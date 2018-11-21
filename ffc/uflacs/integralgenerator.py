@@ -13,9 +13,7 @@ import logging
 from ffc import FFCError
 from ffc.language.cnodes import pad_dim, pad_innermost_dim
 from ffc.uflacs.elementtables import piecewise_ttypes
-from ufl import product
-from ufl.classes import Condition
-from ufl.measure import custom_integral_types, point_integral_types
+import ufl
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +166,7 @@ class IntegralGenerator(object):
         all_postparts = []
 
         # Go through each relevant quadrature loop
-        if self.ir["integral_type"] in custom_integral_types:
+        if self.ir["integral_type"] in ufl.measure.custom_integral_types:
             preparts, quadparts, postparts = \
                 self.generate_runtime_quadrature_loop()
             all_preparts += preparts
@@ -216,7 +214,7 @@ class IntegralGenerator(object):
 
         # No quadrature tables for custom (given argument)
         # or point (evaluation in single vertex)
-        skip = custom_integral_types + point_integral_types
+        skip = ufl.measure.custom_integral_types + ufl.measure.point_integral_types
         if self.ir["integral_type"] in skip:
             return parts
 
@@ -239,7 +237,7 @@ class IntegralGenerator(object):
                 ]
 
             # Generate quadrature points array
-            N = product(points.shape)
+            N = ufl.product(points.shape)
             if varying_ir["need_points"] and N:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 flattened_points = points.reshape(N)
@@ -266,7 +264,7 @@ class IntegralGenerator(object):
         alignas = self.ir["params"]["alignas"]
         padlen = self.ir["params"]["padlen"]
 
-        if self.ir["integral_type"] in custom_integral_types:
+        if self.ir["integral_type"] in ufl.measure.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
         else:
@@ -335,7 +333,7 @@ class IntegralGenerator(object):
         """Generate quadrature loop for custom integrals, with physical points given runtime."""
         L = self.backend.language
 
-        assert self.ir["integral_type"] in custom_integral_types
+        assert self.ir["integral_type"] in ufl.measure.custom_integral_types
 
         num_points = self.ir["fake_num_points"]
         chunk_size = self.ir["params"]["chunk_size"]
@@ -502,7 +500,7 @@ class IntegralGenerator(object):
 
                 # Create a new intermediate for
                 # each subexpression except boolean conditions
-                if isinstance(v, Condition):
+                if isinstance(v, ufl.classes.Condition):
                     # Inline the conditions x < y, condition values
                     # 'x' and 'y' may still be stored in intermediates.
                     # This removes the need to handle boolean intermediate variables.
@@ -713,7 +711,7 @@ class IntegralGenerator(object):
         # Quadrature weight was removed in representation, add it back now
         if num_points is None:
             weight = L.LiteralFloat(1.0)
-        elif self.ir["integral_type"] in custom_integral_types:
+        elif self.ir["integral_type"] in ufl.measure.custom_integral_types:
             weights = self.backend.symbols.custom_weights_table()
             weight = weights[iq]
         else:
@@ -886,7 +884,8 @@ class IntegralGenerator(object):
         return A_rhs, preparts, quadparts, postparts
 
     def generate_preintegrated_dofblock_partition(self):
-        # FIXME: Generalize this to unrolling all A[] += ... loops, or all loops with noncontiguous DM??
+        # FIXME: Generalize this to unrolling all A[] += ... loops,
+        # or all loops with noncontiguous DM??
         L = self.backend.language
 
         block_contributions = self.ir["piecewise_ir"]["block_contributions"]
@@ -897,7 +896,7 @@ class IntegralGenerator(object):
 
         # Get symbol, dimensions, and loop index symbols for A
         A_shape = self.ir["tensor_shape"]
-        A_size = product(A_shape)
+        A_size = ufl.product(A_shape)
         A_rank = len(A_shape)
 
         # TODO: there's something like shape2strides(A_shape) somewhere
@@ -922,12 +921,6 @@ class IntegralGenerator(object):
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             # A_rhs = f * PI where PI = sum_q weight * u * v
             PI = L.Symbol(blockdata.name)
-            # block_rank = len(blockmap)
-
-            # # Override dof index with quadrature loop index for arguments with
-            # # quadrature element, to index B like B[iq*num_dofs + iq]
-            # arg_indices = tuple(
-            #     self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
