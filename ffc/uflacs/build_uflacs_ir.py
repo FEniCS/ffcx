@@ -257,11 +257,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     ir["unique_table_types"] = {}
 
     # Shared piecewise expr_ir for all quadrature loops
-    ir["piecewise_ir"] = {"V": [],
-                          "V_active": [],
-                          "V_targets": [],
-                          "V_mts": [],
-                          "mt_tabledata": {},
+    ir["piecewise_ir"] = {"F": None,
                           "modified_arguments": [],
                           "preintegrated_blocks": {},
                           "premultiplied_blocks": {},
@@ -269,7 +265,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                           "block_contributions": collections.defaultdict(list)}
 
     # { num_points: expr_ir for one integrand }
-    ir["varying_irs"] = {}
+    ir["varying_irs"] = {"F": None}
 
     # Whether we expect the quadrature weight to be applied or not (in
     # some cases it's just set to 1 in ufl integral scaling)
@@ -292,11 +288,14 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # Rebalance order of nested terminal modifiers
         expression = balance_modifiers(expression)
 
+        # Remove QuadratureWeight terminals from expression and replace with 1.0
+        expression = replace_quadratureweight(expression)
+
         # Build initial scalar list-based graph representation
-        G0 = build_scalar_graph(expression)
-        G0_targets = [i for i, v in G0.nodes.items() if v.get('target', False)]
-        assert len(G0_targets) == 1
-        G0_target = G0_targets[0]
+        S = build_scalar_graph(expression)
+        S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
+        assert len(S_targets) == 1
+        S_target = S_targets[0]
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
@@ -305,7 +304,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # terminal_data again after factorization if that's necessary.
 
         initial_terminals = {i: analyse_modified_terminal(v['expression'])
-                             for i, v in G0.nodes.items()
+                             for i, v in S.nodes.items()
                              if is_modified_terminal(v['expression'])}
 
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
@@ -320,35 +319,27 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
-        # Replace some scalar modified terminals before reconstructing
-        # expressions (could possibly use replace() on target
-        # expressions instead)
-        z = ufl.as_ufl(0.0)
-        one = ufl.as_ufl(1.0)
-        for i, mt in initial_terminals.items():
-            if isinstance(mt.terminal, QuadratureWeight):
-                # Replace quadrature weight with 1.0, will be added back
-                # later
-                G0.nodes[i]['expression'] = one
-            else:
+        # If there are any 'zero' tables, replace symbolically and rebuild graph
+        if 'zeros' in unique_table_types.values():
+            for i, mt in initial_terminals.items():
                 # Set modified terminals with zero tables to zero
                 tr = mt_unique_table_reference.get(mt)
                 if tr is not None and tr.ttype == "zeros":
-                    G0.nodes[i]['expression'] = z
+                    S.nodes[i]['expression'] = ufl.as_ufl(0.0)
 
-        # Propagate expression changes using dependency list
-        for i, v in G0.nodes.items():
-            deps = [G0.nodes[j]['expression'] for j in G0.out_edges[i]]
-            if deps:
-                v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
+            # Propagate expression changes using dependency list
+            for i, v in S.nodes.items():
+                deps = [S.nodes[j]['expression'] for j in S.out_edges[i]]
+                if deps:
+                    v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
-        # Rebuild scalar target expressions and graph (this may be
-        # overkill and possible to optimize away if it turns out to be
-        # costly)
-        expression = G0.nodes[G0_target]['expression']
+            # Rebuild scalar target expressions and graph (this may be
+            # overkill and possible to optimize away if it turns out to be
+            # costly)
+            expression = S.nodes[S_target]['expression']
 
-        # Rebuild scalar list-based graph representation
-        S = build_scalar_graph(expression)
+            # Rebuild scalar list-based graph representation
+            S = build_scalar_graph(expression)
 
         # Output diagnostic graph as pdf
         if parameters['visualise']:
@@ -763,3 +754,24 @@ def analyse_dependencies(F, mt_unique_table_reference):
     for i, v in F.nodes.items():
         if v['status'] == 'active':
             v['status'] = 'piecewise'
+
+
+def replace_quadratureweight(expression):
+    """Remove any QuadratureWeight terminals and replace with 1.0."""
+
+    r = _find_terminals_in_ufl_expression(expression)
+    replace_map = {q: 1.0 for q in r if isinstance(q, QuadratureWeight)}
+
+    return ufl.algorithms.replace(expression, replace_map)
+
+
+def _find_terminals_in_ufl_expression(e):
+    """Recursively search expression for terminals."""
+    r = []
+    for op in e.ufl_operands:
+        if is_modified_terminal(op):
+            r.append(op)
+        else:
+            r += _find_terminals_in_ufl_expression(op)
+
+    return r
