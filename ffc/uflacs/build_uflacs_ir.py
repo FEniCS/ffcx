@@ -35,33 +35,22 @@ logger = logging.getLogger(__name__)
 
 ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
-common_block_data_fields = [
-    "block_mode",  # block mode name: "safe" | "full" | "preintegrated" | "premultiplied"
-    "ttypes",  # list of table types for each block rank
-    "factor_index",  # int: index of factor in vertex array
-    "factor_is_piecewise",  # bool: factor is found in piecewise vertex array instead of quadloop specific vertex array
-    "unames",  # list of unique FE table names for each block rank
-    "restrictions",  # restriction "+" | "-" | None for each block rank
-    "transposed",  # block is the transpose of another
-]
-common_block_data_t = collections.namedtuple("common_block_data_t", common_block_data_fields)
-
-
-def get_common_block_data(blockdata):
-    return common_block_data_t(*blockdata[:len(common_block_data_fields)])
-
-
-preintegrated_block_data_t = collections.namedtuple(
-    "preintegrated_block_data_t", common_block_data_fields + ["is_uniform", "name"])
-
-premultiplied_block_data_t = collections.namedtuple(
-    "premultiplied_block_data_t", common_block_data_fields + ["is_uniform", "name"])
-
-partial_block_data_t = collections.namedtuple(
-    "partial_block_data_t", common_block_data_fields + ["ma_data", "piecewise_ma_index"])
-
-full_block_data_t = collections.namedtuple("full_block_data_t",
-                                           common_block_data_fields + ["ma_data"])
+block_data_t = collections.namedtuple("block_data_t",
+                                      ["block_mode",
+                                       # "safe" | "full" | "preintegrated" | "premultiplied"
+                                       "ttypes",  # list of table types for each block rank
+                                       "factor_index",  # int: index of factor in vertex array
+                                       "factor_is_piecewise",
+                                       # bool: factor is found in piecewise vertex array
+                                       # instead of quadloop specific vertex array
+                                       "unames",  # list of unique FE table names for each block rank
+                                       "restrictions",  # restriction "+" | "-" | None for each block rank
+                                       "transposed",  # block is the transpose of another
+                                       "is_uniform",  # used in "preintegrated" and "premultiplied"
+                                       "name",  # used in "preintegrated" and "premultiplied"
+                                       "ma_data",  # used in "full", "safe" and "partial"
+                                       "piecewise_ma_index"  # used in "partial"
+                                       ])
 
 
 def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
@@ -505,9 +494,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
                 assert factor_is_piecewise
                 block_unames = (pname, )
-                blockdata = preintegrated_block_data_t(
+                blockdata = block_data_t(
                     block_mode, ttypes, fi, factor_is_piecewise, block_unames,
-                    block_restrictions, block_is_transposed, block_is_uniform, pname)
+                    block_restrictions, block_is_transposed, block_is_uniform, pname,
+                    None, None)
                 block_is_piecewise = True
 
             elif block_mode == "premultiplied":
@@ -543,9 +533,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     unique_table_types[pname] = "premultiplied"
 
                 block_unames = (pname, )
-                blockdata = premultiplied_block_data_t(
+                blockdata = block_data_t(
                     block_mode, ttypes, fi, factor_is_piecewise, block_unames,
-                    block_restrictions, block_is_transposed, block_is_uniform, pname)
+                    block_restrictions, block_is_transposed, block_is_uniform, pname, None, None)
                 block_is_piecewise = False
 
 
@@ -584,20 +574,20 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     assert rank == 2
                     not_piecewise_ma_index = 1 - piecewise_ma_index
                     block_unames = (unames[not_piecewise_ma_index], )
-                    blockdata = partial_block_data_t(block_mode, ttypes, fi,
-                                                     factor_is_piecewise, block_unames,
-                                                     block_restrictions, block_is_transposed,
-                                                     tuple(ma_data), piecewise_ma_index)
+                    blockdata = block_data_t(block_mode, ttypes, fi,
+                                             factor_is_piecewise, block_unames,
+                                             block_restrictions, block_is_transposed,
+                                             None, None, tuple(ma_data), piecewise_ma_index)
                 elif block_mode in ("full", "safe"):
                     # Add to contributions:
                     # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
                     # A[blockmap] += B[i];                    generated after quadloop
 
                     block_unames = unames
-                    blockdata = full_block_data_t(block_mode, ttypes, fi,
-                                                  factor_is_piecewise, block_unames,
-                                                  block_restrictions, block_is_transposed,
-                                                  tuple(ma_data))
+                    blockdata = block_data_t(block_mode, ttypes, fi,
+                                             factor_is_piecewise, block_unames,
+                                             block_restrictions, block_is_transposed,
+                                             None, None, tuple(ma_data), None)
             else:
                 raise FFCError("Invalid block_mode %s" % (block_mode, ))
 
@@ -760,13 +750,13 @@ def replace_quadratureweight(expression):
     """Remove any QuadratureWeight terminals and replace with 1.0."""
 
     r = _find_terminals_in_ufl_expression(expression, QuadratureWeight)
-    replace_map = {q: 1.0 for q in r} # if isinstance(q, QuadratureWeight)}
+    replace_map = {q: 1.0 for q in r}
 
     return ufl.algorithms.replace(expression, replace_map)
 
 
 def _find_terminals_in_ufl_expression(e, etype):
-    """Recursively search expression for terminals."""
+    """Recursively search expression for terminals of type etype."""
     r = []
     for op in e.ufl_operands:
         if is_modified_terminal(op) and isinstance(op, etype):

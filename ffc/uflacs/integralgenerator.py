@@ -477,16 +477,15 @@ class IntegralGenerator(object):
 
             v = attr['expression']
             mt = attr.get('mt')
-            tabledata = attr.get('tr')
 
             if v._ufl_is_literal_:
                 vaccess = self.backend.ufl_to_language.get(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
+                tabledata = attr.get('tr')
 
                 # Backend specific modified terminal translation
-
                 vaccess = self.backend.access.get(mt.terminal, mt, tabledata, num_points)
                 vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, num_points, vaccess)
 
