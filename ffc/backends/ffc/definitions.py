@@ -25,6 +25,8 @@ class FFCBackendDefinitions(object):
         self.symbols = symbols
         self.parameters = parameters
 
+        # Lookup table for handler to call when the "get" method (below) is
+        # called, depending on the first argument type.
         self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
                             ufl.geometry.Jacobian: self.jacobian,
                             ufl.geometry.CellVertices: self._expect_physical_coords,
@@ -41,6 +43,7 @@ class FFCBackendDefinitions(object):
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
     def get(self, t, mt, tabledata, num_points, access):
+        # Call appropriate handler, depending on the type of t
         ttype = type(t)
         if ttype in self.call_lookup:
             return self.call_lookup[ttype](t, mt, tabledata, num_points, access)

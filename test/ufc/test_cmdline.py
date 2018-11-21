@@ -32,3 +32,4 @@ def test_cmdline_python():
     ffc.main(["-v", "PoissonDG.ufl"])
     ffc.main(["-v", "Conditional.ufl"])
     ffc.main(["-v", "HyperElasticity.ufl"])
+    ffc.main(["-v", "VectorLaplaceGradCurl.ufl"])
