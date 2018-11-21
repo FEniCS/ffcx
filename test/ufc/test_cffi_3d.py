@@ -81,8 +81,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result):
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((4, 4), dtype=np_type)
-    w0 = np.array([], dtype=np_type)
-    w1 = np.array([w0.ctypes.data], dtype=np.uint64)
+    w = np.array([], dtype=np_type)
     ffi = cffi.FFI()
     coords = np.array([0.0, 0.0, 0.0,
                        1.0, 0.0, 0.0,
@@ -90,7 +89,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result):
                        0.0, 0.0, 1.0], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
-        ffi.cast('{type} * *'.format(type=c_type), w1.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), 0)
 
     assert np.allclose(A, expected_result)
