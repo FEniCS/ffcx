@@ -10,7 +10,6 @@ import collections
 import itertools
 import logging
 
-from ffc import FFCError
 from ffc.language.cnodes import pad_dim, pad_innermost_dim
 from ffc.uflacs.elementtables import piecewise_ttypes
 import ufl
@@ -672,7 +671,7 @@ class IntegralGenerator(object):
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
-            raise FFCError("Not expecting zero arguments to be left in dofblock generation.")
+            raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
         if num_points is None:
             iq = None
@@ -1013,7 +1012,7 @@ class IntegralGenerator(object):
                     L.ForRange(k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
                 ]
         else:
-            raise FFCError("Invalid init_mode parameter %s" % (init_mode, ))
+            raise RuntimeError("Invalid init_mode parameter %s" % (init_mode, ))
 
         return parts
 

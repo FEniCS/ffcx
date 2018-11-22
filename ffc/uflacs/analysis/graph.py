@@ -11,7 +11,6 @@ import logging
 import numpy
 
 import ufl
-from ffc import FFCError
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
 
@@ -106,14 +105,14 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
 
     # No fallbacks, need to specify each type or group of types explicitly
     def expr(self, o, *args, **kwargs):
-        raise FFCError("No handler for type %s" % type(o))
+        raise RuntimeError("No handler for type %s" % type(o))
 
     def terminal(self, o):
-        raise FFCError("Not expecting terminal expression in here, got %s." % type(o))
+        raise RuntimeError("Not expecting terminal expression in here, got %s." % type(o))
 
     # These types are not expected to be part of the graph at this point
     def unexpected(self, o, *args, **kwargs):
-        raise FFCError("Not expecting expression of type %s in here." % type(o))
+        raise RuntimeError("Not expecting expression of type %s in here." % type(o))
 
     multi_index = unexpected
     expr_list = unexpected
@@ -127,7 +126,7 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
 
     def scalar_nary(self, o, ops):
         if o.ufl_shape != ():
-            raise FFCError("Expecting scalar.")
+            raise RuntimeError("Expecting scalar.")
         sops = [op[0] for op in ops]
         return [o._ufl_expr_reconstruct_(*sops)]
 
@@ -154,9 +153,9 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
         symbols = []
         n = len(ops[1])
         if len(ops[0]) != 1:
-            raise FFCError("Condition should be scalar.")
+            raise RuntimeError("Condition should be scalar.")
         if n != len(ops[2]):
-            raise FFCError("Conditional branches should have same shape.")
+            raise RuntimeError("Conditional branches should have same shape.")
         for i in range(len(ops[1])):
             sops = (ops[0][0], ops[1][i], ops[2][i])
             symbols.append(o._ufl_expr_reconstruct_(*sops))
@@ -164,29 +163,29 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
 
     def conj(self, o, ops):
         if len(ops) != 1:
-            raise FFCError("Expecting one operand")
+            raise RuntimeError("Expecting one operand")
         if o.ufl_shape != ():
-            raise FFCError("Expecting scalar.")
+            raise RuntimeError("Expecting scalar.")
         return [o._ufl_expr_reconstruct_(x) for x in ops[0]]
 
     def division(self, o, ops):
         if len(ops) != 2:
-            raise FFCError("Expecting two operands.")
+            raise RuntimeError("Expecting two operands.")
         if len(ops[1]) != 1:
-            raise FFCError("Expecting scalar divisor.")
+            raise RuntimeError("Expecting scalar divisor.")
         b, = ops[1]
         return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
 
     def sum(self, o, ops):
         if len(ops) != 2:
-            raise FFCError("Expecting two operands.")
+            raise RuntimeError("Expecting two operands.")
         if len(ops[0]) != len(ops[1]):
-            raise FFCError("Expecting scalar divisor.")
+            raise RuntimeError("Expecting scalar divisor.")
         return [o._ufl_expr_reconstruct_(a, b) for a, b in zip(ops[0], ops[1])]
 
     def product(self, o, ops):
         if len(ops) != 2:
-            raise FFCError("Expecting two operands.")
+            raise RuntimeError("Expecting two operands.")
 
         # Get the simple cases out of the way
         if len(ops[0]) == 1:  # True scalar * something
@@ -243,7 +242,7 @@ class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
         # axis corresponding to summation index ii.
         ss = ops[0]  # Scalar subexpressions of summand
         if len(ss) != predim * postdim * d:
-            raise FFCError("Mismatching number of subexpressions.")
+            raise RuntimeError("Mismatching number of subexpressions.")
         sops = []
         for i in range(predim):
             iind = i * (postdim * d)
@@ -298,7 +297,7 @@ def rebuild_with_scalar_subexpressions(G):
 
         if is_modified_terminal(v):
             # if v.ufl_free_indices:
-            #     raise FFCError("Expecting no free indices.")
+            #     raise RuntimeError("Expecting no free indices.")
             sh = v.ufl_shape
             if sh:
                 # Store each terminal expression component. We may not
@@ -309,7 +308,7 @@ def rebuild_with_scalar_subexpressions(G):
             else:
                 # Store single modified terminal expression component
                 if len(vs) != 1:
-                    raise FFCError("Expecting single symbol for scalar valued modified terminal.")
+                    raise RuntimeError("Expecting single symbol for scalar valued modified terminal.")
                 ws = [v]
             # FIXME: Replace ws[:] with 0's if its table is empty
             # Possible redesign: loop over modified terminals only first,
@@ -322,7 +321,7 @@ def rebuild_with_scalar_subexpressions(G):
                 if isinstance(vop, ufl.classes.MultiIndex):
                     # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(v, ufl.classes.IndexSum):
-                        raise FFCError("Not expecting a %s." % type(v))
+                        raise RuntimeError("Not expecting a %s." % type(v))
                     sops.append(())
                 else:
                     # TODO: Build edge datastructure and use instead?
@@ -338,7 +337,7 @@ def rebuild_with_scalar_subexpressions(G):
 
             # Store all scalar subexpressions for v symbols
             if len(vs) != len(ws):
-                raise FFCError("Expecting one symbol for each expression.")
+                raise RuntimeError("Expecting one symbol for each expression.")
 
         # Store each new scalar subexpression in W at the index of its symbol
         handled = set()

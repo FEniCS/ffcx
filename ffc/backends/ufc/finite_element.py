@@ -12,7 +12,6 @@
 from collections import defaultdict
 
 import ffc.backends.ufc.finite_element_template as ufc_finite_element
-from ffc import FFCError
 from ffc.backends.ufc.evalderivs import (_generate_combinations,
                                          generate_evaluate_reference_basis_derivatives)
 from ffc.backends.ufc.evaluatebasis import generate_evaluate_reference_basis
@@ -58,7 +57,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
         M_scale = 1.0 / (detJ * detJ)
         M_row = [J[i0, jj] * J[i1, kk] for jj in range(tdim) for kk in range(tdim)]
     else:
-        raise FFCError("Unknown mapping: %s" % mapping)
+        raise RuntimeError("Unknown mapping: %s" % mapping)
 
     return M_scale, M_row, num_physical_components
 

@@ -10,7 +10,6 @@ import ufl
 import logging
 import warnings
 
-from ffc import FFCError
 from ffc.fiatinterface import create_element
 from ufl.finiteelement import MixedElement
 from ufl.measure import custom_integral_types
@@ -108,13 +107,13 @@ class FFCBackendAccess(object):
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         if mt.global_derivatives:
-            raise FFCError("Not expecting global derivatives of SpatialCoordinate.")
+            raise RuntimeError("Not expecting global derivatives of SpatialCoordinate.")
         if mt.averaged:
-            raise FFCError("Not expecting average of SpatialCoordinates.")
+            raise RuntimeError("Not expecting average of SpatialCoordinates.")
 
         if self.integral_type in custom_integral_types:
             if mt.local_derivatives:
-                raise FFCError("FIXME: Jacobian in custom integrals is not implemented.")
+                raise RuntimeError("FIXME: Jacobian in custom integrals is not implemented.")
 
             # Access predefined quadrature points table
             x = self.symbols.custom_points_table()
@@ -132,11 +131,11 @@ class FFCBackendAccess(object):
 
     def cell_coordinate(self, e, mt, tabledata, num_points):
         if mt.global_derivatives:
-            raise FFCError("Not expecting derivatives of CellCoordinate.")
+            raise RuntimeError("Not expecting derivatives of CellCoordinate.")
         if mt.local_derivatives:
-            raise FFCError("Not expecting derivatives of CellCoordinate.")
+            raise RuntimeError("Not expecting derivatives of CellCoordinate.")
         if mt.averaged:
-            raise FFCError("Not expecting average of CellCoordinate.")
+            raise RuntimeError("Not expecting average of CellCoordinate.")
 
         if self.integral_type == "cell" and not mt.restriction:
             # Access predefined quadrature points table
@@ -153,23 +152,23 @@ class FFCBackendAccess(object):
         else:
             # X should be computed from x or Xf symbolically instead of
             # getting here
-            raise FFCError("Expecting reference cell coordinate to be symbolically rewritten.")
+            raise RuntimeError("Expecting reference cell coordinate to be symbolically rewritten.")
 
     def facet_coordinate(self, e, mt, tabledata, num_points):
         L = self.language
         if mt.global_derivatives:
-            raise FFCError("Not expecting derivatives of FacetCoordinate.")
+            raise RuntimeError("Not expecting derivatives of FacetCoordinate.")
         if mt.local_derivatives:
-            raise FFCError("Not expecting derivatives of FacetCoordinate.")
+            raise RuntimeError("Not expecting derivatives of FacetCoordinate.")
         if mt.averaged:
-            raise FFCError("Not expecting average of FacetCoordinate.")
+            raise RuntimeError("Not expecting average of FacetCoordinate.")
         if mt.restriction:
-            raise FFCError("Not expecting restriction of FacetCoordinate.")
+            raise RuntimeError("Not expecting restriction of FacetCoordinate.")
 
         if self.integral_type in ("interior_facet", "exterior_facet"):
             tdim, = mt.terminal.ufl_shape
             if tdim == 0:
-                raise FFCError("Vertices have no facet coordinates.")
+                raise RuntimeError("Vertices have no facet coordinates.")
             elif tdim == 1:
                 warnings.warn(
                     "Vertex coordinate is always 0, should get rid of this in ufl geometry lowering."
@@ -188,13 +187,13 @@ class FFCBackendAccess(object):
         else:
             # Xf should be computed from X or x symbolically instead of
             # getting here
-            raise FFCError("Expecting reference facet coordinate to be symbolically rewritten.")
+            raise RuntimeError("Expecting reference facet coordinate to be symbolically rewritten.")
 
     def jacobian(self, e, mt, tabledata, num_points):
         if mt.global_derivatives:
-            raise FFCError("Not expecting global derivatives of Jacobian.")
+            raise RuntimeError("Not expecting global derivatives of Jacobian.")
         if mt.averaged:
-            raise FFCError("Not expecting average of Jacobian.")
+            raise RuntimeError("Not expecting average of Jacobian.")
         return self.symbols.J_component(mt)
 
     def reference_cell_volume(self, e, mt, tabledata, access):
@@ -203,7 +202,7 @@ class FFCBackendAccess(object):
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol("{0}_reference_cell_volume".format(cellname))
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
     def reference_facet_volume(self, e, mt, tabledata, access):
         L = self.language
@@ -211,7 +210,7 @@ class FFCBackendAccess(object):
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol("{0}_reference_facet_volume".format(cellname))
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
     def reference_normal(self, e, mt, tabledata, access):
         L = self.language
@@ -221,7 +220,7 @@ class FFCBackendAccess(object):
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]]
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
     def cell_facet_jacobian(self, e, mt, tabledata, num_points):
         L = self.language
@@ -231,9 +230,9 @@ class FFCBackendAccess(object):
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":
-            raise FFCError("The reference facet jacobian doesn't make sense for interval cell.")
+            raise RuntimeError("The reference facet jacobian doesn't make sense for interval cell.")
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
     def reference_cell_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
@@ -242,9 +241,9 @@ class FFCBackendAccess(object):
             table = L.Symbol("{0}_reference_edge_vectors".format(cellname))
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
-            raise FFCError("The reference cell edge vectors doesn't make sense for interval cell.")
+            raise RuntimeError("The reference cell edge vectors doesn't make sense for interval cell.")
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
     def reference_facet_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
@@ -254,11 +253,11 @@ class FFCBackendAccess(object):
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
-            raise FFCError(
+            raise RuntimeError(
                 "The reference cell facet edge vectors doesn't make sense for interval or triangle cell."
             )
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
     def cell_orientation(self, e, mt, tabledata, num_points):
         # Error if not in manifold case:
@@ -270,7 +269,7 @@ class FFCBackendAccess(object):
         L = self.language
         cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname not in ("interval", "triangle", "tetrahedron"):
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
         table = L.Symbol("{0}_facet_orientations".format(cellname))
         facet = self.symbols.entity("facet", mt.restriction)
@@ -308,9 +307,9 @@ class FFCBackendAccess(object):
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             pass
         elif cellname == "interval":
-            raise FFCError("The physical cell edge vectors doesn't make sense for interval cell.")
+            raise RuntimeError("The physical cell edge vectors doesn't make sense for interval cell.")
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, MixedElement)
@@ -351,10 +350,10 @@ class FFCBackendAccess(object):
         if cellname in ("tetrahedron", "hexahedron"):
             pass
         elif cellname in ("interval", "triangle", "quadrilateral"):
-            raise FFCError(
+            raise RuntimeError(
                 "The physical facet edge vectors doesn't make sense for {0} cell.".format(cellname))
         else:
-            raise FFCError("Unhandled cell types {0}.".format(cellname))
+            raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, MixedElement)
@@ -383,7 +382,7 @@ class FFCBackendAccess(object):
         return expr
 
     def _expect_symbolic_lowering(self, e, mt, tabledata, num_points):
-        raise FFCError("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
+        raise RuntimeError("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
 
     facet_normal = _expect_symbolic_lowering
     cell_normal = _expect_symbolic_lowering

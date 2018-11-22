@@ -8,8 +8,6 @@
 
 import logging
 
-from ffc import FFCError
-
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +36,7 @@ def num_coordinate_component_dofs(coordinate_element):
         elif entity_dim == 3:
             n = (degree - 3) * (degree - 2) * (degree - 1) // 6
         else:
-            raise FFCError("Entity dimension out of range")
+            raise RuntimeError("Entity dimension out of range")
         # Accumulate
         num_entities = num_cell_entities[cellname][entity_dim]
         d += num_entities * n

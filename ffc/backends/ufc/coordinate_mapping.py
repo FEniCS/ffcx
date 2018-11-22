@@ -6,7 +6,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import ffc.backends.ufc.coordinate_mapping_template as ufc_coordinate_mapping
-from ffc import FFCError
 from ffc.backends.ufc.utils import generate_return_new
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
@@ -97,7 +96,7 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
         elif gdim == 3:
             adj_values = adj_expr_3x3(J)
         else:
-            raise FFCError("Not implemented.")
+            raise RuntimeError("Not implemented.")
         return L.StatementList(
             [L.Assign(K[j, i], adj_values[j][i] / detJ) for j in range(tdim) for i in range(gdim)])
     else:

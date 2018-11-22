@@ -9,7 +9,6 @@
 import logging
 from functools import singledispatch
 
-from ffc import FFCError
 from ffc.uflacs.analysis.graph import ExpressionGraph
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                     strip_modified_terminal)
@@ -57,17 +56,17 @@ noargs = {}
 def handler(v, fac, sf, F):
     # Error checking
     if any(fac):
-        raise FFCError(
+        raise RuntimeError(
             "Assuming that a {0} cannot be applied to arguments. If this is wrong please report a bug.".
             format(type(v)))
     # Record non-argument subexpression
-    raise FFCError("No arguments")
+    raise RuntimeError("No arguments")
 
 
 @handler.register(Sum)
 def handle_sum(v, fac, sf, F):
     if len(fac) != 2:
-        raise FFCError("Assuming binary sum here. This can be fixed if needed.")
+        raise RuntimeError("Assuming binary sum here. This can be fixed if needed.")
 
     fac0 = fac[0]
     fac1 = fac[1]
@@ -79,7 +78,7 @@ def handle_sum(v, fac, sf, F):
         factors = {}
         for argkey in argkeys:
             if len(argkey) != keylen:
-                raise FFCError("Expecting equal argument rank terms among summands.")
+                raise RuntimeError("Expecting equal argument rank terms among summands.")
 
             fi0 = fac0.get(argkey)
             fi1 = fac1.get(argkey)
@@ -94,7 +93,7 @@ def handle_sum(v, fac, sf, F):
             factors[argkey] = fisum
 
     else:  # non-arg + non-arg
-        raise FFCError("No arguments")
+        raise RuntimeError("No arguments")
 
     return factors
 
@@ -102,12 +101,12 @@ def handle_sum(v, fac, sf, F):
 @handler.register(Product)
 def handle_product(v, fac, sf, F):
     if len(fac) != 2:
-        raise FFCError("Assuming binary product here. This can be fixed if needed.")
+        raise RuntimeError("Assuming binary product here. This can be fixed if needed.")
     fac0 = fac[0]
     fac1 = fac[1]
 
     if not fac0 and not fac1:  # non-arg * non-arg
-        raise FFCError("No arguments")
+        raise RuntimeError("No arguments")
 
     elif not fac0:  # non-arg * arg
         # Record products of non-arg operand with each factor of arg-dependent operand
@@ -148,7 +147,7 @@ def handle_conj(v, fac, sf, F):
             f0 = F.nodes[fac[k]]['expression']
             factors[k] = graph_insert(F, Conj(f0))
     else:
-        raise FFCError("No arguments")
+        raise RuntimeError("No arguments")
 
     return factors
 
@@ -168,7 +167,7 @@ def handle_division(v, fac, sf, F):
             factors[k0] = graph_insert(F, f0 / f1)
 
     else:  # non-arg / non-arg
-        raise FFCError("No arguments")
+        raise RuntimeError("No arguments")
 
     return factors
 
@@ -181,7 +180,7 @@ def handle_conditional(v, fac, sf, F):
     assert not fac0, "Cannot have argument in condition."
 
     if not (fac1 or fac2):  # non-arg ? non-arg : non-arg
-        raise FFCError("No arguments")
+        raise RuntimeError("No arguments")
     else:
         f0 = sf[0]
         f1 = sf[1]
