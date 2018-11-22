@@ -231,11 +231,12 @@ def _validate_representation_choice(form_data, preprocessing_representation_fami
     # Require unique family
     if len(representations) != 1:
         raise RuntimeError("Failed to extract unique representation family. "
-                       "Got '{}'.".format(representations))
+                           "Got '{}'.".format(representations))
 
     # Check preprocessing strategy
-    assert preprocessing_representation_family in representations, "Form preprocessed using '{}' representaion family, while '{}' representations set for integrals.".format(  # noqa: E501
-        preprocessing_representation_family, representations)
+    assert preprocessing_representation_family in representations, \
+        "Form preprocessed using '{}' representaion family, while '{}' representations set for integrals." \
+        .format(preprocessing_representation_family, representations)
 
 
 def _has_custom_integrals(o):

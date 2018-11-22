@@ -135,7 +135,7 @@ def _create_fiat_element(ufl_element):
         # Check if finite element family is supported by FIAT
         if family not in FIAT.supported_elements:
             raise RuntimeError("Sorry, finite element of type \"%s\" are not supported by FIAT.",
-                           family)
+                               family)
 
         ElementClass = FIAT.supported_elements[family]
 
@@ -155,8 +155,8 @@ def _create_fiat_element(ufl_element):
     if element.value_shape() != ufl_element.reference_value_shape():
         # Consistency check between UFL and FIAT elements.
         raise RuntimeError("Something went wrong in the construction of FIAT element from UFL element."
-                       + "Shapes are {} and {}.".format(element.value_shape(),
-                                                        ufl_element.reference_value_shape()))
+                           + "Shapes are {} and {}.".format(element.value_shape(),
+                                                            ufl_element.reference_value_shape()))
 
     return element
 
