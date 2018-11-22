@@ -15,7 +15,6 @@ from ffc.uflacs.tools import (accumulate_integrals, collect_quadrature_rules,
 from ufl import custom_integral_types
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
-import ufl
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +148,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
 
     offsets = {}
     _offset = 0
-    for k,u in zip(coefficient_numbering.keys(), form_data.coefficient_elements):
+    for k, u in zip(coefficient_numbering.keys(), form_data.coefficient_elements):
         offsets[k] = _offset
         print(k, _offset)
         _offset += ir["element_dimensions"][u]
