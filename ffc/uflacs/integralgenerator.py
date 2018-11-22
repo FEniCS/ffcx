@@ -443,7 +443,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir["piecewise_ir"]["F"]
+        F = self.ir["piecewise_ir"]["factorization"]
 
         arraysymbol = L.Symbol("sp")
         num_points = None
@@ -455,7 +455,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir["varying_irs"][num_points]["F"]
+        F = self.ir["varying_irs"][num_points]["factorization"]
 
         arraysymbol = L.Symbol("sv%d" % num_points)
         parts = self.generate_partition(arraysymbol, F, "varying", num_points)
@@ -703,9 +703,10 @@ class IntegralGenerator(object):
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
-            v = self.ir["piecewise_ir"]["F"].nodes[blockdata.factor_index]['expression']
+            F = self.ir["piecewise_ir"]["factorization"]
         else:
-            v = self.ir["varying_irs"][num_points]["F"].nodes[blockdata.factor_index]['expression']
+            F = self.ir["varying_irs"][num_points]["factorization"]
+        v = F.nodes[blockdata.factor_index]['expression']
         f = self.get_var(num_points, v)
 
         # Quadrature weight was removed in representation, add it back now
@@ -838,7 +839,8 @@ class IntegralGenerator(object):
                 body = L.ForRange(P_index, 0, pad_dim(P_dim, padlen), body=body)
                 quadparts.append(body)
 
-            # Define B = B_rhs = piecewise_argument[:] * P[:], where P[:] = sum_q weight * f * other_argument[:]
+            # Define B = B_rhs = piecewise_argument[:] * P[:],
+            # where P[:] = sum_q weight * f * other_argument[:]
             B_rhs = arg_factors[i] * P[P_index]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -900,6 +902,8 @@ class IntegralGenerator(object):
         A_rank = len(A_shape)
 
         # TODO: there's something like shape2strides(A_shape) somewhere
+        # A_strides = ufl.utils.indexflattening.shape_to_strides(A_shape)
+
         A_strides = [1] * A_rank
         for i in reversed(range(0, A_rank - 1)):
             A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
@@ -915,7 +919,7 @@ class IntegralGenerator(object):
             inline_table = self.ir["integral_type"] == "cell"
 
             # Get factor expression
-            v = self.ir["piecewise_ir"]["F"].nodes[blockdata.factor_index]['expression']
+            v = self.ir["piecewise_ir"]["factorization"].nodes[blockdata.factor_index]['expression']
             f = self.get_var(None, v)
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs

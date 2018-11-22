@@ -22,7 +22,7 @@
 # Compile this form with FFC: ffc VectorLaplaceGradCurl.ufl
 
 def HodgeLaplaceGradCurl(element, felement):
-    """This is a formulation of the Hodge Laplacian using k=1 and n=3,
+    r"""This is a formulation of the Hodge Laplacian using k=1 and n=3,
     i.e 0-forms and 1-forms in 3D.
 
     Appropriate elements are

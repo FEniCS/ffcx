@@ -246,7 +246,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     ir["unique_table_types"] = {}
 
     # Shared piecewise expr_ir for all quadrature loops
-    ir["piecewise_ir"] = {"F": None,
+    ir["piecewise_ir"] = {"factorization": None,
                           "modified_arguments": [],
                           "preintegrated_blocks": {},
                           "premultiplied_blocks": {},
@@ -254,7 +254,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                           "block_contributions": collections.defaultdict(list)}
 
     # { num_points: expr_ir for one integrand }
-    ir["varying_irs"] = {"F": None}
+    ir["varying_irs"] = {"factorization": None}
 
     # Whether we expect the quadrature weight to be applied or not (in
     # some cases it's just set to 1 in ufl integral scaling)
@@ -370,7 +370,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         analyse_dependencies(F, mt_unique_table_reference)
 
         # Save the factorisation graph to the piecewise IR
-        ir["piecewise_ir"]["F"] = F
+        ir["piecewise_ir"]["factorization"] = F
         ir["piecewise_ir"]["modified_arguments"] = [F.nodes[i]['mt']
                                                     for i in argkeys]
 
@@ -682,7 +682,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
-        ir["varying_irs"][num_points] = {"F": F,
+        ir["varying_irs"][num_points] = {"factorization": F,
                                          "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
                                          "block_contributions": block_contributions,
                                          "need_points": need_points,
