@@ -12,7 +12,6 @@ import numpy
 
 import FIAT
 import ufl
-from ffc import FFCError
 from FIAT.enriched import EnrichedElement
 from FIAT.mixed import MixedElement
 from FIAT.nodal_enriched import NodalEnrichedElement
@@ -71,7 +70,7 @@ def create_element(ufl_element):
         element = NodalEnrichedElement(*elements)
     elif isinstance(ufl_element, ufl.RestrictedElement):
         element = _create_restricted_element(ufl_element)
-        raise FFCError("Cannot handle this element type: {}".format(ufl_element))
+        raise RuntimeError("Cannot handle this element type: {}".format(ufl_element))
 
     # Store in cache
     _cache[element_signature] = element
@@ -90,7 +89,7 @@ def _create_fiat_element(ufl_element):
 
     # Check that FFC supports this element
     if family not in supported_families:
-        raise FFCError("This element family (%s) is not supported by FFC." % family)
+        raise RuntimeError("This element family (%s) is not supported by FFC." % family)
 
     # Create FIAT cell
     fiat_cell = reference_cell(cellname)
@@ -135,7 +134,7 @@ def _create_fiat_element(ufl_element):
     else:
         # Check if finite element family is supported by FIAT
         if family not in FIAT.supported_elements:
-            raise FFCError("Sorry, finite element of type \"%s\" are not supported by FIAT.",
+            raise RuntimeError("Sorry, finite element of type \"%s\" are not supported by FIAT.",
                            family)
 
         ElementClass = FIAT.supported_elements[family]
@@ -155,7 +154,7 @@ def _create_fiat_element(ufl_element):
 
     if element.value_shape() != ufl_element.reference_value_shape():
         # Consistency check between UFL and FIAT elements.
-        raise FFCError("Something went wrong in the construction of FIAT element from UFL element."
+        raise RuntimeError("Something went wrong in the construction of FIAT element from UFL element."
                        + "Shapes are {} and {}.".format(element.value_shape(),
                                                         ufl_element.reference_value_shape()))
 
@@ -274,7 +273,7 @@ def _create_restricted_element(ufl_element):
     """Create an FFC representation for an UFL RestrictedElement."""
 
     if not isinstance(ufl_element, ufl.RestrictedElement):
-        raise FFCError("create_restricted_element expects an ufl.RestrictedElement")
+        raise RuntimeError("create_restricted_element expects an ufl.RestrictedElement")
 
     base_element = ufl_element.sub_element()
     restriction_domain = ufl_element.restriction_domain()
@@ -289,7 +288,7 @@ def _create_restricted_element(ufl_element):
         elements = _extract_elements(base_element, restriction_domain)
         return MixedElement(elements)
 
-    raise FFCError("Cannot create restricted element from: {}".format(ufl_element))
+    raise RuntimeError("Cannot create restricted element from: {}".format(ufl_element))
 
 
 def triangle_permutation_table(n, interior=0):

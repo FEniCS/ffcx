@@ -6,8 +6,6 @@ import logging
 
 import numpy
 
-from ffc import FFCError
-
 logger = logging.getLogger(__name__)
 
 
@@ -278,8 +276,7 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
         code = _generate_compute_tetrahedron_basisvalues(
             L, basisvalues, Y, embedded_degree, num_members)
     else:
-        # FIXME: This needs a message
-        raise FFCError("")
+        raise RuntimeError("Not supported:" + element_cellname)
 
     return code
 

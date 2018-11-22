@@ -9,8 +9,6 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
-from ffc import FFCError
-
 
 def jacobian(L, gdim, tdim, element_cellname):
     J = L.Symbol("J")
@@ -85,7 +83,7 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
                 ])
             ]
         else:
-            raise FFCError("Cannot compute interval with gdim: %d" % gdim)
+            raise RuntimeError("Cannot compute interval with gdim: %d" % gdim)
     elif cellname == "triangle":
         if gdim == 2:
             C0 = L.Symbol("C0")
@@ -113,7 +111,7 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
                 ])
             ]
         else:
-            raise FFCError("Cannot compute triangle with gdim: %d" % gdim)
+            raise RuntimeError("Cannot compute triangle with gdim: %d" % gdim)
     elif cellname == 'tetrahedron' and gdim == 3:
         C0 = L.Symbol("C0")
         C1 = L.Symbol("C1")
@@ -148,6 +146,6 @@ def fiat_coordinate_mapping(L, cellname, gdim, ref_coord_symbol="Y"):
                                           * (2.0 * x[1] - C1) + d[8] * (2.0 * x[2] - C2)) / detJ])
         ]
     else:
-        raise FFCError("Cannot compute %s with gdim: %d" % (cellname, gdim))
+        raise RuntimeError("Cannot compute %s with gdim: %d" % (cellname, gdim))
 
     return code

@@ -7,8 +7,6 @@
 """Tools for C/C++ expression formatting."""
 
 import logging
-
-from ffc import FFCError
 import ufl
 
 logger = logging.getLogger(__name__)
@@ -103,7 +101,7 @@ class UFL2CNodesTranslatorCpp(object):
 
     def expr(self, o, *args):
         """Generic fallback with error message for missing rules."""
-        raise FFCError("Missing C formatting rule for expr type {0}.".format(o._ufl_class_))
+        raise RuntimeError("Missing C formatting rule for expr type {0}.".format(o._ufl_class_))
 
     # === Formatting rules for scalar literals ===
 

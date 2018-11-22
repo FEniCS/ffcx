@@ -74,7 +74,6 @@ from collections import defaultdict
 from time import time
 
 import ufl
-from ffc import FFCError
 from ffc.analysis import analyze_ufl_objects
 from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
@@ -129,7 +128,7 @@ def compile_ufl_objects(ufl_objects,
     if not ufl_objects:
         return "", ""
     if prefix != os.path.basename(prefix):
-        raise FFCError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
+        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
     if object_names is None:
         object_names = {}
 

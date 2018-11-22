@@ -20,7 +20,7 @@ import warnings
 import numpy
 
 import ufl
-from ffc import FFCError, utils
+from ffc import utils
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ def _analyze_form(form, parameters):
             raise
         form_data = tsfc_compute_form_data(form, complex_mode=complex_mode)
     else:
-        raise FFCError("Unexpected representation family \"{}\" for form preprocessing.".format(r))
+        raise RuntimeError("Unexpected representation family \"{}\" for form preprocessing.".format(r))
 
     # Attach integral meta data
     _attach_integral_metadata(form_data, r, parameters)
@@ -182,13 +182,13 @@ def _extract_representation_family(form, parameters):
     if len(representations) == 1:
         r = representations.pop()
         if r not in compatible:
-            raise FFCError(
+            raise RuntimeError(
                 "Representation family {} is not compatible with this form (try one of {})".format(
                     r, sorted(compatible)))
         return r
     elif len(representations) == 0:
         if len(compatible) == 0:
-            raise FFCError("Did not find any representation compatible with this form.")
+            raise RuntimeError("Did not find any representation compatible with this form.")
         elif len(compatible) == 1:
             # If only one compatible, use it
             return compatible.pop()
@@ -201,7 +201,7 @@ def _extract_representation_family(form, parameters):
         # representations in same form due to restrictions
         # in preprocessing
         assert len(representations) > 1
-        raise FFCError("Cannot mix uflacs and tsfc representation in a single form.")
+        raise RuntimeError("Cannot mix uflacs and tsfc representation in a single form.")
 
 
 def _validate_representation_choice(form_data, preprocessing_representation_family):
@@ -230,7 +230,7 @@ def _validate_representation_choice(form_data, preprocessing_representation_fami
 
     # Require unique family
     if len(representations) != 1:
-        raise FFCError("Failed to extract unique representation family. "
+        raise RuntimeError("Failed to extract unique representation family. "
                        "Got '{}'.".format(representations))
 
     # Check preprocessing strategy
@@ -254,7 +254,7 @@ def _extract_common_quadrature_degree(integral_metadatas):
     quadrature_degrees = [md["quadrature_degree"] for md in integral_metadatas]
     for d in quadrature_degrees:
         if not isinstance(d, int):
-            raise FFCError("Invalid non-integer quadrature degree %s" % (str(d), ))
+            raise RuntimeError("Invalid non-integer quadrature degree %s" % (str(d), ))
     qd = max(quadrature_degrees)
     if not utils.all_equal(quadrature_degrees):
         # FIXME: Shouldn't we raise here?
@@ -284,9 +284,9 @@ def _autoselect_quadrature_degree(integral_metadata, integral, form_data):
         if qd >= 0:
             logger.info("quadrature_degree: {}".format(qd))
         else:
-            raise FFCError("Illegal negative quadrature degree {}".format(qd))
+            raise RuntimeError("Illegal negative quadrature degree {}".format(qd))
     else:
-        raise FFCError("Invalid quadrature_degree %s." % (qd, ))
+        raise RuntimeError("Invalid quadrature_degree %s." % (qd, ))
 
     tdim = integral.ufl_domain().topological_dimension()
     _check_quadrature_degree(qd, tdim)
@@ -330,7 +330,7 @@ def _autoselect_quadrature_rule(integral_metadata, integral, form_data):
         logger.info("quadrature_rule:   %s" % qr)
     else:
         logger.info("Valid choices are 'default', 'canonical', 'vertex', and 'auto'.")
-        raise FFCError("Illegal choice of quadrature rule for integral: {}".format(qr))
+        raise RuntimeError("Illegal choice of quadrature rule for integral: {}".format(qr))
 
     return qr
 
@@ -346,11 +346,11 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
     precision_values = set(md["precision"] for md in integral_metadatas)
 
     if len(representations) > 1:
-        raise FFCError(
+        raise RuntimeError(
             "Integral representation must be equal within each sub domain or 'auto', got %s." %
             (str(sorted(str(v) for v in representations)), ))
     if len(precision_values) > 1:
-        raise FFCError(
+        raise RuntimeError(
             "Integral 'precision' metadata must be equal within each sub domain or not set, got %s."
             % (str(sorted(str(v) for v in precision_values)), ))
 
@@ -366,7 +366,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
         compatible = _find_compatible_representations(ida.integrals, parameters)
         # Pick the one compatible or default to uflacs
         if len(compatible) == 0:
-            raise FFCError("Found no representation capable of compiling this form.")
+            raise RuntimeError("Found no representation capable of compiling this form.")
         elif len(compatible) == 1:
             r, = compatible
         else:
@@ -377,7 +377,7 @@ def _determine_representation(integral_metadatas, ida, form_data, form_r_family,
             elif form_r_family == "tsfc":
                 r = "tsfc"
             else:
-                raise FFCError("Invalid form representation family {}.".format(form_r_family))
+                raise RuntimeError("Invalid form representation family {}.".format(form_r_family))
 
         logger.info("representation:    auto --> %s" % r)
     else:
@@ -480,7 +480,7 @@ def _validate_quadrature_schemes_of_elements(quad_schemes, elements):
         if element.family() == "Quadrature":
             qs = element.quadrature_scheme()
             if qs != scheme:
-                raise FFCError(
+                raise RuntimeError(
                     "Quadrature element must have specified quadrature scheme ({}) equal to the integral ({}).".
                     format(qs, scheme))
 

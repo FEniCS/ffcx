@@ -13,7 +13,6 @@ import logging
 import numpy
 
 import ufl
-from ffc import FFCError
 from ffc.uflacs.analysis.balancing import balance_modifiers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_scalar_graph
@@ -78,7 +77,7 @@ def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
         elif rank == 1:
             ptable[facets[0], :] = vectors[0]
         else:
-            raise FFCError("Nothing to multiply!")
+            raise RuntimeError("Nothing to multiply!")
 
     return ptable
 
@@ -106,7 +105,7 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
         elif rank == 1:
             ptable[entity, :] = vectors[0]
         else:
-            raise FFCError("Nothing to multiply!")
+            raise RuntimeError("Nothing to multiply!")
 
     return ptable
 
@@ -589,7 +588,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                                              block_restrictions, block_is_transposed,
                                              None, None, tuple(ma_data), None)
             else:
-                raise FFCError("Invalid block_mode %s" % (block_mode, ))
+                raise RuntimeError("Invalid block_mode %s" % (block_mode, ))
 
             if block_is_piecewise:
                 # Insert in piecewise expr_ir
@@ -635,7 +634,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             tbl = ir["unique_tables"].get(name)
             if tbl is not None and not numpy.allclose(
                     tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
-                raise FFCError("Table values mismatch with same name.")
+                raise RuntimeError("Table values mismatch with same name.")
         ir["unique_tables"].update(unique_tables)
 
         # Analyse active terminals to check what we'll need to generate code for
@@ -724,10 +723,10 @@ def analyse_dependencies(F, mt_unique_table_reference):
                 varying_indices.append(i)
             else:
                 if ttype not in ("fixed", "piecewise", "ones", "zeros"):
-                    raise FFCError("Invalid ttype %s" % (ttype, ))
+                    raise RuntimeError("Invalid ttype %s" % (ttype, ))
 
         elif not is_cellwise_constant(v['expression']):
-            raise FFCError("Error")
+            raise RuntimeError("Error")
             # Keeping this check to be on the safe side,
             # not sure which cases this will cover (if any)
             # varying_indices.append(i)

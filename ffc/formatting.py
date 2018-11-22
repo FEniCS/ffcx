@@ -20,7 +20,6 @@ import pprint
 import textwrap
 
 from ffc import __version__ as FFC_VERSION
-from ffc import FFCError
 from ffc.backends.ufc import __version__ as UFC_VERSION
 from ffc.parameters import compilation_relevant_parameters
 
@@ -155,7 +154,7 @@ def _generate_comment(parameters):
         comment = FORMAT_TEMPLATE["dolfin comment"].format(
             ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
     else:
-        raise FFCError("Unable to format code, unknown format \"{}\".".format(parameters["format"]))
+        raise RuntimeError("Unable to format code, unknown format \"{}\".".format(parameters["format"]))
 
     # Add parameter information
     comment += "//\n"
