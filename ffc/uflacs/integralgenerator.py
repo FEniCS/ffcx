@@ -149,55 +149,6 @@ class IntegralGenerator(object):
         # Assert that scopes are empty: expecting this to be called only once
         assert not any(d for d in self.scopes.values())
 
-        # Experiment with getting coefficient offset
-        coefficients = []
-        ir_piecewise = self.ir["piecewise_ir"]
-        factorization = ir_piecewise["F"]
-        for i, attr in factorization.nodes.items():
-            if attr['status'] == 'piecewise':
-                v = attr['expression']
-                mt = attr.get('mt', False)
-                if mt and not v._ufl_is_literal_:
-                    if isinstance(mt.terminal, ufl.Coefficient):
-                        tr = attr.get('tr', False)
-                        begin, end = tr.dofrange
-                        assert end - begin > 0
-                        n = self.ir["coefficient_numbering"][mt.terminal]
-                        print("C0:", mt.terminal, n, end - begin)
-                        coefficients.append((n, end - begin, mt.terminal))
-
-        for num_points in self.ir["all_num_points"]:
-            ir = self.ir["varying_irs"][num_points]
-            factorization = ir["F"]
-            for i, attr in factorization.nodes.items():
-                if attr['status'] == 'varying':
-                    v = attr['expression']
-                    mt = attr.get('mt', False)
-                    if mt and not v._ufl_is_literal_:
-                        if isinstance(mt.terminal, ufl.Coefficient):
-                            tr = attr.get('tr', False)
-                            begin, end = tr.dofrange
-                            assert end - begin > 0
-                            n = self.ir["coefficient_numbering"][mt.terminal]
-                            print("C1:", mt.terminal, n, end - begin, mt.terminal.count())
-                            coefficients.append((n, end - begin, mt.terminal))
-
-        # What is the right ordering here? See uflacsrepresentation.py for "numbering"...
-        offsets = {}
-        _offset = 0
-        for num, size, c in sorted(coefficients):
-            offsets[c] = _offset
-            _offset += size
-        print('Offsets = ', offsets)
-        print('Numbering = ', self.backend.access.symbols.coefficient_numbering)
-        # Copy offsets to backend, where they are used
-        self.backend.access.symbols.coefficient_offsets = offsets
-
-        # offset = [size for _, size, _ in  sorted(coefficients)]
-        # print(offset)
-        # for c in coefficients.sorted():
-        #     print(c)
-
         parts = []
 
         # Generate the tables of quadrature points and weights

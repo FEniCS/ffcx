@@ -24,7 +24,9 @@ class FFCBackend(object):
         self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, complex_mode)
 
         coefficient_numbering = ir["coefficient_numbering"]
-        self.symbols = FFCBackendSymbols(self.language, coefficient_numbering)
+        coefficient_offsets = ir["coefficient_offsets"]
+        self.symbols = FFCBackendSymbols(self.language, coefficient_numbering,
+                                         coefficient_offsets)
         self.definitions = FFCBackendDefinitions(ir, self.language,
                                                  self.symbols, parameters)
         self.access = FFCBackendAccess(ir, self.language, self.symbols,

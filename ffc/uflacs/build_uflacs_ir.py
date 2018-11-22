@@ -237,7 +237,7 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
 
 
 def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
-                    coefficient_numbering, quadrature_rules, parameters):
+                    quadrature_rules, parameters):
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -248,9 +248,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
     # Pass on parameters for consumption in code generation
     ir["params"] = p
-
-    # { ufl coefficient: count }
-    ir["coefficient_numbering"] = coefficient_numbering
 
     # Shared unique tables for all quadrature loops
     ir["unique_tables"] = {}

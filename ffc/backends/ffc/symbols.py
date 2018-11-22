@@ -52,10 +52,11 @@ def format_mt_name(basename, mt):
 class FFCBackendSymbols(object):
     """FFC specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, language, coefficient_numbering):
+    def __init__(self, language, coefficient_numbering, coefficient_offsets):
         self.L = language
         self.S = self.L.Symbol
         self.coefficient_numbering = coefficient_numbering
+        self.coefficient_offsets = coefficient_offsets
 
         # Used for padding variable names based on restriction
 #        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
