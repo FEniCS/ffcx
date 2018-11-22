@@ -142,10 +142,12 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     offsets = {}
     _offset = 0
     for num, size, c in sorted(coefficients):
-        offsets[c] = _offset
-        _offset += size
-    # print('Offsets = ', offsets.values())
-    # print('Numbering = ', coefficient_numbering.values())
+        print(num, size, c)
+        if c not in offsets:
+            offsets[c] = _offset
+            _offset += size
+    print('Offsets = ', offsets.values())
+    print('Numbering = ', coefficient_numbering.values())
 
     # Copy offsets into IR
     uflacs_ir["coefficient_offsets"] = offsets
