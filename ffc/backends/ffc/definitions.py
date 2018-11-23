@@ -120,6 +120,9 @@ class FFCBackendDefinitions(object):
         assert ttype != "quadrature"
 
         # Get access to element table
+        #        if tabledata.is_uniform and tabledata.is_piecewise:
+        #            FE = tabledata.values[0][0]
+        #        else:
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         # Inlined version (we know this is bounded by a small number)

@@ -11,10 +11,9 @@ import itertools
 import logging
 
 import ufl
-
-from ffc import FFCError
 from ffc.language.cnodes import pad_dim, pad_innermost_dim
 from ffc.uflacs.elementtables import piecewise_ttypes
+
 
 logger = logging.getLogger(__name__)
 
@@ -444,7 +443,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir["piecewise_ir"]["F"]
+        F = self.ir["piecewise_ir"]["factorization"]
 
         arraysymbol = L.Symbol("sp")
         num_points = None
@@ -456,7 +455,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir["varying_irs"][num_points]["F"]
+        F = self.ir["varying_irs"][num_points]["factorization"]
 
         arraysymbol = L.Symbol("sv%d" % num_points)
         parts = self.generate_partition(arraysymbol, F, "varying", num_points)
@@ -476,16 +475,15 @@ class IntegralGenerator(object):
 
             v = attr['expression']
             mt = attr.get('mt')
-            tabledata = attr.get('tr')
 
             if v._ufl_is_literal_:
                 vaccess = self.backend.ufl_to_language.get(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
+                tabledata = attr.get('tr')
 
                 # Backend specific modified terminal translation
-
                 vaccess = self.backend.access.get(mt.terminal, mt, tabledata, num_points)
                 vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, num_points, vaccess)
 
@@ -674,7 +672,7 @@ class IntegralGenerator(object):
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
-            raise FFCError("Not expecting zero arguments to be left in dofblock generation.")
+            raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
         if num_points is None:
             iq = None
@@ -705,9 +703,10 @@ class IntegralGenerator(object):
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
-            v = self.ir["piecewise_ir"]["F"].nodes[blockdata.factor_index]['expression']
+            F = self.ir["piecewise_ir"]["factorization"]
         else:
-            v = self.ir["varying_irs"][num_points]["F"].nodes[blockdata.factor_index]['expression']
+            F = self.ir["varying_irs"][num_points]["factorization"]
+        v = F.nodes[blockdata.factor_index]['expression']
         f = self.get_var(num_points, v)
 
         # Quadrature weight was removed in representation, add it back now
@@ -840,7 +839,8 @@ class IntegralGenerator(object):
                 body = L.ForRange(P_index, 0, pad_dim(P_dim, padlen), body=body)
                 quadparts.append(body)
 
-            # Define B = B_rhs = piecewise_argument[:] * P[:], where P[:] = sum_q weight * f * other_argument[:]
+            # Define B = B_rhs = piecewise_argument[:] * P[:],
+            # where P[:] = sum_q weight * f * other_argument[:]
             B_rhs = arg_factors[i] * P[P_index]
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -886,7 +886,8 @@ class IntegralGenerator(object):
         return A_rhs, preparts, quadparts, postparts
 
     def generate_preintegrated_dofblock_partition(self):
-        # FIXME: Generalize this to unrolling all A[] += ... loops, or all loops with noncontiguous DM??
+        # FIXME: Generalize this to unrolling all A[] += ... loops,
+        # or all loops with noncontiguous DM??
         L = self.backend.language
 
         block_contributions = self.ir["piecewise_ir"]["block_contributions"]
@@ -901,6 +902,8 @@ class IntegralGenerator(object):
         A_rank = len(A_shape)
 
         # TODO: there's something like shape2strides(A_shape) somewhere
+        # A_strides = ufl.utils.indexflattening.shape_to_strides(A_shape)
+
         A_strides = [1] * A_rank
         for i in reversed(range(0, A_rank - 1)):
             A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
@@ -916,18 +919,12 @@ class IntegralGenerator(object):
             inline_table = self.ir["integral_type"] == "cell"
 
             # Get factor expression
-            v = self.ir["piecewise_ir"]["F"].nodes[blockdata.factor_index]['expression']
+            v = self.ir["piecewise_ir"]["factorization"].nodes[blockdata.factor_index]['expression']
             f = self.get_var(None, v)
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
             # A_rhs = f * PI where PI = sum_q weight * u * v
             PI = L.Symbol(blockdata.name)
-            # block_rank = len(blockmap)
-
-            # # Override dof index with quadrature loop index for arguments with
-            # # quadrature element, to index B like B[iq*num_dofs + iq]
-            # arg_indices = tuple(
-            #     self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
@@ -1016,7 +1013,7 @@ class IntegralGenerator(object):
                     L.ForRange(k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
                 ]
         else:
-            raise FFCError("Invalid init_mode parameter %s" % (init_mode, ))
+            raise RuntimeError("Invalid init_mode parameter %s" % (init_mode, ))
 
         return parts
 

@@ -16,7 +16,7 @@ import os
 import dijitso
 import ufl
 from ffc import __version__ as FFC_VERSION
-from ffc import FFCError, classname
+from ffc import classname
 from ffc.backends import ufc
 from ffc import compiler
 from ffc.parameters import (compute_jit_parameters_signature, validate_jit_parameters)
@@ -138,7 +138,7 @@ def compute_prefix(ufl_object, parameters, kind=None):
         kind = "element"
         object_signature = repr(ufl_object)
     else:
-        raise FFCError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
+        raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
@@ -170,10 +170,6 @@ def compute_prefix(ufl_object, parameters, kind=None):
     return kind, prefix
 
 
-class FFCJitError(FFCError):
-    pass
-
-
 def jit(ufl_object, parameters=None, indirect=False):
     """Just-in-time compile the given form or element
 
@@ -197,7 +193,7 @@ def jit(ufl_object, parameters=None, indirect=False):
         # TODO: To communicate directory name here, need dijitso params
         # to call
         # fail_dir = dijitso.cache.create_fail_dir_path(signature, dijitso_cache_params)
-        raise FFCJitError(
+        raise RuntimeError(
             "A directory with files to reproduce the jit build failure has been created.")
 
     # Construct instance of object from compiled code, unless indirect
@@ -218,7 +214,7 @@ def jit(ufl_object, parameters=None, indirect=False):
             cm = _instantiate_coordinate_mapping(module, module_name)
             return cm
         else:
-            raise FFCError("Unknown kind {}".format(kind))
+            raise RuntimeError("Unknown kind {}".format(kind))
 
 
 def _instantiate_form(module, prefix):

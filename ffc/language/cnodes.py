@@ -1086,32 +1086,6 @@ class Return(CStatement):
         return (isinstance(other, type(self)) and self.value == other.value)
 
 
-class Case(CStatement):
-    __slots__ = ("value", )
-    is_scoped = False
-
-    def __init__(self, value):
-        # NB! This is too permissive and will allow invalid case arguments.
-        self.value = as_cexpr(value)
-
-    def cs_format(self, precision=None):
-        return "case " + self.value.ce_format(precision) + ":"
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.value == other.value)
-
-
-class Default(CStatement):
-    __slots__ = ()
-    is_scoped = False
-
-    def cs_format(self, precision=None):
-        return "default:"
-
-    def __eq__(self, other):
-        return isinstance(other, type(self))
-
-
 class Comment(CStatement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
 

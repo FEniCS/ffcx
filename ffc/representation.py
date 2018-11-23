@@ -25,7 +25,7 @@ import numpy
 import ffc.fiatinterface
 import FIAT.reference_element
 import ufl
-from ffc import FFCError, classname
+from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, MixedElement,
                                QuadratureElement, SpaceOfReals, create_element)
 from FIAT.hdiv_trace import HDivTrace
@@ -46,7 +46,7 @@ def pick_representation(representation):
     elif representation == "tsfc":
         from ffc import tsfc as r
     else:
-        raise FFCError("Unknown representation: {}".format(representation))
+        raise RuntimeError("Unknown representation: {}".format(representation))
     return r
 
 
@@ -759,7 +759,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
                     for q in range(e.value_shape()[1])
                 ]
             else:
-                raise FFCError("Unknown situation with num_components > 1")
+                raise RuntimeError("Unknown situation with num_components > 1")
 
             # Clamp coefficient zeros
             coefficients = numpy.asarray(coefficients)
@@ -849,7 +849,7 @@ def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
     ]
 
     if len(itg_data) > 1:
-        raise FFCError("Expecting at most one default integral of each type.")
+        raise RuntimeError("Expecting at most one default integral of each type.")
     if itg_data:
         return classname.make_integral_name(prefix, integral_type, form_id, "otherwise")
     else:
