@@ -99,10 +99,24 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
         for num_points in sorted(sorted_integrals)
     }
 
+    # Add coefficient numbering to IR
+    ir["coefficient_numbering"] = coefficient_numbering
+
+    index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
+    offsets = {}
+    _offset = 0
+    for k, el in zip(index_to_coeff, form_data.coefficient_elements):
+        offsets[k[1]] = _offset
+        _offset += ir["element_dimensions"][el]
+
+    # Copy offsets also into IR
+    ir["coefficient_offsets"] = offsets
+
     # Build the more uflacs-specific intermediate representation
     uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
                                 ir["entitytype"], integrands, ir["tensor_shape"],
-                                coefficient_numbering, quadrature_rules, parameters)
+                                quadrature_rules, parameters)
+
     ir.update(uflacs_ir)
 
     return ir

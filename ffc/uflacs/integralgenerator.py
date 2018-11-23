@@ -10,9 +10,10 @@ import collections
 import itertools
 import logging
 
+import ufl
 from ffc.language.cnodes import pad_dim, pad_innermost_dim
 from ffc.uflacs.elementtables import piecewise_ttypes
-import ufl
+
 
 logger = logging.getLogger(__name__)
 
