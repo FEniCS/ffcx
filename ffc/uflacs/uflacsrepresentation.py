@@ -107,54 +107,14 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     # Add coefficient numbering to UFLACS IR
     uflacs_ir["coefficient_numbering"] = coefficient_numbering
 
-    # # Get coefficient offset
-    # coefficients = []
-    # factorization = uflacs_ir["piecewise_ir"]["F"]
-    # for i, attr in factorization.nodes.items():
-    #     if attr['status'] == 'piecewise':
-    #         v = attr['expression']
-    #         mt = attr.get('mt', False)
-    #         if mt and not v._ufl_is_literal_:
-    #             if isinstance(mt.terminal, ufl.Coefficient):
-    #                 tr = attr.get('tr', False)
-    #                 begin, end = tr.dofrange
-    #                 assert end - begin > 0
-    #                 n = coefficient_numbering[mt.terminal]
-    #                 print("C0:", mt.terminal, n, end - begin)
-    #                 coefficients.append((n, end - begin, mt.terminal))
-
-    # for num_points in uflacs_ir["all_num_points"]:
-    #     factorization = uflacs_ir["varying_irs"][num_points]["F"]
-    #     for i, attr in factorization.nodes.items():
-    #         if attr['status'] == 'varying':
-    #             v = attr['expression']
-    #             mt = attr.get('mt', False)
-    #             if mt and not v._ufl_is_literal_:
-    #                 if isinstance(mt.terminal, ufl.Coefficient):
-    #                     tr = attr.get('tr', False)
-    #                     begin, end = tr.dofrange
-    #                     assert end - begin > 0
-    #                     n = coefficient_numbering[mt.terminal]
-    #                     print("C1:", mt.terminal, n, end - begin, mt.terminal.count())
-    #                     coefficients.append((n, end - begin, mt.terminal))
-
-    # offsets = {}
-    # _offset = 0
-    # for num, size, c in sorted(coefficients):
-    #     print(num, size, c)
-    #     if c not in offsets:
-    #         offsets[c] = _offset
-    #         _offset += size
+    index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
 
     offsets = {}
     _offset = 0
-    for k, u in zip(coefficient_numbering.keys(), form_data.coefficient_elements):
-        offsets[k] = _offset
-        print(k, _offset)
-        _offset += ir["element_dimensions"][u]
-
-    print('Offsets = ', offsets.values())
-    print('Numbering = ', coefficient_numbering.values())
+    for k, el in zip(index_to_coeff, form_data.coefficient_elements):
+        offsets[k[1]] = _offset
+        # print(k[0], str(k[1]), _offset, el)
+        _offset += ir["element_dimensions"][el]
 
     # Copy offsets into IR
     uflacs_ir["coefficient_offsets"] = offsets
