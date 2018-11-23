@@ -131,7 +131,7 @@ UFC_INTEGRAL_DECL = """
 typedef struct ufc_cell_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                         const double* restrict coordinate_dofs,
                         int cell_orientation);
 } ufc_cell_integral;
@@ -139,7 +139,7 @@ void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
 typedef struct ufc_exterior_facet_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                         const double* restrict coordinate_dofs, int facet,
                         int cell_orientation);
 } ufc_exterior_facet_integral;
@@ -147,7 +147,7 @@ void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
 typedef struct ufc_interior_facet_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                         const double* restrict coordinate_dofs_0,
                         const double* restrict coordinate_dofs_1,
                         int facet_0, int facet_1, int cell_orientation_0,
@@ -157,7 +157,7 @@ void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
 typedef struct ufc_vertex_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                         const double* restrict coordinate_dofs, int vertex,
                         int cell_orientation);
 } ufc_vertex_integral;
@@ -165,7 +165,7 @@ void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
 typedef struct ufc_custom_integral
 {
 const bool* enabled_coefficients;
-void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* const* w,
+void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                         const double* restrict coordinate_dofs,
                         int num_quadrature_points,
                         const double* restrict quadrature_points,
