@@ -107,7 +107,6 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     _offset = 0
     for k, el in zip(index_to_coeff, form_data.coefficient_elements):
         offsets[k[1]] = _offset
-        # print(k[0], str(k[1]), _offset, el)
         _offset += ir["element_dimensions"][el]
 
     # Copy offsets also into IR
