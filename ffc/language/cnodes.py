@@ -15,22 +15,16 @@ from ffc.language.format_value import (format_float, format_int, format_value)
 from ffc.language.precedence import PRECEDENCE
 
 logger = logging.getLogger(__name__)
-"""CNode TODO:
-- Array copy statement
-- Extend ArrayDecl and ArrayAccess with support for
-  flattened but conceptually multidimensional arrays,
-  maybe even with padding (FlattenedArray possibly covers what we need)
-- Function declaration
-- TypeDef
-- Type
-- TemplateArgumentList
-- Class declaration
-- Class definition
-"""
+
+# Define types
+Scalar = "ufc_scalar_t"
+ConstScalar = "const " + Scalar
+StaticConstScalar = "static " + ConstScalar
+ConstInt = "const int"
+StaticConstInt = "static " + ConstInt
+
 
 # Some helper functions
-
-
 def is_zero_cexpr(cexpr):
     return ((isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0)
             or (isinstance(cexpr, LiteralInt) and cexpr.value == 0))
