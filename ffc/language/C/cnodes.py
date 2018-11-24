@@ -12,7 +12,7 @@ import numpy
 
 from ffc.language.format_lines import Indented, format_indented_lines
 from ffc.language.format_value import (format_float, format_int, format_value)
-from ffc.language.precedence import PRECEDENCE
+from ffc.language.C.precedence import PRECEDENCE
 
 logger = logging.getLogger(__name__)
 

@@ -200,7 +200,7 @@ def ufc_form_generator(ir, parameters):
     d["has_vertex_integrals"] = "true" if ir["has_vertex_integrals"] else "false"
     d["has_custom_integrals"] = "true" if ir["has_custom_integrals"] else "false"
 
-    import ffc.language.cnodes as L
+    import ffc.language.C.cnodes as L
     generator = UFCForm()
 
     statements = generator.original_coefficient_position(L, ir)
