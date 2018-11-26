@@ -56,31 +56,6 @@ class FFCBackendAccess(object):
         else:
             raise RuntimeError("Not handled: %s", etype)
 
-    # === Rules for literal constants ===
-
-    def zero(self, e, mt, tabledata, num_points):
-        # We shouldn't have derivatives of constants left at this point
-        assert not (mt.global_derivatives or mt.local_derivatives)
-        # NB! UFL doesn't retain float/int type information for zeros...
-        L = self.language
-        return L.LiteralFloat(0.0)
-
-    def int_value(self, e, mt, tabledata, num_points):
-        # We shouldn't have derivatives of constants left at this point
-        assert not (mt.global_derivatives or mt.local_derivatives)
-        L = self.language
-        return L.LiteralInt(int(e))
-
-    def float_value(self, e, mt, tabledata, num_points):
-        # We shouldn't have derivatives of constants left at this point
-        assert not (mt.global_derivatives or mt.local_derivatives)
-        L = self.language
-        return L.LiteralFloat(float(e))
-
-    # def quadrature_weight(self, e, mt, tabledata, num_points):
-    #    "Quadrature weights are precomputed and need no code."
-    #    return []
-
     def coefficient(self, e, mt, tabledata, num_points):
         ttype = tabledata.ttype
         assert ttype != "zeros"
