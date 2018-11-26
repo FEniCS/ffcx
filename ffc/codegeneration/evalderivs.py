@@ -6,7 +6,7 @@ import logging
 import numpy
 
 from ffc.codegeneration.evaluatebasis import (generate_compute_basisvalues,
-                                            generate_expansion_coefficients)
+                                              generate_expansion_coefficients)
 
 logger = logging.getLogger(__name__)
 

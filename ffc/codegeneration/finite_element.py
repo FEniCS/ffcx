@@ -13,11 +13,11 @@ from collections import defaultdict
 
 import ffc.codegeneration.finite_element_template as ufc_finite_element
 from ffc.codegeneration.evalderivs import (_generate_combinations,
-                                         generate_evaluate_reference_basis_derivatives)
+                                           generate_evaluate_reference_basis_derivatives)
 from ffc.codegeneration.evaluatebasis import generate_evaluate_reference_basis
 from ffc.codegeneration.evaluatedof import generate_transform_values
 from ffc.codegeneration.utils import (generate_return_int_switch,
-                                    generate_return_new_switch)
+                                      generate_return_new_switch)
 from ufl import product
 
 index_type = "int64_t"
