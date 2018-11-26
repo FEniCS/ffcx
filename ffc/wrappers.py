@@ -7,7 +7,6 @@
 
 import logging
 
-from ffc import utils
 from ffc.backends import dolfin
 
 logger = logging.getLogger(__name__)
@@ -90,4 +89,4 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
     # Build list of all argument elements to which if all are equal
     elements = [element for form in form_data for element in form.argument_elements]
 
-    return capsules, utils.all_equal(elements)
+    return capsules, all(x == elements[0] for x in elements)
