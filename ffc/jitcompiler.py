@@ -17,7 +17,7 @@ import dijitso
 import ufl
 from ffc import __version__ as FFC_VERSION
 from ffc import classname
-from ffc.backends import ufc
+from ffc.codegeneration import get_include_path, get_signature
 from ffc import compiler
 from ffc.parameters import (compute_jit_parameters_signature, validate_jit_parameters)
 
@@ -83,7 +83,7 @@ def build(ufl_object, module_name, parameters):
     build_params["debug"] = not parameters["cpp_optimize"]
     build_params["cxxflags_opt"] = tuple(parameters["cpp_optimize_flags"].split())
     build_params["cxxflags_debug"] = ("-O0", )
-    build_params["include_dirs"] = (ufc.get_include_path(), ) + _string_tuple(
+    build_params["include_dirs"] = (get_include_path(), ) + _string_tuple(
         parameters.get("external_include_dirs"))
     build_params["lib_dirs"] = _string_tuple(parameters.get("external_library_dirs"))
 
@@ -154,7 +154,7 @@ def compute_prefix(ufl_object, parameters, kind=None):
         parameters_signature,
         str(FFC_VERSION),
         str(jit_version_bump),
-        ufc.get_signature(),
+        get_signature(),
         kind,
     ]
     string = ";".join(signatures)

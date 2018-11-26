@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import cffi
 
-import ffc.backends.ufc.jit
+import ffc.codegeneration.jit
 import ufl
 
 
@@ -28,7 +28,7 @@ def lagrange_element():
     """Compile list of Lagrange elements"""
     cell = ufl.tetrahedron
     elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-    compiled_elements, module = ffc.backends.ufc.jit.compile_elements(elements)
+    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
     return elements, compiled_elements, module
 
 
@@ -71,7 +71,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):

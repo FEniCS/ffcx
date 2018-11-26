@@ -15,13 +15,13 @@ UFC function from an intermediate representation (IR).
 import itertools
 import logging
 
-from ffc.backends.ufc.coordinate_mapping import \
+from ffc.codegeneration.coordinate_mapping import \
     ufc_coordinate_mapping_generator
-from ffc.backends.ufc.dofmap import ufc_dofmap_generator
-from ffc.backends.ufc.finite_element import \
+from ffc.codegeneration.dofmap import ufc_dofmap_generator
+from ffc.codegeneration.finite_element import \
     generator as ufc_finite_element_generator
-from ffc.backends.ufc.form import ufc_form_generator
-from ffc.backends.ufc.integrals import ufc_integral_generator
+from ffc.codegeneration.form import ufc_form_generator
+from ffc.codegeneration.integrals import ufc_integral_generator
 
 logger = logging.getLogger(__name__)
 

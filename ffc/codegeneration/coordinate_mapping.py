@@ -5,8 +5,8 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import ffc.backends.ufc.coordinate_mapping_template as ufc_coordinate_mapping
-from ffc.backends.ufc.utils import generate_return_new
+import ffc.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
+from ffc.codegeneration.utils import generate_return_new
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 

@@ -9,7 +9,7 @@
 import logging
 
 import ufl
-from ffc.backends.ffc.common import num_coordinate_component_dofs
+from ffc.codegeneration.common import num_coordinate_component_dofs
 
 logger = logging.getLogger(__name__)
 

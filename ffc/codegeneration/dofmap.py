@@ -8,8 +8,8 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-import ffc.backends.ufc.dofmap_template as ufc_dofmap
-from ffc.backends.ufc.utils import generate_return_new_switch
+import ffc.codegeneration.dofmap_template as ufc_dofmap
+from ffc.codegeneration.utils import generate_return_new_switch
 
 
 def tabulate_dof_permutations(L, ir):

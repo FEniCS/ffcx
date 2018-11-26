@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Utility functions for UFC"""
-
-__author__ = "FEniCS Project"
-__version__ = "2018.2.0.dev0"
-__license__ = "This code is released into the public domain"
+# Copyright (C) 2011-2018 Michal Habera and Martin Sandve Alnæs
+#
+# This file is part of FFC (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import os
 import hashlib
+
+# Version of FFC header files
+__version__ = "2018.2.0.dev0"
 
 # Get abspath on import, it can in some cases be a relative path w.r.t.
 # curdir on startup

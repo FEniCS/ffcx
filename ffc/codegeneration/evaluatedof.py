@@ -9,7 +9,7 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
-from ffc.backends.ufc.jacobian import jacobian, inverse_jacobian, orientation
+from ffc.codegeneration.jacobian import jacobian, inverse_jacobian, orientation
 from ufl.permutation import build_component_numbering
 
 index_type = "int64_t"

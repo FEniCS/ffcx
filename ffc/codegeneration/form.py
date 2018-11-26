@@ -8,8 +8,8 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-from ffc.backends.ufc import form_template as ufc_form
-from ffc.backends.ufc.utils import (generate_return_new,
+from ffc.codegeneration import form_template as ufc_form
+from ffc.codegeneration.utils import (generate_return_new,
                                     generate_return_new_switch)
 from ffc.representation import ufc_integral_types
 

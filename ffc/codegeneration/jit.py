@@ -233,7 +233,7 @@ def compile_elements(elements, module_name=None):
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.backends.ufc.get_include_path()])
+        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
     ffibuilder.cdef(decl)
 
     compile_dir = "compile_cache"
@@ -282,7 +282,7 @@ def compile_forms(forms, module_name=None, parameters=None):
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.backends.ufc.get_include_path()])
+        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
     ffibuilder.cdef(decl)
 
     compile_dir = "compile_cache"

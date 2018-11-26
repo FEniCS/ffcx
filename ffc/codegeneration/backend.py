@@ -8,9 +8,9 @@
 
 import ffc.language.cnodes
 from ffc.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp
-from ffc.backends.ffc.symbols import FFCBackendSymbols
-from ffc.backends.ffc.access import FFCBackendAccess
-from ffc.backends.ffc.definitions import FFCBackendDefinitions
+from ffc.codegeneration.symbols import FFCBackendSymbols
+from ffc.codegeneration.access import FFCBackendAccess
+from ffc.codegeneration.definitions import FFCBackendDefinitions
 
 
 class FFCBackend(object):

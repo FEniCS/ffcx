@@ -20,7 +20,7 @@ import pprint
 import textwrap
 
 from ffc import __version__ as FFC_VERSION
-from ffc.backends.ufc import __version__ as UFC_VERSION
+from ffc.codegeneration import __version__ as UFC_VERSION
 from ffc.parameters import compilation_relevant_parameters
 
 logger = logging.getLogger(__name__)
