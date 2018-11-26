@@ -8,7 +8,6 @@
 import subprocess
 import os
 import os.path
-import ffc
 
 
 def test_cmdline_simple():

@@ -9,6 +9,7 @@ import ffc
 import os
 import os.path
 
+
 def test_forms():
     os.chdir(os.path.dirname(__file__))
     ffc.main(["-v", "Poisson.ufl"])
