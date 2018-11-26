@@ -345,7 +345,7 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree,
             0,
             embedded_degree + 1,
             index_type=index_type,
-            body=L.AssignMul(basisvalues[p], L.Call("sqrt", (0.5 + p, ))))
+            body=L.AssignMul(basisvalues[p], L.Sqrt(0.5 + p)))
     ]
     return code
 
@@ -450,7 +450,7 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
         for s in range(0, embedded_degree + 1 - r):
             rr = _idx2d(r, s)
             A = (r + 0.5) * (r + s + 1)
-            code += [L.AssignMul(basisvalues[rr], L.Call("sqrt", (A, )))]
+            code += [L.AssignMul(basisvalues[rr], L.Sqrt(A))]
 
     return code
 
@@ -608,6 +608,6 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
             for t in range(0, embedded_degree - r - s + 1):
                 rr = _idx3d(r, s, t)
                 A = (r + 0.5) * (r + s + 1) * (r + s + t + 1.5)
-                code += [L.AssignMul(basisvalues[rr], L.Call("sqrt", (A, )))]
+                code += [L.AssignMul(basisvalues[rr], L.Sqrt(A))]
 
     return code

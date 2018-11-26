@@ -23,13 +23,3 @@ def test_visualise():
     subprocess.run(["ffc", "-f", "visualise", "1", "Poisson.ufl"])
     assert os.path.isfile("S.pdf")
     assert os.path.isfile("F.pdf")
-
-
-def test_cmdline_python():
-    ffc.main(["-v", "Poisson.ufl"])
-    ffc.main(["-f", "visualise", "1", "Poisson.ufl"])
-    ffc.main(["-l", "dolfin", "Poisson.ufl"])
-    ffc.main(["-v", "PoissonDG.ufl"])
-    ffc.main(["-v", "Conditional.ufl"])
-    ffc.main(["-v", "HyperElasticity.ufl"])
-    ffc.main(["-v", "VectorLaplaceGradCurl.ufl"])
