@@ -6,8 +6,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFC specific pieces for the code generation phase."""
 
-import ffc.language.cnodes
-from ffc.language.ufl_to_cnodes import UFL2CNodesTranslatorCpp
+import ffc.codegeneration.C.cnodes
+from ffc.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
 from ffc.codegeneration.symbols import FFCBackendSymbols
 from ffc.codegeneration.access import FFCBackendAccess
 from ffc.codegeneration.definitions import FFCBackendDefinitions
@@ -19,7 +19,7 @@ class FFCBackend(object):
     def __init__(self, ir, parameters):
 
         # This is the seam where cnodes/C is chosen for the ffc backend
-        self.language = ffc.language.cnodes
+        self.language = ffc.codegeneration.C.cnodes
         complex_mode = "complex" in parameters.get("scalar_type", "double")
         self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, complex_mode)
 
