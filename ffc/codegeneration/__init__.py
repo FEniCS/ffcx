@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-# Copyright (C) 2011-2018 Michal Habera and Martin Sandve Alnæs
-#
-# This file is part of FFC (https://www.fenicsproject.org)
-#
-# SPDX-License-Identifier:    LGPL-3.0-or-later
-
 import os
 import hashlib
+
+# Version of FFC header files
+__author__ = "FEniCS Project"
+__license__ = "This code is released into the public domain"
+__version__ = "2018.2.0.dev0"
 
 # Version of FFC header files
 __version__ = "2018.2.0.dev0"
