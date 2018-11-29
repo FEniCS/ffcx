@@ -6,9 +6,6 @@ __author__ = "FEniCS Project"
 __license__ = "This code is released into the public domain"
 __version__ = "2018.2.0.dev0"
 
-# Version of FFC header files
-__version__ = "2018.2.0.dev0"
-
 # Get abspath on import, it can in some cases be a relative path w.r.t.
 # curdir on startup
 _include_path = os.path.dirname(os.path.abspath(__file__))
