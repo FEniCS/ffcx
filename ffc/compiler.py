@@ -75,7 +75,7 @@ from time import time
 
 import ufl
 from ffc.analysis import analyze_ufl_objects
-from ffc.codegeneration import generate_code
+from ffc.codegeneration.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.parameters import validate_parameters
 from ffc.representation import compute_ir

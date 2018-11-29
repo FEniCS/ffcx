@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-"""Utility functions for UFC"""
-
-__author__ = "FEniCS Project"
-__version__ = "2018.2.0.dev0"
-__license__ = "This code is released into the public domain"
-
 import os
 import hashlib
+
+# Version of FFC header files
+__author__ = "FEniCS Project"
+__license__ = "This code is released into the public domain"
+__version__ = "2018.2.0.dev0"
 
 # Get abspath on import, it can in some cases be a relative path w.r.t.
 # curdir on startup

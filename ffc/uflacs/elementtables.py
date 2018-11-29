@@ -13,7 +13,8 @@ import numpy
 
 import ufl
 import ufl.utils.derivativetuples
-from ffc.backends.ffc.common import ufc_restriction_offset
+# FIXME: Suspicious, calling codegeneration here
+from ffc.codegeneration.common import ufc_restriction_offset
 from ffc.fiatinterface import create_element
 from ffc.representationutils import (create_quadrature_points_and_weights,
                                      integral_type_to_entity_dim,

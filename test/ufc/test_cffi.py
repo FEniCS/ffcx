@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import cffi
 
-import ffc.backends.ufc.jit
+import ffc.codegeneration.jit
 import ufl
 
 
@@ -28,7 +28,7 @@ def lagrange_element():
     """Compile list of Lagrange elements"""
     cell = ufl.triangle
     elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-    compiled_elements, module = ffc.backends.ufc.jit.compile_elements(elements)
+    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
     return elements, compiled_elements, module
 
 
@@ -66,7 +66,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -105,7 +105,7 @@ def test_mass_bilinear_form_2d(mode, expected_result):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -146,7 +146,7 @@ def test_helmholtz_form_2d(mode, expected_result):
 
     a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(k * u, v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -174,7 +174,7 @@ def test_form_coefficient():
     g = ufl.Coefficient(element)
     a = g * ufl.inner(u, v) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.backends.ufc.jit.compile_forms(forms)
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -196,7 +196,7 @@ def test_form_coefficient():
 
 # cell = ufl.triangle
 # elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-# compiled_elements, module = ffc.backends.ufc.jit.compile_elements(elements)
+# compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
 
 # for e, compiled_e in zip(elements, compiled_elements):
 #     assert compiled_e.geometric_dimension == 2

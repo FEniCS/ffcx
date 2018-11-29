@@ -122,16 +122,14 @@ def run_install():
         platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
         packages=[
             "ffc",
-            "ffc.backends",
-            "ffc.backends.ffc",
-            "ffc.backends.ufc",
+            "ffc.codegeneration",
             "ffc.language",
             "ffc.tsfc",
             "ffc.uflacs",
             "ffc.uflacs.analysis",
         ],
         package_dir={"ffc": "ffc"},
-        package_data={"ffc": [os.path.join('backends', 'ufc', '*.h')]},
+        package_data={"ffc": [os.path.join('codegeneration', '*.h')]},
         #scripts=scripts,  # Using entry_points instead
         entry_points=entry_points,
         install_requires=REQUIREMENTS,

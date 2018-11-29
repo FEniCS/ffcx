@@ -9,7 +9,7 @@
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 from ffc.representation import pick_representation
-from ffc.backends.ufc import integrals_template as ufc_integrals
+from ffc.codegeneration import integrals_template as ufc_integrals
 
 
 def ufc_integral_generator(ir, parameters):

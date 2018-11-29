@@ -7,7 +7,7 @@
 
 import logging
 
-from ffc.backends import dolfin
+from ffc.codegeneration import dolfin
 
 logger = logging.getLogger(__name__)
 
