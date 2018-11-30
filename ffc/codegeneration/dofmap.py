@@ -233,7 +233,7 @@ def ufc_dofmap_generator(ir, parameters):
     d["num_entity_dofs"] = ir["num_entity_dofs"] + [0, 0, 0, 0]
     d["num_entity_closure_dofs"] = ir["num_entity_closure_dofs"] + [0, 0, 0, 0]
 
-    import ffc.codegeneration.C.cnodes as L
+    import ffc.language.cnodes as L
 
     # Functions
     d["tabulate_dof_permutations"] = tabulate_dof_permutations(L, ir)

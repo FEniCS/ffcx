@@ -850,7 +850,7 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     d["topological_dimension"] = ir["topological_dimension"]
     d["cell_shape"] = ir["cell_shape"]
 
-    import ffc.codegeneration.C.cnodes as L
+    import ffc.language.cnodes as L
 
     # Functions
     d["create_coordinate_finite_element"] = create_coordinate_finite_element(L, ir)
