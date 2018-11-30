@@ -123,6 +123,7 @@ def run_install():
         packages=[
             "ffc",
             "ffc.codegeneration",
+            "ffc.codegeneration.C",
             "ffc.tsfc",
             "ffc.uflacs",
             "ffc.uflacs.analysis",
