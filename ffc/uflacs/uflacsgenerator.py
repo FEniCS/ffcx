@@ -12,7 +12,7 @@ import logging
 from ffc.codegeneration.backend import FFCBackend
 from ffc.representationutils import initialize_integral_code
 from ffc.uflacs.integralgenerator import IntegralGenerator
-from ffc.language.format_lines import format_indented_lines
+from ffc.codegeneration.C.format_lines import format_indented_lines
 
 logger = logging.getLogger(__name__)
 

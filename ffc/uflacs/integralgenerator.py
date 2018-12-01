@@ -11,7 +11,7 @@ import itertools
 import logging
 
 import ufl
-from ffc.language.cnodes import pad_dim, pad_innermost_dim
+from ffc.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffc.uflacs.elementtables import piecewise_ttypes
 
 
