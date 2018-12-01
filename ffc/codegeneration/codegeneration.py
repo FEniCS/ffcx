@@ -57,8 +57,6 @@ def generate_code(ir, parameters, jit):
         ufc_coordinate_mapping_generator(ir, parameters) for ir in ir_coordinate_mappings
     ]
 
-    ufc_coordinate_mapping_generator
-
     # Generate code for integrals
     logger.debug("Generating code for integrals")
     code_integrals = [ufc_integral_generator(ir, parameters) for ir in ir_integrals]
