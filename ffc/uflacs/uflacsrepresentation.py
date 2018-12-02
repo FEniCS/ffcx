@@ -8,7 +8,7 @@
 import logging
 
 from ffc.fiatinterface import create_element
-from ffc.representationutils import initialize_integral_ir
+from ffc.representation.representationutils import initialize_integral_ir
 from ffc.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffc.uflacs.tools import (accumulate_integrals, collect_quadrature_rules,
                               compute_quadrature_rules)

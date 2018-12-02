@@ -9,7 +9,7 @@ import collections
 
 import numpy
 
-from ffc.representationutils import create_quadrature_points_and_weights
+from ffc.representation.representationutils import create_quadrature_points_and_weights
 from ufl import custom_integral_types
 from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum

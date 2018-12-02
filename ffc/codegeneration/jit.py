@@ -222,7 +222,7 @@ def compile_elements(elements, module_name=None):
         _, impl = ffc.compiler.compile_element(e)
         code_body += impl
         p = ffc.parameters.validate_parameters(None)
-        name = ffc.representation.make_finite_element_jit_classname(e, p)
+        name = ffc.representation.representation.make_finite_element_jit_classname(e, p)
         create_element = element_template.format(name=name)
         decl += create_element + "\n"
 
@@ -244,7 +244,7 @@ def compile_elements(elements, module_name=None):
     compiled_module = importlib.import_module(compile_dir + "." + module_name)
     for e in elements:
         p = ffc.parameters.validate_parameters(None)
-        name = ffc.representation.make_finite_element_jit_classname(e, p)
+        name = ffc.representation.representation.make_finite_element_jit_classname(e, p)
         create_element = "create_" + name
         compiled_elements.append(getattr(compiled_module.lib, create_element)())
 

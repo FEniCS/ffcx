@@ -10,7 +10,7 @@ source structure from factorized representation."""
 import logging
 
 from ffc.codegeneration.backend import FFCBackend
-from ffc.representationutils import initialize_integral_code
+from ffc.representation.representationutils import initialize_integral_code
 from ffc.uflacs.integralgenerator import IntegralGenerator
 from ffc.codegeneration.C.format_lines import format_indented_lines
 

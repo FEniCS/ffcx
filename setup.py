@@ -124,6 +124,7 @@ def run_install():
             "ffc",
             "ffc.codegeneration",
             "ffc.codegeneration.C",
+            "ffc.representation",
             "ffc.tsfc",
             "ffc.uflacs",
             "ffc.uflacs.analysis",

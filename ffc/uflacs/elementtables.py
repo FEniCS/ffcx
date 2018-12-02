@@ -16,9 +16,9 @@ import ufl.utils.derivativetuples
 # FIXME: Suspicious, calling codegeneration here
 from ffc.codegeneration.common import ufc_restriction_offset
 from ffc.fiatinterface import create_element
-from ffc.representationutils import (create_quadrature_points_and_weights,
-                                     integral_type_to_entity_dim,
-                                     map_integral_points)
+from ffc.representation.representationutils import (create_quadrature_points_and_weights,
+                                                    integral_type_to_entity_dim,
+                                                    map_integral_points)
 
 logger = logging.getLogger(__name__)
 

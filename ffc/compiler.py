@@ -78,7 +78,7 @@ from ffc.analysis import analyze_ufl_objects
 from ffc.codegeneration.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.parameters import validate_parameters
-from ffc.representation import compute_ir
+from ffc.representation.representation import compute_ir
 from ffc.wrappers import generate_wrapper_code
 
 logger = logging.getLogger(__name__)
