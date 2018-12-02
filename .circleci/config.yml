@@ -19,7 +19,7 @@ jobs:
             pip install git+https://bitbucket.org/fenics-project/dijitso.git --user
       - run:
           name: Install FFC
-          command: pip install -e . --user
+          command: pip install . --user -v
       - run:
           name: Run flake8 tests
           command: python -m flake8 ffc/ test/
