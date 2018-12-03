@@ -384,20 +384,6 @@ class Symbol(CExprTerminal):
         return isinstance(other, Symbol) and self.name == other.name
 
 
-class New(CExpr):
-    __slots__ = ("typename", )
-
-    def __init__(self, typename):
-        assert isinstance(typename, str)
-        self.typename = typename
-
-    def ce_format(self, precision=None):
-        return "new %s()" % (self.typename, )
-
-    def __eq__(self, other):
-        return isinstance(other, New) and self.typename == other.typename
-
-
 # CExprOperator base classes
 
 

@@ -153,7 +153,7 @@ def geometric_dimension(L, geometric_dimension):
 
 def create_coordinate_finite_element(L, ir):
     classname = ir["create_coordinate_finite_element"]
-    return generate_return_new(L, classname, factory=True)
+    return generate_return_new(L, classname)
 
 
 def coordinate_finite_element_declaration(L, ir):
@@ -164,7 +164,7 @@ def coordinate_finite_element_declaration(L, ir):
 
 def create_coordinate_dofmap(L, ir):
     classname = ir["create_coordinate_dofmap"]
-    return generate_return_new(L, classname, factory=True)
+    return generate_return_new(L, classname)
 
 
 def coordinate_dofmap_declaration(L, ir):
