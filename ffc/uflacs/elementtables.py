@@ -13,8 +13,6 @@ import numpy
 
 import ufl
 import ufl.utils.derivativetuples
-# FIXME: Suspicious, calling codegeneration here
-from ffc.codegeneration.common import ufc_restriction_offset
 from ffc.fiatinterface import create_element
 from ffc.representationutils import (create_quadrature_points_and_weights,
                                      integral_type_to_entity_dim,
@@ -38,6 +36,14 @@ valid_ttypes = set(("quadrature", )) | set(piecewise_ttypes) | set(uniform_ttype
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
     ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise", "is_uniform"])
+
+
+# TODO: Get restriction postfix from somewhere central
+def ufc_restriction_offset(restriction, length):
+    if restriction == "-":
+        return length
+    else:
+        return 0
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):

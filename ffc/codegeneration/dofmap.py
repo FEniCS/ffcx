@@ -208,7 +208,7 @@ def tabulate_entity_closure_dofs(L, ir):
 
 def create_sub_dofmap(L, ir):
     classnames = ir["create_sub_dofmap"]
-    return generate_return_new_switch(L, "i", classnames, factory=True)
+    return generate_return_new_switch(L, "i", classnames)
 
 
 def sub_dofmap_declaration(L, ir):

@@ -124,7 +124,7 @@ def sub_element_declaration(L, ir):
 
 def create_sub_element(L, ir):
     classnames = ir["create_sub_element"]
-    return generate_return_new_switch(L, "i", classnames, factory=True)
+    return generate_return_new_switch(L, "i", classnames)
 
 
 def transform_values(L, ir, parameters):
