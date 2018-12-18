@@ -272,8 +272,8 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
 
     # Evaluate function at physical point
     lines_r += [L.Comment("Evaluate function at physical point")]
-    vals = L.Symbol("physical_values")
-    c = L.Symbol("c")
+    # vals = L.Symbol("physical_values")
+    # c = L.Symbol("c")
     lines_r += [L.Comment("Replace this: f.evaluate(vals, y, c)")]
 
     # Map function values to the reference element
