@@ -55,7 +55,7 @@ void transform_values_{factory_name}(
   {transform_values}
 }}
 
-void tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
+int tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
 {{
   {tabulate_reference_dof_coordinates}
 }}

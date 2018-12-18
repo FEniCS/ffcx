@@ -117,7 +117,7 @@ extern "C"
 
     // FIXME: change to 'const double* reference_dof_coordinates()'
     /// Tabulate the coordinates of all dofs on a reference cell
-    void (*tabulate_reference_dof_coordinates)(
+    int (*tabulate_reference_dof_coordinates)(
         double* restrict reference_dof_coordinates);
 
     /// Return the number of sub elements (for a mixed element)
