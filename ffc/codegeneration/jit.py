@@ -61,7 +61,7 @@ void (*transform_values)(
     const ufc_scalar_t* restrict physical_values,
     const double* restrict coordinate_dofs,
     int cell_orientation, const ufc_coordinate_mapping* cm);
-void (*tabulate_reference_dof_coordinates)(
+int (*tabulate_reference_dof_coordinates)(
     double* restrict reference_dof_coordinates);
 int num_sub_elements;
 ufc_finite_element* (*create_sub_element)(int i);
