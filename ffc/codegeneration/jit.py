@@ -56,7 +56,7 @@ int (*transform_reference_basis_derivatives)(
     const double* restrict reference_values, const double* restrict X,
     const double* restrict J, const double* restrict detJ,
     const double* restrict K, int cell_orientation);
-void (*transform_values)(
+int (*transform_values)(
     ufc_scalar_t* restrict reference_values,
     const ufc_scalar_t* restrict physical_values,
     const double* restrict coordinate_dofs,

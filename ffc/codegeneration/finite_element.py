@@ -407,9 +407,9 @@ def generator(ir, parameters):
     d["cell_shape"] = ir["cell_shape"]
     d["space_dimension"] = ir["space_dimension"]
     d["value_rank"] = len(ir["value_shape"])
-    d["value_size"] = product(ir["value_shape"])
+    d["value_size"] = ufl.product(ir["value_shape"])
     d["reference_value_rank"] = len(ir["reference_value_shape"])
-    d["reference_value_size"] = product(ir["reference_value_shape"])
+    d["reference_value_size"] = ufl.product(ir["reference_value_shape"])
     d["degree"] = ir["degree"]
     d["family"] = "\"{}\"".format(ir["family"])
     d["num_sub_elements"] = ir["num_sub_elements"]
