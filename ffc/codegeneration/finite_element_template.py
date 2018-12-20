@@ -45,7 +45,7 @@ int transform_reference_basis_derivatives_{factory_name}(
   {transform_reference_basis_derivatives}
 }}
 
-void transform_values_{factory_name}(
+int transform_values_{factory_name}(
      ufc_scalar_t* restrict reference_values,
      const ufc_scalar_t* restrict physical_values,
      const double* restrict coordinate_dofs,

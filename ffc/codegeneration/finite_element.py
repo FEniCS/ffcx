@@ -12,13 +12,13 @@
 from collections import defaultdict
 
 import ffc.codegeneration.finite_element_template as ufc_finite_element
+import ufl
 from ffc.codegeneration.evalderivs import (_generate_combinations,
                                            generate_evaluate_reference_basis_derivatives)
 from ffc.codegeneration.evaluatebasis import generate_evaluate_reference_basis
 from ffc.codegeneration.evaluatedof import generate_transform_values
 from ffc.codegeneration.utils import (generate_return_int_switch,
                                       generate_return_new_switch)
-from ufl import product
 
 index_type = "int64_t"
 
@@ -87,7 +87,7 @@ def value_dimension(L, value_shape):
 
 
 def value_size(L, value_shape):
-    return L.Return(product(value_shape))
+    return L.Return(ufl.product(value_shape))
 
 
 def reference_value_rank(L, reference_value_shape):
@@ -99,7 +99,7 @@ def reference_value_dimension(L, reference_value_shape):
 
 
 def reference_value_size(L, reference_value_shape):
-    return L.Return(product(reference_value_shape))
+    return L.Return(ufl.product(reference_value_shape))
 
 
 def degree(L, degree):
@@ -140,7 +140,6 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
 
     # Raise error if tabulate_reference_dof_coordinates is ill-defined
     if not ir:
-        # Return error code
         return [L.Return(-1)]
 
     # Extract coordinates and cell dimension
@@ -155,9 +154,8 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
     dof_X_values = [X[jj] for X in points for jj in range(tdim)]
     decl = L.ArrayDecl("static const double", dof_X, (len(points) * tdim, ), values=dof_X_values)
     copy = L.MemCopy(dof_X, reference_dof_coordinates, tdim * len(points), "double")
-
-    code = [decl, copy]
-    return code
+    ret = L.Return(0)
+    return [decl, copy, ret]
 
 
 def evaluate_reference_basis(L, ir, parameters):
@@ -271,19 +269,17 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     transform_matrix_code = [
         # Initialize transform matrix to all 1.0
         L.ArrayDecl("double", transform, (max_g_d, max_t_d)),
-        L.ForRanges(
-            (r, 0, num_derivatives_g), (s, 0, num_derivatives_t),
-            index_type=index_type,
-            body=L.Assign(transform[r, s], 1.0)),
+        L.ForRanges((r, 0, num_derivatives_g), (s, 0, num_derivatives_t),
+                    index_type=index_type,
+                    body=L.Assign(transform[r, s], 1.0)),
     ]
     if max_degree > 0:
         transform_matrix_code += [
             # Compute transform matrix entries, each a product of K entries
-            L.ForRanges(
-                (r, 0, num_derivatives_g), (s, 0, num_derivatives_t), (k, 0, order),
-                index_type=index_type,
-                body=L.AssignMul(transform[r, s],
-                                 K[ip, combinations_t[s, k], combinations_g[r, k]])),
+            L.ForRanges((r, 0, num_derivatives_g), (s, 0, num_derivatives_t), (k, 0, order),
+                        index_type=index_type,
+                        body=L.AssignMul(transform[r, s],
+                                         K[ip, combinations_t[s, k], combinations_g[r, k]])),
         ]
 
     # Initialize values to 0, will be added to inside loops
@@ -376,13 +372,11 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                     # Apply derivative transformation, for order=0 this reduces to
                     # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
                     L.Comment("Mapping derivatives back to the physical element"),
-                    L.ForRanges(
-                        (r, 0, num_derivatives_g),
-                        index_type=index_type,
-                        body=[
-                            L.AssignAdd(values[ip, idof, r, physical_offset + i],
-                                        transform[r, s] * mapped_value)
-                        ])
+                    L.ForRanges((r, 0, num_derivatives_g),
+                                index_type=index_type,
+                                body=[
+                                    L.AssignAdd(values[ip, idof, r, physical_offset + i],
+                                                transform[r, s] * mapped_value)])
                 ])
         ]
 
@@ -397,8 +391,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     ]
 
     # Join code
-    code = (combinations_code + values_init_code
-            + dof_attributes_code + point_loop_code
+    code = (combinations_code + values_init_code + dof_attributes_code + point_loop_code
             + [L.Comment(msg), L.Return(0)])
     return code
 
@@ -413,9 +406,9 @@ def generator(ir, parameters):
     d["cell_shape"] = ir["cell_shape"]
     d["space_dimension"] = ir["space_dimension"]
     d["value_rank"] = len(ir["value_shape"])
-    d["value_size"] = product(ir["value_shape"])
+    d["value_size"] = ufl.product(ir["value_shape"])
     d["reference_value_rank"] = len(ir["reference_value_shape"])
-    d["reference_value_size"] = product(ir["reference_value_shape"])
+    d["reference_value_size"] = ufl.product(ir["reference_value_shape"])
     d["degree"] = ir["degree"]
     d["family"] = "\"{}\"".format(ir["family"])
     d["num_sub_elements"] = ir["num_sub_elements"]

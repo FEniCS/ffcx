@@ -347,4 +347,5 @@ def generate_transform_values(L, ir):
         code += c
         code += [L.Assign(values[i], r)]
 
+    code += [L.Return(0)]
     return code

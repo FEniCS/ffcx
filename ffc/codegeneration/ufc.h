@@ -108,8 +108,9 @@ extern "C"
         const double* restrict K, int cell_orientation);
 
     /// Map values of field from physical to reference space which has
-    /// been evaluated at points given by tabulate_reference_dof_coordinates.
-    void (*transform_values)(ufc_scalar_t* restrict reference_values,
+    /// been evaluated at points given by
+    /// tabulate_reference_dof_coordinates.
+    int (*transform_values)(ufc_scalar_t* restrict reference_values,
                              const ufc_scalar_t* restrict physical_values,
                              const double* restrict coordinate_dofs,
                              int cell_orientation,
@@ -123,7 +124,8 @@ extern "C"
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
-    /// Create a new finite element for sub element i (for a mixed element)
+    /// Create a new finite element for sub element i (for a mixed
+    /// element)
     ufc_finite_element* (*create_sub_element)(int i);
 
     /// Create a new class instance
