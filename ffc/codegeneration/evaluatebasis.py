@@ -252,6 +252,9 @@ def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
     elif element_cellname == "quadrilateral":
         code = _generate_compute_quad_basisvalues(
             L, basisvalues, Y, embedded_degree, num_members)
+    elif element_cellname == "hexahedron":
+        code = _generate_compute_hex_basisvalues(
+            L, basisvalues, Y, embedded_degree, num_members)
     else:
         raise RuntimeError("Not supported:" + element_cellname)
 
@@ -300,10 +303,12 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree,
 
 def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
                                        num_members):
-    # FIAT_NEW.expansions.LineExpansionSet.
 
     # Create zero-initialized array for with basisvalues
     code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
+
+    p = embedded_degree + 1
+    assert p*p == num_members
 
     bx = [1.0]
     by = [1.0]
@@ -313,7 +318,6 @@ def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
         by += [Y[1]]
 
     # Only active if embedded_degree > 1.
-    p = embedded_degree + 1
     for r in range(2, p):
         a3 = (2 * r - 1) / r
         a4 = (r - 1) / r
@@ -326,6 +330,43 @@ def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
 
     for r in range(p * p):
         code += [L.Assign(basisvalues[r], bx[r % p] * by[r // p])]
+
+    return code
+
+
+def _generate_compute_hex_basisvalues(L, basisvalues, Y, embedded_degree,
+                                       num_members):
+
+    # Create zero-initialized array for with basisvalues
+    code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
+
+    p = embedded_degree + 1
+    assert p*p*p == num_members
+
+    bx = [1.0]
+    by = [1.0]
+    bz = [1.0]
+
+    if embedded_degree > 0:
+        bx += [Y[0]]
+        by += [Y[1]]
+        bz += [Y[2]]
+
+    # Only active if embedded_degree > 1.
+    for r in range(2, p):
+        a3 = (2 * r - 1) / r
+        a4 = (r - 1) / r
+        bx += [a3 * Y[0] * bx[r - 1] - a4 * bx[r - 2]]
+        by += [a3 * Y[1] * by[r - 1] - a4 * by[r - 2]]
+        bz += [a3 * Y[2] * bz[r - 1] - a4 * bz[r - 2]]
+
+    for r in range(p):
+        bx[r] *= numpy.sqrt(r + 0.5)
+        by[r] *= numpy.sqrt(r + 0.5)
+        bz[r] *= numpy.sqrt(r + 0.5)
+
+    for r in range(p * p * p):
+        code += [L.Assign(basisvalues[r], bx[r % p] * by[(r // p) % p] * bz[r // (p * p)])]
 
     return code
 
