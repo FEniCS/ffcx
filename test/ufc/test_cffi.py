@@ -31,6 +31,7 @@ def lagrange_element():
     compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
     return elements, compiled_elements, module
 
+
 @pytest.fixture(scope="module")
 def quadrilateral_element():
     """Compile list of Lagrange elements"""
@@ -59,12 +60,12 @@ def test_tabulate_reference_dof_coordinates(lagrange_element):
         compiled_e.tabulate_reference_dof_coordinates(X_ptr)
         # print(X)
 
+
 def test_evaluate_reference_basis(lagrange_element):
     ufl_elements, compiled_elements, module = lagrange_element
     for e, compiled_e in zip(ufl_elements, compiled_elements):
-        tdim = compiled_e.topological_dimension
         space_dim = compiled_e.space_dimension
-        X = np.array([[0.0,0.0], [0.5,0.5], [0.25, 0.25],
+        X = np.array([[0.0, 0.0], [0.5, 0.5], [0.25, 0.25],
                       [1 / 3, 1 / 3], [1.0, 0.0], [0.0, 1.0]])
         npoint = X.shape[0]
         X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
@@ -75,12 +76,12 @@ def test_evaluate_reference_basis(lagrange_element):
         np.set_printoptions(suppress=True)
         print('X=', X, 'vals = ', vals, np.sum(vals))
 
+
 def test_evaluate_reference_basis_quad(quadrilateral_element):
     ufl_elements, compiled_elements, module = quadrilateral_element
     for e, compiled_e in zip(ufl_elements, compiled_elements):
-        tdim = compiled_e.topological_dimension
         space_dim = compiled_e.space_dimension
-        X = np.array([[0.0,0.0], [0.5,0.5], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+        X = np.array([[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
         npoint = X.shape[0]
         X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
         vals = np.zeros([npoint, space_dim])
