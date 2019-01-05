@@ -13,7 +13,7 @@ import logging
 import numpy
 
 import ufl
-from ffc.uflacs.analysis.balancing import balance_modifiers
+from ufl.algorithms.balancing import balance_modifiers
 from ffc.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.uflacs.analysis.graph import build_scalar_graph
 from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
