@@ -122,7 +122,9 @@ class ReconstructScalarSubexpressions(object):
     def reconstruct(self, o, *args):
         if isinstance(o, ufl.classes.MathFunction):
             return self.scalar_nary(o, *args)
-        if type(o) not in self.call_lookup:
+        elif isinstance(o, ufl.classes.Conditional):
+            return self.conditional(o, *args)
+        elif type(o) not in self.call_lookup:
             raise RuntimeError("Not expecting expression of type %s in here." % type(o))
         return self.call_lookup[type(o)](o, *args)
 
