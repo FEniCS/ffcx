@@ -52,14 +52,13 @@ def build_graph_vertices(expression, scalar=False):
 
     G = ExpressionGraph()
 
-    G.e2i = {}
-    _count_nodes_with_unique_post_traversal(expression, G.e2i, scalar)
+    G.e2i = _count_nodes_with_unique_post_traversal(expression, scalar)
 
     # Invert the map to get index->expression
-    G.V = sorted(G.e2i, key=G.e2i.get)
+    GV = sorted(G.e2i, key=G.e2i.get)
 
     # Add nodes to 'new' graph structure
-    for i, v in enumerate(G.V):
+    for i, v in enumerate(GV):
         G.add_node(i, expression=v)
 
     # Get vertex index representing input expression root
@@ -86,11 +85,12 @@ def build_scalar_graph(expression):
 
     # Compute graph edges
     V_deps = []
-    for v in G.V:
-        if v._ufl_is_terminal_ or v._ufl_is_terminal_modifier_:
+    for i, v in G.nodes.items():
+        expr = v['expression']
+        if expr._ufl_is_terminal_ or expr._ufl_is_terminal_modifier_:
             V_deps.append(())
         else:
-            V_deps.append([G.e2i[o] for o in v.ufl_operands])
+            V_deps.append([G.e2i[o] for o in expr.ufl_operands])
 
     for i, edges in enumerate(V_deps):
         for j in edges:
@@ -287,7 +287,8 @@ def rebuild_with_scalar_subexpressions(G):
     W = numpy.empty(total_unique_symbols, dtype=object)
 
     # Iterate over each graph node in order
-    for i, v in enumerate(G.V):
+    for i, v in G.nodes.items():
+        expr = v['expression']
         # Find symbols of v components
         vs = V_symbols[i]
 
@@ -295,21 +296,21 @@ def rebuild_with_scalar_subexpressions(G):
         if all(W[s] is not None for s in vs):
             continue
 
-        if is_modified_terminal(v):
+        if is_modified_terminal(expr):
             # if v.ufl_free_indices:
             #     raise RuntimeError("Expecting no free indices.")
-            sh = v.ufl_shape
+            sh = expr.ufl_shape
             if sh:
                 # Store each terminal expression component. We may not
                 # actually need all of these later, but that will be
                 # optimized away.
                 # Note: symmetries will be dealt with in the value numbering.
-                ws = [v[c] for c in ufl.permutation.compute_indices(sh)]
+                ws = [expr[c] for c in ufl.permutation.compute_indices(sh)]
             else:
                 # Store single modified terminal expression component
                 if len(vs) != 1:
                     raise RuntimeError("Expecting single symbol for scalar valued modified terminal.")
-                ws = [v]
+                ws = [expr]
             # FIXME: Replace ws[:] with 0's if its table is empty
             # Possible redesign: loop over modified terminals only first,
             # then build tables for them, set W[s] = 0.0 for modified terminals with zero table,
@@ -317,11 +318,11 @@ def rebuild_with_scalar_subexpressions(G):
         else:
             # Find symbols of operands
             sops = []
-            for j, vop in enumerate(v.ufl_operands):
+            for j, vop in enumerate(expr.ufl_operands):
                 if isinstance(vop, ufl.classes.MultiIndex):
                     # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
-                    if not isinstance(v, ufl.classes.IndexSum):
-                        raise RuntimeError("Not expecting a %s." % type(v))
+                    if not isinstance(expr, ufl.classes.IndexSum):
+                        raise RuntimeError("Not expecting a %s." % type(expr))
                     sops.append(())
                 else:
                     # TODO: Build edge datastructure and use instead?
@@ -333,7 +334,7 @@ def rebuild_with_scalar_subexpressions(G):
             wops = [tuple(W[k] for k in so) for so in sops]
 
             # Reconstruct scalar subexpressions of v
-            ws = reconstruct_scalar_subexpressions(v, wops)
+            ws = reconstruct_scalar_subexpressions(expr, wops)
 
             # Store all scalar subexpressions for v symbols
             if len(vs) != len(ws):
@@ -354,11 +355,10 @@ def rebuild_with_scalar_subexpressions(G):
     return scalar_expression
 
 
-def _count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifiers=False):
+def _count_nodes_with_unique_post_traversal(expr, skip_terminal_modifiers=False):
     """Yields o for each node o in expr, child before parent.
     Never visits a node twice."""
-    if e2i is None:
-        e2i = {}
+
 
     def getops(e):
         """Get a modifiable list of operands of e, optionally treating modified terminals as a unit."""
@@ -368,6 +368,7 @@ def _count_nodes_with_unique_post_traversal(expr, e2i=None, skip_terminal_modifi
         else:
             return list(e.ufl_operands)
 
+    e2i = {}
     stack = [(expr, getops(expr))]
     while stack:
         expr, ops = stack[-1]

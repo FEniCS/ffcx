@@ -41,12 +41,12 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
         return begin
 
     def get_node_symbols(self, expr):
-        idx = [i for i, v in enumerate(self.G.V) if v == expr][0]
+        idx = [i for i, v in self.G.nodes.items() if v['expression'] == expr][0]
         return self.V_symbols[idx]
 
     def compute_symbols(self):
-        for i, v in enumerate(self.G.V):
-            self.V_symbols.append(self.__call__(v))
+        for i, v in self.G.nodes.items():
+            self.V_symbols.append(self.__call__(v['expression']))
         return self.V_symbols
 
     def expr(self, v):
