@@ -99,49 +99,38 @@ def build_scalar_graph(expression):
     return G
 
 
-class ReconstructScalarSubexpressions(ufl.corealg.multifunction.MultiFunction):
+class ReconstructScalarSubexpressions(object):
     def __init__(self):
-        super().__init__()
 
-    # No fallbacks, need to specify each type or group of types explicitly
-    def expr(self, o, *args, **kwargs):
-        raise RuntimeError("No handler for type %s" % type(o))
+        # methods to call based on type of operand
+        self.call_lookup = {ufl.classes.Abs: self.scalar_nary,
+                            ufl.classes.MinValue: self.scalar_nary,
+                            ufl.classes.MaxValue: self.scalar_nary,
+                            ufl.classes.Real: self.scalar_nary,
+                            ufl.classes.Imag: self.scalar_nary,
+                            ufl.classes.Power: self.scalar_nary,
+                            ufl.classes.BesselFunction: self.scalar_nary,
+                            ufl.classes.Atan2: self.scalar_nary,
+                            ufl.classes.Product: self.product,
+                            ufl.classes.Division: self.division,
+                            ufl.classes.Sum: self.sum,
+                            ufl.classes.IndexSum: self.index_sum,
+                            ufl.classes.Conj: self.conj,
+                            ufl.classes.Conditional: self.conditional,
+                            ufl.classes.Condition: self.condition}
 
-    def terminal(self, o):
-        raise RuntimeError("Not expecting terminal expression in here, got %s." % type(o))
-
-    # These types are not expected to be part of the graph at this point
-    def unexpected(self, o, *args, **kwargs):
-        raise RuntimeError("Not expecting expression of type %s in here." % type(o))
-
-    multi_index = unexpected
-    expr_list = unexpected
-    expr_mapping = unexpected
-    utility_type = unexpected
-    label = unexpected
-    component_tensor = unexpected
-    list_tensor = unexpected
-    transposed = unexpected
-    variable = unexpected
+    def reconstruct(self, o, *args):
+        if isinstance(o, ufl.classes.MathFunction):
+            return self.scalar_nary(o, *args)
+        if type(o) not in self.call_lookup:
+            raise RuntimeError("Not expecting expression of type %s in here." % type(o))
+        return self.call_lookup[type(o)](o, *args)
 
     def scalar_nary(self, o, ops):
         if o.ufl_shape != ():
             raise RuntimeError("Expecting scalar.")
         sops = [op[0] for op in ops]
         return [o._ufl_expr_reconstruct_(*sops)]
-
-    # Unary scalar functions
-    math_function = scalar_nary
-    abs = scalar_nary
-    min_value = scalar_nary
-    max_value = scalar_nary
-    real = scalar_nary
-    imag = scalar_nary
-
-    # Binary scalar functions
-    power = scalar_nary
-    bessel_function = scalar_nary  # TODO: Is this ok?
-    atan_2 = scalar_nary
 
     def condition(self, o, ops):
         # A condition is always scalar, so len(op) == 1
@@ -334,7 +323,7 @@ def rebuild_with_scalar_subexpressions(G):
             wops = [tuple(W[k] for k in so) for so in sops]
 
             # Reconstruct scalar subexpressions of v
-            ws = reconstruct_scalar_subexpressions(expr, wops)
+            ws = reconstruct_scalar_subexpressions.reconstruct(expr, wops)
 
             # Store all scalar subexpressions for v symbols
             if len(vs) != len(ws):
@@ -358,7 +347,6 @@ def rebuild_with_scalar_subexpressions(G):
 def _count_nodes_with_unique_post_traversal(expr, skip_terminal_modifiers=False):
     """Yields o for each node o in expr, child before parent.
     Never visits a node twice."""
-
 
     def getops(e):
         """Get a modifiable list of operands of e, optionally treating modified terminals as a unit."""
