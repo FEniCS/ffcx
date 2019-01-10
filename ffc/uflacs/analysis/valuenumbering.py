@@ -68,6 +68,7 @@ class ValueNumberer(object):
                 for k in self.call_lookup.keys():
                     if isinstance(expr, k):
                         symbol = self.call_lookup[k](expr)
+                        break
 
             if symbol is None:
                 # Nothing found

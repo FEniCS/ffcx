@@ -293,8 +293,6 @@ def rebuild_with_scalar_subexpressions(G):
             continue
 
         if is_modified_terminal(expr):
-            # if v.ufl_free_indices:
-            #     raise RuntimeError("Expecting no free indices.")
             sh = expr.ufl_shape
             if sh:
                 # Store each terminal expression component. We may not
@@ -343,7 +341,7 @@ def rebuild_with_scalar_subexpressions(G):
                 W[s] = w
                 handled.add(s)
             else:
-                assert s in handled  # Result of symmetry!
+                assert s in handled  # Result of symmetry! - but I think this never gets reached anyway (CNR)
 
     # Find symbols of final v from input graph
     vs = V_symbols[-1][0]
