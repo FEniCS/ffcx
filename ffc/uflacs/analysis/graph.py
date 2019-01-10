@@ -13,6 +13,7 @@ import numpy
 import ufl
 from ffc.uflacs.analysis.modified_terminals import is_modified_terminal
 from ffc.uflacs.analysis.valuenumbering import ValueNumberer
+from ffc.uflacs.analysis.reconstruct import reconstruct
 
 logger = logging.getLogger(__name__)
 
@@ -99,164 +100,6 @@ def build_scalar_graph(expression):
     return G
 
 
-class ReconstructScalarSubexpressions(object):
-    def __init__(self):
-
-        # methods to call based on type of operand
-        self.call_lookup = {ufl.classes.MathFunction: self.scalar_nary,
-                            ufl.classes.Abs: self.scalar_nary,
-                            ufl.classes.MinValue: self.scalar_nary,
-                            ufl.classes.MaxValue: self.scalar_nary,
-                            ufl.classes.Real: self.scalar_nary,
-                            ufl.classes.Imag: self.scalar_nary,
-                            ufl.classes.Power: self.scalar_nary,
-                            ufl.classes.BesselFunction: self.scalar_nary,
-                            ufl.classes.Atan2: self.scalar_nary,
-                            ufl.classes.Product: self.product,
-                            ufl.classes.Division: self.division,
-                            ufl.classes.Sum: self.sum,
-                            ufl.classes.IndexSum: self.index_sum,
-                            ufl.classes.Conj: self.conj,
-                            ufl.classes.Conditional: self.conditional,
-                            ufl.classes.Condition: self.condition}
-
-    def reconstruct(self, o, *args):
-        # First look for exact match
-        f = self.call_lookup.get(type(o), False)
-        if f:
-            return f(o, *args)
-        else:
-            # Look for parent class types instead
-            for k in self.call_lookup.keys():
-                if isinstance(o, k):
-                    return self.call_lookup[k](o, *args)
-            # Nothing found
-            raise RuntimeError("Not expecting expression of type %s in here." % type(o))
-
-    def scalar_nary(self, o, ops):
-        if o.ufl_shape != ():
-            raise RuntimeError("Expecting scalar.")
-        sops = [op[0] for op in ops]
-        return [o._ufl_expr_reconstruct_(*sops)]
-
-    def condition(self, o, ops):
-        # A condition is always scalar, so len(op) == 1
-        sops = [op[0] for op in ops]
-        return [o._ufl_expr_reconstruct_(*sops)]
-
-    def conditional(self, o, ops):
-        # A condition can be non scalar
-        symbols = []
-        n = len(ops[1])
-        if len(ops[0]) != 1:
-            raise RuntimeError("Condition should be scalar.")
-        if n != len(ops[2]):
-            raise RuntimeError("Conditional branches should have same shape.")
-        for i in range(len(ops[1])):
-            sops = (ops[0][0], ops[1][i], ops[2][i])
-            symbols.append(o._ufl_expr_reconstruct_(*sops))
-        return symbols
-
-    def conj(self, o, ops):
-        if len(ops) != 1:
-            raise RuntimeError("Expecting one operand")
-        if o.ufl_shape != ():
-            raise RuntimeError("Expecting scalar.")
-        return [o._ufl_expr_reconstruct_(x) for x in ops[0]]
-
-    def division(self, o, ops):
-        if len(ops) != 2:
-            raise RuntimeError("Expecting two operands.")
-        if len(ops[1]) != 1:
-            raise RuntimeError("Expecting scalar divisor.")
-        b, = ops[1]
-        return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
-
-    def sum(self, o, ops):
-        if len(ops) != 2:
-            raise RuntimeError("Expecting two operands.")
-        if len(ops[0]) != len(ops[1]):
-            raise RuntimeError("Expecting scalar divisor.")
-        return [o._ufl_expr_reconstruct_(a, b) for a, b in zip(ops[0], ops[1])]
-
-    def product(self, o, ops):
-        if len(ops) != 2:
-            raise RuntimeError("Expecting two operands.")
-
-        # Get the simple cases out of the way
-        if len(ops[0]) == 1:  # True scalar * something
-            a, = ops[0]
-            return [ufl.classes.Product(a, b) for b in ops[1]]
-        elif len(ops[1]) == 1:  # Something * true scalar
-            b, = ops[1]
-            return [ufl.classes.Product(a, b) for a in ops[0]]
-
-        # Neither of operands are true scalars, this is the tricky part
-        o0, o1 = o.ufl_operands
-
-        # Get shapes and index shapes
-        fi = o.ufl_free_indices
-        fi0 = o0.ufl_free_indices
-        fi1 = o1.ufl_free_indices
-        fid = o.ufl_index_dimensions
-        fid0 = o0.ufl_index_dimensions
-        fid1 = o1.ufl_index_dimensions
-
-        # Need to map each return component to one component of o0 and
-        # one component of o1
-        indices = ufl.permutation.compute_indices(fid)
-
-        # Compute which component of o0 is used in component (comp,ind) of o
-        # Compute strides within free index spaces
-        ist0 = ufl.utils.indexflattening.shape_to_strides(fid0)
-        ist1 = ufl.utils.indexflattening.shape_to_strides(fid1)
-        # Map o0 and o1 indices to o indices
-        indmap0 = [fi.index(i) for i in fi0]
-        indmap1 = [fi.index(i) for i in fi1]
-        indks = [(ufl.utils.indexflattening.flatten_multiindex([ind[i] for i in indmap0], ist0),
-                  ufl.utils.indexflattening.flatten_multiindex([ind[i] for i in indmap1], ist1))
-                 for ind in indices]
-
-        # Build products for scalar components
-        results = [ufl.classes.Product(ops[0][k0], ops[1][k1]) for k0, k1 in indks]
-        return results
-
-    def index_sum(self, o, ops):
-        summand, mi = o.ufl_operands
-        ic = mi[0].count()
-        fi = summand.ufl_free_indices
-        fid = summand.ufl_index_dimensions
-        ipos = fi.index(ic)
-        d = fid[ipos]
-
-        # Compute "macro-dimensions" before and after i in the total shape of a
-        predim = ufl.product(summand.ufl_shape) * ufl.product(fid[:ipos])
-        postdim = ufl.product(fid[ipos + 1:])
-
-        # Map each flattened total component of summand to
-        # flattened total component of indexsum o by removing
-        # axis corresponding to summation index ii.
-        ss = ops[0]  # Scalar subexpressions of summand
-        if len(ss) != predim * postdim * d:
-            raise RuntimeError("Mismatching number of subexpressions.")
-        sops = []
-        for i in range(predim):
-            iind = i * (postdim * d)
-            for k in range(postdim):
-                ind = iind + k
-                sops.append([ss[ind + j * postdim] for j in range(d)])
-
-        # For each scalar output component, sum over collected subcomponents
-        # TODO: Need to split this into binary additions to work with future CRSArray format,
-        #       i.e. emitting more expressions than there are symbols for this node.
-        results = [sum(sop) for sop in sops]
-        return results
-
-    # TODO: To implement compound tensor operators such as dot and inner,
-    # we need to identify which index to do the contractions over,
-    # and build expressions such as sum(a*b for a,b in zip(aops, bops))
-
-
 def rebuild_with_scalar_subexpressions(G):
     """Build a new expression2index mapping where each subexpression is scalar valued.
 
@@ -275,9 +118,6 @@ def rebuild_with_scalar_subexpressions(G):
     value_numberer = ValueNumberer(G)
     V_symbols = value_numberer.compute_symbols()
     total_unique_symbols = value_numberer.symbol_count
-
-    # Algorithm to apply to each subexpression
-    reconstruct_scalar_subexpressions = ReconstructScalarSubexpressions()
 
     # Array to store the scalar subexpression in for each symbol
     W = numpy.empty(total_unique_symbols, dtype=object)
@@ -328,7 +168,7 @@ def rebuild_with_scalar_subexpressions(G):
             wops = [tuple(W[k] for k in so) for so in sops]
 
             # Reconstruct scalar subexpressions of v
-            ws = reconstruct_scalar_subexpressions.reconstruct(expr, wops)
+            ws = reconstruct(expr, wops)
 
             # Store all scalar subexpressions for v symbols
             if len(vs) != len(ws):
