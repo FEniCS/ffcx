@@ -103,7 +103,8 @@ class ReconstructScalarSubexpressions(object):
     def __init__(self):
 
         # methods to call based on type of operand
-        self.call_lookup = {ufl.classes.Abs: self.scalar_nary,
+        self.call_lookup = {ufl.classes.MathFunction: self.scalar_nary,
+                            ufl.classes.Abs: self.scalar_nary,
                             ufl.classes.MinValue: self.scalar_nary,
                             ufl.classes.MaxValue: self.scalar_nary,
                             ufl.classes.Real: self.scalar_nary,
@@ -120,13 +121,17 @@ class ReconstructScalarSubexpressions(object):
                             ufl.classes.Condition: self.condition}
 
     def reconstruct(self, o, *args):
-        if isinstance(o, ufl.classes.MathFunction):
-            return self.scalar_nary(o, *args)
-        elif isinstance(o, ufl.classes.Conditional):
-            return self.conditional(o, *args)
-        elif type(o) not in self.call_lookup:
+        # First look for exact match
+        f = self.call_lookup.get(type(o), False)
+        if f:
+            return f(o, *args)
+        else:
+            # Look for parent class types instead
+            for k in self.call_lookup.keys():
+                if isinstance(o, k):
+                    return self.call_lookup[k](o, *args)
+            # Nothing found
             raise RuntimeError("Not expecting expression of type %s in here." % type(o))
-        return self.call_lookup[type(o)](o, *args)
 
     def scalar_nary(self, o, ops):
         if o.ufl_shape != ():
