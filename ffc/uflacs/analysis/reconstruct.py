@@ -7,16 +7,19 @@
 
 import ufl
 
+
 def handle_scalar_nary(o, ops):
     if o.ufl_shape != ():
         raise RuntimeError("Expecting scalar.")
     sops = [op[0] for op in ops]
     return [o._ufl_expr_reconstruct_(*sops)]
 
+
 def handle_condition(o, ops):
     # A condition is always scalar, so len(op) == 1
     sops = [op[0] for op in ops]
     return [o._ufl_expr_reconstruct_(*sops)]
+
 
 def handle_conditional(o, ops):
     # A condition can be non scalar
@@ -31,12 +34,14 @@ def handle_conditional(o, ops):
         symbols.append(o._ufl_expr_reconstruct_(*sops))
     return symbols
 
+
 def handle_conj(o, ops):
     if len(ops) != 1:
         raise RuntimeError("Expecting one operand")
     if o.ufl_shape != ():
         raise RuntimeError("Expecting scalar.")
     return [o._ufl_expr_reconstruct_(x) for x in ops[0]]
+
 
 def handle_division(o, ops):
     if len(ops) != 2:
@@ -46,12 +51,14 @@ def handle_division(o, ops):
     b, = ops[1]
     return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
 
+
 def handle_sum(o, ops):
     if len(ops) != 2:
         raise RuntimeError("Expecting two operands.")
     if len(ops[0]) != len(ops[1]):
         raise RuntimeError("Expecting scalar divisor.")
     return [o._ufl_expr_reconstruct_(a, b) for a, b in zip(ops[0], ops[1])]
+
 
 def handle_product(o, ops):
     if len(ops) != 2:
@@ -94,6 +101,7 @@ def handle_product(o, ops):
     # Build products for scalar components
     results = [ufl.classes.Product(ops[0][k0], ops[1][k1]) for k0, k1 in indks]
     return results
+
 
 def handle_index_sum(o, ops):
     summand, mi = o.ufl_operands
@@ -147,6 +155,7 @@ _reconstruct_call_lookup = {ufl.classes.MathFunction: handle_scalar_nary,
                             ufl.classes.Conj: handle_conj,
                             ufl.classes.Conditional: handle_conditional,
                             ufl.classes.Condition: handle_condition}
+
 
 def reconstruct(o, *args):
     # First look for exact match
