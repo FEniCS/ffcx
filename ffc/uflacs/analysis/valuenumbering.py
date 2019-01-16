@@ -26,7 +26,8 @@ class ValueNumberer(object):
         self.G = G
         self.V_symbols = []
         self.call_lookup = {ufl.classes.Expr: self.expr,
-                            ufl.classes.FormArgument: self.form_argument,
+                            ufl.classes.Argument: self.form_argument,
+                            ufl.classes.Coefficient: self.form_argument,
                             ufl.classes.Grad: self._modified_terminal,
                             ufl.classes.ReferenceGrad: self._modified_terminal,
                             ufl.classes.FacetAvg: self._modified_terminal,
