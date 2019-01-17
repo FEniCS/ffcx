@@ -724,7 +724,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
                 # This is for hexahedral element
                 ac = A.element.A.get_coeffs()
                 bc = A.element.B.get_coeffs()
-                ac = numpy.block([[w*ac for w in v] for v in bc])
+                ac = numpy.block([[w * ac for w in v] for v in bc])
                 ad = A.element.A.dmats()
                 bd = A.element.B.dmats()
                 ai = numpy.eye(ad[0].shape[0])
@@ -735,15 +735,15 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
 
                 dmats = []
                 for mat in ad:
-                    dmats += [numpy.block([[w*mat for w in v] for v in bi])]
-                dmats += [numpy.block([[w*ai for w in v] for v in bd[0]])]
+                    dmats += [numpy.block([[w * mat for w in v] for v in bi])]
+                dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
                 ad = dmats
             else:
                 ac = A.get_coeffs()
                 ad = A.dmats()
             bc = B.get_coeffs()
             bd = B.dmats()
-            coeffs = numpy.block([[w*ac for w in v] for v in bc])
+            coeffs = numpy.block([[w * ac for w in v] for v in bc])
             num_expansion_members = coeffs.shape[0]
             ai = numpy.eye(ad[0].shape[0])
             bi = numpy.eye(bd[0].shape[0])
@@ -753,8 +753,8 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
 
             dmats = []
             for mat in ad:
-                dmats += [numpy.block([[w*mat for w in v] for v in bi])]
-            dmats += [numpy.block([[w*ai for w in v] for v in bd[0]])]
+                dmats += [numpy.block([[w * mat for w in v] for v in bi])]
+            dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
 
         else:
             coeffs = e.get_coeffs()
