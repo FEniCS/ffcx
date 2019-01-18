@@ -26,7 +26,7 @@ import ffc.fiatinterface
 import FIAT.reference_element
 import ufl
 from ffc import classname
-from ffc.fiatinterface import (EnrichedElement, MixedElement,
+from ffc.fiatinterface import (EnrichedElement, MixedElement, FlattenedDimensions,
                                QuadratureElement, SpaceOfReals, create_element)
 from FIAT.hdiv_trace import HDivTrace
 
@@ -697,14 +697,6 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         if isinstance(e, HDivTrace):
             return "Function not supported for Trace elements"
 
-    # Skip this function for TensorProductElement if get_coeffs is not
-    # implemented
-    for e in elements:
-        try:
-            e.get_coeffs()
-        except NotImplementedError:
-            return "Function is not supported/implemented."
-
     # Initialise data with 'global' values.
     data = {
         "reference_value_size": ufl_element.reference_value_size(),
@@ -722,9 +714,52 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     dofs_data = []
     for e in elements:
         num_components = ufl.utils.sequences.product(e.value_shape())
-        coeffs = e.get_coeffs()
-        num_expansion_members = e.get_num_members(e.degree())
-        dmats = e.dmats()
+
+        if isinstance(e, FlattenedDimensions):
+            # Tensor product element
+            A = e.element.A
+            B = e.element.B
+            # Attach suitable coefficients to element
+            if isinstance(A, FlattenedDimensions):
+                # This is for hexahedral element
+                ac = A.element.A.get_coeffs()
+                bc = A.element.B.get_coeffs()
+                ac = numpy.block([[w * ac for w in v] for v in bc])
+                ad = A.element.A.dmats()
+                bd = A.element.B.dmats()
+                ai = numpy.eye(ad[0].shape[0])
+                bi = numpy.eye(bd[0].shape[0])
+
+                if len(bd) != 1:
+                    raise NotImplementedError("Cannot create dmats")
+
+                dmats = []
+                for mat in ad:
+                    dmats += [numpy.block([[w * mat for w in v] for v in bi])]
+                dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
+                ad = dmats
+            else:
+                ac = A.get_coeffs()
+                ad = A.dmats()
+            bc = B.get_coeffs()
+            bd = B.dmats()
+            coeffs = numpy.block([[w * ac for w in v] for v in bc])
+            num_expansion_members = coeffs.shape[0]
+            ai = numpy.eye(ad[0].shape[0])
+            bi = numpy.eye(bd[0].shape[0])
+
+            if len(bd) != 1:
+                raise NotImplementedError("Cannot create dmats")
+
+            dmats = []
+            for mat in ad:
+                dmats += [numpy.block([[w * mat for w in v] for v in bi])]
+            dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
+
+        else:
+            coeffs = e.get_coeffs()
+            dmats = e.dmats()
+            num_expansion_members = e.get_num_members(e.degree())
 
         # Clamp dmats zeros
         dmats = numpy.asarray(dmats)

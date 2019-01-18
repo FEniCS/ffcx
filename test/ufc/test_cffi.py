@@ -32,6 +32,15 @@ def lagrange_element():
     return elements, compiled_elements, module
 
 
+@pytest.fixture(scope="module")
+def quadrilateral_element():
+    """Compile list of Lagrange elements"""
+    cell = ufl.quadrilateral
+    elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
+    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
+    return elements, compiled_elements, module
+
+
 def test_dim_degree(lagrange_element):
     ufl_elements, compiled_elements, module = lagrange_element
     for e, compiled_e in zip(ufl_elements, compiled_elements):
@@ -50,6 +59,37 @@ def test_tabulate_reference_dof_coordinates(lagrange_element):
         X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
         compiled_e.tabulate_reference_dof_coordinates(X_ptr)
         # print(X)
+
+
+def test_evaluate_reference_basis(lagrange_element):
+    ufl_elements, compiled_elements, module = lagrange_element
+    for e, compiled_e in zip(ufl_elements, compiled_elements):
+        space_dim = compiled_e.space_dimension
+        X = np.array([[0.0, 0.0], [0.5, 0.5], [0.25, 0.25],
+                      [1 / 3, 1 / 3], [1.0, 0.0], [0.0, 1.0]])
+        npoint = X.shape[0]
+        X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
+        vals = np.zeros([npoint, space_dim])
+        vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+        compiled_e.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
+        assert np.isclose(np.sum(vals), npoint)
+        np.set_printoptions(suppress=True)
+        print('X=', X, 'vals = ', vals, np.sum(vals))
+
+
+def test_evaluate_reference_basis_quad(quadrilateral_element):
+    ufl_elements, compiled_elements, module = quadrilateral_element
+    for e, compiled_e in zip(ufl_elements, compiled_elements):
+        space_dim = compiled_e.space_dimension
+        X = np.array([[0.0, 0.0], [0.5, 0.5], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
+        npoint = X.shape[0]
+        X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
+        vals = np.zeros([npoint, space_dim])
+        vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+        compiled_e.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
+        assert np.isclose(np.sum(vals), npoint)
+        np.set_printoptions(suppress=True)
+        print('X=', X, 'vals = ', vals, np.sum(vals))
 
 
 @pytest.mark.parametrize("mode,expected_result", [
