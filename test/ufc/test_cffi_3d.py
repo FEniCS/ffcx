@@ -60,7 +60,8 @@ def test_tabulate_reference_dof_coordinates(lagrange_element):
         compiled_e.tabulate_reference_dof_coordinates(X_ptr)
         # print(X)
 
-def test_evaluate_reference_basis_quad(hexahedral_element):
+
+def test_evaluate_reference_basis_hex(hexahedral_element):
     ufl_elements, compiled_elements, module = hexahedral_element
     for e, compiled_e in zip(ufl_elements, compiled_elements):
         space_dim = compiled_e.space_dimension
