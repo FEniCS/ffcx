@@ -257,7 +257,6 @@ def compile_forms(forms, module_name=None, parameters=None):
     # FIXME: support list of forms. Problem is that FFC does not use a
     # hash for form signature, unlike for other objects
 
-    code_body = ""
     if parameters and "complex" in parameters["scalar_type"]:
         complex_mode = "_Complex"
     else:
@@ -265,16 +264,14 @@ def compile_forms(forms, module_name=None, parameters=None):
     decl = UFC_HEADER_DECL.format(complex_mode) + UFC_ELEMENT_DECL \
         + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
-    form_template = "ufc_form * create_{name}(void);"
 
-    _, impl = ffc.compiler.compile_form(forms, parameters=parameters)
-    code_body += impl
+    form_names = [ffc.classname.make_name("Form", "form", i)
+                  for i in range(len(forms))]
+    form_template = "ufc_form * create_{name}(void);\n"
+    for name in form_names:
+        decl += form_template.format(name=name)
 
-    # FIXME: FFC should has the form name
-    for i in range(len(forms)):
-        name = ffc.classname.make_name("Form", "form", i)
-        create_form = form_template.format(name=name)
-        decl += create_form + "\n"
+    _, code_body = ffc.compiler.compile_form(forms, parameters=parameters)
 
     if not module_name:
         h = hashlib.sha1()
@@ -282,8 +279,8 @@ def compile_forms(forms, module_name=None, parameters=None):
         module_name = "_" + h.hexdigest()
 
     ffibuilder = cffi.FFI()
-    ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
+    ffibuilder.set_source(module_name, code_body,
+                          include_dirs=[ffc.codegeneration.get_include_path()])
     ffibuilder.cdef(decl)
 
     compile_dir = "compile_cache"
@@ -292,8 +289,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     # Build list of compiled elements
     compiled_forms = []
     compiled_module = importlib.import_module(compile_dir + "." + module_name)
-    for i in range(len(forms)):
-        name = ffc.classname.make_name("Form", "form", i)
+    for name in form_names:
         create_form = "create_" + name
         compiled_forms.append(getattr(compiled_module.lib, create_form)())
 
