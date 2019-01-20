@@ -153,6 +153,7 @@ def test_mass_bilinear_form_2d(mode, expected_result):
         assert compiled_f.rank == len(f.arguments())
 
     form0 = compiled_forms[0][0].create_default_cell_integral()
+    form1 = compiled_forms[1][0].create_default_cell_integral()
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -164,7 +165,14 @@ def test_mass_bilinear_form_2d(mode, expected_result):
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), 0)
 
+    b = np.zeros(3, dtype=np_type)
+    form1.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), b.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), 0)
+
     assert np.allclose(A, expected_result)
+    assert np.allclose(b, 1.0 / 6.0)
 
 
 @pytest.mark.parametrize("mode,expected_result", [
