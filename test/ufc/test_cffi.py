@@ -144,7 +144,8 @@ def test_mass_bilinear_form_2d(mode, expected_result):
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.dx
-    forms = [a]
+    L =  ufl.conj(v)  * ufl.dx
+    forms = [a, L]
     compiled_forms, module = ffc.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode})
 

@@ -266,12 +266,13 @@ def compile_forms(forms, module_name=None, parameters=None):
         + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
     form_template = "ufc_form * create_{name}(void);"
-    for f in forms:
-        _, impl = ffc.compiler.compile_form(f, parameters=parameters)
-        code_body += impl
 
-        # FIXME: FFC should has the form name
-        name = ffc.classname.make_name("Form", "form", 0)
+    _, impl = ffc.compiler.compile_form(forms, parameters=parameters)
+    code_body += impl
+
+    # FIXME: FFC should has the form name
+    for i in range(len(forms)):
+        name = ffc.classname.make_name("Form", "form", i)
         create_form = form_template.format(name=name)
         decl += create_form + "\n"
 
@@ -291,8 +292,8 @@ def compile_forms(forms, module_name=None, parameters=None):
     # Build list of compiled elements
     compiled_forms = []
     compiled_module = importlib.import_module(compile_dir + "." + module_name)
-    for f in forms:
-        name = ffc.classname.make_name("Form", "form", 0)
+    for i in range(len(forms)):
+        name = ffc.classname.make_name("Form", "form", i)
         create_form = "create_" + name
         compiled_forms.append(getattr(compiled_module.lib, create_form)())
 
