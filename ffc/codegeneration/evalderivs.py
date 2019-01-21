@@ -335,7 +335,7 @@ def generate_tabulate_dmats(L, dofs_data):
             matrix[i, ...] = numpy.transpose(dmat)
 
         # TODO: Use precision from parameters here
-        from ffc.uflacs.elementtables import clamp_table_small_numbers
+        from ffc.ir.uflacs.elementtables import clamp_table_small_numbers
         matrix = clamp_table_small_numbers(matrix)
 
         # O(n^2) matrix matching...

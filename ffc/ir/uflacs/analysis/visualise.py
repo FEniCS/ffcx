@@ -6,7 +6,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utility to draw graphs."""
 
-from ffc.uflacs.analysis.modified_terminals import strip_modified_terminal
+from ffc.ir.uflacs.analysis.modified_terminals import strip_modified_terminal
 from ufl.classes import Sum, Product, Division, IntValue, FloatValue, Indexed, ReferenceValue, Argument
 
 

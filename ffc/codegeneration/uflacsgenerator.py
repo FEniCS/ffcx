@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def generate_integral_code(ir, prefix, parameters):
     """Generate code for integral from intermediate representation."""
 
-    logger.info("Generating code from ffc.uflacs representation")
+    logger.info("Generating code from ffc.ir.uflacs representation")
 
     # FIXME: Is this the right precision value to use? Make it default to None or 0.
     precision = ir["integrals_metadata"]["precision"]
