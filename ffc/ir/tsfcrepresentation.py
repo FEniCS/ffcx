@@ -6,7 +6,7 @@
 
 import logging
 
-from ffc.representationutils import initialize_integral_ir
+from ffc.ir.representationutils import initialize_integral_ir
 
 logger = logging.getLogger(__name__)
 

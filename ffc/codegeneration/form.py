@@ -11,7 +11,7 @@
 from ffc.codegeneration import form_template as ufc_form
 from ffc.codegeneration.utils import (generate_return_new,
                                       generate_return_new_switch)
-from ffc.representation.representation import ufc_integral_types
+from ffc.ir.representation import ufc_integral_types
 
 # These are the method names in ufc_form that are specialized for each
 # integral type
