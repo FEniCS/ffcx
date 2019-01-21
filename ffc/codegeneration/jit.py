@@ -220,19 +220,22 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     decl = UFC_HEADER_DECL.format("") + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
     element_template = "ufc_finite_element * create_{name}(void);\n"
-#    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
+    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
     names = []
     for e in elements:
         name = ffc.representation.make_finite_element_jit_classname(e, p)
         names.append(name)
         decl += element_template.format(name=name)
-#        name = ffc.representation.make_dofmap_jit_classname(e, p)
-#        names.append(name)
-#        decl += dofmap_template.format(name=name)
+        name = ffc.representation.make_dofmap_jit_classname(e, p)
+        names.append(name)
+        decl += dofmap_template.format(name=name)
 
     _, code_body = ffc.compiler.compile_element(elements, parameters=p)
 
-    return _compile_objects(decl, code_body, names, module_name, p)
+    objects, module = _compile_objects(decl, code_body, names, module_name, p)
+    # Pair up elements with dofmaps
+    objects = zip(objects[::2], objects[1::2])
+    return objects, module
 
 
 def compile_forms(forms, module_name=None, parameters=None):
@@ -295,7 +298,6 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(cache_dir + "." + module_name)
-    print(object_names)
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module
