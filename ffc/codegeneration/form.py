@@ -93,7 +93,7 @@ class UFCForm:
     def create_coordinate_finite_element(self, L, ir):
         classnames = ir["create_coordinate_finite_element"]
         assert len(classnames) == 1
-        return generate_return_new(L, classnames[0], factory=True)
+        return generate_return_new(L, classnames[0])
 
     def coordinate_finite_element_declaration(self, L, ir):
         classname = ir["create_coordinate_finite_element"]
@@ -103,7 +103,7 @@ class UFCForm:
     def create_coordinate_dofmap(self, L, ir):
         classnames = ir["create_coordinate_dofmap"]
         assert len(classnames) == 1
-        return generate_return_new(L, classnames[0], factory=True)
+        return generate_return_new(L, classnames[0])
 
     def coordinate_dofmap_declaration(self, L, ir):
         classname = ir["create_coordinate_dofmap"]
@@ -114,7 +114,7 @@ class UFCForm:
         classnames = ir["create_coordinate_mapping"]
         # list of length 1 until we support multiple domains
         assert len(classnames) == 1
-        return generate_return_new(L, classnames[0], factory=True)
+        return generate_return_new(L, classnames[0])
 
     def coordinate_mapping_declaration(self, L, ir):
         classname = ir["create_coordinate_mapping"]
@@ -124,7 +124,7 @@ class UFCForm:
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_finite_element"]
-        return generate_return_new_switch(L, i, classnames, factory=True)
+        return generate_return_new_switch(L, i, classnames)
 
     def finite_element_declaration(self, L, ir):
         classnames = set(ir["create_finite_element"])
@@ -136,7 +136,7 @@ class UFCForm:
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")
         classnames = ir["create_dofmap"]
-        return generate_return_new_switch(L, i, classnames, factory=True)
+        return generate_return_new_switch(L, i, classnames)
 
     def dofmap_declaration(self, L, ir):
         classnames = set(ir["create_dofmap"])
@@ -165,7 +165,7 @@ class UFCForm:
         # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
         subdomain_ids, classnames = ir[declname]
         subdomain_id = L.Symbol("subdomain_id")
-        return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids, factory=True)
+        return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
 
     def _create_default_foo_integral(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
@@ -174,7 +174,7 @@ class UFCForm:
         if classname is None:
             return L.Return(L.Null())
         else:
-            return generate_return_new(L, classname, factory=True)
+            return generate_return_new(L, classname)
 
 
 def ufc_form_generator(ir, parameters):

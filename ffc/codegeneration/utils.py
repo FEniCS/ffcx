@@ -8,26 +8,17 @@
 # TODO: Move these to ffc.language utils?
 
 
-def generate_return_new(L, classname, factory):
-    if factory:
-        return L.Return(L.Call("create_" + classname))
-    else:
-        return L.Return(L.New(classname))
+def generate_return_new(L, classname):
+    return L.Return(L.Call("create_" + classname))
 
 
-def generate_return_new_switch(L, i, classnames, args=None, factory=False):
+def generate_return_new_switch(L, i, classnames, args=None):
 
     if isinstance(i, str):
         i = L.Symbol(i)
 
-    if factory:
-
-        def create(classname):
-            return L.Call("create_" + classname)
-    else:
-
-        def create(classname):
-            return L.New(classname)
+    def create(classname):
+        return L.Call("create_" + classname)
 
     default = L.Return(L.Null())
     if classnames:

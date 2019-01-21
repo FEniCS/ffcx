@@ -16,7 +16,7 @@ from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
 logger = logging.getLogger(__name__)
 
 
-class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
+class ValueNumberer(object):
     """An algorithm to map the scalar components of an expression node to unique value numbers,
     with fallthrough for types that can be mapped to the value numbers
     of their operands."""
@@ -25,7 +25,19 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
         self.symbol_count = 0
         self.G = G
         self.V_symbols = []
-        super().__init__()
+        self.call_lookup = {ufl.classes.Expr: self.expr,
+                            ufl.classes.Argument: self.form_argument,
+                            ufl.classes.Coefficient: self.form_argument,
+                            ufl.classes.Grad: self._modified_terminal,
+                            ufl.classes.ReferenceGrad: self._modified_terminal,
+                            ufl.classes.FacetAvg: self._modified_terminal,
+                            ufl.classes.CellAvg: self._modified_terminal,
+                            ufl.classes.Restricted: self._modified_terminal,
+                            ufl.classes.ReferenceValue: self._modified_terminal,
+                            ufl.classes.Indexed: self.indexed,
+                            ufl.classes.ComponentTensor: self.component_tensor,
+                            ufl.classes.ListTensor: self.list_tensor,
+                            ufl.classes.Variable: self.variable}
 
     def new_symbols(self, n):
         """Generator for new symbols with a running counter."""
@@ -41,12 +53,30 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
         return begin
 
     def get_node_symbols(self, expr):
-        idx = [i for i, v in enumerate(self.G.V) if v == expr][0]
+        idx = [i for i, v in self.G.nodes.items() if v['expression'] == expr][0]
         return self.V_symbols[idx]
 
     def compute_symbols(self):
-        for i, v in enumerate(self.G.V):
-            self.V_symbols.append(self.__call__(v))
+        for i, v in self.G.nodes.items():
+            expr = v['expression']
+            symbol = None
+            # First look for exact type match
+            f = self.call_lookup.get(type(expr), False)
+            if f:
+                symbol = f(expr)
+            else:
+                # Look for parent class types instead
+                for k in self.call_lookup.keys():
+                    if isinstance(expr, k):
+                        symbol = self.call_lookup[k](expr)
+                        break
+
+            if symbol is None:
+                # Nothing found
+                raise RuntimeError("Not expecting type %s here." % type(expr))
+
+            self.V_symbols.append(symbol)
+
         return self.V_symbols
 
     def expr(self, v):
@@ -77,6 +107,9 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
             symbols = self.new_symbols(n)
 
         return symbols
+
+    # Handle modified terminals with element symmetries and second derivative symmetries!
+    # terminals are implemented separately, or maybe they don't need to be?
 
     def _modified_terminal(self, v):
         """Modifiers:
@@ -145,17 +178,7 @@ class ValueNumberer(ufl.corealg.multifunction.MultiFunction):
             raise RuntimeError("Internal error in value numbering.")
         return symbols
 
-    # Handle modified terminals with element symmetries and second derivative symmetries!
-    # terminals are implemented separately, or maybe they don't need to be?
-    grad = _modified_terminal
-    reference_grad = _modified_terminal
-    facet_avg = _modified_terminal
-    cell_avg = _modified_terminal
-    restricted = _modified_terminal
-    reference_value = _modified_terminal
-
     # indexed is implemented as a fall-through operation
-
     def indexed(self, Aii):
         # Reuse symbols of arg A for Aii
         A = Aii.ufl_operands[0]

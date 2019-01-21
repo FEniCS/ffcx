@@ -224,6 +224,7 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
     w2 = L.Symbol("w2")
     w3 = L.Symbol("w3")
     y = L.Symbol("y")
+
     coordinate_dofs = L.Symbol("coordinate_dofs")
 
     if tdim == 1:
@@ -231,7 +232,8 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
             L.Comment("Evaluate basis functions for affine mapping"),
             L.VariableDecl("const double", w0, 1 - X_i[r][0]),
             L.VariableDecl("const double", w1, X_i[r][0]),
-            L.Comment("Compute affine mapping y = F(X)")
+            L.Comment("Compute affine mapping y = F(X)"),
+            L.ArrayDecl("double", y, [gdim])
         ]
         for j in range(gdim):
             lines_r += [L.Assign(y[j], w0 * coordinate_dofs[j] + w1 * coordinate_dofs[j + gdim])]
@@ -241,7 +243,8 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
             L.VariableDecl("const double", w0, 1 - X_i[r][0] - X_i[r][1]),
             L.VariableDecl("const double", w1, X_i[r][0]),
             L.VariableDecl("const double", w2, X_i[r][1]),
-            L.Comment("Compute affine mapping y = F(X)")
+            L.Comment("Compute affine mapping y = F(X)"),
+            L.ArrayDecl("double", y, [gdim])
         ]
         for j in range(gdim):
             lines_r += [
@@ -256,7 +259,8 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
             L.VariableDecl("const double", w1, X_i[r][0]),
             L.VariableDecl("const double", w2, X_i[r][1]),
             L.VariableDecl("const double", w3, X_i[r][2]),
-            L.Comment("Compute affine mapping y = F(X)")
+            L.Comment("Compute affine mapping y = F(X)"),
+            L.ArrayDecl("double", y, [gdim])
         ]
         for j in range(gdim):
             lines_r += [
@@ -268,10 +272,9 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
 
     # Evaluate function at physical point
     lines_r += [L.Comment("Evaluate function at physical point")]
-    y = L.Symbol("y")
-    vals = L.Symbol("physical_values")
-    c = L.Symbol("c")
-    lines_r += [L.Call("f.evaluate", (vals, y, c))]
+    # vals = L.Symbol("physical_values")
+    # c = L.Symbol("c")
+    lines_r += [L.Comment("Replace this: f.evaluate(vals, y, c)")]
 
     # Map function values to the reference element
     lines_r += [L.Comment("Map function to reference element")]
@@ -344,4 +347,5 @@ def generate_transform_values(L, ir):
         code += c
         code += [L.Assign(values[i], r)]
 
+    code += [L.Return(0)]
     return code
