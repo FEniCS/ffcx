@@ -107,6 +107,7 @@ def test_cmap():
     assert(np.isclose(X[0, 0], 0.25))
     assert(np.isclose(X[0, 1], 0.125))
 
+
 @pytest.mark.parametrize("mode,expected_result", [
     ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
     ("double complex",
