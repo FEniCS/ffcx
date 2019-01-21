@@ -226,9 +226,9 @@ def compile_elements(elements, module_name=None, parameters=None):
         name = ffc.representation.make_finite_element_jit_classname(e, p)
         names.append(name)
         decl += element_template.format(name=name)
-        name = ffc.representation.make_dofmap_jit_classname(e, p)
-        names.append(name)
-        decl += dofmap_template.format(name=name)
+#        name = ffc.representation.make_dofmap_jit_classname(e, p)
+#        names.append(name)
+#        decl += dofmap_template.format(name=name)
 
     _, code_body = ffc.compiler.compile_element(elements, parameters=p)
 
