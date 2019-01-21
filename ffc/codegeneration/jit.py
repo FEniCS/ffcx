@@ -220,7 +220,7 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     decl = UFC_HEADER_DECL.format("") + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
     element_template = "ufc_finite_element * create_{name}(void);\n"
-    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
+#    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
     names = []
     for e in elements:
         name = ffc.representation.make_finite_element_jit_classname(e, p)
