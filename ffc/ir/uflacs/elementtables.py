@@ -15,8 +15,8 @@ import ufl
 import ufl.utils.derivativetuples
 from ffc.fiatinterface import create_element
 from ffc.ir.representationutils import (create_quadrature_points_and_weights,
-                                                    integral_type_to_entity_dim,
-                                                    map_integral_points)
+                                        integral_type_to_entity_dim,
+                                        map_integral_points)
 
 logger = logging.getLogger(__name__)
 
