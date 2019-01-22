@@ -217,16 +217,15 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
-
     decl = UFC_HEADER_DECL.format("") + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
     element_template = "ufc_finite_element * create_{name}(void);\n"
     dofmap_template = "ufc_dofmap * create_{name}(void);\n"
     names = []
     for e in elements:
-        name = ffc.representation.make_finite_element_jit_classname(e, p)
+        name = ffc.ir.representation.make_finite_element_jit_classname(e, p)
         names.append(name)
         decl += element_template.format(name=name)
-        name = ffc.representation.make_dofmap_jit_classname(e, p)
+        name = ffc.ir.representation.make_dofmap_jit_classname(e, p)
         names.append(name)
         decl += dofmap_template.format(name=name)
 
@@ -267,7 +266,7 @@ def compile_coordinate_maps(cmaps, module_name=None, parameters=None):
 
     decl = UFC_HEADER_DECL.format("") + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
-    cmap_names = [ffc.representation.make_coordinate_mapping_jit_classname(cmap, p) for cmap in cmaps]
+    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, p) for cmap in cmaps]
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 

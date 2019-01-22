@@ -10,7 +10,7 @@ import coffee.base as coffee
 import tsfc.kernel_interface.ufc as ufc_interface
 from coffee.plan import ASTKernel
 from coffee.visitors import Find
-from ffc.representationutils import initialize_integral_code
+from ffc.ir.representationutils import initialize_integral_code
 from tsfc.driver import compile_integral
 
 logger = logging.getLogger(__name__)

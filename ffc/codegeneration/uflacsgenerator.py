@@ -10,8 +10,8 @@ source structure from factorized representation."""
 import logging
 
 from ffc.codegeneration.backend import FFCBackend
-from ffc.representationutils import initialize_integral_code
-from ffc.uflacs.integralgenerator import IntegralGenerator
+from ffc.ir.representationutils import initialize_integral_code
+from ffc.ir.uflacs.integralgenerator import IntegralGenerator
 from ffc.codegeneration.C.format_lines import format_indented_lines
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def generate_integral_code(ir, prefix, parameters):
     """Generate code for integral from intermediate representation."""
 
-    logger.info("Generating code from ffc.uflacs representation")
+    logger.info("Generating code from ffc.ir.uflacs representation")
 
     # FIXME: Is this the right precision value to use? Make it default to None or 0.
     precision = ir["integrals_metadata"]["precision"]
