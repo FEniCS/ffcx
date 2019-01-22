@@ -9,9 +9,9 @@
 import logging
 
 import ufl
-from ffc.uflacs.analysis.indexing import (map_component_tensor_arg_components,
-                                          map_indexed_arg_components)
-from ffc.uflacs.analysis.modified_terminals import analyse_modified_terminal
+from ffc.ir.uflacs.analysis.indexing import (map_component_tensor_arg_components,
+                                             map_indexed_arg_components)
+from ffc.ir.uflacs.analysis.modified_terminals import analyse_modified_terminal
 
 logger = logging.getLogger(__name__)
 

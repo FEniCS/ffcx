@@ -14,14 +14,14 @@ import numpy
 
 import ufl
 from ufl.algorithms.balancing import balance_modifiers
-from ffc.uflacs.analysis.factorization import compute_argument_factorization
-from ffc.uflacs.analysis.graph import build_scalar_graph
-from ffc.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
-                                                    is_modified_terminal)
-from ffc.uflacs.analysis.visualise import visualise
-from ffc.uflacs.elementtables import (build_optimized_tables,
-                                      clamp_table_small_numbers,
-                                      piecewise_ttypes)
+from ffc.ir.uflacs.analysis.factorization import compute_argument_factorization
+from ffc.ir.uflacs.analysis.graph import build_scalar_graph
+from ffc.ir.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
+                                                       is_modified_terminal)
+from ffc.ir.uflacs.analysis.visualise import visualise
+from ffc.ir.uflacs.elementtables import (build_optimized_tables,
+                                         clamp_table_small_numbers,
+                                         piecewise_ttypes)
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
 from ufl.measure import (custom_integral_types, facet_integral_types,

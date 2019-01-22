@@ -8,7 +8,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.representation import pick_representation
 from ffc.codegeneration import integrals_template as ufc_integrals
 
 
@@ -21,12 +20,16 @@ def ufc_integral_generator(ir, parameters):
     declaration = ufc_integrals.declaration.format(
         type=integral_type, factory_name=factory_name)
 
-    # Select representation
-    r = pick_representation(ir["representation"])
+    if ir["representation"] == "uflacs":
+        from ffc.codegeneration.uflacsgenerator import generate_integral_code
+    elif ir["representation"] == "tsfc":
+        from ffc.codegeneration.tsfcgenerator import generate_integral_code
+    else:
+        raise RuntimeError("Unknown representation: {}".format(ir["representation"]))
 
     # Generate code
     # TODO: Drop prefix argument and get from ir:
-    code = r.generate_integral_code(ir, ir["prefix"], parameters)
+    code = generate_integral_code(ir, ir["prefix"], parameters)
 
     # Hack for benchmarking overhead in assembler with empty
     # tabulate_tensor

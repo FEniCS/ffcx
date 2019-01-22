@@ -36,20 +36,6 @@ logger = logging.getLogger(__name__)
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
 
-def pick_representation(representation):
-    """Return one of the specialized code generation modules from a
-    representation string.
-
-    """
-    if representation == "uflacs":
-        from ffc import uflacs as r
-    elif representation == "tsfc":
-        from ffc import tsfc as r
-    else:
-        raise RuntimeError("Unknown representation: {}".format(representation))
-    return r
-
-
 def make_finite_element_jit_classname(ufl_element, parameters):
     from ffc import jitcompiler  # FIXME circular file dependency
     kind, prefix = jitcompiler.compute_prefix(ufl_element, parameters)
@@ -458,10 +444,16 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
         # Select representation
         # TODO: Is it possible to detach this metadata from
         # IntegralData? It's a bit strange from the ufl side.
-        r = pick_representation(itg_data.metadata["representation"])
+        repre = itg_data.metadata["representation"]
+        if repre == "uflacs":
+            from ffc.ir.uflacs.uflacsrepresentation import compute_integral_ir
+        elif repre == "tsfc":
+            from ffc.ir.tsfcrepresentation import compute_integral_ir
+        else:
+            raise RuntimeError("Unknown representation: {}".format(repre))
 
         # Compute representation
-        ir = r.compute_integral_ir(
+        ir = compute_integral_ir(
             itg_data,
             form_data,
             form_index,  # FIXME: Can we remove this?

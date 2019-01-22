@@ -322,7 +322,7 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
 
     # TODO: Use epsilon parameter here?
     # TODO: Move to a more 'neutral' utility file
-    from ffc.uflacs.elementtables import clamp_table_small_numbers
+    from ffc.ir.uflacs.elementtables import clamp_table_small_numbers
     x_table = clamp_table_small_numbers(x_table)
     J_table = clamp_table_small_numbers(J_table)
 
@@ -774,7 +774,7 @@ def compute_midpoint_geometry(L, ir):
 
     # TODO: Use epsilon parameter here?
     # TODO: Move to a more 'neutral' utility file
-    from ffc.uflacs.elementtables import clamp_table_small_numbers
+    from ffc.ir.uflacs.elementtables import clamp_table_small_numbers
     xm_table = clamp_table_small_numbers(xm_table)
     Jm_table = clamp_table_small_numbers(Jm_table)
 
