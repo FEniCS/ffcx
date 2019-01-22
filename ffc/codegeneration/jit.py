@@ -77,6 +77,7 @@ int num_global_support_dofs;
 int num_element_support_dofs;
 int num_entity_dofs[4];
 int num_entity_closure_dofs[4];
+void (*tabulate_dof_permutations)(int* restrict perm, const int64_t* restrict global_indices);
 void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
 void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
 int num_sub_dofmaps;
@@ -213,51 +214,34 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
-def compile_elements(elements, module_name=None):
-    """Compile a list of UFL elements into UFC Python objects"""
-    code_body = ""
-    decl = UFC_HEADER_DECL.format("") + UFC_ELEMENT_DECL
-    element_template = "ufc_finite_element * create_{name}(void);"
+def compile_elements(elements, module_name=None, parameters=None):
+    """Compile a list of UFL elements and dofmaps into UFC Python objects"""
+    p = ffc.parameters.validate_parameters(parameters)
+    decl = UFC_HEADER_DECL.format("") + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
+    element_template = "ufc_finite_element * create_{name}(void);\n"
+    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
+    names = []
     for e in elements:
-        _, impl = ffc.compiler.compile_element(e)
-        code_body += impl
-        p = ffc.parameters.validate_parameters(None)
         name = ffc.ir.representation.make_finite_element_jit_classname(e, p)
-        create_element = element_template.format(name=name)
-        decl += create_element + "\n"
+        names.append(name)
+        decl += element_template.format(name=name)
+        name = ffc.ir.representation.make_dofmap_jit_classname(e, p)
+        names.append(name)
+        decl += dofmap_template.format(name=name)
 
-    if not module_name:
-        h = hashlib.sha1()
-        h.update((code_body + decl).encode('utf-8'))
-        module_name = "_" + h.hexdigest()
+    _, code_body = ffc.compiler.compile_element(elements, parameters=p)
 
-    ffibuilder = cffi.FFI()
-    ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
-    ffibuilder.cdef(decl)
-
-    compile_dir = "compile_cache"
-    ffibuilder.compile(tmpdir=compile_dir, verbose=False)
-
-    # Build list of compiled elements
-    compiled_elements = []
-    compiled_module = importlib.import_module(compile_dir + "." + module_name)
-    for e in elements:
-        p = ffc.parameters.validate_parameters(None)
-        name = ffc.ir.representation.make_finite_element_jit_classname(e, p)
-        create_element = "create_" + name
-        compiled_elements.append(getattr(compiled_module.lib, create_element)())
-
-    return compiled_elements, compiled_module
+    objects, module = _compile_objects(decl, code_body, names, module_name, p)
+    # Pair up elements with dofmaps
+    objects = zip(objects[::2], objects[1::2])
+    return objects, module
 
 
 def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
+    p = ffc.parameters.validate_parameters(parameters)
 
-    # FIXME: support list of forms. Problem is that FFC does not use a
-    # hash for form signature, unlike for other objects
-
-    if parameters and "complex" in parameters["scalar_type"]:
+    if p and "complex" in p["scalar_type"]:
         complex_mode = "_Complex"
     else:
         complex_mode = ""
@@ -271,7 +255,27 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_form(forms, parameters=parameters)
+    _, code_body = ffc.compiler.compile_form(forms, parameters=p)
+
+    return _compile_objects(decl, code_body, form_names, module_name, p)
+
+
+def compile_coordinate_maps(cmaps, module_name=None, parameters=None):
+    """Compile a list of UFL coordinate mappings into UFC Python objects"""
+    p = ffc.parameters.validate_parameters(parameters)
+
+    decl = UFC_HEADER_DECL.format("") + UFC_COORDINATEMAPPING_DECL
+    cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
+    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, p) for cmap in cmaps]
+    for name in cmap_names:
+        decl += cmap_template.format(name=name)
+
+    _, code_body = ffc.compiler.compile_coordinate_mapping(cmaps, parameters=p)
+
+    return _compile_objects(decl, code_body, cmap_names, module_name, p)
+
+
+def _compile_objects(decl, code_body, object_names, module_name, parameters):
 
     if not module_name:
         h = hashlib.sha1()
@@ -279,18 +283,20 @@ def compile_forms(forms, module_name=None, parameters=None):
         module_name = "_" + h.hexdigest()
 
     ffibuilder = cffi.FFI()
-    ffibuilder.set_source(module_name, code_body,
-                          include_dirs=[ffc.codegeneration.get_include_path()])
+    ffibuilder.set_source(
+        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
     ffibuilder.cdef(decl)
 
-    compile_dir = "compile_cache"
-    ffibuilder.compile(tmpdir=compile_dir, verbose=False)
+    cache_dir = None
+    if parameters:
+        cache_dir = parameters.get("cache_dir")
+    if not cache_dir:
+        cache_dir = "compile_cache"
 
-    # Build list of compiled elements
-    compiled_forms = []
-    compiled_module = importlib.import_module(compile_dir + "." + module_name)
-    for name in form_names:
-        create_form = "create_" + name
-        compiled_forms.append(getattr(compiled_module.lib, create_form)())
+    ffibuilder.compile(tmpdir=cache_dir, verbose=False)
 
-    return compiled_forms, compiled_module
+    # Build list of compiled objects
+    compiled_module = importlib.import_module(cache_dir + "." + module_name)
+    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+
+    return compiled_objects, compiled_module
