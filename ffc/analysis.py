@@ -42,6 +42,7 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
     element_numbers : dict
         Mapping to unique numbers for all elements
     unique_coordinate_elements
+
     """
     logger.info("Compiler stage 1: Analyzing %s(s)" % (kind, ))
 
@@ -109,6 +110,7 @@ def _analyze_form(form, parameters):
     The main workload of this function is extraction of unique/default metadata
     from parameters, integral metadata or inherited fro UFL
     (in case of quadrature degree)
+
     """
 
     # Check that form is not empty
@@ -305,6 +307,7 @@ def _has_custom_integrals(o):
     ----
     Presence of custom integral in integrals/forms is determining the
     representation to be used.
+
     """
     if isinstance(o, ufl.integral.Integral):
         return o.integral_type() in ufl.custom_integral_types
