@@ -222,10 +222,10 @@ def compile_elements(elements, module_name=None, parameters=None):
     dofmap_template = "ufc_dofmap * create_{name}(void);\n"
     names = []
     for e in elements:
-        name = ffc.ir.representation.make_finite_element_jit_classname(e, None, p)
+        name = ffc.ir.representation.make_finite_element_jit_classname(e, "Element", p)
         names.append(name)
         decl += element_template.format(name=name)
-        name = ffc.ir.representation.make_dofmap_jit_classname(e, None, p)
+        name = ffc.ir.representation.make_dofmap_jit_classname(e, "Element", p)
         names.append(name)
         decl += dofmap_template.format(name=name)
 
@@ -266,7 +266,7 @@ def compile_coordinate_maps(cmaps, module_name=None, parameters=None):
 
     decl = UFC_HEADER_DECL.format("") + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
-    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, None, p) for cmap in cmaps]
+    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, "Mesh", p) for cmap in cmaps]
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
