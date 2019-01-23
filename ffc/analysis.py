@@ -91,10 +91,7 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
 
 def _compute_element_numbers(elements):
     """Build map from elements to element numbers."""
-    element_numbers = {}
-    for (i, element) in enumerate(elements):
-        element_numbers[element] = i
-    return element_numbers
+    return {element: i for i, element in enumerate(elements)}
 
 
 def _analyze_form(form, parameters):

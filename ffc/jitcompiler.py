@@ -117,7 +117,7 @@ def build(ufl_object, module_name, parameters):
     return module
 
 
-def compute_prefix(ufl_object, parameters, kind=None):
+def compute_prefix(ufl_object, tag, parameters, kind=None):
     """Compute the prefix (module name) for jit modules."""
 
     # Get signature from ufl object
@@ -154,16 +154,12 @@ def compute_prefix(ufl_object, parameters, kind=None):
         parameters_signature,
         str(FFC_VERSION),
         str(jit_version_bump),
+        str(tag),
         get_signature(),
         kind,
     ]
     string = ";".join(signatures)
     signature = hashlib.sha1(string.encode('utf-8')).hexdigest()
-
-    # Optionally shorten signature
-    max_signature_length = parameters["max_signature_length"]
-    if max_signature_length:
-        signature = signature[:max_signature_length]
 
     # Combine into prefix with some info including kind
     prefix = "ffc_{}_{}".format(kind, signature).lower()
