@@ -60,8 +60,8 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
         quadrature_integral_type = "cell"
     else:
         # Collect which quadrature rules occur in integrals
-        default_scheme = itg_data.metadata["quadrature_degree"]
-        default_degree = itg_data.metadata["quadrature_rule"]
+        default_scheme = itg_data.metadata["quadrature_rule"]
+        default_degree = itg_data.metadata["quadrature_degree"]
         rules = collect_quadrature_rules(itg_data.integrals, default_scheme, default_degree)
         quadrature_integral_type = integral_type
 
