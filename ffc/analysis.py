@@ -14,6 +14,7 @@ form representation type.
 
 import logging
 import os
+from typing import Dict, List, Tuple, Union
 import warnings
 
 import numpy
@@ -23,23 +24,25 @@ import ufl
 logger = logging.getLogger(__name__)
 
 
-def analyze_ufl_objects(ufl_objects, kind, parameters):
+def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteElement], List],
+                        kind: str,
+                        parameters: Dict) -> Tuple[Tuple[ufl.algorithms.formdata.FormData], List, Dict, List]:
     """Analyze ufl object(s)
 
     Parameters
     ----------
-    ufl_objects : list
-    kind : str
+    ufl_objects
+    kind
         One of `form`, `element` or `coordinate_mapping`
-    parameters : dict
+    parameters
 
     Returns
     -------
-    form_datas : tuple
+    form_datas
         Form_data objects
-    unique_elements : tuple
+    unique_elements
         Unique elements across all forms
-    element_numbers : dict
+    element_numbers
         Mapping to unique numbers for all elements
     unique_coordinate_elements
 
@@ -91,17 +94,17 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
     return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
 
-def _analyze_form(form, parameters):
+def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formdata.FormData:
     """Analyzes form and attaches metadata
 
     Parameters
     ----------
-    form : `ufl.Form`
-    parameters : dict
+    form
+    parameters
 
     Returns
     -------
-    form_data : `ufl.FormData`
+    form_data
         Form data computed by UFL with metadata attached
 
     Note
@@ -295,12 +298,8 @@ def _analyze_form(form, parameters):
     return form_data
 
 
-def _has_custom_integrals(o):
+def _has_custom_integrals(o) -> bool:
     """Check for custom integrals
-
-    Returns
-    -------
-    `True` if custom integral is present, else `False`
 
     Note
     ----
@@ -318,7 +317,7 @@ def _has_custom_integrals(o):
         raise NotImplementedError
 
 
-def _check_quadrature_degree(degree, top_dim):
+def _check_quadrature_degree(degree: int, top_dim: int) -> None:
     """Check that quadrature degree does not result in a unreasonable high
     number of integration points.
     """
