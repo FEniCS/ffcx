@@ -73,9 +73,8 @@ def analyze_ufl_objects(ufl_objects, kind, parameters):
     elif kind == "coordinate_mapping":
         meshes = ufl_objects
 
-        for mesh in meshes:
-            # Extract unique (sub)elements
-            unique_coordinate_elements.update(mesh.ufl_coordinate_element())
+        # Extract unique (sub)elements
+        unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
 
     # Make sure coordinate elements and their subelements are included
     unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(unique_coordinate_elements))
