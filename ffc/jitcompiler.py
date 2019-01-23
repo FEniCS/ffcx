@@ -179,7 +179,7 @@ def jit(ufl_object, parameters=None, indirect=False):
     parameters = validate_jit_parameters(parameters)
 
     # Make unique module name for generated code
-    kind, module_name = compute_prefix(ufl_object, parameters)
+    kind, module_name = compute_prefix(ufl_object, None, parameters)
 
     # Get module (inspect cache and generate+build if necessary)
     module = build(ufl_object, module_name, parameters)
