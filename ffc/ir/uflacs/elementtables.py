@@ -334,9 +334,7 @@ def build_element_tables(num_points,
     all_elements = [res[0] for res in analysis.values()]
     unique_elements = ufl.algorithms.sort_elements(
         ufl.algorithms.analysis.extract_sub_elements(all_elements))
-    element_numbers = {}
-    for (i, element) in enumerate(unique_elements):
-        element_numbers[element] = i
+    element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
     def add_table(res):
         element, avg, local_derivatives, flat_component = res

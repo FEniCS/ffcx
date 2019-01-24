@@ -87,9 +87,7 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     unique_coordinate_elements = sorted(unique_coordinate_elements, key=lambda x: repr(x))
 
     # Compute element numbers
-    element_numbers = {}
-    for (i, element) in enumerate(unique_elements):
-        element_numbers[element] = i
+    element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
     return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
