@@ -36,6 +36,7 @@ def generate_code(ir, parameters, jit):
     # FIXME: This has global side effects
     # Set code generation parameters
     # set_float_formatting(parameters["precision"])
+    # set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir

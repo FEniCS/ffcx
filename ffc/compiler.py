@@ -114,6 +114,8 @@ def compile_ufl_objects(ufl_objects,
     """Generate UFC code for a given UFL form or list of UFL forms."""
     logger.info("Compiling {} {}\n".format(kind, prefix))
 
+    print("Compiling {} {}\n".format(kind, prefix))
+
     # Reset timing
     cpu_time_0 = time()
 
@@ -127,8 +129,8 @@ def compile_ufl_objects(ufl_objects,
         ufl_objects = (ufl_objects, )
     if not ufl_objects:
         return "", ""
-    if prefix != os.path.basename(prefix):
-        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
+    if prefix[0] != os.path.basename(prefix[0]):
+        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix[0]))
     if object_names is None:
         object_names = {}
 

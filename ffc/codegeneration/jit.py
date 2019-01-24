@@ -229,7 +229,7 @@ def compile_elements(elements, module_name=None, parameters=None):
         names.append(name)
         decl += dofmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_element(elements, parameters=p)
+    _, code_body = ffc.compiler.compile_element(elements, prefix=("Element", True), parameters=p)
 
     objects, module = _compile_objects(decl, code_body, names, module_name, p)
     # Pair up elements with dofmaps
@@ -255,7 +255,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_form(forms, parameters=p)
+    _, code_body = ffc.compiler.compile_form(forms, prefix=("Form", True), parameters=p)
 
     return _compile_objects(decl, code_body, form_names, module_name, p)
 
@@ -270,7 +270,7 @@ def compile_coordinate_maps(cmaps, module_name=None, parameters=None):
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_coordinate_mapping(cmaps, parameters=p)
+    _, code_body = ffc.compiler.compile_coordinate_mapping(cmaps, prefix=("Mesh", True), parameters=p)
 
     return _compile_objects(decl, code_body, cmap_names, module_name, p)
 

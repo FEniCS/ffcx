@@ -39,7 +39,7 @@ def generate(ufl_object, module_name, signature, parameters):
     # Return C code for requested ufl_object, and return any UFL objects
     # that ufl_objects needs, e.g. a form will require some elements.
     code_h, code_c, dependent_ufl_objects = compile_object(
-        ufl_object, prefix=signature, parameters=parameters, jit=True)
+        ufl_object, prefix=(module_name, False), parameters=parameters, jit=True)
 
     # Jit compile dependent objects separately, but pass indirect=True
     # to skip instantiating objects. (This is done in here such that
@@ -111,35 +111,33 @@ def build(ufl_object, module_name, parameters):
     })
 
     # Carry out jit compilation, calling generate only if needed
-    module, signature = dijitso.jit(jitable=ufl_object, name=module_name,
-                                    params=params, generate=generate)
+    module, signature = dijitso.jit(
+        jitable=ufl_object, name=module_name, params=params, generate=generate)
 
     return module
 
 
-def compute_signature(ufl_object, tag, parameters) -> str:
-    """Compute a signature (40 character SHA1 hex string) for jit modules
+def compute_prefix(ufl_object, tag, parameters, kind=None):
+    """Compute the prefix (module name) for jit modules."""
 
-    Parameters
-    ----------
-    ufl_object
-    tag
-        A representative string: another hash, module type or filename
-    parameters
-
-    Returns
-    -------
-    signature
-        String
-
-    """
-
-    if isinstance(ufl_object, ufl.Mesh):
-        object_signature = repr(ufl_object.ufl_coordinate_element())
-    elif isinstance(ufl_object, ufl.Form):
+    # Get signature from ufl object
+    if isinstance(ufl_object, ufl.Form):
+        kind = "form"
         object_signature = ufl_object.signature()
-    else:
+    elif isinstance(ufl_object, ufl.Mesh):
+        # When coordinate mapping is represented by a Mesh, just getting
+        # its coordinate element
+        kind = "coordinate_mapping"
+        object_signature = repr(ufl_object.ufl_coordinate_element())  # ** must match below
+    elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
+        # When coordinate mapping is represented by its coordinate
+        # element
+        object_signature = repr(ufl_object)  # ** must match above
+    elif isinstance(ufl_object, ufl.FiniteElementBase):
+        kind = "element"
         object_signature = repr(ufl_object)
+    else:
+        raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
@@ -156,12 +154,14 @@ def compute_signature(ufl_object, tag, parameters) -> str:
         str(FFC_VERSION),
         str(jit_version_bump),
         get_signature(),
-        str(tag),
+        kind,
     ]
     string = ";".join(signatures)
     signature = hashlib.sha1(string.encode('utf-8')).hexdigest()
 
-    return signature
+    # Combine into prefix with some info including kind
+    prefix = "ffc_{}_{}".format(kind, signature).lower()
+    return kind, prefix
 
 
 def jit(ufl_object, parameters=None, indirect=False):
@@ -177,18 +177,9 @@ def jit(ufl_object, parameters=None, indirect=False):
     parameters = validate_jit_parameters(parameters)
 
     # Make unique module name for generated code
+    kind, module_name = compute_prefix(ufl_object, "", parameters)
 
-    if isinstance(ufl_object, ufl.Form):
-        kind = "form"
-    elif isinstance(ufl_object, ufl.Mesh):
-        kind = "coordinate_mapping"
-    elif isinstance(ufl_object, ufl.FiniteElementBase):
-        kind = "element"
-    else:
-        raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
-
-    sig = compute_signature(ufl_object, kind, parameters)
-    module_name = "ffc_{}_{}".format(kind, sig).lower()
+    print("Building module ", module_name)
 
     # Get module (inspect cache and generate+build if necessary)
     module = build(ufl_object, module_name, parameters)
