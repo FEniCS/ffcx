@@ -39,7 +39,7 @@ def generate(ufl_object, module_name, signature, parameters):
     # Return C code for requested ufl_object, and return any UFL objects
     # that ufl_objects needs, e.g. a form will require some elements.
     code_h, code_c, dependent_ufl_objects = compile_object(
-        ufl_object, prefix=module_name, parameters=parameters, jit=True)
+        ufl_object, prefix=(module_name, False), parameters=parameters, jit=True)
 
     # Jit compile dependent objects separately, but pass indirect=True
     # to skip instantiating objects. (This is done in here such that
@@ -117,7 +117,7 @@ def build(ufl_object, module_name, parameters):
     return module
 
 
-def compute_prefix(ufl_object, parameters, kind=None):
+def compute_prefix(ufl_object, tag, parameters, kind=None):
     """Compute the prefix (module name) for jit modules."""
 
     # Get signature from ufl object
@@ -128,8 +128,7 @@ def compute_prefix(ufl_object, parameters, kind=None):
         # When coordinate mapping is represented by a Mesh, just getting
         # its coordinate element
         kind = "coordinate_mapping"
-        ufl_object = ufl_object.ufl_coordinate_element()
-        object_signature = repr(ufl_object)  # ** must match below
+        object_signature = repr(ufl_object.ufl_coordinate_element())  # ** must match below
     elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
         # When coordinate mapping is represented by its coordinate
         # element
@@ -160,11 +159,6 @@ def compute_prefix(ufl_object, parameters, kind=None):
     string = ";".join(signatures)
     signature = hashlib.sha1(string.encode('utf-8')).hexdigest()
 
-    # Optionally shorten signature
-    max_signature_length = parameters["max_signature_length"]
-    if max_signature_length:
-        signature = signature[:max_signature_length]
-
     # Combine into prefix with some info including kind
     prefix = "ffc_{}_{}".format(kind, signature).lower()
     return kind, prefix
@@ -183,7 +177,9 @@ def jit(ufl_object, parameters=None, indirect=False):
     parameters = validate_jit_parameters(parameters)
 
     # Make unique module name for generated code
-    kind, module_name = compute_prefix(ufl_object, parameters)
+    kind, module_name = compute_prefix(ufl_object, "", parameters)
+
+    print("Building module ", module_name)
 
     # Get module (inspect cache and generate+build if necessary)
     module = build(ufl_object, module_name, parameters)
