@@ -117,9 +117,22 @@ def build(ufl_object, module_name, parameters):
     return module
 
 
-def compute_signature(ufl_object, tag, parameters):
-    """Compute the prefix (module name) for jit modules.
-"""
+def compute_signature(ufl_object, tag, parameters) -> str:
+    """Compute a signature (40 character SHA1 hex string) for jit modules
+
+    Parameters
+    ----------
+    ufl_object
+    tag
+        A representative string: another hash, module type or filename
+    parameters
+
+    Returns
+    -------
+    signature
+        String
+
+    """
 
     if isinstance(ufl_object, ufl.Mesh):
         ufl_object = ufl_object.ufl_coordinate_element()
