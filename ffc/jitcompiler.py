@@ -135,9 +135,8 @@ def compute_signature(ufl_object, tag, parameters) -> str:
     """
 
     if isinstance(ufl_object, ufl.Mesh):
-        ufl_object = ufl_object.ufl_coordinate_element()
-
-    if isinstance(ufl_object, ufl.Form):
+        object_signature = repr(ufl_object.ufl_coordinate_element())
+    elif isinstance(ufl_object, ufl.Form):
         object_signature = ufl_object.signature()
     else:
         object_signature = repr(ufl_object)
