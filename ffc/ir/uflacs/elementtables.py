@@ -331,11 +331,10 @@ def build_element_tables(num_points,
 
     # Build element numbering using topological ordering so subelements
     # get priority
-    from ffc.analysis import _compute_element_numbers
     all_elements = [res[0] for res in analysis.values()]
     unique_elements = ufl.algorithms.sort_elements(
         ufl.algorithms.analysis.extract_sub_elements(all_elements))
-    element_numbers = _compute_element_numbers(unique_elements)
+    element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
     def add_table(res):
         element, avg, local_derivatives, flat_component = res
