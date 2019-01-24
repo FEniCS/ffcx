@@ -444,19 +444,17 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
 
     irs = []
 
+    # Select representation
+    r = form_data.representation
+    if r == "uflacs":
+        from ffc.ir.uflacs.uflacsrepresentation import compute_integral_ir
+    elif r == "tsfc":
+        from ffc.ir.tsfcrepresentation import compute_integral_ir
+    else:
+        raise RuntimeError("Unknown representation: {}".format(r))
+
     # Iterate over integrals
     for itg_data in form_data.integral_data:
-
-        # Select representation
-        # TODO: Is it possible to detach this metadata from
-        # IntegralData? It's a bit strange from the ufl side.
-        repre = itg_data.metadata["representation"]
-        if repre == "uflacs":
-            from ffc.ir.uflacs.uflacsrepresentation import compute_integral_ir
-        elif repre == "tsfc":
-            from ffc.ir.tsfcrepresentation import compute_integral_ir
-        else:
-            raise RuntimeError("Unknown representation: {}".format(repre))
 
         # Compute representation
         ir = compute_integral_ir(
