@@ -117,28 +117,17 @@ def build(ufl_object, module_name, parameters):
     return module
 
 
-def compute_prefix(ufl_object, tag, parameters, kind=None):
-    """Compute the prefix (module name) for jit modules."""
+def compute_signature(ufl_object, tag, parameters):
+    """Compute the prefix (module name) for jit modules.
+"""
 
-    # Get signature from ufl object
-    if isinstance(ufl_object, ufl.Form):
-        kind = "form"
-        object_signature = ufl_object.signature()
-    elif isinstance(ufl_object, ufl.Mesh):
-        # When coordinate mapping is represented by a Mesh, just getting
-        # its coordinate element
-        kind = "coordinate_mapping"
+    if isinstance(ufl_object, ufl.Mesh):
         ufl_object = ufl_object.ufl_coordinate_element()
-        object_signature = repr(ufl_object)  # ** must match below
-    elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
-        # When coordinate mapping is represented by its coordinate
-        # element
-        object_signature = repr(ufl_object)  # ** must match above
-    elif isinstance(ufl_object, ufl.FiniteElementBase):
-        kind = "element"
-        object_signature = repr(ufl_object)
+
+    if isinstance(ufl_object, ufl.Form):
+        object_signature = ufl_object.signature()
     else:
-        raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
+        object_signature = repr(ufl_object)
 
     # Compute deterministic string of relevant parameters
     parameters_signature = compute_jit_parameters_signature(parameters)
@@ -154,16 +143,13 @@ def compute_prefix(ufl_object, tag, parameters, kind=None):
         parameters_signature,
         str(FFC_VERSION),
         str(jit_version_bump),
-        str(tag),
         get_signature(),
-        kind,
+        str(tag),
     ]
     string = ";".join(signatures)
     signature = hashlib.sha1(string.encode('utf-8')).hexdigest()
 
-    # Combine into prefix with some info including kind
-    prefix = "ffc_{}_{}".format(kind, signature).lower()
-    return kind, prefix
+    return signature
 
 
 def jit(ufl_object, parameters=None, indirect=False):
@@ -179,7 +165,18 @@ def jit(ufl_object, parameters=None, indirect=False):
     parameters = validate_jit_parameters(parameters)
 
     # Make unique module name for generated code
-    kind, module_name = compute_prefix(ufl_object, None, parameters)
+
+    if isinstance(ufl_object, ufl.Form):
+        kind = "form"
+    elif isinstance(ufl_object, ufl.Mesh):
+        kind = "coordinate_mapping"
+    elif isinstance(ufl_object, ufl.FiniteElementBase):
+        kind = "element"
+    else:
+        raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
+
+    sig = compute_signature(ufl_object, kind, parameters)
+    module_name = "ffc_{}_{}".format(kind, sig).lower()
 
     # Get module (inspect cache and generate+build if necessary)
     module = build(ufl_object, module_name, parameters)
