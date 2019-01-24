@@ -39,7 +39,7 @@ def generate(ufl_object, module_name, signature, parameters):
     # Return C code for requested ufl_object, and return any UFL objects
     # that ufl_objects needs, e.g. a form will require some elements.
     code_h, code_c, dependent_ufl_objects = compile_object(
-        ufl_object, prefix=module_name, parameters=parameters, jit=True)
+        ufl_object, prefix=signature, parameters=parameters, jit=True)
 
     # Jit compile dependent objects separately, but pass indirect=True
     # to skip instantiating objects. (This is done in here such that
@@ -111,8 +111,8 @@ def build(ufl_object, module_name, parameters):
     })
 
     # Carry out jit compilation, calling generate only if needed
-    module, signature = dijitso.jit(
-        jitable=ufl_object, name=module_name, params=params, generate=generate)
+    module, signature = dijitso.jit(jitable=ufl_object, name=module_name,
+                                    params=params, generate=generate)
 
     return module
 
