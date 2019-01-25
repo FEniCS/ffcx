@@ -114,8 +114,6 @@ def compile_ufl_objects(ufl_objects,
     """Generate UFC code for a given UFL form or list of UFL forms."""
     logger.info("Compiling {} {}\n".format(kind, prefix))
 
-    print("Compiling {} {}\n".format(kind, prefix))
-
     # Reset timing
     cpu_time_0 = time()
 

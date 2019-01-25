@@ -155,6 +155,7 @@ def compute_prefix(ufl_object, tag, parameters, kind=None):
         str(jit_version_bump),
         get_signature(),
         kind,
+        tag
     ]
     string = ";".join(signatures)
     signature = hashlib.sha1(string.encode('utf-8')).hexdigest()
@@ -178,8 +179,6 @@ def jit(ufl_object, parameters=None, indirect=False):
 
     # Make unique module name for generated code
     kind, module_name = compute_prefix(ufl_object, "", parameters)
-
-    print("Building module ", module_name)
 
     # Get module (inspect cache and generate+build if necessary)
     module = build(ufl_object, module_name, parameters)

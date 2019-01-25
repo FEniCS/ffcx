@@ -58,8 +58,6 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, element_n
     # Make unique classnames to match separately jit-compiled
     # module
 
-    print('Shall I include prefix in hash?', prefix[1])
-
     if (prefix[1]):
         tag = prefix[0]
     else:
