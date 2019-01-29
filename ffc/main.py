@@ -81,10 +81,10 @@ parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 def compile_ufl_data(ufd, prefix, parameters):
     if len(ufd.forms) > 0:
         code_h, code_c = compiler.compile_form(
-            ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
+            ufd.forms, ufd.object_names, prefix=(prefix, True), parameters=parameters)
     else:
         code_h, code_c = compiler.compile_element(
-            ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters)
+            ufd.elements, ufd.object_names, prefix=(prefix, True), parameters=parameters)
     return code_h, code_c
 
 

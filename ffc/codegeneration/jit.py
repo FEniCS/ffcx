@@ -222,14 +222,14 @@ def compile_elements(elements, module_name=None, parameters=None):
     dofmap_template = "ufc_dofmap * create_{name}(void);\n"
     names = []
     for e in elements:
-        name = ffc.ir.representation.make_finite_element_jit_classname(e, p)
+        name = ffc.ir.representation.make_finite_element_jit_classname(e, "Element", p)
         names.append(name)
         decl += element_template.format(name=name)
-        name = ffc.ir.representation.make_dofmap_jit_classname(e, p)
+        name = ffc.ir.representation.make_dofmap_jit_classname(e, "Element", p)
         names.append(name)
         decl += dofmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_element(elements, parameters=p)
+    _, code_body = ffc.compiler.compile_element(elements, prefix=("Element", True), parameters=p)
 
     objects, module = _compile_objects(decl, code_body, names, module_name, p)
     # Pair up elements with dofmaps
@@ -255,7 +255,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_form(forms, parameters=p)
+    _, code_body = ffc.compiler.compile_form(forms, prefix=("Form", True), parameters=p)
 
     return _compile_objects(decl, code_body, form_names, module_name, p)
 
@@ -266,11 +266,11 @@ def compile_coordinate_maps(cmaps, module_name=None, parameters=None):
 
     decl = UFC_HEADER_DECL.format("") + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
-    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, p) for cmap in cmaps]
+    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, "Mesh", p) for cmap in cmaps]
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_coordinate_mapping(cmaps, parameters=p)
+    _, code_body = ffc.compiler.compile_coordinate_mapping(cmaps, prefix=("Mesh", True), parameters=p)
 
     return _compile_objects(decl, code_body, cmap_names, module_name, p)
 
