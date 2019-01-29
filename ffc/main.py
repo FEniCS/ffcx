@@ -78,16 +78,6 @@ parser.add_argument(
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
 
-def compile_ufl_data(ufd, prefix, parameters):
-    if len(ufd.forms) > 0:
-        code_h, code_c = compiler.compile_form(
-            ufd.forms, ufd.object_names, prefix=(prefix, True), parameters=parameters)
-    else:
-        code_h, code_c = compiler.compile_element(
-            ufd.elements, ufd.object_names, prefix=(prefix, True), parameters=parameters)
-    return code_h, code_c
-
-
 def main(args=None):
     """Commandline tool for FFC."""
 
@@ -148,11 +138,13 @@ def _compile_files(args, parameters, enable_profile):
         # Load UFL file
         ufd = ufl.algorithms.load_ufl_file(filename)
 
-        # Previously wrapped in try-except, disabled to actually get information we need
-        # try:
-
         # Generate code
-        code_h, code_c = compile_ufl_data(ufd, prefix, parameters)
+        if len(ufd.forms) > 0:
+            code_h, code_c = compiler.compile_ufl_objects(
+                ufd.forms, prefix=(prefix, True), parameters=parameters)
+        else:
+            code_h, code_c = compiler.compile_ufl_objects(
+                ufd.elements, prefix=(prefix, True), parameters=parameters)
 
         # Write to file
         formatting.write_code(code_h, code_c, prefix, parameters)

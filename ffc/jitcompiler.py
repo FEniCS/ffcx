@@ -28,17 +28,9 @@ def generate(ufl_object, module_name, signature, parameters):
     """Callback function passed to dijitso.jit: generate code and return as strings."""
     logger.info("Calling FFC just-in-time (JIT) compiler.")
 
-    # Pick the generator for actual code for this object
-    if isinstance(ufl_object, ufl.Form):
-        compile_object = compiler.compile_form
-    elif isinstance(ufl_object, ufl.FiniteElementBase):
-        compile_object = compiler.compile_element
-    elif isinstance(ufl_object, ufl.Mesh):
-        compile_object = compiler.compile_coordinate_mapping
-
     # Return C code for requested ufl_object, and return any UFL objects
     # that ufl_objects needs, e.g. a form will require some elements.
-    code_h, code_c, dependent_ufl_objects = compile_object(
+    code_h, code_c, dependent_ufl_objects = compiler.compile_ufl_objects(
         ufl_object, prefix=(module_name, False), parameters=parameters, jit=True)
 
     # Jit compile dependent objects separately, but pass indirect=True
