@@ -112,8 +112,13 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
         ufl_objects = (ufl_objects, )
     if not ufl_objects:
         return "", ""
+
     if prefix[0] != os.path.basename(prefix[0]):
         raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix[0]))
+
+    # Check that all UFL objects passed here are of the same class/type
+    obj_type = type(ufl_objects[0])
+    assert (obj_type == type(x) for x in ufl_objects)
 
     # Stage 1: analysis
     cpu_time = time()

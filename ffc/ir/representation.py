@@ -38,23 +38,29 @@ ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "cus
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
     from ffc import jitcompiler  # FIXME circular file dependency
+    assert isinstance(ufl_element, ufl.FiniteElementBase)
     kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
+
     return classname.make_name(prefix, "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, tag, parameters):
     from ffc import jitcompiler  # FIXME circular file dependency
+    assert isinstance(ufl_element, ufl.FiniteElementBase)
     kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
+
     return classname.make_name(prefix, "dofmap", "main")
 
 
-def make_coordinate_mapping_jit_classname(ufl_mesh, tag, parameters):
+def make_coordinate_mapping_jit_classname(ufl_element, tag, parameters):
     from ffc import jitcompiler  # FIXME circular file dependency
-    kind, prefix = jitcompiler.compute_prefix(ufl_mesh, tag, parameters)
+    assert isinstance(ufl_element, ufl.FiniteElementBase)
+    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
+
     return classname.make_name(prefix, "coordinate_mapping", "main")
 
 
-def make_all_element_classnames(prefix, elements, coordinate_elements, element_numbers, parameters):
+def make_all_element_classnames(prefix, elements, coordinate_elements, parameters):
     # Make unique classnames to match separately jit-compiled
     # module
 
@@ -91,8 +97,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     assert isinstance(prefix, tuple)
 
     # Construct classnames for all element objects and coordinate mappings
-    classnames = make_all_element_classnames(prefix, elements, coordinate_elements, element_numbers,
-                                             parameters)
+    classnames = make_all_element_classnames(prefix, elements, coordinate_elements, parameters)
 
     # Skip processing elements if jitting forms
     # NB! it's important that this happens _after_ the element numbers and classnames
