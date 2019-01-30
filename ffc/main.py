@@ -141,10 +141,10 @@ def _compile_files(args, parameters, enable_profile):
         # Generate code
         if len(ufd.forms) > 0:
             code_h, code_c = compiler.compile_ufl_objects(
-                ufd.forms, prefix=(prefix, True), parameters=parameters)
+                ufd.forms, ufd.object_names, prefix=(prefix, True), parameters=parameters)
         else:
             code_h, code_c = compiler.compile_ufl_objects(
-                ufd.elements, prefix=(prefix, True), parameters=parameters)
+                ufd.elements, ufd.object_names, prefix=(prefix, True), parameters=parameters)
 
         # Write to file
         formatting.write_code(code_h, code_c, prefix, parameters)

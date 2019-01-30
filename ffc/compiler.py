@@ -85,6 +85,7 @@ def _print_timing(stage, timing):
 
 
 def compile_ufl_objects(ufl_objects: Union[List, Tuple],
+                        object_names: Dict = {},
                         prefix: Tuple = None,
                         parameters: Dict = None,
                         jit: bool = False):
@@ -141,7 +142,7 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
         for ir_comp, e_name in zip(ir, comp):
             for e in ir_comp:
                 classnames[e_name].append(e["classname"])
-        wrapper_code = generate_wrapper_code(analysis, prefix[0], {}, classnames, parameters)
+        wrapper_code = generate_wrapper_code(analysis, prefix[0], object_names, classnames, parameters)
     else:
         wrapper_code = None
 
