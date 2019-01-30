@@ -85,16 +85,16 @@ def _print_timing(stage, timing):
 
 
 def compile_ufl_objects(ufl_objects: Union[List, Tuple],
-                        prefix: Tuple=None,
-                        parameters: Dict=None,
-                        jit: bool=False):
+                        prefix: Tuple = None,
+                        parameters: Dict = None,
+                        jit: bool = False):
     """Generate UFC code for a given UFL objects.
 
     Parameters
     ----------
     ufl_objects
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
-    
+
     """
     logger.info("Compiling {}\n".format(prefix))
 
