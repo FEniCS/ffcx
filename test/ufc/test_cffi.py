@@ -19,6 +19,12 @@ def float_to_type(name):
         return "double", np.float64
     elif name == "double complex":
         return "double _Complex", np.complex128
+    elif name == "float":
+        return "float", np.float32
+    elif name == "float complex":
+        return "float _Complex", np.complex64
+    elif name == "long double":
+        return "long double", np.longdouble
     else:
         raise RuntimeError("Unknown C type for: {}".format(name))
 
@@ -144,6 +150,16 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
 
 
 @pytest.mark.parametrize("mode,expected_result", [
+    ("float",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.float32)),
+    ("long double",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.longdouble)),
     ("double",
      np.array(
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
@@ -154,6 +170,11 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
           [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
          dtype=np.complex128)),
+    ("float complex",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.complex64)),
 ])
 def test_mass_bilinear_form_2d(mode, expected_result):
     cell = ufl.triangle

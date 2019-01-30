@@ -199,18 +199,19 @@ def _define_scalar(parameters):
     # Define the ufc_scalar type before including  the ufc header
     # By default use double scalars
     scalar_type = parameters.get("scalar_type")
-    if scalar_type == "double complex":
-        scalar = "\n".join([
-            "#if defined(__cplusplus)",
-            "#include <complex>",
-            "typedef std::complex<double> ufc_scalar_t;",
-            "#else",
-            "#include <complex.h>",
-            "typedef double _Complex ufc_scalar_t;",
-            "#endif",
-            "\n",
-        ])
+    if "complex" in scalar_type:
+        base_type = scalar_type.replace("complex", "")
+        scalar = """
+#if defined(__cplusplus)
+ #include <complex>
+ typedef std::complex<{0}> ufc_scalar_t;
+#else
+ #include <complex.h>
+ typedef {0} _Complex ufc_scalar_t;
+#endif
+
+""".format(base_type)
     else:
-        scalar = "typedef double ufc_scalar_t;" + "\n"
+        scalar = "typedef " + scalar_type + " ufc_scalar_t;" + "\n"
 
     return scalar

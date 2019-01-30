@@ -13,7 +13,7 @@ import cffi
 import ffc
 
 UFC_HEADER_DECL = """
-typedef double {} ufc_scalar_t;  /* Hack to deal with scalar type */
+typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
 
 typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
 typedef struct ufc_finite_element ufc_finite_element;
@@ -217,7 +217,8 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
-    decl = UFC_HEADER_DECL.format("") + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
+    scalar_type = p["scalar_type"].replace("complex", "_Complex")
+    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
     element_template = "ufc_finite_element * create_{name}(void);\n"
     dofmap_template = "ufc_dofmap * create_{name}(void);\n"
     names = []
@@ -241,11 +242,8 @@ def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
-    if p and "complex" in p["scalar_type"]:
-        complex_mode = "_Complex"
-    else:
-        complex_mode = ""
-    decl = UFC_HEADER_DECL.format(complex_mode) + UFC_ELEMENT_DECL \
+    scalar_type = p["scalar_type"].replace("complex", "_Complex")
+    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL \
         + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
@@ -263,8 +261,8 @@ def compile_forms(forms, module_name=None, parameters=None):
 def compile_coordinate_maps(cmaps, module_name=None, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
-
-    decl = UFC_HEADER_DECL.format("") + UFC_COORDINATEMAPPING_DECL
+    scalar_type = p["scalar_type"].replace("complex", "_Complex")
+    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, "Mesh", p) for cmap in cmaps]
     for name in cmap_names:
