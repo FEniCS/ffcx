@@ -110,7 +110,14 @@ def build(ufl_object, module_name, parameters):
 
 
 def compute_prefix(ufl_object, tag, parameters, coordinate_mapping=False):
-    """Compute the prefix (module name) for jit modules."""
+    """Compute the prefix (module name) for jit modules.
+
+    Note
+    ----
+    The parameter `coordinate_mapping` is used to force compilation of finite element
+    as a coordinate mapping element. There is no way to find this information
+    just by looking at type of `ufl_object` passed.
+    """
 
     # Get signature from ufl object
     if isinstance(ufl_object, ufl.Form):
