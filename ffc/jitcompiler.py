@@ -109,7 +109,7 @@ def build(ufl_object, module_name, parameters):
     return module
 
 
-def compute_prefix(ufl_object, tag, parameters):
+def compute_prefix(ufl_object, tag, parameters, coordinate_mapping=False):
     """Compute the prefix (module name) for jit modules."""
 
     # Get signature from ufl object
@@ -121,6 +121,9 @@ def compute_prefix(ufl_object, tag, parameters):
         # its coordinate element
         kind = "coordinate_mapping"
         object_signature = repr(ufl_object.ufl_coordinate_element())
+    elif coordinate_mapping and isinstance(ufl_object, ufl.FiniteElementBase):
+        object_signature = repr(ufl_object)
+        kind = "coordinate_mapping"
     elif isinstance(ufl_object, ufl.FiniteElementBase):
         kind = "element"
         object_signature = repr(ufl_object)

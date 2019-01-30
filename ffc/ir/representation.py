@@ -55,7 +55,7 @@ def make_dofmap_jit_classname(ufl_element, tag, parameters):
 def make_coordinate_mapping_jit_classname(ufl_element, tag, parameters):
     from ffc import jitcompiler  # FIXME circular file dependency
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
+    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters, coordinate_mapping=True)
 
     return classname.make_name(prefix, "coordinate_mapping", "main")
 
