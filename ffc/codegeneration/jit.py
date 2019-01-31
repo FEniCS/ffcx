@@ -293,13 +293,14 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
         cache_dir = "compile_cache"
 
     c_filename = cache_dir + "/" + module_name + ".c"
+    lockfile_name = c_filename + ".lock"
     # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
+
     try:
         # Create C file with exclusive access or fail
         open(c_filename, "x")
         # Create a lock file while compiling
-        lockfile_name = c_filename + ".lock"
         fd = open(lockfile_name, "x")
         fd.close()
         # Compile
@@ -310,7 +311,7 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
         print("C file already exists")
         # Now wait if there is a lock file
         for i in range(100):
-            if not os.path.exists(c_filename + ".lock"):
+            if not os.path.exists(lockfile_name):
                 break
             print("Waiting for ", lockfile_name, " to be removed.")
             time.sleep(1)
