@@ -315,7 +315,7 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
                 break
             print("Waiting for ", lockfile_name, " to be removed.")
             time.sleep(1)
-        raise TimeoutError
+
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(cache_dir + "." + module_name)
