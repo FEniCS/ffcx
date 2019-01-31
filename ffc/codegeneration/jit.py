@@ -7,9 +7,9 @@
 
 import hashlib
 import importlib
+import os
 
 import cffi
-
 import ffc
 
 UFC_HEADER_DECL = """
@@ -291,7 +291,17 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
     if not cache_dir:
         cache_dir = "compile_cache"
 
-    ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+    c_filename = cache_dir + "/" + module_name + ".c"
+    # Ensure cache dir exists
+    os.makedirs(cache_dir, exist_ok=True)
+    try:
+        # Create C file with exclusive access or fail
+        open(c_filename, "x")
+        ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+    except:
+        print("C file already exists")
+
+    # FIXME: just because the C file exists, doesn't guarantee the .so is ready to load
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(cache_dir + "." + module_name)
