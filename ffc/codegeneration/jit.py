@@ -298,17 +298,21 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
     try:
         # Create C file with exclusive access or fail
         open(c_filename, "x")
-        lockfile = open(c_filename + ".lock", "x")
-        lockfile.close()
+        # Create a lock file while compiling
+        lockfile_name = c_filename + ".lock"
+        fd = open(lockfile_name, "x")
+        fd.close()
+        # Compile
         ffibuilder.compile(tmpdir=cache_dir, verbose=False)
-        os.remove(lockfile)
-    except Exception:
+        # Remove lock
+        os.remove(lockfile_name)
+    except FileExistsError:
         print("C file already exists")
         # Now wait if there is a lock file
         for i in range(100):
             if not os.path.exists(c_filename + ".lock"):
                 break
-            print("Waiting for ", lockfile, " to be removed.")
+            print("Waiting for ", lockfile_name, " to be removed.")
             time.sleep(1)
         raise TimeoutError
 
