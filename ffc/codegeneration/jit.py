@@ -298,7 +298,7 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
         # Create C file with exclusive access or fail
         open(c_filename, "x")
         ffibuilder.compile(tmpdir=cache_dir, verbose=False)
-    except:
+    except Exception:
         print("C file already exists")
 
     # FIXME: just because the C file exists, doesn't guarantee the .so is ready to load
