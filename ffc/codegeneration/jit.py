@@ -8,6 +8,7 @@
 import hashlib
 import importlib
 import os
+import time
 
 import cffi
 import ffc
@@ -297,11 +298,19 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
     try:
         # Create C file with exclusive access or fail
         open(c_filename, "x")
+        lockfile = open(c_filename + ".lock", "x")
+        lockfile.close()
         ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+        os.remove(lockfile)
     except Exception:
         print("C file already exists")
-
-    # FIXME: just because the C file exists, doesn't guarantee the .so is ready to load
+        # Now wait if there is a lock file
+        for i in range(100):
+            if not os.path.exists(c_filename + ".lock"):
+                break
+            print("Waiting for ", lockfile, " to be removed.")
+            time.sleep(1)
+        raise TimeoutError
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(cache_dir + "." + module_name)
