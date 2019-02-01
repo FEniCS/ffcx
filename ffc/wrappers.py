@@ -20,7 +20,6 @@ def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters
     capsules, common_space = _encapsulate(prefix, object_names, classnames, analysis, parameters)
 
     # Generate code
-    logger.info("Generating wrapper code for DOLFIN")
     code_h, code_c = dolfin.generate_wrappers(prefix, capsules, common_space)
     code_h += "\n"
     code_c += "\n"
@@ -44,7 +43,6 @@ def _encapsulate(prefix, object_names, classnames, analysis, parameters):
 def _encapsulate_elements(elements, object_names, classnames):
     """Generate capsules for each element named in the input (no wrappers
     for subelements will be created)"""
-    assert not classnames["coordinate_maps"], "Need to fix element wrappers for coordinate mappings."
 
     capsules = []
     for i, element in enumerate(elements):
@@ -54,7 +52,7 @@ def _encapsulate_elements(elements, object_names, classnames):
                 "name": name,
                 "element_classname": classnames["elements"][i],
                 "dofmap_classname": classnames["dofmaps"][i],
-                "coordinate_mapping_classname": None
+                "coordinate_mapping_classname": classnames["coordinate_maps"][i]
             }
             capsules.append(dolfin.UFCElementNames(**args))
 

@@ -18,7 +18,7 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Biharmonic equation in Regge formulation.
 #
-# Compile this form with FFC: ffc -l dolfin BiharmonicRegge.ufl
+# Compile this form with FFC: ffc BiharmonicRegge.ufl
 
 REG = FiniteElement('Regge', tetrahedron, 1)
 CG =  FiniteElement('Lagrange', tetrahedron, 2)
