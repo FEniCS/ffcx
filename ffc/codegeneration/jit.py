@@ -13,7 +13,7 @@ import time
 import cffi
 import ufl
 import ffc
-from ffc.parameters import (compute_jit_parameters_signature, validate_jit_parameters)
+from ffc.parameters import compute_jit_parameters_signature
 
 UFC_HEADER_DECL = """
 typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
@@ -261,7 +261,6 @@ def compute_signature(ufl_objects, parameters, coordinate_mapping=False):
     string = ";".join(signatures)
 
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
-
 
 
 def compile_elements(elements, module_name=None, parameters=None):
