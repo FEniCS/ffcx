@@ -28,17 +28,9 @@ def generate(ufl_object, module_name, signature, parameters):
     """Callback function passed to dijitso.jit: generate code and return as strings."""
     logger.info("Calling FFC just-in-time (JIT) compiler.")
 
-    # Pick the generator for actual code for this object
-    if isinstance(ufl_object, ufl.Form):
-        compile_object = compiler.compile_form
-    elif isinstance(ufl_object, ufl.FiniteElementBase):
-        compile_object = compiler.compile_element
-    elif isinstance(ufl_object, ufl.Mesh):
-        compile_object = compiler.compile_coordinate_mapping
-
     # Return C code for requested ufl_object, and return any UFL objects
     # that ufl_objects needs, e.g. a form will require some elements.
-    code_h, code_c, dependent_ufl_objects = compile_object(
+    code_h, code_c, dependent_ufl_objects = compiler.compile_ufl_objects(
         ufl_object, prefix=(module_name, False), parameters=parameters, jit=True)
 
     # Jit compile dependent objects separately, but pass indirect=True
@@ -117,8 +109,15 @@ def build(ufl_object, module_name, parameters):
     return module
 
 
-def compute_prefix(ufl_object, tag, parameters, kind=None):
-    """Compute the prefix (module name) for jit modules."""
+def compute_prefix(ufl_object, tag, parameters, coordinate_mapping=False):
+    """Compute the prefix (module name) for jit modules.
+
+    Note
+    ----
+    The parameter `coordinate_mapping` is used to force compilation of finite element
+    as a coordinate mapping element. There is no way to find this information
+    just by looking at type of `ufl_object` passed.
+    """
 
     # Get signature from ufl object
     if isinstance(ufl_object, ufl.Form):
@@ -128,11 +127,10 @@ def compute_prefix(ufl_object, tag, parameters, kind=None):
         # When coordinate mapping is represented by a Mesh, just getting
         # its coordinate element
         kind = "coordinate_mapping"
-        object_signature = repr(ufl_object.ufl_coordinate_element())  # ** must match below
-    elif kind == "coordinate_mapping" and isinstance(ufl_object, ufl.FiniteElementBase):
-        # When coordinate mapping is represented by its coordinate
-        # element
-        object_signature = repr(ufl_object)  # ** must match above
+        object_signature = repr(ufl_object.ufl_coordinate_element())
+    elif coordinate_mapping and isinstance(ufl_object, ufl.FiniteElementBase):
+        object_signature = repr(ufl_object)
+        kind = "coordinate_mapping"
     elif isinstance(ufl_object, ufl.FiniteElementBase):
         kind = "element"
         object_signature = repr(ufl_object)

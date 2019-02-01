@@ -231,7 +231,7 @@ def compile_elements(elements, module_name=None, parameters=None):
         names.append(name)
         decl += dofmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_element(elements, prefix=("Element", True), parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix=("Element", True), parameters=p)
 
     objects, module = _compile_objects(decl, code_body, names, module_name, p)
     # Pair up elements with dofmaps
@@ -254,22 +254,23 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_form(forms, prefix=("Form", True), parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix=("Form", True), parameters=p)
 
     return _compile_objects(decl, code_body, form_names, module_name, p)
 
 
-def compile_coordinate_maps(cmaps, module_name=None, parameters=None):
+def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
-    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(cmap, "Mesh", p) for cmap in cmaps]
+    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
+        mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_coordinate_mapping(cmaps, prefix=("Mesh", True), parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix=("Mesh", True), parameters=p)
 
     return _compile_objects(decl, code_body, cmap_names, module_name, p)
 
