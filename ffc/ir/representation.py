@@ -25,6 +25,7 @@ import numpy
 import ffc.fiatinterface
 import FIAT.reference_element
 import ufl
+from ffc.codegeneration.jit import compute_signature
 from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, MixedElement, FlattenedDimensions,
                                QuadratureElement, SpaceOfReals, create_element)
@@ -37,27 +38,21 @@ ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "cus
 
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
-    from ffc import jitcompiler  # FIXME circular file dependency
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
-
-    return classname.make_name(prefix, "finite_element", "main")
+    sig = compute_signature([ufl_element], parameters)
+    return classname.make_name("ffc_element_{}".format(sig), "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, tag, parameters):
-    from ffc import jitcompiler  # FIXME circular file dependency
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
-
-    return classname.make_name(prefix, "dofmap", "main")
+    sig = compute_signature([ufl_element], parameters)
+    return classname.make_name("ffc_element_{}".format(sig), "dofmap", "main")
 
 
 def make_coordinate_mapping_jit_classname(ufl_element, tag, parameters):
-    from ffc import jitcompiler  # FIXME circular file dependency
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters, coordinate_mapping=True)
-
-    return classname.make_name(prefix, "coordinate_mapping", "main")
+    sig = compute_signature([ufl_element], parameters, coordinate_mapping=True)
+    return classname.make_name("ffc_coordinate_mapping_{}".format(sig), "coordinate_mapping", "main")
 
 
 def make_all_element_classnames(prefix, elements, coordinate_elements, parameters):
