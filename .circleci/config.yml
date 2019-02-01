@@ -34,5 +34,6 @@ jobs:
             coveralls
       - run:
           name: Rerun tests (check caching)
+          command: |
             export PATH=$PATH:$HOME/.local/bin
             python3 -m pytest -s test/
