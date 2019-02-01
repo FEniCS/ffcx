@@ -293,29 +293,26 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
         cache_dir = "compile_cache"
 
     c_filename = cache_dir + "/" + module_name + ".c"
-    lockfile_name = c_filename + ".lock"
+    ready_name = c_filename + ".cached"
     # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
 
     try:
         # Create C file with exclusive access or fail
         open(c_filename, "x")
-        # Create a lock file while compiling
-        fd = open(lockfile_name, "x")
-        fd.close()
         # Compile
         ffibuilder.compile(tmpdir=cache_dir, verbose=False)
-        # Remove lock
-        os.remove(lockfile_name)
+        # Create a "status ready" file
+        fd = open(ready_name, "x")
+        fd.close()
     except FileExistsError:
-        print("C file already exists")
-        # Now wait if there is a lock file
+        print("C file already exists:", c_filename)
+        # Now wait for ready
         for i in range(100):
-            if not os.path.exists(lockfile_name):
-                break
-            print("Waiting for ", lockfile_name, " to be removed.")
             time.sleep(1)
-
+            if os.path.exists(ready_name):
+                break
+            print("Waiting for ", ready_name, " to appear.")
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(cache_dir + "." + module_name)
