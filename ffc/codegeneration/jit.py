@@ -11,7 +11,9 @@ import os
 import time
 
 import cffi
+import ufl
 import ffc
+from ffc.parameters import (compute_jit_parameters_signature, validate_jit_parameters)
 
 UFC_HEADER_DECL = """
 typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
@@ -215,9 +217,60 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
+def compute_signature(ufl_objects, parameters, coordinate_mapping=False):
+    """Compute the signature hash for jit modules.
+
+    Note
+    ----
+    The parameter `coordinate_mapping` is used to force compilation of finite element
+    as a coordinate mapping element. There is no way to find this information
+    just by looking at type of `ufl_object` passed.
+    """
+
+    object_signature = ""
+    for ufl_object in ufl_objects:
+        # Get signature from ufl object
+        if isinstance(ufl_object, ufl.Form):
+            kind = "form"
+            object_signature += ufl_object.signature()
+        elif isinstance(ufl_object, ufl.Mesh):
+            # When coordinate mapping is represented by a Mesh, just getting
+            # its coordinate element
+            object_signature += repr(ufl_object.ufl_coordinate_element())
+            kind = "coordinate_mapping"
+        elif coordinate_mapping and isinstance(ufl_object, ufl.FiniteElementBase):
+            object_signature += repr(ufl_object)
+            kind = "coordinate_mapping"
+        elif isinstance(ufl_object, ufl.FiniteElementBase):
+            object_signature += repr(ufl_object)
+            kind = "element"
+        else:
+            raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
+
+    # Compute deterministic string of relevant parameters
+    parameters_signature = compute_jit_parameters_signature(parameters)
+
+    # Build combined signature
+    signatures = [
+        object_signature,
+        parameters_signature,
+        str(ffc.__version__),
+        ffc.codegeneration.get_signature(),
+        kind,
+    ]
+    string = ";".join(signatures)
+
+    return hashlib.sha1(string.encode('utf-8')).hexdigest()
+
+
+
 def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
+
+    # Get a signature for these elements
+    module_name = 'elements_' + compute_signature(elements, p)
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
     element_template = "ufc_finite_element * create_{name}(void);\n"
@@ -243,6 +296,9 @@ def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
+    # Get a signature for these forms
+    module_name = 'forms_' + compute_signature(forms, p)
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL \
         + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
@@ -262,6 +318,10 @@ def compile_forms(forms, module_name=None, parameters=None):
 def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
+
+    # Get a signature for these cmaps
+    module_name = 'cmaps_' + compute_signature(meshes, p, True)
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
