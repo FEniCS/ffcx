@@ -61,10 +61,6 @@ def _encapsulate_elements(elements, object_names, classnames):
 
 def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
 
-    # FIXME: Figure what to do with coordinate maps. Can there be more
-    # than 1?
-    assert len(classnames["coordinate_maps"]) == 1
-
     capsules = []
     for i, form in enumerate(form_data):
         element_numbers = [
