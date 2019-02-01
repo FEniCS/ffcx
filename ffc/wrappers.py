@@ -74,7 +74,10 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
         ufc_form_name = classnames["forms"][i]
         ufc_elements = [classnames["elements"][j] for j in element_numbers]
         ufc_dofmaps = [classnames["dofmaps"][j] for j in element_numbers]
-        ufc_cmaps = [classnames["coordinate_maps"][0]]
+
+        ufc_cmaps = []
+        if len(classnames["coordinate_maps"]) > 0:
+            ufc_cmaps = [classnames["coordinate_maps"][0]]
 
         capsules.append(
             dolfin.UFCFormNames(name, coefficient_names, ufc_form_name, ufc_elements, ufc_dofmaps,
