@@ -299,6 +299,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     objects = zip(objects[::2], objects[1::2])
     return objects, module
 
+
 def get_cached_module(module_name, object_names):
     cache_dir = "compile_cache"
     c_filename = cache_dir + "/" + module_name + ".c"
@@ -364,7 +365,6 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]
-
 
     obj, mod = get_cached_module(module_name, cmap_names)
     if obj is not None:
