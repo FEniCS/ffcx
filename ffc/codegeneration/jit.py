@@ -270,25 +270,61 @@ def compile_elements(elements, module_name=None, parameters=None):
     # Get a signature for these elements
     module_name = 'elements_' + compute_signature(elements, p)
 
-    scalar_type = p["scalar_type"].replace("complex", "_Complex")
-    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
-    element_template = "ufc_finite_element * create_{name}(void);\n"
-    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
     names = []
     for e in elements:
         name = ffc.ir.representation.make_finite_element_jit_classname(e, "Element", p)
         names.append(name)
-        decl += element_template.format(name=name)
         name = ffc.ir.representation.make_dofmap_jit_classname(e, "Element", p)
         names.append(name)
-        decl += dofmap_template.format(name=name)
+
+    obj, mod = get_cached_module(module_name, names)
+    if obj is not None:
+        # Pair up elements with dofmaps
+        obj = zip(obj[::2], obj[1::2])
+        return obj, mod
+
+    scalar_type = p["scalar_type"].replace("complex", "_Complex")
+    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
+    element_template = "ufc_finite_element * create_{name}(void);\n"
+    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
+
+    for i in range(len(elements)):
+        decl += element_template.format(name=names[i * 2])
+        decl += dofmap_template.format(name=names[i * 2 + 1])
 
     _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix=("Element", True), parameters=p)
 
-    objects, module = _compile_objects(decl, code_body, names, module_name, p)
+    objects, module = _compile_objects(decl, code_body, names, module_name, p, force=True)
     # Pair up elements with dofmaps
     objects = zip(objects[::2], objects[1::2])
     return objects, module
+
+def get_cached_module(module_name, object_names):
+    cache_dir = "compile_cache"
+    c_filename = cache_dir + "/" + module_name + ".c"
+    ready_name = c_filename + ".cached"
+    # Ensure cache dir exists
+    os.makedirs(cache_dir, exist_ok=True)
+
+    try:
+        # Create C file with exclusive access
+        open(c_filename, "x")
+        return None, None
+
+    except FileExistsError:
+        print("Cached C file already exists:", c_filename)
+        # Now wait for ready
+        for i in range(100):
+            if os.path.exists(ready_name):
+                break
+            print("Waiting for ", ready_name, " to appear.")
+            time.sleep(1)
+
+    # Build list of compiled objects
+    compiled_module = importlib.import_module(cache_dir + "." + module_name)
+    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+
+    return compiled_objects, compiled_module
 
 
 def compile_forms(forms, module_name=None, parameters=None):
@@ -298,20 +334,25 @@ def compile_forms(forms, module_name=None, parameters=None):
     # Get a signature for these forms
     module_name = 'forms_' + compute_signature(forms, p)
 
+    form_names = [ffc.classname.make_name("Form", "form", i)
+                  for i in range(len(forms))]
+
+    obj, mod = get_cached_module(module_name, form_names)
+    if obj is not None:
+        return obj, mod
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL \
         + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
-    form_names = [ffc.classname.make_name("Form", "form", i)
-                  for i in range(len(forms))]
     form_template = "ufc_form * create_{name}(void);\n"
     for name in form_names:
         decl += form_template.format(name=name)
 
     _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix=("Form", True), parameters=p)
 
-    return _compile_objects(decl, code_body, form_names, module_name, p)
+    return _compile_objects(decl, code_body, form_names, module_name, p, force=True)
 
 
 def compile_coordinate_maps(meshes, module_name=None, parameters=None):
@@ -321,20 +362,27 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     # Get a signature for these cmaps
     module_name = 'cmaps_' + compute_signature(meshes, p, True)
 
+    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
+        mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]
+
+
+    obj, mod = get_cached_module(module_name, cmap_names)
+    if obj is not None:
+        return obj, mod
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
-    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
-        mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]
+
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
     _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix=("Mesh", True), parameters=p)
 
-    return _compile_objects(decl, code_body, cmap_names, module_name, p)
+    return _compile_objects(decl, code_body, cmap_names, module_name, p, force=True)
 
 
-def _compile_objects(decl, code_body, object_names, module_name, parameters):
+def _compile_objects(decl, code_body, object_names, module_name, parameters, force=False):
 
     if not module_name:
         h = hashlib.sha1()
@@ -359,7 +407,8 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
 
     try:
         # Create C file with exclusive access or fail
-        open(c_filename, "x")
+        if not force:
+            open(c_filename, "x")
         # Compile
         ffibuilder.compile(tmpdir=cache_dir, verbose=False)
         # Create a "status ready" file
