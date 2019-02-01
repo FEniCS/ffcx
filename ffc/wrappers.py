@@ -37,6 +37,8 @@ def _encapsulate_elements(elements, object_names, classnames):
     """Generate capsules for each element named in the input (no wrappers
     for subelements will be created)"""
 
+    assert not classnames["coordinate_maps"], "Need to fix element wrappers for coordinate mappings."
+
     capsules = []
     for i, element in enumerate(elements):
         name = object_names.get(id(element), None)
@@ -54,6 +56,10 @@ def _encapsulate_elements(elements, object_names, classnames):
 
 def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
 
+    # FIXME: Figure what to do with coordinate maps. Can there be more
+    # than 1?
+    assert len(classnames["coordinate_maps"]) == 1
+
     capsules = []
     for i, form in enumerate(form_data):
         element_numbers = [
@@ -67,10 +73,7 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
         ufc_form_name = classnames["forms"][i]
         ufc_elements = [classnames["elements"][j] for j in element_numbers]
         ufc_dofmaps = [classnames["dofmaps"][j] for j in element_numbers]
-
-        ufc_cmaps = []
-        if len(classnames["coordinate_maps"]) > 0:
-            ufc_cmaps = [classnames["coordinate_maps"][0]]
+        ufc_cmaps = [classnames["coordinate_maps"][0]]
 
         capsules.append(
             dolfin.UFCFormNames(name, coefficient_names, ufc_form_name, ufc_elements, ufc_dofmaps,

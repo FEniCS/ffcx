@@ -140,12 +140,15 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     # Extract class names from the IR and add to a dict
     # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
-    classnames = defaultdict(list)
-    comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
-    for ir_comp, e_name in zip(ir, comp):
-        for e in ir_comp:
-            classnames[e_name].append(e["classname"])
-    wrapper_code = generate_wrapper_code(analysis, prefix[0], object_names, classnames, parameters)
+    if len(object_names) > 0:
+        classnames = defaultdict(list)
+        comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
+        for ir_comp, e_name in zip(ir, comp):
+            for e in ir_comp:
+                classnames[e_name].append(e["classname"])
+        wrapper_code = generate_wrapper_code(analysis, prefix[0], object_names, classnames, parameters)
+    else:
+        wrapper_code = None
 
     _print_timing(4.1, time() - cpu_time)
 
