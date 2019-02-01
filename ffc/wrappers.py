@@ -52,7 +52,7 @@ def _encapsulate_elements(elements, object_names, classnames):
                 "name": name,
                 "element_classname": classnames["elements"][i],
                 "dofmap_classname": classnames["dofmaps"][i],
-                "coordinate_mapping_classname": classnames["coordinate_maps"][i]
+                "coordinate_mapping_classname": None
             }
             capsules.append(dolfin.UFCElementNames(**args))
 
@@ -74,7 +74,7 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
         ufc_form_name = classnames["forms"][i]
         ufc_elements = [classnames["elements"][j] for j in element_numbers]
         ufc_dofmaps = [classnames["dofmaps"][j] for j in element_numbers]
-        ufc_cmaps = [classnames["coordinate_maps"][j] for j in element_numbers]
+        ufc_cmaps = [classnames["coordinate_maps"][0]]
 
         capsules.append(
             dolfin.UFCFormNames(name, coefficient_names, ufc_form_name, ufc_elements, ufc_dofmaps,
