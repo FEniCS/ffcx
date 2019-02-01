@@ -25,15 +25,12 @@ logger = logging.getLogger(__name__)
 
 
 def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteElement], List],
-                        kind: str,
                         parameters: Dict) -> Tuple[Tuple[ufl.algorithms.formdata.FormData], List, Dict, List]:
     """Analyze ufl object(s)
 
     Parameters
     ----------
     ufl_objects
-    kind
-        One of `form`, `element` or `coordinate_mapping`
     parameters
 
     Returns
@@ -47,13 +44,13 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     unique_coordinate_elements
 
     """
-    logger.info("Compiler stage 1: Analyzing %s(s)" % (kind, ))
+    logger.info("Compiler stage 1: Analyzing UFL objects")
 
     form_datas = ()
     unique_elements = set()
     unique_coordinate_elements = set()
 
-    if kind == "form":
+    if isinstance(ufl_objects[0], ufl.form.Form):
         forms = ufl_objects
 
         # Analyze forms
@@ -67,17 +64,19 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
         for form_data in form_datas:
             unique_coordinate_elements.update(form_data.coordinate_elements)
 
-    elif kind == "element":
+    elif isinstance(ufl_objects[0], ufl.FiniteElementBase):
         elements = ufl_objects
 
         # Extract unique (sub)elements
         unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
 
-    elif kind == "coordinate_mapping":
+    elif isinstance(ufl_objects[0], ufl.Mesh):
         meshes = ufl_objects
 
         # Extract unique (sub)elements
         unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
+    else:
+        raise TypeError("UFL objects not recognised.")
 
     # Make sure coordinate elements and their subelements are included
     unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(unique_coordinate_elements))

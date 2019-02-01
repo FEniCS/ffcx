@@ -60,18 +60,13 @@ Compiler stages:
    to the UFC format, generating as output one or more .h/.c files
    conforming to the UFC format.
 
-The main interface is defined by the following two functions::
-
-    compile_form compile_element
-
 """
-
-__all__ = ["compile_form", "compile_element"]
 
 import logging
 import os
 from collections import defaultdict
 from time import time
+from typing import Dict, List, Tuple, Union
 
 import ufl
 from ffc.analysis import analyze_ufl_objects
@@ -89,30 +84,20 @@ def _print_timing(stage, timing):
         stage=stage, time=timing))
 
 
-def compile_form(forms, object_names=None, prefix="Form", parameters=None, jit=False):
-    """Generate UFC code for a given UFL form or list of UFL forms."""
-    return compile_ufl_objects(forms, "form", object_names, prefix, parameters, jit)
+def compile_ufl_objects(ufl_objects: Union[List, Tuple],
+                        object_names: Dict = {},
+                        prefix: Tuple = None,
+                        parameters: Dict = None,
+                        jit: bool = False):
+    """Generate UFC code for a given UFL objects.
 
+    Parameters
+    ----------
+    ufl_objects
+        Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
 
-def compile_element(elements, object_names=None, prefix="Element", parameters=None, jit=False):
-    """Generate UFC code for a given UFL element or list of UFL elements."""
-    return compile_ufl_objects(elements, "element", object_names, prefix, parameters, jit)
-
-
-def compile_coordinate_mapping(meshes, object_names=None, prefix="Mesh", parameters=None,
-                               jit=False):
-    """Generates UFC code for a given UFL mesh or list of UFL meshes."""
-    return compile_ufl_objects(meshes, "coordinate_mapping", object_names, prefix, parameters, jit)
-
-
-def compile_ufl_objects(ufl_objects,
-                        kind,
-                        object_names=None,
-                        prefix=None,
-                        parameters=None,
-                        jit=False):
-    """Generate UFC code for a given UFL form or list of UFL forms."""
-    logger.info("Compiling {} {}\n".format(kind, prefix))
+    """
+    logger.info("Compiling {}\n".format(prefix))
 
     # Reset timing
     cpu_time_0 = time()
@@ -127,14 +112,17 @@ def compile_ufl_objects(ufl_objects,
         ufl_objects = (ufl_objects, )
     if not ufl_objects:
         return "", ""
+
     if prefix[0] != os.path.basename(prefix[0]):
         raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix[0]))
-    if object_names is None:
-        object_names = {}
+
+    # Check that all UFL objects passed here are of the same class/type
+    obj_type = type(ufl_objects[0])
+    assert (obj_type == type(x) for x in ufl_objects)
 
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_ufl_objects(ufl_objects, kind, parameters)
+    analysis = analyze_ufl_objects(ufl_objects, parameters)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
