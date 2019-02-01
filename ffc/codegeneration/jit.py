@@ -263,6 +263,34 @@ def compute_signature(ufl_objects, parameters, coordinate_mapping=False):
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
+def get_cached_module(module_name, object_names):
+    cache_dir = "compile_cache"
+    c_filename = cache_dir + "/" + module_name + ".c"
+    ready_name = c_filename + ".cached"
+    # Ensure cache dir exists
+    os.makedirs(cache_dir, exist_ok=True)
+
+    try:
+        # Create C file with exclusive access
+        open(c_filename, "x")
+        return None, None
+
+    except FileExistsError:
+        print("Cached C file already exists:", c_filename)
+        # Now wait for ready
+        for i in range(100):
+            if os.path.exists(ready_name):
+                break
+            print("Waiting for ", ready_name, " to appear.")
+            time.sleep(1)
+
+    # Build list of compiled objects
+    compiled_module = importlib.import_module(cache_dir + "." + module_name)
+    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+
+    return compiled_objects, compiled_module
+
+
 def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
@@ -294,38 +322,10 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix=("Element", True), parameters=p)
 
-    objects, module = _compile_objects(decl, code_body, names, module_name, p, force=True)
+    objects, module = _compile_objects(decl, code_body, names, module_name, p)
     # Pair up elements with dofmaps
     objects = zip(objects[::2], objects[1::2])
     return objects, module
-
-
-def get_cached_module(module_name, object_names):
-    cache_dir = "compile_cache"
-    c_filename = cache_dir + "/" + module_name + ".c"
-    ready_name = c_filename + ".cached"
-    # Ensure cache dir exists
-    os.makedirs(cache_dir, exist_ok=True)
-
-    try:
-        # Create C file with exclusive access
-        open(c_filename, "x")
-        return None, None
-
-    except FileExistsError:
-        print("Cached C file already exists:", c_filename)
-        # Now wait for ready
-        for i in range(100):
-            if os.path.exists(ready_name):
-                break
-            print("Waiting for ", ready_name, " to appear.")
-            time.sleep(1)
-
-    # Build list of compiled objects
-    compiled_module = importlib.import_module(cache_dir + "." + module_name)
-    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
-
-    return compiled_objects, compiled_module
 
 
 def compile_forms(forms, module_name=None, parameters=None):
@@ -353,7 +353,7 @@ def compile_forms(forms, module_name=None, parameters=None):
 
     _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix=("Form", True), parameters=p)
 
-    return _compile_objects(decl, code_body, form_names, module_name, p, force=True)
+    return _compile_objects(decl, code_body, form_names, module_name, p)
 
 
 def compile_coordinate_maps(meshes, module_name=None, parameters=None):
@@ -379,10 +379,10 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
     _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix=("Mesh", True), parameters=p)
 
-    return _compile_objects(decl, code_body, cmap_names, module_name, p, force=True)
+    return _compile_objects(decl, code_body, cmap_names, module_name, p)
 
 
-def _compile_objects(decl, code_body, object_names, module_name, parameters, force=False):
+def _compile_objects(decl, code_body, object_names, module_name, parameters):
 
     if not module_name:
         h = hashlib.sha1()
@@ -405,23 +405,13 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters, for
     # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
 
-    try:
-        # Create C file with exclusive access or fail
-        if not force:
-            open(c_filename, "x")
-        # Compile
-        ffibuilder.compile(tmpdir=cache_dir, verbose=False)
-        # Create a "status ready" file
-        fd = open(ready_name, "x")
-        fd.close()
-    except FileExistsError:
-        print("C file already exists:", c_filename)
-        # Now wait for ready
-        for i in range(100):
-            time.sleep(1)
-            if os.path.exists(ready_name):
-                break
-            print("Waiting for ", ready_name, " to appear.")
+    # Compile
+    ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+
+    # Create a "status ready" file
+    # If this fails, it is an error, because it should not exist yet.
+    fd = open(ready_name, "x")
+    fd.close()
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(cache_dir + "." + module_name)

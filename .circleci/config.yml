@@ -32,3 +32,7 @@ jobs:
             export PATH=$PATH:$HOME/.local/bin
             coverage run --source ffc -m pytest -s test/
             coveralls
+      - run:
+          name: Rerun tests (check caching)
+            export PATH=$PATH:$HOME/.local/bin
+            python3 -m pytest -s test/
