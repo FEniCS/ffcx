@@ -14,10 +14,16 @@ logger = logging.getLogger(__name__)
 
 def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters):
 
-    logger.info("Compiler stage 4.1: Generating additional wrapper code")
+    logger.info("Compiler stage 4.1: Generating additional wrapper code for {}".format(object_names))
 
-    # Encapsulate data
-    capsules, common_space = _encapsulate(prefix, object_names, classnames, analysis, parameters)
+    # Extract data from analysis
+    form_data, elements, element_map, domains = analysis
+
+    if not form_data:
+        capsules = _encapsulate_elements(elements, object_names, classnames)
+        common_space = False
+    else:
+        capsules, common_space = _encapsule_forms(prefix, object_names, classnames, form_data, element_map)
 
     # Generate code
     code_h, code_c = dolfin.generate_wrappers(prefix, capsules, common_space)
@@ -25,19 +31,6 @@ def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters
     code_c += "\n"
 
     return code_h, code_c
-
-
-def _encapsulate(prefix, object_names, classnames, analysis, parameters):
-
-    # Extract data from analysis
-    form_data, elements, element_map, domains = analysis
-
-    # FIXME: Encapsulate domains?
-
-    if not form_data:
-        return _encapsulate_elements(elements, object_names, classnames), False
-    else:
-        return _encapsule_forms(prefix, object_names, classnames, form_data, element_map)
 
 
 def _encapsulate_elements(elements, object_names, classnames):
