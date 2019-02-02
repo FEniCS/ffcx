@@ -27,14 +27,6 @@ logger = logging.getLogger(__name__)
 parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFC, https://fenicsproject.org)")
 parser.add_argument(
-    "-l",
-    "--language",
-    type=str,
-    action='store',
-    choices=["ufc", "dolfin"],
-    default="ufc",
-    help="target language/wrappers (default: %(default)s)")
-parser.add_argument(
     "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
 parser.add_argument("-d", "--debug", action='store_true', help="enable debug output")
 parser.add_argument("-v", "--verbose", action='store_true', help="verbose output")
@@ -89,7 +81,6 @@ def main(args=None):
         ffc_logger.setLevel(logging.DEBUG)
     if xargs.verbose:
         ffc_logger.setLevel(logging.INFO)
-    parameters["format"] = xargs.language
     parameters["representation"] = xargs.representation
     parameters["quadrature_rule"] = xargs.quadrature_rule
     parameters["quadrature_degree"] = xargs.quadrature_degree
