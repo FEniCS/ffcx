@@ -217,7 +217,7 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
-def compute_signature(ufl_objects, parameters, coordinate_mapping=False):
+def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
     """Compute the signature hash for jit modules.
 
     Note
@@ -257,6 +257,7 @@ def compute_signature(ufl_objects, parameters, coordinate_mapping=False):
         str(ffc.__version__),
         ffc.codegeneration.get_signature(),
         kind,
+        tag
     ]
     string = ";".join(signatures)
 
@@ -296,7 +297,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     # Get a signature for these elements
-    module_name = 'elements_' + compute_signature(elements, p)
+    module_name = 'elements_' + compute_signature(elements, '', p)
 
     names = []
     for e in elements:
@@ -333,7 +334,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     # Get a signature for these forms
-    module_name = 'forms_' + compute_signature(forms, p)
+    module_name = 'forms_' + compute_signature(forms, '', p)
 
     form_names = [ffc.classname.make_name("Form", "form", i)
                   for i in range(len(forms))]
@@ -361,7 +362,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     # Get a signature for these cmaps
-    module_name = 'cmaps_' + compute_signature(meshes, p, True)
+    module_name = 'cmaps_' + compute_signature(meshes, '', p, True)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]

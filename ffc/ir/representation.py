@@ -39,19 +39,19 @@ ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "cus
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], parameters)
+    sig = compute_signature([ufl_element], tag, parameters)
     return classname.make_name("ffc_element_{}".format(sig), "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, tag, parameters):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], parameters)
+    sig = compute_signature([ufl_element], tag, parameters)
     return classname.make_name("ffc_element_{}".format(sig), "dofmap", "main")
 
 
 def make_coordinate_mapping_jit_classname(ufl_element, tag, parameters):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], parameters, coordinate_mapping=True)
+    sig = compute_signature([ufl_element], tag, parameters, coordinate_mapping=True)
     return classname.make_name("ffc_coordinate_mapping_{}".format(sig), "coordinate_mapping", "main")
 
 
