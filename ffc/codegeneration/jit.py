@@ -264,10 +264,13 @@ def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
-def get_cached_module(module_name, object_names):
-    cache_dir = "compile_cache"
+def get_cached_module(module_name, object_names, parameters):
+    cache_dir = parameters.get("cache_dir",
+                               "compile_cache")
+
     c_filename = cache_dir + "/" + module_name + ".c"
     ready_name = c_filename + ".cached"
+
     # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
 
@@ -306,7 +309,7 @@ def compile_elements(elements, module_name=None, parameters=None):
         name = ffc.ir.representation.make_dofmap_jit_classname(e, "Element", p)
         names.append(name)
 
-    obj, mod = get_cached_module(module_name, names)
+    obj, mod = get_cached_module(module_name, names, p)
     if obj is not None:
         # Pair up elements with dofmaps
         obj = zip(obj[::2], obj[1::2])
@@ -339,7 +342,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     form_names = [ffc.classname.make_name("Form", "form", i)
                   for i in range(len(forms))]
 
-    obj, mod = get_cached_module(module_name, form_names)
+    obj, mod = get_cached_module(module_name, form_names, p)
     if obj is not None:
         return obj, mod
 
@@ -367,7 +370,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]
 
-    obj, mod = get_cached_module(module_name, cmap_names)
+    obj, mod = get_cached_module(module_name, cmap_names, p)
     if obj is not None:
         return obj, mod
 
@@ -385,21 +388,13 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
 def _compile_objects(decl, code_body, object_names, module_name, parameters):
 
-    if not module_name:
-        h = hashlib.sha1()
-        h.update((code_body + decl).encode('utf-8'))
-        module_name = "_" + h.hexdigest()
-
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
         module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
     ffibuilder.cdef(decl)
 
-    cache_dir = None
-    if parameters:
-        cache_dir = parameters.get("cache_dir")
-    if not cache_dir:
-        cache_dir = "compile_cache"
+    cache_dir = parameters.get("cache_dir",
+                               "compile_cache")
 
     c_filename = cache_dir + "/" + module_name + ".c"
     ready_name = c_filename + ".cached"

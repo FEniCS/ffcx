@@ -52,7 +52,7 @@ _FFC_BUILD_PARAMETERS = {
     "external_include_dirs": "",
 }
 _FFC_CACHE_PARAMETERS = {
-    "cache_dir": "",  # cache dir used by Instant
+    "cache_dir": "compile_cache",  # cache dir used by default
     "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
