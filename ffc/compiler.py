@@ -86,7 +86,7 @@ def _print_timing(stage, timing):
 
 def compile_ufl_objects(ufl_objects: Union[List, Tuple],
                         object_names: Dict = {},
-                        prefix: Tuple = None,
+                        prefix: str = None,
                         parameters: Dict = None,
                         jit: bool = False):
     """Generate UFC code for a given UFL objects.
@@ -113,8 +113,8 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
     if not ufl_objects:
         return "", ""
 
-    if prefix[0] != os.path.basename(prefix[0]):
-        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix[0]))
+    if prefix != os.path.basename(prefix):
+        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
 
     # Check that all UFL objects passed here are of the same class/type
     obj_type = type(ufl_objects[0])

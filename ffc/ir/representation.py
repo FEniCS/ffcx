@@ -59,18 +59,13 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, parameter
     # Make unique classnames to match separately jit-compiled
     # module
 
-    if (prefix[1]):
-        tag = prefix[0]
-    else:
-        tag = ""
-
     classnames = {
-        "finite_element": {e: make_finite_element_jit_classname(e, tag, parameters)
+        "finite_element": {e: make_finite_element_jit_classname(e, prefix, parameters)
                            for e in elements},
-        "dofmap": {e: make_dofmap_jit_classname(e, tag, parameters)
+        "dofmap": {e: make_dofmap_jit_classname(e, prefix, parameters)
                    for e in elements},
         "coordinate_mapping":
-        {e: make_coordinate_mapping_jit_classname(e, tag, parameters)
+        {e: make_coordinate_mapping_jit_classname(e, prefix, parameters)
          for e in coordinate_elements},
     }
 
@@ -88,8 +83,6 @@ def compute_ir(analysis, prefix, parameters, jit=False):
 
     # Extract data from analysis
     form_datas, elements, element_numbers, coordinate_elements = analysis
-
-    assert isinstance(prefix, tuple)
 
     # Construct classnames for all element objects and coordinate mappings
     classnames = make_all_element_classnames(prefix, elements, coordinate_elements, parameters)
@@ -139,7 +132,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute and flatten representation of integrals
     logger.info("Computing representation of integrals")
     irs = [
-        _compute_integral_ir(fd, form_index, prefix[0], element_numbers, classnames, parameters, jit)
+        _compute_integral_ir(fd, form_index, prefix, element_numbers, classnames, parameters, jit)
         for (form_index, fd) in enumerate(form_datas)
     ]
     ir_integrals = list(itertools.chain(*irs))
@@ -147,7 +140,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, form_index, prefix[0], element_numbers, classnames, parameters, jit)
+        _compute_form_ir(fd, form_index, prefix, element_numbers, classnames, parameters, jit)
         for (form_index, fd) in enumerate(form_datas)
     ]
 
