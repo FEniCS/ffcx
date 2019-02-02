@@ -321,7 +321,7 @@ def compile_elements(elements, module_name=None, parameters=None):
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix=("Element", True), parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix="Element", parameters=p)
 
     objects, module = _compile_objects(decl, code_body, names, module_name, p)
     # Pair up elements with dofmaps
@@ -352,7 +352,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix=("Form", True), parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="Form", parameters=p)
 
     return _compile_objects(decl, code_body, form_names, module_name, p)
 
@@ -378,7 +378,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix=("Mesh", True), parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix="Mesh", parameters=p)
 
     return _compile_objects(decl, code_body, cmap_names, module_name, p)
 
