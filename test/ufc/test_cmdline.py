@@ -14,7 +14,7 @@ def test_cmdline_simple():
     os.chdir(os.path.dirname(__file__))
     subprocess.run("ffc")
     subprocess.run(["ffc", "-v", "Poisson.ufl"])
-    subprocess.run(["ffc", "-l", "dolfin", "Poisson.ufl"])
+    subprocess.run(["ffc", "Poisson.ufl"])
 
 
 def test_visualise():

@@ -138,10 +138,9 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
     # Stage 4.1: generate convenience wrappers, e.g. for DOLFIN
     cpu_time = time()
 
-    if parameters["format"] == "dolfin":
-        # FIXME: Can this be avoided?
-        # Extract class names from the IR and add to a dict
-        # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
+    # Extract class names from the IR and add to a dict
+    # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
+    if len(object_names) > 0:
         classnames = defaultdict(list)
         comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
         for ir_comp, e_name in zip(ir, comp):

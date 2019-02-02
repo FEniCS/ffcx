@@ -140,8 +140,6 @@ def generate_form(form, prefix, classname):
     blocks_c = []
 
     # Generate code for "Form_x_FunctionSpace_y" factories
-    # FIXME: Is this always the case?
-    assert (len(form.ufc_coordinate_mapping_classnames) == 1)
     for i in range(form.rank):
         args = {
             "prefix": prefix,

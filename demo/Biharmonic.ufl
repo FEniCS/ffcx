@@ -22,7 +22,7 @@
 # Biharmonic equation in a discontinuous Galerkin (DG)
 # formulation.
 #
-# Compile this form with FFC: ffc -l dolfin Biharmonic.ufl
+# Compile this form with FFC: ffc Biharmonic.ufl
 
 # Elements
 element = FiniteElement("Lagrange", triangle, 2)
