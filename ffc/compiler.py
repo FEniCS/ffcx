@@ -146,7 +146,7 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
         for ir_comp, e_name in zip(ir, comp):
             for e in ir_comp:
                 classnames[e_name].append(e["classname"])
-        wrapper_code = generate_wrapper_code(analysis, prefix[0], object_names, classnames, parameters)
+        wrapper_code = generate_wrapper_code(analysis, prefix, object_names, classnames, parameters)
     else:
         wrapper_code = None
 
@@ -154,7 +154,7 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     # Stage 5: format code
     cpu_time = time()
-    code_h, code_c = format_code(code, wrapper_code, prefix[0], parameters)
+    code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
     logger.info("FFC finished in {} seconds.".format(time() - cpu_time_0))
