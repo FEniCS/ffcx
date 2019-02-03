@@ -7,10 +7,13 @@
 
 import importlib
 import os
+import logging
 import time
 import cffi
 
 import ffc
+
+logger = logging.getLogger(__name__)
 
 UFC_HEADER_DECL = """
 typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
@@ -232,7 +235,7 @@ def get_cached_module(module_name, object_names, parameters):
         return None, None
 
     except FileExistsError:
-        print("Cached C file already exists:", c_filename)
+        logger.info("Cached C file already exists:" + c_filename)
         # Now wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
@@ -248,7 +251,8 @@ def get_cached_module(module_name, object_names, parameters):
 
                 return compiled_objects, compiled_module
 
-            print("Waiting for ", ready_name, " to appear.")
+            logger.info("Waiting for "
+                        + ready_name + " to appear.")
             time.sleep(1)
         raise TimeoutError("""JIT compilation did not complete on another process.
         Try cleaning cache or increase timeout parameter.""")
@@ -287,7 +291,7 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     objects, module = _compile_objects(decl, code_body, names, module_name, p)
     # Pair up elements with dofmaps
-    objects = zip(objects[::2], objects[1::2])
+    objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
 
 
@@ -350,6 +354,7 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
         module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
+
     ffibuilder.cdef(decl)
 
     cache_dir = parameters.get("cache_dir",
