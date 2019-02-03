@@ -250,7 +250,8 @@ def get_cached_module(module_name, object_names, parameters):
 
             print("Waiting for ", ready_name, " to appear.")
             time.sleep(1)
-        raise TimeoutError("JIT compilation did not complete on another process. Try cleaning cache or increase timeout parameter.")
+        raise TimeoutError("""JIT compilation did not complete on another process.
+        Try cleaning cache or increase timeout parameter.""")
 
 
 def compile_elements(elements, module_name=None, parameters=None):
