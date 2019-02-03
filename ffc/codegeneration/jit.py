@@ -275,7 +275,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     obj, mod = get_cached_module(module_name, names, p)
     if obj is not None:
         # Pair up elements with dofmaps
-        obj = zip(obj[::2], obj[1::2])
+        obj = list(zip(obj[::2], obj[1::2]))
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
