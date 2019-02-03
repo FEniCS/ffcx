@@ -38,6 +38,9 @@ _FFC_GENERATE_PARAMETERS = {
     # Scalar type to be used in generated code (real or complex
     # C double precision floating-point types)
     "scalar_type": "double",
+    # Max time to wait on cache if not building on this
+    # process (seconds)
+    "timeout": 100,
     # ':' separated list of include filenames to add to generated code
     "external_includes": "",
 }

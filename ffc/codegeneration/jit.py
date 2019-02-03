@@ -5,15 +5,12 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import hashlib
 import importlib
 import os
 import time
-
 import cffi
-import ufl
+
 import ffc
-from ffc.parameters import compute_jit_parameters_signature
 
 UFC_HEADER_DECL = """
 typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
@@ -217,10 +214,11 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
-
 def get_cached_module(module_name, object_names, parameters):
     cache_dir = parameters.get("cache_dir",
                                "compile_cache")
+
+    timeout = int(parameters.get("timeout", 100))
 
     c_filename = cache_dir + "/" + module_name + ".c"
     ready_name = c_filename + ".cached"
@@ -236,17 +234,23 @@ def get_cached_module(module_name, object_names, parameters):
     except FileExistsError:
         print("Cached C file already exists:", c_filename)
         # Now wait for ready
-        for i in range(100):
+        for i in range(timeout):
             if os.path.exists(ready_name):
-                break
+                # Build list of compiled objects
+                compiled_module = \
+                    importlib.import_module(cache_dir
+                                            + "."
+                                            + module_name)
+                compiled_objects = \
+                    [getattr(compiled_module.lib,
+                             "create_" + name)()
+                     for name in object_names]
+
+                return compiled_objects, compiled_module
+
             print("Waiting for ", ready_name, " to appear.")
             time.sleep(1)
-
-    # Build list of compiled objects
-    compiled_module = importlib.import_module(cache_dir + "." + module_name)
-    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
-
-    return compiled_objects, compiled_module
+        raise TimeoutError("JIT compilation did not complete on another process. Try cleaning cache or increase timeout parameter.")
 
 
 def compile_elements(elements, module_name=None, parameters=None):
