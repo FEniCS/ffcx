@@ -217,52 +217,6 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
-def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
-    """Compute the signature hash for jit modules.
-
-    Note
-    ----
-    The parameter `coordinate_mapping` is used to force compilation of finite element
-    as a coordinate mapping element. There is no way to find this information
-    just by looking at type of `ufl_object` passed.
-    """
-
-    object_signature = ""
-    for ufl_object in ufl_objects:
-        # Get signature from ufl object
-        if isinstance(ufl_object, ufl.Form):
-            kind = "form"
-            object_signature += ufl_object.signature()
-        elif isinstance(ufl_object, ufl.Mesh):
-            # When coordinate mapping is represented by a Mesh, just getting
-            # its coordinate element
-            object_signature += repr(ufl_object.ufl_coordinate_element())
-            kind = "coordinate_mapping"
-        elif coordinate_mapping and isinstance(ufl_object, ufl.FiniteElementBase):
-            object_signature += repr(ufl_object)
-            kind = "coordinate_mapping"
-        elif isinstance(ufl_object, ufl.FiniteElementBase):
-            object_signature += repr(ufl_object)
-            kind = "element"
-        else:
-            raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
-
-    # Compute deterministic string of relevant parameters
-    parameters_signature = compute_jit_parameters_signature(parameters)
-
-    # Build combined signature
-    signatures = [
-        object_signature,
-        parameters_signature,
-        str(ffc.__version__),
-        ffc.codegeneration.get_signature(),
-        kind,
-        tag
-    ]
-    string = ";".join(signatures)
-
-    return hashlib.sha1(string.encode('utf-8')).hexdigest()
-
 
 def get_cached_module(module_name, object_names, parameters):
     cache_dir = parameters.get("cache_dir",
@@ -300,7 +254,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     # Get a signature for these elements
-    module_name = 'elements_' + compute_signature(elements, '', p)
+    module_name = 'elements_' + ffc.classname.compute_signature(elements, '', p)
 
     names = []
     for e in elements:
@@ -337,7 +291,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     # Get a signature for these forms
-    module_name = 'forms_' + compute_signature(forms, '', p)
+    module_name = 'forms_' + ffc.classname.compute_signature(forms, '', p)
 
     form_names = [ffc.classname.make_name("Form", "form", i)
                   for i in range(len(forms))]
@@ -365,7 +319,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     # Get a signature for these cmaps
-    module_name = 'cmaps_' + compute_signature(meshes, '', p, True)
+    module_name = 'cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]

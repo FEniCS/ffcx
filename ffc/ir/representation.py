@@ -25,7 +25,6 @@ import numpy
 import ffc.fiatinterface
 import FIAT.reference_element
 import ufl
-from ffc.codegeneration.jit import compute_signature
 from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, MixedElement, FlattenedDimensions,
                                QuadratureElement, SpaceOfReals, create_element)
@@ -39,19 +38,19 @@ ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "cus
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], tag, parameters)
+    sig = classname.compute_signature([ufl_element], tag, parameters)
     return classname.make_name("ffc_element_{}".format(sig), "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, tag, parameters):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], tag, parameters)
+    sig = classname.compute_signature([ufl_element], tag, parameters)
     return classname.make_name("ffc_element_{}".format(sig), "dofmap", "main")
 
 
 def make_coordinate_mapping_jit_classname(ufl_element, tag, parameters):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], tag, parameters, coordinate_mapping=True)
+    sig = classname.compute_signature([ufl_element], tag, parameters, coordinate_mapping=True)
     return classname.make_name("ffc_coordinate_mapping_{}".format(sig), "coordinate_mapping", "main")
 
 
