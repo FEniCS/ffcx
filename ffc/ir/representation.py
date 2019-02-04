@@ -92,7 +92,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     if jit and form_datas:
         # While we may get multiple forms during command line action,
         # not so during jit
-#        assert len(form_datas) == 1, "Expecting only one form data instance during jit."
+        #        assert len(form_datas) == 1, "Expecting only one form data instance during jit."
         # Drop some processing
         elements = []
         coordinate_elements = []
