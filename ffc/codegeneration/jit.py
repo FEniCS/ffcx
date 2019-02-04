@@ -230,21 +230,21 @@ def get_ufl_dependencies(ufl_objects, parameters):
         mesh_id = ufl_objects[0].ufl_domain().ufl_id()
     elif isinstance(ufl_objects[0], ufl.Mesh):
         mesh_id = ufl_objects[0].ufl_id()
-        unique_meshes = []
+    unique_meshes = []
     if mesh_id is not None:
         unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id) for element in unique_coordinate_elements]
 
     # Avoid returning self as dependency for infinite recursion
+    dependent_ufl_objects = {}
     unique_elements = tuple(
         element for element in unique_elements if element not in ufl_objects)
-    unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
+    if (unique_elements):
+        dependent_ufl_objects['element'] = unique_elements
 
-    # Setup dependencies (these will be jitted before continuing to
-    # compile ufl_objects)
-    dependent_ufl_objects = {
-        "element": unique_elements,
-        "coordinate_mapping": unique_meshes,
-    }
+    unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
+    if (unique_meshes):
+        dependent_ufl_objects['coordinate_mapping'] = unique_meshes
+
     return dependent_ufl_objects
 
 
@@ -295,6 +295,22 @@ def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
+    deps = get_ufl_dependencies(elements, p)
+
+    print('*** ELEMENT DEPS = ', deps)
+    depfiles = []
+    for k, v in deps.items():
+        if (k == 'element'):
+            stuff = compile_elements(v, parameters=p)
+            libname = pathlib.Path(stuff[1].__file__).stem
+            depfiles.append(libname[3:])
+        if (k == 'coordinate_mapping'):
+            stuff = compile_coordinate_maps(v, parameters=p)
+            libname = pathlib.Path(stuff[1].__file__).stem
+            depfiles.append(libname[3:])
+
+    print(depfiles)
+
     print('Compiliing element with ' + str(elements) + 'params = ' + str(p))
 
     # Get a signature for these elements
@@ -327,7 +343,7 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix="JIT", parameters=p)
 
-    objects, module = _compile_objects(decl, code_body, names, module_name, p)
+    objects, module = _compile_objects(decl, code_body, names, module_name, p, depfiles)
     # Pair up elements with dofmaps
     objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
@@ -346,7 +362,7 @@ def compile_forms(forms, module_name=None, parameters=None):
 
     deps = get_ufl_dependencies(forms, p)
 
-    print('*** DEPS = ', deps)
+    print('*** FORM DEPS = ', deps)
     depfiles = []
     for k, v in deps.items():
         if (k == 'element'):
@@ -383,6 +399,23 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
+    print(meshes, type(meshes))
+    deps = get_ufl_dependencies(meshes, p)
+
+    print('*** CMAP DEPS = ', deps)
+    depfiles = []
+    for k, v in deps.items():
+        if (k == 'element'):
+            stuff = compile_elements(v, parameters=p)
+            libname = pathlib.Path(stuff[1].__file__).stem
+            depfiles.append(libname[3:])
+        if (k == 'coordinate_mapping'):
+            stuff = compile_coordinate_maps(v, parameters=p)
+            libname = pathlib.Path(stuff[1].__file__).stem
+            depfiles.append(libname[3:])
+
+    print(depfiles)
+
     # Get a signature for these cmaps
     module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
     print('cmap module name = ', module_name)
@@ -404,7 +437,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
     _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix="JIT", parameters=p)
 
-    return _compile_objects(decl, code_body, cmap_names, module_name, p)
+    return _compile_objects(decl, code_body, cmap_names, module_name, p, depfiles)
 
 
 def _compile_objects(decl, code_body, object_names, module_name, parameters, link=[]):
