@@ -298,7 +298,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     print('Compiliing element with ' + str(elements) + 'params = ' + str(p))
 
     # Get a signature for these elements
-    module_name = 'elements_' + ffc.classname.compute_signature(elements, '', p)
+    module_name = 'libffc_elements_' + ffc.classname.compute_signature(elements, '', p)
     print('element module name = ', module_name)
 
     names = []
@@ -311,6 +311,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     obj, mod = get_cached_module(module_name, names, p)
     if obj is not None:
         print(' **** Loaded from cache: ' + module_name)
+        print(dir(mod.lib))
         # Pair up elements with dofmaps
         obj = list(zip(obj[::2], obj[1::2]))
         return obj, mod
@@ -346,11 +347,18 @@ def compile_forms(forms, module_name=None, parameters=None):
     deps = get_ufl_dependencies(forms, p)
 
     print('*** DEPS = ', deps)
+    depfiles = []
     for k, v in deps.items():
         if (k == 'element'):
-            compile_elements(v, parameters=p)
+            stuff = compile_elements(v, parameters=p)
+            libname = pathlib.Path(stuff[1].__file__).stem
+            depfiles.append(libname[3:])
         if (k == 'coordinate_mapping'):
-            compile_coordinate_maps(v, parameters=p)
+            stuff = compile_coordinate_maps(v, parameters=p)
+            libname = pathlib.Path(stuff[1].__file__).stem
+            depfiles.append(libname[3:])
+
+    print(depfiles)
 
     obj, mod = get_cached_module(module_name, form_names, p)
     if obj is not None:
@@ -368,7 +376,7 @@ def compile_forms(forms, module_name=None, parameters=None):
 
     _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="JIT", parameters=p, jit=True)
 
-    return _compile_objects(decl, code_body, form_names, module_name, p)
+    return _compile_objects(decl, code_body, form_names, module_name, p, depfiles)
 
 
 def compile_coordinate_maps(meshes, module_name=None, parameters=None):
@@ -376,7 +384,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     # Get a signature for these cmaps
-    module_name = 'cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
+    module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
     print('cmap module name = ', module_name)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
@@ -399,17 +407,19 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     return _compile_objects(decl, code_body, cmap_names, module_name, p)
 
 
-def _compile_objects(decl, code_body, object_names, module_name, parameters):
-
-    ffibuilder = cffi.FFI()
-    ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
-
-    ffibuilder.cdef(decl)
+def _compile_objects(decl, code_body, object_names, module_name, parameters, link=[]):
 
     cache_dir = pathlib.Path(parameters.get("cache_dir",
                                             "compile_cache"))
     cache_dir = cache_dir.expanduser()
+
+    ffibuilder = cffi.FFI()
+    ffibuilder.set_source(
+        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()], library_dirs=[str(cache_dir.absolute())],
+        runtime_library_dirs = [str(cache_dir.absolute())], libraries=link)
+
+    ffibuilder.cdef(decl)
+
     c_filename = cache_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
@@ -420,7 +430,7 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
     os.makedirs(cache_dir, exist_ok=True)
 
     # Compile
-    ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+    ffibuilder.compile(tmpdir=cache_dir, verbose=True)
 
     # Create a "status ready" file
     # If this fails, it is an error, because it should not exist yet.
