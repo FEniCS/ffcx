@@ -285,8 +285,7 @@ def get_cached_module(module_name, object_names, parameters):
 
                 return compiled_objects, compiled_module
 
-            print("Waiting for "
-                        + str(ready_name) + " to appear.")
+            print("Waiting for " + str(ready_name) + " to appear.")
             time.sleep(1)
         raise TimeoutError("""JIT compilation did not complete on another process.
         Try cleaning cache or increase timeout parameter.""")
