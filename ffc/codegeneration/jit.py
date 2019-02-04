@@ -299,6 +299,7 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     # Get a signature for these elements
     module_name = 'elements_' + ffc.classname.compute_signature(elements, '', p)
+    print('element module name = ', module_name)
 
     names = []
     for e in elements:
@@ -337,12 +338,14 @@ def compile_forms(forms, module_name=None, parameters=None):
 
     # Get a signature for these forms
     module_name = 'forms_' + ffc.classname.compute_signature(forms, '', p)
+    print('form module name = ', module_name)
 
     form_names = [ffc.classname.make_name("JIT", "form", i)
                   for i in range(len(forms))]
 
     deps = get_ufl_dependencies(forms, p)
 
+    print('*** DEPS = ', deps)
     for k, v in deps.items():
         if (k == 'element'):
             compile_elements(v, parameters=p)
@@ -374,6 +377,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
     # Get a signature for these cmaps
     module_name = 'cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
+    print('cmap module name = ', module_name)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
