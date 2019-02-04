@@ -10,6 +10,7 @@ import os
 import logging
 import time
 import cffi
+import pathlib
 
 import ffc
 
@@ -218,13 +219,15 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 
 
 def get_cached_module(module_name, object_names, parameters):
-    cache_dir = parameters.get("cache_dir",
-                               "compile_cache")
+    cache_dir = pathlib.PurePath(parameters.get("cache_dir",
+                                                "compile_cache"))
 
-    timeout = int(parameters.get("timeout", 100))
+    timeout = int(parameters.get("timeout", 10))
 
-    c_filename = cache_dir + "/" + module_name + ".c"
-    ready_name = c_filename + ".cached"
+    c_filename = cache_dir.joinpath(module_name + ".c")
+    ready_name = c_filename.with_suffix(".c.cached")
+
+    print(str(c_filename), str(ready_name))
 
     # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
@@ -235,13 +238,13 @@ def get_cached_module(module_name, object_names, parameters):
         return None, None
 
     except FileExistsError:
-        logger.info("Cached C file already exists:" + c_filename)
+        logger.info("Cached C file already exists:" + str(c_filename))
         # Now wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
                 # Build list of compiled objects
                 compiled_module = \
-                    importlib.import_module(cache_dir
+                    importlib.import_module(str(cache_dir)
                                             + "."
                                             + module_name)
                 compiled_objects = \
@@ -252,7 +255,7 @@ def get_cached_module(module_name, object_names, parameters):
                 return compiled_objects, compiled_module
 
             logger.info("Waiting for "
-                        + ready_name + " to appear.")
+                        + str(ready_name) + " to appear.")
             time.sleep(1)
         raise TimeoutError("""JIT compilation did not complete on another process.
         Try cleaning cache or increase timeout parameter.""")
@@ -357,11 +360,12 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
 
     ffibuilder.cdef(decl)
 
-    cache_dir = parameters.get("cache_dir",
-                               "compile_cache")
+    cache_dir = pathlib.PurePath(parameters.get("cache_dir",
+                                                "compile_cache"))
+    c_filename = cache_dir.joinpath(module_name + ".c")
+    ready_name = c_filename.with_suffix(".c.cached")
+    print(str(c_filename), str(ready_name))
 
-    c_filename = cache_dir + "/" + module_name + ".c"
-    ready_name = c_filename + ".cached"
     # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
 
@@ -374,7 +378,7 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
     fd.close()
 
     # Build list of compiled objects
-    compiled_module = importlib.import_module(cache_dir + "." + module_name)
+    compiled_module = importlib.import_module(str(cache_dir) + "." + module_name)
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module

@@ -40,7 +40,7 @@ _FFC_GENERATE_PARAMETERS = {
     "scalar_type": "double",
     # Max time to wait on cache if not building on this
     # process (seconds)
-    "timeout": 100,
+    "timeout": 10,
     # ':' separated list of include filenames to add to generated code
     "external_includes": "",
 }
@@ -162,7 +162,7 @@ def compilation_relevant_parameters(parameters):
     return p
 
 
-def compute_jit_parameters_signature(parameters):
+def compute_jit_signature(parameters):
     """Return parameters signature (some parameters must be ignored)."""
     from ufl.utils.sorting import canonicalize_metadata
     parameters = compilation_relevant_parameters(parameters)
