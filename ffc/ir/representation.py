@@ -92,7 +92,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     if jit and form_datas:
         # While we may get multiple forms during command line action,
         # not so during jit
-        assert len(form_datas) == 1, "Expecting only one form data instance during jit."
+#        assert len(form_datas) == 1, "Expecting only one form data instance during jit."
         # Drop some processing
         elements = []
         coordinate_elements = []
@@ -111,20 +111,20 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(elements)))
     ir_elements = [
-        _compute_element_ir(e, element_numbers, classnames, parameters, jit) for e in elements
+        _compute_element_ir(e, element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of dofmaps
     logger.info("Computing representation of {} dofmaps".format(len(elements)))
     ir_dofmaps = [
-        _compute_dofmap_ir(e, element_numbers, classnames, parameters, jit) for e in elements
+        _compute_dofmap_ir(e, element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of coordinate mappings
     logger.info("Computing representation of {} coordinate mappings".format(
         len(coordinate_elements)))
     ir_coordinate_mappings = [
-        _compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters, jit)
+        _compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters)
         for e in coordinate_elements
     ]
 
@@ -146,7 +146,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
 
-def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, jit):
+def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     """Compute intermediate representation of element."""
     # Create FIAT element
     fiat_element = create_element(ufl_element)
@@ -244,7 +244,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
     return (edge_permutations, face_permutations, cell_topology)
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
+def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     """Compute intermediate representation of dofmap."""
     # Create FIAT element
     fiat_element = create_element(ufl_element)
@@ -339,8 +339,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
 def _compute_coordinate_mapping_ir(ufl_coordinate_element,
                                    element_numbers,
                                    classnames,
-                                   parameters,
-                                   jit=False):
+                                   parameters):
     """Compute intermediate representation of coordinate mapping."""
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
