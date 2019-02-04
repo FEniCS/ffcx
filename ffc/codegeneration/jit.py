@@ -6,6 +6,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import importlib
+import sys
 import os
 import logging
 import time
@@ -219,8 +220,10 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 
 
 def get_cached_module(module_name, object_names, parameters):
-    cache_dir = pathlib.PurePath(parameters.get("cache_dir",
-                                                "compile_cache"))
+    cache_dir = pathlib.Path(parameters.get("cache_dir",
+                                            "compile_cache"))
+
+    cache_dir = cache_dir.expanduser()
 
     timeout = int(parameters.get("timeout", 10))
 
@@ -230,7 +233,11 @@ def get_cached_module(module_name, object_names, parameters):
     print(str(c_filename), str(ready_name))
 
     # Ensure cache dir exists
+    print('make cache_dir ', str(cache_dir))
     os.makedirs(cache_dir, exist_ok=True)
+
+    # Ensure it is first on the path for loading modules
+    sys.path.insert(0, str(cache_dir))
 
     try:
         # Create C file with exclusive access
@@ -244,9 +251,8 @@ def get_cached_module(module_name, object_names, parameters):
             if os.path.exists(ready_name):
                 # Build list of compiled objects
                 compiled_module = \
-                    importlib.import_module(str(cache_dir)
-                                            + "."
-                                            + module_name)
+                    importlib.import_module(module_name)
+                sys.path.remove(str(cache_dir))
                 compiled_objects = \
                     [getattr(compiled_module.lib,
                              "create_" + name)()
@@ -360,11 +366,14 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
 
     ffibuilder.cdef(decl)
 
-    cache_dir = pathlib.PurePath(parameters.get("cache_dir",
-                                                "compile_cache"))
+    cache_dir = pathlib.Path(parameters.get("cache_dir",
+                                            "compile_cache"))
+    cache_dir = cache_dir.expanduser()
     c_filename = cache_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
-    print(str(c_filename), str(ready_name))
+
+    # Ensure path is set for module
+    sys.path.insert(0, str(cache_dir))
 
     # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
@@ -378,7 +387,8 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters):
     fd.close()
 
     # Build list of compiled objects
-    compiled_module = importlib.import_module(str(cache_dir) + "." + module_name)
+    compiled_module = importlib.import_module(module_name)
+    sys.path.remove(str(cache_dir))
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module
