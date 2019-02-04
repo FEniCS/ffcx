@@ -415,8 +415,9 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters, lin
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()], library_dirs=[str(cache_dir.absolute())],
-        runtime_library_dirs = [str(cache_dir.absolute())], libraries=link)
+        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
+        library_dirs=[str(cache_dir.absolute())],
+        runtime_library_dirs=[str(cache_dir.absolute())], libraries=link)
 
     ffibuilder.cdef(decl)
 
