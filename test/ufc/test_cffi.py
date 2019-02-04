@@ -12,6 +12,9 @@ import cffi
 import ffc.codegeneration.jit
 import ufl
 
+import logging
+logging.basicConfig(logging.level=INFO)
+
 
 def float_to_type(name):
     """Map a string name to C and NumPy types"""
