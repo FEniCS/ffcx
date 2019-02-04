@@ -270,7 +270,7 @@ def get_cached_module(module_name, object_names, parameters):
         return None, None
 
     except FileExistsError:
-        logger.info("Cached C file already exists:" + str(c_filename))
+        print("Cached C file already exists:" + str(c_filename))
         # Now wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
@@ -285,7 +285,7 @@ def get_cached_module(module_name, object_names, parameters):
 
                 return compiled_objects, compiled_module
 
-            logger.info("Waiting for "
+            print("Waiting for "
                         + str(ready_name) + " to appear.")
             time.sleep(1)
         raise TimeoutError("""JIT compilation did not complete on another process.
@@ -296,7 +296,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
-    logger.info('Compiliing element with ' + str(elements) + 'params = ' + str(p))
+    print('Compiliing element with ' + str(elements) + 'params = ' + str(p))
 
     # Get a signature for these elements
     module_name = 'elements_' + ffc.classname.compute_signature(elements, '', p)
@@ -310,7 +310,7 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     obj, mod = get_cached_module(module_name, names, p)
     if obj is not None:
-        logger.info(' **** Loaded from cache: ' + module_name)
+        print(' **** Loaded from cache: ' + module_name)
         # Pair up elements with dofmaps
         obj = list(zip(obj[::2], obj[1::2]))
         return obj, mod
@@ -352,7 +352,7 @@ def compile_forms(forms, module_name=None, parameters=None):
 
     obj, mod = get_cached_module(module_name, form_names, p)
     if obj is not None:
-        logger.info('Loaded from cache: ' + module_name)
+        print('Loaded from cache: ' + module_name)
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
@@ -381,7 +381,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
     obj, mod = get_cached_module(module_name, cmap_names, p)
     if obj is not None:
-        logger.info('Loaded from cache: ' + module_name)
+        print('Loaded from cache: ' + module_name)
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
