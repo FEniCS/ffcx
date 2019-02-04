@@ -432,9 +432,9 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
                          jit):
     """Compute intermediate represention for form integrals."""
     # For consistency, all jit objects now have classnames with postfix "main"
-    if jit:
-        assert form_index == 0
-        form_index = "main"
+#    if jit:
+#        assert form_index == 0
+#        form_index = "main"
 
     irs = []
 
@@ -484,9 +484,9 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
                      jit=False):
     """Compute intermediate representation of form."""
     # For consistency, all jit objects now have classnames with postfix "main"
-    if jit:
-        assert form_id == 0
-        form_id = "main"
+#    if jit:
+#        assert form_id == 0
+#        form_id = "main"
 
     # Store id
     ir = {"id": form_id}

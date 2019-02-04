@@ -13,7 +13,9 @@ import time
 import cffi
 import pathlib
 
+import ufl
 import ffc
+from ffc.analysis import analyze_ufl_objects
 
 logger = logging.getLogger(__name__)
 
@@ -219,10 +221,36 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
+def get_ufl_dependencies(ufl_objects, parameters):
+
+    _, unique_elements, _, unique_coordinate_elements = analyze_ufl_objects(ufl_objects, parameters)
+
+    mesh_id = None
+    if isinstance(ufl_objects[0], ufl.Form):
+        mesh_id = ufl_objects[0].ufl_domain().ufl_id()
+    elif isinstance(ufl_objects[0], ufl.Mesh):
+        mesh_id = ufl_objects[0].ufl_id()
+        unique_meshes = []
+    if mesh_id is not None:
+        unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id) for element in unique_coordinate_elements]
+
+    # Avoid returning self as dependency for infinite recursion
+    unique_elements = tuple(
+        element for element in unique_elements if element not in ufl_objects)
+    unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
+
+    # Setup dependencies (these will be jitted before continuing to
+    # compile ufl_objects)
+    dependent_ufl_objects = {
+        "element": unique_elements,
+        "coordinate_mapping": unique_meshes,
+    }
+    return dependent_ufl_objects
+
+
 def get_cached_module(module_name, object_names, parameters):
     cache_dir = pathlib.Path(parameters.get("cache_dir",
                                             "compile_cache"))
-
     cache_dir = cache_dir.expanduser()
 
     timeout = int(parameters.get("timeout", 10))
@@ -230,10 +258,7 @@ def get_cached_module(module_name, object_names, parameters):
     c_filename = cache_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    print(str(c_filename), str(ready_name))
-
     # Ensure cache dir exists
-    print('make cache_dir ', str(cache_dir))
     os.makedirs(cache_dir, exist_ok=True)
 
     # Ensure it is first on the path for loading modules
@@ -276,13 +301,14 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     names = []
     for e in elements:
-        name = ffc.ir.representation.make_finite_element_jit_classname(e, "Element", p)
+        name = ffc.ir.representation.make_finite_element_jit_classname(e, "JIT", p)
         names.append(name)
-        name = ffc.ir.representation.make_dofmap_jit_classname(e, "Element", p)
+        name = ffc.ir.representation.make_dofmap_jit_classname(e, "JIT", p)
         names.append(name)
 
     obj, mod = get_cached_module(module_name, names, p)
     if obj is not None:
+        logger.info('Loaded from cache: ' + module_name)
         # Pair up elements with dofmaps
         obj = list(zip(obj[::2], obj[1::2]))
         return obj, mod
@@ -296,7 +322,7 @@ def compile_elements(elements, module_name=None, parameters=None):
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix="Element", parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix="JIT", parameters=p)
 
     objects, module = _compile_objects(decl, code_body, names, module_name, p)
     # Pair up elements with dofmaps
@@ -311,11 +337,21 @@ def compile_forms(forms, module_name=None, parameters=None):
     # Get a signature for these forms
     module_name = 'forms_' + ffc.classname.compute_signature(forms, '', p)
 
-    form_names = [ffc.classname.make_name("Form", "form", i)
+    form_names = [ffc.classname.make_name("JIT", "form", i)
                   for i in range(len(forms))]
+
+    deps = get_ufl_dependencies(forms, p)
+    logger.info('Need dependencies: ' + deps)
+
+    for k, v in deps.items():
+        if (k == 'element'):
+            compile_elements(v, parameters=p)
+        if (k == 'coordinate_mapping'):
+            compile_coordinate_maps(v, parameters=p)
 
     obj, mod = get_cached_module(module_name, form_names, p)
     if obj is not None:
+        logger.info('Loaded from cache: ' + module_name)
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
@@ -327,7 +363,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="Form", parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="JIT", parameters=p, jit=True)
 
     return _compile_objects(decl, code_body, form_names, module_name, p)
 
@@ -340,10 +376,11 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     module_name = 'cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
-        mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]
+        mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
 
     obj, mod = get_cached_module(module_name, cmap_names, p)
     if obj is not None:
+        logger.info('Loaded from cache: ' + module_name)
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
@@ -353,7 +390,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix="Mesh", parameters=p)
+    _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix="JIT", parameters=p)
 
     return _compile_objects(decl, code_body, cmap_names, module_name, p)
 

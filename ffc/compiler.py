@@ -68,7 +68,6 @@ from collections import defaultdict
 from time import time
 from typing import Dict, List, Tuple, Union
 
-import ufl
 from ffc.analysis import analyze_ufl_objects
 from ffc.codegeneration.codegeneration import generate_code
 from ffc.formatting import format_code
@@ -159,36 +158,38 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     logger.info("FFC finished in {} seconds.".format(time() - cpu_time_0))
 
-    if jit:
-        # Must use processed elements from analysis here
-        form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
+    # if jit:
+    #     # Must use processed elements from analysis here
+    #     form_datas, unique_elements, element_numbers, unique_coordinate_elements = analysis
 
-        # FIXME: assuming ufl_id=0 is a major bug!
-        # Wrap coordinate elements in Mesh object to represent that we
-        # want a ufc_coordinate_mapping not a ufc_finite_element
-        # unique_meshes = [ufl.Mesh(element, ufl_id=0) for element in unique_coordinate_elements]  # Original code
+    #     # FIXME: assuming ufl_id=0 is a major bug!
+    #     # Wrap coordinate elements in Mesh object to represent that we
+    #     # want a ufc_coordinate_mapping not a ufc_finite_element
+    #     # unique_meshes = [ufl.Mesh(element, ufl_id=0) for element in unique_coordinate_elements]  # Original code
 
-        # FIXME: this is a temporary hack to try to decue an appropriate mesh ID
-        mesh_id = None
-        if isinstance(ufl_objects[0], ufl.Form):
-            mesh_id = ufl_objects[0].ufl_domain().ufl_id()
-        elif isinstance(ufl_objects[0], ufl.Mesh):
-            mesh_id = ufl_objects[0].ufl_id()
-        unique_meshes = []
-        if mesh_id is not None:
-            unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id) for element in unique_coordinate_elements]
+    #     # FIXME: this is a temporary hack to try to decue an appropriate mesh ID
+    #     mesh_id = None
+    #     if isinstance(ufl_objects[0], ufl.Form):
+    #         mesh_id = ufl_objects[0].ufl_domain().ufl_id()
+    #     elif isinstance(ufl_objects[0], ufl.Mesh):
+    #         mesh_id = ufl_objects[0].ufl_id()
+    #     unique_meshes = []
+    #     if mesh_id is not None:
+    #         unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id) for element in unique_coordinate_elements]
 
-        # Avoid returning self as dependency for infinite recursion
-        unique_elements = tuple(
-            element for element in unique_elements if element not in ufl_objects)
-        unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
+    #     # Avoid returning self as dependency for infinite recursion
+    #     unique_elements = tuple(
+    #         element for element in unique_elements if element not in ufl_objects)
+    #     unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
 
-        # Setup dependencies (these will be jitted before continuing to
-        # compile ufl_objects)
-        dependent_ufl_objects = {
-            "element": unique_elements,
-            "coordinate_mapping": unique_meshes,
-        }
-        return code_h, code_c, dependent_ufl_objects
-    else:
-        return code_h, code_c
+    #     # Setup dependencies (these will be jitted before continuing to
+    #     # compile ufl_objects)
+    #     dependent_ufl_objects = {
+    #         "element": unique_elements,
+    #         "coordinate_mapping": unique_meshes,
+    #     }
+    #     return code_h, code_c, dependent_ufl_objects
+    # else:
+    #     return code_h, code_c
+
+    return code_h, code_c
