@@ -341,7 +341,6 @@ def compile_forms(forms, module_name=None, parameters=None):
                   for i in range(len(forms))]
 
     deps = get_ufl_dependencies(forms, p)
-    logger.info('Need dependencies: ' + deps)
 
     for k, v in deps.items():
         if (k == 'element'):
