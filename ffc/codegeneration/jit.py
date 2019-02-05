@@ -270,7 +270,7 @@ def get_cached_module(module_name, object_names, parameters):
         return None, None
 
     except FileExistsError:
-        print("Cached C file already exists:" + str(c_filename))
+        print("\033[1;31mCached C file already exists:\033[0m" + str(c_filename))
         # Now wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
@@ -294,20 +294,22 @@ def get_cached_module(module_name, object_names, parameters):
 def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
-
+    p['external_include_dirs'] = ''  # Blank off for elements (hack)
     deps = get_ufl_dependencies(elements, p)
 
     print('*** ELEMENT DEPS = ', deps)
     depfiles = []
     for k, v in deps.items():
         if (k == 'element'):
-            stuff = compile_elements(v, parameters=p)
-            libname = pathlib.Path(stuff[1].__file__).stem
-            depfiles.append(libname[3:])
+            for el in v:
+                stuff = compile_elements([el], parameters=p)
+                libname = pathlib.Path(stuff[1].__file__).stem
+                depfiles.append(libname[3:])
         if (k == 'coordinate_mapping'):
-            stuff = compile_coordinate_maps(v, parameters=p)
-            libname = pathlib.Path(stuff[1].__file__).stem
-            depfiles.append(libname[3:])
+            for cm in v:
+                stuff = compile_coordinate_maps([cm], parameters=p)
+                libname = pathlib.Path(stuff[1].__file__).stem
+                depfiles.append(libname[3:])
 
     print(depfiles)
 
@@ -366,13 +368,15 @@ def compile_forms(forms, module_name=None, parameters=None):
     depfiles = []
     for k, v in deps.items():
         if (k == 'element'):
-            stuff = compile_elements(v, parameters=p)
-            libname = pathlib.Path(stuff[1].__file__).stem
-            depfiles.append(libname[3:])
+            for el in v:
+                stuff = compile_elements([el], parameters=p)
+                libname = pathlib.Path(stuff[1].__file__).stem
+                depfiles.append(libname[3:])
         if (k == 'coordinate_mapping'):
-            stuff = compile_coordinate_maps(v, parameters=p)
-            libname = pathlib.Path(stuff[1].__file__).stem
-            depfiles.append(libname[3:])
+            for cm in v:
+                stuff = compile_coordinate_maps([cm], parameters=p)
+                libname = pathlib.Path(stuff[1].__file__).stem
+                depfiles.append(libname[3:])
 
     print(depfiles)
 
@@ -406,13 +410,15 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     depfiles = []
     for k, v in deps.items():
         if (k == 'element'):
-            stuff = compile_elements(v, parameters=p)
-            libname = pathlib.Path(stuff[1].__file__).stem
-            depfiles.append(libname[3:])
+            for el in v:
+                stuff = compile_elements([el], parameters=p)
+                libname = pathlib.Path(stuff[1].__file__).stem
+                depfiles.append(libname[3:])
         if (k == 'coordinate_mapping'):
-            stuff = compile_coordinate_maps(v, parameters=p)
-            libname = pathlib.Path(stuff[1].__file__).stem
-            depfiles.append(libname[3:])
+            for cm in v:
+                stuff = compile_coordinate_maps([cm], parameters=p)
+                libname = pathlib.Path(stuff[1].__file__).stem
+                depfiles.append(libname[3:])
 
     print(depfiles)
 
