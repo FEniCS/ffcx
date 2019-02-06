@@ -297,7 +297,7 @@ def get_cached_module(module_name, object_names, parameters):
             logger.info("Waiting for " + str(ready_name) + " to appear.")
             time.sleep(1)
         raise TimeoutError("""JIT compilation did not complete on another process.
-        Try cleaning cache or increase timeout parameter.""")
+        Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
 def compile_elements(elements, module_name=None, parameters=None):
@@ -435,7 +435,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, l
     os.makedirs(cache_dir, exist_ok=True)
 
     # Compile
-    ffibuilder.compile(tmpdir=cache_dir, verbose=True)
+    ffibuilder.compile(tmpdir=cache_dir, verbose=False)
 
     # Create a "status ready" file
     # If this fails, it is an error, because it should not exist yet.
