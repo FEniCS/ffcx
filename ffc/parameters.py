@@ -11,9 +11,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Comments from other places in code:
-# FIXME: Document option -fconvert_exceptions_to_warnings
-
 # NB! Parameters in the generate and build sets are
 # included in jit signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
@@ -27,11 +24,6 @@ _FFC_GENERATE_PARAMETERS = {
     # precision used when writing numbers (None for max precision)
     "precision": None,
     "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
-    "form_postfix": True,  # postfix form name with "Function", "LinearForm" or BilinearForm
-    # convert all exceptions to warning in generated code
-    "convert_exceptions_to_warnings": False,
-    "max_signature_length":
-    0,  # set to positive integer to shorten signatures set to True to replace tabulate_tensor body with no-op
     # set to True to add timing inside tabulate_tensor
     "generate_dummy_tabulate_tensor": False,
     "add_tabulate_tensor_timing": False,
@@ -57,7 +49,7 @@ _FFC_BUILD_PARAMETERS = {
     "external_include_dirs": "",
 }
 _FFC_CACHE_PARAMETERS = {
-    "cache_dir": "compile_cache",  # cache dir used by default
+    "cache_dir": "~/.cache/fenics",  # cache dir used by default
     "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
