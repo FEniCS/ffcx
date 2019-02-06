@@ -294,24 +294,25 @@ def get_cached_module(module_name, object_names, parameters):
 def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
-    p['external_include_dirs'] = ''  # Blank off for elements (hack)
-    deps = get_ufl_dependencies(elements, p)
 
-    print('*** ELEMENT DEPS = ', deps)
     depfiles = []
-    for k, v in deps.items():
-        if (k == 'element'):
-            for el in v:
-                stuff = compile_elements([el], parameters=p)
-                libname = pathlib.Path(stuff[1].__file__).stem
-                depfiles.append(libname[3:])
-        if (k == 'coordinate_mapping'):
-            for cm in v:
-                stuff = compile_coordinate_maps([cm], parameters=p)
-                libname = pathlib.Path(stuff[1].__file__).stem
-                depfiles.append(libname[3:])
+    if parameters['crosslink']:
+        deps = get_ufl_dependencies(elements, p)
 
-    print(depfiles)
+        print('*** ELEMENT DEPS = ', deps)
+        for k, v in deps.items():
+            if (k == 'element'):
+                for el in v:
+                    stuff = compile_elements([el], parameters=p)
+                    libname = pathlib.Path(stuff[1].__file__).stem
+                    depfiles.append(libname[3:])
+            if (k == 'coordinate_mapping'):
+                for cm in v:
+                    stuff = compile_coordinate_maps([cm], parameters=p)
+                    libname = pathlib.Path(stuff[1].__file__).stem
+                    depfiles.append(libname[3:])
+
+        print(depfiles)
 
     print('Compiliing element with ' + str(elements) + 'params = ' + str(p))
 
@@ -362,23 +363,24 @@ def compile_forms(forms, module_name=None, parameters=None):
     form_names = [ffc.classname.make_name("JIT", "form", i)
                   for i in range(len(forms))]
 
-    deps = get_ufl_dependencies(forms, p)
-
-    print('*** FORM DEPS = ', deps)
     depfiles = []
-    for k, v in deps.items():
-        if (k == 'element'):
-            for el in v:
-                stuff = compile_elements([el], parameters=p)
-                libname = pathlib.Path(stuff[1].__file__).stem
-                depfiles.append(libname[3:])
-        if (k == 'coordinate_mapping'):
-            for cm in v:
-                stuff = compile_coordinate_maps([cm], parameters=p)
-                libname = pathlib.Path(stuff[1].__file__).stem
-                depfiles.append(libname[3:])
+    if parameters['crosslink']:
+        deps = get_ufl_dependencies(forms, p)
 
-    print(depfiles)
+        print('*** FORM DEPS = ', deps)
+        for k, v in deps.items():
+            if (k == 'element'):
+                for el in v:
+                    stuff = compile_elements([el], parameters=p)
+                    libname = pathlib.Path(stuff[1].__file__).stem
+                    depfiles.append(libname[3:])
+            if (k == 'coordinate_mapping'):
+                for cm in v:
+                    stuff = compile_coordinate_maps([cm], parameters=p)
+                    libname = pathlib.Path(stuff[1].__file__).stem
+                    depfiles.append(libname[3:])
+
+        print(depfiles)
 
     obj, mod = get_cached_module(module_name, form_names, p)
     if obj is not None:
@@ -394,7 +396,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="JIT", parameters=p, jit=True)
+    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="JIT", parameters=p, jit=parameters['crosslink'])
 
     return _compile_objects(decl, code_body, form_names, module_name, p, depfiles)
 
@@ -403,24 +405,25 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
-    print(meshes, type(meshes))
-    deps = get_ufl_dependencies(meshes, p)
-
-    print('*** CMAP DEPS = ', deps)
     depfiles = []
-    for k, v in deps.items():
-        if (k == 'element'):
-            for el in v:
-                stuff = compile_elements([el], parameters=p)
-                libname = pathlib.Path(stuff[1].__file__).stem
-                depfiles.append(libname[3:])
-        if (k == 'coordinate_mapping'):
-            for cm in v:
-                stuff = compile_coordinate_maps([cm], parameters=p)
-                libname = pathlib.Path(stuff[1].__file__).stem
-                depfiles.append(libname[3:])
 
-    print(depfiles)
+    if (parameters['crosslink']):
+        deps = get_ufl_dependencies(meshes, p)
+
+        print('*** CMAP DEPS = ', deps)
+        for k, v in deps.items():
+            if (k == 'element'):
+                for el in v:
+                    stuff = compile_elements([el], parameters=p)
+                    libname = pathlib.Path(stuff[1].__file__).stem
+                    depfiles.append(libname[3:])
+            if (k == 'coordinate_mapping'):
+                for cm in v:
+                    stuff = compile_coordinate_maps([cm], parameters=p)
+                    libname = pathlib.Path(stuff[1].__file__).stem
+                    depfiles.append(libname[3:])
+
+        print(depfiles)
 
     # Get a signature for these cmaps
     module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)

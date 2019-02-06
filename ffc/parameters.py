@@ -43,6 +43,8 @@ _FFC_GENERATE_PARAMETERS = {
     "timeout": 10,
     # ':' separated list of include filenames to add to generated code
     "external_includes": "",
+    # Whether to crosslink JIT libraries or build standalone
+    "crosslink": False,
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,  # optimization for the C++ compiler
