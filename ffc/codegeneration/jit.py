@@ -413,7 +413,8 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, l
     if sys.platform == 'darwin':
         link = []
 
-    _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
+    _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters,
+                                                    jit=parameters['crosslink'])
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(

@@ -75,11 +75,6 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     """Compute intermediate representation."""
     logger.info("Compiler stage 2: Computing intermediate representation")
 
-    # Set code generation parameters (this is not actually a 'formatting'
-    # parameter, used for table value clamping as well)
-    # FIXME: Global state?!
-    #    set_float_formatting(parameters["precision"])
-
     # Extract data from analysis
     form_datas, elements, element_numbers, coordinate_elements = analysis
 
@@ -90,9 +85,6 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # NB! it's important that this happens _after_ the element numbers and classnames
     # above have been created.
     if jit and form_datas:
-        # While we may get multiple forms during command line action,
-        # not so during jit
-        #        assert len(form_datas) == 1, "Expecting only one form data instance during jit."
         # Drop some processing
         elements = []
         coordinate_elements = []
@@ -100,13 +92,9 @@ def compute_ir(analysis, prefix, parameters, jit=False):
         # While we may get multiple coordinate elements during command
         # line action, or during form jit, not so during coordinate
         # mapping jit
-        assert len(coordinate_elements) == 1, "Expecting only one form data instance during jit."
+        assert len(coordinate_elements) == 1, "Expecting only one coordinate map data instance during jit."
         # Drop some processing
         elements = []
-    elif jit and elements:
-        # Assuming a topological sorting of the elements,
-        # only process the last (main) element from here on
-        elements = [elements[-1]]
 
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(elements)))
@@ -131,7 +119,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute and flatten representation of integrals
     logger.info("Computing representation of integrals")
     irs = [
-        _compute_integral_ir(fd, form_index, prefix, element_numbers, classnames, parameters, jit)
+        _compute_integral_ir(fd, form_index, prefix, element_numbers, classnames, parameters)
         for (form_index, fd) in enumerate(form_datas)
     ]
     ir_integrals = list(itertools.chain(*irs))
@@ -139,7 +127,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, form_index, prefix, element_numbers, classnames, parameters, jit)
+        _compute_form_ir(fd, form_index, prefix, element_numbers, classnames, parameters)
         for (form_index, fd) in enumerate(form_datas)
     ]
 
@@ -427,13 +415,8 @@ def _needs_mesh_entities(fiat_element):
         return [d > 0 for d in num_dofs_per_entity]
 
 
-def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters,
-                         jit):
+def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters):
     """Compute intermediate represention for form integrals."""
-    # For consistency, all jit objects now have classnames with postfix "main"
-#    if jit:
-#        assert form_index == 0
-#        form_index = "main"
 
     irs = []
 
@@ -479,13 +462,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
     return irs
 
 
-def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, parameters,
-                     jit=False):
+def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, parameters):
     """Compute intermediate representation of form."""
-    # For consistency, all jit objects now have classnames with postfix "main"
-#    if jit:
-#        assert form_id == 0
-#        form_id = "main"
 
     # Store id
     ir = {"id": form_id}
