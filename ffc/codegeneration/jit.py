@@ -232,20 +232,31 @@ def get_ufl_dependencies(ufl_objects, parameters):
         mesh_id = ufl_objects[0].ufl_id()
     unique_meshes = []
     if mesh_id is not None:
-        unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id) for element in unique_coordinate_elements]
+        unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id)
+                         for element in unique_coordinate_elements]
 
     # Avoid returning self as dependency for infinite recursion
-    dependent_ufl_objects = {}
-    unique_elements = tuple(
-        element for element in unique_elements if element not in ufl_objects)
-    if (unique_elements):
-        dependent_ufl_objects['element'] = unique_elements
+    unique_elements = tuple(element for element in unique_elements
+                            if element not in ufl_objects)
 
     unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
-    if (unique_meshes):
-        dependent_ufl_objects['coordinate_mapping'] = unique_meshes
 
-    return dependent_ufl_objects
+    print('***  DEPS = ', unique_elements, unique_meshes)
+
+    depfiles = []
+    for el in unique_elements:
+        objects, module = compile_elements([el], parameters=parameters)
+        libname = pathlib.Path(module.__file__).stem
+        depfiles.append(libname[3:])
+
+    for cm in unique_meshes:
+        objects, module = compile_coordinate_maps([cm], parameters=parameters)
+        libname = pathlib.Path(module.__file__).stem
+        depfiles.append(libname[3:])
+
+    print(depfiles)
+
+    return depfiles
 
 
 def get_cached_module(module_name, object_names, parameters):
@@ -297,22 +308,7 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     depfiles = []
     if p['crosslink']:
-        deps = get_ufl_dependencies(elements, p)
-
-        print('*** ELEMENT DEPS = ', deps)
-        for k, v in deps.items():
-            if (k == 'element'):
-                for el in v:
-                    stuff = compile_elements([el], parameters=p)
-                    libname = pathlib.Path(stuff[1].__file__).stem
-                    depfiles.append(libname[3:])
-            if (k == 'coordinate_mapping'):
-                for cm in v:
-                    stuff = compile_coordinate_maps([cm], parameters=p)
-                    libname = pathlib.Path(stuff[1].__file__).stem
-                    depfiles.append(libname[3:])
-
-        print(depfiles)
+        depfiles = get_ufl_dependencies(elements, p)
 
     print('Compiliing element with ' + str(elements) + 'params = ' + str(p))
 
@@ -365,22 +361,7 @@ def compile_forms(forms, module_name=None, parameters=None):
 
     depfiles = []
     if p['crosslink']:
-        deps = get_ufl_dependencies(forms, p)
-
-        print('*** FORM DEPS = ', deps)
-        for k, v in deps.items():
-            if (k == 'element'):
-                for el in v:
-                    stuff = compile_elements([el], parameters=p)
-                    libname = pathlib.Path(stuff[1].__file__).stem
-                    depfiles.append(libname[3:])
-            if (k == 'coordinate_mapping'):
-                for cm in v:
-                    stuff = compile_coordinate_maps([cm], parameters=p)
-                    libname = pathlib.Path(stuff[1].__file__).stem
-                    depfiles.append(libname[3:])
-
-        print(depfiles)
+        depfiles = get_ufl_dependencies(forms, p)
 
     obj, mod = get_cached_module(module_name, form_names, p)
     if obj is not None:
@@ -406,24 +387,8 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     depfiles = []
-
     if (p['crosslink']):
-        deps = get_ufl_dependencies(meshes, p)
-
-        print('*** CMAP DEPS = ', deps)
-        for k, v in deps.items():
-            if (k == 'element'):
-                for el in v:
-                    stuff = compile_elements([el], parameters=p)
-                    libname = pathlib.Path(stuff[1].__file__).stem
-                    depfiles.append(libname[3:])
-            if (k == 'coordinate_mapping'):
-                for cm in v:
-                    stuff = compile_coordinate_maps([cm], parameters=p)
-                    libname = pathlib.Path(stuff[1].__file__).stem
-                    depfiles.append(libname[3:])
-
-        print(depfiles)
+        depfiles = get_ufl_dependencies(meshes, p)
 
     # Get a signature for these cmaps
     module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
@@ -454,6 +419,10 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters, lin
     cache_dir = pathlib.Path(parameters.get("cache_dir",
                                             "compile_cache"))
     cache_dir = cache_dir.expanduser()
+
+    # Cancel crosslinking on MacOS, not needed
+    if sys.platform == 'darwin':
+        link = []
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
