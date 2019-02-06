@@ -296,7 +296,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     p = ffc.parameters.validate_parameters(parameters)
 
     depfiles = []
-    if parameters['crosslink']:
+    if p['crosslink']:
         deps = get_ufl_dependencies(elements, p)
 
         print('*** ELEMENT DEPS = ', deps)
@@ -364,7 +364,7 @@ def compile_forms(forms, module_name=None, parameters=None):
                   for i in range(len(forms))]
 
     depfiles = []
-    if parameters['crosslink']:
+    if p['crosslink']:
         deps = get_ufl_dependencies(forms, p)
 
         print('*** FORM DEPS = ', deps)
@@ -396,7 +396,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="JIT", parameters=p, jit=parameters['crosslink'])
+    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="JIT", parameters=p, jit=p['crosslink'])
 
     return _compile_objects(decl, code_body, form_names, module_name, p, depfiles)
 
@@ -407,7 +407,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
     depfiles = []
 
-    if (parameters['crosslink']):
+    if (p['crosslink']):
         deps = get_ufl_dependencies(meshes, p)
 
         print('*** CMAP DEPS = ', deps)
