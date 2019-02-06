@@ -68,6 +68,5 @@ def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
     ]
     string = ";".join(signatures)
     sig = hashlib.sha1(string.encode('utf-8')).hexdigest()
-    print('Got signature for ', kind, tag, ' of ', sig)
 
     return sig

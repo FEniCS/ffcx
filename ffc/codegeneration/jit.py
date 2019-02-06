@@ -241,7 +241,7 @@ def get_ufl_dependencies(ufl_objects, parameters):
 
     unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
 
-    print('***  DEPS = ', unique_elements, unique_meshes)
+    logger.info('Dependencies = ' + str(unique_elements) + str(unique_meshes))
 
     depfiles = []
     for el in unique_elements:
@@ -253,8 +253,6 @@ def get_ufl_dependencies(ufl_objects, parameters):
         objects, module = compile_coordinate_maps([cm], parameters=parameters)
         libname = pathlib.Path(module.__file__).stem
         depfiles.append(libname[3:])
-
-    print(depfiles)
 
     return depfiles
 
@@ -281,7 +279,7 @@ def get_cached_module(module_name, object_names, parameters):
         return None, None
 
     except FileExistsError:
-        print("\033[1;31mCached C file already exists:\033[0m" + str(c_filename))
+        logger.info("Cached C file already exists: " + str(c_filename))
         # Now wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
@@ -296,7 +294,7 @@ def get_cached_module(module_name, object_names, parameters):
 
                 return compiled_objects, compiled_module
 
-            print("Waiting for " + str(ready_name) + " to appear.")
+            logger.info("Waiting for " + str(ready_name) + " to appear.")
             time.sleep(1)
         raise TimeoutError("""JIT compilation did not complete on another process.
         Try cleaning cache or increase timeout parameter.""")
@@ -310,11 +308,10 @@ def compile_elements(elements, module_name=None, parameters=None):
     if p['crosslink']:
         depfiles = get_ufl_dependencies(elements, p)
 
-    print('Compiliing element with ' + str(elements) + 'params = ' + str(p))
+    logger.info('Compiling elements: ' + str(elements))
 
     # Get a signature for these elements
     module_name = 'libffc_elements_' + ffc.classname.compute_signature(elements, '', p)
-    print('element module name = ', module_name)
 
     names = []
     for e in elements:
@@ -325,8 +322,6 @@ def compile_elements(elements, module_name=None, parameters=None):
 
     obj, mod = get_cached_module(module_name, names, p)
     if obj is not None:
-        print(' **** Loaded from cache: ' + module_name)
-        print(dir(mod.lib))
         # Pair up elements with dofmaps
         obj = list(zip(obj[::2], obj[1::2]))
         return obj, mod
@@ -340,9 +335,7 @@ def compile_elements(elements, module_name=None, parameters=None):
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix="JIT", parameters=p)
-
-    objects, module = _compile_objects(decl, code_body, names, module_name, p, depfiles)
+    objects, module = _compile_objects(decl, elements, names, module_name, p, depfiles)
     # Pair up elements with dofmaps
     objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
@@ -352,20 +345,20 @@ def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
-    # Get a signature for these forms
-    module_name = 'forms_' + ffc.classname.compute_signature(forms, '', p)
-    print('form module name = ', module_name)
-
-    form_names = [ffc.classname.make_name("JIT", "form", i)
-                  for i in range(len(forms))]
-
     depfiles = []
     if p['crosslink']:
         depfiles = get_ufl_dependencies(forms, p)
 
+    logger.info('Compiling forms: ' + str(forms))
+
+    # Get a signature for these forms
+    module_name = 'libffc_forms_' + ffc.classname.compute_signature(forms, '', p)
+
+    form_names = [ffc.classname.make_name("JIT", "form", i)
+                  for i in range(len(forms))]
+
     obj, mod = get_cached_module(module_name, form_names, p)
     if obj is not None:
-        print('Loaded from cache: ' + module_name)
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
@@ -377,9 +370,7 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix="JIT", parameters=p, jit=p['crosslink'])
-
-    return _compile_objects(decl, code_body, form_names, module_name, p, depfiles)
+    return _compile_objects(decl, forms, form_names, module_name, p, depfiles)
 
 
 def compile_coordinate_maps(meshes, module_name=None, parameters=None):
@@ -390,16 +381,16 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     if (p['crosslink']):
         depfiles = get_ufl_dependencies(meshes, p)
 
+    logger.info('Compiling cmaps: ' + str(meshes))
+
     # Get a signature for these cmaps
     module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
-    print('cmap module name = ', module_name)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
 
     obj, mod = get_cached_module(module_name, cmap_names, p)
     if obj is not None:
-        print('Loaded from cache: ' + module_name)
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
@@ -409,12 +400,10 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix="JIT", parameters=p)
-
-    return _compile_objects(decl, code_body, cmap_names, module_name, p, depfiles)
+    return _compile_objects(decl, meshes, cmap_names, module_name, p, depfiles)
 
 
-def _compile_objects(decl, code_body, object_names, module_name, parameters, link=[]):
+def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, link=[]):
 
     cache_dir = pathlib.Path(parameters.get("cache_dir",
                                             "compile_cache"))
@@ -423,6 +412,8 @@ def _compile_objects(decl, code_body, object_names, module_name, parameters, lin
     # Cancel crosslinking on MacOS, not needed
     if sys.platform == 'darwin':
         link = []
+
+    _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
