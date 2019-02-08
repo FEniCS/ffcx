@@ -280,24 +280,35 @@ def get_cached_module(module_name, object_names, parameters):
 
     except FileExistsError:
         logger.info("Cached C file already exists: " + str(c_filename))
-        # Now wait for ready
-        for i in range(timeout):
-            if os.path.exists(ready_name):
-                # Build list of compiled objects
-                compiled_module = \
-                    importlib.import_module(module_name)
-                sys.path.remove(str(cache_dir))
-                compiled_objects = \
-                    [getattr(compiled_module.lib,
-                             "create_" + name)()
-                     for name in object_names]
 
-                return compiled_objects, compiled_module
+    mtime = time.time() - os.path.getmtime(c_filename)
+    print('C file was created approx ', mtime, ' seconds ago...')
+    if not os.path.exists(ready_name) and mtime > 2*timeout:
+        print('That seems a long time to be compiling for...')
+        try:
+            os.unlink(c_filename)
+            open(c_filename, "x")
+            return None, None
+        except FileExistsError:
+            logger.info("Cached C file already exists: " + str(c_filename))
 
-            logger.info("Waiting for " + str(ready_name) + " to appear.")
-            time.sleep(1)
-        raise TimeoutError("""JIT compilation did not complete on another process.
-        Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
+    # Now wait for ready
+    for i in range(timeout):
+        if os.path.exists(ready_name):
+            # Build list of compiled objects
+            compiled_module = importlib.import_module(module_name)
+            sys.path.remove(str(cache_dir))
+            compiled_objects = [getattr(compiled_module.lib,
+                                        "create_" + name)()
+                                for name in object_names]
+
+            return compiled_objects, compiled_module
+
+        logger.info("Waiting for " + str(ready_name) + " to appear.")
+        time.sleep(1)
+
+    raise TimeoutError("""JIT compilation did not complete on another process.
+    Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
 def compile_elements(elements, module_name=None, parameters=None):
