@@ -11,41 +11,125 @@ import ufl
 
 logger = logging.getLogger(__name__)
 
-# Table of handled math functions in real and complex modes
-math_table = {'sqrt': ('sqrt', 'csqrt'),
-              'abs': ('fabs', 'cabs'),
-              'cos': ('cos', 'ccos'),
-              'sin': ('sin', 'csin'),
-              'tan': ('tan', 'ctan'),
-              'acos': ('acos', 'cacos'),
-              'asin': ('asin', 'casin'),
-              'atan': ('atan', 'catan'),
-              'cosh': ('cosh', 'ccosh'),
-              'sinh': ('sinh', 'csinh'),
-              'tanh': ('tanh', 'ctanh'),
-              'acosh': ('acosh', 'cacosh'),
-              'asinh': ('asinh', 'casinh'),
-              'atanh': ('atanh', 'catanh'),
-              'power': ('pow', 'cpow'),
-              'exp': ('exp', 'cexp'),
-              'ln': ('log', 'clog'),
-              'real': (None, 'creal'),
-              'imag': (None, 'cimag'),
-              'conj': (None, 'conj'),
-              'erf': ('erf', None),
-              'atan_2': ('atan2', None),
-              'min_value': ('fmin', None),
-              'max_value': ('fmax', None)}
+# Table of handled math functions for different scalar types
+
+math_table = {'double': {'sqrt': 'sqrt',
+                         'abs': 'fabs',
+                         'cos': 'cos',
+                         'sin': 'sin',
+                         'tan': 'tan',
+                         'acos': 'acos',
+                         'asin': 'asin',
+                         'atan': 'atan',
+                         'cosh': 'cosh',
+                         'sinh': 'sinh',
+                         'tanh': 'tanh',
+                         'acosh': 'acosh',
+                         'asinh': 'asinh',
+                         'atanh': 'atanh',
+                         'power': 'pow',
+                         'exp': 'exp',
+                         'ln': 'log',
+                         'erf': 'erf',
+                         'atan_2': 'atan2',
+                         'min_value': 'fmin',
+                         'max_value': 'fmax'},
+
+              'float': {'sqrt': 'sqrtf',
+                        'abs': 'fabsf',
+                        'cos': 'cosf',
+                        'sin': 'sinf',
+                        'tan': 'tanf',
+                        'acos': 'acosf',
+                        'asin': 'asinf',
+                        'atan': 'atanf',
+                        'cosh': 'coshf',
+                        'sinh': 'sinhf',
+                        'tanh': 'tanhf',
+                        'acosh': 'acoshf',
+                        'asinh': 'asinhf',
+                        'atanh': 'atanhf',
+                        'power': 'powf',
+                        'exp': 'expf',
+                        'ln': 'logf',
+                        'erf': 'erff',
+                        'atan_2': 'atan2f',
+                        'min_value': 'fminf',
+                        'max_value': 'fmaxf'},
+
+              'long double': {'sqrt': 'sqrtl',
+                              'abs': 'fabsl',
+                              'cos': 'cosl',
+                              'sin': 'sinl',
+                              'tan': 'tanl',
+                              'acos': 'acosl',
+                              'asin': 'asinl',
+                              'atan': 'atanl',
+                              'cosh': 'coshl',
+                              'sinh': 'sinhl',
+                              'tanh': 'tanhl',
+                              'acosh': 'acoshl',
+                              'asinh': 'asinhl',
+                              'atanh': 'atanhl',
+                              'power': 'powl',
+                              'exp': 'expl',
+                              'ln': 'logl',
+                              'erf': 'erfl',
+                              'atan_2': 'atan2l',
+                              'min_value': 'fminl',
+                              'max_value': 'fmaxl'},
+
+              'double complex': {'sqrt': 'csqrt',
+                                 'abs': 'cabs',
+                                 'cos': 'ccos',
+                                 'sin': 'csin',
+                                 'tan': 'ctan',
+                                 'acos': 'cacos',
+                                 'asin': 'casin',
+                                 'atan': 'catan',
+                                 'cosh': 'ccosh',
+                                 'sinh': 'csinh',
+                                 'tanh': 'ctanh',
+                                 'acosh': 'cacosh',
+                                 'asinh': 'casinh',
+                                 'atanh': 'catanh',
+                                 'power': 'cpow',
+                                 'exp': 'cexp',
+                                 'ln': 'clog',
+                                 'real': 'creal',
+                                 'imag': 'cimag',
+                                 'conj': 'conj'},
+
+              'float complex': {'sqrt': 'csqrtf',
+                                 'abs': 'cabsf',
+                                 'cos': 'ccosf',
+                                 'sin': 'csinf',
+                                 'tan': 'ctanf',
+                                 'acos': 'cacosf',
+                                 'asin': 'casinf',
+                                 'atan': 'catanf',
+                                 'cosh': 'ccoshf',
+                                 'sinh': 'csinhf',
+                                 'tanh': 'ctanhf',
+                                 'acosh': 'cacoshf',
+                                 'asinh': 'casinhf',
+                                 'atanh': 'catanhf',
+                                 'power': 'cpowf',
+                                 'exp': 'cexpf',
+                                 'ln': 'clogf',
+                                 'real': 'crealf',
+                                 'imag': 'cimagf',
+                                 'conj': 'conjf'}}
 
 
 class UFL2CNodesTranslatorCpp(object):
     """UFL to CNodes translator class."""
 
-    def __init__(self, language, complex_mode=False):
+    def __init__(self, language, scalar_type="double"):
         self.L = language
         self.force_floats = False
         self.enable_strength_reduction = False
-        self.complex_mode = 1 if complex_mode else 0
+        self.scalar_type = scalar_type
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
@@ -175,12 +259,11 @@ class UFL2CNodesTranslatorCpp(object):
     def _cmath(self, o, *args):
         k = o._ufl_handler_name_
         try:
-            name = math_table[k]
+            name = math_table[self.scalar_type].get(k)
         except Exception as e:
-            raise type(e)("Math function not found:", k)
-        name = name[self.complex_mode]
+            raise type(e)("Math function not found:", self.scalar_type, k)
         if name is None:
-            raise RuntimeError("Not supported in current complex mode")
+            raise RuntimeError("Not supported in current scalar mode")
         return self.L.Call(name, args)
 
     # === Formatting rules for bessel functions ===
@@ -188,7 +271,7 @@ class UFL2CNodesTranslatorCpp(object):
     # but not all.
 
     def bessel_j(self, o, n, v):
-        assert self.complex_mode == 0
+        assert "complex" not in self.scalar_type
         n = int(float(n))
         if n == 0:
             return self.L.Call("j0", v)
@@ -198,7 +281,7 @@ class UFL2CNodesTranslatorCpp(object):
             return self.L.Call("jn", (n, v))
 
     def bessel_y(self, o, n, v):
-        assert self.complex_mode == 0
+        assert "complex" not in self.scalar_type
         n = int(float(n))
         if n == 0:
             return self.L.Call("y0", v)
