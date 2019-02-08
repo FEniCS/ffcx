@@ -37,45 +37,34 @@ ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "cus
 
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
-    from ffc import jitcompiler  # FIXME circular file dependency
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
-
-    return classname.make_name(prefix, "finite_element", "main")
+    sig = classname.compute_signature([ufl_element], tag, parameters)
+    return classname.make_name("ffc_element_{}".format(sig), "finite_element", "main")
 
 
 def make_dofmap_jit_classname(ufl_element, tag, parameters):
-    from ffc import jitcompiler  # FIXME circular file dependency
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters)
-
-    return classname.make_name(prefix, "dofmap", "main")
+    sig = classname.compute_signature([ufl_element], tag, parameters)
+    return classname.make_name("ffc_element_{}".format(sig), "dofmap", "main")
 
 
 def make_coordinate_mapping_jit_classname(ufl_element, tag, parameters):
-    from ffc import jitcompiler  # FIXME circular file dependency
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    kind, prefix = jitcompiler.compute_prefix(ufl_element, tag, parameters, coordinate_mapping=True)
-
-    return classname.make_name(prefix, "coordinate_mapping", "main")
+    sig = classname.compute_signature([ufl_element], tag, parameters, coordinate_mapping=True)
+    return classname.make_name("ffc_coordinate_mapping_{}".format(sig), "coordinate_mapping", "main")
 
 
 def make_all_element_classnames(prefix, elements, coordinate_elements, parameters):
     # Make unique classnames to match separately jit-compiled
     # module
 
-    if (prefix[1]):
-        tag = prefix[0]
-    else:
-        tag = ""
-
     classnames = {
-        "finite_element": {e: make_finite_element_jit_classname(e, tag, parameters)
+        "finite_element": {e: make_finite_element_jit_classname(e, prefix, parameters)
                            for e in elements},
-        "dofmap": {e: make_dofmap_jit_classname(e, tag, parameters)
+        "dofmap": {e: make_dofmap_jit_classname(e, prefix, parameters)
                    for e in elements},
         "coordinate_mapping":
-        {e: make_coordinate_mapping_jit_classname(e, tag, parameters)
+        {e: make_coordinate_mapping_jit_classname(e, prefix, parameters)
          for e in coordinate_elements},
     }
 
@@ -86,15 +75,8 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     """Compute intermediate representation."""
     logger.info("Compiler stage 2: Computing intermediate representation")
 
-    # Set code generation parameters (this is not actually a 'formatting'
-    # parameter, used for table value clamping as well)
-    # FIXME: Global state?!
-    #    set_float_formatting(parameters["precision"])
-
     # Extract data from analysis
     form_datas, elements, element_numbers, coordinate_elements = analysis
-
-    assert isinstance(prefix, tuple)
 
     # Construct classnames for all element objects and coordinate mappings
     classnames = make_all_element_classnames(prefix, elements, coordinate_elements, parameters)
@@ -103,9 +85,6 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # NB! it's important that this happens _after_ the element numbers and classnames
     # above have been created.
     if jit and form_datas:
-        # While we may get multiple forms during command line action,
-        # not so during jit
-        assert len(form_datas) == 1, "Expecting only one form data instance during jit."
         # Drop some processing
         elements = []
         coordinate_elements = []
@@ -113,38 +92,34 @@ def compute_ir(analysis, prefix, parameters, jit=False):
         # While we may get multiple coordinate elements during command
         # line action, or during form jit, not so during coordinate
         # mapping jit
-        assert len(coordinate_elements) == 1, "Expecting only one form data instance during jit."
+        assert len(coordinate_elements) == 1, "Expecting only one coordinate map data instance during jit."
         # Drop some processing
         elements = []
-    elif jit and elements:
-        # Assuming a topological sorting of the elements,
-        # only process the last (main) element from here on
-        elements = [elements[-1]]
 
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(elements)))
     ir_elements = [
-        _compute_element_ir(e, element_numbers, classnames, parameters, jit) for e in elements
+        _compute_element_ir(e, element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of dofmaps
     logger.info("Computing representation of {} dofmaps".format(len(elements)))
     ir_dofmaps = [
-        _compute_dofmap_ir(e, element_numbers, classnames, parameters, jit) for e in elements
+        _compute_dofmap_ir(e, element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of coordinate mappings
     logger.info("Computing representation of {} coordinate mappings".format(
         len(coordinate_elements)))
     ir_coordinate_mappings = [
-        _compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters, jit)
+        _compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters)
         for e in coordinate_elements
     ]
 
     # Compute and flatten representation of integrals
     logger.info("Computing representation of integrals")
     irs = [
-        _compute_integral_ir(fd, form_index, prefix[0], element_numbers, classnames, parameters, jit)
+        _compute_integral_ir(fd, form_index, prefix, element_numbers, classnames, parameters)
         for (form_index, fd) in enumerate(form_datas)
     ]
     ir_integrals = list(itertools.chain(*irs))
@@ -152,14 +127,14 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, form_index, prefix[0], element_numbers, classnames, parameters, jit)
+        _compute_form_ir(fd, form_index, prefix, element_numbers, classnames, parameters)
         for (form_index, fd) in enumerate(form_datas)
     ]
 
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
 
-def _compute_element_ir(ufl_element, element_numbers, classnames, parameters, jit):
+def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     """Compute intermediate representation of element."""
     # Create FIAT element
     fiat_element = create_element(ufl_element)
@@ -257,7 +232,7 @@ def _compute_dofmap_permutation_tables(fiat_element, cell):
     return (edge_permutations, face_permutations, cell_topology)
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters, jit=False):
+def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     """Compute intermediate representation of dofmap."""
     # Create FIAT element
     fiat_element = create_element(ufl_element)
@@ -352,8 +327,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
 def _compute_coordinate_mapping_ir(ufl_coordinate_element,
                                    element_numbers,
                                    classnames,
-                                   parameters,
-                                   jit=False):
+                                   parameters):
     """Compute intermediate representation of coordinate mapping."""
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
@@ -441,13 +415,8 @@ def _needs_mesh_entities(fiat_element):
         return [d > 0 for d in num_dofs_per_entity]
 
 
-def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters,
-                         jit):
+def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters):
     """Compute intermediate represention for form integrals."""
-    # For consistency, all jit objects now have classnames with postfix "main"
-    if jit:
-        assert form_index == 0
-        form_index = "main"
 
     irs = []
 
@@ -493,13 +462,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
     return irs
 
 
-def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, parameters,
-                     jit=False):
+def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, parameters):
     """Compute intermediate representation of form."""
-    # For consistency, all jit objects now have classnames with postfix "main"
-    if jit:
-        assert form_id == 0
-        form_id = "main"
 
     # Store id
     ir = {"id": form_id}

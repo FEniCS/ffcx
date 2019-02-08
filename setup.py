@@ -19,9 +19,9 @@ if on_rtd:
 else:
     REQUIREMENTS = [
         "numpy",
+        "cffi",
         "fenics-fiat{}".format(RESTRICT_REQUIREMENTS),
         "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
-        "fenics-dijitso{}".format(RESTRICT_REQUIREMENTS),
     ]
 
 URL = "https://bitbucket.org/fenics-project/ffc/"

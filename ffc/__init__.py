@@ -29,9 +29,6 @@ logging.basicConfig()
 logger = logging.getLogger("ffc")
 logging.captureWarnings(capture=True)
 
-# Import JIT compiler
-from ffc.jitcompiler import jit  # noqa: F401
-
 # Import main function, entry point to script
 from ffc.main import main  # noqa: F401
 

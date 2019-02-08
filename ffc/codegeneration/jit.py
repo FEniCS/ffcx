@@ -5,12 +5,19 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import hashlib
 import importlib
-
+import sys
+import os
+import logging
+import time
 import cffi
+import pathlib
 
+import ufl
 import ffc
+from ffc.analysis import analyze_ufl_objects
+
+logger = logging.getLogger(__name__)
 
 UFC_HEADER_DECL = """
 typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
@@ -214,27 +221,123 @@ ufc_custom_integral* (*create_default_custom_integral)(void);
 """
 
 
+def get_ufl_dependencies(ufl_objects, parameters):
+
+    _, unique_elements, _, unique_coordinate_elements = analyze_ufl_objects(ufl_objects, parameters)
+
+    mesh_id = None
+    if isinstance(ufl_objects[0], ufl.Form):
+        mesh_id = ufl_objects[0].ufl_domain().ufl_id()
+    elif isinstance(ufl_objects[0], ufl.Mesh):
+        mesh_id = ufl_objects[0].ufl_id()
+    unique_meshes = []
+    if mesh_id is not None:
+        unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id)
+                         for element in unique_coordinate_elements]
+
+    # Avoid returning self as dependency for infinite recursion
+    unique_elements = tuple(element for element in unique_elements
+                            if element not in ufl_objects)
+
+    unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
+
+    logger.info('Dependencies = ' + str(unique_elements) + str(unique_meshes))
+
+    depfiles = []
+    for el in unique_elements:
+        objects, module = compile_elements([el], parameters=parameters)
+        libname = pathlib.Path(module.__file__).stem
+        depfiles.append(libname[3:])
+
+    for cm in unique_meshes:
+        objects, module = compile_coordinate_maps([cm], parameters=parameters)
+        libname = pathlib.Path(module.__file__).stem
+        depfiles.append(libname[3:])
+
+    return depfiles
+
+
+def get_cached_module(module_name, object_names, parameters):
+    cache_dir = pathlib.Path(parameters.get("cache_dir",
+                                            "compile_cache"))
+    cache_dir = cache_dir.expanduser()
+
+    timeout = int(parameters.get("timeout", 10))
+
+    c_filename = cache_dir.joinpath(module_name + ".c")
+    ready_name = c_filename.with_suffix(".c.cached")
+
+    # Ensure cache dir exists
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Ensure it is first on the path for loading modules
+    sys.path.insert(0, str(cache_dir))
+
+    try:
+        # Create C file with exclusive access
+        open(c_filename, "x")
+        return None, None
+
+    except FileExistsError:
+        logger.info("Cached C file already exists: " + str(c_filename))
+        # Now wait for ready
+        for i in range(timeout):
+            if os.path.exists(ready_name):
+                # Build list of compiled objects
+                compiled_module = \
+                    importlib.import_module(module_name)
+                sys.path.remove(str(cache_dir))
+                compiled_objects = \
+                    [getattr(compiled_module.lib,
+                             "create_" + name)()
+                     for name in object_names]
+
+                return compiled_objects, compiled_module
+
+            logger.info("Waiting for " + str(ready_name) + " to appear.")
+            time.sleep(1)
+        raise TimeoutError("""JIT compilation did not complete on another process.
+        Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
+
+
 def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
+
+    depfiles = []
+    if p['crosslink']:
+        depfiles = get_ufl_dependencies(elements, p)
+
+    logger.info('Compiling elements: ' + str(elements))
+
+    # Get a signature for these elements
+    module_name = 'libffc_elements_' + ffc.classname.compute_signature(elements, '', p)
+
+    names = []
+    for e in elements:
+        name = ffc.ir.representation.make_finite_element_jit_classname(e, "JIT", p)
+        names.append(name)
+        name = ffc.ir.representation.make_dofmap_jit_classname(e, "JIT", p)
+        names.append(name)
+
+    obj, mod = get_cached_module(module_name, names, p)
+    if obj is not None:
+        # Pair up elements with dofmaps
+        obj = list(zip(obj[::2], obj[1::2]))
+        return obj, mod
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
     element_template = "ufc_finite_element * create_{name}(void);\n"
     dofmap_template = "ufc_dofmap * create_{name}(void);\n"
-    names = []
-    for e in elements:
-        name = ffc.ir.representation.make_finite_element_jit_classname(e, "Element", p)
-        names.append(name)
-        decl += element_template.format(name=name)
-        name = ffc.ir.representation.make_dofmap_jit_classname(e, "Element", p)
-        names.append(name)
-        decl += dofmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(elements, prefix=("Element", True), parameters=p)
+    for i in range(len(elements)):
+        decl += element_template.format(name=names[i * 2])
+        decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    objects, module = _compile_objects(decl, code_body, names, module_name, p)
+    objects, module = _compile_objects(decl, elements, names, module_name, p, depfiles)
     # Pair up elements with dofmaps
-    objects = zip(objects[::2], objects[1::2])
+    objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
 
 
@@ -242,60 +345,106 @@ def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
+    depfiles = []
+    if p['crosslink']:
+        depfiles = get_ufl_dependencies(forms, p)
+
+    logger.info('Compiling forms: ' + str(forms))
+
+    # Get a signature for these forms
+    module_name = 'libffc_forms_' + ffc.classname.compute_signature(forms, '', p)
+
+    form_names = [ffc.classname.make_name("JIT", "form", i)
+                  for i in range(len(forms))]
+
+    obj, mod = get_cached_module(module_name, form_names, p)
+    if obj is not None:
+        return obj, mod
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL \
         + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
         + UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
-    form_names = [ffc.classname.make_name("Form", "form", i)
-                  for i in range(len(forms))]
     form_template = "ufc_form * create_{name}(void);\n"
     for name in form_names:
         decl += form_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(forms, prefix=("Form", True), parameters=p)
-
-    return _compile_objects(decl, code_body, form_names, module_name, p)
+    return _compile_objects(decl, forms, form_names, module_name, p, depfiles)
 
 
 def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
+
+    depfiles = []
+    if (p['crosslink']):
+        depfiles = get_ufl_dependencies(meshes, p)
+
+    logger.info('Compiling cmaps: ' + str(meshes))
+
+    # Get a signature for these cmaps
+    module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
+
+    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
+        mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
+
+    obj, mod = get_cached_module(module_name, cmap_names, p)
+    if obj is not None:
+        return obj, mod
+
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
-    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
-        mesh.ufl_coordinate_element(), "Mesh", p) for mesh in meshes]
+
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    _, code_body = ffc.compiler.compile_ufl_objects(meshes, prefix=("Mesh", True), parameters=p)
-
-    return _compile_objects(decl, code_body, cmap_names, module_name, p)
+    return _compile_objects(decl, meshes, cmap_names, module_name, p, depfiles)
 
 
-def _compile_objects(decl, code_body, object_names, module_name, parameters):
+def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, link=[]):
 
-    if not module_name:
-        h = hashlib.sha1()
-        h.update((code_body + decl).encode('utf-8'))
-        module_name = "_" + h.hexdigest()
+    cache_dir = pathlib.Path(parameters.get("cache_dir",
+                                            "compile_cache"))
+    cache_dir = cache_dir.expanduser()
+
+    # Cancel crosslinking on MacOS, not needed
+    if sys.platform == 'darwin':
+        link = []
+
+    _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters,
+                                                    jit=parameters['crosslink'])
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()])
+        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
+        library_dirs=[str(cache_dir.absolute())],
+        runtime_library_dirs=[str(cache_dir.absolute())], libraries=link,
+        extra_compile_args=['-g0'])  # turn off -g
+
     ffibuilder.cdef(decl)
 
-    cache_dir = None
-    if parameters:
-        cache_dir = parameters.get("cache_dir")
-    if not cache_dir:
-        cache_dir = "compile_cache"
+    c_filename = cache_dir.joinpath(module_name + ".c")
+    ready_name = c_filename.with_suffix(".c.cached")
 
+    # Ensure path is set for module
+    sys.path.insert(0, str(cache_dir))
+
+    # Ensure cache dir exists
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Compile
     ffibuilder.compile(tmpdir=cache_dir, verbose=False)
 
+    # Create a "status ready" file
+    # If this fails, it is an error, because it should not exist yet.
+    fd = open(ready_name, "x")
+    fd.close()
+
     # Build list of compiled objects
-    compiled_module = importlib.import_module(cache_dir + "." + module_name)
+    compiled_module = importlib.import_module(module_name)
+    sys.path.remove(str(cache_dir))
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module

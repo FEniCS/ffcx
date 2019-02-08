@@ -11,9 +11,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Comments from other places in code:
-# FIXME: Document option -fconvert_exceptions_to_warnings
-
 # NB! Parameters in the generate and build sets are
 # included in jit signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
@@ -27,19 +24,19 @@ _FFC_GENERATE_PARAMETERS = {
     # precision used when writing numbers (None for max precision)
     "precision": None,
     "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
-    "form_postfix": True,  # postfix form name with "Function", "LinearForm" or BilinearForm
-    # convert all exceptions to warning in generated code
-    "convert_exceptions_to_warnings": False,
-    "max_signature_length":
-    0,  # set to positive integer to shorten signatures set to True to replace tabulate_tensor body with no-op
     # set to True to add timing inside tabulate_tensor
     "generate_dummy_tabulate_tensor": False,
     "add_tabulate_tensor_timing": False,
     # Scalar type to be used in generated code (real or complex
     # C double precision floating-point types)
     "scalar_type": "double",
+    # Max time to wait on cache if not building on this
+    # process (seconds)
+    "timeout": 10,
     # ':' separated list of include filenames to add to generated code
     "external_includes": "",
+    # Whether to crosslink JIT libraries or build standalone
+    "crosslink": True,
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,  # optimization for the C++ compiler
@@ -52,7 +49,7 @@ _FFC_BUILD_PARAMETERS = {
     "external_include_dirs": "",
 }
 _FFC_CACHE_PARAMETERS = {
-    "cache_dir": "",  # cache dir used by Instant
+    "cache_dir": "~/.cache/fenics",  # cache dir used by default
     "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
@@ -159,7 +156,7 @@ def compilation_relevant_parameters(parameters):
     return p
 
 
-def compute_jit_parameters_signature(parameters):
+def compute_jit_signature(parameters):
     """Return parameters signature (some parameters must be ignored)."""
     from ufl.utils.sorting import canonicalize_metadata
     parameters = compilation_relevant_parameters(parameters)
