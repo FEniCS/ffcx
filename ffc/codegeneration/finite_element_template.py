@@ -5,37 +5,37 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_finite_element* create_{factory_name}(void);
+static ufc_finite_element* create_{factory_name}(void);
 """
 
 factory = """
 // Code for element {factory_name}
 
-int value_dimension_{factory_name}(int i)
+static int value_dimension_{factory_name}(int i)
 {{
   {value_dimension}
 }}
 
-int reference_value_dimension_{factory_name}(int i)
+static int reference_value_dimension_{factory_name}(int i)
 {{
   {reference_value_dimension}
 }}
 
-int evaluate_reference_basis_{factory_name}(double* restrict reference_values,
+static int evaluate_reference_basis_{factory_name}(double* restrict reference_values,
                                             int num_points,
                                             const double* restrict X)
 {{
   {evaluate_reference_basis}
 }}
 
-int evaluate_reference_basis_derivatives_{factory_name}(double * restrict reference_values,
+static int evaluate_reference_basis_derivatives_{factory_name}(double * restrict reference_values,
                                           int order, int num_points,
                                           const double * restrict X)
 {{
   {evaluate_reference_basis_derivatives}
 }}
 
-int transform_reference_basis_derivatives_{factory_name}(
+static int transform_reference_basis_derivatives_{factory_name}(
     double * restrict values, int order, int num_points,
     const double * restrict reference_values,
     const double * restrict X, const double * restrict J,
@@ -45,7 +45,7 @@ int transform_reference_basis_derivatives_{factory_name}(
   {transform_reference_basis_derivatives}
 }}
 
-int transform_values_{factory_name}(
+static int transform_values_{factory_name}(
      ufc_scalar_t* restrict reference_values,
      const ufc_scalar_t* restrict physical_values,
      const double* restrict coordinate_dofs,
@@ -55,18 +55,18 @@ int transform_values_{factory_name}(
   {transform_values}
 }}
 
-int tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
+static int tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
 {{
   {tabulate_reference_dof_coordinates}
 }}
 
 {sub_element_declaration}
-ufc_finite_element* create_sub_element_{factory_name}(int i)
+static ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
   {create_sub_element}
 }}
 
-ufc_finite_element* create_{factory_name}(void)
+static ufc_finite_element* create_{factory_name}(void)
 {{
   ufc_finite_element* element = malloc(sizeof(*element));
 

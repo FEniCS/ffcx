@@ -5,34 +5,34 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_dofmap* create_{factory_name}(void);
+static ufc_dofmap* create_{factory_name}(void);
 """
 
 factory = """
 // Code for dofmap {factory_name}
 
-void tabulate_dof_permutations_{factory_name}(int* restrict perm, const int64_t* restrict global_indices)
+static void tabulate_dof_permutations_{factory_name}(int* restrict perm, const int64_t* restrict global_indices)
 {{
 {tabulate_dof_permutations}
 }}
 
-void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
+static void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 {{
 {tabulate_entity_dofs}
 }}
 
-void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int i)
+static void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int i)
 {{
 {tabulate_entity_closure_dofs}
 }}
 
 {sub_dofmap_declaration}
-ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
+static ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
 {{
 {create_sub_dofmap}
 }}
 
-ufc_dofmap* create_{factory_name}(void)
+static ufc_dofmap* create_{factory_name}(void)
 {{
   ufc_dofmap* dofmap = malloc(sizeof(*dofmap));
   dofmap->signature = {signature};
