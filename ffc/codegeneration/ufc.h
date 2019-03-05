@@ -498,20 +498,20 @@ extern "C"
     ///
     ufc_dofmap* (*create_dofmap)(int i);
 
-    /// Upper bound on subdomain ids for cell integrals
-    int max_cell_subdomain_id;
+    /// All ids for cell integrals
+    void (get_cell_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for exterior facet integrals
-    int max_exterior_facet_subdomain_id;
+    /// All ids for exterior facet integrals
+    void (get_exterior_facet_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for interior facet integrals
-    int max_interior_facet_subdomain_id;
+    /// All ids for interior facet integrals
+    void (get_interior_facet_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for vertex integrals
-    int max_vertex_subdomain_id;
+    /// All ids for vertex integrals
+    void (get_vertex_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for custom integrals
-    int max_custom_subdomain_id;
+    /// All ids for custom integrals
+    void (get_custom_integral_ids)(int *ids);
 
     /// Number of cell integrals
     int num_cell_integrals;

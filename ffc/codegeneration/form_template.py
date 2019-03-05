@@ -51,9 +51,19 @@ ufc_cell_integral* create_cell_integral_{factory_name}(int subdomain_id)
   {create_cell_integral}
 }}
 
+void get_cell_integral_ids_{factory_name}(int *ids)
+{{
+  {get_cell_integral_ids}
+}}
+
 ufc_exterior_facet_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
 {{
   {create_exterior_facet_integral}
+}}
+
+void get_exterior_facet_integral_ids_{factory_name}(int *ids)
+{{
+  {get_exterior_facet_integral_ids}
 }}
 
 ufc_interior_facet_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
@@ -61,14 +71,29 @@ ufc_interior_facet_integral* create_interior_facet_integral_{factory_name}(int s
 {create_interior_facet_integral}
 }}
 
+void get_interior_facet_integral_ids_{factory_name}(int *ids)
+{{
+  {get_interior_facet_integral_ids}
+}}
+
 ufc_vertex_integral* create_vertex_integral_{factory_name}(int subdomain_id)
 {{
 {create_vertex_integral}
 }}
 
+void get_vertex_integral_ids_{factory_name}(int *ids)
+{{
+  {get_vertex_integral_ids}
+}}
+
 ufc_custom_integral* create_custom_integral_{factory_name}(int subdomain_id)
 {{
 {create_custom_integral}
+}}
+
+void get_custom_integral_ids_{factory_name}(int *ids)
+{{
+  {get_custom_integral_ids}
 }}
 
 ufc_form* create_{factory_name}(void)
@@ -85,11 +110,11 @@ ufc_form* create_{factory_name}(void)
   form->create_finite_element = create_finite_element_{factory_name};
   form->create_dofmap = create_dofmap_{factory_name};
 
-  form->max_cell_subdomain_id = {max_cell_subdomain_id};
-  form->max_exterior_facet_subdomain_id = {max_exterior_facet_subdomain_id};
-  form->max_interior_facet_subdomain_id = {max_interior_facet_subdomain_id};
-  form->max_vertex_subdomain_id = {max_vertex_subdomain_id};
-  form->max_custom_subdomain_id = {max_custom_subdomain_id};
+  form->get_cell_integral_ids = get_cell_integral_ids_{factory_name};
+  form->get_exterior_facet_integral_ids = get_exterior_facet_integral_ids_{factory_name};
+  form->get_interior_facet_integral_ids = get_interior_facet_integral_ids_{factory_name};
+  form->get_vertex_integral_ids = get_vertex_integral_ids_{factory_name};
+  form->get_custom_integral_ids = get_custom_integral_ids_{factory_name};
 
   form->num_cell_integrals = {num_cell_integrals};
   form->num_exterior_facet_integrals = {num_exterior_facet_integrals};

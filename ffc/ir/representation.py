@@ -513,6 +513,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
             form_data.max_subdomain_ids.get(integral_type, 0)
         ir["create_%s_integral" % integral_type] = \
             _create_foo_integral(prefix, form_id, integral_type, form_data)
+        ir["get_%s_integral_ids" % integral_type] = \
+            _create_foo_integral(prefix, form_id, integral_type, form_data)
 
     return ir
 
