@@ -135,7 +135,6 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
         assert compiled_f.rank == len(f.arguments())
 
     form0 = compiled_forms[0][0].create_cell_integral(-1)
-    print(form0)
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
