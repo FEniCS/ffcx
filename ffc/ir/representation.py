@@ -824,31 +824,22 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
     subdomain_ids = []
     classnames = []
 
-    if _create_default_foo_integral(prefix, form_id, integral_type, form_data) is not None:
+    itg_data = [itg_data for itg_data in form_data.integral_data
+                if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")]
+
+    if len(itg_data) > 1:
+        raise RuntimeError("Expecting at most one default integral of each type.")
+    elif len(itg_data) == 1:
         subdomain_ids += [-1]
         classnames += [classname.make_integral_name(prefix, integral_type, form_id, 'otherwise')]
 
     for itg_data in form_data.integral_data:
         if (itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)):
             subdomain_ids += [itg_data.subdomain_id]
-            classnames += [classname.make_integral_name(prefix, integral_type, form_id, itg_data.subdomain_id)]
+            classnames += [classname.make_integral_name(prefix, integral_type,
+                                                        form_id, itg_data.subdomain_id)]
 
     return subdomain_ids, classnames
-
-
-def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
-    """Compute intermediate representation of create_default_foo_integral."""
-    itg_data = [
-        itg_data for itg_data in form_data.integral_data
-        if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")
-    ]
-
-    if len(itg_data) > 1:
-        raise RuntimeError("Expecting at most one default integral of each type.")
-    if itg_data:
-        return classname.make_integral_name(prefix, integral_type, form_id, "otherwise")
-    else:
-        return None
 
 
 # --- Utility functions ---
