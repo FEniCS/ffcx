@@ -509,12 +509,9 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
     # (integrals are always generated as part of form so don't get
     # their own prefix)
     for integral_type in ufc_integral_types:
-        ir["max_%s_subdomain_id" % integral_type] = \
-            form_data.max_subdomain_ids.get(integral_type, 0)
-        ir["create_%s_integral" % integral_type] = \
-            _create_foo_integral(prefix, form_id, integral_type, form_data)
-        ir["get_%s_integral_ids" % integral_type] = \
-            _create_foo_integral(prefix, form_id, integral_type, form_data)
+        irdata = _create_foo_integral(prefix, form_id, integral_type, form_data)
+        ir["create_%s_integral" % integral_type] = irdata
+        ir["get_%s_integral_ids" % integral_type] = irdata
 
     return ir
 
@@ -819,13 +816,6 @@ def _tabulate_entity_closure_dofs(element, cell):
     ]
 
     return entity_closure_dofs, num_entity_closure_dofs
-
-
-def _has_foo_integrals(prefix, form_id, integral_type, form_data):
-    """Compute intermediate representation of has_foo_integrals."""
-    v = (form_data.max_subdomain_ids.get(integral_type, 0) > 0
-         or _create_default_foo_integral(prefix, form_id, integral_type, form_data) is not None)
-    return bool(v)
 
 
 def _create_foo_integral(prefix, form_id, integral_type, form_data):
