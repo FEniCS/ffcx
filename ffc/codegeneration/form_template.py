@@ -71,31 +71,6 @@ ufc_custom_integral* create_custom_integral_{factory_name}(int subdomain_id)
 {create_custom_integral}
 }}
 
-ufc_cell_integral* create_default_cell_integral_{factory_name}(void)
-{{
-{create_default_cell_integral}
-}}
-
-ufc_exterior_facet_integral* create_default_exterior_facet_integral_{factory_name}(void)
-{{
-{create_default_exterior_facet_integral}
-}}
-
-ufc_interior_facet_integral* create_default_interior_facet_integral_{factory_name}(void)
-{{
-{create_default_interior_facet_integral}
-}}
-
-ufc_vertex_integral* create_default_vertex_integral_{factory_name}(void)
-{{
-{create_default_vertex_integral}
-}}
-
-ufc_custom_integral* create_default_custom_integral_{factory_name}(void)
-{{
-{create_default_custom_integral}
-}}
-
 ufc_form* create_{factory_name}(void)
 {{
   ufc_form* form = malloc(sizeof(*form));
@@ -126,12 +101,6 @@ ufc_form* create_{factory_name}(void)
   form->create_interior_facet_integral = create_interior_facet_integral_{factory_name};
   form->create_vertex_integral = create_vertex_integral_{factory_name};
   form->create_custom_integral = create_custom_integral_{factory_name};
-
-  form->create_default_cell_integral = create_default_cell_integral_{factory_name};
-  form->create_default_exterior_facet_integral = create_default_exterior_facet_integral_{factory_name};
-  form->create_default_interior_facet_integral = create_default_interior_facet_integral_{factory_name};
-  form->create_default_vertex_integral = create_default_vertex_integral_{factory_name};
-  form->create_default_custom_integral = create_default_custom_integral_{factory_name};
 
   return form;
 }};

@@ -19,7 +19,6 @@ integral_name_templates = (
     "max_{}_subdomain_id",
     "has_{}_integrals",
     "create_{}_integral",
-    "create_default_{}_integral",
 )
 
 
@@ -167,15 +166,6 @@ class UFCForm:
         subdomain_id = L.Symbol("subdomain_id")
         return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
 
-    def _create_default_foo_integral(self, L, ir, parameters, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s()."""
-        # e.g. classname = ir["create_default_cell_integral"]
-        classname = ir[declname]
-        if classname is None:
-            return L.Return(L.Null())
-        else:
-            return generate_return_new(L, classname)
-
 
 def ufc_form_generator(ir, parameters):
     """Generate UFC code for a form"""
@@ -225,16 +215,6 @@ def ufc_form_generator(ir, parameters):
         L, ir, parameters)
     d["create_vertex_integral"] = generator.create_vertex_integral(L, ir, parameters)
     d["create_custom_integral"] = generator.create_custom_integral(L, ir, parameters)
-
-    d["create_default_cell_integral"] = generator.create_default_cell_integral(L, ir, parameters)
-    d["create_default_interior_facet_integral"] = generator.create_default_interior_facet_integral(
-        L, ir, parameters)
-    d["create_default_exterior_facet_integral"] = generator.create_default_exterior_facet_integral(
-        L, ir, parameters)
-    d["create_default_vertex_integral"] = generator.create_default_vertex_integral(
-        L, ir, parameters)
-    d["create_default_custom_integral"] = generator.create_default_custom_integral(
-        L, ir, parameters)
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

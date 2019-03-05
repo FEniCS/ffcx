@@ -832,14 +832,19 @@ def _has_foo_integrals(prefix, form_id, integral_type, form_data):
 
 def _create_foo_integral(prefix, form_id, integral_type, form_data):
     """Compute intermediate representation of create_foo_integral."""
-    subdomain_ids = [
-        itg_data.subdomain_id for itg_data in form_data.integral_data
-        if (itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int))
-    ]
-    classnames = [
-        classname.make_integral_name(prefix, integral_type, form_id, subdomain_id)
-        for subdomain_id in subdomain_ids
-    ]
+
+    subdomain_ids = []
+    classnames = []
+
+    if _create_default_foo_integral(prefix, form_id, integral_type, form_data) is not None:
+        subdomain_ids += [-1]
+        classnames += [classname.make_integral_name(prefix, integral_type, form_id, 'otherwise')]
+
+    for itg_data in form_data.integral_data:
+        if (itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)):
+            subdomain_ids += [itg_data.subdomain_id]
+            classnames += [classname.make_integral_name(prefix, integral_type, form_id, itg_data.subdomain_id)]
+
     return subdomain_ids, classnames
 
 
