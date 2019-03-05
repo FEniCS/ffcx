@@ -545,20 +545,6 @@ extern "C"
     /// Create a new custom integral on sub domain subdomain_id
     ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
-    /// Create a new cell integral on everywhere else
-    ufc_cell_integral* (*create_default_cell_integral)(void);
-
-    /// Create a new exterior facet integral on everywhere else
-    ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)(void);
-
-    /// Create a new interior facet integral on everywhere else
-    ufc_interior_facet_integral* (*create_default_interior_facet_integral)(void);
-
-    /// Create a new vertex integral on everywhere else
-    ufc_vertex_integral* (*create_default_vertex_integral)(void);
-
-    /// Create a new custom integral on everywhere else
-    ufc_custom_integral* (*create_default_custom_integral)(void);
   } ufc_form;
 
 

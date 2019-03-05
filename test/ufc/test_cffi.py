@@ -134,7 +134,8 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_default_cell_integral()
+    form0 = compiled_forms[0][0].create_cell_integral(-1)
+    print(form0)
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -189,8 +190,8 @@ def test_mass_bilinear_form_2d(mode, expected_result):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_default_cell_integral()
-    form1 = compiled_forms[1][0].create_default_cell_integral()
+    form0 = compiled_forms[0][0].create_cell_integral(-1)
+    form1 = compiled_forms[1][0].create_cell_integral(-1)
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -238,7 +239,7 @@ def test_helmholtz_form_2d(mode, expected_result):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_default_cell_integral()
+    form0 = compiled_forms[0][0].create_cell_integral(-1)
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -265,7 +266,7 @@ def test_form_coefficient():
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_default_cell_integral()
+    form0 = compiled_forms[0][0].create_cell_integral(-1)
     A = np.zeros((3, 3), dtype=np.float64)
     w = np.array([1.0, 1.0, 1.0], dtype=np.float64)
     ffi = cffi.FFI()

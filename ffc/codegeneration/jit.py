@@ -212,11 +212,6 @@ ufc_interior_facet_integral* (*create_interior_facet_integral)(
     int subdomain_id);
 ufc_vertex_integral* (*create_vertex_integral)(int subdomain_id);
 ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
-ufc_cell_integral* (*create_default_cell_integral)(void);
-ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)(void);
-ufc_interior_facet_integral* (*create_default_interior_facet_integral)(void);
-ufc_vertex_integral* (*create_default_vertex_integral)(void);
-ufc_custom_integral* (*create_default_custom_integral)(void);
 } ufc_form;
 """
 
