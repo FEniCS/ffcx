@@ -200,11 +200,11 @@ int max_exterior_facet_subdomain_id;
 int max_interior_facet_subdomain_id;
 int max_vertex_subdomain_id;
 int max_custom_subdomain_id;
-bool has_cell_integrals;
-bool has_exterior_facet_integrals;
-bool has_interior_facet_integrals;
-bool has_vertex_integrals;
-bool has_custom_integrals;
+int num_cell_integrals;
+int num_exterior_facet_integrals;
+int num_interior_facet_integrals;
+int num_vertex_integrals;
+int num_custom_integrals;
 ufc_cell_integral* (*create_cell_integral)(int subdomain_id);
 ufc_exterior_facet_integral* (*create_exterior_facet_integral)(
     int subdomain_id);

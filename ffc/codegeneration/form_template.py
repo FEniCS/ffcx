@@ -90,11 +90,12 @@ ufc_form* create_{factory_name}(void)
   form->max_interior_facet_subdomain_id = {max_interior_facet_subdomain_id};
   form->max_vertex_subdomain_id = {max_vertex_subdomain_id};
   form->max_custom_subdomain_id = {max_custom_subdomain_id};
-  form->has_cell_integrals = {has_cell_integrals};
-  form->has_exterior_facet_integrals = {has_exterior_facet_integrals};
-  form->has_interior_facet_integrals = {has_interior_facet_integrals};
-  form->has_vertex_integrals = {has_vertex_integrals};
-  form->has_custom_integrals = {has_custom_integrals};
+
+  form->num_cell_integrals = {num_cell_integrals};
+  form->num_exterior_facet_integrals = {num_exterior_facet_integrals};
+  form->num_interior_facet_integrals = {num_interior_facet_integrals};
+  form->num_vertex_integrals = {num_vertex_integrals};
+  form->num_custom_integrals = {num_custom_integrals};
 
   form->create_cell_integral = create_cell_integral_{factory_name};
   form->create_exterior_facet_integral = create_exterior_facet_integral_{factory_name};

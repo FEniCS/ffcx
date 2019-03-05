@@ -17,7 +17,6 @@ from ffc.ir.representation import ufc_integral_types
 # integral type
 integral_name_templates = (
     "max_{}_subdomain_id",
-    "has_{}_integrals",
     "create_{}_integral",
 )
 
@@ -153,12 +152,6 @@ class UFCForm:
         max_subdomain_id = ir[declname]
         return L.Return(int(max_subdomain_id))
 
-    def _has_foo_integrals(self, L, ir, parameters, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s()."""
-        # e.g. has_integrals = ir["has_cell_integrals"]
-        has_integrals = ir[declname]
-        return L.Return(bool(has_integrals))
-
     def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
         # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
@@ -184,11 +177,11 @@ def ufc_form_generator(ir, parameters):
     d["max_vertex_subdomain_id"] = ir["max_vertex_subdomain_id"]
     d["max_custom_subdomain_id"] = ir["max_custom_subdomain_id"]
 
-    d["has_cell_integrals"] = "true" if ir["has_cell_integrals"] else "false"
-    d["has_exterior_facet_integrals"] = "true" if ir["has_exterior_facet_integrals"] else "false"
-    d["has_interior_facet_integrals"] = "true" if ir["has_interior_facet_integrals"] else "false"
-    d["has_vertex_integrals"] = "true" if ir["has_vertex_integrals"] else "false"
-    d["has_custom_integrals"] = "true" if ir["has_custom_integrals"] else "false"
+    d["num_cell_integrals"] = len(ir["create_cell_integral"][0])
+    d["num_exterior_facet_integrals"] = len(ir["create_exterior_facet_integral"][0])
+    d["num_interior_facet_integrals"] = len(ir["create_interior_facet_integral"][0])
+    d["num_vertex_integrals"] = len(ir["create_vertex_integral"][0])
+    d["num_custom_integrals"] = len(ir["create_custom_integral"][0])
 
     import ffc.codegeneration.C.cnodes as L
     generator = UFCForm()

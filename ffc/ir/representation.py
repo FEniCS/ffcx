@@ -511,12 +511,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
     for integral_type in ufc_integral_types:
         ir["max_%s_subdomain_id" % integral_type] = \
             form_data.max_subdomain_ids.get(integral_type, 0)
-        ir["has_%s_integrals" % integral_type] = \
-            _has_foo_integrals(prefix, form_id, integral_type, form_data)
         ir["create_%s_integral" % integral_type] = \
             _create_foo_integral(prefix, form_id, integral_type, form_data)
-        ir["create_default_%s_integral" % integral_type] = \
-            _create_default_foo_integral(prefix, form_id, integral_type, form_data)
 
     return ir
 

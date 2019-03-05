@@ -513,20 +513,20 @@ extern "C"
     /// Upper bound on subdomain ids for custom integrals
     int max_custom_subdomain_id;
 
-    /// Whether form has any cell integrals
-    bool has_cell_integrals;
+    /// Number of cell integrals
+    int num_cell_integrals;
 
-    /// Whether form has any exterior facet integrals
-    bool has_exterior_facet_integrals;
+    /// Number of exterior facet integrals
+    int num_exterior_facet_integrals;
 
-    /// Whether form has any interior facet integrals
-    bool has_interior_facet_integrals;
+    /// Number of interior facet integrals
+    int num_interior_facet_integrals;
 
-    /// Whether form has any vertex integrals
-    bool has_vertex_integrals;
+    /// Number of vertex integrals
+    int num_vertex_integrals;
 
-    /// Whether form has any custom integrals
-    bool has_custom_integrals;
+    /// Number of custom integrals
+    int num_custom_integrals;
 
     /// Create a new cell integral on sub domain subdomain_id
     ufc_cell_integral* (*create_cell_integral)(int subdomain_id);
