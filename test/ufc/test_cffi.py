@@ -134,14 +134,22 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_cell_integral(-1)
+    ffi = cffi.FFI()
+    form0 = compiled_forms[0][0]
+
+    assert form0.num_cell_integrals == 1
+    ids = np.zeros(form0.num_cell_integrals, dtype=np.int32)
+    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert ids[0] == -1
+
+    default_integral = form0.create_cell_integral(ids[0])
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
-    ffi = cffi.FFI()
+
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
-    form0.tabulate_tensor(
+    default_integral.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), 0)
