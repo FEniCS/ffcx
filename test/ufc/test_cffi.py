@@ -286,3 +286,44 @@ def test_form_coefficient():
     A_diff = (A - A_analytic)
     assert np.isclose(A_diff.max(), 0.0)
     assert np.isclose(A_diff.min(), 0.0)
+
+
+def test_subdomains():
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    a0 = ufl.inner(u, v) * ufl.dx + ufl.inner(u, v) * ufl.dx(2)
+    a1 = ufl.inner(u, v) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx
+    a2 = ufl.inner(u, v) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx(1)
+    a3 = ufl.inner(u, v) * ufl.ds(210) + ufl.inner(u, v) * ufl.ds(0)
+    forms = [a0, a1, a2, a3]
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': 'double'})
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == len(f.arguments())
+
+    ffi = cffi.FFI()
+
+    form0 = compiled_forms[0][0]
+    ids = np.zeros(form0.num_cell_integrals, dtype=np.int32)
+    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert ids[0] == -1 and ids[1] == 2
+
+    form1 = compiled_forms[1][0]
+    ids = np.zeros(form1.num_cell_integrals, dtype=np.int32)
+    form1.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert ids[0] == -1 and ids[1] == 2
+
+    form2 = compiled_forms[2][0]
+    ids = np.zeros(form2.num_cell_integrals, dtype=np.int32)
+    form2.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert ids[0] == 1 and ids[1] == 2
+
+    form3 = compiled_forms[3][0]
+    ids = np.zeros(form3.num_cell_integrals, dtype=np.int32)
+    form3.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert len(ids) == 0
+    ids = np.zeros(form3.num_exterior_facet_integrals, dtype=np.int32)
+    form3.get_exterior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert ids[0] == 0 and ids[1] == 210
