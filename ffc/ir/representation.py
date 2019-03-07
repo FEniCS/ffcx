@@ -834,10 +834,13 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
         classnames += [classname.make_integral_name(prefix, integral_type, form_id, 'otherwise')]
 
     for itg_data in form_data.integral_data:
-        if (itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)):
-            subdomain_ids += [itg_data.subdomain_id]
-            classnames += [classname.make_integral_name(prefix, integral_type,
-                                                        form_id, itg_data.subdomain_id)]
+        if isinstance(itg_data.subdomain_id, int):
+            if itg_data.subdomain_id < 0:
+                raise ValueError("Integral subdomain ID must be non-negative integer, not " + str(itg_data.subdomain_id))
+            if (itg_data.integral_type == integral_type):
+                subdomain_ids += [itg_data.subdomain_id]
+                classnames += [classname.make_integral_name(prefix, integral_type,
+                                                            form_id, itg_data.subdomain_id)]
 
     return subdomain_ids, classnames
 
