@@ -47,14 +47,13 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     logger.info("Compiler stage 1: Analyzing UFL objects")
 
     form_datas = ()
+    expressions = []
     unique_elements = set()
     unique_coordinate_elements = set()
 
     if isinstance(ufl_objects[0], ufl.form.Form):
-        forms = ufl_objects
-
         # Analyze forms
-        form_datas = tuple(_analyze_form(form, parameters) for form in forms)
+        form_datas = tuple(_analyze_form(form, parameters) for form in ufl_objects)
 
         # Extract unique elements across all forms
         for form_data in form_datas:
@@ -65,16 +64,19 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
             unique_coordinate_elements.update(form_data.coordinate_elements)
 
     elif isinstance(ufl_objects[0], ufl.FiniteElementBase):
-        elements = ufl_objects
-
         # Extract unique (sub)elements
-        unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
+        unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(ufl_objects))
 
     elif isinstance(ufl_objects[0], ufl.Mesh):
-        meshes = ufl_objects
-
         # Extract unique (sub)elements
-        unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
+        unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in ufl_objects]
+
+    elif isinstance(ufl_objects[0], ufl.core.expr.Expr):
+        for expression in ufl_objects:
+            unique_elements.update(ufl.algorithms.extract_elements(expression))
+
+            expression = _analyze_expression(expression)
+            expressions.append(expression)
     else:
         raise TypeError("UFL objects not recognised.")
 
@@ -88,7 +90,26 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     # Compute element numbers
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    return form_datas, unique_elements, element_numbers, unique_coordinate_elements
+    return form_datas, expressions, unique_elements, element_numbers, unique_coordinate_elements
+
+
+def _analyze_expression(expression: ufl.core.expr.Expr):
+    """Analyzes and preprocesses expressions"""
+
+    preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
+
+    if len(ufl.algorithms.extract_arguments(expression)) > 0:
+        raise NotImplementedError("Expressions with Arguments not implemented.")
+
+    expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+    expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
+    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+
+    return expression
 
 
 def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formdata.FormData:

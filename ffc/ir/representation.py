@@ -76,7 +76,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     logger.info("Compiler stage 2: Computing intermediate representation")
 
     # Extract data from analysis
-    form_datas, elements, element_numbers, coordinate_elements = analysis
+    form_datas, expressions, elements, element_numbers, coordinate_elements = analysis
 
     # Construct classnames for all element objects and coordinate mappings
     classnames = make_all_element_classnames(prefix, elements, coordinate_elements, parameters)
@@ -130,6 +130,10 @@ def compute_ir(analysis, prefix, parameters, jit=False):
         _compute_form_ir(fd, form_index, prefix, element_numbers, classnames, parameters)
         for (form_index, fd) in enumerate(form_datas)
     ]
+
+    # Compute representation of expressions
+    logger.info("Computing representation of expressions")
+    ir_expressions = [_compute_expression_ir(exp, parameters) for exp in expressions]
 
     return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
 
@@ -514,6 +518,10 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
         ir["get_%s_integral_ids" % integral_type] = irdata
 
     return ir
+
+
+def _compute_expression_ir(expression, parameters):
+    pass
 
 
 # --- Computation of intermediate representation for non-trivial functions ---
