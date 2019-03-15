@@ -117,12 +117,6 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
         logger.error("Form (%s) seems to be zero: cannot compile it." % str(form))
         raise RuntimeError("Form (%s) seems to be zero: cannot compile it." % str(form))
 
-    # There is no support for custom integrals
-    # We assume at this point, that lacking support for these
-    # integrals is the same across both representations, tsfc and uflacs
-    if _has_custom_integrals(form):
-        raise RuntimeError("Form (%s) contains unsupported custom integrals." % str(form))
-
     #
     # ---- Extract representation across all integrals in this form
     #

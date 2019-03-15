@@ -406,9 +406,10 @@ class IntegralGenerator(object):
 
             # Not assuming runtime size to be multiple by chunk size
             num_points_in_block = L.Symbol("num_points_in_chunk")
-            decl = L.VariableDecl("const int", num_points_in_block,
-                                  L.Call("min", (chunk_size, np - iq_chunk * chunk_size)))
-            rule_parts.append(decl)
+            rule_parts += [L.VariableDecl("int", num_points_in_block,
+                                          np - iq_chunk * chunk_size),
+                           L.If(L.GT(num_points_in_block, chunk_size),
+                                L.Assign(num_points_in_block, chunk_size))]
 
             iq_body = L.ForRange(iq, 0, num_points_in_block, body=body)
 
