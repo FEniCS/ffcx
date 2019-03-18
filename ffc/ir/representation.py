@@ -135,7 +135,7 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     logger.info("Computing representation of expressions")
     ir_expressions = [_compute_expression_ir(exp, parameters) for exp in expressions]
 
-    return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
+    return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms, ir_expressions
 
 
 def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
@@ -521,7 +521,34 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
 
 
 def _compute_expression_ir(expression, parameters):
-    pass
+    from ffc.ir.uflacs.build_uflacs_ir import build_uflacs_ir
+
+    integrands = {3: expression}
+    quadrature_rules = {3: (numpy.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
+                           numpy.array([1.0, 1.0, 1.0]))}
+
+    ir = build_uflacs_ir(ufl.triangle, "vertex", "cell", integrands, (), quadrature_rules, parameters)
+
+    ir["classname"] = "expression"
+    ir["integral_type"] = "vertex"
+    ir["representation"] = "uflacs"
+    ir["prefix"] = "JIT"
+    ir["integrals_metadata"] = {"precision": 16}
+
+    F = ir["piecewise_ir"]["factorization"]
+
+    from ffc.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
+    import ffc.codegeneration.C.cnodes
+
+    ufl_to_language = UFL2CNodesTranslatorCpp(ffc.codegeneration.C.cnodes)
+
+    for i, attr in F.nodes.items():
+        expr = attr["expression"]
+        print(expr.ufl_operands)
+
+    exit()
+
+    return ir
 
 
 # --- Computation of intermediate representation for non-trivial functions ---

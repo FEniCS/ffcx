@@ -362,7 +362,7 @@ class IntegralGenerator(object):
 
         return preparts, quadparts, postparts
 
-    def generate_runtime_quadrature_loop(self):
+        def generate_runtime_quadrature_loop(self):
         """Generate quadrature loop for custom integrals, with physical points given runtime."""
         L = self.backend.language
 

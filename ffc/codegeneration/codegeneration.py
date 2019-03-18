@@ -39,7 +39,7 @@ def generate_code(ir, parameters, jit):
     # set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Extract representations
-    ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
+    ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms, ir_expressions = ir
 
     # Generate code for finite_elements
     logger.debug("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
@@ -64,6 +64,10 @@ def generate_code(ir, parameters, jit):
     # Generate code for forms
     logger.debug("Generating code for forms")
     code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
+
+    logger.debug("Generating code for expressions")
+    code_expressions = [ufc_integral_generator(ir, parameters) for ir in ir_expressions]
+    print(code_expressions)
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals, jit)

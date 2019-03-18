@@ -99,7 +99,7 @@ def _analyze_expression(expression: ufl.core.expr.Expr):
     preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
 
     if len(ufl.algorithms.extract_arguments(expression)) > 0:
-        raise NotImplementedError("Expressions with Arguments not implemented.")
+        raise NotImplementedError("Expressions with Arguments under development.")
 
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
