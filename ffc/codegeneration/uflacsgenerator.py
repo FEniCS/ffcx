@@ -377,6 +377,8 @@ class IntegralGenerator(object):
 
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
+        for k in self.ir.keys():
+            print("----------------------\n", k , "\n\n", self.ir[k], "\n\n----------------------\n")
 
         # Generate unstructured varying partition
         body = self.generate_unstructured_varying_partition(num_points)
@@ -411,41 +413,28 @@ class IntegralGenerator(object):
                            L.If(L.GT(num_points_in_block, chunk_size),
                                 L.Assign(num_points_in_block, chunk_size))]
 
-            iq_body = L.ForRange(iq, 0, num_points_in_block, body=body)
+            iq_body = [L.ForRange(iq, 0, num_points_in_block, body=body)]
+
+            elem = list(self.ir['classnames']['finite_element'].values())[0]
+            print('elem = ', elem)
 
             # Preparations for quadrature rules
             #
             varying_ir = self.ir["varying_irs"][num_points]
 
-            # Copy quadrature weights for this chunk
+            # Point to quadrature weights for this chunk
             if varying_ir["need_weights"]:
                 cwsym = self.backend.symbols.custom_quadrature_weights()
                 wsym = self.backend.symbols.custom_weights_table()
-                rule_parts += [
-                    L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0, alignas=alignas),
-                    L.ForRange(
-                        iq,
-                        0,
-                        num_points_in_block,
-                        body=L.Assign(wsym[iq], cwsym[chunk_size * iq_chunk + iq])),
-                ]
+                rule_parts += [L.VariableDecl("const double*", wsym,
+                                              cwsym + chunk_size * iq_chunk)]
 
-            # Copy quadrature points for this chunk
+            # Point to quadrature points for this chunk
             if varying_ir["need_points"]:
                 cpsym = self.backend.symbols.custom_quadrature_points()
                 psym = self.backend.symbols.custom_points_table()
-                rule_parts += [
-                    L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0, alignas=alignas),
-                    L.ForRange(
-                        iq,
-                        0,
-                        num_points_in_block,
-                        body=[
-                            L.Assign(psym[iq * gdim + i],
-                                     cpsym[chunk_size * iq_chunk * gdim + iq * gdim + i])
-                            for i in range(gdim)
-                        ])
-                ]
+                rule_parts += [L.VariableDecl("const double*", psym,
+                                              cpsym + chunk_size * iq_chunk * gdim)]
 
             # Add leading comment if there are any tables
             rule_parts = L.commented_code_list(rule_parts, "Quadrature weights and points")
@@ -459,16 +448,23 @@ class IntegralGenerator(object):
             ]
             for name in non_piecewise_tables:
                 table = tables[name]
-                decl = L.ArrayDecl(
-                    "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0,
-                    alignas=alignas)  # padlen=padlen)
+                decl = L.ArrayDecl("ufc_scalar_t",
+                                   name, (1, chunk_size, table.shape[2]), 0,
+                                   alignas=alignas)
                 table_parts += [decl]
 
-            table_parts += [L.Comment("FIXME: Fill element tables here")]
-            # table_origins
+            for name in non_piecewise_tables:
+                table_name = L.Symbol(name)
+                print(name, ' = ', tables[name])
+                # FIXME: this just calls evaluate_reference_basis, but not for higher
+                # derivatives...
+                order = 0
+                table_parts += [L.Call("evaluate_reference_basis_derivatives_" + elem,
+                                      (L.AddressOf(table_name[0][0][0]), order,
+                                       num_points_in_block, psym))]
 
             # Gather all in chunk loop
-            chunk_body = rule_parts + table_parts + [iq_body]
+            chunk_body = rule_parts + table_parts + iq_body
             quadparts = [L.ForRange(iq_chunk, 0, num_point_blocks, body=chunk_body)]
 
         return preparts, quadparts, postparts
