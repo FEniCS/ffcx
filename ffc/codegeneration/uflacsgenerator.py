@@ -378,7 +378,7 @@ class IntegralGenerator(object):
         tables = self.ir["unique_tables"]
         table_types = self.ir["unique_table_types"]
         for k in self.ir.keys():
-            print("----------------------\n", k , "\n\n", self.ir[k], "\n\n----------------------\n")
+            print("----------------------\n", k, "\n\n", self.ir[k], "\n\n----------------------\n")
 
         # Generate unstructured varying partition
         body = self.generate_unstructured_varying_partition(num_points)
@@ -460,8 +460,8 @@ class IntegralGenerator(object):
                 # derivatives...
                 order = 0
                 table_parts += [L.Call("evaluate_reference_basis_derivatives_" + elem,
-                                      (L.AddressOf(table_name[0][0][0]), order,
-                                       num_points_in_block, psym))]
+                                       (L.AddressOf(table_name[0][0][0]), order,
+                                        num_points_in_block, psym))]
 
             # Gather all in chunk loop
             chunk_body = rule_parts + table_parts + iq_body
