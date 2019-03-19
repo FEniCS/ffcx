@@ -195,16 +195,16 @@ ufc_dofmap* (*create_coordinate_dofmap)(void);
 ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
 ufc_finite_element* (*create_finite_element)(int i);
 ufc_dofmap* (*create_dofmap)(int i);
-int max_cell_subdomain_id;
-int max_exterior_facet_subdomain_id;
-int max_interior_facet_subdomain_id;
-int max_vertex_subdomain_id;
-int max_custom_subdomain_id;
-bool has_cell_integrals;
-bool has_exterior_facet_integrals;
-bool has_interior_facet_integrals;
-bool has_vertex_integrals;
-bool has_custom_integrals;
+void (*get_cell_integral_ids)(int *ids);
+void (*get_exterior_facet_integral_ids)(int *ids);
+void (*get_interior_facet_integral_ids)(int *ids);
+void (*get_vertex_integral_ids)(int *ids);
+void (*get_custom_integral_ids)(int *ids);
+int num_cell_integrals;
+int num_exterior_facet_integrals;
+int num_interior_facet_integrals;
+int num_vertex_integrals;
+int num_custom_integrals;
 ufc_cell_integral* (*create_cell_integral)(int subdomain_id);
 ufc_exterior_facet_integral* (*create_exterior_facet_integral)(
     int subdomain_id);
@@ -212,11 +212,6 @@ ufc_interior_facet_integral* (*create_interior_facet_integral)(
     int subdomain_id);
 ufc_vertex_integral* (*create_vertex_integral)(int subdomain_id);
 ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
-ufc_cell_integral* (*create_default_cell_integral)(void);
-ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)(void);
-ufc_interior_facet_integral* (*create_default_interior_facet_integral)(void);
-ufc_vertex_integral* (*create_default_vertex_integral)(void);
-ufc_custom_integral* (*create_default_custom_integral)(void);
 } ufc_form;
 """
 

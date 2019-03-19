@@ -498,35 +498,35 @@ extern "C"
     ///
     ufc_dofmap* (*create_dofmap)(int i);
 
-    /// Upper bound on subdomain ids for cell integrals
-    int max_cell_subdomain_id;
+    /// All ids for cell integrals
+    void (*get_cell_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for exterior facet integrals
-    int max_exterior_facet_subdomain_id;
+    /// All ids for exterior facet integrals
+    void (*get_exterior_facet_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for interior facet integrals
-    int max_interior_facet_subdomain_id;
+    /// All ids for interior facet integrals
+    void (*get_interior_facet_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for vertex integrals
-    int max_vertex_subdomain_id;
+    /// All ids for vertex integrals
+    void (*get_vertex_integral_ids)(int *ids);
 
-    /// Upper bound on subdomain ids for custom integrals
-    int max_custom_subdomain_id;
+    /// All ids for custom integrals
+    void (*get_custom_integral_ids)(int *ids);
 
-    /// Whether form has any cell integrals
-    bool has_cell_integrals;
+    /// Number of cell integrals
+    int num_cell_integrals;
 
-    /// Whether form has any exterior facet integrals
-    bool has_exterior_facet_integrals;
+    /// Number of exterior facet integrals
+    int num_exterior_facet_integrals;
 
-    /// Whether form has any interior facet integrals
-    bool has_interior_facet_integrals;
+    /// Number of interior facet integrals
+    int num_interior_facet_integrals;
 
-    /// Whether form has any vertex integrals
-    bool has_vertex_integrals;
+    /// Number of vertex integrals
+    int num_vertex_integrals;
 
-    /// Whether form has any custom integrals
-    bool has_custom_integrals;
+    /// Number of custom integrals
+    int num_custom_integrals;
 
     /// Create a new cell integral on sub domain subdomain_id
     ufc_cell_integral* (*create_cell_integral)(int subdomain_id);
@@ -545,20 +545,6 @@ extern "C"
     /// Create a new custom integral on sub domain subdomain_id
     ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
-    /// Create a new cell integral on everywhere else
-    ufc_cell_integral* (*create_default_cell_integral)(void);
-
-    /// Create a new exterior facet integral on everywhere else
-    ufc_exterior_facet_integral* (*create_default_exterior_facet_integral)(void);
-
-    /// Create a new interior facet integral on everywhere else
-    ufc_interior_facet_integral* (*create_default_interior_facet_integral)(void);
-
-    /// Create a new vertex integral on everywhere else
-    ufc_vertex_integral* (*create_default_vertex_integral)(void);
-
-    /// Create a new custom integral on everywhere else
-    ufc_custom_integral* (*create_default_custom_integral)(void);
   } ufc_form;
 
 

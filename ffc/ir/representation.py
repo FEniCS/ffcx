@@ -509,14 +509,9 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
     # (integrals are always generated as part of form so don't get
     # their own prefix)
     for integral_type in ufc_integral_types:
-        ir["max_%s_subdomain_id" % integral_type] = \
-            form_data.max_subdomain_ids.get(integral_type, 0)
-        ir["has_%s_integrals" % integral_type] = \
-            _has_foo_integrals(prefix, form_id, integral_type, form_data)
-        ir["create_%s_integral" % integral_type] = \
-            _create_foo_integral(prefix, form_id, integral_type, form_data)
-        ir["create_default_%s_integral" % integral_type] = \
-            _create_default_foo_integral(prefix, form_id, integral_type, form_data)
+        irdata = _create_foo_integral(prefix, form_id, integral_type, form_data)
+        ir["create_%s_integral" % integral_type] = irdata
+        ir["get_%s_integral_ids" % integral_type] = irdata
 
     return ir
 
@@ -823,39 +818,32 @@ def _tabulate_entity_closure_dofs(element, cell):
     return entity_closure_dofs, num_entity_closure_dofs
 
 
-def _has_foo_integrals(prefix, form_id, integral_type, form_data):
-    """Compute intermediate representation of has_foo_integrals."""
-    v = (form_data.max_subdomain_ids.get(integral_type, 0) > 0
-         or _create_default_foo_integral(prefix, form_id, integral_type, form_data) is not None)
-    return bool(v)
-
-
 def _create_foo_integral(prefix, form_id, integral_type, form_data):
     """Compute intermediate representation of create_foo_integral."""
-    subdomain_ids = [
-        itg_data.subdomain_id for itg_data in form_data.integral_data
-        if (itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int))
-    ]
-    classnames = [
-        classname.make_integral_name(prefix, integral_type, form_id, subdomain_id)
-        for subdomain_id in subdomain_ids
-    ]
-    return subdomain_ids, classnames
 
+    subdomain_ids = []
+    classnames = []
 
-def _create_default_foo_integral(prefix, form_id, integral_type, form_data):
-    """Compute intermediate representation of create_default_foo_integral."""
-    itg_data = [
-        itg_data for itg_data in form_data.integral_data
-        if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")
-    ]
+    itg_data = [itg_data for itg_data in form_data.integral_data
+                if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")]
 
     if len(itg_data) > 1:
         raise RuntimeError("Expecting at most one default integral of each type.")
-    if itg_data:
-        return classname.make_integral_name(prefix, integral_type, form_id, "otherwise")
-    else:
-        return None
+    elif len(itg_data) == 1:
+        subdomain_ids += [-1]
+        classnames += [classname.make_integral_name(prefix, integral_type, form_id, 'otherwise')]
+
+    for itg_data in form_data.integral_data:
+        if isinstance(itg_data.subdomain_id, int):
+            if itg_data.subdomain_id < 0:
+                raise ValueError("Integral subdomain ID must be non-negative integer, not "
+                                 + str(itg_data.subdomain_id))
+            if (itg_data.integral_type == integral_type):
+                subdomain_ids += [itg_data.subdomain_id]
+                classnames += [classname.make_integral_name(prefix, integral_type,
+                                                            form_id, itg_data.subdomain_id)]
+
+    return subdomain_ids, classnames
 
 
 # --- Utility functions ---
