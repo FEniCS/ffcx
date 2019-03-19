@@ -20,8 +20,8 @@ class FFCBackend(object):
 
         # This is the seam where cnodes/C is chosen for the ffc backend
         self.language = ffc.codegeneration.C.cnodes
-        complex_mode = "complex" in parameters.get("scalar_type", "double")
-        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, complex_mode)
+        scalar_type = parameters.get("scalar_type", "double")
+        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type)
 
         coefficient_numbering = ir["coefficient_numbering"]
         coefficient_offsets = ir["coefficient_offsets"]
