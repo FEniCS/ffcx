@@ -278,7 +278,7 @@ def get_cached_module(module_name, object_names, parameters):
 
     mtime = time.time() - os.path.getmtime(c_filename)
     print('C file was created approx ', mtime, ' seconds ago...')
-    if not os.path.exists(ready_name) and mtime > 2*timeout:
+    if not os.path.exists(ready_name) and mtime > 2 * timeout:
         print('That seems a long time to be compiling for...')
         try:
             os.unlink(c_filename)
