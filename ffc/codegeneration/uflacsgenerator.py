@@ -456,6 +456,8 @@ class IntegralGenerator(object):
             for name in non_piecewise_tables:
                 table_name = L.Symbol(name)
                 print(name, ' = ', tables[name])
+                if "D" in name:
+                    raise RuntimeError("Cannot handle higher derivatives... FIXME")
                 # FIXME: this just calls evaluate_reference_basis, but not for higher
                 # derivatives...
                 order = 0
