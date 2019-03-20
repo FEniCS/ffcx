@@ -82,7 +82,6 @@ def test_custom_form_2d():
             ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
             ffi.cast('double *', coords.ctypes.data), 0)
 
-
         print(A0, A1)
 
         assert np.isclose(A0, A1).all()
