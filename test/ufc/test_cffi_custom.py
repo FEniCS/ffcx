@@ -32,9 +32,13 @@ def test_custom_form_2d():
     mode = 'double'
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
+    compiled_element, module = ffc.codegeneration.jit.compile_elements([element])
+    el = compiled_element[0][0]
+    sd = el.space_dimension
+
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
-    a1 = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dc
-    a2 = u * v * ufl.dc
+    a1 = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dc + ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+    a2 = u * v * ufl.dc + u * v * ufl.dx
     forms = [a1, a2]
     compiled_forms, module = ffc.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode})
@@ -43,14 +47,16 @@ def test_custom_form_2d():
         assert compiled_f.rank == len(f.arguments())
 
     for f in compiled_forms:
-        form0 = f[0].create_default_custom_integral()
+        form0 = f[0].create_custom_integral(-1)
+        form1 = f[0].create_cell_integral(-1)
 
         c_type, np_type = float_to_type(mode)
-        A = np.zeros((3, 3), dtype=np_type)
+        A0 = np.zeros((sd, sd), dtype=np_type)
         w = np.array([], dtype=np_type)
         ffi = cffi.FFI()
         coords = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=np.float64)
 
+        # Quadrature points and weights
         Qpts = np.array([[0.81684757, 0.09157621],
                          [0.09157621, 0.81684757],
                          [0.09157621, 0.09157621],
@@ -62,11 +68,21 @@ def test_custom_form_2d():
         Fnormal = np.array([])
 
         form0.tabulate_tensor(
-            ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+            ffi.cast('{type} *'.format(type=c_type), A0.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
             ffi.cast('double *', coords.ctypes.data), len(Qpts),
             ffi.cast('{type} *'.format(type=c_type), Qpts.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), Qwts.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), Fnormal.ctypes.data), 0)
 
-        print(A)
+        A1 = np.zeros((sd, sd), dtype=np_type)
+
+        form1.tabulate_tensor(
+            ffi.cast('{type} *'.format(type=c_type), A1.ctypes.data),
+            ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), 0)
+
+
+        print(A0, A1)
+
+        assert np.isclose(A0, A1).all()
