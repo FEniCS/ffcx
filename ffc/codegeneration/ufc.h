@@ -549,7 +549,7 @@ extern "C"
 
 
   // FIXME: Formalise a UFC 'function space'.
-  typedef struct dolfin_function_space
+  typedef struct ufc_function_space
   {
     // Pointer to factory function that creates a new ufc_finite_element
     ufc_finite_element* (*element)(void);
@@ -559,7 +559,7 @@ extern "C"
 
     // Pointer to factory function that creates a new ufc_coordinate_mapping
     ufc_coordinate_mapping* (*coordinate_mapping)(void);
-  } dolfin_function_space;
+  } ufc_function_space;
 
   typedef struct dolfin_form
   {

@@ -24,14 +24,13 @@ def generate_wrappers(prefix, forms, common_function_space=False):
         True if common function space, otherwise False
     """
 
-    # Tag
-    code_h = "\n// DOLFIN helper functions\n"
-    code_c = "\n// DOLFIN helper functions\n"
+    code_h = "\n"
+    code_c = "\n"
 
     # Typedefs for convenience factory functions
     code_h += """
 // Typedefs for convenience pointers to functions (factories)
-typedef dolfin_function_space* (*dolfin_function_space_factory_ptr)(void);
+typedef ufc_function_space* (*ufc_function_space_factory_ptr)(void);
 typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
 
 """
@@ -57,7 +56,7 @@ typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
         assert (parameters["use_common_coefficient_names"])
         spaces = extract_coefficient_spaces(forms)
 
-        # Generate dolfin_function_space code for common coefficient spaces
+        # Generate ufc_function_space code for common coefficient spaces
         code_h += "// Coefficient spaces helpers (number: {})\n".format(len(spaces))
         for space in spaces:
             args = {
@@ -114,7 +113,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
         for i, form in enumerate(forms):
             if form.rank:
                 # FIXME: Is this naming robust?
-                typedefs += "\n\nstatic const dolfin_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(  # noqa: E501
+                typedefs += "\n\nstatic const ufc_function_space_factory_ptr {0}FunctionSpace = {0}Form_{1}_FunctionSpace_0;".format(  # noqa: E501
                     prefix, form.name)
                 break
 
@@ -154,7 +153,7 @@ def generate_form(form, prefix, classname):
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
     blocks_h += ["// Coefficient function space typedefs for form \"{}\"".format(classname)]
-    template = "static const dolfin_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
+    template = "static const ufc_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
     blocks_h += [
         template.format(prefix, classname, form.rank + i, form.coefficient_names[i])
         for i in range(form.num_coefficients)
@@ -258,14 +257,14 @@ def generate_function_space_typedefs(form, prefix, classname):
     snippets = {"functionspace": ("TestSpace", "TrialSpace")}
 
     # Add convenience pointers to factory functions
-    template0 = "static const dolfin_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
+    template0 = "static const ufc_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
     factory0 = "\n".join(
         template0.format(prefix, snippets["functionspace"][i], classname, i)
         for i in range(form.rank))
 
     # FIXME: (GNW) These are function typedefs to functions typedefs,
     # and are giving trouble with a C compiler (fine with C++)
-    template1 = "// static dolfin_function_space_factory_ptr {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};"
+    template1 = "// static ufc_function_space_factory_ptr {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};"
     factory1 = "\n".join(
         template1.format(prefix, form.coefficient_names[i], classname, form.rank + i)
         for i in range(form.num_coefficients))
@@ -304,13 +303,13 @@ dolfin_form* {prefix}{classname}()
 """
 
 FUNCTION_SPACE_TEMPLATE_DECL = """\
-dolfin_function_space* {prefix}{classname}(void);
+ufc_function_space* {prefix}{classname}(void);
 """
 
 FUNCTION_SPACE_TEMPLATE_IMPL = """\
-dolfin_function_space* {prefix}{classname}(void)
+ufc_function_space* {prefix}{classname}(void)
 {{
-  dolfin_function_space* space = (dolfin_function_space*) malloc(sizeof(*space));
+  ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));
   space->element = create_{finite_element_classname};
   space->dofmap = create_{dofmap_classname};
   space->coordinate_mapping = {coordinate_map_classname};
