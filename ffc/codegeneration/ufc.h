@@ -567,18 +567,6 @@ extern "C"
     ufc_coordinate_mapping* (*coordinate_mapping)(void);
   } ufc_function_space;
 
-  typedef struct dolfin_form
-  {
-    // Pointer to factory function that returns a new ufc_form
-    ufc_form* (*form)(void);
-
-    // Pointer to function that returns name of coefficient i
-    const char* (*coefficient_name_map)(int i);
-
-    // Pointer to function that returns index of coefficient
-    int (*coefficient_number_map)(const char* name);
-  } dolfin_form;
-
 #ifdef __cplusplus
 #undef restrict
 }
