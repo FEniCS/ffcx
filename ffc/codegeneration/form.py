@@ -110,11 +110,9 @@ class UFCForm:
         if ir["num_coefficients"] == 0:
             name = "  return NULL;"
         else:
-            ifstr = "if "
             name = '  switch (i)\n  {\n'
             for i, coeff in enumerate(cnames):
                 name += '  case %d:\n    return "%s";\n' % (i, coeff)
-                ifstr = 'else if '
             name += "  }\n  return NULL;"
         return name
 
