@@ -31,7 +31,7 @@ def generate_wrappers(prefix, forms, common_function_space=False):
     code_h += """
 // Typedefs for convenience pointers to functions (factories)
 typedef ufc_function_space* (*ufc_function_space_factory_ptr)(void);
-typedef dolfin_form* (*dolfin_form_factory_ptr)(void);
+typedef ufc_form* (*ufc_form_factory_ptr)(void);
 
 """
 
@@ -105,7 +105,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
     # Combine data to typedef code
     typedefs = "\n".join(
-        "static const dolfin_form_factory_ptr {0}{1} = {0}{2};".format(prefix, fro, to)
+        "static const ufc_form_factory_ptr {0}{1} = {0}{2};".format(prefix, fro, to)
         for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
@@ -163,17 +163,14 @@ def generate_form(form, prefix, classname):
     blocks_h += [""]
 
     # Generate Form factory
-    code_h, code_c = generate_form_class(form, prefix, classname)
+    code_h = generate_form_class(form, prefix, classname)
 
     # Return code
-    return "\n".join(blocks_h) + code_h, "\n".join(blocks_c) + code_c
+    return "\n".join(blocks_h) + code_h, "\n".join(blocks_c)
 
 
 def generate_form_class(form, prefix, classname):
     """Generate dolfin wrapper code for a single Form class."""
-
-    # Generate data for coefficient assignments
-    (number, name) = generate_coefficient_map_data(form)
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
     typedefs = "// Typedefs (function spaces for {})\n".format(
@@ -184,40 +181,12 @@ def generate_form_class(form, prefix, classname):
         "prefix": prefix,
         "classname": classname,
         "ufc_form": form.ufc_form_classname,
-        "coefficient_number": number,
-        "coefficient_name": name,
         "typedefs": typedefs
     }
 
     code_h = FORM_CLASS_TEMPLATE_DECL.format_map(args)
-    code_c = FORM_CLASS_TEMPLATE_IMPL.format_map(args)
 
-    return code_h, code_c
-
-
-def generate_coefficient_map_data(form):
-    """Generate data for code for the functions Form::coefficient_number
-    and Form::coefficient_name."""
-
-    # Handle case of no coefficients
-    if form.num_coefficients == 0:
-        num = "  return -1;"
-        name = "  return NULL;"
-        return (num, name)
-
-    # Otherwise create switch
-    ifstr = "if "
-    num = ""
-    name = '  switch (i)\n  {\n'
-    for i, coeff in enumerate(form.coefficient_names):
-        num += '  %s(strcmp(name, "%s") == 0)\n    return %d;\n' % (ifstr, coeff, i)
-        name += '  case %d:\n    return "%s";\n' % (i, coeff)
-        ifstr = 'else if '
-
-    num += "\n  return -1;"
-    name += "  }\n  return NULL;"
-
-    return (num, name)
+    return code_h
 
 
 def extract_coefficient_spaces(forms):
@@ -274,32 +243,9 @@ def generate_function_space_typedefs(form, prefix, classname):
 
 
 FORM_CLASS_TEMPLATE_DECL = """\
-dolfin_form* {prefix}{classname}(void);
+static const ufc_form_factory_ptr {prefix}{classname} = create_{ufc_form};
 
 {typedefs}
-"""
-
-FORM_CLASS_TEMPLATE_IMPL = """\
-// Return the number of the coefficient with this name. Returns -1 if name does not exist.
-static int {prefix}{classname}_coefficient_number(const char* name)
-{{
-{coefficient_number}
-}}
-
-// Return the name of the coefficient with this number. Returns NULL if index is out-of-range.
-static const char* {prefix}{classname}_coefficient_name(int i)
-{{
-{coefficient_name}
-}}
-
-dolfin_form* {prefix}{classname}()
-{{
-  dolfin_form* form = (dolfin_form*) malloc(sizeof(*form));
-  form->form = create_{ufc_form};
-  form->coefficient_name_map = {prefix}{classname}_coefficient_name;
-  form->coefficient_number_map = {prefix}{classname}_coefficient_number;
-  return form;
-}}
 """
 
 FUNCTION_SPACE_TEMPLATE_DECL = """\

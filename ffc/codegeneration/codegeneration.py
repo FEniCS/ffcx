@@ -15,18 +15,16 @@ UFC function from an intermediate representation (IR).
 import itertools
 import logging
 
-from ffc.codegeneration.coordinate_mapping import \
-    ufc_coordinate_mapping_generator
+from ffc.codegeneration.coordinate_mapping import ufc_coordinate_mapping_generator
 from ffc.codegeneration.dofmap import ufc_dofmap_generator
-from ffc.codegeneration.finite_element import \
-    generator as ufc_finite_element_generator
+from ffc.codegeneration.finite_element import generator as ufc_finite_element_generator
 from ffc.codegeneration.form import ufc_form_generator
 from ffc.codegeneration.integrals import ufc_integral_generator
 
 logger = logging.getLogger(__name__)
 
 
-def generate_code(ir, parameters, jit):
+def generate_code(analysis, object_names, ir, parameters, jit):
     """Generate code from intermediate representation."""
 
     logger.debug("Compiler stage 4: Generating code")
@@ -37,6 +35,9 @@ def generate_code(ir, parameters, jit):
     # Set code generation parameters
     # set_float_formatting(parameters["precision"])
     # set_exception_handling(parameters["convert_exceptions_to_warnings"])
+
+    # Extract data from analysis
+    form_data, elements, element_map, domains = analysis
 
     # Extract representations
     ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
@@ -63,7 +64,14 @@ def generate_code(ir, parameters, jit):
 
     # Generate code for forms
     logger.debug("Generating code for forms")
-    code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
+    # FIXME: add coefficient names it IR
+    coefficient_names = []
+    for form in form_data:
+        names = [
+            object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form.reduced_coefficients)
+        ]
+        coefficient_names.append(names)
+    code_forms = [ufc_form_generator(ir, cnames, parameters) for ir, cnames in zip(ir_forms, coefficient_names)]
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals, jit)
