@@ -471,6 +471,12 @@ extern "C"
     ///
     int (*original_coefficient_position)(int i);
 
+    // Return name of coefficient i
+    const char* (*coefficient_name_map)(int i);
+
+    // Return index of named coefficient
+    int (*coefficient_number_map)(const char* name);
+
     // FIXME: Remove and just use 'create_coordinate_mapping'
     /// Create a new finite element for parameterization of coordinates
     ufc_finite_element* (*create_coordinate_finite_element)(void);

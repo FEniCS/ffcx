@@ -131,7 +131,7 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     # Stage 4: code generation
     cpu_time = time()
-    code = generate_code(ir, parameters, jit)
+    code = generate_code(analysis, object_names, ir, parameters, jit)
     _print_timing(4, time() - cpu_time)
 
     # Stage 4.1: generate convenience wrappers, e.g. for DOLFIN
