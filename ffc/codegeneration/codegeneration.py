@@ -66,16 +66,12 @@ def generate_code(analysis, object_names, ir, parameters, jit):
     logger.debug("Generating code for forms")
     # FIXME: add coefficient names it IR
     coefficient_names = []
-    # print(form_data)
-    # print(ir_forms[0])
     for form in form_data:
         names = [
             object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form.reduced_coefficients)
         ]
         coefficient_names.append(names)
-    # print(forms_coefficient_names)
     code_forms = [ufc_form_generator(ir, cnames, parameters) for ir, cnames in zip(ir_forms, coefficient_names)]
-    # code_forms = [ufc_form_generator(ir, parameters) for ir in ir_forms]
 
     # Extract additional includes
     includes = _extract_includes(full_ir, code_integrals, jit)
