@@ -172,9 +172,6 @@ def generate_form(form, prefix, classname):
 def generate_form_class(form, prefix, classname):
     """Generate dolfin wrapper code for a single Form class."""
 
-    # Generate data for coefficient assignments
-    (number, name) = generate_coefficient_map_data(form)
-
     # Generate typedefs for FunctionSpace subclasses for Coefficients
     typedefs = "// Typedefs (function spaces for {})\n".format(
         classname) + generate_function_space_typedefs(form, prefix, classname)
@@ -190,31 +187,6 @@ def generate_form_class(form, prefix, classname):
     code_h = FORM_CLASS_TEMPLATE_DECL.format_map(args)
 
     return code_h
-
-
-def generate_coefficient_map_data(form):
-    """Generate data for code for the functions Form::coefficient_number
-    and Form::coefficient_name."""
-
-    # Handle case of no coefficients
-    if form.num_coefficients == 0:
-        num = "  return -1;"
-        name = "  return NULL;"
-        return (num, name)
-
-    # Otherwise create switch
-    ifstr = "if "
-    num = ""
-    name = '  switch (i)\n  {\n'
-    for i, coeff in enumerate(form.coefficient_names):
-        num += '  %s(strcmp(name, "%s") == 0)\n    return %d;\n' % (ifstr, coeff, i)
-        name += '  case %d:\n    return "%s";\n' % (i, coeff)
-        ifstr = 'else if '
-
-    num += "\n  return -1;"
-    name += "  }\n  return NULL;"
-
-    return (num, name)
 
 
 def extract_coefficient_spaces(forms):
