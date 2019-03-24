@@ -109,7 +109,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
         for i, form in enumerate(forms):
             if form.rank:
                 # FIXME: Is this naming robust?
-                typedefs += "\n\nstatic const ufc_function_space_factory_ptr {0}FunctionSpace = {0}form_{1}_FunctionSpace_0;".format(  # noqa: E501
+                typedefs += "\n\nstatic const ufc_function_space_factory_ptr {0}_functionspace_create = {0}_form_{1}_functionspace_0_create;".format(  # noqa: E501
                     prefix, form.name)
                 break
 
@@ -138,7 +138,7 @@ def generate_form(form, prefix, classname):
     for i in range(form.rank):
         args = {
             "prefix": prefix,
-            "classname": "{}_FunctionSpace_{}".format(classname, i),
+            "classname": "{}_functionspace_{}".format(classname, i),
             "finite_element_classname": form.ufc_finite_element_classnames[i],
             "dofmap_classname": form.ufc_dofmap_classnames[i],
             "coordinate_map_classname":
@@ -149,7 +149,7 @@ def generate_form(form, prefix, classname):
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
     blocks_h += ["/* Coefficient function space typedefs for form \"{}\" */".format(classname)]
-    template = "static const ufc_function_space_factory_ptr {0}{1}_FunctionSpace_{2} = {0}CoefficientSpace_{3};"
+    template = "static const ufc_function_space_factory_ptr {0}_{1}_functionspace_{2}_create = {0}_coefficientspace_{3}_create;"  # noqa
     blocks_h += [
         template.format(prefix, classname, form.rank + i, form.coefficient_names[i])
         for i in range(form.num_coefficients)
@@ -169,7 +169,7 @@ def generate_form_class(form, prefix, classname):
     """Generate dolfin wrapper code for a single Form class."""
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
-    typedefs = "/*    Typedefs (XXfunction spaces for {}) */\n".format(
+    typedefs = "/*    Typedefs (function spaces for {}) */\n".format(
         classname) + generate_function_space_typedefs(form, prefix, classname)
 
     # Wrap functions in class body
@@ -181,7 +181,7 @@ def generate_form_class(form, prefix, classname):
     }
 
     FORM_CLASS_TEMPLATE_DECL = """\
-/*    From helper */
+/*    Form helper */
 static const ufc_form_factory_ptr {prefix}_{classname}_create = create_{ufc_form};
 
 {typedefs}
@@ -210,7 +210,7 @@ def extract_coefficient_spaces(forms):
 
             # Map element name, dof map name, etc to this coefficient
             assert len(form.ufc_coordinate_mapping_classnames) == 1
-            spaces[name] = ("CoefficientSpace_{}".format(name),
+            spaces[name] = ("coefficientspace_{}".format(name),
                             form.ufc_finite_element_classnames[form.rank + i],
                             form.ufc_dofmap_classnames[form.rank + i],
                             form.ufc_coordinate_mapping_classnames[0])
@@ -226,17 +226,17 @@ def generate_function_space_typedefs(form, prefix, classname):
 
     """
 
-    snippets = {"functionspace": ("TestSpace", "TrialSpace")}
+    snippets = {"functionspace": ("testspace", "trialspace")}
 
     # Add convenience pointers to factory functions
-    template0 = "static const ufc_function_space_factory_ptr {0}{2}{1} = {0}{2}_FunctionSpace_{3};"
+    template0 = "static const ufc_function_space_factory_ptr {0}_{2}_{1}_create = {0}_{2}_functionspace_{3}_create;"
     factory0 = "\n".join(
         template0.format(prefix, snippets["functionspace"][i], classname, i)
         for i in range(form.rank))
 
     # FIXME: (GNW) These are function typedefs to functions typedefs,
     # and are giving trouble with a C compiler (fine with C++)
-    template1 = "// static ufc_function_space_factory_ptr {0}{2}CoefficientSpace_{1} = {0}{2}_FunctionSpace_{3};"
+    template1 = "// static ufc_function_space_factory_ptr {0}_{2}_coefficientspace_{1}_create = {0}_{2}__functionspace_{3}_create;"  # noqa
     factory1 = "\n".join(
         template1.format(prefix, form.coefficient_names[i], classname, form.rank + i)
         for i in range(form.num_coefficients))
@@ -246,11 +246,11 @@ def generate_function_space_typedefs(form, prefix, classname):
 
 
 FUNCTION_SPACE_TEMPLATE_DECL = """\
-ufc_function_space* {prefix}{classname}(void);
+ufc_function_space* {prefix}_{classname}_create(void);
 """
 
 FUNCTION_SPACE_TEMPLATE_IMPL = """\
-ufc_function_space* {prefix}{classname}(void)
+ufc_function_space* {prefix}_{classname}_create(void)
 {{
   ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));
   space->element = create_{finite_element_classname};
