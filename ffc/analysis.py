@@ -171,7 +171,7 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
             do_apply_geometry_lowering=True,
             preserve_geometry_types=(ufl.classes.Jacobian, ),
             do_apply_restrictions=True,
-            do_append_everywhere_integrals=False,
+            do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
             complex_mode=complex_mode)
     elif representation == "tsfc":
         # TSFC provides compute_form_data wrapper using correct kwargs
