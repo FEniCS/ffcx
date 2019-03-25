@@ -89,7 +89,9 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
 
     analyze_ufl_data = namedtuple(
         'analyze_ufl_data', ['form_data', 'unique_elements', 'element_numbers', 'unique_coordinate_elements'])
-    return analyze_ufl_data(form_datas, unique_elements, element_numbers, unique_coordinate_elements)
+    return analyze_ufl_data(form_data=form_datas, unique_elements=unique_elements,
+                            element_numbers=element_numbers,
+                            unique_coordinate_elements=unique_coordinate_elements)
 
 
 def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formdata.FormData:
