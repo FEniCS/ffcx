@@ -81,10 +81,13 @@ def compute_ir(analysis: namedtuple, prefix, parameters, jit=False):
     classnames = make_all_element_classnames(prefix, analysis.unique_elements,
                                              analysis.unique_coordinate_elements, parameters)
 
+    coordinate_elements = analysis.unique_coordinate_elements
+    elements = analysis.unique_elements
+
     # Skip processing elements if jitting forms
     # NB! it's important that this happens _after_ the element numbers and classnames
     # above have been created.
-    if jit and form_datas:
+    if jit and analysis.form_data:
         # Drop some processing
         elements = []
         coordinate_elements = []
@@ -92,28 +95,28 @@ def compute_ir(analysis: namedtuple, prefix, parameters, jit=False):
         # While we may get multiple coordinate elements during command
         # line action, or during form jit, not so during coordinate
         # mapping jit
-        assert len(analysis.unique_coordinate_elements) == 1, "Expecting only one coordinate map data instance during jit."
+        assert len(coordinate_elements) == 1, "Expecting only one coordinate map data instance during jit."
         # Drop some processing
         elements = []
 
     # Compute representation of elements
-    logger.info("Computing representation of {} elements".format(len(analysis.unique_elements)))
+    logger.info("Computing representation of {} elements".format(len(elements)))
     ir_elements = [
-        _compute_element_ir(e, analysis.element_numbers, classnames, parameters) for e in analysis.unique_elements
+        _compute_element_ir(e, analysis.element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of dofmaps
-    logger.info("Computing representation of {} dofmaps".format(len(analysis.unique_elements)))
+    logger.info("Computing representation of {} dofmaps".format(len(elements)))
     ir_dofmaps = [
-        _compute_dofmap_ir(e, analysis.element_numbers, classnames, parameters) for e in analysis.unique_elements
+        _compute_dofmap_ir(e, analysis.element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of coordinate mappings
     logger.info("Computing representation of {} coordinate mappings".format(
-        len(analysis.unique_coordinate_elements)))
+        len(coordinate_elements)))
     ir_coordinate_mappings = [
         _compute_coordinate_mapping_ir(e, analysis.element_numbers, classnames, parameters)
-        for e in analysis.unique_coordinate_elements
+        for e in coordinate_elements
     ]
 
     # Compute and flatten representation of integrals
@@ -133,8 +136,9 @@ def compute_ir(analysis: namedtuple, prefix, parameters, jit=False):
 
     ir_data = namedtuple(
         'ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
-
-    return ir_data(elements=ir_elements, dofmaps=ir_dofmaps, coordinate_mappings=ir_coordinate_mappings, integrals=ir_integrals, forms=ir_forms)
+    return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
+                   coordinate_mappings=ir_coordinate_mappings,
+                   integrals=ir_integrals, forms=ir_forms)
 
 
 def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
@@ -839,8 +843,8 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
             if itg_data.subdomain_id < 0:
-                raise ValueError("Integral subdomain ID must be non-negative integer, not " +
-                                 str(itg_data.subdomain_id))
+                raise ValueError("Integral subdomain ID must be non-negative integer, not "
+                                 + str(itg_data.subdomain_id))
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
                 classnames += [classname.make_integral_name(prefix, integral_type,
