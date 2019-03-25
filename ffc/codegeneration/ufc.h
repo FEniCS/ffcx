@@ -471,6 +471,12 @@ extern "C"
     ///
     int (*original_coefficient_position)(int i);
 
+    // Return name of coefficient i
+    const char* (*coefficient_name_map)(int i);
+
+    // Return index of named coefficient
+    int (*coefficient_number_map)(const char* name);
+
     // FIXME: Remove and just use 'create_coordinate_mapping'
     /// Create a new finite element for parameterization of coordinates
     ufc_finite_element* (*create_coordinate_finite_element)(void);
@@ -549,7 +555,7 @@ extern "C"
 
 
   // FIXME: Formalise a UFC 'function space'.
-  typedef struct dolfin_function_space
+  typedef struct ufc_function_space
   {
     // Pointer to factory function that creates a new ufc_finite_element
     ufc_finite_element* (*element)(void);
@@ -559,19 +565,7 @@ extern "C"
 
     // Pointer to factory function that creates a new ufc_coordinate_mapping
     ufc_coordinate_mapping* (*coordinate_mapping)(void);
-  } dolfin_function_space;
-
-  typedef struct dolfin_form
-  {
-    // Pointer to factory function that returns a new ufc_form
-    ufc_form* (*form)(void);
-
-    // Pointer to function that returns name of coefficient i
-    const char* (*coefficient_name_map)(int i);
-
-    // Pointer to function that returns index of coefficient
-    int (*coefficient_number_map)(const char* name);
-  } dolfin_form;
+  } ufc_function_space;
 
 #ifdef __cplusplus
 #undef restrict

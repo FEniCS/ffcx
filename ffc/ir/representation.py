@@ -19,6 +19,7 @@ in the intermediate representation under the key "foo".
 
 import itertools
 import logging
+from collections import namedtuple
 
 import numpy
 
@@ -26,8 +27,9 @@ import ffc.fiatinterface
 import FIAT.reference_element
 import ufl
 from ffc import classname
-from ffc.fiatinterface import (EnrichedElement, MixedElement, FlattenedDimensions,
-                               QuadratureElement, SpaceOfReals, create_element)
+from ffc.fiatinterface import (EnrichedElement, FlattenedDimensions,
+                               MixedElement, QuadratureElement, SpaceOfReals,
+                               create_element)
 from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
@@ -71,20 +73,21 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, parameter
     return classnames
 
 
-def compute_ir(analysis, prefix, parameters, jit=False):
+def compute_ir(analysis: namedtuple, prefix, parameters, jit=False):
     """Compute intermediate representation."""
     logger.info("Compiler stage 2: Computing intermediate representation")
 
-    # Extract data from analysis
-    form_datas, elements, element_numbers, coordinate_elements = analysis
-
     # Construct classnames for all element objects and coordinate mappings
-    classnames = make_all_element_classnames(prefix, elements, coordinate_elements, parameters)
+    classnames = make_all_element_classnames(prefix, analysis.unique_elements,
+                                             analysis.unique_coordinate_elements, parameters)
+
+    coordinate_elements = analysis.unique_coordinate_elements
+    elements = analysis.unique_elements
 
     # Skip processing elements if jitting forms
     # NB! it's important that this happens _after_ the element numbers and classnames
     # above have been created.
-    if jit and form_datas:
+    if jit and analysis.form_data:
         # Drop some processing
         elements = []
         coordinate_elements = []
@@ -99,39 +102,43 @@ def compute_ir(analysis, prefix, parameters, jit=False):
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(elements)))
     ir_elements = [
-        _compute_element_ir(e, element_numbers, classnames, parameters) for e in elements
+        _compute_element_ir(e, analysis.element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of dofmaps
     logger.info("Computing representation of {} dofmaps".format(len(elements)))
     ir_dofmaps = [
-        _compute_dofmap_ir(e, element_numbers, classnames, parameters) for e in elements
+        _compute_dofmap_ir(e, analysis.element_numbers, classnames, parameters) for e in elements
     ]
 
     # Compute representation of coordinate mappings
     logger.info("Computing representation of {} coordinate mappings".format(
         len(coordinate_elements)))
     ir_coordinate_mappings = [
-        _compute_coordinate_mapping_ir(e, element_numbers, classnames, parameters)
+        _compute_coordinate_mapping_ir(e, analysis.element_numbers, classnames, parameters)
         for e in coordinate_elements
     ]
 
     # Compute and flatten representation of integrals
     logger.info("Computing representation of integrals")
     irs = [
-        _compute_integral_ir(fd, form_index, prefix, element_numbers, classnames, parameters)
-        for (form_index, fd) in enumerate(form_datas)
+        _compute_integral_ir(fd, form_index, prefix, analysis.element_numbers, classnames, parameters)
+        for (form_index, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
 
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, form_index, prefix, element_numbers, classnames, parameters)
-        for (form_index, fd) in enumerate(form_datas)
+        _compute_form_ir(fd, form_index, prefix, analysis.element_numbers, classnames, parameters)
+        for (form_index, fd) in enumerate(analysis.form_data)
     ]
 
-    return ir_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms
+    ir_data = namedtuple(
+        'ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
+    return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
+                   coordinate_mappings=ir_coordinate_mappings,
+                   integrals=ir_integrals, forms=ir_forms)
 
 
 def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):

@@ -190,6 +190,8 @@ const char* signature;
 int rank;
 int num_coefficients;
 int (*original_coefficient_position)(int i);
+const char* (*coefficient_name_map)(int i);
+int (*coefficient_number_map)(const char* name);
 ufc_finite_element* (*create_coordinate_finite_element)(void);
 ufc_dofmap* (*create_coordinate_dofmap)(void);
 ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
