@@ -261,10 +261,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
 
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
-    ir["needs_mesh_entities"] = _needs_mesh_entities(fiat_element)
-    ir["topological_dimension"] = cell.topological_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["global_dimension"] = _global_dimension(fiat_element)
     ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
     ir["num_entity_dofs"] = num_dofs_per_entity
@@ -391,35 +387,6 @@ def _num_global_support_dofs(fiat_element):
         if isinstance(e, SpaceOfReals):
             num_reals += 1
     return num_reals
-
-
-def _global_dimension(fiat_element):
-    """Compute intermediate representation for global_dimension."""
-    if not isinstance(fiat_element, MixedElement):
-        if isinstance(fiat_element, SpaceOfReals):
-            return ([], 1)
-        return (_num_dofs_per_entity(fiat_element), 0)
-
-    elements = []
-    num_reals = 0
-    for e in fiat_element.elements():
-        if not isinstance(e, SpaceOfReals):
-            elements += [e]
-        else:
-            num_reals += 1
-    fiat_cell, = set(e.get_reference_element() for e in fiat_element.elements())
-    fiat_element = MixedElement(elements, ref_el=fiat_cell)
-    return (_num_dofs_per_entity(fiat_element), num_reals)
-
-
-def _needs_mesh_entities(fiat_element):
-    """Compute intermediate representation for needs_mesh_entities."""
-    # Note: The dof map for Real elements does not depend on the mesh
-    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
-    if isinstance(fiat_element, SpaceOfReals):
-        return [False for d in num_dofs_per_entity]
-    else:
-        return [d > 0 for d in num_dofs_per_entity]
 
 
 def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters):
