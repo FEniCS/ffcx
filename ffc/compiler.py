@@ -4,13 +4,13 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Main interface for compilation
-of forms and breaking the compilation into several sequential stages.
-The output of each stage is the input of the next stage.
+"""Main interface for compilation of forms and breaking the compilation into
+several sequential stages. The output of each stage is the input of the next
+stage.
 
 Compiler stages:
 
-#. Language, parsing
+0. Language, parsing
 
    - Input:  Python code or .ufl file
    - Output: UFL form
@@ -18,7 +18,7 @@ Compiler stages:
    This stage consists of parsing and expressing a form in the UFL form
    language. This stage is handled by UFL.
 
-#. Analysis
+1. Analysis
 
    - Input:  UFL form
    - Output: Preprocessed UFL form and FormData (metadata)
@@ -26,7 +26,7 @@ Compiler stages:
    This stage preprocesses the UFL form and extracts form metadata. It
    may also perform simplifications on the form.
 
-#. Code representation
+2. Code representation
 
    - Input:  Preprocessed UFL form and FormData (metadata)
    - Output: Intermediate Representation (IR)
@@ -40,7 +40,7 @@ Compiler stages:
    The IR is stored as a dictionary, mapping names of UFC functions to
    data needed for generation of the corresponding code.
 
-#. Code generation
+3. Code generation
 
    - Input:  Intermediate Representation (IR)
    - Output: C code
@@ -51,7 +51,7 @@ Compiler stages:
    The code is stored as a dictionary, mapping names of UFC functions to
    strings containing the C code of the body of each function.
 
-#. Code formatting
+4. Code formatting
 
    - Input:  C code
    - Output: C code files
@@ -129,12 +129,12 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
     ir = compute_ir(analysis, prefix, parameters, jit)
     _print_timing(2, time() - cpu_time)
 
-    # Stage 4: code generation
+    # Stage 3: code generation
     cpu_time = time()
     code = generate_code(analysis, object_names, ir, parameters, jit)
     _print_timing(4, time() - cpu_time)
 
-    # Stage 4.1: generate convenience wrappers, e.g. for DOLFIN
+    # Stage 3.1: generate convenience wrappers, e.g. for DOLFIN
     cpu_time = time()
 
     # Extract class names from the IR and add to a dict
@@ -151,7 +151,7 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     _print_timing(4.1, time() - cpu_time)
 
-    # Stage 5: format code
+    # Stage 4: format code
     cpu_time = time()
     code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
