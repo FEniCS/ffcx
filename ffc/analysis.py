@@ -14,8 +14,9 @@ form representation type.
 
 import logging
 import os
-from typing import Dict, List, Tuple, Union
 import warnings
+from collections import namedtuple
+from typing import Dict, List, Tuple, Union
 
 import numpy
 
@@ -63,13 +64,11 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
         # Extract coordinate elements across all forms
         for form_data in form_datas:
             unique_coordinate_elements.update(form_data.coordinate_elements)
-
     elif isinstance(ufl_objects[0], ufl.FiniteElementBase):
         elements = ufl_objects
 
         # Extract unique (sub)elements
         unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
-
     elif isinstance(ufl_objects[0], ufl.Mesh):
         meshes = ufl_objects
 
@@ -88,7 +87,11 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     # Compute element numbers
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    return form_datas, unique_elements, element_numbers, unique_coordinate_elements
+    analyze_ufl_data = namedtuple(
+        'analyze_ufl_data', ['form_data', 'unique_elements', 'element_numbers', 'unique_coordinate_elements'])
+    return analyze_ufl_data(form_data=form_datas, unique_elements=unique_elements,
+                            element_numbers=element_numbers,
+                            unique_coordinate_elements=unique_coordinate_elements)
 
 
 def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formdata.FormData:

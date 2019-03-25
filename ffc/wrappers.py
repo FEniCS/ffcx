@@ -6,24 +6,21 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+from collections import namedtuple
 
 from ffc.codegeneration import dolfin
 
 logger = logging.getLogger(__name__)
 
 
-def generate_wrapper_code(analysis, prefix, object_names, classnames, parameters):
-
+def generate_wrapper_code(analysis: namedtuple, prefix, object_names, classnames, parameters):
     logger.info("Compiler stage 4.1: Generating additional wrapper code for {}".format(object_names))
-
-    # Extract data from analysis
-    form_data, elements, element_map, domains = analysis
-
-    if not form_data:
-        capsules = _encapsulate_elements(elements, object_names, classnames)
+    if not analysis.form_data:
+        capsules = _encapsulate_elements(analysis.unique_elements, object_names, classnames)
         common_space = False
     else:
-        capsules, common_space = _encapsule_forms(prefix, object_names, classnames, form_data, element_map)
+        capsules, common_space = _encapsule_forms(
+            prefix, object_names, classnames, analysis.form_data, analysis.element_numbers)
 
     # Generate code
     code_h, code_c = dolfin.generate_wrappers(prefix, capsules, common_space)

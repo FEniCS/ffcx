@@ -14,10 +14,13 @@ UFC function from an intermediate representation (IR).
 
 import itertools
 import logging
+from collections import namedtuple
 
-from ffc.codegeneration.coordinate_mapping import ufc_coordinate_mapping_generator
+from ffc.codegeneration.coordinate_mapping import \
+    ufc_coordinate_mapping_generator
 from ffc.codegeneration.dofmap import ufc_dofmap_generator
-from ffc.codegeneration.finite_element import generator as ufc_finite_element_generator
+from ffc.codegeneration.finite_element import \
+    generator as ufc_finite_element_generator
 from ffc.codegeneration.form import ufc_form_generator
 from ffc.codegeneration.integrals import ufc_integral_generator
 
@@ -29,59 +32,54 @@ def generate_code(analysis, object_names, ir, parameters, jit):
 
     logger.debug("Compiler stage 4: Generating code")
 
-    full_ir = ir
-
     # FIXME: This has global side effects
     # Set code generation parameters
     # set_float_formatting(parameters["precision"])
     # set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
-    # Extract data from analysis
-    form_data, elements, element_map, domains = analysis
-
-    # Extract representations
-    ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
-
     # Generate code for finite_elements
-    logger.debug("Generating code for {} finite_element(s)".format(len(ir_finite_elements)))
+    logger.debug("Generating code for {} finite_element(s)".format(len(ir.elements)))
     code_finite_elements = [
-        ufc_finite_element_generator(ir, parameters) for ir in ir_finite_elements
+        ufc_finite_element_generator(ir, parameters) for ir in ir.elements
     ]
 
     # Generate code for dofmaps
-    logger.debug("Generating code for {} dofmap(s)".format(len(ir_dofmaps)))
-    code_dofmaps = [ufc_dofmap_generator(ir, parameters) for ir in ir_dofmaps]
+    logger.debug("Generating code for {} dofmap(s)".format(len(ir.dofmaps)))
+    code_dofmaps = [ufc_dofmap_generator(ir, parameters) for ir in ir.dofmaps]
 
     # Generate code for coordinate_mappings
-    logger.debug("Generating code for {} coordinate_mapping(s)".format(len(ir_coordinate_mappings)))
+    logger.debug("Generating code for {} coordinate_mapping(s)".format(len(ir.coordinate_mappings)))
     code_coordinate_mappings = [
-        ufc_coordinate_mapping_generator(ir, parameters) for ir in ir_coordinate_mappings
+        ufc_coordinate_mapping_generator(ir, parameters) for ir in ir.coordinate_mappings
     ]
 
     # Generate code for integrals
     logger.debug("Generating code for integrals")
-    code_integrals = [ufc_integral_generator(ir, parameters) for ir in ir_integrals]
+    code_integrals = [ufc_integral_generator(ir, parameters) for ir in ir.integrals]
 
     # Generate code for forms
     logger.debug("Generating code for forms")
     # FIXME: add coefficient names it IR
     coefficient_names = []
-    for form in form_data:
+    for form in analysis.form_data:
         names = [
             object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form.reduced_coefficients)
         ]
         coefficient_names.append(names)
-    code_forms = [ufc_form_generator(ir, cnames, parameters) for ir, cnames in zip(ir_forms, coefficient_names)]
+    code_forms = [ufc_form_generator(ir, cnames, parameters) for ir, cnames in zip(ir.forms, coefficient_names)]
 
     # Extract additional includes
-    includes = _extract_includes(full_ir, code_integrals, jit)
+    includes = _extract_includes(ir, code_integrals, jit)
 
-    return (code_finite_elements, code_dofmaps, code_coordinate_mappings, code_integrals,
-            code_forms, includes)
+    code_blocks = namedtuple('code_blocks', ['elements', 'dofmaps',
+                                             'coordinate_mappings', 'integrals', 'forms', 'includes'])
+    return code_blocks(elements=code_finite_elements, dofmaps=code_dofmaps,
+                       coordinate_mappings=code_coordinate_mappings, integrals=code_integrals,
+                       forms=code_forms, includes=includes)
 
 
 def _extract_includes(full_ir, code_integrals, jit):
-    ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = full_ir
+    # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = full_ir
 
     # Includes added by representations
     includes = set()
@@ -91,15 +89,15 @@ def _extract_includes(full_ir, code_integrals, jit):
     # Includes for dependencies in jit mode
     if jit:
         dep_includes = set()
-        for ir in ir_finite_elements:
+        for ir in full_ir.elements:
             dep_includes.update(_finite_element_jit_includes(ir))
-        for ir in ir_dofmaps:
+        for ir in full_ir.dofmaps:
             dep_includes.update(_dofmap_jit_includes(ir))
-        for ir in ir_coordinate_mappings:
+        for ir in full_ir.coordinate_mappings:
             dep_includes.update(_coordinate_mapping_jit_includes(ir))
-        # for ir in ir_integrals:
+        # for ir in full_ir.integrals:
         #    dep_includes.update(_integral_jit_includes(ir))
-        for ir in ir_forms:
+        for ir in full_ir.forms:
             dep_includes.update(_form_jit_includes(ir))
         includes.update(['#include "{}"'.format(inc) for inc in dep_includes])
 
