@@ -220,7 +220,7 @@ ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
 def get_ufl_dependencies(ufl_objects, parameters):
 
-    _, unique_elements, _, unique_coordinate_elements = analyze_ufl_objects(ufl_objects, parameters)
+    analysis = analyze_ufl_objects(ufl_objects, parameters)
 
     mesh_id = None
     if isinstance(ufl_objects[0], ufl.Form):
@@ -230,10 +230,10 @@ def get_ufl_dependencies(ufl_objects, parameters):
     unique_meshes = []
     if mesh_id is not None:
         unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id)
-                         for element in unique_coordinate_elements]
+                         for element in  analysis.unique_coordinate_elements]
 
     # Avoid returning self as dependency for infinite recursion
-    unique_elements = tuple(element for element in unique_elements
+    unique_elements = tuple(element for element in analysis.unique_elements
                             if element not in ufl_objects)
 
     unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
