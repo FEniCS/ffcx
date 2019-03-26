@@ -11,30 +11,20 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# NB! Parameters in the generate and build sets are
-# included in jit signature, cache and log are not.
+# NB! Parameters in the generate and build sets are included in jit
+# signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
     "format": "ufc",  # code generation format
     "representation": "auto",  # form representation / code generation strategy
-    "quadrature_rule":
-    # quadrature rule used for integration of element tensors (None is auto)
-    None,
-    # quadrature degree used for computing integrals (None is auto)
-    "quadrature_degree": None,
-    # precision used when writing numbers (None for max precision)
-    "precision": None,
+    "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
+    "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
+    "precision": None,  # precision used when writing numbers (None for max precision)
     "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
-    # set to True to add timing inside tabulate_tensor
-    "generate_dummy_tabulate_tensor": False,
-    "add_tabulate_tensor_timing": False,
     # Scalar type to be used in generated code (real or complex
     # C double precision floating-point types)
     "scalar_type": "double",
-    # Max time to wait on cache if not building on this
-    # process (seconds)
-    "timeout": 10,
-    # ':' separated list of include filenames to add to generated code
-    "external_includes": "",
+    "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
+    "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
 _FFC_BUILD_PARAMETERS = {
     "cpp_optimize": True,  # optimization for the C++ compiler

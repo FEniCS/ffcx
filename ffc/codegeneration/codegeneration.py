@@ -15,12 +15,12 @@ UFC function from an intermediate representation (IR).
 import logging
 from collections import namedtuple
 
-from ffc.codegeneration.coordinate_mapping import coordinate_mapping_generator
-from ffc.codegeneration.dofmap import dofmap_generator
-from ffc.codegeneration.finite_element import \
-    generator as finite_element_generator
-from ffc.codegeneration.form import form_generator
-from ffc.codegeneration.integrals import integral_generator
+from ffc.codegeneration.finite_element import generator as finite_element_generator
+from ffc.codegeneration.coordinate_mapping import \
+    generator as coordinate_mapping_generator
+from ffc.codegeneration.dofmap import generator as dofmap_generator
+from ffc.codegeneration.form import generator as form_generator
+from ffc.codegeneration.integrals import generator as integral_generator
 
 logger = logging.getLogger(__name__)
 

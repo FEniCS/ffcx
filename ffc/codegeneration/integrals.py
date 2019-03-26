@@ -11,7 +11,7 @@
 from ffc.codegeneration import integrals_template as ufc_integrals
 
 
-def ufc_integral_generator(ir, parameters):
+def generator(ir, parameters):
     """Generate UFC code for an integral"""
     factory_name = ir["classname"]
     integral_type = ir["integral_type"]
@@ -30,11 +30,6 @@ def ufc_integral_generator(ir, parameters):
     # Generate code
     # TODO: Drop prefix argument and get from ir:
     code = generate_integral_code(ir, ir["prefix"], parameters)
-
-    # Hack for benchmarking overhead in assembler with empty
-    # tabulate_tensor
-    if parameters["generate_dummy_tabulate_tensor"]:
-        code["tabulate_tensor"] = ""
 
     # Format tabulate tensor body
     tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[

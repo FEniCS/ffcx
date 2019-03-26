@@ -174,6 +174,15 @@ class UFCForm:
     # This group of functions are repeated for each foo_integral by
     # add_ufc_form_integral_methods:
 
+    def _get_foo_integral_ids(self, L, ir, parameters, integral_type, declname):
+        """Return implementation of ufc::form::%(declname)s()."""
+        code = []
+        ids = L.Symbol("ids")
+        for i, v in enumerate(ir[declname][0]):
+            code += [L.Assign(ids[i], v)]
+        code += [L.Return()]
+        return L.StatementList(code)
+
     def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
         # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
@@ -182,7 +191,7 @@ class UFCForm:
         return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
 
 
-def ufc_form_generator(ir, cnames, parameters):
+def generator(ir, cnames, parameters):
     """Generate UFC code for a form"""
 
     factory_name = ir["classname"]
@@ -203,7 +212,6 @@ def ufc_form_generator(ir, cnames, parameters):
     generator = UFCForm()
 
     statements = generator.original_coefficient_position(L, ir)
-    assert isinstance(statements, list)
     d["original_coefficient_position"] = L.StatementList(statements)
 
     d["coefficient_number_map"] = generator.generate_coefficient_name_to_position_map(L, ir, cnames)
