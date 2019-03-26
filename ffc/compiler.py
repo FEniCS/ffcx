@@ -86,8 +86,7 @@ def _print_timing(stage, timing):
 def compile_ufl_objects(ufl_objects: Union[List, Tuple],
                         object_names: Dict = {},
                         prefix: str = None,
-                        parameters: Dict = None,
-                        jit: bool = False):
+                        parameters: Dict = None):
     """Generate UFC code for a given UFL objects.
 
     Parameters
@@ -103,8 +102,7 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     # Note that jit will always pass validated parameters so
     # this is only for commandline and direct call from python
-    if not jit:
-        parameters = validate_parameters(parameters)
+    parameters = validate_parameters(parameters)
 
     # Check input arguments
     if not isinstance(ufl_objects, (list, tuple)):
@@ -126,12 +124,12 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, prefix, parameters, jit)
+    ir = compute_ir(analysis, prefix, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
     cpu_time = time()
-    code = generate_code(analysis, object_names, ir, parameters, jit)
+    code = generate_code(analysis, object_names, ir, parameters)
     _print_timing(4, time() - cpu_time)
 
     # Stage 3.1: generate convenience wrappers, e.g. for DOLFIN

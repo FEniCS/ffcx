@@ -6,16 +6,15 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import importlib
-import sys
-import os
 import logging
-import time
-import cffi
+import os
 import pathlib
+import sys
+import time
 
-import ufl
+import cffi
+
 import ffc
-from ffc.analysis import analyze_ufl_objects
 
 logger = logging.getLogger(__name__)
 
@@ -218,41 +217,8 @@ ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 """
 
 
-def get_ufl_dependencies(ufl_objects, parameters):
-
-    analysis = analyze_ufl_objects(ufl_objects, parameters)
-
-    mesh_id = None
-    if isinstance(ufl_objects[0], ufl.Form):
-        mesh_id = ufl_objects[0].ufl_domain().ufl_id()
-    elif isinstance(ufl_objects[0], ufl.Mesh):
-        mesh_id = ufl_objects[0].ufl_id()
-    unique_meshes = []
-    if mesh_id is not None:
-        unique_meshes = [ufl.Mesh(element, ufl_id=mesh_id)
-                         for element in analysis.unique_coordinate_elements]
-
-    # Avoid returning self as dependency for infinite recursion
-    unique_elements = tuple(element for element in analysis.unique_elements
-                            if element not in ufl_objects)
-    unique_meshes = tuple(mesh for mesh in unique_meshes if mesh not in ufl_objects)
-    logger.info('Dependencies = ' + str(unique_elements) + str(unique_meshes))
-
-    depfiles = []
-    for el in unique_elements:
-        _, module = compile_elements([el], parameters=parameters)
-        libname = pathlib.Path(module.__file__).stem
-        depfiles.append(libname[3:])
-
-    for cm in unique_meshes:
-        _, module = compile_coordinate_maps([cm], parameters=parameters)
-        libname = pathlib.Path(module.__file__).stem
-        depfiles.append(libname[3:])
-
-    return depfiles
-
-
 def get_cached_module(module_name, object_names, parameters):
+
     cache_dir = pathlib.Path(parameters.get("cache_dir", "compile_cache"))
     cache_dir = cache_dir.expanduser()
 
@@ -290,10 +256,6 @@ def compile_elements(elements, module_name=None, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
-    depfiles = []
-    if p['crosslink']:
-        depfiles = get_ufl_dependencies(elements, p)
-
     logger.info('Compiling elements: ' + str(elements))
 
     # Get a signature for these elements
@@ -321,7 +283,7 @@ def compile_elements(elements, module_name=None, parameters=None):
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    objects, module = _compile_objects(decl, elements, names, module_name, p, depfiles)
+    objects, module = _compile_objects(decl, elements, names, module_name, p)
     # Pair up elements with dofmaps
     objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
@@ -330,10 +292,6 @@ def compile_elements(elements, module_name=None, parameters=None):
 def compile_forms(forms, module_name=None, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
-
-    depfiles = []
-    if p['crosslink']:
-        depfiles = get_ufl_dependencies(forms, p)
 
     logger.info('Compiling forms: ' + str(forms))
 
@@ -355,16 +313,12 @@ def compile_forms(forms, module_name=None, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    return _compile_objects(decl, forms, form_names, module_name, p, depfiles)
+    return _compile_objects(decl, forms, form_names, module_name, p)
 
 
 def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
-
-    depfiles = []
-    if (p['crosslink']):
-        depfiles = get_ufl_dependencies(meshes, p)
 
     logger.info('Compiling cmaps: ' + str(meshes))
 
@@ -385,26 +339,19 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    return _compile_objects(decl, meshes, cmap_names, module_name, p, depfiles)
+    return _compile_objects(decl, meshes, cmap_names, module_name, p)
 
 
-def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, link=[]):
+def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     cache_dir = pathlib.Path(parameters.get("cache_dir", "compile_cache"))
     cache_dir = cache_dir.expanduser()
-
-    # Cancel crosslinking on MacOS, not needed
-    if sys.platform == 'darwin':
-        link = []
-
-    _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters,
-                                                    jit=parameters['crosslink'])
+    _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(
         module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
         library_dirs=[str(cache_dir.absolute())],
-        runtime_library_dirs=[str(cache_dir.absolute())], libraries=link,
-        extra_compile_args=['-g0'])  # turn off -g
+        runtime_library_dirs=[str(cache_dir.absolute())], extra_compile_args=['-g0'])  # turn off -g
 
     ffibuilder.cdef(decl)
 
