@@ -105,16 +105,16 @@ def compute_ir(analysis: namedtuple, prefix, parameters):
     # Compute and flatten representation of integrals
     logger.info("Computing representation of integrals")
     irs = [
-        _compute_integral_ir(fd, form_index, prefix, analysis.element_numbers, classnames, parameters)
-        for (form_index, fd) in enumerate(analysis.form_data)
+        _compute_integral_ir(fd, i, prefix, analysis.element_numbers, classnames, parameters)
+        for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
 
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, form_index, prefix, analysis.element_numbers, classnames, parameters)
-        for (form_index, fd) in enumerate(analysis.form_data)
+        _compute_form_ir(fd, i, prefix, analysis.element_numbers, classnames, parameters)
+        for (i, fd) in enumerate(analysis.form_data)
     ]
 
     ir_data = namedtuple(
@@ -374,27 +374,20 @@ def _num_global_support_dofs(fiat_element):
 
 def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters):
     """Compute intermediate represention for form integrals."""
-    # Select representation
-    r = form_data.representation
-    if r == "uflacs":
+    if form_data.representation == "uflacs":
         from ffc.ir.uflacs.uflacsrepresentation import compute_integral_ir
-    elif r == "tsfc":
+    elif form_data.representation == "tsfc":
         from ffc.ir.tsfcrepresentation import compute_integral_ir
     else:
-        raise RuntimeError("Unknown representation: {}".format(r))
+        raise RuntimeError("Unknown representation: {}".format(form_data.representation))
 
     # Iterate over integrals
     irs = []
     for itg_data in form_data.integral_data:
 
+        # FIXME: Can we remove form_index?
         # Compute representation
-        ir = compute_integral_ir(
-            itg_data,
-            form_data,
-            form_index,  # FIXME: Can we remove this?
-            element_numbers,
-            classnames,
-            parameters)
+        ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers, classnames, parameters)
 
         # Build classname
         ir["classname"] = classname.make_integral_name(prefix, itg_data.integral_type, form_index,
