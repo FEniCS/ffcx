@@ -73,7 +73,7 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, parameter
     return classnames
 
 
-def compute_ir(analysis: namedtuple, prefix, parameters, jit=False):
+def compute_ir(analysis: namedtuple, prefix, parameters):
     """Compute intermediate representation."""
     logger.info("Compiler stage 2: Computing intermediate representation")
 
@@ -83,21 +83,6 @@ def compute_ir(analysis: namedtuple, prefix, parameters, jit=False):
 
     coordinate_elements = analysis.unique_coordinate_elements
     elements = analysis.unique_elements
-
-    # Skip processing elements if jitting forms
-    # NB! it's important that this happens _after_ the element numbers and classnames
-    # above have been created.
-    if jit and analysis.form_data:
-        # Drop some processing
-        elements = []
-        coordinate_elements = []
-    elif jit and coordinate_elements:
-        # While we may get multiple coordinate elements during command
-        # line action, or during form jit, not so during coordinate
-        # mapping jit
-        assert len(coordinate_elements) == 1, "Expecting only one coordinate map data instance during jit."
-        # Drop some processing
-        elements = []
 
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(elements)))
