@@ -94,27 +94,15 @@ def validate_parameters(parameters):
     return p
 
 
-def validate_jit_parameters(parameters):
-    """Check parameters and add any missing parameters"""
-    p = default_jit_parameters()
-    if parameters is not None:
-        p.update(parameters)
-
-    _validate_parameters(p)
-
-    return p
-
-
 def _validate_parameters(parameters):
-    """Does some casting of parameter values in place on the
-    provided dictionary"""
+    """Does some casting of parameter values in place on the provided dictionary"""
     # Convert all legal default values to None
-    if parameters["quadrature_rule"] in ["auto", None, "None"]:
+    if parameters["quadrature_rule"] in ("auto", None, "None"):
         parameters["quadrature_rule"] = None
 
-    # Convert all legal default values to None and
-    # cast nondefaults from str to int
-    if parameters["quadrature_degree"] in ["auto", -1, None, "None"]:
+    # Convert all legal default values to None and cast nondefaults from
+    # str to int
+    if parameters["quadrature_degree"] in ("auto", -1, None, "None"):
         parameters["quadrature_degree"] = None
     else:
         try:
@@ -124,8 +112,8 @@ def _validate_parameters(parameters):
                              parameters.get("quadrature_degree"))
             raise
 
-    # Convert all legal default values to None and
-    # cast nondefaults from str to int
+    # Convert all legal default values to None and cast nondefaults from
+    # str to int
     if parameters["precision"] in ["auto", None, "None"]:
         parameters["precision"] = None
     else:
@@ -144,18 +132,13 @@ def compilation_relevant_parameters(parameters):
     for k in _FFC_CACHE_PARAMETERS:
         del p[k]
 
-    # This doesn't work because some parameters may not be among the defaults above.
-    # That is somewhat confusing but we'll just have to live with it at least for now.
-    # sp = split_parameters(parameters)
-    # p = {}
-    # p.update(sp["generate"])
-    # p.update(sp["build"])
-
     return p
 
 
 def compute_jit_signature(parameters):
-    """Return parameters signature (some parameters must be ignored)."""
+    """Return parameters signature (some parameters must be ignored).
+
+    """
     from ufl.utils.sorting import canonicalize_metadata
     parameters = compilation_relevant_parameters(parameters)
     return str(canonicalize_metadata(parameters))

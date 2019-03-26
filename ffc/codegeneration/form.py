@@ -171,17 +171,8 @@ class UFCForm:
             code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
         return code
 
-    # This group of functions are repeated for each
-    # foo_integral by add_ufc_form_integral_methods:
-
-    def _get_foo_integral_ids(self, L, ir, parameters, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s()."""
-        code = []
-        ids = L.Symbol("ids")
-        for i, v in enumerate(ir[declname][0]):
-            code += [L.Assign(ids[i], v)]
-        code += [L.Return()]
-        return L.StatementList(code)
+    # This group of functions are repeated for each foo_integral by
+    # add_ufc_form_integral_methods:
 
     def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
