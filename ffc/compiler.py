@@ -64,15 +64,15 @@ Compiler stages:
 
 import logging
 import os
+import typing
 from collections import defaultdict
 from time import time
-from typing import Dict, List, Tuple, Union
 
 from ffc.analysis import analyze_ufl_objects
 from ffc.codegeneration.codegeneration import generate_code
 from ffc.formatting import format_code
-from ffc.parameters import validate_parameters
 from ffc.ir.representation import compute_ir
+from ffc.parameters import validate_parameters
 from ffc.wrappers import generate_wrapper_code
 
 logger = logging.getLogger(__name__)
@@ -83,10 +83,10 @@ def _print_timing(stage, timing):
         stage=stage, time=timing))
 
 
-def compile_ufl_objects(ufl_objects: Union[List, Tuple],
-                        object_names: Dict = {},
+def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
+                        object_names: typing.Dict = {},
                         prefix: str = None,
-                        parameters: Dict = None):
+                        parameters: typing.Dict = None):
     """Generate UFC code for a given UFL objects.
 
     Parameters
@@ -96,26 +96,19 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     """
     logger.info("Compiling {}\n".format(prefix))
+    if prefix != os.path.basename(prefix):
+        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
 
     # Reset timing
     cpu_time_0 = time()
 
-    # Note that jit will always pass validated parameters so
-    # this is only for commandline and direct call from python
+    # Note that jit will always pass validated parameters so this is
+    # only for commandline and direct call from Python
     parameters = validate_parameters(parameters)
 
-    # Check input arguments
+    # Convert single input arguments to tuple
     if not isinstance(ufl_objects, (list, tuple)):
         ufl_objects = (ufl_objects, )
-    if not ufl_objects:
-        return "", ""
-
-    if prefix != os.path.basename(prefix):
-        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
-
-    # Check that all UFL objects passed here are of the same class/type
-    obj_type = type(ufl_objects[0])
-    assert (obj_type == type(x) for x in ufl_objects)
 
     # Stage 1: analysis
     cpu_time = time()
