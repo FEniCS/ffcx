@@ -7,9 +7,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 1: Analysis
 
-This module implements the analysis/preprocessing of variational
-forms, including automatic selection of elements, degrees and
-form representation type.
+This module implements the analysis/preprocessing of variational forms,
+including automatic selection of elements, degrees and form
+representation type.
 """
 
 import logging
@@ -23,6 +23,10 @@ import numpy
 import ufl
 
 logger = logging.getLogger(__name__)
+
+
+analyze_ufl_data = namedtuple(
+    'analyze_ufl_data', ['form_data', 'unique_elements', 'element_numbers', 'unique_coordinate_elements'])
 
 
 def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteElement], List],
@@ -87,8 +91,6 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     # Compute element numbers
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    analyze_ufl_data = namedtuple(
-        'analyze_ufl_data', ['form_data', 'unique_elements', 'element_numbers', 'unique_coordinate_elements'])
     return analyze_ufl_data(form_data=form_datas, unique_elements=unique_elements,
                             element_numbers=element_numbers,
                             unique_coordinate_elements=unique_coordinate_elements)
@@ -117,21 +119,17 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
 
     # Check that form is not empty
     if form.empty():
-        logger.error("Form (%s) seems to be zero: cannot compile it." % str(form))
-        raise RuntimeError("Form (%s) seems to be zero: cannot compile it." % str(form))
+        raise RuntimeError("Form ({}) seems to be zero: cannot compile it.".format(str(form)))
 
-    # There is no support for custom integrals
-    # We assume at this point, that lacking support for these
-    # integrals is the same across both representations, tsfc and uflacs
+    # Assume there is no support for custom integrals across backends
     if _has_custom_integrals(form):
-        raise RuntimeError("Form (%s) contains unsupported custom integrals." % str(form))
+        raise RuntimeError("Form ({}) contains unsupported custom integrals.".format(str(form)))
 
-    #
     # ---- Extract representation across all integrals in this form
     #
     # The priority of representation determination is following
     #
-    # 1. Enviromental variable FFC_FORCE_REPRESENTATION
+    # 1. Environment variable FFC_FORCE_REPRESENTATION
     # 2. parameters["representation"]
     # 3. specified in metadata of integral
     representations = set(
@@ -149,8 +147,8 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
         # If user didnt set any default to uflacs
         representation = "uflacs"
     else:
-        # Don't tolerate user requests for mixing representations in same
-        # form due to restrictions in preprocessing
+        # Don't tolerate user requests for mixing representations in
+        # same form due to restrictions in preprocessing
         raise RuntimeError("Cannot mix uflacs and tsfc representation in a single form.")
 
     # Hack to override representation with environment variable
@@ -183,25 +181,22 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
     else:
         raise RuntimeError("Unexpected representation \"{}\" for form preprocessing.".format(representation))
 
-    # Attach common representation to FormData
-    # Again, representation is the same for all integrals in this Form
+    # Attach common representation to FormData. Representation is the
+    # same for all integrals in this Form
     form_data.representation = representation
 
-    #
-    # Determine unique quadrature degree, quadrature scheme and precision per
-    # each integral data
-    #
+    # Determine unique quadrature degree, quadrature scheme and
+    # precision per each integral data
     for integral_data in form_data.integral_data:
         # Iterate through groups of integral data
         #
         # There is one integral data for all integrals with same domain,
         # itype, subdomain_id (but possibly different metadata)
 
-        # Quadrature degree and quadrature scheme must be the same
-        # for all integrals in this integral data group, i.e. must
-        # be the same for for the same (domain, itype, subdomain_id)
+        # Quadrature degree and quadrature scheme must be the same for
+        # all integrals in this integral data group, i.e. must be the
+        # same for for the same (domain, itype, subdomain_id)
 
-        #
         # ----- Extract common quadrature degree
         #
         # The priority of quadrature degree determination is following
@@ -239,7 +234,6 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
         tdim = integral_data.domain.topological_dimension()
         _check_quadrature_degree(qd, tdim)
 
-        #
         # ----- Extract common quadrature rule
         #
         # The priority of quadrature rule determination is following
@@ -261,7 +255,6 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
         else:
             raise RuntimeError("Unable to determine quadrature rule.")
 
-        #
         # ----- Extract precision
         #
         # The priority of precision determination is following
@@ -300,14 +293,7 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
 
 
 def _has_custom_integrals(o) -> bool:
-    """Check for custom integrals
-
-    Note
-    ----
-    Presence of custom integral in integrals/forms is determining the
-    representation to be used.
-
-    """
+    """Check for custom integrals"""
     if isinstance(o, ufl.integral.Integral):
         return o.integral_type() in ufl.custom_integral_types
     elif isinstance(o, ufl.classes.Form):

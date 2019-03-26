@@ -218,8 +218,8 @@ ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
 
 def get_cached_module(module_name, object_names, parameters):
-    cache_dir = pathlib.Path(parameters.get("cache_dir",
-                                            "compile_cache"))
+
+    cache_dir = pathlib.Path(parameters.get("cache_dir", "compile_cache"))
     cache_dir = cache_dir.expanduser()
 
     timeout = int(parameters.get("timeout", 10))
@@ -227,34 +227,26 @@ def get_cached_module(module_name, object_names, parameters):
     c_filename = cache_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    # Ensure cache dir exists
+    # Ensure cache dir exists and ensure it is first on the path for loading modules
     os.makedirs(cache_dir, exist_ok=True)
-
-    # Ensure it is first on the path for loading modules
     sys.path.insert(0, str(cache_dir))
 
     try:
         # Create C file with exclusive access
         open(c_filename, "x")
         return None, None
-
     except FileExistsError:
         logger.info("Cached C file already exists: " + str(c_filename))
         # Now wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
                 # Build list of compiled objects
-                compiled_module = \
-                    importlib.import_module(module_name)
+                compiled_module = importlib.import_module(module_name)
                 sys.path.remove(str(cache_dir))
-                compiled_objects = \
-                    [getattr(compiled_module.lib,
-                             "create_" + name)()
-                     for name in object_names]
-
+                compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
                 return compiled_objects, compiled_module
 
-            logger.info("Waiting for " + str(ready_name) + " to appear.")
+            logger.info("Waiting for {} to appear.".format(str(ready_name)))
             time.sleep(1)
         raise TimeoutError("""JIT compilation did not complete on another process.
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
@@ -314,9 +306,8 @@ def compile_forms(forms, module_name=None, parameters=None):
         return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
-    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL \
-        + UFC_DOFMAP_DECL + UFC_COORDINATEMAPPING_DECL \
-        + UFC_INTEGRAL_DECL + UFC_FORM_DECL
+    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
     form_template = "ufc_form * create_{name}(void);\n"
     for name in form_names:
@@ -352,11 +343,8 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
-
-    cache_dir = pathlib.Path(parameters.get("cache_dir",
-                                            "compile_cache"))
+    cache_dir = pathlib.Path(parameters.get("cache_dir", "compile_cache"))
     cache_dir = cache_dir.expanduser()
-
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
@@ -370,17 +358,15 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     c_filename = cache_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    # Ensure path is set for module
+    # Ensure path is set for module and ensure cache dir exists
     sys.path.insert(0, str(cache_dir))
-
-    # Ensure cache dir exists
     os.makedirs(cache_dir, exist_ok=True)
 
     # Compile
     ffibuilder.compile(tmpdir=cache_dir, verbose=False)
 
-    # Create a "status ready" file
-    # If this fails, it is an error, because it should not exist yet.
+    # Create a "status ready" file. If this fails, it is an error,
+    # because it should not exist yet.
     fd = open(ready_name, "x")
     fd.close()
 
