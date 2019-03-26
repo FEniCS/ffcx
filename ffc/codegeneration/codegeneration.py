@@ -25,16 +25,14 @@ from ffc.codegeneration.integrals import ufc_integral_generator
 
 logger = logging.getLogger(__name__)
 
+code_blocks = namedtuple('code_blocks', ['elements', 'dofmaps',
+                                         'coordinate_mappings', 'integrals', 'forms'])
+
 
 def generate_code(analysis, object_names, ir, parameters):
     """Generate code from intermediate representation."""
 
     logger.debug("Compiler stage 4: Generating code")
-
-    # FIXME: This has global side effects
-    # Set code generation parameters
-    # set_float_formatting(parameters["precision"])
-    # set_exception_handling(parameters["convert_exceptions_to_warnings"])
 
     # Generate code for finite_elements
     logger.debug("Generating code for {} finite_element(s)".format(len(ir.elements)))
@@ -58,7 +56,7 @@ def generate_code(analysis, object_names, ir, parameters):
 
     # Generate code for forms
     logger.debug("Generating code for forms")
-    # FIXME: add coefficient names it IR
+    # FIXME: add coefficient names to IR
     coefficient_names = []
     for form in analysis.form_data:
         names = [
@@ -67,8 +65,6 @@ def generate_code(analysis, object_names, ir, parameters):
         coefficient_names.append(names)
     code_forms = [ufc_form_generator(ir, cnames, parameters) for ir, cnames in zip(ir.forms, coefficient_names)]
 
-    code_blocks = namedtuple('code_blocks', ['elements', 'dofmaps',
-                                             'coordinate_mappings', 'integrals', 'forms'])
     return code_blocks(elements=code_finite_elements, dofmaps=code_dofmaps,
                        coordinate_mappings=code_coordinate_mappings, integrals=code_integrals,
                        forms=code_forms)

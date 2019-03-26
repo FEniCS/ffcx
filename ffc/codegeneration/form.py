@@ -15,10 +15,7 @@ from ffc.ir.representation import ufc_integral_types
 
 # These are the method names in ufc_form that are specialized for each
 # integral type
-integral_name_templates = (
-    "get_{}_integral_ids",
-    "create_{}_integral",
-)
+integral_name_templates = ("get_{}_integral_ids", "create_{}_integral")
 
 
 def create_delegate(integral_type, declname, impl):
@@ -38,7 +35,9 @@ def add_ufc_form_integral_methods(cls):
     expand that implementation into 'create_cell_integrals',
     'create_exterior_facet_integrals', etc.
 
-    Name templates are taken from 'integral_name_templates' and 'ufc_integral_types'.
+    Name templates are taken from 'integral_name_templates' and
+    'ufc_integral_types'.
+
     """
     # The dummy name "foo" is chosen for familiarity for ffc developers
     dummy_integral_type = "foo"
@@ -58,7 +57,9 @@ class UFCForm:
     """Each function maps to a keyword in the template.
 
     The exceptions are functions on the form
+
         def _*_foo_*(self, L, ir, parameters, integral_type, declname)
+
     which add_ufc_form_integral_methods will duplicate for foo = each integral type.
     """
 
@@ -77,7 +78,6 @@ class UFCForm:
 
         if positions:
             code = [L.If(L.GE(i, len(positions)), [L.Comment(msg), L.Return(-1)])]
-
             position = L.Symbol("position")
             code += [
                 L.ArrayDecl("static const int64_t", position, len(positions), positions),

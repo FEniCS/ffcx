@@ -106,7 +106,7 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     # only for commandline and direct call from Python
     parameters = validate_parameters(parameters)
 
-    # Convert single input arguments to tuple
+    # Convert single input arguments to tuple. All types should be the same.
     if not isinstance(ufl_objects, (list, tuple)):
         ufl_objects = (ufl_objects, )
 

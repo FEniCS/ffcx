@@ -7,14 +7,14 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 2: Code representation
 
-Module computes intermediate representations of forms,
-elements and dofmaps. For each UFC function, we extract the
-data needed for code generation at a later stage.
+Module computes intermediate representations of forms, elements and
+dofmaps. For each UFC function, we extract the data needed for code
+generation at a later stage.
 
-The representation should conform strictly to the naming and
-order of functions in UFC. Thus, for code generation of the
-function "foo", one should only need to use the data stored
-in the intermediate representation under the key "foo".
+The representation should conform strictly to the naming and order of
+functions in UFC. Thus, for code generation of the function "foo", one
+should only need to use the data stored in the intermediate
+representation under the key "foo".
 """
 
 import itertools
@@ -462,9 +462,6 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
         ir["get_{}_integral_ids".format(integral_type)] = irdata
 
     return ir
-
-
-# --- Computation of intermediate representation for non-trivial functions ---
 
 
 def _generate_reference_offsets(fiat_element, offset=0):
