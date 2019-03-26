@@ -384,7 +384,6 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
     # Iterate over integrals
     irs = []
     for itg_data in form_data.integral_data:
-
         # FIXME: Can we remove form_index?
         # Compute representation
         ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers, classnames, parameters)
