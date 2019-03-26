@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 # NB! Parameters in the generate and build sets are included in jit
 # signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
-    "format": "ufc",  # code generation format
     "representation": "auto",  # form representation / code generation strategy
     "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
     "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
@@ -27,14 +26,7 @@ _FFC_GENERATE_PARAMETERS = {
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
 _FFC_BUILD_PARAMETERS = {
-    "cpp_optimize": True,  # optimization for the C++ compiler
-    "cpp_optimize_flags": "-O2",  # optimization flags for the C++ compiler
-    # ':' separated list of libraries to link JIT compiled libraries with
-    "external_libraries": "",
-    "external_library_dirs":
-    "",  # ':' separated list of library search dirs to add when JIT compiling
-    # ':' separated list of include dirs to add when JIT compiling
-    "external_include_dirs": "",
+    "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "~/.cache/fenics",  # cache dir used by default
@@ -66,10 +58,8 @@ def default_parameters():
 
 def default_jit_parameters():
     parameters = default_parameters()
-
     # Don't postfix form names
     parameters["form_postfix"] = False
-
     return parameters
 
 
@@ -78,9 +68,7 @@ def validate_parameters(parameters):
     p = default_parameters()
     if parameters is not None:
         p.update(parameters)
-
     _validate_parameters(p)
-
     return p
 
 
@@ -121,14 +109,11 @@ def compilation_relevant_parameters(parameters):
         del p[k]
     for k in _FFC_CACHE_PARAMETERS:
         del p[k]
-
     return p
 
 
 def compute_jit_signature(parameters):
-    """Return parameters signature (some parameters must be ignored).
-
-    """
+    """Return parameters signature (some parameters must be ignored)."""
     from ufl.utils.sorting import canonicalize_metadata
     parameters = compilation_relevant_parameters(parameters)
     return str(canonicalize_metadata(parameters))
