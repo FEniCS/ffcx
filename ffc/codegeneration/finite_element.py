@@ -115,7 +115,7 @@ def num_sub_elements(L, num_sub_elements):
 
 
 def sub_element_declaration(L, ir):
-    classnames = set(ir["create_sub_element"])
+    classnames = set(ir.create_sub_element)
     code = ""
     for name in classnames:
         code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
@@ -123,20 +123,20 @@ def sub_element_declaration(L, ir):
 
 
 def create_sub_element(L, ir):
-    classnames = ir["create_sub_element"]
+    classnames = ir.create_sub_element
     return generate_return_new_switch(L, "i", classnames)
 
 
 def transform_values(L, ir, parameters):
     """Generate code for transform_values()"""
-    return generate_transform_values(L, ir["evaluate_dof"])
+    return generate_transform_values(L, ir.evaluate_dof)
 
 
 def tabulate_reference_dof_coordinates(L, ir, parameters):
     # TODO: ensure points is a numpy array,
     #   get tdim from points.shape[1],
     #   place points in ir directly instead of the subdict
-    ir = ir["tabulate_dof_coordinates"]
+    ir = ir.tabulate_dof_coordinates
 
     # Raise error if tabulate_reference_dof_coordinates is ill-defined
     if not ir:
@@ -159,7 +159,7 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
 
 
 def evaluate_reference_basis(L, ir, parameters):
-    data = ir["evaluate_basis"]
+    data = ir.evaluate_basis
     if isinstance(data, str):
         # Function has not been requested
         msg = "evaluate_reference_basis: {}".format(data)
@@ -169,17 +169,17 @@ def evaluate_reference_basis(L, ir, parameters):
 
 
 def evaluate_reference_basis_derivatives(L, ir, parameters):
-    data = ir["evaluate_basis"]
+    data = ir.evaluate_basis
     if isinstance(data, str):
         # Function has not been requested
         msg = "evaluate_reference_basis_derivatives: {}".format(data)
         return [L.Comment(msg), L.Return(-1)]
 
-    return generate_evaluate_reference_basis_derivatives(L, data, ir["classname"], parameters)
+    return generate_evaluate_reference_basis_derivatives(L, data, ir.classname, parameters)
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):
-    data = ir["evaluate_basis"]
+    data = ir.evaluate_basis
     if isinstance(data, str):
         # Function has not been requested
         msg = "transform_reference_basis_derivatives: {}".format(data)
@@ -399,43 +399,38 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 def generator(ir, parameters):
     """Generate UFC code for a finite element"""
     d = {}
-    d["factory_name"] = ir["classname"]
-    d["signature"] = "\"{}\"".format(ir["signature"])
-    d["geometric_dimension"] = ir["geometric_dimension"]
-    d["topological_dimension"] = ir["topological_dimension"]
-    d["cell_shape"] = ir["cell_shape"]
-    d["space_dimension"] = ir["space_dimension"]
-    d["value_rank"] = len(ir["value_shape"])
-    d["value_size"] = ufl.product(ir["value_shape"])
-    d["reference_value_rank"] = len(ir["reference_value_shape"])
-    d["reference_value_size"] = ufl.product(ir["reference_value_shape"])
-    d["degree"] = ir["degree"]
-    d["family"] = "\"{}\"".format(ir["family"])
-    d["num_sub_elements"] = ir["num_sub_elements"]
+    d["factory_name"] = ir.classname
+    d["signature"] = "\"{}\"".format(ir.signature)
+    d["geometric_dimension"] = ir.geometric_dimension
+    d["topological_dimension"] = ir.topological_dimension
+    d["cell_shape"] = ir.cell_shape
+    d["space_dimension"] = ir.space_dimension
+    d["value_rank"] = len(ir.value_shape)
+    d["value_size"] = ufl.product(ir.value_shape)
+    d["reference_value_rank"] = len(ir.reference_value_shape)
+    d["reference_value_size"] = ufl.product(ir.reference_value_shape)
+    d["degree"] = ir.degree
+    d["family"] = "\"{}\"".format(ir.family)
+    d["num_sub_elements"] = ir.num_sub_elements
 
     import ffc.codegeneration.C.cnodes as L
 
-    d["value_dimension"] = value_dimension(L, ir["value_shape"])
-    d["reference_value_dimension"] = reference_value_dimension(L, ir["reference_value_shape"])
+    d["value_dimension"] = value_dimension(L, ir.value_shape)
+    d["reference_value_dimension"] = reference_value_dimension(L, ir.reference_value_shape)
 
     statements = evaluate_reference_basis(L, ir, parameters)
-    assert isinstance(statements, list)
     d["evaluate_reference_basis"] = L.StatementList(statements)
 
     statements = evaluate_reference_basis_derivatives(L, ir, parameters)
-    assert isinstance(statements, list)
     d["evaluate_reference_basis_derivatives"] = L.StatementList(statements)
 
     statements = transform_reference_basis_derivatives(L, ir, parameters)
-    assert isinstance(statements, list)
     d["transform_reference_basis_derivatives"] = L.StatementList(statements)
 
     statements = transform_values(L, ir, parameters)
-    assert isinstance(statements, list)
     d["transform_values"] = L.StatementList(statements)
 
     statements = tabulate_reference_dof_coordinates(L, ir, parameters)
-    assert isinstance(statements, list)
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
 
     statements = create_sub_element(L, ir)
@@ -454,6 +449,6 @@ def generator(ir, parameters):
     implementation = ufc_finite_element.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_finite_element.declaration.format(factory_name=ir["classname"])
+    declaration = ufc_finite_element.declaration.format(factory_name=ir.classname)
 
     return declaration, implementation

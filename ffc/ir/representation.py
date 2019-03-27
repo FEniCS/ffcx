@@ -131,6 +131,13 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
+    ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
+                                           'topological_dimension',
+                                           'geometric_dimension', 'space_dimension', 'value_shape',
+                                           'reference_value_shape', 'degree', 'family', 'evaluate_basis',
+                                           'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
+                                           'create_sub_element'])
+
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["classname"] = classnames["finite_element"][ufl_element]
@@ -153,7 +160,11 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [classnames["finite_element"][e] for e in ufl_element.sub_elements()]
 
-    return ir
+    ir_test  = ir_element(**ir)
+#    print(ir_test._fields)
+
+    return ir_test
+    #return ir
 
 
 def _compute_dofmap_permutation_tables(fiat_element, cell):
