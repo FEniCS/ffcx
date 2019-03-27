@@ -6,10 +6,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFC/UFC specific variable access."""
 
-import ufl
 import logging
 import warnings
 
+import ufl
 from ffc.fiatinterface import create_element
 from ufl.finiteelement import MixedElement
 from ufl.measure import custom_integral_types
@@ -23,8 +23,8 @@ class FFCBackendAccess(object):
     def __init__(self, ir, language, symbols, parameters):
 
         # Store ir and parameters
-        self.entitytype = ir["entitytype"]
-        self.integral_type = ir["integral_type"]
+        self.entitytype = ir.entitytype
+        self.integral_type = ir.integral_type
         self.language = language
         self.symbols = symbols
         self.parameters = parameters

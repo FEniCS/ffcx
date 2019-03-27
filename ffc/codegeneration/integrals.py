@@ -13,23 +13,23 @@ from ffc.codegeneration import integrals_template as ufc_integrals
 
 def generator(ir, parameters):
     """Generate UFC code for an integral"""
-    factory_name = ir["classname"]
-    integral_type = ir["integral_type"]
+    factory_name = ir.classname
+    integral_type = ir.integral_type
 
     # Format declaration
     declaration = ufc_integrals.declaration.format(
         type=integral_type, factory_name=factory_name)
 
-    if ir["representation"] == "uflacs":
+    if ir.representation == "uflacs":
         from ffc.codegeneration.uflacsgenerator import generate_integral_code
-    elif ir["representation"] == "tsfc":
+    elif ir.representation == "tsfc":
         from ffc.codegeneration.tsfcgenerator import generate_integral_code
     else:
-        raise RuntimeError("Unknown representation: {}".format(ir["representation"]))
+        raise RuntimeError("Unknown representation: {}".format(ir.representation))
 
     # Generate code
     # TODO: Drop prefix argument and get from ir:
-    code = generate_integral_code(ir, ir["prefix"], parameters)
+    code = generate_integral_code(ir, ir.prefix, parameters)
 
     # Format tabulate tensor body
     tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[

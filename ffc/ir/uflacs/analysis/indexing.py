@@ -7,9 +7,9 @@
 """Algorithms for working with multiindices."""
 
 import ufl
-from ufl.permutation import compute_indices
-from ufl.utils.indexflattening import shape_to_strides, flatten_multiindex
 from ufl.classes import ComponentTensor, FixedIndex, Index, Indexed
+from ufl.permutation import compute_indices
+from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 
 
 def map_indexed_arg_components(indexed):

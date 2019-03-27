@@ -37,6 +37,49 @@ logger = logging.getLogger(__name__)
 # List of supported integral types
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
+ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
+                                 'num_coefficients', 'original_coefficient_position',
+                                 'create_coordinate_finite_element', 'create_coordinate_dofmap',
+                                 'create_coordinate_mapping', 'create_finite_element',
+                                 'create_dofmap', 'create_cell_integral',
+                                 'get_cell_integral_ids', 'create_exterior_facet_integral',
+                                 'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
+                                 'get_interior_facet_integral_ids', 'create_vertex_integral',
+                                 'get_vertex_integral_ids', 'create_custom_integral',
+                                 'get_custom_integral_ids'])
+ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
+                                       'topological_dimension',
+                                       'geometric_dimension', 'space_dimension', 'value_shape',
+                                       'reference_value_shape', 'degree', 'family', 'evaluate_basis',
+                                       'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
+                                       'create_sub_element'])
+ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
+                                     'num_element_support_dofs', 'num_entity_dofs', 'num_entity_closure_dofs',
+                                     'dof_permutations', 'tabulate_entity_dofs', 'tabulate_entity_closure_dofs',
+                                     'num_sub_dofmaps', 'create_sub_dofmap'])
+ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
+                                                     'topological_dimension',
+                                                     'geometric_dimension', 'create_coordinate_finite_element',
+                                                     'create_coordinate_dofmap', 'compute_physical_coordinates',
+                                                     'compute_reference_coordinates', 'compute_jacobians',
+                                                     'compute_jacobian_determinants',
+                                                     'compute_jacobian_inverses', 'compute_geometry', 'tables',
+                                                     'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
+                                                     'coordinate_finite_element_classname',
+                                                     'scalar_coordinate_finite_element_classname'])
+ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'subdomain_id',
+                                         'form_id', 'rank', 'geometric_dimension', 'topological_dimension',
+                                         'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
+                                         'enabled_coefficients', 'classnames', 'element_dimensions',
+                                         'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
+                                         'coefficient_offsets', 'params', 'unique_tables', 'unique_table_types',
+                                         'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
+                                         'prefix', 'integrals_metadata', 'integral_metadata'])
+ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
+ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
+                                                 'geometric_dimension', 'topological_dimension', 'dofs',
+                                                 'physical_offsets', 'cell_shape'])
+
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
 
 
@@ -117,8 +160,6 @@ def compute_ir(analysis: namedtuple, prefix, parameters):
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    ir_data = namedtuple(
-        'ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
                    coordinate_mappings=ir_coordinate_mappings,
                    integrals=ir_integrals, forms=ir_forms)
@@ -153,7 +194,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [classnames["finite_element"][e] for e in ufl_element.sub_elements()]
 
-    return ir
+    return ir_element(**ir)
 
 
 def _compute_dofmap_permutation_tables(fiat_element, cell):
@@ -254,7 +295,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
 
-    return ir
+    return ir_dofmap(**ir)
 
 
 _midpoints = {
@@ -356,7 +397,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     ir["scalar_coordinate_finite_element_classname"] = classnames["finite_element"][
         ufl_coordinate_element.sub_elements()[0]]
 
-    return ir
+    return ir_coordinate_map(**ir)
 
 
 def _num_global_support_dofs(fiat_element):
@@ -402,7 +443,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
         ir["integrals_metadata"] = itg_data.metadata
         ir["integral_metadata"] = [integral.metadata() for integral in itg_data.integrals]
 
-        irs.append(ir)
+        irs.append(ir_integral(**ir))
 
     return irs
 
@@ -453,7 +494,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
         ir["create_{}_integral".format(integral_type)] = irdata
         ir["get_{}_integral_ids".format(integral_type)] = irdata
 
-    return ir
+    return ir_form(**ir)
 
 
 def _generate_reference_offsets(fiat_element, offset=0):
@@ -541,16 +582,15 @@ def _evaluate_dof(ufl_element, fiat_element):
         dofs = [L.pt_dict for L in fiat_element.dual_basis()]
     else:
         dofs = [None] * fiat_element.space_dimension()
-    return {
-        "mappings": fiat_element.mapping(),
-        "reference_value_size": ufl_element.reference_value_size(),
-        "physical_value_size": ufl_element.value_size(),
-        "geometric_dimension": cell.geometric_dimension(),
-        "topological_dimension": cell.topological_dimension(),
-        "dofs": dofs,
-        "physical_offsets": _generate_physical_offsets(ufl_element),
-        "cell_shape": cell.cellname()
-    }
+
+    return ir_evaluate_dof(mappings=fiat_element.mapping(),
+                           reference_value_size=ufl_element.reference_value_size(),
+                           physical_value_size=ufl_element.value_size(),
+                           geometric_dimension=cell.geometric_dimension(),
+                           topological_dimension=cell.topological_dimension(),
+                           dofs=dofs,
+                           physical_offsets=_generate_physical_offsets(ufl_element),
+                           cell_shape=cell.cellname())
 
 
 def _extract_elements(fiat_element):
@@ -720,13 +760,11 @@ def _tabulate_dof_coordinates(ufl_element, element):
         return {}
 
     cell = ufl_element.cell()
-
-    data = {}
-    data["tdim"] = cell.topological_dimension()
-    data["gdim"] = cell.geometric_dimension()
-    data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
-    data["cell_shape"] = cell.cellname()
-    return data
+    return ir_tabulate_dof_coordinates(
+        tdim=cell.topological_dimension(),
+        gdim=cell.geometric_dimension(),
+        points=[sorted(L.pt_dict.keys())[0] for L in element.dual_basis()],
+        cell_shape=cell.cellname())
 
 
 def _tabulate_entity_closure_dofs(element, cell):
@@ -763,8 +801,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
             if itg_data.subdomain_id < 0:
-                raise ValueError("Integral subdomain ID must be non-negative integer, not "
-                                 + str(itg_data.subdomain_id))
+                raise ValueError("Integral subdomain ID must be non-negative, not {}".format(itg_data.subdomain_id))
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
                 classnames += [classname.make_integral_name(prefix, integral_type,

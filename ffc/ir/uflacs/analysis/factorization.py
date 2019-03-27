@@ -13,7 +13,8 @@ from ffc.ir.uflacs.analysis.graph import ExpressionGraph
 from ffc.ir.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                        strip_modified_terminal)
 from ufl import as_ufl, conditional
-from ufl.classes import Argument, Conditional, Division, Product, Sum, Zero, Conj
+from ufl.classes import (Argument, Conditional, Conj, Division, Product, Sum,
+                         Zero)
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@ def test_cmdline_simple():
     subprocess.run(["ffc", "Poisson.ufl"])
 
 
-def test_visualise():
+def xtest_visualise():
     os.chdir(os.path.dirname(__file__))
     subprocess.run(["ffc", "-f", "visualise", "1", "Poisson.ufl"])
     assert os.path.isfile("S.pdf")

@@ -71,11 +71,10 @@ class UFCForm:
 
     def original_coefficient_position(self, L, ir):
         i = L.Symbol("i")
-        positions = ir["original_coefficient_position"]
+        positions = ir.original_coefficient_position
 
         # Check argument
         msg = "Invalid original coefficient index."
-
         if positions:
             code = [L.If(L.GE(i, len(positions)), [L.Comment(msg), L.Return(-1)])]
             position = L.Symbol("position")
@@ -90,8 +89,8 @@ class UFCForm:
 
     def generate_coefficient_name_to_position_map(self, L, ir, cnames):
         """Generate code that maps name to number."""
-        assert ir["num_coefficients"] == len(cnames)
-        if ir["num_coefficients"] == 0:
+        assert ir.num_coefficients == len(cnames)
+        if ir.num_coefficients == 0:
             num = "  return -1;"
         else:
             ifstr = "if "
@@ -104,10 +103,10 @@ class UFCForm:
 
     def generate_coefficient_position_to_name_map(self, L, ir, cnames):
         """Generate code that maps int to name string."""
-        assert ir["num_coefficients"] == len(cnames)
+        assert ir.num_coefficients == len(cnames)
 
         # Handle case of no coefficients
-        if ir["num_coefficients"] == 0:
+        if ir.num_coefficients == 0:
             name = "  return NULL;"
         else:
             name = '  switch (i)\n  {\n'
@@ -117,43 +116,43 @@ class UFCForm:
         return name
 
     def create_coordinate_finite_element(self, L, ir):
-        classnames = ir["create_coordinate_finite_element"]
+        classnames = ir.create_coordinate_finite_element
         assert len(classnames) == 1
         return generate_return_new(L, classnames[0])
 
     def coordinate_finite_element_declaration(self, L, ir):
-        classname = ir["create_coordinate_finite_element"]
+        classname = ir.create_coordinate_finite_element
         code = "ufc_finite_element* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_coordinate_dofmap(self, L, ir):
-        classnames = ir["create_coordinate_dofmap"]
+        classnames = ir.create_coordinate_dofmap
         assert len(classnames) == 1
         return generate_return_new(L, classnames[0])
 
     def coordinate_dofmap_declaration(self, L, ir):
-        classname = ir["create_coordinate_dofmap"]
+        classname = ir.create_coordinate_dofmap
         code = "ufc_dofmap* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_coordinate_mapping(self, L, ir):
-        classnames = ir["create_coordinate_mapping"]
+        classnames = ir.create_coordinate_mapping
         # list of length 1 until we support multiple domains
         assert len(classnames) == 1
         return generate_return_new(L, classnames[0])
 
     def coordinate_mapping_declaration(self, L, ir):
-        classname = ir["create_coordinate_mapping"]
+        classname = ir.create_coordinate_mapping
         code = "ufc_coordinate_mapping* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_finite_element"]
+        classnames = ir.create_finite_element
         return generate_return_new_switch(L, i, classnames)
 
     def finite_element_declaration(self, L, ir):
-        classnames = set(ir["create_finite_element"])
+        classnames = set(ir.create_finite_element)
         code = ""
         for name in classnames:
             code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
@@ -161,11 +160,11 @@ class UFCForm:
 
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")
-        classnames = ir["create_dofmap"]
+        classnames = ir.create_dofmap
         return generate_return_new_switch(L, i, classnames)
 
     def dofmap_declaration(self, L, ir):
-        classnames = set(ir["create_dofmap"])
+        classnames = set(ir.create_dofmap)
         code = ""
         for name in classnames:
             code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
@@ -178,15 +177,15 @@ class UFCForm:
         """Return implementation of ufc::form::%(declname)s()."""
         code = []
         ids = L.Symbol("ids")
-        for i, v in enumerate(ir[declname][0]):
+        for i, v in enumerate(getattr(ir, declname)[0]):
             code += [L.Assign(ids[i], v)]
         code += [L.Return()]
         return L.StatementList(code)
 
     def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
-        # e.g. subdomain_ids, classnames = ir["create_cell_integral"]
-        subdomain_ids, classnames = ir[declname]
+        # e.g. subdomain_ids, classnames = ir.create_cell_integral
+        subdomain_ids, classnames = getattr(ir, declname)
         subdomain_id = L.Symbol("subdomain_id")
         return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
 
@@ -194,19 +193,19 @@ class UFCForm:
 def generator(ir, cnames, parameters):
     """Generate UFC code for a form"""
 
-    factory_name = ir["classname"]
+    factory_name = ir.classname
 
     d = {}
     d["factory_name"] = factory_name
-    d["signature"] = "\"{}\"".format(ir["signature"])
-    d["rank"] = ir["rank"]
-    d["num_coefficients"] = ir["num_coefficients"]
+    d["signature"] = "\"{}\"".format(ir.signature)
+    d["rank"] = ir.rank
+    d["num_coefficients"] = ir.num_coefficients
 
-    d["num_cell_integrals"] = len(ir["create_cell_integral"][0])
-    d["num_exterior_facet_integrals"] = len(ir["create_exterior_facet_integral"][0])
-    d["num_interior_facet_integrals"] = len(ir["create_interior_facet_integral"][0])
-    d["num_vertex_integrals"] = len(ir["create_vertex_integral"][0])
-    d["num_custom_integrals"] = len(ir["create_custom_integral"][0])
+    d["num_cell_integrals"] = len(ir.create_cell_integral[0])
+    d["num_exterior_facet_integrals"] = len(ir.create_exterior_facet_integral[0])
+    d["num_interior_facet_integrals"] = len(ir.create_interior_facet_integral[0])
+    d["num_vertex_integrals"] = len(ir.create_vertex_integral[0])
+    d["num_custom_integrals"] = len(ir.create_custom_integral[0])
 
     import ffc.codegeneration.C.cnodes as L
     generator = UFCForm()

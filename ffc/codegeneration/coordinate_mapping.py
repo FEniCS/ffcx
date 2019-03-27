@@ -139,7 +139,7 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
 
 
 def cell_shape(L, ir):
-    name = ir["cell_shape"]
+    name = ir.cell_shape
     return L.Return(L.Symbol("ufc::shape::" + name))
 
 
@@ -152,29 +152,29 @@ def geometric_dimension(L, geometric_dimension):
 
 
 def create_coordinate_finite_element(L, ir):
-    classname = ir["create_coordinate_finite_element"]
+    classname = ir.create_coordinate_finite_element
     return generate_return_new(L, classname)
 
 
 def coordinate_finite_element_declaration(L, ir):
-    classname = ir["create_coordinate_finite_element"]
+    classname = ir.create_coordinate_finite_element
     code = "ufc_finite_element* create_{name}(void);\n".format(name=classname)
     return code
 
 
 def create_coordinate_dofmap(L, ir):
-    classname = ir["create_coordinate_dofmap"]
+    classname = ir.create_coordinate_dofmap
     return generate_return_new(L, classname)
 
 
 def coordinate_dofmap_declaration(L, ir):
-    classname = ir["create_coordinate_dofmap"]
+    classname = ir.create_coordinate_dofmap
     code = "ufc_dofmap* create_{name}(void);\n".format(name=classname)
     return code
 
 
 def evaluate_reference_basis_declaration(L, ir):
-    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    scalar_coordinate_element_classname = ir.scalar_coordinate_finite_element_classname
     code = """
 int evaluate_reference_basis_{}(double* restrict reference_values,
     int num_points, const double* restrict X);
@@ -183,12 +183,12 @@ int evaluate_reference_basis_{}(double* restrict reference_values,
 
 
 def compute_physical_coordinates(L, ir):
-    num_dofs = ir["num_scalar_coordinate_element_dofs"]
-    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    num_dofs = ir.num_scalar_coordinate_element_dofs
+    scalar_coordinate_element_classname = ir.scalar_coordinate_finite_element_classname
 
     # Dimensions
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
     num_points = L.Symbol("num_points")
 
     # Loop indices
@@ -240,7 +240,7 @@ def compute_physical_coordinates(L, ir):
 
 
 def compute_reference_geometry(L, ir):
-    degree = ir["coordinate_element_degree"]
+    degree = ir.coordinate_element_degree
     if degree == 1:
         # Special case optimized for affine mesh (possibly room for
         # further optimization)
@@ -252,7 +252,7 @@ def compute_reference_geometry(L, ir):
 
 # TODO: Maybe we don't need this version, see what we need in dolfin first
 def compute_reference_coordinates(L, ir):
-    degree = ir["coordinate_element_degree"]
+    degree = ir.coordinate_element_degree
     if degree == 1:
         # Special case optimized for affine mesh (possibly room for
         # further optimization)
@@ -264,15 +264,15 @@ def compute_reference_coordinates(L, ir):
 
 def _compute_reference_coordinates_affine(L, ir, output_all=False):
     # Class name
-    classname = ir["classname"]
+    classname = ir.classname
 
     # Dimensions
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
     num_points = L.Symbol("num_points")
 
     # Number of dofs for a scalar component
-    num_dofs = ir["num_scalar_coordinate_element_dofs"]
+    num_dofs = ir.num_scalar_coordinate_element_dofs
 
     # Loop indices
     ip = L.Symbol("ip")  # point
@@ -312,7 +312,7 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     # Tables of coordinate basis function values and derivatives at X=0
     # and X=midpoint available through ir. This is useful in several
     # geometry functions.
-    tables = ir["tables"]
+    tables = ir.tables
 
     # Check the table shapes against our expectations
     x_table = tables["x0"]
@@ -422,12 +422,12 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
             if dX sufficiently small: break
     """
     # Dimensions
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
-    cellname = ir["cell_shape"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
+    cellname = ir.cell_shape
     num_points = L.Symbol("num_points")
 
-    degree = ir["coordinate_element_degree"]
+    degree = ir.coordinate_element_degree
 
     # Computing table one point at a time instead of vectorized over
     # num_points will allow skipping dynamic allocation
@@ -514,16 +514,15 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     # the first iteration for each target point by initializing Xk = Xm
     # + Km * (xgoal - xm) which is the affine approximation starting at
     # the midpoint.
-    classname = ir['classname']
     midpoint_geometry = [
         L.Comment("Compute K = J^-1 and x at midpoint of cell"),
         L.ArrayDecl("double", xm, (gdim, ), 0.0),
         L.ArrayDecl("double", Km, (tdim * gdim, )),
-        L.Call("compute_midpoint_geometry_{}".format(classname),
+        L.Call("compute_midpoint_geometry_{}".format(ir.classname),
                (xm, J, coordinate_dofs)),
-        L.Call("compute_jacobian_determinants_{}".format(classname),
+        L.Call("compute_jacobian_determinants_{}".format(ir.classname),
                (detJ, one_point, J, cell_orientation)),
-        L.Call("compute_jacobian_inverses_{}".format(classname),
+        L.Call("compute_jacobian_inverses_{}".format(ir.classname),
                (Km, one_point, J, detJ)),
     ]
 
@@ -543,7 +542,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     part1 = [
         L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
         L.Comment("intermediate storage inside compute_geometry, not used out here"),
-        L.Call("compute_geometry_{}".format(classname),
+        L.Call("compute_geometry_{}".format(ir.classname),
                (xk, J, detJ, K, one_point, Xk, coordinate_dofs, cell_orientation)),
     ]
 
@@ -595,7 +594,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
 
 
 def evaluate_reference_basis_derivatives_declaration(L, ir):
-    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    scalar_coordinate_element_classname = ir.scalar_coordinate_finite_element_classname
     code = """
 int evaluate_reference_basis_derivatives_{}(double* restrict reference_values,
     int order, int num_points, const double* restrict X);
@@ -604,12 +603,12 @@ int evaluate_reference_basis_derivatives_{}(double* restrict reference_values,
 
 
 def compute_jacobians(L, ir):
-    num_dofs = ir["num_scalar_coordinate_element_dofs"]
-    scalar_coordinate_element_classname = ir["scalar_coordinate_finite_element_classname"]
+    num_dofs = ir.num_scalar_coordinate_element_dofs
+    scalar_coordinate_element_classname = ir.scalar_coordinate_finite_element_classname
 
     # Dimensions
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
     num_points = L.Symbol("num_points")
 
     # Loop indices
@@ -665,8 +664,8 @@ def compute_jacobians(L, ir):
 
 def compute_jacobian_determinants(L, ir):
     # Dimensions
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
     num_points = L.Symbol("num_points")
 
     # Loop indices
@@ -701,8 +700,8 @@ def compute_jacobian_determinants(L, ir):
 
 def compute_jacobian_inverses(L, ir):
     # Dimensions
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
     num_points = L.Symbol("num_points")
 
     # Loop indices
@@ -724,7 +723,7 @@ def compute_jacobian_inverses(L, ir):
 
 def compute_geometry(L, ir):
     # Class name
-    classname = ir["classname"]
+    classname = ir.classname
 
     # Output geometry
     x = L.Symbol("x")
@@ -757,14 +756,14 @@ def compute_geometry(L, ir):
 
 def compute_midpoint_geometry(L, ir):
     # Dimensions
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
-    num_dofs = ir["num_scalar_coordinate_element_dofs"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
+    num_dofs = ir.num_scalar_coordinate_element_dofs
 
     # Tables of coordinate basis function values and derivatives at
     # X=0 and X=midpoint available through ir. This is useful in
     # several geometry functions.
-    tables = ir["tables"]
+    tables = ir.tables
 
     # Check the table shapes against our expectations
     xm_table = tables["xm"]
@@ -844,11 +843,11 @@ def generator(ir, parameters):
     d = {}
 
     # Attributes
-    d["factory_name"] = ir["classname"]
-    d["signature"] = "\"{}\"".format(ir["signature"])
-    d["geometric_dimension"] = ir["geometric_dimension"]
-    d["topological_dimension"] = ir["topological_dimension"]
-    d["cell_shape"] = ir["cell_shape"]
+    d["factory_name"] = ir.classname
+    d["signature"] = "\"{}\"".format(ir.signature)
+    d["geometric_dimension"] = ir.geometric_dimension
+    d["topological_dimension"] = ir.topological_dimension
+    d["cell_shape"] = ir.cell_shape
 
     import ffc.codegeneration.C.cnodes as L
 
@@ -893,6 +892,6 @@ def generator(ir, parameters):
     implementation = ufc_coordinate_mapping.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir["classname"])
+    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.classname)
 
     return declaration, implementation

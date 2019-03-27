@@ -7,6 +7,7 @@
 """Tools for C/C++ expression formatting."""
 
 import logging
+
 import ufl
 
 logger = logging.getLogger(__name__)
