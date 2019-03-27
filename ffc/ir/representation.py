@@ -48,13 +48,16 @@ ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global
                                      'num_element_support_dofs', 'num_entity_dofs', 'num_entity_closure_dofs',
                                      'dof_permutations', 'tabulate_entity_dofs', 'tabulate_entity_closure_dofs',
                                      'num_sub_dofmaps', 'create_sub_dofmap'])
-ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape', 'topological_dimension',
+ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
+                                                     'topological_dimension',
                                                      'geometric_dimension', 'create_coordinate_finite_element',
                                                      'create_coordinate_dofmap', 'compute_physical_coordinates',
-                                                     'compute_reference_coordinates', 'compute_jacobians', 'compute_jacobian_determinants',
+                                                     'compute_reference_coordinates', 'compute_jacobians',
+                                                     'compute_jacobian_determinants',
                                                      'compute_jacobian_inverses', 'compute_geometry', 'tables',
                                                      'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
-                                                     'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname'])
+                                                     'coordinate_finite_element_classname',
+                                                     'scalar_coordinate_finite_element_classname'])
 
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
