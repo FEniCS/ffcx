@@ -18,8 +18,8 @@ def tabulate_dof_permutations(L, ir):
     ordering of some edge dofs; for 3D cells, the facet dofs may also
     be permuted by rotation or reflection in the plane. """
 
-    edge_perms, facet_perms, cell, cell_topology = ir["dof_permutations"]
-    ndofs = ir["num_element_support_dofs"] + ir["num_global_support_dofs"]
+    edge_perms, facet_perms, cell, cell_topology = ir.dof_permutations
+    ndofs = ir.num_element_support_dofs + ir.num_global_support_dofs
 
     perm = L.Symbol("perm")
     i = L.Symbol("i")
@@ -127,7 +127,7 @@ def tabulate_dof_permutations(L, ir):
 
 
 def tabulate_entity_dofs(L, ir):
-    entity_dofs, num_dofs_per_entity = ir["tabulate_entity_dofs"]
+    entity_dofs, num_dofs_per_entity = ir.tabulate_entity_dofs
 
     # Output argument array
     dofs = L.Symbol("dofs")
@@ -168,8 +168,7 @@ def tabulate_entity_dofs(L, ir):
 
 def tabulate_entity_closure_dofs(L, ir):
     # Extract variables from ir
-    entity_closure_dofs, entity_dofs, num_dofs_per_entity = \
-        ir["tabulate_entity_closure_dofs"]
+    entity_closure_dofs, entity_dofs, num_dofs_per_entity = ir.tabulate_entity_closure_dofs
 
     # Output argument array
     dofs = L.Symbol("dofs")
@@ -207,12 +206,12 @@ def tabulate_entity_closure_dofs(L, ir):
 
 
 def create_sub_dofmap(L, ir):
-    classnames = ir["create_sub_dofmap"]
+    classnames = ir.create_sub_dofmap
     return generate_return_new_switch(L, "i", classnames)
 
 
 def sub_dofmap_declaration(L, ir):
-    classnames = set(ir["create_sub_dofmap"])
+    classnames = set(ir.create_sub_dofmap)
     code = ""
     for name in classnames:
         code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
@@ -225,13 +224,13 @@ def generator(ir, parameters):
     d = {}
 
     # Attributes
-    d["factory_name"] = ir["classname"]
-    d["signature"] = "\"{}\"".format(ir["signature"])
-    d["num_global_support_dofs"] = ir["num_global_support_dofs"]
-    d["num_element_support_dofs"] = ir["num_element_support_dofs"]
-    d["num_sub_dofmaps"] = ir["num_sub_dofmaps"]
-    d["num_entity_dofs"] = ir["num_entity_dofs"] + [0, 0, 0, 0]
-    d["num_entity_closure_dofs"] = ir["num_entity_closure_dofs"] + [0, 0, 0, 0]
+    d["factory_name"] = ir.classname
+    d["signature"] = "\"{}\"".format(ir.signature)
+    d["num_global_support_dofs"] = ir.num_global_support_dofs
+    d["num_element_support_dofs"] = ir.num_element_support_dofs
+    d["num_sub_dofmaps"] = ir.num_sub_dofmaps
+    d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
+    d["num_entity_closure_dofs"] = ir.num_entity_closure_dofs + [0, 0, 0, 0]
 
     import ffc.codegeneration.C.cnodes as L
 
@@ -254,6 +253,6 @@ def generator(ir, parameters):
     implementation = ufc_dofmap.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_dofmap.declaration.format(factory_name=ir["classname"])
+    declaration = ufc_dofmap.declaration.format(factory_name=ir.classname)
 
     return declaration, implementation

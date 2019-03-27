@@ -38,6 +38,16 @@ logger = logging.getLogger(__name__)
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
+ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
+                                       'topological_dimension',
+                                       'geometric_dimension', 'space_dimension', 'value_shape',
+                                       'reference_value_shape', 'degree', 'family', 'evaluate_basis',
+                                       'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
+                                       'create_sub_element'])
+ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
+                                     'num_element_support_dofs', 'num_entity_dofs', 'num_entity_closure_dofs',
+                                     'dof_permutations', 'tabulate_entity_dofs', 'tabulate_entity_closure_dofs',
+                                     'num_sub_dofmaps', 'create_sub_dofmap'])
 
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
@@ -131,13 +141,6 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
-    ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
-                                           'topological_dimension',
-                                           'geometric_dimension', 'space_dimension', 'value_shape',
-                                           'reference_value_shape', 'degree', 'family', 'evaluate_basis',
-                                           'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                           'create_sub_element'])
-
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["classname"] = classnames["finite_element"][ufl_element]
@@ -160,11 +163,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [classnames["finite_element"][e] for e in ufl_element.sub_elements()]
 
-    ir_test  = ir_element(**ir)
-#    print(ir_test._fields)
-
-    return ir_test
-    #return ir
+    return ir_element(**ir)
 
 
 def _compute_dofmap_permutation_tables(fiat_element, cell):
@@ -265,7 +264,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
 
-    return ir
+    return ir_dofmap(**ir)
 
 
 _midpoints = {
