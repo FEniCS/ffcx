@@ -37,6 +37,16 @@ logger = logging.getLogger(__name__)
 # List of supported integral types
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
+ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
+                                    'num_coefficients', 'original_coefficient_position',
+                                    'create_coordinate_finite_element', 'create_coordinate_dofmap',
+                                    'create_coordinate_mapping', 'create_finite_element',
+                                    'create_dofmap', 'create_cell_integral',
+                                    'get_cell_integral_ids', 'create_exterior_facet_integral',
+                                    'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
+                                    'get_interior_facet_integral_ids', 'create_vertex_integral',
+                                    'get_vertex_integral_ids', 'create_custom_integral',
+                                    'get_custom_integral_ids'])
 ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
                                        'topological_dimension',
                                        'geometric_dimension', 'space_dimension', 'value_shape',
@@ -484,7 +494,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
         ir["create_{}_integral".format(integral_type)] = irdata
         ir["get_{}_integral_ids".format(integral_type)] = irdata
 
-    return ir
+    return ir_form(**ir)
 
 
 def _generate_reference_offsets(fiat_element, offset=0):
