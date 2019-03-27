@@ -143,8 +143,8 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
         return [L.Return(-1)]
 
     # Extract coordinates and cell dimension
-    tdim = ir["tdim"]
-    points = ir["points"]
+    tdim = ir.tdim
+    points = ir.points
 
     # Output argument
     reference_dof_coordinates = L.Symbol("reference_dof_coordinates")

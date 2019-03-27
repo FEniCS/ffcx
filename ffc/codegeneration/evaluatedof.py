@@ -304,24 +304,24 @@ def generate_transform_values(L, ir):
     values in physical space into reference space. These
     values represent evaluation of the function at dof
     points (only valid for point evaluation dofs).
+
     """
 
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
-
-    cell_shape = ir["cell_shape"]
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
+    cell_shape = ir.cell_shape
 
     # Enriched element, no dofs defined
-    if not any(ir["dofs"]):
+    if not any(ir.dofs):
         code = []
     else:
         code = []
         # Check whether Jacobians are necessary.
-        needs_inverse_jacobian = any(["contravariant piola" in m for m in ir["mappings"]])
-        needs_jacobian = any(["covariant piola" in m for m in ir["mappings"]])
+        needs_inverse_jacobian = any(["contravariant piola" in m for m in ir.mappings])
+        needs_jacobian = any(["covariant piola" in m for m in ir.mappings])
 
         # Intermediate variable needed for multiple point dofs
-        needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir["dofs"])
+        needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir.dofs)
         if needs_temporary:
             result = L.Symbol("result")
             code += [L.VariableDecl("double", result)]
@@ -335,13 +335,13 @@ def generate_transform_values(L, ir):
                 code += orientation(L)
 
     # Extract variables
-    mappings = ir["mappings"]
-    offsets = ir["physical_offsets"]
+    mappings = ir.mappings
+    offsets = ir.physical_offsets
 
     # Generate bodies for each degree of freedom
     values = L.Symbol("reference_values")
-    value_size = ir["physical_value_size"]
-    for (i, dof) in enumerate(ir["dofs"]):
+    value_size = ir.physical_value_size
+    for (i, dof) in enumerate(ir.dofs):
         c, r = _generate_body(L, i, dof, mappings[i], gdim, tdim, cell_shape,
                               offsets[i] + i * value_size)
         code += c

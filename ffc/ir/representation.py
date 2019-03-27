@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 # List of supported integral types
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
-ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
 ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
                                        'topological_dimension',
                                        'geometric_dimension', 'space_dimension', 'value_shape',
@@ -66,6 +65,10 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'coefficient_offsets', 'params', 'unique_tables', 'unique_table_types',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
                                          'prefix', 'integrals_metadata', 'integral_metadata'])
+ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
+ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
+                                                 'geometric_dimension', 'topological_dimension', 'dofs',
+                                                 'physical_offsets', 'cell_shape'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
 
@@ -569,16 +572,15 @@ def _evaluate_dof(ufl_element, fiat_element):
         dofs = [L.pt_dict for L in fiat_element.dual_basis()]
     else:
         dofs = [None] * fiat_element.space_dimension()
-    return {
-        "mappings": fiat_element.mapping(),
-        "reference_value_size": ufl_element.reference_value_size(),
-        "physical_value_size": ufl_element.value_size(),
-        "geometric_dimension": cell.geometric_dimension(),
-        "topological_dimension": cell.topological_dimension(),
-        "dofs": dofs,
-        "physical_offsets": _generate_physical_offsets(ufl_element),
-        "cell_shape": cell.cellname()
-    }
+
+    return ir_evaluate_dof(mappings=fiat_element.mapping(),
+                           reference_value_size=ufl_element.reference_value_size(),
+                           physical_value_size=ufl_element.value_size(),
+                           geometric_dimension=cell.geometric_dimension(),
+                           topological_dimension=cell.topological_dimension(),
+                           dofs=dofs,
+                           physical_offsets=_generate_physical_offsets(ufl_element),
+                           cell_shape=cell.cellname())
 
 
 def _extract_elements(fiat_element):
@@ -748,13 +750,11 @@ def _tabulate_dof_coordinates(ufl_element, element):
         return {}
 
     cell = ufl_element.cell()
-
-    data = {}
-    data["tdim"] = cell.topological_dimension()
-    data["gdim"] = cell.geometric_dimension()
-    data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
-    data["cell_shape"] = cell.cellname()
-    return data
+    return ir_tabulate_dof_coordinates(
+        tdim=cell.topological_dimension(),
+        gdim=cell.geometric_dimension(),
+        points=[sorted(L.pt_dict.keys())[0] for L in element.dual_basis()],
+        cell_shape=cell.cellname())
 
 
 def _tabulate_entity_closure_dofs(element, cell):
