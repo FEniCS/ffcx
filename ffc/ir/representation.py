@@ -67,6 +67,8 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
                                          'prefix', 'integrals_metadata', 'integral_metadata'])
 
+ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
+
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
@@ -145,8 +147,6 @@ def compute_ir(analysis: namedtuple, prefix, parameters):
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    ir_data = namedtuple(
-        'ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
                    coordinate_mappings=ir_coordinate_mappings,
                    integrals=ir_integrals, forms=ir_forms)
@@ -431,7 +431,6 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
         ir["integral_metadata"] = [integral.metadata() for integral in itg_data.integrals]
 
         irs.append(ir_integral(**ir))
-        # irs.append(ir)
 
     return irs
 
