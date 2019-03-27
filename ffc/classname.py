@@ -6,9 +6,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Some basics for generating C code."""
 
+import hashlib
+
 import ffc
 import ufl
-import hashlib
 
 
 def make_name(prefix, basename, signature):

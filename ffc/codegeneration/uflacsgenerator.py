@@ -11,7 +11,6 @@ import collections
 import itertools
 import logging
 
-
 import ufl
 from ffc.codegeneration.backend import FFCBackend
 from ffc.codegeneration.C.cnodes import pad_dim, pad_innermost_dim

@@ -7,6 +7,7 @@
 """FFC/UFC specific variable definitions."""
 
 import logging
+
 import ufl
 
 logger = logging.getLogger(__name__)

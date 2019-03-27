@@ -7,10 +7,10 @@
 """Collection of FFC specific pieces for the code generation phase."""
 
 import ffc.codegeneration.C.cnodes
-from ffc.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
-from ffc.codegeneration.symbols import FFCBackendSymbols
 from ffc.codegeneration.access import FFCBackendAccess
+from ffc.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
 from ffc.codegeneration.definitions import FFCBackendDefinitions
+from ffc.codegeneration.symbols import FFCBackendSymbols
 
 
 class FFCBackend(object):

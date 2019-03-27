@@ -6,10 +6,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFC/UFC specific variable access."""
 
-import ufl
 import logging
 import warnings
 
+import ufl
 from ffc.fiatinterface import create_element
 from ufl.finiteelement import MixedElement
 from ufl.measure import custom_integral_types
