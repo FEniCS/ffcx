@@ -38,15 +38,15 @@ logger = logging.getLogger(__name__)
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
 ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
-                                    'num_coefficients', 'original_coefficient_position',
-                                    'create_coordinate_finite_element', 'create_coordinate_dofmap',
-                                    'create_coordinate_mapping', 'create_finite_element',
-                                    'create_dofmap', 'create_cell_integral',
-                                    'get_cell_integral_ids', 'create_exterior_facet_integral',
-                                    'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
-                                    'get_interior_facet_integral_ids', 'create_vertex_integral',
-                                    'get_vertex_integral_ids', 'create_custom_integral',
-                                    'get_custom_integral_ids'])
+                                 'num_coefficients', 'original_coefficient_position',
+                                 'create_coordinate_finite_element', 'create_coordinate_dofmap',
+                                 'create_coordinate_mapping', 'create_finite_element',
+                                 'create_dofmap', 'create_cell_integral',
+                                 'get_cell_integral_ids', 'create_exterior_facet_integral',
+                                 'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
+                                 'get_interior_facet_integral_ids', 'create_vertex_integral',
+                                 'get_vertex_integral_ids', 'create_custom_integral',
+                                 'get_custom_integral_ids'])
 ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
                                        'topological_dimension',
                                        'geometric_dimension', 'space_dimension', 'value_shape',

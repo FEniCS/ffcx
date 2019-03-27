@@ -29,9 +29,6 @@ from ufl.measure import (custom_integral_types, facet_integral_types,
 
 logger = logging.getLogger(__name__)
 
-# Some quick internal structs, massive improvement to readability and
-# maintainability over just tuples...
-
 ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
 block_data_t = collections.namedtuple("block_data_t",
@@ -255,9 +252,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
     # Whether we expect the quadrature weight to be applied or not (in
     # some cases it's just set to 1 in ufl integral scaling)
     tdim = cell.topological_dimension()
-    expect_weight = (integral_type not in point_integral_types
-                     and (entitytype == "cell" or (entitytype == "facet" and tdim > 1)
-                          or (integral_type in custom_integral_types)))
+    expect_weight = (integral_type not in point_integral_types and (entitytype == "cell" or (
+        entitytype == "facet" and tdim > 1) or (integral_type in custom_integral_types)))
 
     # Analyse each num_points/integrand separately
     assert isinstance(integrands, dict)
@@ -534,17 +530,16 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                     block_restrictions, block_is_transposed, block_is_uniform, pname, None, None)
                 block_is_piecewise = False
 
-
-        #    elif block_mode == "scaled":
-        #    # TODO: Add mode, block is piecewise but choose not to be premultiplied
-        #        # Add to contributions:
-        #        # FI = sum_q weight * f;          generated inside quadloop
-        #        # B[...] = FI * u * v;            generated after quadloop
-        #        # A[blockmap] += B[...];          generated after quadloop
-        #        raise NotImplementedError("scaled block mode not implemented.")
-        #        # (probably need mostly the same data as
-        #        # premultiplied, except no P table name or values)
-        #        block_is_piecewise = False
+#           elif block_mode == "scaled":
+#           # TODO: Add mode, block is piecewise but choose not to be premultiplied
+#               # Add to contributions:
+#               # FI = sum_q weight * f;          generated inside quadloop
+#               # B[...] = FI * u * v;            generated after quadloop
+#               # A[blockmap] += B[...];          generated after quadloop
+#               raise NotImplementedError("scaled block mode not implemented.")
+#               # (probably need mostly the same data as
+#               # premultiplied, except no P table name or values)
+#               block_is_piecewise = False
 
             elif block_mode in ("partial", "full", "safe"):
                 block_is_piecewise = factor_is_piecewise and not expect_weight
