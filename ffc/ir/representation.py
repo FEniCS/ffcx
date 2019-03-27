@@ -58,6 +58,14 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signatu
                                                      'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
                                                      'coordinate_finite_element_classname',
                                                      'scalar_coordinate_finite_element_classname'])
+ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'subdomain_id',
+                                         'form_id', 'rank', 'geometric_dimension', 'topological_dimension',
+                                         'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
+                                         'enabled_coefficients', 'classnames', 'element_dimensions',
+                                         'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
+                                         'coefficient_offsets', 'params', 'unique_tables', 'unique_table_types',
+                                         'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
+                                         'prefix', 'integrals_metadata', 'integral_metadata'])
 
 
 def make_finite_element_jit_classname(ufl_element, tag, parameters):
@@ -422,7 +430,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
         ir["integrals_metadata"] = itg_data.metadata
         ir["integral_metadata"] = [integral.metadata() for integral in itg_data.integrals]
 
-        irs.append(ir)
+        irs.append(ir_integral(**ir))
+        # irs.append(ir)
 
     return irs
 
@@ -783,8 +792,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
             if itg_data.subdomain_id < 0:
-                raise ValueError("Integral subdomain ID must be non-negative integer, not "
-                                 + str(itg_data.subdomain_id))
+                raise ValueError("Integral subdomain ID must be non-negative, not {}".format(itg_data.subdomain_id))
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
                 classnames += [classname.make_integral_name(prefix, integral_type,

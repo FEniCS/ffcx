@@ -23,8 +23,8 @@ class FFCBackend(object):
         scalar_type = parameters.get("scalar_type", "double")
         self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type)
 
-        coefficient_numbering = ir["coefficient_numbering"]
-        coefficient_offsets = ir["coefficient_offsets"]
+        coefficient_numbering = ir.coefficient_numbering
+        coefficient_offsets = ir.coefficient_offsets
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering,
                                          coefficient_offsets)
         self.definitions = FFCBackendDefinitions(ir, self.language,

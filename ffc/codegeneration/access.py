@@ -23,8 +23,8 @@ class FFCBackendAccess(object):
     def __init__(self, ir, language, symbols, parameters):
 
         # Store ir and parameters
-        self.entitytype = ir["entitytype"]
-        self.integral_type = ir["integral_type"]
+        self.entitytype = ir.entitytype
+        self.integral_type = ir.integral_type
         self.language = language
         self.symbols = symbols
         self.parameters = parameters

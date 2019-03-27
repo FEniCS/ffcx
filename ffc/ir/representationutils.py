@@ -141,15 +141,15 @@ def initialize_integral_code(ir, prefix, parameters):
 
     """
     code = {}
-    code["class_type"] = ir["integral_type"] + "_integral"
-    code["classname"] = classname.make_integral_name(prefix, ir["integral_type"], ir["form_id"],
-                                                     ir["subdomain_id"])
+    code["class_type"] = ir.integral_type + "_integral"
+    code["classname"] = classname.make_integral_name(prefix, ir.integral_type, ir.form_id,
+                                                     ir.subdomain_id)
     code["members"] = ""
     code["constructor"] = ""
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
     code["destructor"] = ""
-    code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
+    code["enabled_coefficients"] = generate_enabled_coefficients(ir.enabled_coefficients)
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
 
     return code

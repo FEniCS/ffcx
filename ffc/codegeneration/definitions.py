@@ -48,8 +48,8 @@ class FFCBackendDefinitions(object):
 
     def __init__(self, ir, language, symbols, parameters):
         # Store ir and parameters
-        self.integral_type = ir["integral_type"]
-        self.entitytype = ir["entitytype"]
+        self.integral_type = ir.integral_type
+        self.entitytype = ir.entitytype
         self.language = language
         self.symbols = symbols
         self.parameters = parameters
@@ -86,7 +86,7 @@ class FFCBackendDefinitions(object):
         ttype = tabledata.ttype
         begin, end = tabledata.dofrange
 
-        # fe_classname = ir["classnames"]["finite_element"][t.ufl_element()]
+        # fe_classname = ir.classnames["finite_element"][t.ufl_element()]
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
