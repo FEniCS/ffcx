@@ -219,7 +219,7 @@ def sub_dofmap_declaration(L, ir):
     return code
 
 
-def ufc_dofmap_generator(ir, parameters):
+def generator(ir, parameters):
     """Generate UFC code for a dofmap"""
 
     d = {}

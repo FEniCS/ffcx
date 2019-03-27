@@ -11,40 +11,22 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# NB! Parameters in the generate and build sets are
-# included in jit signature, cache and log are not.
+# NB! Parameters in the generate and build sets are included in jit
+# signature, cache and log are not.
 _FFC_GENERATE_PARAMETERS = {
-    "format": "ufc",  # code generation format
     "representation": "auto",  # form representation / code generation strategy
-    "quadrature_rule":
-    # quadrature rule used for integration of element tensors (None is auto)
-    None,
-    # quadrature degree used for computing integrals (None is auto)
-    "quadrature_degree": None,
-    # precision used when writing numbers (None for max precision)
-    "precision": None,
+    "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
+    "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
+    "precision": None,  # precision used when writing numbers (None for max precision)
     "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
-    # set to True to add timing inside tabulate_tensor
-    "generate_dummy_tabulate_tensor": False,
-    "add_tabulate_tensor_timing": False,
     # Scalar type to be used in generated code (real or complex
     # C double precision floating-point types)
     "scalar_type": "double",
-    # Max time to wait on cache if not building on this
-    # process (seconds)
-    "timeout": 10,
-    # ':' separated list of include filenames to add to generated code
-    "external_includes": "",
+    "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
+    "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
 _FFC_BUILD_PARAMETERS = {
-    "cpp_optimize": True,  # optimization for the C++ compiler
-    "cpp_optimize_flags": "-O2",  # optimization flags for the C++ compiler
-    # ':' separated list of libraries to link JIT compiled libraries with
-    "external_libraries": "",
-    "external_library_dirs":
-    "",  # ':' separated list of library search dirs to add when JIT compiling
-    # ':' separated list of include dirs to add when JIT compiling
-    "external_include_dirs": "",
+    "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
 }
 _FFC_CACHE_PARAMETERS = {
     "cache_dir": "~/.cache/fenics",  # cache dir used by default
@@ -76,10 +58,8 @@ def default_parameters():
 
 def default_jit_parameters():
     parameters = default_parameters()
-
     # Don't postfix form names
     parameters["form_postfix"] = False
-
     return parameters
 
 
@@ -88,33 +68,19 @@ def validate_parameters(parameters):
     p = default_parameters()
     if parameters is not None:
         p.update(parameters)
-
     _validate_parameters(p)
-
-    return p
-
-
-def validate_jit_parameters(parameters):
-    """Check parameters and add any missing parameters"""
-    p = default_jit_parameters()
-    if parameters is not None:
-        p.update(parameters)
-
-    _validate_parameters(p)
-
     return p
 
 
 def _validate_parameters(parameters):
-    """Does some casting of parameter values in place on the
-    provided dictionary"""
+    """Does some casting of parameter values in place on the provided dictionary"""
     # Convert all legal default values to None
-    if parameters["quadrature_rule"] in ["auto", None, "None"]:
+    if parameters["quadrature_rule"] in ("auto", None, "None"):
         parameters["quadrature_rule"] = None
 
-    # Convert all legal default values to None and
-    # cast nondefaults from str to int
-    if parameters["quadrature_degree"] in ["auto", -1, None, "None"]:
+    # Convert all legal default values to None and cast nondefaults from
+    # str to int
+    if parameters["quadrature_degree"] in ("auto", -1, None, "None"):
         parameters["quadrature_degree"] = None
     else:
         try:
@@ -124,8 +90,8 @@ def _validate_parameters(parameters):
                              parameters.get("quadrature_degree"))
             raise
 
-    # Convert all legal default values to None and
-    # cast nondefaults from str to int
+    # Convert all legal default values to None and cast nondefaults from
+    # str to int
     if parameters["precision"] in ["auto", None, "None"]:
         parameters["precision"] = None
     else:
@@ -143,14 +109,6 @@ def compilation_relevant_parameters(parameters):
         del p[k]
     for k in _FFC_CACHE_PARAMETERS:
         del p[k]
-
-    # This doesn't work because some parameters may not be among the defaults above.
-    # That is somewhat confusing but we'll just have to live with it at least for now.
-    # sp = split_parameters(parameters)
-    # p = {}
-    # p.update(sp["generate"])
-    # p.update(sp["build"])
-
     return p
 
 

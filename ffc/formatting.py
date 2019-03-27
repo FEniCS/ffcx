@@ -142,14 +142,7 @@ def _generate_comment(parameters):
     parameters = compilation_relevant_parameters(parameters)
 
     # Generate top level comment
-    if parameters["format"] == "ufc":
-        comment = FORMAT_TEMPLATE["ufc comment"].format(
-            ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
-    elif parameters["format"] == "dolfin":
-        comment = FORMAT_TEMPLATE["dolfin comment"].format(
-            ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
-    else:
-        raise RuntimeError("Unable to format code, unknown format \"{}\".".format(parameters["format"]))
+    comment = FORMAT_TEMPLATE["ufc comment"].format(ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
 
     # Add parameter information
     comment += "//\n"

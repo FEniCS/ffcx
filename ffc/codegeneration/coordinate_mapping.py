@@ -838,7 +838,7 @@ def compute_midpoint_geometry(L, ir):
     return code
 
 
-def ufc_coordinate_mapping_generator(ir, parameters):
+def generator(ir, parameters):
     """Generate UFC code for a coordinate mapping"""
 
     d = {}
@@ -859,32 +859,26 @@ def ufc_coordinate_mapping_generator(ir, parameters):
     d["coordinate_dofmap_declaration"] = coordinate_dofmap_declaration(L, ir)
 
     statements = compute_physical_coordinates(L, ir)
-    assert isinstance(statements, list)
     d["compute_physical_coordinates"] = L.StatementList(statements)
     d["evaluate_reference_basis_declaration"] = evaluate_reference_basis_declaration(L, ir)
 
     statements = compute_reference_coordinates(L, ir)
-    assert isinstance(statements, list)
     d["compute_reference_coordinates"] = L.StatementList(statements)
 
     statements = compute_reference_geometry(L, ir)
-    assert isinstance(statements, list)
     d["compute_reference_geometry"] = L.StatementList(statements)
     d["evaluate_reference_basis_derivatives_declaration"] = evaluate_reference_basis_derivatives_declaration(L, ir)
 
     statements = compute_jacobians(L, ir)
-    assert isinstance(statements, list)
     d["compute_jacobians"] = L.StatementList(statements)
 
     d["compute_jacobian_determinants"] = compute_jacobian_determinants(L, ir)
     d["compute_jacobian_inverses"] = compute_jacobian_inverses(L, ir)
 
     statements = compute_geometry(L, ir)
-    assert isinstance(statements, list)
     d["compute_geometry"] = L.StatementList(statements)
 
     statements = compute_midpoint_geometry(L, ir)
-    assert isinstance(statements, list)
     d["compute_midpoint_geometry"] = L.StatementList(statements)
 
     # Check that no keys are redundant or have been missed

@@ -15,10 +15,7 @@ from ffc.ir.representation import ufc_integral_types
 
 # These are the method names in ufc_form that are specialized for each
 # integral type
-integral_name_templates = (
-    "get_{}_integral_ids",
-    "create_{}_integral",
-)
+integral_name_templates = ("get_{}_integral_ids", "create_{}_integral")
 
 
 def create_delegate(integral_type, declname, impl):
@@ -38,7 +35,9 @@ def add_ufc_form_integral_methods(cls):
     expand that implementation into 'create_cell_integrals',
     'create_exterior_facet_integrals', etc.
 
-    Name templates are taken from 'integral_name_templates' and 'ufc_integral_types'.
+    Name templates are taken from 'integral_name_templates' and
+    'ufc_integral_types'.
+
     """
     # The dummy name "foo" is chosen for familiarity for ffc developers
     dummy_integral_type = "foo"
@@ -58,7 +57,9 @@ class UFCForm:
     """Each function maps to a keyword in the template.
 
     The exceptions are functions on the form
+
         def _*_foo_*(self, L, ir, parameters, integral_type, declname)
+
     which add_ufc_form_integral_methods will duplicate for foo = each integral type.
     """
 
@@ -77,7 +78,6 @@ class UFCForm:
 
         if positions:
             code = [L.If(L.GE(i, len(positions)), [L.Comment(msg), L.Return(-1)])]
-
             position = L.Symbol("position")
             code += [
                 L.ArrayDecl("static const int64_t", position, len(positions), positions),
@@ -171,8 +171,8 @@ class UFCForm:
             code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
         return code
 
-    # This group of functions are repeated for each
-    # foo_integral by add_ufc_form_integral_methods:
+    # This group of functions are repeated for each foo_integral by
+    # add_ufc_form_integral_methods:
 
     def _get_foo_integral_ids(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
@@ -191,7 +191,7 @@ class UFCForm:
         return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
 
 
-def ufc_form_generator(ir, cnames, parameters):
+def generator(ir, cnames, parameters):
     """Generate UFC code for a form"""
 
     factory_name = ir["classname"]
@@ -212,7 +212,6 @@ def ufc_form_generator(ir, cnames, parameters):
     generator = UFCForm()
 
     statements = generator.original_coefficient_position(L, ir)
-    assert isinstance(statements, list)
     d["original_coefficient_position"] = L.StatementList(statements)
 
     d["coefficient_number_map"] = generator.generate_coefficient_name_to_position_map(L, ir, cnames)
