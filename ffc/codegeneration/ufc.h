@@ -153,11 +153,6 @@ extern "C"
     /// of each cell entity dimension d
     int num_entity_closure_dofs[4];
 
-    /// Calculate dof permutation for given global vertex index ordering
-    /// perm[num_element_dofs] - integer permutation
-    /// global_indices[num_vertices_per_cell] - global indices of cell vertices
-    void (*tabulate_dof_permutations)(int* restrict perm, const int64_t* restrict global_indices);
-
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
 

@@ -55,7 +55,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs', 'num_entity_closure_dofs',
-                                     'dof_permutations', 'tabulate_entity_dofs', 'tabulate_entity_closure_dofs',
+                                     'tabulate_entity_dofs', 'tabulate_entity_closure_dofs',
                                      'num_sub_dofmaps', 'create_sub_dofmap'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
@@ -289,7 +289,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
-    ir["dof_permutations"] = (edge_permutations, face_permutations, cell, cell_topology)
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
