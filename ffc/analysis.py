@@ -7,16 +7,16 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 1: Analysis
 
-This module implements the analysis/preprocessing of variational
-forms, including automatic selection of elements, degrees and
-form representation type.
+This module implements the analysis/preprocessing of variational forms,
+including automatic selection of elements, degrees and form
+representation type.
 """
 
 import logging
 import os
+import typing
 import warnings
 from collections import namedtuple
-from typing import Dict, List, Tuple, Union
 
 import numpy
 
@@ -25,8 +25,13 @@ import ufl
 logger = logging.getLogger(__name__)
 
 
-def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteElement], List],
-                        parameters: Dict) -> Tuple[Tuple[ufl.algorithms.formdata.FormData], List, Dict, List]:
+ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numbers',
+                                   'unique_coordinate_elements'])
+
+
+def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], typing.List[ufl.FiniteElement],
+                                                  typing.List],
+                        parameters: typing.Dict) -> ufl_data:
     """Analyze ufl object(s)
 
     Parameters
@@ -47,32 +52,30 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     """
     logger.info("Compiler stage 1: Analyzing UFL objects")
 
-    form_datas = ()
+    form_data = ()
     unique_elements = set()
     unique_coordinate_elements = set()
 
+    # FIXME: This assumes that forms come before elements in
+    # ufl_objects? Is this reasonable?
     if isinstance(ufl_objects[0], ufl.form.Form):
         forms = ufl_objects
+        form_data = tuple(_analyze_form(form, parameters) for form in forms)
 
-        # Analyze forms
-        form_datas = tuple(_analyze_form(form, parameters) for form in forms)
+        # Extract unique elements across forms
+        for data in form_data:
+            unique_elements.update(data.unique_sub_elements)
 
-        # Extract unique elements across all forms
-        for form_data in form_datas:
-            unique_elements.update(form_data.unique_sub_elements)
-
-        # Extract coordinate elements across all forms
-        for form_data in form_datas:
-            unique_coordinate_elements.update(form_data.coordinate_elements)
+        # Extract uniquecoordinate elements across forms
+        for data in form_data:
+            unique_coordinate_elements.update(data.coordinate_elements)
     elif isinstance(ufl_objects[0], ufl.FiniteElementBase):
-        elements = ufl_objects
-
         # Extract unique (sub)elements
+        elements = ufl_objects
         unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
     elif isinstance(ufl_objects[0], ufl.Mesh):
-        meshes = ufl_objects
-
         # Extract unique (sub)elements
+        meshes = ufl_objects
         unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
     else:
         raise TypeError("UFL objects not recognised.")
@@ -80,22 +83,20 @@ def analyze_ufl_objects(ufl_objects: Union[List[ufl.form.Form], List[ufl.FiniteE
     # Make sure coordinate elements and their subelements are included
     unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(unique_coordinate_elements))
 
-    # Sort elements
+    # Sort elements so sub-elements come before mixed elements
     unique_elements = ufl.algorithms.sort_elements(unique_elements)
     unique_coordinate_elements = sorted(unique_coordinate_elements, key=lambda x: repr(x))
 
-    # Compute element numbers
+    # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    analyze_ufl_data = namedtuple(
-        'analyze_ufl_data', ['form_data', 'unique_elements', 'element_numbers', 'unique_coordinate_elements'])
-    return analyze_ufl_data(form_data=form_datas, unique_elements=unique_elements,
-                            element_numbers=element_numbers,
-                            unique_coordinate_elements=unique_coordinate_elements)
+    return ufl_data(form_data=form_data, unique_elements=unique_elements,
+                    element_numbers=element_numbers,
+                    unique_coordinate_elements=unique_coordinate_elements)
 
 
-def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formdata.FormData:
-    """Analyzes form and attaches metadata
+def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithms.formdata.FormData:
+    """Analyzes UFL form and attaches metadata
 
     Parameters
     ----------
@@ -109,54 +110,49 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
 
     Note
     ----
+
     The main workload of this function is extraction of unique/default metadata
-    from parameters, integral metadata or inherited fro UFL
+    from parameters, integral metadata or inherited from UFL
     (in case of quadrature degree)
 
     """
 
-    # Check that form is not empty
     if form.empty():
-        logger.error("Form (%s) seems to be zero: cannot compile it." % str(form))
-        raise RuntimeError("Form (%s) seems to be zero: cannot compile it." % str(form))
+        raise RuntimeError("Form ({}) seems to be zero: cannot compile it.".format(str(form)))
+#    if _has_custom_integrals(form):
+#        raise RuntimeError("Form ({}) contains unsupported custom integrals.".format(str(form)))
 
-    #
     # ---- Extract representation across all integrals in this form
     #
     # The priority of representation determination is following
     #
-    # 1. Enviromental variable FFC_FORCE_REPRESENTATION
+    # 1. Environment variable FFC_FORCE_REPRESENTATION
     # 2. parameters["representation"]
     # 3. specified in metadata of integral
     representations = set(
         integral.metadata().get("representation", "auto") for integral in form.integrals())
 
     # Remove "auto" to see representations set by user
-    representations.discard("auto")
-
-    if parameters["representation"] in ["uflacs", "tsfc"]:
+    if parameters["representation"] in ("uflacs", "tsfc"):
         representation = parameters["representation"]
-    elif len(representations) == 1:
-        # If user set just one representation return it
-        representation = representations.pop()
-    elif len(representations) == 0:
-        # If user didnt set any default to uflacs
+    elif len(representations - {"auto"}) == 1:
+        # User has set just one
+        representation = (representations - {"auto"}).pop()
+    elif representations == {"auto"}:
+        # If user didn't set any default to uflacs
         representation = "uflacs"
     else:
-        # Don't tolerate user requests for mixing representations in same
-        # form due to restrictions in preprocessing
-        raise RuntimeError("Cannot mix uflacs and tsfc representation in a single form.")
+        raise RuntimeError("Cannot mix uflacs and tsfc representations in a single form.")
 
-    # Hack to override representation with environment variable
+    # Override representation with environment variable
     forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
     if forced_r:
-        warnings.warn(
-            "representation:    forced by $FFC_FORCE_REPRESENTATION to '{}'".format(forced_r))
+        warnings.warn("Representation: forced by $FFC_FORCE_REPRESENTATION to '{}'".format(forced_r))
         representation = forced_r
 
-    logger.info("Found representation '{}' for form {}.".format(representation, str(form)))
+    logger.info("Determined representation '{}' for form {}.".format(representation, str(form)))
 
-    # Get complex mode
+    # Check for complex mode
     complex_mode = "complex" in parameters.get("scalar_type", "double")
 
     # Compute form metadata
@@ -177,25 +173,22 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
     else:
         raise RuntimeError("Unexpected representation \"{}\" for form preprocessing.".format(representation))
 
-    # Attach common representation to FormData
-    # Again, representation is the same for all integrals in this Form
+    # Attach common representation to FormData. Common to all integrals
+    # in form
     form_data.representation = representation
 
-    #
-    # Determine unique quadrature degree, quadrature scheme and precision per
-    # each integral data
-    #
+    # Determine unique quadrature degree, quadrature scheme and
+    # precision per each integral data
     for integral_data in form_data.integral_data:
         # Iterate through groups of integral data
         #
         # There is one integral data for all integrals with same domain,
         # itype, subdomain_id (but possibly different metadata)
 
-        # Quadrature degree and quadrature scheme must be the same
-        # for all integrals in this integral data group, i.e. must
-        # be the same for for the same (domain, itype, subdomain_id)
+        # Quadrature degree and quadrature scheme must be the same for
+        # all integrals in this integral data group, i.e. must be the
+        # same for for the same (domain, itype, subdomain_id)
 
-        #
         # ----- Extract common quadrature degree
         #
         # The priority of quadrature degree determination is following
@@ -233,7 +226,6 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
         tdim = integral_data.domain.topological_dimension()
         _check_quadrature_degree(qd, tdim)
 
-        #
         # ----- Extract common quadrature rule
         #
         # The priority of quadrature rule determination is following
@@ -255,7 +247,6 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
         else:
             raise RuntimeError("Unable to determine quadrature rule.")
 
-        #
         # ----- Extract precision
         #
         # The priority of precision determination is following
@@ -294,14 +285,7 @@ def _analyze_form(form: ufl.form.Form, parameters: Dict) -> ufl.algorithms.formd
 
 
 def _has_custom_integrals(o) -> bool:
-    """Check for custom integrals
-
-    Note
-    ----
-    Presence of custom integral in integrals/forms is determining the
-    representation to be used.
-
-    """
+    """Check for custom integrals"""
     if isinstance(o, ufl.integral.Integral):
         return o.integral_type() in ufl.custom_integral_types
     elif isinstance(o, ufl.classes.Form):
@@ -315,9 +299,10 @@ def _has_custom_integrals(o) -> bool:
 def _check_quadrature_degree(degree: int, top_dim: int) -> None:
     """Check that quadrature degree does not result in a unreasonable high
     number of integration points.
+
     """
     num_points = ((degree + 1 + 1) // 2)**top_dim
     if num_points >= 100:
         warnings.warn(
-            "Number of integration points per cell is : {}. Consider using 'quadrature_degree' to reduce number.".
-            format(num_points))
+            "Number of integration points per cell is : {}. Consider using 'quadrature_degree' "
+            "to reduce number.".format(num_points))

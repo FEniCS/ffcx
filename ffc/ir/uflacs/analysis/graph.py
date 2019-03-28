@@ -12,8 +12,8 @@ import numpy
 
 import ufl
 from ffc.ir.uflacs.analysis.modified_terminals import is_modified_terminal
-from ffc.ir.uflacs.analysis.valuenumbering import ValueNumberer
 from ffc.ir.uflacs.analysis.reconstruct import reconstruct
+from ffc.ir.uflacs.analysis.valuenumbering import ValueNumberer
 
 logger = logging.getLogger(__name__)
 

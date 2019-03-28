@@ -80,7 +80,7 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
     code_c_pre += scalar_type
 
     # Generate includes and add to preamble
-    includes_h, includes_c = _generate_includes(code.includes, parameters)
+    includes_h, includes_c = _generate_includes(parameters)
     code_h_pre += includes_h
     code_c_pre += includes_c
 
@@ -142,14 +142,7 @@ def _generate_comment(parameters):
     parameters = compilation_relevant_parameters(parameters)
 
     # Generate top level comment
-    if parameters["format"] == "ufc":
-        comment = FORMAT_TEMPLATE["ufc comment"].format(
-            ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
-    elif parameters["format"] == "dolfin":
-        comment = FORMAT_TEMPLATE["dolfin comment"].format(
-            ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
-    else:
-        raise RuntimeError("Unable to format code, unknown format \"{}\".".format(parameters["format"]))
+    comment = FORMAT_TEMPLATE["ufc comment"].format(ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
 
     # Add parameter information
     comment += "//\n"
@@ -161,7 +154,7 @@ def _generate_comment(parameters):
     return comment
 
 
-def _generate_includes(includes, parameters):
+def _generate_includes(parameters):
 
     default_h_includes = [
         "#include <ufc.h>",
@@ -179,7 +172,7 @@ def _generate_includes(includes, parameters):
     # external_includes = set(
     #     "#include <%s>" % inc for inc in parameters.get("external_includes", ()))
 
-    s_h = set(default_h_includes) | includes
+    s_h = set(default_h_includes)
     s_c = set(default_c_includes)
 
     # s2 = external_includes - s

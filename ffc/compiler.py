@@ -64,15 +64,15 @@ Compiler stages:
 
 import logging
 import os
+import typing
 from collections import defaultdict
 from time import time
-from typing import Dict, List, Tuple, Union
 
 from ffc.analysis import analyze_ufl_objects
 from ffc.codegeneration.codegeneration import generate_code
 from ffc.formatting import format_code
-from ffc.parameters import validate_parameters
 from ffc.ir.representation import compute_ir
+from ffc.parameters import validate_parameters
 from ffc.wrappers import generate_wrapper_code
 
 logger = logging.getLogger(__name__)
@@ -83,11 +83,10 @@ def _print_timing(stage, timing):
         stage=stage, time=timing))
 
 
-def compile_ufl_objects(ufl_objects: Union[List, Tuple],
-                        object_names: Dict = {},
+def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
+                        object_names: typing.Dict = {},
                         prefix: str = None,
-                        parameters: Dict = None,
-                        jit: bool = False):
+                        parameters: typing.Dict = None):
     """Generate UFC code for a given UFL objects.
 
     Parameters
@@ -97,27 +96,19 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     """
     logger.info("Compiling {}\n".format(prefix))
+    if prefix != os.path.basename(prefix):
+        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
 
     # Reset timing
     cpu_time_0 = time()
 
-    # Note that jit will always pass validated parameters so
-    # this is only for commandline and direct call from python
-    if not jit:
-        parameters = validate_parameters(parameters)
+    # Note that jit will always pass validated parameters so this is
+    # only for commandline and direct call from Python
+    parameters = validate_parameters(parameters)
 
-    # Check input arguments
+    # Convert single input arguments to tuple. All types should be the same.
     if not isinstance(ufl_objects, (list, tuple)):
         ufl_objects = (ufl_objects, )
-    if not ufl_objects:
-        return "", ""
-
-    if prefix != os.path.basename(prefix):
-        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
-
-    # Check that all UFL objects passed here are of the same class/type
-    obj_type = type(ufl_objects[0])
-    assert (obj_type == type(x) for x in ufl_objects)
 
     # Stage 1: analysis
     cpu_time = time()
@@ -126,25 +117,30 @@ def compile_ufl_objects(ufl_objects: Union[List, Tuple],
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, prefix, parameters, jit)
+    ir = compute_ir(analysis, prefix, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
     cpu_time = time()
-    code = generate_code(analysis, object_names, ir, parameters, jit)
+    code = generate_code(analysis, object_names, ir, parameters)
     _print_timing(4, time() - cpu_time)
 
     # Stage 3.1: generate convenience wrappers, e.g. for DOLFIN
     cpu_time = time()
 
+    # FIXME: Simplify and make robist w.r.t. naming
     # Extract class names from the IR and add to a dict
     # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
     if len(object_names) > 0:
         classnames = defaultdict(list)
         comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
         for ir_comp, e_name in zip(ir, comp):
-            for e in ir_comp:
-                classnames[e_name].append(e["classname"])
+            try:
+                for e in ir_comp:
+                    classnames[e_name].append(e["classname"])
+            except TypeError:
+                for e in ir_comp:
+                    classnames[e_name].append(e.classname)
         wrapper_code = generate_wrapper_code(analysis, prefix, object_names, classnames, parameters)
     else:
         wrapper_code = None

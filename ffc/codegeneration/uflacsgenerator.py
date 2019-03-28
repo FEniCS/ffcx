@@ -11,7 +11,6 @@ import collections
 import itertools
 import logging
 
-
 import ufl
 from ffc.codegeneration.backend import FFCBackend
 from ffc.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
@@ -28,7 +27,7 @@ def generate_integral_code(ir, prefix, parameters):
     logger.info("Generating code from ffc.ir.uflacs representation")
 
     # FIXME: Is this the right precision value to use? Make it default to None or 0.
-    precision = ir["integrals_metadata"]["precision"]
+    precision = ir.integrals_metadata["precision"]
 
     # Create FFC C backend
     backend = FFCBackend(ir, parameters)
@@ -46,7 +45,7 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
     code["tabulate_tensor"] = body
     code["additional_includes_set"] = set(ig.get_includes())
-    code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
+    # code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
 
     return code
 
@@ -121,7 +120,7 @@ class IntegralGenerator(object):
     def init_scopes(self):
         """Initialize variable scope dicts."""
         # Reset variables, separate sets for quadrature loop
-        self.scopes = {num_points: {} for num_points in self.ir["all_num_points"]}
+        self.scopes = {num_points: {} for num_points in self.ir.all_num_points}
         self.scopes[None] = {}
 
     def set_var(self, num_points, v, vaccess):
@@ -199,17 +198,16 @@ class IntegralGenerator(object):
         all_postparts = []
 
         # Go through each relevant quadrature loop
-        if self.ir["integral_type"] in ufl.measure.custom_integral_types:
+        if self.ir.integral_type in ufl.measure.custom_integral_types:
             preparts, quadparts, postparts = \
                 self.generate_runtime_quadrature_loop()
             all_preparts += preparts
             all_quadparts += quadparts
             all_postparts += postparts
         else:
-            for num_points in self.ir["all_num_points"]:
+            for num_points in self.ir.all_num_points:
                 # Generate code to integrate reusable blocks of final element tensor
-                preparts, quadparts, postparts = \
-                    self.generate_quadrature_loop(num_points)
+                preparts, quadparts, postparts = self.generate_quadrature_loop(num_points)
                 all_preparts += preparts
                 all_quadparts += quadparts
                 all_postparts += postparts
@@ -248,16 +246,16 @@ class IntegralGenerator(object):
         # No quadrature tables for custom (given argument)
         # or point (evaluation in single vertex)
         skip = ufl.measure.custom_integral_types + ufl.measure.point_integral_types
-        if self.ir["integral_type"] in skip:
+        if self.ir.integral_type in skip:
             return parts
 
-        alignas = self.ir["params"]["alignas"]
+        alignas = self.ir.params["alignas"]
 
         # Loop over quadrature rules
-        for num_points in self.ir["all_num_points"]:
-            varying_ir = self.ir["varying_irs"][num_points]
+        for num_points in self.ir.all_num_points:
+            varying_ir = self.ir.varying_irs[num_points]
 
-            points, weights = self.ir["quadrature_rules"][num_points]
+            points, weights = self.ir.quadrature_rules[num_points]
             assert num_points == len(weights)
             assert num_points == points.shape[0]
 
@@ -290,14 +288,14 @@ class IntegralGenerator(object):
         L = self.backend.language
         parts = []
 
-        tables = self.ir["unique_tables"]
-        table_types = self.ir["unique_table_types"]
-        inline_tables = self.ir["integral_type"] == "cell"
+        tables = self.ir.unique_tables
+        table_types = self.ir.unique_table_types
+        inline_tables = self.ir.integral_type == "cell"
 
-        alignas = self.ir["params"]["alignas"]
-        padlen = self.ir["params"]["padlen"]
+        alignas = self.ir.params["alignas"]
+        padlen = self.ir.params["padlen"]
 
-        if self.ir["integral_type"] in ufl.measure.custom_integral_types:
+        if self.ir.integral_type in ufl.measure.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
         else:
@@ -366,19 +364,17 @@ class IntegralGenerator(object):
         """Generate quadrature loop for custom integrals, with physical points given runtime."""
         L = self.backend.language
 
-        assert self.ir["integral_type"] in ufl.measure.custom_integral_types
+        assert self.ir.integral_type in ufl.measure.custom_integral_types
 
-        num_points = self.ir["fake_num_points"]
-        chunk_size = self.ir["params"]["chunk_size"]
+        num_points = self.ir.fake_num_points
+        chunk_size = self.ir.params["chunk_size"]
 
-        gdim = self.ir["geometric_dimension"]
+        gdim = self.ir.geometric_dimension
 
-        alignas = self.ir["params"]["alignas"]
+        alignas = self.ir.params["alignas"]
 
-        tables = self.ir["unique_tables"]
-        table_types = self.ir["unique_table_types"]
-        for k in self.ir.keys():
-            print("----------------------\n", k, "\n\n", self.ir[k], "\n\n----------------------\n")
+        tables = self.ir.unique_tables
+        table_types = self.ir.unique_table_types
 
         # Generate unstructured varying partition
         body = self.generate_unstructured_varying_partition(num_points)
@@ -420,7 +416,7 @@ class IntegralGenerator(object):
 
             # Preparations for quadrature rules
             #
-            varying_ir = self.ir["varying_irs"][num_points]
+            varying_ir = self.ir.varying_irs[num_points]
 
             # Point to quadrature weights for this chunk
             if varying_ir["need_weights"]:
@@ -475,7 +471,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir["piecewise_ir"]["factorization"]
+        F = self.ir.piecewise_ir["factorization"]
 
         arraysymbol = L.Symbol("sp")
         num_points = None
@@ -487,7 +483,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir["varying_irs"][num_points]["factorization"]
+        F = self.ir.varying_irs[num_points]["factorization"]
 
         arraysymbol = L.Symbol("sv%d" % num_points)
         parts = self.generate_partition(arraysymbol, F, "varying", num_points)
@@ -546,7 +542,7 @@ class IntegralGenerator(object):
                 else:
                     # Record assignment of vexpr to intermediate variable
                     j = len(intermediates)
-                    if self.ir["params"]["use_symbol_array"]:
+                    if self.ir.params["use_symbol_array"]:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
@@ -562,17 +558,17 @@ class IntegralGenerator(object):
         if definitions:
             parts += definitions
         if intermediates:
-            if self.ir["params"]["use_symbol_array"]:
-                alignas = self.ir["params"]["alignas"]
+            if self.ir.params["use_symbol_array"]:
+                alignas = self.ir.params["alignas"]
                 parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas)]
             parts += intermediates
         return parts
 
     def generate_dofblock_partition(self, num_points):
         if num_points is None:  # NB! None meaning piecewise partition, not custom integral
-            block_contributions = self.ir["piecewise_ir"]["block_contributions"]
+            block_contributions = self.ir.piecewise_ir["block_contributions"]
         else:
-            block_contributions = self.ir["varying_irs"][num_points]["block_contributions"]
+            block_contributions = self.ir.varying_irs[num_points]["block_contributions"]
 
         preparts = []
         quadparts = []
@@ -605,14 +601,14 @@ class IntegralGenerator(object):
     def get_entities(self, blockdata):
         L = self.backend.language
 
-        if self.ir["integral_type"] == "interior_facet":
+        if self.ir.integral_type == "interior_facet":
             # Get the facet entities
             entities = []
             for r in blockdata.restrictions:
                 if r is None:
                     entities.append(0)
                 else:
-                    entities.append(self.backend.symbols.entity(self.ir["entitytype"], r))
+                    entities.append(self.backend.symbols.entity(self.ir.entitytype, r))
             if blockdata.transposed:
                 return (entities[1], entities[0])
             else:
@@ -623,7 +619,7 @@ class IntegralGenerator(object):
                 # uniform, i.e. constant across facets
                 entity = L.LiteralInt(0)
             else:
-                entity = self.backend.symbols.entity(self.ir["entitytype"], None)
+                entity = self.backend.symbols.entity(self.ir.entitytype, None)
             return (entity, )
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
@@ -634,9 +630,9 @@ class IntegralGenerator(object):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
             if td.is_piecewise:
-                scope = self.ir["piecewise_ir"]["modified_arguments"]
+                scope = self.ir.piecewise_ir["modified_arguments"]
             else:
-                scope = self.ir["varying_irs"][num_points]["modified_arguments"]
+                scope = self.ir.varying_irs[num_points]["modified_arguments"]
             mt = scope[mad.ma_index]
 
             # Translate modified terminal to code
@@ -644,7 +640,7 @@ class IntegralGenerator(object):
             #       Not using self.backend.access.argument() here
             #       now because it assumes too much about indices.
 
-            table = self.backend.symbols.element_table(td, self.ir["entitytype"], mt.restriction)
+            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
 
             assert td.ttype != "zeros"
 
@@ -695,8 +691,8 @@ class IntegralGenerator(object):
 
         tempname = tempnames.get(blockdata.block_mode)
 
-        alignas = self.ir["params"]["alignas"]
-        padlen = self.ir["params"]["padlen"]
+        alignas = self.ir.params["alignas"]
+        padlen = self.ir.params["padlen"]
 
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
@@ -735,16 +731,16 @@ class IntegralGenerator(object):
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
-            F = self.ir["piecewise_ir"]["factorization"]
+            F = self.ir.piecewise_ir["factorization"]
         else:
-            F = self.ir["varying_irs"][num_points]["factorization"]
+            F = self.ir.varying_irs[num_points]["factorization"]
         v = F.nodes[blockdata.factor_index]['expression']
         f = self.get_var(num_points, v)
 
         # Quadrature weight was removed in representation, add it back now
         if num_points is None:
             weight = L.LiteralFloat(1.0)
-        elif self.ir["integral_type"] in ufl.measure.custom_integral_types:
+        elif self.ir.integral_type in ufl.measure.custom_integral_types:
             weights = self.backend.symbols.custom_weights_table()
             weight = weights[iq]
         else:
@@ -824,7 +820,7 @@ class IntegralGenerator(object):
                     P_rhs = L.float_product([fw, arg_factors[i]])
                     body = L.Assign(P[P_index], P_rhs)
                     # if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
-                    vectorize = self.ir["params"]["vectorize"]
+                    vectorize = self.ir.params["vectorize"]
                     body = L.ForRange(P_index, 0, P_dim, body=body, vectorize=vectorize)
                     quadparts.append(body)
 
@@ -834,7 +830,7 @@ class IntegralGenerator(object):
             body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
             for i in reversed(range(block_rank)):
                 # Vectorize only the innermost loop
-                vectorize = self.ir["params"]["vectorize"] and (i == block_rank - 1)
+                vectorize = self.ir.params["vectorize"] and (i == block_rank - 1)
                 if ttypes[i] != "quadrature":
                     body = L.ForRange(
                         B_indices[i], 0, padded_blockdims[i], body=body, vectorize=vectorize)
@@ -922,14 +918,14 @@ class IntegralGenerator(object):
         # or all loops with noncontiguous DM??
         L = self.backend.language
 
-        block_contributions = self.ir["piecewise_ir"]["block_contributions"]
+        block_contributions = self.ir.piecewise_ir["block_contributions"]
 
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
                   for blockdata in contributions if blockdata.block_mode == "preintegrated"]
 
         # Get symbol, dimensions, and loop index symbols for A
-        A_shape = self.ir["tensor_shape"]
+        A_shape = self.ir.tensor_shape
         A_size = ufl.product(A_shape)
         A_rank = len(A_shape)
 
@@ -946,12 +942,12 @@ class IntegralGenerator(object):
             # Accumulate A[blockmap[...]] += f*PI[...]
 
             # Get table for inlining
-            tables = self.ir["unique_tables"]
+            tables = self.ir.unique_tables
             table = tables[blockdata.name]
-            inline_table = self.ir["integral_type"] == "cell"
+            inline_table = self.ir.integral_type == "cell"
 
             # Get factor expression
-            v = self.ir["piecewise_ir"]["factorization"].nodes[blockdata.factor_index]['expression']
+            v = self.ir.piecewise_ir["factorization"].nodes[blockdata.factor_index]['expression']
             f = self.get_var(None, v)
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -998,7 +994,7 @@ class IntegralGenerator(object):
         A = self.backend.symbols.element_tensor()
         A_size = len(A_values)
 
-        init_mode = self.ir["params"]["tensor_init_mode"]
+        init_mode = self.ir.params["tensor_init_mode"]
         z = L.LiteralFloat(0.0)
 
         k = L.Symbol("k")  # Index for zeroing arrays
@@ -1054,7 +1050,7 @@ class IntegralGenerator(object):
         parts = []
 
         # Get symbol, dimensions, and loop index symbols for A
-        A_shape = self.ir["tensor_shape"]
+        A_shape = self.ir.tensor_shape
         A_rank = len(A_shape)
 
         Asym = self.backend.symbols.element_tensor()
