@@ -54,8 +54,8 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
                                        'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
-                                     'num_element_support_dofs', 'num_entity_dofs', 'num_entity_closure_dofs',
-                                     'tabulate_entity_dofs', 'tabulate_entity_closure_dofs',
+                                     'num_element_support_dofs', 'num_entity_dofs',
+                                     'tabulate_entity_dofs',
                                      'num_sub_dofmaps', 'create_sub_dofmap'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
@@ -276,9 +276,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     edge_permutations, face_permutations, cell_topology = _compute_dofmap_permutation_tables(
         fiat_element, cell)
 
-    entity_closure_dofs, num_dofs_per_entity_closure = _tabulate_entity_closure_dofs(
-        fiat_element, cell)
-
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["classname"] = classnames["dofmap"][ufl_element]
@@ -288,9 +285,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
-    ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
 
@@ -764,22 +759,6 @@ def _tabulate_dof_coordinates(ufl_element, element):
         gdim=cell.geometric_dimension(),
         points=[sorted(L.pt_dict.keys())[0] for L in element.dual_basis()],
         cell_shape=cell.cellname())
-
-
-def _tabulate_entity_closure_dofs(element, cell):
-    """Compute intermediate representation of tabulate_entity_closure_dofs."""
-    # Get entity closure dofs from FIAT element
-    fiat_entity_closure_dofs = element.entity_closure_dofs()
-    entity_closure_dofs = {}
-    for d0 in sorted(fiat_entity_closure_dofs.keys()):
-        for e0 in sorted(fiat_entity_closure_dofs[d0].keys()):
-            entity_closure_dofs[(d0, e0)] = fiat_entity_closure_dofs[d0][e0]
-
-    num_entity_closure_dofs = [
-        len(fiat_entity_closure_dofs[d0][0]) for d0 in sorted(fiat_entity_closure_dofs.keys())
-    ]
-
-    return entity_closure_dofs, num_entity_closure_dofs
 
 
 def _create_foo_integral(prefix, form_id, integral_type, form_data):
