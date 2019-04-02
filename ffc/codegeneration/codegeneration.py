@@ -37,19 +37,19 @@ def generate_code(analysis, object_names, ir, parameters):
 
     # Generate code for finite_elements
     logger.debug("Generating code for {} finite_element(s)".format(len(ir.elements)))
-    code_finite_elements = [finite_element_generator(ir, parameters) for ir in ir.elements]
+    code_finite_elements = [finite_element_generator(element_ir, parameters) for element_ir in ir.elements]
 
     # Generate code for dofmaps
     logger.debug("Generating code for {} dofmap(s)".format(len(ir.dofmaps)))
-    code_dofmaps = [dofmap_generator(ir, parameters) for ir in ir.dofmaps]
+    code_dofmaps = [dofmap_generator(dofmap_ir, parameters) for dofmap_ir in ir.dofmaps]
 
     # Generate code for coordinate_mappings
     logger.debug("Generating code for {} coordinate_mapping(s)".format(len(ir.coordinate_mappings)))
-    code_coordinate_mappings = [coordinate_mapping_generator(ir, parameters) for ir in ir.coordinate_mappings]
+    code_coordinate_mappings = [coordinate_mapping_generator(cmap_ir, parameters) for cmap_ir in ir.coordinate_mappings]
 
     # Generate code for integrals
     logger.debug("Generating code for integrals")
-    code_integrals = [integral_generator(ir, parameters) for ir in ir.integrals]
+    code_integrals = [integral_generator(integral_ir, parameters) for integral_ir in ir.integrals]
 
     # Generate code for forms
     logger.debug("Generating code for forms")
@@ -58,7 +58,7 @@ def generate_code(analysis, object_names, ir, parameters):
     for form in analysis.form_data:
         names = [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form.reduced_coefficients)]
         coefficient_names.append(names)
-    code_forms = [form_generator(ir, cnames, parameters) for ir, cnames in zip(ir.forms, coefficient_names)]
+    code_forms = [form_generator(form_ir, cnames, parameters) for form_ir, cnames in zip(ir.forms, coefficient_names)]
 
     return code_blocks(elements=code_finite_elements, dofmaps=code_dofmaps,
                        coordinate_mappings=code_coordinate_mappings, integrals=code_integrals,
