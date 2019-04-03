@@ -149,16 +149,8 @@ extern "C"
     /// dimension d
     int num_entity_dofs[4];
 
-    /// Number of dofs associated with the closure
-    /// of each cell entity dimension d
-    int num_entity_closure_dofs[4];
-
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
-
-    /// Tabulate the local-to-local mapping of dofs on the closure of
-    /// entity (d, i)
-    void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
 
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
