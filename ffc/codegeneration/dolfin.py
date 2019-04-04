@@ -253,9 +253,9 @@ FUNCTION_SPACE_TEMPLATE_IMPL = """\
 ufc_function_space* {prefix}_{classname}_create(void)
 {{
   ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));
-  space->element = create_{finite_element_classname};
-  space->dofmap = create_{dofmap_classname};
-  space->coordinate_mapping = {coordinate_map_classname};
+  space->create_element = create_{finite_element_classname};
+  space->create_dofmap = create_{dofmap_classname};
+  space->create_coordinate_mapping = {coordinate_map_classname};
   return space;
 }}
 """
