@@ -545,13 +545,13 @@ extern "C"
   typedef struct ufc_function_space
   {
     // Pointer to factory function that creates a new ufc_finite_element
-    ufc_finite_element* (*element)(void);
+    ufc_finite_element* (*create_element)(void);
 
     // Pointer to factory function that creates a new ufc_dofmap
-    ufc_dofmap* (*dofmap)(void);
+    ufc_dofmap* (*create_dofmap)(void);
 
     // Pointer to factory function that creates a new ufc_coordinate_mapping
-    ufc_coordinate_mapping* (*coordinate_mapping)(void);
+    ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
   } ufc_function_space;
 
 #ifdef __cplusplus
