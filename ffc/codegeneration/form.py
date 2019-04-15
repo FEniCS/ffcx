@@ -87,33 +87,16 @@ class UFCForm:
             code = [L.Comment(msg), L.Return(-1)]
         return code
 
-    def generate_coefficient_name_to_position_map(self, L, ir, cnames):
+    def generate_coefficient_position_to_name_map(self, L, ir, cnames):
         """Generate code that maps name to number."""
         assert ir.num_coefficients == len(cnames)
-        if ir.num_coefficients == 0:
-            num = "  return -1;"
+        names = L.Symbol("names")
+        if (len(cnames) == 0):
+            code = [L.Return(L.Null())]
         else:
-            ifstr = "if "
-            num = ""
-            for i, coeff in enumerate(cnames):
-                num += '  %s(strcmp(name, "%s") == 0)\n    return %d;\n' % (ifstr, coeff, i)
-                ifstr = 'else if '
-            num += "\n  return -1;"
-        return num
-
-    def generate_coefficient_position_to_name_map(self, L, ir, cnames):
-        """Generate code that maps int to name string."""
-        assert ir.num_coefficients == len(cnames)
-
-        # Handle case of no coefficients
-        if ir.num_coefficients == 0:
-            name = "  return NULL;"
-        else:
-            name = '  switch (i)\n  {\n'
-            for i, coeff in enumerate(cnames):
-                name += '  case %d:\n    return "%s";\n' % (i, coeff)
-            name += "  }\n  return NULL;"
-        return name
+            code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
+            code += [L.Return(names)]
+        return L.StatementList(code)
 
     def create_coordinate_finite_element(self, L, ir):
         classnames = ir.create_coordinate_finite_element
@@ -213,7 +196,6 @@ def generator(ir, cnames, parameters):
     statements = generator.original_coefficient_position(L, ir)
     d["original_coefficient_position"] = L.StatementList(statements)
 
-    d["coefficient_number_map"] = generator.generate_coefficient_name_to_position_map(L, ir, cnames)
     d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir, cnames)
 
     d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(L, ir)
