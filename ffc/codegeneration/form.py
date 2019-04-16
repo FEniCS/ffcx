@@ -87,8 +87,9 @@ class UFCForm:
             code = [L.Comment(msg), L.Return(-1)]
         return code
 
-    def generate_coefficient_position_to_name_map(self, L, ir, cnames):
+    def generate_coefficient_position_to_name_map(self, L, ir):
         """Generate code that maps name to number."""
+        cnames = ir.coefficient_names
         assert ir.num_coefficients == len(cnames)
         names = L.Symbol("names")
         if (len(cnames) == 0):
@@ -173,7 +174,7 @@ class UFCForm:
         return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
 
 
-def generator(ir, cnames, parameters):
+def generator(ir, parameters):
     """Generate UFC code for a form"""
 
     factory_name = ir.classname
@@ -196,7 +197,7 @@ def generator(ir, cnames, parameters):
     statements = generator.original_coefficient_position(L, ir)
     d["original_coefficient_position"] = L.StatementList(statements)
 
-    d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir, cnames)
+    d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir)
 
     d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(L, ir)
     d["coordinate_finite_element_declaration"] = generator.coordinate_finite_element_declaration(L, ir)

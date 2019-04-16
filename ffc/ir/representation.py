@@ -39,6 +39,7 @@ ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "cus
 
 ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
                                  'num_coefficients', 'original_coefficient_position',
+                                 'coefficient_names',
                                  'create_coordinate_finite_element', 'create_coordinate_dofmap',
                                  'create_coordinate_mapping', 'create_finite_element',
                                  'create_dofmap', 'create_cell_integral',
@@ -115,7 +116,7 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, parameter
     return classnames
 
 
-def compute_ir(analysis: namedtuple, prefix, parameters):
+def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
     """Compute intermediate representation.
 
     """
@@ -156,7 +157,8 @@ def compute_ir(analysis: namedtuple, prefix, parameters):
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, i, prefix, analysis.element_numbers, classnames, parameters)
+        _compute_form_ir(fd, i, prefix, analysis.element_numbers,
+                         classnames, object_names, parameters)
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
@@ -442,7 +444,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
     return irs
 
 
-def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, parameters):
+def _compute_form_ir(form_data, form_id, prefix, element_numbers,
+                     classnames, object_names, parameters):
     """Compute intermediate representation of form."""
 
     # Store id
@@ -459,6 +462,10 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
 
     ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
+
+    ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
+                               for j, obj in enumerate(form_data.reduced_coefficients)]
+
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
     # TODO: Remove create_coordinate_{finite_element,dofmap} and access

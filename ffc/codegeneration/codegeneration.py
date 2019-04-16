@@ -28,7 +28,7 @@ code_blocks = namedtuple('code_blocks', ['elements', 'dofmaps',
                                          'coordinate_mappings', 'integrals', 'forms'])
 
 
-def generate_code(analysis, object_names, ir, parameters):
+def generate_code(ir, parameters):
     """Generate code blocks from intermediate representation.
 
     """
@@ -53,12 +53,7 @@ def generate_code(analysis, object_names, ir, parameters):
 
     # Generate code for forms
     logger.debug("Generating code for forms")
-    # FIXME: add coefficient names to IR
-    coefficient_names = []
-    for form in analysis.form_data:
-        names = [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form.reduced_coefficients)]
-        coefficient_names.append(names)
-    code_forms = [form_generator(form_ir, cnames, parameters) for form_ir, cnames in zip(ir.forms, coefficient_names)]
+    code_forms = [form_generator(form_ir, parameters) for form_ir in ir.forms]
 
     return code_blocks(elements=code_finite_elements, dofmaps=code_dofmaps,
                        coordinate_mappings=code_coordinate_mappings, integrals=code_integrals,
