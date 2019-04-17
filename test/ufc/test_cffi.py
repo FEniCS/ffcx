@@ -327,3 +327,36 @@ def test_subdomains():
     ids = np.zeros(form3.num_exterior_facet_integrals, dtype=np.int32)
     form3.get_exterior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == 0 and ids[1] == 210
+
+
+@pytest.mark.parametrize("mode", ["double", "double complex"])
+def test_conditional(mode):
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    x = ufl.SpatialCoordinate(cell)
+    condition = ufl.Or(ufl.ge(ufl.real(x[0]), 0.1), ufl.ge(ufl.real(x[1]), 0.1))
+    c = ufl.conditional(condition, 2.0, 1.0)
+    a = c * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+    forms = [a]
+
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode})
+
+    form0 = compiled_forms[0][0].create_cell_integral(-1)
+
+    c_type, np_type = float_to_type(mode)
+
+    A = np.zeros((3, 3), dtype=np_type)
+    w = np.array([1.0, 1.0, 1.0], dtype=np_type)
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+
+    ffi = cffi.FFI()
+
+    form0.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), 0)
+
+    expected_A = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=np_type)
+    assert np.allclose(A, expected_A)
