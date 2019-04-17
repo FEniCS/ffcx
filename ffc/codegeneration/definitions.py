@@ -158,7 +158,7 @@ class FFCBackendDefinitions(object):
         # Inlined version (we know this is bounded by a small number)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
         value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
-        code = [L.VariableDecl("const ufc_scalar_t", access, value)]
+        code = [L.VariableDecl("const double", access, value)]
 
         return code
 
