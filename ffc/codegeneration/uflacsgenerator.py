@@ -529,8 +529,6 @@ class IntegralGenerator(object):
                 parent_exp = None
                 if parent_id:
                     parent_exp = F.nodes.get(parent_id[0])['expression']
-                    print(type(v))
-                    print(type(parent_exp))
 
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
@@ -548,7 +546,6 @@ class IntegralGenerator(object):
                     # This removes the need to handle boolean intermediate variables.
                     # With tensor-valued conditionals it may not be optimal but we
                     # let the compiler take responsibility for optimizing those cases.
-                    # Conditionals should be stored to
                     vaccess = vexpr
                 elif any(op._ufl_is_literal_ for op in v.ufl_operands):
                     # Skip intermediates for e.g. -2.0*x,
