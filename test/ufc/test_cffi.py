@@ -335,7 +335,8 @@ def test_conditional(mode):
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     x = ufl.SpatialCoordinate(cell)
-    condition = ufl.Or(ufl.ge(ufl.real(x[0]), 0.1), ufl.ge(ufl.real(x[1]), 0.1))
+    condition = ufl.Or(ufl.ge(ufl.real(x[0] + x[1]), 0.1),
+                       ufl.ge(ufl.real(x[1] + x[1]**2), 0.1))
     c = ufl.conditional(condition, 2.0, 1.0)
     a = c * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
