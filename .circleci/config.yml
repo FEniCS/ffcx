@@ -30,10 +30,10 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            coverage run --source ffc -m pytest -s -v test/
+            coverage run --source ffc -m pytest -v test/
             coveralls
       - run:
           name: Rerun tests (check caching)
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            python3 -m pytest -s -v test/
+            python3 -m pytest -v test/
