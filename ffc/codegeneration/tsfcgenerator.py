@@ -16,13 +16,13 @@ from tsfc.driver import compile_integral
 logger = logging.getLogger(__name__)
 
 
-def generate_integral_code(ir, prefix, parameters):
+def generate_integral_code(ir, parameters):
     """Generate code for integral from intermediate representation."""
 
     logger.info("Generating code from tsfc representation")
 
     # Generate generic ffc code snippets
-    code = initialize_integral_code(ir, prefix, parameters)
+    code = initialize_integral_code(ir, parameters)
 
     # Go unoptimized if TSFC mode has not been set yet
     integral_data, form_data, prefix, parameters = ir["compile_integral"]

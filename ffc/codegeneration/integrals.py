@@ -28,8 +28,7 @@ def generator(ir, parameters):
         raise RuntimeError("Unknown representation: {}".format(ir.representation))
 
     # Generate code
-    # TODO: Drop prefix argument and get from ir:
-    code = generate_integral_code(ir, ir.prefix, parameters)
+    code = generate_integral_code(ir, parameters)
 
     # Format tabulate tensor body
     tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[
