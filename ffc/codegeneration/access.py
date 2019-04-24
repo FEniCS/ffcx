@@ -355,14 +355,3 @@ class FFCBackendAccess(object):
             - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
 
         return expr
-
-    def _expect_symbolic_lowering(self, e, mt, tabledata, num_points):
-        raise RuntimeError("Expecting {0} to be replaced in symbolic preprocessing.".format(type(e)))
-
-    facet_normal = _expect_symbolic_lowering
-    cell_normal = _expect_symbolic_lowering
-    jacobian_inverse = _expect_symbolic_lowering
-    jacobian_determinant = _expect_symbolic_lowering
-    facet_jacobian = _expect_symbolic_lowering
-    facet_jacobian_inverse = _expect_symbolic_lowering
-    facet_jacobian_determinant = _expect_symbolic_lowering
