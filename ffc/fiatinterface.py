@@ -289,25 +289,3 @@ def _create_restricted_element(ufl_element):
         return MixedElement(elements)
 
     raise RuntimeError("Cannot create restricted element from: {}".format(ufl_element))
-
-
-def triangle_permutation_table(n, interior=0):
-    """Calculate the positions of dofs on a triangular lattice, in the same way
-    as FIAT.reference_element, for each of the six possible permutations (three
-    rotations and two reflections) """
-
-    pt_to_index = {}
-    for i, ids in enumerate(FIAT.reference_element.lattice_iter(
-            interior, n + 1 - interior, 2)):
-        pt_to_index[tuple(ids)] = i
-
-    st = [[] for i in range(6)]
-    for (i, j) in sorted(pt_to_index.keys()):
-        k = n - i - j
-        iset = [(i, j), (j, i),
-                (i, k), (j, k),
-                (k, i), (k, j)]
-        for p, w in enumerate(iset):
-            st[p] += [pt_to_index[w]]
-
-    return st
