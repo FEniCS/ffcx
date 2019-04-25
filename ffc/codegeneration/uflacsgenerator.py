@@ -503,7 +503,6 @@ class IntegralGenerator(object):
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
-
             v = attr['expression']
             mt = attr.get('mt')
 
@@ -525,15 +524,25 @@ class IntegralGenerator(object):
                 # Get previously visited operands
                 vops = [self.get_var(num_points, op) for op in v.ufl_operands]
 
+                # get parent operand
+                pid = F.in_edges[i][0] if F.in_edges[i] else -1
+                if pid and pid > i:
+                    parent_exp = F.nodes.get(pid)['expression']
+                else:
+                    parent_exp = None
+
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
                 vexpr = self.backend.ufl_to_language.get(v, *vops)
 
-                # Create a new intermediate for
-                # each subexpression except boolean conditions
-                if isinstance(v, ufl.classes.Condition):
+                # Create a new intermediate for each subexpression
+                # except boolean conditions and its childs
+                if isinstance(parent_exp, ufl.classes.Condition):
+                    # Skip intermediates for 'x' and 'y' in x<y
+                    # Avoid the creation of complex valued intermediates
+                    vaccess = vexpr
+                elif isinstance(v, ufl.classes.Condition):
                     # Inline the conditions x < y, condition values
-                    # 'x' and 'y' may still be stored in intermediates.
                     # This removes the need to handle boolean intermediate variables.
                     # With tensor-valued conditionals it may not be optimal but we
                     # let the compiler take responsibility for optimizing those cases.
