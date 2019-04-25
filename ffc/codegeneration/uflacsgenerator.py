@@ -21,7 +21,7 @@ from ffc.ir.uflacs.elementtables import piecewise_ttypes
 logger = logging.getLogger(__name__)
 
 
-def generate_integral_code(ir, prefix, parameters):
+def generate_integral_code(ir, parameters):
     """Generate code for integral from intermediate representation."""
 
     logger.info("Generating code from ffc.ir.uflacs representation")
@@ -42,10 +42,8 @@ def generate_integral_code(ir, prefix, parameters):
     body = format_indented_lines(parts.cs_format(precision), 1)
 
     # Generate generic ffc code snippets and add uflacs specific parts
-    code = initialize_integral_code(ir, prefix, parameters)
+    code = initialize_integral_code(ir, parameters)
     code["tabulate_tensor"] = body
-    code["additional_includes_set"] = set(ig.get_includes())
-    # code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
 
     return code
 
@@ -80,42 +78,6 @@ class IntegralGenerator(object):
 
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
-
-    def get_includes(self):
-        """Return list of include statements needed to support generated code."""
-        includes = set()
-
-        cmath_names = set((
-            "abs",
-            "sign",
-            "pow",
-            "sqrt",
-            "exp",
-            "ln",
-            "cos",
-            "sin",
-            "tan",
-            "acos",
-            "asin",
-            "atan",
-            "atan_2",
-            "cosh",
-            "sinh",
-            "tanh",
-            "acosh",
-            "asinh",
-            "atanh",
-            "erf",
-            "erfc",
-        ))
-
-        # Only return the necessary headers
-        if cmath_names.intersection(self._ufl_names):
-            includes.add("#include <math.h>")
-
-        includes.add("#include <stdalign.h>")
-
-        return sorted(includes)
 
     def init_scopes(self):
         """Initialize variable scope dicts."""

@@ -169,13 +169,8 @@ def _generate_includes(parameters):
         "#include <ufc.h>",
     ]
 
-    # external_includes = set(
-    #     "#include <%s>" % inc for inc in parameters.get("external_includes", ()))
-
     s_h = set(default_h_includes)
     s_c = set(default_c_includes)
-
-    # s2 = external_includes - s
 
     includes_h = "\n".join(sorted(s_h)) + "\n" if s_h else ""
     includes_c = "\n".join(sorted(s_c)) + "\n" if s_c else ""

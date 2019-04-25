@@ -62,56 +62,12 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
     return M_scale, M_row, num_physical_components
 
 
-def cell_shape(L, cell_shape):
-    return L.Return(L.Symbol("ufc::shape::" + cell_shape))
-
-
-def topological_dimension(L, topological_dimension):
-    return L.Return(topological_dimension)
-
-
-def geometric_dimension(L, geometric_dimension):
-    return L.Return(geometric_dimension)
-
-
-def space_dimension(L, space_dimension):
-    return L.Return(space_dimension)
-
-
-def value_rank(L, value_shape):
-    return L.Return(len(value_shape))
-
-
 def value_dimension(L, value_shape):
     return generate_return_int_switch(L, "i", value_shape, 1)
 
 
-def value_size(L, value_shape):
-    return L.Return(ufl.product(value_shape))
-
-
-def reference_value_rank(L, reference_value_shape):
-    return L.Return(len(reference_value_shape))
-
-
 def reference_value_dimension(L, reference_value_shape):
     return generate_return_int_switch(L, "i", reference_value_shape, 1)
-
-
-def reference_value_size(L, reference_value_shape):
-    return L.Return(ufl.product(reference_value_shape))
-
-
-def degree(L, degree):
-    return L.Return(degree)
-
-
-def family(L, family):
-    return L.Return(L.LiteralString(family))
-
-
-def num_sub_elements(L, num_sub_elements):
-    return L.Return(num_sub_elements)
 
 
 def sub_element_declaration(L, ir):

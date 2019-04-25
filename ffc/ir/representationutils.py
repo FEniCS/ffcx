@@ -134,14 +134,14 @@ def generate_enabled_coefficients(enabled_coefficients):
     return code
 
 
-def initialize_integral_code(ir, prefix, parameters):
+def initialize_integral_code(ir, parameters):
     """Representation independent default initialization of code dict for
     integral from intermediate representation.
 
     """
     code = {}
     code["class_type"] = ir.integral_type + "_integral"
-    code["classname"] = classname.make_integral_name(prefix, ir.integral_type, ir.form_id,
+    code["classname"] = classname.make_integral_name(ir.prefix, ir.integral_type, ir.form_id,
                                                      ir.subdomain_id)
     code["members"] = ""
     code["constructor"] = ""

@@ -63,12 +63,6 @@ class UFCForm:
     which add_ufc_form_integral_methods will duplicate for foo = each integral type.
     """
 
-    def num_coefficients(self, L, num_coefficients):
-        return L.Return(num_coefficients)
-
-    def rank(self, L, rank):
-        return L.Return(rank)
-
     def original_coefficient_position(self, L, ir):
         i = L.Symbol("i")
         positions = ir.original_coefficient_position
