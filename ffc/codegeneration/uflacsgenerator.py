@@ -373,7 +373,7 @@ class IntegralGenerator(object):
 
             iq_body = [L.ForRange(iq, 0, num_points_in_block, body=body)]
 
-            elem = list(self.ir['classnames']['finite_element'].values())[0]
+            elem = list(self.ir.classnames["finite_element"].values())[0]
             print('elem = ', elem)
 
             # Preparations for quadrature rules

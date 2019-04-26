@@ -76,6 +76,8 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     # Store the fake num_points for analysis in custom integrals
     if integral_type in custom_integral_types:
         ir["fake_num_points"], = quadrature_rules.keys()
+    else:
+        ir["fake_num_points"] = None
 
     # Group and accumulate integrals on the format { num_points: integral data }
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)

@@ -73,7 +73,7 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
                                          'coefficient_offsets', 'params', 'unique_tables', 'unique_table_types',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
-                                         'prefix', 'integrals_metadata', 'integral_metadata'])
+                                         'prefix', 'integrals_metadata', 'integral_metadata', 'fake_num_points'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
