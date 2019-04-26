@@ -23,8 +23,6 @@ from collections import namedtuple
 
 import numpy
 
-import ffc.fiatinterface
-import FIAT.reference_element
 import ufl
 from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, FlattenedDimensions,
@@ -39,6 +37,7 @@ ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "cus
 
 ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
                                  'num_coefficients', 'original_coefficient_position',
+                                 'coefficient_names',
                                  'create_coordinate_finite_element', 'create_coordinate_dofmap',
                                  'create_coordinate_mapping', 'create_finite_element',
                                  'create_dofmap', 'create_cell_integral',
@@ -54,8 +53,8 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
                                        'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
-                                     'num_element_support_dofs', 'num_entity_dofs', 'num_entity_closure_dofs',
-                                     'dof_permutations', 'tabulate_entity_dofs', 'tabulate_entity_closure_dofs',
+                                     'num_element_support_dofs', 'num_entity_dofs',
+                                     'tabulate_entity_dofs',
                                      'num_sub_dofmaps', 'create_sub_dofmap'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
@@ -115,7 +114,7 @@ def make_all_element_classnames(prefix, elements, coordinate_elements, parameter
     return classnames
 
 
-def compute_ir(analysis: namedtuple, prefix, parameters):
+def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
     """Compute intermediate representation.
 
     """
@@ -156,7 +155,8 @@ def compute_ir(analysis: namedtuple, prefix, parameters):
     # Compute representation of forms
     logger.info("Computing representation of forms")
     ir_forms = [
-        _compute_form_ir(fd, i, prefix, analysis.element_numbers, classnames, parameters)
+        _compute_form_ir(fd, i, prefix, analysis.element_numbers,
+                         classnames, object_names, parameters)
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
@@ -197,87 +197,14 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     return ir_element(**ir)
 
 
-def _compute_dofmap_permutation_tables(fiat_element, cell):
-    """Create tables of edge permutations and facet permutations for all the possible
-    orientations of the cell."""
-
-    if isinstance(fiat_element, MixedElement):
-        elements = fiat_element.elements()
-    else:
-        elements = (fiat_element, )
-
-    td = cell.topological_dimension()
-
-    if td == 1:
-        return ([], [], {})
-
-    # Collect up some topological tables
-    ufc_cell = FIAT.reference_element.ufc_cell
-    celltype = cell.cellname()
-    edge_vertices = tuple(ufc_cell(celltype).get_connectivity()[(1, 0)])
-    facet_edges = tuple(ufc_cell(celltype).get_connectivity()[(2, 1)])
-    facet_edge_vertices = tuple(
-        tuple(ufc_cell(celltype).get_topology()[1][e] for e in f)
-        for f in ufc_cell(celltype).get_connectivity()[(2, 1)])
-    cell_topology = {
-        'facet_edge_vertices': facet_edge_vertices,
-        'facet_edges': facet_edges,
-        'edge_vertices': edge_vertices
-    }
-
-    # Lists of permutations for each edge or facet (if any)
-    edge_permutations = []
-    face_permutations = []
-
-    offset = 0
-    for element in elements:
-        nd = _num_dofs_per_entity(element)
-        ed = element.entity_dofs()
-
-        # If more than one dof on edge, then they need a permutation available
-        # Just reverse the order
-        if td > 1 and nd[1] > 1:
-            edge_permutations = [{} for i in range(len(ed[1]))]
-            for k, v in ed[1].items():
-                for i in range(len(v)):
-                    idx1 = v[i]
-                    idx2 = v[-i - 1]
-                    if idx1 != idx2:
-                        edge_permutations[k][idx1 + offset] = idx2 + offset
-        if td > 2 and nd[2] > 1 and cell.cellname() == 'tetrahedron':
-            # Permutation on a triangular facet
-            # FIXME: add support for quadrilateral facets
-            # FIXME: add support for Hdiv/Hcurl elements
-            d = element.degree()
-            n_facet_dofs = (d - 1) * (d - 2) / 2  # Valid for Lagrange - fails for RT, Nedelec etc.
-            if n_facet_dofs == nd[2]:
-                tab = ffc.fiatinterface.triangle_permutation_table(d, 1)
-                face_permutations = [{} for i in range(len(ed[2]))]
-                for k, v in ed[2].items():
-                    for i, idx in enumerate(v):
-                        perms = [(v[row[i]] + offset) for row in tab]
-                        face_permutations[k][idx + offset] = perms
-
-        offset += element.space_dimension()
-
-    return (edge_permutations, face_permutations, cell_topology)
-
-
 def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     """Compute intermediate representation of dofmap."""
     # Create FIAT element
     fiat_element = create_element(ufl_element)
-    cell = ufl_element.cell()
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     entity_dofs = fiat_element.entity_dofs()
-
-    edge_permutations, face_permutations, cell_topology = _compute_dofmap_permutation_tables(
-        fiat_element, cell)
-
-    entity_closure_dofs, num_dofs_per_entity_closure = _tabulate_entity_closure_dofs(
-        fiat_element, cell)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -288,10 +215,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
     ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
-    ir["dof_permutations"] = (edge_permutations, face_permutations, cell, cell_topology)
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
-    ir["tabulate_entity_closure_dofs"] = (entity_closure_dofs, entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
 
@@ -448,7 +372,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
     return irs
 
 
-def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, parameters):
+def _compute_form_ir(form_data, form_id, prefix, element_numbers,
+                     classnames, object_names, parameters):
     """Compute intermediate representation of form."""
 
     # Store id
@@ -465,6 +390,10 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, pa
 
     ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
+
+    ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
+                               for j, obj in enumerate(form_data.reduced_coefficients)]
+
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
     # TODO: Remove create_coordinate_{finite_element,dofmap} and access
@@ -765,22 +694,6 @@ def _tabulate_dof_coordinates(ufl_element, element):
         gdim=cell.geometric_dimension(),
         points=[sorted(L.pt_dict.keys())[0] for L in element.dual_basis()],
         cell_shape=cell.cellname())
-
-
-def _tabulate_entity_closure_dofs(element, cell):
-    """Compute intermediate representation of tabulate_entity_closure_dofs."""
-    # Get entity closure dofs from FIAT element
-    fiat_entity_closure_dofs = element.entity_closure_dofs()
-    entity_closure_dofs = {}
-    for d0 in sorted(fiat_entity_closure_dofs.keys()):
-        for e0 in sorted(fiat_entity_closure_dofs[d0].keys()):
-            entity_closure_dofs[(d0, e0)] = fiat_entity_closure_dofs[d0][e0]
-
-    num_entity_closure_dofs = [
-        len(fiat_entity_closure_dofs[d0][0]) for d0 in sorted(fiat_entity_closure_dofs.keys())
-    ]
-
-    return entity_closure_dofs, num_entity_closure_dofs
 
 
 def _create_foo_integral(prefix, form_id, integral_type, form_data):

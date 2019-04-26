@@ -117,12 +117,12 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, prefix, parameters)
+    ir = compute_ir(analysis, object_names, prefix, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
     cpu_time = time()
-    code = generate_code(analysis, object_names, ir, parameters)
+    code = generate_code(ir, parameters)
     _print_timing(4, time() - cpu_time)
 
     # Stage 3.1: generate convenience wrappers, e.g. for DOLFIN

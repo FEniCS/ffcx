@@ -21,7 +21,7 @@ from ffc.ir.uflacs.elementtables import piecewise_ttypes
 logger = logging.getLogger(__name__)
 
 
-def generate_integral_code(ir, prefix, parameters):
+def generate_integral_code(ir, parameters):
     """Generate code for integral from intermediate representation."""
 
     logger.info("Generating code from ffc.ir.uflacs representation")
@@ -42,10 +42,8 @@ def generate_integral_code(ir, prefix, parameters):
     body = format_indented_lines(parts.cs_format(precision), 1)
 
     # Generate generic ffc code snippets and add uflacs specific parts
-    code = initialize_integral_code(ir, prefix, parameters)
+    code = initialize_integral_code(ir, parameters)
     code["tabulate_tensor"] = body
-    code["additional_includes_set"] = set(ig.get_includes())
-    # code["additional_includes_set"].update(ir.get("additional_includes_set", ()))
 
     return code
 
@@ -80,42 +78,6 @@ class IntegralGenerator(object):
 
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
-
-    def get_includes(self):
-        """Return list of include statements needed to support generated code."""
-        includes = set()
-
-        cmath_names = set((
-            "abs",
-            "sign",
-            "pow",
-            "sqrt",
-            "exp",
-            "ln",
-            "cos",
-            "sin",
-            "tan",
-            "acos",
-            "asin",
-            "atan",
-            "atan_2",
-            "cosh",
-            "sinh",
-            "tanh",
-            "acosh",
-            "asinh",
-            "atanh",
-            "erf",
-            "erfc",
-        ))
-
-        # Only return the necessary headers
-        if cmath_names.intersection(self._ufl_names):
-            includes.add("#include <math.h>")
-
-        includes.add("#include <stdalign.h>")
-
-        return sorted(includes)
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -500,7 +462,6 @@ class IntegralGenerator(object):
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
-
             v = attr['expression']
             mt = attr.get('mt')
 
@@ -522,15 +483,25 @@ class IntegralGenerator(object):
                 # Get previously visited operands
                 vops = [self.get_var(num_points, op) for op in v.ufl_operands]
 
+                # get parent operand
+                pid = F.in_edges[i][0] if F.in_edges[i] else -1
+                if pid and pid > i:
+                    parent_exp = F.nodes.get(pid)['expression']
+                else:
+                    parent_exp = None
+
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
                 vexpr = self.backend.ufl_to_language.get(v, *vops)
 
-                # Create a new intermediate for
-                # each subexpression except boolean conditions
-                if isinstance(v, ufl.classes.Condition):
+                # Create a new intermediate for each subexpression
+                # except boolean conditions and its childs
+                if isinstance(parent_exp, ufl.classes.Condition):
+                    # Skip intermediates for 'x' and 'y' in x<y
+                    # Avoid the creation of complex valued intermediates
+                    vaccess = vexpr
+                elif isinstance(v, ufl.classes.Condition):
                     # Inline the conditions x < y, condition values
-                    # 'x' and 'y' may still be stored in intermediates.
                     # This removes the need to handle boolean intermediate variables.
                     # With tensor-valued conditionals it may not be optimal but we
                     # let the compiler take responsibility for optimizing those cases.

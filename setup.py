@@ -11,8 +11,8 @@ if sys.version_info < (3, 5):
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-VERSION = "2018.2.0.dev0"
-RESTRICT_REQUIREMENTS = ">=2018.2.0.dev0,<2018.3"
+VERSION = "2019.2.0.dev0"
+RESTRICT_REQUIREMENTS = ">=2019.2.0.dev0,<2019.3"
 
 if on_rtd:
     REQUIREMENTS = []

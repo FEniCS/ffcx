@@ -16,14 +16,8 @@ int original_coefficient_position_{factory_name}(int i)
 {original_coefficient_position}
 }}
 
-// Return the number of the coefficient with this name. Returns -1 if name does not exist.
-int coefficient_number_{factory_name}(const char* name)
-{{
-{coefficient_number_map}
-}}
-
-// Return the name of the coefficient with this number. Returns NULL if index is out-of-range.
-const char* coefficient_name_{factory_name}(int i)
+// Return a list of the coefficient names.
+const char** coefficient_name_{factory_name}()
 {{
 {coefficient_name_map}
 }}
@@ -118,7 +112,6 @@ ufc_form* create_{factory_name}(void)
   form->original_coefficient_position = original_coefficient_position_{factory_name};
 
   form->coefficient_name_map = coefficient_name_{factory_name};
-  form->coefficient_number_map = coefficient_number_{factory_name};
 
   form->create_coordinate_finite_element = create_coordinate_finite_element_{factory_name};
   form->create_coordinate_dofmap = create_coordinate_dofmap_{factory_name};

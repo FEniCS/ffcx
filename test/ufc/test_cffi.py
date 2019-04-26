@@ -327,3 +327,54 @@ def test_subdomains():
     ids = np.zeros(form3.num_exterior_facet_integrals, dtype=np.int32)
     form3.get_exterior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == 0 and ids[1] == 210
+
+
+@pytest.mark.parametrize("mode", ["double", "double complex"])
+def test_conditional(mode):
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    x = ufl.SpatialCoordinate(cell)
+    condition = ufl.Or(ufl.ge(ufl.real(x[0] + x[1]), 0.1),
+                       ufl.ge(ufl.real(x[1] + x[1]**2), 0.1))
+    c1 = ufl.conditional(condition, 2.0, 1.0)
+    a = c1 * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+
+    x1x2 = ufl.real(x[0] + ufl.as_ufl(2) * x[1])
+    c2 = ufl.conditional(ufl.ge(x1x2, 0), 6.0, 0.0)
+    b = c2 * ufl.conj(v) * ufl.dx
+
+    forms = [a, b]
+
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode})
+
+    form0 = compiled_forms[0][0].create_cell_integral(-1)
+    form1 = compiled_forms[1][0].create_cell_integral(-1)
+
+    ffi = cffi.FFI()
+    c_type, np_type = float_to_type(mode)
+
+    A1 = np.zeros((3, 3), dtype=np_type)
+    w1 = np.array([1.0, 1.0, 1.0], dtype=np_type)
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+
+    form0.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), A1.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), w1.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), 0)
+
+    expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=np_type)
+    assert np.allclose(A1, expected_result)
+
+    A2 = np.zeros(3, dtype=np_type)
+    w2 = np.array([1.0, 1.0, 1.0], dtype=np_type)
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+
+    form1.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), A2.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), w2.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), 0)
+
+    expected_result = np.ones(3, dtype=np_type)
+    assert np.allclose(A2, expected_result)

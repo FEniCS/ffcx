@@ -138,19 +138,6 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
             return L.StatementList(code)
 
 
-def cell_shape(L, ir):
-    name = ir.cell_shape
-    return L.Return(L.Symbol("ufc::shape::" + name))
-
-
-def topological_dimension(L, topological_dimension):
-    return L.Return(topological_dimension)
-
-
-def geometric_dimension(L, geometric_dimension):
-    return L.Return(geometric_dimension)
-
-
 def create_coordinate_finite_element(L, ir):
     classname = ir.create_coordinate_finite_element
     return generate_return_new(L, classname)

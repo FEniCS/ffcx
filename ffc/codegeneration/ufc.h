@@ -149,21 +149,8 @@ extern "C"
     /// dimension d
     int num_entity_dofs[4];
 
-    /// Number of dofs associated with the closure
-    /// of each cell entity dimension d
-    int num_entity_closure_dofs[4];
-
-    /// Calculate dof permutation for given global vertex index ordering
-    /// perm[num_element_dofs] - integer permutation
-    /// global_indices[num_vertices_per_cell] - global indices of cell vertices
-    void (*tabulate_dof_permutations)(int* restrict perm, const int64_t* restrict global_indices);
-
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
-
-    /// Tabulate the local-to-local mapping of dofs on the closure of
-    /// entity (d, i)
-    void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
 
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
@@ -471,11 +458,8 @@ extern "C"
     ///
     int (*original_coefficient_position)(int i);
 
-    // Return name of coefficient i
-    const char* (*coefficient_name_map)(int i);
-
-    // Return index of named coefficient
-    int (*coefficient_number_map)(const char* name);
+    /// Return list of names of coefficients
+    const char** (*coefficient_name_map)();
 
     // FIXME: Remove and just use 'create_coordinate_mapping'
     /// Create a new finite element for parameterization of coordinates
@@ -558,13 +542,13 @@ extern "C"
   typedef struct ufc_function_space
   {
     // Pointer to factory function that creates a new ufc_finite_element
-    ufc_finite_element* (*element)(void);
+    ufc_finite_element* (*create_element)(void);
 
     // Pointer to factory function that creates a new ufc_dofmap
-    ufc_dofmap* (*dofmap)(void);
+    ufc_dofmap* (*create_dofmap)(void);
 
     // Pointer to factory function that creates a new ufc_coordinate_mapping
-    ufc_coordinate_mapping* (*coordinate_mapping)(void);
+    ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
   } ufc_function_space;
 
 #ifdef __cplusplus
