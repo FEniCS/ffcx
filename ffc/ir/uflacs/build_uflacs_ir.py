@@ -448,8 +448,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 # on
                 block_mode = "safe"
 
-            block_mode = "full"
-
             # Carry out decision
             if block_mode == "preintegrated":
                 # Add to contributions:
