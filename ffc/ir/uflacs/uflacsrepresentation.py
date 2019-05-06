@@ -6,6 +6,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+import numpy
 
 from ffc.fiatinterface import create_element
 from ffc.ir.representationutils import initialize_integral_ir
@@ -16,8 +17,70 @@ from ffc.ir.uflacs.tools import (accumulate_integrals,
 from ufl import custom_integral_types
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
+from ufl.algorithms import extract_arguments, compute_form_data, extract_coefficients
 
 logger = logging.getLogger(__name__)
+
+
+def compute_expression_ir(expression, analysis, parameters):
+    logger.info("Computing uflacs representation of expression")
+
+    points = numpy.array([[0.1, 0.0], [1.0, 0.7], [0.5, 0.55], [0.3, 0.3]])
+    num_points = points.shape[0]
+    weights = numpy.array([1.0] * num_points)
+
+    cell = expression.ufl_domain().ufl_cell()
+
+    ir = {}
+
+    # Prepare dimensions of all unique element in expression,
+    # including elements for arguments, coefficients and coordinate mappings
+    ir["element_dimensions"] = {
+        ufl_element: create_element(ufl_element).space_dimension()
+        for ufl_element in analysis.unique_elements
+    }
+
+    # Extract dimensions for elements of arguments only
+    arguments = extract_arguments(expression)
+    argument_elements = tuple(f.ufl_element() for f in arguments)
+    argument_dimensions = [
+        ir["element_dimensions"][ufl_element] for ufl_element in argument_elements
+    ]
+
+    tensor_shape = argument_dimensions
+    ir["tensor_shape"] = tensor_shape
+
+    coefficients = extract_coefficients(expression)
+    coefficient_numbering = {}
+    for i, coeff in enumerate(coefficients):
+        coefficient_numbering[coeff] = i
+
+    # Add coefficient numbering to IR
+    ir["coefficient_numbering"] = coefficient_numbering
+
+    coefficient_elements = tuple(f.ufl_element() for f in coefficients)
+
+    offsets = {}
+    _offset = 0
+    for i, el in enumerate(coefficient_elements):
+        offsets[coefficients[i]] = _offset
+        _offset += ir["element_dimensions"][el]
+
+    # Copy offsets also into IR
+    ir["coefficient_offsets"] = offsets
+
+    ir["integral_type"] = "custom"
+    ir["entitytype"] = "cell"
+
+    integrands = {num_points: expression}
+    quadrature_rules = {num_points: (points, weights)}
+
+    uflacs_ir = build_uflacs_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
+                                quadrature_rules, parameters)
+
+    ir.update(uflacs_ir)
+
+    return ir
 
 
 def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters):

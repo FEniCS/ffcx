@@ -152,3 +152,10 @@ def initialize_integral_code(ir, parameters):
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
 
     return code
+
+
+def initialize_expression_code(ir):
+    code = {}
+    code["classname"] = "{}_expression".format(ir.classname)
+
+    return code

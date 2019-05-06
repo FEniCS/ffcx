@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numbers',
-                                   'unique_coordinate_elements'])
+                                   'unique_coordinate_elements', 'expressions'])
 
 
 def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], typing.List[ufl.FiniteElement],
@@ -55,6 +55,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     form_data = ()
     unique_elements = set()
     unique_coordinate_elements = set()
+    expressions = []
 
     # FIXME: This assumes that forms come before elements in
     # ufl_objects? Is this reasonable?
@@ -77,6 +78,12 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
         # Extract unique (sub)elements
         meshes = ufl_objects
         unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
+    elif isinstance(ufl_objects[0], ufl.core.expr.Expr):
+        for expression in ufl_objects:
+            unique_elements.update(ufl.algorithms.extract_elements(expression))
+
+            expression = _analyze_expression(expression)
+            expressions.append(expression)
     else:
         raise TypeError("UFL objects not recognised.")
 
@@ -92,7 +99,24 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
 
     return ufl_data(form_data=form_data, unique_elements=unique_elements,
                     element_numbers=element_numbers,
-                    unique_coordinate_elements=unique_coordinate_elements)
+                    unique_coordinate_elements=unique_coordinate_elements,
+                    expressions=expressions)
+
+
+def _analyze_expression(expression: ufl.core.expr.Expr):
+    """Analyzes and preprocesses expressions"""
+
+    preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
+
+    expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+    expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
+    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+
+    return expression
 
 
 def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithms.formdata.FormData:

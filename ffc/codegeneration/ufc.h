@@ -374,6 +374,12 @@ extern "C"
 
   } ufc_coordinate_mapping;
 
+  typedef struct ufc_expression
+  {
+    void (*tabulate_expression)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                const double* restrict coordinate_dofs);
+  } ufc_expression;
+
   // FIXME: Is this required for integrals?
   // Number of coefficients
   // int num_coefficients() const = 0;

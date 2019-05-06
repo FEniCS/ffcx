@@ -52,6 +52,9 @@ def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
         elif isinstance(ufl_object, ufl.FiniteElementBase):
             object_signature += repr(ufl_object)
             kind = "element"
+        elif isinstance(ufl_object, ufl.core.expr.Expr):
+            object_signature += repr(ufl_object)
+            kind = "expression"
         else:
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
