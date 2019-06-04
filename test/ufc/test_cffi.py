@@ -329,14 +329,15 @@ def test_subdomains():
     assert ids[0] == 0 and ids[1] == 210
 
 
-def test_interior_facet_integral():
+@pytest.mark.parametrize("mode", ["double", "double complex"])
+def test_interior_facet_integral(mode):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a0 = ufl.inner(ufl.jump(u), ufl.jump(v)) * ufl.dS
     forms = [a0]
     compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, parameters={'scalar_type': 'double'})
+        forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -348,18 +349,22 @@ def test_interior_facet_integral():
     form0.get_interior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == -1
 
+    ffi = cffi.FFI()
+    c_type, np_type = float_to_type(mode)
+
     integral0 = form0.create_interior_facet_integral(-1)
-    A = np.zeros((6, 6), dtype=np.float64)
-    w = np.array([], dtype=np.float64)
+    A = np.zeros((6, 6), dtype=np_type)
+    w = np.array([], dtype=np_type)
     facets = np.array([0, 2], dtype=np.int32)
     orients = np.array([1, 1], dtype=np.int32)
-    ffi = cffi.FFI()
+
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
                        1.0, 0.0, 0.0, 1.0, 1.0, 1.0], dtype=np.float64)
 
     integral0.tabulate_tensor(
-        ffi.cast('double  *', A.ctypes.data), ffi.cast('double  *', w.ctypes.data),
-        ffi.cast('double  *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
+        ffi.cast('{}  *'.format(c_type), A.ctypes.data),
+        ffi.cast('{}  *'.format(c_type), w.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
         ffi.cast('int *', orients.ctypes.data))
 
     print(A)
