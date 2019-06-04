@@ -144,18 +144,16 @@ typedef struct ufc_exterior_facet_integral
 {
 const bool* enabled_coefficients;
 void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                        const double* restrict coordinate_dofs, int facet,
-                        int cell_orientation);
+                        const double* restrict coordinate_dofs, const int* facet,
+                        const int* cell_orientation);
 } ufc_exterior_facet_integral;
 
 typedef struct ufc_interior_facet_integral
 {
 const bool* enabled_coefficients;
 void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                        const double* restrict coordinate_dofs_0,
-                        const double* restrict coordinate_dofs_1,
-                        int facet_0, int facet_1, int cell_orientation_0,
-                        int cell_orientation_1);
+                        const double* restrict coordinate_dofs,
+                        const int* facet, const int* cell_orientation);
 } ufc_interior_facet_integral;
 
 typedef struct ufc_vertex_integral

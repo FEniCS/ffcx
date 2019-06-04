@@ -76,7 +76,10 @@ class FFCBackendSymbols(object):
             # Always 0 for cells (even with restriction)
             return self.L.LiteralInt(0)
         elif entitytype == "facet":
-            return self.S("facet" + ufc_restriction_postfix(restriction))
+            postfix = "[0]"
+            if restriction == "-":
+                postfix = "[1]"
+            return self.S("facet" + postfix)
         elif entitytype == "vertex":
             return self.S("vertex")
         else:
@@ -143,11 +146,14 @@ class FFCBackendSymbols(object):
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
-        vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
+        offset = 0
+        if restriction == "-":
+            offset = num_scalar_dofs * gdim
+        vc = self.S("coordinate_dofs")
         if self.interleaved_components:
-            return vc[gdim * dof + component]
+            return vc[gdim * dof + component + offset]
         else:
-            return vc[num_scalar_dofs * component + dof]
+            return vc[num_scalar_dofs * component + dof + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!

@@ -21,8 +21,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     "exterior_facet":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                     const double* restrict coordinate_dofs,
-                                     int facet, int cell_orientation)
+                                    const double* restrict coordinate_dofs,
+                                    const int* facet, const int* cell_orientation)
 {{
 {tabulate_tensor}
 }}
@@ -30,10 +30,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     "interior_facet":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                    const double* restrict coordinate_dofs_0,
-                                    const double* restrict coordinate_dofs_1, int facet_0,
-                                    int facet_1, int cell_orientation_0,
-                                    int cell_orientation_1)
+                                    const double* restrict coordinate_dofs,
+                                    const int* facet, const int* cell_orientation)
 {{
 {tabulate_tensor}
 }}

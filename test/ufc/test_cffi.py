@@ -329,6 +329,26 @@ def test_subdomains():
     assert ids[0] == 0 and ids[1] == 210
 
 
+def test_interior_facet_integral():
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    a0 = ufl.avg(u) * ufl.avg(v) * ufl.dS
+    forms = [a0]
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': 'double'})
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == len(f.arguments())
+
+    ffi = cffi.FFI()
+
+    form0 = compiled_forms[0][0]
+    ids = np.zeros(form0.num_interior_facet_integrals, dtype=np.int32)
+    form0.get_interior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert ids[0] == -1
+
+
 @pytest.mark.parametrize("mode", ["double", "double complex"])
 def test_conditional(mode):
     cell = ufl.triangle
