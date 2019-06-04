@@ -152,7 +152,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
     default_integral.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), 0)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
 
@@ -208,13 +208,13 @@ def test_mass_bilinear_form_2d(mode, expected_result):
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), 0)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     b = np.zeros(3, dtype=np_type)
     form1.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), b.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), 0)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
     assert np.allclose(b, 1.0 / 6.0)
@@ -256,7 +256,7 @@ def test_helmholtz_form_2d(mode, expected_result):
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), 0)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
 
@@ -280,7 +280,7 @@ def test_form_coefficient():
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('double  *', A.ctypes.data), ffi.cast('double  *', w.ctypes.data),
-        ffi.cast('double  *', coords.ctypes.data), 0)
+        ffi.cast('double  *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
     A_diff = (A - A_analytic)
@@ -403,7 +403,7 @@ def test_conditional(mode):
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A1.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w1.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), 0)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=np_type)
     assert np.allclose(A1, expected_result)
@@ -415,7 +415,7 @@ def test_conditional(mode):
     form1.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A2.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w2.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), 0)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.ones(3, dtype=np_type)
     assert np.allclose(A2, expected_result)

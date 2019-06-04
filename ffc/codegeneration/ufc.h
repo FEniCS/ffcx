@@ -15,9 +15,11 @@
 #define UFC_VERSION_RELEASE 0
 
 #if UFC_VERSION_RELEASE
-#define UFC_VERSION UFC_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE
+#define UFC_VERSION                                                            \
+  UFC_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE
 #else
-#define UFC_VERSION UFC_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE ".dev0"
+#define UFC_VERSION                                                            \
+  UFC_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE ".dev0"
 #endif
 
 #include <stdbool.h>
@@ -34,8 +36,8 @@ extern "C"
 #define restrict __restrict__
 #else
 #define restrict
-#endif  // restrict
-#endif  // __cplusplus
+#endif // restrict
+#endif // __cplusplus
 
   typedef enum
   {
@@ -111,10 +113,10 @@ extern "C"
     /// been evaluated at points given by
     /// tabulate_reference_dof_coordinates.
     int (*transform_values)(ufc_scalar_t* restrict reference_values,
-                             const ufc_scalar_t* restrict physical_values,
-                             const double* restrict coordinate_dofs,
-                             int cell_orientation,
-                             const ufc_coordinate_mapping* cm);
+                            const ufc_scalar_t* restrict physical_values,
+                            const double* restrict coordinate_dofs,
+                            int cell_orientation,
+                            const ufc_coordinate_mapping* cm);
 
     // FIXME: change to 'const double* reference_dof_coordinates()'
     /// Tabulate the coordinates of all dofs on a reference cell
@@ -374,39 +376,20 @@ extern "C"
 
   } ufc_coordinate_mapping;
 
-  // FIXME: Is this required for integrals?
-  // Number of coefficients
-  // int num_coefficients() const = 0;
-
-  // FIXME: Consider a common signature for tabulate_tensor
-
-  typedef struct ufc_cell_integral
+  typedef struct ufc_integral
   {
     const bool* enabled_coefficients;
     void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                             const double* restrict coordinate_dofs,
-                            int cell_orientation);
-  } ufc_cell_integral;
-
-  typedef struct ufc_facet_integral
-  {
-    const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                            const double* restrict coordinate_dofs, const int* facet,
+                            const int* entity_local_index,
                             const int* cell_orientation);
-  } ufc_facet_integral;
+  } ufc_integral;
 
   // Backwards compatible typedefs
-  typedef ufc_facet_integral ufc_exterior_facet_integral;
-  typedef ufc_facet_integral ufc_interior_facet_integral;
-
-  typedef struct ufc_vertex_integral
-  {
-    const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                            const double* restrict coordinate_dofs, int vertex,
-                            int cell_orientation);
-  } ufc_vertex_integral;
+  typedef ufc_integral ufc_cell_integral;
+  typedef ufc_integral ufc_exterior_facet_integral;
+  typedef ufc_integral ufc_interior_facet_integral;
+  typedef ufc_integral ufc_vertex_integral;
 
   typedef struct ufc_custom_integral
   {
@@ -483,19 +466,19 @@ extern "C"
     ufc_dofmap* (*create_dofmap)(int i);
 
     /// All ids for cell integrals
-    void (*get_cell_integral_ids)(int *ids);
+    void (*get_cell_integral_ids)(int* ids);
 
     /// All ids for exterior facet integrals
-    void (*get_exterior_facet_integral_ids)(int *ids);
+    void (*get_exterior_facet_integral_ids)(int* ids);
 
     /// All ids for interior facet integrals
-    void (*get_interior_facet_integral_ids)(int *ids);
+    void (*get_interior_facet_integral_ids)(int* ids);
 
     /// All ids for vertex integrals
-    void (*get_vertex_integral_ids)(int *ids);
+    void (*get_vertex_integral_ids)(int* ids);
 
     /// All ids for custom integrals
-    void (*get_custom_integral_ids)(int *ids);
+    void (*get_custom_integral_ids)(int* ids);
 
     /// Number of cell integrals
     int num_cell_integrals;
@@ -513,24 +496,21 @@ extern "C"
     int num_custom_integrals;
 
     /// Create a new cell integral on sub domain subdomain_id
-    ufc_cell_integral* (*create_cell_integral)(int subdomain_id);
+    ufc_integral* (*create_cell_integral)(int subdomain_id);
 
     /// Create a new exterior facet integral on sub domain subdomain_id
-    ufc_facet_integral* (*create_exterior_facet_integral)(
-        int subdomain_id);
+    ufc_integral* (*create_exterior_facet_integral)(int subdomain_id);
 
     /// Create a new interior facet integral on sub domain subdomain_id
-    ufc_facet_integral* (*create_interior_facet_integral)(
-        int subdomain_id);
+    ufc_integral* (*create_interior_facet_integral)(int subdomain_id);
 
     /// Create a new vertex integral on sub domain subdomain_id
-    ufc_vertex_integral* (*create_vertex_integral)(int subdomain_id);
+    ufc_integral* (*create_vertex_integral)(int subdomain_id);
 
     /// Create a new custom integral on sub domain subdomain_id
     ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
   } ufc_form;
-
 
   // FIXME: Formalise a UFC 'function space'.
   typedef struct ufc_function_space

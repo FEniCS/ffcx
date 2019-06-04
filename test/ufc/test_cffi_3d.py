@@ -111,6 +111,6 @@ def test_laplace_bilinear_form_3d(mode, expected_result):
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), 0)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)

@@ -13,7 +13,8 @@ tabulate_implementation = {
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                                     const double* restrict coordinate_dofs,
-                                    int cell_orientation)
+                                    const int* unused_local_index,
+                                    const int* cell_orientation)
 {{
 {tabulate_tensor}
 }}
@@ -22,7 +23,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                                     const double* restrict coordinate_dofs,
-                                    const int* facet, const int* cell_orientation)
+                                    const int* facet,
+                                    const int* cell_orientation)
 {{
 {tabulate_tensor}
 }}
@@ -31,7 +33,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                                     const double* restrict coordinate_dofs,
-                                    const int* facet, const int* cell_orientation)
+                                    const int* facet,
+                                    const int* cell_orientation)
 {{
 {tabulate_tensor}
 }}
@@ -39,8 +42,9 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     "vertex":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                    const double* restrict coordinate_dofs, int vertex,
-                                    int cell_orientation)
+                                    const double* restrict coordinate_dofs,
+                                    const int* vertex,
+                                    const int* cell_orientation)
 {{
 {tabulate_tensor}
 }}
