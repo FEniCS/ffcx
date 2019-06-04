@@ -37,6 +37,7 @@ def generator(ir, parameters):
         factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
 
     # Format implementation code
+
     implementation = ufc_integrals.factory.format(
         type=integral_type,
         factory_name=factory_name,

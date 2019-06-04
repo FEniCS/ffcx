@@ -388,21 +388,17 @@ extern "C"
                             int cell_orientation);
   } ufc_cell_integral;
 
-  typedef struct ufc_exterior_facet_integral
+  typedef struct ufc_facet_integral
   {
     const bool* enabled_coefficients;
     void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                             const double* restrict coordinate_dofs, const int* facet,
                             const int* cell_orientation);
-  } ufc_exterior_facet_integral;
+  } ufc_facet_integral;
 
-  typedef struct ufc_interior_facet_integral
-  {
-    const bool* enabled_coefficients;
-    void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                            const double* restrict coordinate_dofs,
-                            const int* facet, const int* cell_orientation);
-  } ufc_interior_facet_integral;
+  // Backwards compatible typedefs
+  typedef ufc_facet_integral ufc_exterior_facet_integral;
+  typedef ufc_facet_integral ufc_interior_facet_integral;
 
   typedef struct ufc_vertex_integral
   {
@@ -520,11 +516,11 @@ extern "C"
     ufc_cell_integral* (*create_cell_integral)(int subdomain_id);
 
     /// Create a new exterior facet integral on sub domain subdomain_id
-    ufc_exterior_facet_integral* (*create_exterior_facet_integral)(
+    ufc_facet_integral* (*create_exterior_facet_integral)(
         int subdomain_id);
 
     /// Create a new interior facet integral on sub domain subdomain_id
-    ufc_interior_facet_integral* (*create_interior_facet_integral)(
+    ufc_facet_integral* (*create_interior_facet_integral)(
         int subdomain_id);
 
     /// Create a new vertex integral on sub domain subdomain_id

@@ -334,7 +334,7 @@ def test_interior_facet_integral(mode):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
-    a0 = ufl.inner(ufl.jump(u), ufl.jump(v)) * ufl.dS
+    a0 = ufl.inner(ufl.jump(ufl.grad(u)), ufl.jump(ufl.grad(v))) * ufl.dS
     forms = [a0]
     compiled_forms, module = ffc.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode})
@@ -358,8 +358,8 @@ def test_interior_facet_integral(mode):
     facets = np.array([0, 2], dtype=np.int32)
     orients = np.array([1, 1], dtype=np.int32)
 
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-                       1.0, 0.0, 0.0, 1.0, 1.0, 1.0], dtype=np.float64)
+    coords = np.array([[0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+                       [1.0, 0.0, 0.0, 1.0, 1.0, 1.0]], dtype=np.float64)
 
     integral0.tabulate_tensor(
         ffi.cast('{}  *'.format(c_type), A.ctypes.data),

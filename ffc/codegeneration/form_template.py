@@ -62,7 +62,7 @@ void get_cell_integral_ids_{factory_name}(int *ids)
   {get_cell_integral_ids}
 }}
 
-ufc_exterior_facet_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
+ufc_facet_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
 {{
   {create_exterior_facet_integral}
 }}
@@ -72,7 +72,7 @@ void get_exterior_facet_integral_ids_{factory_name}(int *ids)
   {get_exterior_facet_integral_ids}
 }}
 
-ufc_interior_facet_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
+ufc_facet_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
 {{
 {create_interior_facet_integral}
 }}
