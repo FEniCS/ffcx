@@ -87,7 +87,10 @@ class FFCBackendSymbols(object):
 
     def cell_orientation_argument(self, restriction):
         """Cell orientation argument in ufc. Not same as cell orientation in generated code."""
-        return self.S("cell_orientation" + ufc_restriction_postfix(restriction))
+        postfix = "[0]"
+        if restriction == "-":
+            postfix = "[1]"
+        return self.S("cell_orientation" + postfix)
 
     def cell_orientation_internal(self, restriction):
         """Internal value for cell orientation in generated code."""
