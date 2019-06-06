@@ -81,7 +81,7 @@ class FFCBackendSymbols(object):
                 postfix = "[1]"
             return self.S("facet" + postfix)
         elif entitytype == "vertex":
-            return self.S("vertex")
+            return self.S("vertex[0]")
         else:
             logging.exception("Unknown entitytype {}".format(entitytype))
 
