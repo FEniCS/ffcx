@@ -385,12 +385,6 @@ extern "C"
                             const int* cell_orientation);
   } ufc_integral;
 
-  // Backwards compatible typedefs
-  typedef ufc_integral ufc_cell_integral;
-  typedef ufc_integral ufc_exterior_facet_integral;
-  typedef ufc_integral ufc_interior_facet_integral;
-  typedef ufc_integral ufc_vertex_integral;
-
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;

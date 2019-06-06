@@ -5,7 +5,11 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
-ufc_{type}_integral* create_{factory_name}(void);
+ufc_integral* create_{factory_name}(void);
+"""
+
+custom_declaration = """
+ufc_custom_integral* create_{factory_name}(void);
 """
 
 tabulate_implementation = {
@@ -65,19 +69,37 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
 }
 
 factory = """
-// Code for {type}_integral {factory_name}
+// Code for integral {factory_name}
 
 {tabulate_tensor}
 
-ufc_{type}_integral* create_{factory_name}(void)
+ufc_integral* create_{factory_name}(void)
 {{
   static const bool enabled{enabled_coefficients}
 
-  ufc_{type}_integral* integral = malloc(sizeof(*integral));
+  ufc_integral* integral = malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;
 }};
 
-// End of code for {type}_integral {factory_name}
+// End of code for integral {factory_name}
+"""
+
+custom_factory = """
+// Code for custom integral {factory_name}
+
+{tabulate_tensor}
+
+ufc_custom_integral* create_{factory_name}(void)
+{{
+  static const bool enabled{enabled_coefficients}
+
+  ufc_custom_integral* integral = malloc(sizeof(*integral));
+  integral->enabled_coefficients = enabled;
+  integral->tabulate_tensor = tabulate_tensor_{factory_name};
+  return integral;
+}};
+
+// End of code for custom integral {factory_name}
 """
