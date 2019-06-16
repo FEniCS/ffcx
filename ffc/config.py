@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 def get_cache_path(parameters):
     """Get the path for the JIT cache"""
 
-    # Get cache path from parameters, withh fallback to to current
-    # working directory
-    cache_dir = parameters.get("cache_dir", Path.cwd())
+    # Get cache path from parameters, with fallback to current working
+    # directory
+    cache_dir = parameters.get("cache_dir", Path.cwd() / "compile-cache")
 
-    # Check for envirnment variable
+    # Check for cache environment variable
     cache_dir = os.getenv('FENICS_CACHE_DIR', cache_dir)
 
-    return Path(cache_dir)
+    return Path(cache_dir).expanduser()

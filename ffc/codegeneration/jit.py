@@ -15,6 +15,7 @@ import time
 import cffi
 
 import ffc
+import ffc.config
 
 logger = logging.getLogger(__name__)
 
@@ -190,16 +191,13 @@ ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
 def get_cached_module(module_name, object_names, parameters):
 
-    cache_dir = pathlib.Path(parameters.get("cache_dir", "compile_cache"))
-    cache_dir = cache_dir.expanduser()
-
+    cache_dir = ffc.config.get_cache_path(parameters)
     timeout = int(parameters.get("timeout", 10))
-
     c_filename = cache_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
     # Ensure cache dir exists and ensure it is first on the path for loading modules
-    os.makedirs(cache_dir, exist_ok=True)
+    cache_dir.mkdir(exist_ok=True)
     sys.path.insert(0, str(cache_dir))
 
     try:
@@ -223,8 +221,9 @@ def get_cached_module(module_name, object_names, parameters):
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
-def compile_elements(elements, module_name=None, parameters=None):
+def compile_elements(elements, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
+
     p = ffc.parameters.validate_parameters(parameters)
 
     logger.info('Compiling elements: ' + str(elements))
@@ -260,7 +259,7 @@ def compile_elements(elements, module_name=None, parameters=None):
     return objects, module
 
 
-def compile_forms(forms, module_name=None, parameters=None):
+def compile_forms(forms, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
     p = ffc.parameters.validate_parameters(parameters)
 
@@ -287,8 +286,10 @@ def compile_forms(forms, module_name=None, parameters=None):
     return _compile_objects(decl, forms, form_names, module_name, p)
 
 
-def compile_coordinate_maps(meshes, module_name=None, parameters=None):
+def compile_coordinate_maps(meshes, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
+    print("Compile cmaps")
+
     p = ffc.parameters.validate_parameters(parameters)
 
     logger.info('Compiling cmaps: ' + str(meshes))
@@ -314,8 +315,7 @@ def compile_coordinate_maps(meshes, module_name=None, parameters=None):
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
-    cache_dir = pathlib.Path(parameters.get("cache_dir", "compile_cache"))
-    cache_dir = cache_dir.expanduser()
+    cache_dir = ffc.config.get_cache_path(parameters)
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
@@ -331,7 +331,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     # Ensure path is set for module and ensure cache dir exists
     sys.path.insert(0, str(cache_dir))
-    os.makedirs(cache_dir, exist_ok=True)
+    cache_dir.mkdir(exist_ok=True)
 
     # Compile
     ffibuilder.compile(tmpdir=cache_dir, verbose=False)

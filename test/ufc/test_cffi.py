@@ -128,8 +128,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, parameters={'scalar_type': mode, 'cache_dir': './compile_cache'})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
