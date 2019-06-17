@@ -331,13 +331,13 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     # Ensure path is set for module and ensure cache dir exists
     print("Sys dir:", cache_dir)
     print("Sys dir:", str(cache_dir))
-    print("Boo:", os.listdir(str(cache_dir)))
     sys.path.insert(0, str(cache_dir))
     cache_dir.mkdir(exist_ok=True)
 
     # Compile
     print("Tmp dir:", cache_dir)
     ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+    print("Boo:", os.listdir(str(cache_dir)))
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
