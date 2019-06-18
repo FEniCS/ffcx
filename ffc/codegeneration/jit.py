@@ -287,7 +287,6 @@ def compile_forms(forms, parameters=None):
 
 def compile_coordinate_maps(meshes, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
-    print("Compile cmaps")
 
     p = ffc.parameters.validate_parameters(parameters)
 
