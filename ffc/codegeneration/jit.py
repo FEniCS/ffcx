@@ -55,7 +55,8 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?
 
 
 def get_cached_module(module_name, object_names, parameters):
-
+    """Look for an existing C file and wait for compilation, or if it does not exist,
+       create it."""
     cache_dir = ffc.config.get_cache_path(parameters)
     timeout = int(parameters.get("timeout", 10))
     c_filename = cache_dir.joinpath(module_name + ".c")
@@ -88,7 +89,6 @@ def get_cached_module(module_name, object_names, parameters):
 
 def compile_elements(elements, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
-
     p = ffc.parameters.validate_parameters(parameters)
 
     logger.info('Compiling elements: ' + str(elements))
