@@ -6,6 +6,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import tempfile
+from pathlib import Path
 import importlib
 import logging
 import os
@@ -184,7 +185,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     if (parameters['use_cache']):
         compile_dir = ffc.config.get_cache_path(parameters)
     else:
-        compile_dir = tempfile.mkdtemp()
+        compile_dir = Path(tempfile.mkdtemp())
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
