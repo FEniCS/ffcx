@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import tempfile
 import importlib
 import logging
 import os
@@ -180,26 +181,27 @@ def compile_coordinate_maps(meshes, parameters=None):
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
-    cache_dir = ffc.config.get_cache_path(parameters)
+    if (parameters['use_cache']):
+        compile_dir = ffc.config.get_cache_path(parameters)
+    else:
+        compile_dir = tempfile.mkdtemp()
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
-    ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
-        library_dirs=[str(cache_dir.absolute())],
-        runtime_library_dirs=[str(cache_dir.absolute())], extra_compile_args=['-g0'])  # turn off -g
+    ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
+                          extra_compile_args=['-g0'])  # turn off -g
 
     ffibuilder.cdef(decl)
 
-    c_filename = cache_dir.joinpath(module_name + ".c")
+    c_filename = compile_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
     # Ensure path is set for module and ensure cache dir exists
-    sys.path.insert(0, str(cache_dir))
-    cache_dir.mkdir(exist_ok=True)
+    sys.path.insert(0, str(compile_dir))
+    compile_dir.mkdir(exist_ok=True)
 
     # Compile
-    ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+    ffibuilder.compile(tmpdir=compile_dir, verbose=False)
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
@@ -208,7 +210,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(module_name)
-    sys.path.remove(str(cache_dir))
+    sys.path.remove(str(compile_dir))
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module
