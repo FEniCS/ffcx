@@ -5,11 +5,14 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import tempfile
+from pathlib import Path
 import importlib
 import logging
 import os
 import sys
 import time
+import re
 
 import cffi
 
@@ -36,160 +39,23 @@ vertex = 60,
 }} ufc_shape;
 """
 
-UFC_ELEMENT_DECL = """
-typedef struct ufc_finite_element
-{
-const char* signature;
-ufc_shape cell_shape;
-int topological_dimension;
-int geometric_dimension;
-int space_dimension;
-int value_rank;
-int (*value_dimension)(int i);
-int value_size;
-int reference_value_rank;
-int (*reference_value_dimension)(int i);
-int reference_value_size;
-int degree;
-const char* family;
-int (*evaluate_reference_basis)(double* restrict reference_values,
-                                int num_points, const double* restrict X);
-int (*evaluate_reference_basis_derivatives)(
-    double* restrict reference_values, int order, int num_points,
-    const double* restrict X);
-int (*transform_reference_basis_derivatives)(
-    double* restrict values, int order, int num_points,
-    const double* restrict reference_values, const double* restrict X,
-    const double* restrict J, const double* restrict detJ,
-    const double* restrict K, int cell_orientation);
-int (*transform_values)(
-    ufc_scalar_t* restrict reference_values,
-    const ufc_scalar_t* restrict physical_values,
-    const double* restrict coordinate_dofs,
-    int cell_orientation, const ufc_coordinate_mapping* cm);
-int (*tabulate_reference_dof_coordinates)(
-    double* restrict reference_dof_coordinates);
-int num_sub_elements;
-ufc_finite_element* (*create_sub_element)(int i);
-ufc_finite_element* (*create)(void);
-} ufc_finite_element;
-"""
+# Get declarations directly from ufc.h
+file_dir = os.path.dirname(os.path.abspath(__file__))
+with open(file_dir + "/ufc.h", "r") as f:
+    ufc_h = ''.join(f.readlines())
 
-UFC_DOFMAP_DECL = """
-typedef struct ufc_dofmap
-{
-const char* signature;
-int num_global_support_dofs;
-int num_element_support_dofs;
-int num_entity_dofs[4];
-void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
-int num_sub_dofmaps;
-ufc_dofmap* (*create_sub_dofmap)(int i);
-ufc_dofmap* (*create)(void);
-} ufc_dofmap;
-"""
-
-UFC_COORDINATEMAPPING_DECL = """
-typedef struct ufc_coordinate_mapping
-{
-const char* signature;
-ufc_coordinate_mapping* (*create)(void);
-int geometric_dimension;
-int topological_dimension;
-ufc_shape cell_shape;
-ufc_finite_element* (*create_coordinate_finite_element)(void);
-ufc_dofmap* (*create_coordinate_dofmap)(void);
-void (*compute_physical_coordinates)(
-    double* restrict x, int num_points, const double* restrict X,
-    const double* restrict coordinate_dofs);
-void (*compute_reference_coordinates)(
-    double* restrict X, int num_points, const double* restrict x,
-    const double* restrict coordinate_dofs, int cell_orientation);
-void (*compute_reference_geometry)(double* restrict X, double* restrict J,
-                                    double* restrict detJ,
-                                    double* restrict K, int num_points,
-                                    const double* restrict x,
-                                    const double* restrict coordinate_dofs,
-                                    int cell_orientation);
-void (*compute_jacobians)(double* restrict J, int num_points,
-                            const double* restrict X,
-                            const double* restrict coordinate_dofs);
-void (*compute_jacobian_determinants)(double* restrict detJ, int num_points,
-                                        const double* restrict J,
-                                        int cell_orientation);
-void (*compute_jacobian_inverses)(double* restrict K, int num_points,
-                                    const double* restrict J,
-                                    const double* restrict detJ);
-void (*compute_geometry)(double* restrict x, double* restrict J,
-                            double* restrict detJ, double* restrict K,
-                            int num_points, const double* restrict X,
-                            const double* restrict coordinate_dofs,
-                            int cell_orientation);
-void (*compute_midpoint_geometry)(double* restrict x, double* restrict J,
-                                    const double* restrict coordinate_dofs);
-
-} ufc_coordinate_mapping;
-"""
-
-UFC_INTEGRAL_DECL = """
-typedef struct ufc_integral
-{
-const bool* enabled_coefficients;
-void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                        const double* restrict coordinate_dofs,
-                        const int* entity_local_index,
-                        const int* cell_orientation);
-} ufc_integral;
-
-typedef struct ufc_custom_integral
-{
-const bool* enabled_coefficients;
-void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                        const double* restrict coordinate_dofs,
-                        int num_quadrature_points,
-                        const double* restrict quadrature_points,
-                        const double* restrict quadrature_weights,
-                        const double* restrict facet_normals,
-                        int cell_orientation);
-} ufc_custom_integral;
-"""
-
-UFC_FORM_DECL = """
-typedef struct ufc_form
-{
-const char* signature;
-int rank;
-int num_coefficients;
-int (*original_coefficient_position)(int i);
-const char** (*coefficient_name_map)();
-ufc_finite_element* (*create_coordinate_finite_element)(void);
-ufc_dofmap* (*create_coordinate_dofmap)(void);
-ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
-ufc_finite_element* (*create_finite_element)(int i);
-ufc_dofmap* (*create_dofmap)(int i);
-void (*get_cell_integral_ids)(int *ids);
-void (*get_exterior_facet_integral_ids)(int *ids);
-void (*get_interior_facet_integral_ids)(int *ids);
-void (*get_vertex_integral_ids)(int *ids);
-void (*get_custom_integral_ids)(int *ids);
-int num_cell_integrals;
-int num_exterior_facet_integrals;
-int num_interior_facet_integrals;
-int num_vertex_integrals;
-int num_custom_integrals;
-ufc_integral* (*create_cell_integral)(int subdomain_id);
-ufc_integral* (*create_exterior_facet_integral)(
-    int subdomain_id);
-ufc_integral* (*create_interior_facet_integral)(
-    int subdomain_id);
-ufc_integral* (*create_vertex_integral)(int subdomain_id);
-ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
-} ufc_form;
-"""
+UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
+UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
+UFC_COORDINATEMAPPING_DECL = '\n'.join(re.findall('typedef struct ufc_coordinate_mapping.*?ufc_coordinate_mapping;',
+                                                  ufc_h, re.DOTALL))
+UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufc_form.*?ufc_form;', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL = '\n'.join(re.findall('typedef struct ufc_integral.*?ufc_integral;', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?ufc_custom_integral;',
+                                          ufc_h, re.DOTALL))
 
 
 def get_cached_module(module_name, object_names, parameters):
-
+    """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = ffc.config.get_cache_path(parameters)
     timeout = int(parameters.get("timeout", 10))
     c_filename = cache_dir.joinpath(module_name + ".c")
@@ -216,14 +82,15 @@ def get_cached_module(module_name, object_names, parameters):
 
             logger.info("Waiting for {} to appear.".format(str(ready_name)))
             time.sleep(1)
-        raise TimeoutError("""JIT compilation did not complete on another process.
+        raise TimeoutError("""JIT compilation timed out, probably due to a failed previous compile.
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
 def compile_elements(elements, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
-
-    p = ffc.parameters.validate_parameters(parameters)
+    p = ffc.parameters.default_parameters()
+    if parameters is not None:
+        p.update(parameters)
 
     logger.info('Compiling elements: ' + str(elements))
 
@@ -237,11 +104,12 @@ def compile_elements(elements, parameters=None):
         name = ffc.ir.representation.make_dofmap_jit_classname(e, "JIT", p)
         names.append(name)
 
-    obj, mod = get_cached_module(module_name, names, p)
-    if obj is not None:
-        # Pair up elements with dofmaps
-        obj = list(zip(obj[::2], obj[1::2]))
-        return obj, mod
+    if p['use_cache']:
+        obj, mod = get_cached_module(module_name, names, p)
+        if obj is not None:
+            # Pair up elements with dofmaps
+            obj = list(zip(obj[::2], obj[1::2]))
+            return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
@@ -260,7 +128,9 @@ def compile_elements(elements, parameters=None):
 
 def compile_forms(forms, parameters=None):
     """Compile a list of UFL forms into UFC Python objects"""
-    p = ffc.parameters.validate_parameters(parameters)
+    p = ffc.parameters.default_parameters()
+    if parameters is not None:
+        p.update(parameters)
 
     logger.info('Compiling forms: ' + str(forms))
 
@@ -270,9 +140,10 @@ def compile_forms(forms, parameters=None):
     form_names = [ffc.classname.make_name("JIT", "form", i)
                   for i in range(len(forms))]
 
-    obj, mod = get_cached_module(module_name, form_names, p)
-    if obj is not None:
-        return obj, mod
+    if p['use_cache']:
+        obj, mod = get_cached_module(module_name, form_names, p)
+        if obj is not None:
+            return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
@@ -287,8 +158,9 @@ def compile_forms(forms, parameters=None):
 
 def compile_coordinate_maps(meshes, parameters=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects"""
-
-    p = ffc.parameters.validate_parameters(parameters)
+    p = ffc.parameters.default_parameters()
+    if parameters is not None:
+        p.update(parameters)
 
     logger.info('Compiling cmaps: ' + str(meshes))
 
@@ -298,9 +170,10 @@ def compile_coordinate_maps(meshes, parameters=None):
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
 
-    obj, mod = get_cached_module(module_name, cmap_names, p)
-    if obj is not None:
-        return obj, mod
+    if p['use_cache']:
+        obj, mod = get_cached_module(module_name, cmap_names, p)
+        if obj is not None:
+            return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
@@ -313,26 +186,27 @@ def compile_coordinate_maps(meshes, parameters=None):
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
-    cache_dir = ffc.config.get_cache_path(parameters)
+    if (parameters['use_cache']):
+        compile_dir = ffc.config.get_cache_path(parameters)
+    else:
+        compile_dir = Path(tempfile.mkdtemp())
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
-    ffibuilder.set_source(
-        module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
-        library_dirs=[str(cache_dir.absolute())],
-        runtime_library_dirs=[str(cache_dir.absolute())], extra_compile_args=['-g0'])  # turn off -g
+    ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
+                          extra_compile_args=['-g0'])  # turn off -g
 
     ffibuilder.cdef(decl)
 
-    c_filename = cache_dir.joinpath(module_name + ".c")
+    c_filename = compile_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
     # Ensure path is set for module and ensure cache dir exists
-    sys.path.insert(0, str(cache_dir))
-    cache_dir.mkdir(exist_ok=True)
+    sys.path.insert(0, str(compile_dir))
+    compile_dir.mkdir(exist_ok=True)
 
     # Compile
-    ffibuilder.compile(tmpdir=cache_dir, verbose=False)
+    ffibuilder.compile(tmpdir=compile_dir, verbose=False)
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
@@ -341,7 +215,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     # Build list of compiled objects
     compiled_module = importlib.import_module(module_name)
-    sys.path.remove(str(cache_dir))
+    sys.path.remove(str(compile_dir))
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module
