@@ -9,7 +9,6 @@ import importlib
 import logging
 import os
 import re
-import sys
 import tempfile
 import time
 from pathlib import Path
@@ -61,9 +60,8 @@ def get_cached_module(module_name, object_names, parameters):
     c_filename = cache_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    # Ensure cache dir exists and ensure it is first on the path for loading modules
+    # Ensure cache dir exists
     cache_dir.mkdir(exist_ok=True)
-    sys.path.insert(0, str(cache_dir))
 
     try:
         # Create C file with exclusive access
@@ -71,12 +69,19 @@ def get_cached_module(module_name, object_names, parameters):
         return None, None
     except FileExistsError:
         logger.info("Cached C file already exists: " + str(c_filename))
-        # Now wait for ready
+        finder = importlib.machinery.FileFinder(
+            str(cache_dir), (importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES))
+        finder.invalidate_caches()
+
+        # Now, wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
-                # Build list of compiled objects
-                compiled_module = importlib.import_module(module_name)
-                sys.path.remove(str(cache_dir))
+                spec = finder.find_spec(module_name)
+                if spec is None:
+                    raise ModuleNotFoundError("Unable to find JIT module.")
+                compiled_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(compiled_module)
+
                 compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
                 return compiled_objects, compiled_module
 
