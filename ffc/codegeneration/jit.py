@@ -75,6 +75,7 @@ def get_cached_module(module_name, object_names, parameters):
         for i in range(timeout):
             if os.path.exists(ready_name):
                 # Build list of compiled objects
+                importlib.invalidate_caches()
                 compiled_module = importlib.import_module(module_name)
                 sys.path.remove(str(cache_dir))
                 compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
@@ -213,9 +214,13 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     fd = open(ready_name, "x")
     fd.close()
 
-    # Build list of compiled objects
+    # Invalidate PathFinder cache and import
+    # (Python otherwise will assume no new modules can exist during runtime)
+    importlib.invalidate_caches()
     compiled_module = importlib.import_module(module_name)
     sys.path.remove(str(compile_dir))
+
+    # Build list of compiled objects
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module
