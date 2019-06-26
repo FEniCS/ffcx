@@ -200,17 +200,17 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     c_filename = compile_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    print("Sys dir:", compile_dir)
-    print("Sys dir:", str(compile_dir))
+    # print("Sys dir:", compile_dir)
+    # print("Sys dir:", str(compile_dir))
 
     # Ensure path is set for module and ensure cache dir exists
     sys.path.insert(0, str(compile_dir))
     compile_dir.mkdir(exist_ok=True)
 
     # Compile
-    print("Tmp dir:", compile_dir)
+    # print("Tmp dir:", compile_dir)
     ffibuilder.compile(tmpdir=compile_dir, verbose=False)
-    print("Boo:", os.listdir(str(compile_dir)))
+    # print("Boo:", os.listdir(str(compile_dir)))
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
@@ -218,7 +218,18 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     fd.close()
 
     # Build list of compiled objects
-    compiled_module = importlib.import_module(module_name)
+    import importlib.util
+    spec = importlib.util.find_spec(module_name)
+    if spec is None:
+        print("can't find the compiled module module")
+    else:
+        # If you chose to perform the actual import ...
+        compiled_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(compiled_module)
+        # Adding the module to sys.modules is optional.
+        #sys.modules[name] = module
+
+    # compiled_module = importlib.import_module(module_name)
     sys.path.remove(str(compile_dir))
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
