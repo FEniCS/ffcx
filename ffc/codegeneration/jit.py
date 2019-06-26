@@ -5,14 +5,14 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import tempfile
-from pathlib import Path
 import importlib
 import logging
 import os
-import sys
-import time
 import re
+import sys
+import tempfile
+import time
+from pathlib import Path
 
 import cffi
 
@@ -195,23 +195,22 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
                           extra_compile_args=['-g0'])  # turn off -g
-
     ffibuilder.cdef(decl)
 
     c_filename = compile_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    print("Sys dir:", cache_dir)
-    print("Sys dir:", str(cache_dir))
+    print("Sys dir:", compile_dir)
+    print("Sys dir:", str(compile_dir))
 
     # Ensure path is set for module and ensure cache dir exists
     sys.path.insert(0, str(compile_dir))
     compile_dir.mkdir(exist_ok=True)
 
     # Compile
-    print("Tmp dir:", cache_dir)
+    print("Tmp dir:", compile_dir)
     ffibuilder.compile(tmpdir=compile_dir, verbose=False)
-    print("Boo:", os.listdir(str(cache_dir)))
+    print("Boo:", os.listdir(str(compile_dir)))
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
