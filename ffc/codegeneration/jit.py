@@ -220,7 +220,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     if spec is None:
         raise ModuleNotFoundError("Unable to find JIT module.")
 
-    # Import module
+    # Load module
     compiled_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(compiled_module)
 
