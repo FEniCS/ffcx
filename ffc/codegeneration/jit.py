@@ -57,7 +57,7 @@ def get_cached_module(module_name, object_names, parameters):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = ffc.config.get_cache_path(parameters)
     timeout = int(parameters.get("timeout", 10))
-    c_filename = cache_dir.joinpath(module_name + ".c")
+    c_filename = cache_dir.joinpath(module_name).with_suffix(".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
     # Ensure cache dir exists
