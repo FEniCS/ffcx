@@ -5,14 +5,13 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import tempfile
-from pathlib import Path
 import importlib
 import logging
 import os
-import sys
-import time
 import re
+import tempfile
+import time
+from pathlib import Path
 
 import cffi
 
@@ -58,12 +57,11 @@ def get_cached_module(module_name, object_names, parameters):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = ffc.config.get_cache_path(parameters)
     timeout = int(parameters.get("timeout", 10))
-    c_filename = cache_dir.joinpath(module_name + ".c")
+    c_filename = cache_dir.joinpath(module_name).with_suffix(".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    # Ensure cache dir exists and ensure it is first on the path for loading modules
+    # Ensure cache dir exists
     cache_dir.mkdir(exist_ok=True)
-    sys.path.insert(0, str(cache_dir))
 
     try:
         # Create C file with exclusive access
@@ -71,12 +69,19 @@ def get_cached_module(module_name, object_names, parameters):
         return None, None
     except FileExistsError:
         logger.info("Cached C file already exists: " + str(c_filename))
-        # Now wait for ready
+        finder = importlib.machinery.FileFinder(
+            str(cache_dir), (importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES))
+        finder.invalidate_caches()
+
+        # Now, wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
-                # Build list of compiled objects
-                compiled_module = importlib.import_module(module_name)
-                sys.path.remove(str(cache_dir))
+                spec = finder.find_spec(module_name)
+                if spec is None:
+                    raise ModuleNotFoundError("Unable to find JIT module.")
+                compiled_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(compiled_module)
+
                 compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
                 return compiled_objects, compiled_module
 
@@ -195,17 +200,13 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
                           extra_compile_args=['-g0'])  # turn off -g
-
     ffibuilder.cdef(decl)
 
     c_filename = compile_dir.joinpath(module_name + ".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
-    # Ensure path is set for module and ensure cache dir exists
-    sys.path.insert(0, str(compile_dir))
+    # Compile (ensuring that compile dir exists)
     compile_dir.mkdir(exist_ok=True)
-
-    # Compile
     ffibuilder.compile(tmpdir=compile_dir, verbose=False)
 
     # Create a "status ready" file. If this fails, it is an error,
@@ -213,9 +214,21 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     fd = open(ready_name, "x")
     fd.close()
 
-    # Build list of compiled objects
-    compiled_module = importlib.import_module(module_name)
-    sys.path.remove(str(compile_dir))
+    # Create module finder that searches the compile path
+    finder = importlib.machinery.FileFinder(
+        str(compile_dir), (importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES))
+
+    # Find module. Clear search cache to be sure dynamically created
+    # (new) modules are found
+    finder.invalidate_caches()
+    spec = finder.find_spec(module_name)
+    if spec is None:
+        raise ModuleNotFoundError("Unable to find JIT module.")
+
+    # Load module
+    compiled_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(compiled_module)
+
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
     return compiled_objects, compiled_module
