@@ -171,7 +171,12 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     engine.finalize_object()
     engine.run_static_constructors()
 
-    print(dir(engine))
+    fnames = ['create_' + name for name in object_names]
+
+    for f in fnames:
+        q = engine.get_function_address(f)
+        print(f, q)
+
     quit()
 
     # Build list of compiled objects
