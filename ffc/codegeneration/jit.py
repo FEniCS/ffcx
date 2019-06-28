@@ -5,16 +5,18 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import tempfile
-from pathlib import Path
-import importlib
+# import tempfile
+# from pathlib import Path
+# import importlib
 import logging
 import os
-import sys
-import time
+import subprocess
+# import sys
+# import time
 import re
 
-import cffi
+# import cffi
+import llvmlite.binding as llvm
 
 import ffc
 import ffc.config
@@ -54,39 +56,6 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?
                                           ufc_h, re.DOTALL))
 
 
-def get_cached_module(module_name, object_names, parameters):
-    """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
-    cache_dir = ffc.config.get_cache_path(parameters)
-    timeout = int(parameters.get("timeout", 10))
-    c_filename = cache_dir.joinpath(module_name + ".c")
-    ready_name = c_filename.with_suffix(".c.cached")
-
-    # Ensure cache dir exists and ensure it is first on the path for loading modules
-    cache_dir.mkdir(exist_ok=True)
-    sys.path.insert(0, str(cache_dir))
-
-    try:
-        # Create C file with exclusive access
-        open(c_filename, "x")
-        return None, None
-    except FileExistsError:
-        logger.info("Cached C file already exists: " + str(c_filename))
-        # Now wait for ready
-        for i in range(timeout):
-            if os.path.exists(ready_name):
-                # Build list of compiled objects
-                importlib.invalidate_caches()
-                compiled_module = importlib.import_module(module_name)
-                sys.path.remove(str(cache_dir))
-                compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
-                return compiled_objects, compiled_module
-
-            logger.info("Waiting for {} to appear.".format(str(ready_name)))
-            time.sleep(1)
-        raise TimeoutError("""JIT compilation timed out, probably due to a failed previous compile.
-        Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
-
-
 def compile_elements(elements, parameters=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects"""
     p = ffc.parameters.default_parameters()
@@ -104,13 +73,6 @@ def compile_elements(elements, parameters=None):
         names.append(name)
         name = ffc.ir.representation.make_dofmap_jit_classname(e, "JIT", p)
         names.append(name)
-
-    if p['use_cache']:
-        obj, mod = get_cached_module(module_name, names, p)
-        if obj is not None:
-            # Pair up elements with dofmaps
-            obj = list(zip(obj[::2], obj[1::2]))
-            return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
@@ -141,11 +103,6 @@ def compile_forms(forms, parameters=None):
     form_names = [ffc.classname.make_name("JIT", "form", i)
                   for i in range(len(forms))]
 
-    if p['use_cache']:
-        obj, mod = get_cached_module(module_name, form_names, p)
-        if obj is not None:
-            return obj, mod
-
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
         UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL
@@ -171,11 +128,6 @@ def compile_coordinate_maps(meshes, parameters=None):
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
 
-    if p['use_cache']:
-        obj, mod = get_cached_module(module_name, cmap_names, p)
-        if obj is not None:
-            return obj, mod
-
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
     cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
@@ -187,40 +139,45 @@ def compile_coordinate_maps(meshes, parameters=None):
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
-    if (parameters['use_cache']):
-        compile_dir = ffc.config.get_cache_path(parameters)
-    else:
-        compile_dir = Path(tempfile.mkdtemp())
+
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
-    ffibuilder = cffi.FFI()
-    ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
-                          extra_compile_args=['-g0'])  # turn off -g
+    command = "clang -x c - {includes} -c -S -emit-llvm -o -".format(includes="-I"
+                                                                     + ffc.codegeneration.get_include_path())
 
-    ffibuilder.cdef(decl)
+    ps = subprocess.Popen(command.split(" "), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    code_body = code_body.encode('utf-8')
+    llvm_ir = ps.communicate(input=code_body)
+    llvm_ir = llvm_ir[0].decode('utf-8')
 
-    c_filename = compile_dir.joinpath(module_name + ".c")
-    ready_name = c_filename.with_suffix(".c.cached")
+    #    print(llvm_ir)
 
-    # Ensure path is set for module and ensure cache dir exists
-    sys.path.insert(0, str(compile_dir))
-    compile_dir.mkdir(exist_ok=True)
+    # All these initializations are required for code generation!
+    llvm.initialize()
+    llvm.initialize_native_target()
+    llvm.initialize_native_asmprinter()
 
-    # Compile
-    ffibuilder.compile(tmpdir=compile_dir, verbose=False)
+    # Create a target machine representing the host
+    target = llvm.Target.from_default_triple()
+    target_machine = target.create_target_machine()
+    # And an execution engine with an empty backing module
+    backing_mod = llvm.parse_assembly("")
+    engine = llvm.create_mcjit_compiler(backing_mod, target_machine)
 
-    # Create a "status ready" file. If this fails, it is an error,
-    # because it should not exist yet.
-    fd = open(ready_name, "x")
-    fd.close()
+    mod = llvm.parse_assembly(llvm_ir)
+    mod.verify()
+    # Now add the module and make sure it is ready for execution
+    engine.add_module(mod)
+    engine.finalize_object()
+    engine.run_static_constructors()
 
-    # Invalidate PathFinder cache and import
-    # (Python otherwise will assume no new modules can exist during runtime)
-    importlib.invalidate_caches()
-    compiled_module = importlib.import_module(module_name)
-    sys.path.remove(str(compile_dir))
+    print(dir(engine))
+    quit()
 
     # Build list of compiled objects
-    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+    #    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+
+    compiled_objects = None
+    compiled_module = None
 
     return compiled_objects, compiled_module
