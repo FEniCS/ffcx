@@ -61,7 +61,7 @@ def get_cached_module(module_name, object_names, parameters):
     ready_name = c_filename.with_suffix(".c.cached")
 
     # Ensure cache dir exists
-    cache_dir.mkdir(exist_ok=True)
+    cache_dir.mkdir(exist_ok=True, parents=True)
 
     try:
         # Create C file with exclusive access
@@ -206,7 +206,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     ready_name = c_filename.with_suffix(".c.cached")
 
     # Compile (ensuring that compile dir exists)
-    compile_dir.mkdir(exist_ok=True)
+    compile_dir.mkdir(exist_ok=True, parents=True)
     ffibuilder.compile(tmpdir=compile_dir, verbose=False)
 
     # Create a "status ready" file. If this fails, it is an error,
