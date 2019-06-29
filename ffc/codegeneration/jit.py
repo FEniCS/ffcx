@@ -15,8 +15,10 @@ import subprocess
 # import time
 import re
 
-# import cffi
+import cffi
 import llvmlite.binding as llvm
+
+from ctypes import CFUNCTYPE, c_long
 
 import ffc
 import ffc.config
@@ -142,8 +144,8 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
-    command = "clang -x c - {includes} -c -S -emit-llvm -o -".format(includes="-I"
-                                                                     + ffc.codegeneration.get_include_path())
+    command = "clang -x c - {includes} -fPIC -c -S -emit-llvm -o -".format(includes="-I"
+                                                                           + ffc.codegeneration.get_include_path())
 
     ps = subprocess.Popen(command.split(" "), stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     code_body = code_body.encode('utf-8')
@@ -173,16 +175,19 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     fnames = ['create_' + name for name in object_names]
 
-    for f in fnames:
-        q = engine.get_function_address(f)
-        print(f, q)
+    ffi = cffi.FFI()
+    ffi.cdef(decl)
 
-    quit()
-
+    print(fnames, decl)
+    f_ptr = [engine.get_function_address(f) for f in fnames]
+    print(f_ptr)
+    cfunc = [CFUNCTYPE(c_long)(f)() for f in f_ptr]
+    print(cfunc)
+    compiled_objects = [ffi.cast("ufc_form *", res) for res in cfunc]
+    print(compiled_objects)
     # Build list of compiled objects
     #    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
 
-    compiled_objects = None
     compiled_module = None
 
     return compiled_objects, compiled_module
