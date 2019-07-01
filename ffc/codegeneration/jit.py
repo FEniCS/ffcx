@@ -5,20 +5,15 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-# import tempfile
-# from pathlib import Path
-# import importlib
 import logging
 import os
 import subprocess
-# import sys
-# import time
 import re
 
 import cffi
 import llvmlite.binding as llvm
 
-from ctypes import CFUNCTYPE, c_long
+from ctypes import CFUNCTYPE, c_void_p
 
 import ffc
 import ffc.config
@@ -141,7 +136,6 @@ def compile_coordinate_maps(meshes, parameters=None):
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
-
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     command = "clang -x c - {includes} -fPIC -c -S -emit-llvm -o -".format(includes="-I"
@@ -151,8 +145,6 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     code_body = code_body.encode('utf-8')
     llvm_ir = ps.communicate(input=code_body)
     llvm_ir = llvm_ir[0].decode('utf-8')
-
-    #    print(llvm_ir)
 
     # All these initializations are required for code generation!
     llvm.initialize()
@@ -165,7 +157,6 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     # And an execution engine with an empty backing module
     backing_mod = llvm.parse_assembly("")
     engine = llvm.create_mcjit_compiler(backing_mod, target_machine)
-
     mod = llvm.parse_assembly(llvm_ir)
     mod.verify()
     # Now add the module and make sure it is ready for execution
@@ -173,21 +164,26 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
     engine.finalize_object()
     engine.run_static_constructors()
 
-    fnames = ['create_' + name for name in object_names]
-
+    # Go through a string of casts to get an object
     ffi = cffi.FFI()
     ffi.cdef(decl)
+    # Function pointers to "create_" method
 
-    print(fnames, decl)
+    fnames = ['create_' + name for name in object_names]
+    obj_types = []
+    for name in object_names:
+        if name.startswith("jit_form"):
+            obj_types += ["ufc_form *"]
+        elif name.startswith("ffc_coordinate_map"):
+            obj_types += ["ufc_coordinate_mapping *"]
+        elif name.startswith("ffc_element"):
+            obj_types += ["ufc_finite_element *"]
+        else:
+            raise RuntimeError("Bad name")
+
     f_ptr = [engine.get_function_address(f) for f in fnames]
-    print(f_ptr)
-    cfunc = [CFUNCTYPE(c_long)(f)() for f in f_ptr]
-    print(cfunc)
-    compiled_objects = [ffi.cast("ufc_form *", res) for res in cfunc]
-    print(compiled_objects)
-    # Build list of compiled objects
-    #    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+    create_func = [CFUNCTYPE(c_void_p)(f)() for f in f_ptr]
+    compiled_objects = [ffi.cast(otype, f) for otype, f in zip(obj_types, create_func)]
 
-    compiled_module = None
-
-    return compiled_objects, compiled_module
+    # FIXME: return "engine" here to keep in scope (otherwise loaded object code may be deleted)
+    return compiled_objects, engine

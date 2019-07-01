@@ -55,7 +55,8 @@ def test_tabulate_reference_dof_coordinates(lagrange_element):
         tdim = compiled_e[0].topological_dimension
         space_dim = compiled_e[0].space_dimension
         X = np.zeros([space_dim, tdim])
-        X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+        ffi = cffi.FFI()
+        X_ptr = ffi.cast("double *", ffi.from_buffer(X))
         compiled_e[0].tabulate_reference_dof_coordinates(X_ptr)
 
 
@@ -66,9 +67,10 @@ def test_evaluate_reference_basis_hex(hexahedral_element):
         X = np.array([[0.0, 0.0, 0.0], [0.5, 0.5, 0.5], [1.0, 0.0, 0.0],
                       [0.0, 1.0, 0.0], [1.0, 1.0, 1.0]])
         npoint = X.shape[0]
-        X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
+        ffi = cffi.FFI()
+        X_ptr = ffi.cast("const double *", ffi.from_buffer(X))
         vals = np.zeros([npoint, space_dim])
-        vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+        vals_ptr = ffi.cast("double *", ffi.from_buffer(vals))
         compiled_e[0].evaluate_reference_basis(vals_ptr, npoint, X_ptr)
         assert np.isclose(np.sum(vals), npoint)
 
@@ -78,13 +80,13 @@ def test_evaluate_reference_basis_hex(hexahedral_element):
                          [-1 / 6, 1 / 6, 0.0, 0.0],
                          [-1 / 6, 0.0, 1 / 6, 0.0],
                          [-1 / 6, 0.0, 0.0, 1 / 6]], dtype=np.float64)),
-    ("double complex",
-     np.array(
-         [[0.5 + 0j, -1 / 6 + 0j, -1 / 6 + 0j, -1 / 6 + 0j],
-          [-1 / 6 + 0j, 1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j],
-          [-1 / 6 + 0j, 0.0 + 0j, 1 / 6 + 0j, 0.0 + 0j],
-          [-1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j, 1 / 6 + 0j]],
-         dtype=np.complex128)),
+    # ("double complex",
+    #  np.array(
+    #      [[0.5 + 0j, -1 / 6 + 0j, -1 / 6 + 0j, -1 / 6 + 0j],
+    #       [-1 / 6 + 0j, 1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j],
+    #       [-1 / 6 + 0j, 0.0 + 0j, 1 / 6 + 0j, 0.0 + 0j],
+    #       [-1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j, 1 / 6 + 0j]],
+    #      dtype=np.complex128)),
 ])
 def test_laplace_bilinear_form_3d(mode, expected_result):
     cell = ufl.tetrahedron
