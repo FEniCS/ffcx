@@ -9,15 +9,14 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update && sudo apt-get install libboost-math-dev graphviz
-            sudo pip install cffi flake8 pydocstyle pytest pygraphviz coverage coveralls --upgrade
+            sudo apt-get update && sudo apt-get install libboost-math-dev graphviz clang
+            sudo pip install cffi llvmlite flake8 pydocstyle pytest pygraphviz coverage coveralls --upgrade
       - run:
           name: Install FEniCS dependencies
           command: |
             pip install git+https://bitbucket.org/fenics-project/fiat.git --user
             pip install git+https://bitbucket.org/fenics-project/ufl.git --user
             pip install git+https://bitbucket.org/fenics-project/dijitso.git --user
-            pip install llvmlite --user
       - run:
           name: Install FFC
           command: pip install . --user -v
