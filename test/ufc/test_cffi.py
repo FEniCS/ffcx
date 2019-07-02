@@ -120,11 +120,11 @@ def test_cmap():
 
 @pytest.mark.parametrize("mode,expected_result", [
     ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
-    #    ("double complex",
-    #     np.array(
-    #         [[1.0 + 0j, -0.5 + 0j, -0.5 + 0j], [-0.5 + 0j, 0.5 + 0j, 0.0 + 0j],
-    #          [-0.5 + 0j, 0.0 + 0j, 0.5 + 0j]],
-    #         dtype=np.complex128)),
+    ("double complex",
+     np.array(
+         [[1.0 + 0j, -0.5 + 0j, -0.5 + 0j], [-0.5 + 0j, 0.5 + 0j, 0.0 + 0j],
+          [-0.5 + 0j, 0.0 + 0j, 0.5 + 0j]],
+         dtype=np.complex128)),
 ])
 def test_laplace_bilinear_form_2d(mode, expected_result):
     cell = ufl.triangle
@@ -179,16 +179,16 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
           [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
          dtype=np.float64)),
-    # ("double complex",
-    #  np.array(
-    #      [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
-    #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
-    #      dtype=np.complex128)),
-    # ("float complex",
-    #  np.array(
-    #      [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
-    #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
-    #      dtype=np.complex64)),
+    ("double complex",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.complex128)),
+    ("float complex",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.complex64)),
 ])
 def test_mass_bilinear_form_2d(mode, expected_result):
     cell = ufl.triangle
@@ -229,9 +229,9 @@ def test_mass_bilinear_form_2d(mode, expected_result):
 @pytest.mark.parametrize("mode,expected_result", [
     ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)
      - (1.0 / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64)),
-    # ("double complex",
-    #  np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.complex128)
-    #  - (1.0j / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.complex128)),
+    ("double complex",
+     np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.complex128)
+     - (1.0j / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.complex128)),
 ])
 def test_helmholtz_form_2d(mode, expected_result):
     cell = ufl.triangle
