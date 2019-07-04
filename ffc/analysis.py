@@ -202,7 +202,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
         # Find all estimated polynomial degrees by UFL for all integrals in this
         # integral data group
-        estimated_quadrature_degrees = [integral.metadata()["estimated_polynomial_degree"]
+        estimated_quadrature_degrees = [numpy.max(integral.metadata()["estimated_polynomial_degree"])
                                         for integral in integral_data.integrals]
 
         if isinstance(parameters["quadrature_degree"], int):

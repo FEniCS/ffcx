@@ -10,6 +10,7 @@
 # have been made to the generated code.
 
 from collections import defaultdict
+import numpy
 
 import ffc.codegeneration.finite_element_template as ufc_finite_element
 import ufl

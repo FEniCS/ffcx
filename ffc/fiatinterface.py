@@ -71,6 +71,25 @@ def create_element(ufl_element):
     elif isinstance(ufl_element, ufl.RestrictedElement):
         element = _create_restricted_element(ufl_element)
         raise RuntimeError("Cannot handle this element type: {}".format(ufl_element))
+    elif isinstance(ufl_element, ufl.TensorProductElement):
+
+        cellname = ufl_element.cell().cellname()
+
+        if cellname == "quadrilateral":
+            # Just reconstruct the quad cell and pass run again
+            A = ufl_element.sub_elements()[0]
+            B = ufl_element.sub_elements()[1]
+
+            tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+            el = ufl.TensorProductElement(A, B, cell=tpc)
+
+            element = FlattenedDimensions(
+                        _create_fiat_element(el))
+
+        else:
+            raise RuntimeError("TensorProductElement on this cell not implemented.")
+    else:
+        raise RuntimeError("Unknown FIAT element for UFL element {}".format(ufl_element))
 
     # Store in cache
     _cache[element_signature] = element

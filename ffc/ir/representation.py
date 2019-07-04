@@ -185,7 +185,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
-    ir["degree"] = ufl_element.degree()
+    ir["degree"] = numpy.max(ufl_element.degree())
     ir["family"] = ufl_element.family()
 
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, parameters["epsilon"])
