@@ -27,8 +27,8 @@ def create_delegate(integral_type, declname, impl):
 
 
 def add_ufc_form_integral_methods(cls):
-    """Generate methods on the class decorated by this function,
-    for each integral name template and for each integral type.
+    """Generate methods on the class decorated by this function.
+    One for each integral name template and for each integral type.
 
     This allows implementing e.g. create_###_integrals once in the
     decorated class as '_create_foo_integrals', and this function will
@@ -169,7 +169,7 @@ class UFCForm:
 
 
 def generator(ir, parameters):
-    """Generate UFC code for a form"""
+    """Generate UFC code for a form."""
 
     factory_name = ir.classname
 

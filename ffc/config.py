@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_cache_path(parameters):
-    """Get the path for the JIT cache"""
+    """Get the path for the JIT cache."""
 
     # Get cache path from parameters, with fallback to current working
     # directory

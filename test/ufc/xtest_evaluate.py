@@ -27,7 +27,7 @@ import ffc_factory
 
 @pytest.fixture(scope="module")
 def point_data():
-    """Points are which evaluate functions are tested"""
+    """Points are which evaluate functions are tested."""
     p = {1: [(0.114,), (0.349,), (0.986,)],
          2: [(0.114, 0.854), (0.349, 0.247), (0.986, 0.045)],
          3: [(0.114, 0.854, 0.126), (0.349, 0.247, 0.457),
@@ -37,7 +37,7 @@ def point_data():
 
 @pytest.fixture(scope="module")
 def build_ufl_element_list():
-    """Build collection of UFL elements"""
+    """Build collection of UFL elements."""
 
     elements = []
 
@@ -96,16 +96,13 @@ def build_ufl_element_list():
 
 
 def element_id(e):
-    """Return element string signature as ID"""
+    """Return element string signature as ID."""
     return str(e)
 
 
 @pytest.fixture(params=build_ufl_element_list(), ids=element_id, scope="module")
 def element_pair(request):
-    """Given a UFL element, returns UFL element and a JIT-compiled and
-    wrapped UFC element.
-
-    """
+    """Given a UFL element, returns UFL element and a JIT-compiled and wrapped UFC element."""
 
     ufl_element = request.param
     ufc_element, ufc_dofmap = ffc.jit(ufl_element, parameters=None)
@@ -114,10 +111,7 @@ def element_pair(request):
 
 
 def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
-    """Tests ufc::finite_element::evaluate_reference_basis against data
-    from FIAT.
-
-    """
+    """Tests ufc::finite_element::evaluate_reference_basis against data from FIAT."""
 
     ufl_element, ufc_element = element_pair
 
@@ -169,9 +163,9 @@ def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
 
 
 def test_evaluate_basis_vs_fiat(element_pair, point_data):
-    """Tests ufc::finite_element::evaluate_basis and
+    """Tests against FIAT.
+    Test ufc::finite_element::evaluate_basis and
     ufc::finite_element::evaluate_basis_all against data from FIAT.
-
     """
 
     ufl_element, ufc_element = element_pair
@@ -233,7 +227,8 @@ def test_evaluate_basis_vs_fiat(element_pair, point_data):
 @pytest.mark.parametrize("order", range(4))
 def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
                                                 point_data):
-    """Tests ufc::finite_element::evaluate_reference_basis_derivatives
+    """Tests agaist FIAT.
+    Tests ufc::finite_element::evaluate_reference_basis_derivatives
     against data from FIAT.
 
     """
@@ -272,8 +267,8 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
                     break
 
     def to_fiat_tuple(comb, gdim):
-        """Convert a list of combinations of derivatives to a fiat tuple of
-        derivatives.  FIAT expects a list with the number of
+        """Convert a list of combinations of derivatives to a fiat tuple of derivatives.
+        FIAT expects a list with the number of
         derivatives in each spatial direction.  E.g., in 2D: u_{xyy}
         --> [0, 1, 1] in FFC --> (1, 2) in FIAT.
 

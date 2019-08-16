@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class ValueNumberer(object):
-    """An algorithm to map the scalar components of an expression node to unique value numbers,
+    """Maps scalar components to unique values.
+
+    An algorithm to map the scalar components of an expression node to unique value numbers,
     with fallthrough for types that can be mapped to the value numbers
     of their operands."""
 
@@ -112,7 +114,10 @@ class ValueNumberer(object):
     # terminals are implemented separately, or maybe they don't need to be?
 
     def _modified_terminal(self, v):
-        """Modifiers:
+        """Handle modified terminal.
+
+        Modifiers:
+        ---------
         terminal           - the underlying Terminal object
         global_derivatives - tuple of ints, each meaning derivative in that global direction
         local_derivatives  - tuple of ints, each meaning derivative in that local direction
@@ -121,6 +126,7 @@ class ValueNumberer(object):
         restriction        - None, '+' or '-'
         component          - tuple of ints, the global component of the Terminal
         flat_component     - single int, flattened local component of the Terminal, considering symmetry
+
         """
         # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
         #     in which case the reference value shape of the element must be used.

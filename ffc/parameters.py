@@ -72,7 +72,7 @@ def validate_parameters(parameters):
 
 
 def _validate_parameters(parameters):
-    """Does some casting of parameter values in place on the provided dictionary"""
+    """Does some casting of parameter values in place on the provided dictionary."""
     # Convert all legal default values to None
     if parameters["quadrature_rule"] in ("auto", None, "None"):
         parameters["quadrature_rule"] = None

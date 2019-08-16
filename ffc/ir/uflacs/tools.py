@@ -61,9 +61,7 @@ def compute_quadrature_rules(rules, integral_type, cell):
 
 
 def accumulate_integrals(itg_data, quadrature_rule_sizes):
-    """Group and accumulate integrals according to the number
-    of quadrature points in their rules.
-    """
+    """Group and accumulate integrals according to the number of quadrature points in their rules."""
     if not itg_data.integrals:
         return {}
 

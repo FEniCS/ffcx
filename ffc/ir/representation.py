@@ -5,7 +5,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Compiler stage 2: Code representation
+"""Compiler stage 2: Code representation.
 
 Module computes intermediate representations of forms, elements and
 dofmaps. For each UFC function, we extract the data needed for code
@@ -427,7 +427,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
 
 
 def _generate_reference_offsets(fiat_element, offset=0):
-    """Generate offsets: i.e value offset for each basis function
+    """Generate offsets.
+    i.e. value offset for each basis function
     relative to a reference element representation."""
     if isinstance(fiat_element, MixedElement):
         offsets = []
@@ -447,7 +448,8 @@ def _generate_reference_offsets(fiat_element, offset=0):
 
 
 def _generate_physical_offsets(ufl_element, offset=0):
-    """Generate offsets: i.e value offset for each basis function
+    """Generate offsets.
+    i.e. value offset for each basis function
     relative to a physical element representation."""
     cell = ufl_element.cell()
     gdim = cell.geometric_dimension()
@@ -478,7 +480,8 @@ def _generate_physical_offsets(ufl_element, offset=0):
 
 
 def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
-    """Generate offsets: i.e value offset for each basis function
+    """Generate offsets.
+    i.e. value offset for each basis function
     relative to a physical element representation."""
     if isinstance(ufl_element, ufl.MixedElement):
         offsets = []
@@ -730,8 +733,7 @@ def all_elements(fiat_element):
 
 
 def _num_dofs_per_entity(fiat_element):
-    """Compute list of integers representing the number of dofs
-    associated with a single mesh entity.
+    """Compute list of the number of dofs associated with a single mesh entity.
 
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
 

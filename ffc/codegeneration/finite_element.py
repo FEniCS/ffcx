@@ -84,7 +84,7 @@ def create_sub_element(L, ir):
 
 
 def transform_values(L, ir, parameters):
-    """Generate code for transform_values()"""
+    """Generate code for transform_values."""
     return generate_transform_values(L, ir.evaluate_dof)
 
 
@@ -353,7 +353,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
 
 def generator(ir, parameters):
-    """Generate UFC code for a finite element"""
+    """Generate UFC code for a finite element."""
     d = {}
     d["factory_name"] = ir.classname
     d["signature"] = "\"{}\"".format(ir.signature)
