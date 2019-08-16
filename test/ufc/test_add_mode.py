@@ -30,7 +30,7 @@ def float_to_type(name):
 
 
 @pytest.mark.parametrize("mode", ["double", "float", "long double", "double complex", "float complex"])
-def test_laplace_bilinear_form_2d(mode):
+def test_additive_facet_integral(mode):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
@@ -69,3 +69,50 @@ def test_laplace_bilinear_form_2d(mode):
             ffi.cast('int *', facets.ctypes.data), ffi.NULL)
 
         assert np.isclose(A.sum(), np.sqrt(12) * (i + 1))
+
+
+@pytest.mark.parametrize("mode", ["double", "float", "long double", "double complex", "float complex"])
+def test_additive_cell_integral(mode):
+    cell = ufl.triangle
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+    forms = [a]
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms,
+                                                                  parameters={'scalar_type': mode,
+                                                                              'tensor_init_mode': 'add'})
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == len(f.arguments())
+
+    ffi = cffi.FFI()
+    form0 = compiled_forms[0][0]
+
+    assert form0.num_cell_integrals == 1
+    ids = np.zeros(form0.num_cell_integrals, dtype=np.int32)
+    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert ids[0] == -1
+
+    default_integral = form0.create_cell_integral(ids[0])
+
+    c_type, np_type = float_to_type(mode)
+    A = np.zeros((3, 3), dtype=np_type)
+    w = np.array([], dtype=np_type)
+
+    coords = np.array([0.0, 2.0, np.sqrt(3.0), -1.0, -np.sqrt(3.0), -1.0], dtype=np.float64)
+
+    default_integral.tabulate_tensor(
+        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+
+    A0 = np.array(A)
+
+    for i in range(3):
+
+        default_integral.tabulate_tensor(
+            ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+            ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+
+        assert np.all(np.isclose(A, (i + 2) * A0))
