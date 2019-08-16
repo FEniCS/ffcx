@@ -206,7 +206,7 @@ class FFCBackendDefinitions(object):
         return []
 
     def _expect_physical_coords(self, e, mt, tabledata, num_points, access):
-        """These quantities refer to coordinate_dofs"""
+        """These quantities refer to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
         return []

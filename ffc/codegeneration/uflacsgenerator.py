@@ -4,8 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Controlling algorithm for building the tabulate_tensor
-source structure from factorized representation."""
+"""Controlling algorithm for building the tabulate_tensor source structure from factorized representation."""
 
 import collections
 import itertools
@@ -245,8 +244,7 @@ class IntegralGenerator(object):
         return parts
 
     def generate_element_tables(self):
-        """Generate static tables with precomputed element basis
-        function values in quadrature points."""
+        """Generate static tables with precomputed element basis function values in quadrature points."""
         L = self.backend.language
         parts = []
 

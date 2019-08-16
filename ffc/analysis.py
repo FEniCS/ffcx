@@ -5,7 +5,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Compiler stage 1: Analysis
+"""Compiler stage 1: Analysis.
 
 This module implements the analysis/preprocessing of variational forms,
 including automatic selection of elements, degrees and form
@@ -32,7 +32,7 @@ ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numb
 def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], typing.List[ufl.FiniteElement],
                                                   typing.List],
                         parameters: typing.Dict) -> ufl_data:
-    """Analyze ufl object(s)
+    """Analyze ufl object(s).
 
     Parameters
     ----------
@@ -96,7 +96,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
 
 
 def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithms.formdata.FormData:
-    """Analyzes UFL form and attaches metadata
+    """Analyzes UFL form and attaches metadata.
 
     Parameters
     ----------
@@ -105,12 +105,10 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
     Returns
     -------
-    form_data
-        Form data computed by UFL with metadata attached
+    form_data -  Form data computed by UFL with metadata attached
 
     Note
     ----
-
     The main workload of this function is extraction of unique/default metadata
     from parameters, integral metadata or inherited from UFL
     (in case of quadrature degree)
@@ -285,7 +283,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
 
 def _has_custom_integrals(o) -> bool:
-    """Check for custom integrals"""
+    """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):
         return o.integral_type() in ufl.custom_integral_types
     elif isinstance(o, ufl.classes.Form):
@@ -297,7 +295,8 @@ def _has_custom_integrals(o) -> bool:
 
 
 def _check_quadrature_degree(degree: int, top_dim: int) -> None:
-    """Check that quadrature degree does not result in a unreasonable high
+    """Check quadrature degree.
+    Check that it does not result in a unreasonable high
     number of integration points.
 
     """

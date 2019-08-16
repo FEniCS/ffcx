@@ -37,7 +37,7 @@ class SpaceOfReals(object):
 
 
 def reference_cell(cellname):
-    """Return FIAT reference cell"""
+    """Return FIAT reference cell."""
     return FIAT.ufc_cell(cellname)
 
 
@@ -162,7 +162,9 @@ def _create_fiat_element(ufl_element):
 
 
 def create_quadrature(shape, degree, scheme="default"):
-    """Generate quadrature rule (points, weights) for given shape
+    """Generate quadrature rule.
+
+    Quadrature rule(points, weights) for given shape
     that will integrate an polynomial of order 'degree' exactly.
 
     """
@@ -202,7 +204,9 @@ def create_quadrature(shape, degree, scheme="default"):
 
 
 def map_facet_points(points, facet, cellname):
-    """Map points from the e (UFC) reference simplex of dimension d - 1
+    """Map points from a facet to a cell.
+
+    Map points from the e (UFC) reference simplex of dimension d - 1
     to a given facet on the (UFC) reference simplex of dimension d. This
     may be used to transform points tabulated for example on the 2D
     reference triangle to points on a given facet of the reference

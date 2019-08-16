@@ -189,7 +189,8 @@ def uflacs_default_parameters(optimize):
 
 
 def parse_uflacs_optimization_parameters(parameters, integral_type):
-    """Following model from quadrature representation, extracting
+    """Extract parameters.
+    Following model from quadrature representation, extracting
     uflacs specific parameters from the global parameters dict."""
 
     # Get default parameters

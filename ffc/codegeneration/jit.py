@@ -92,7 +92,7 @@ def get_cached_module(module_name, object_names, parameters):
 
 
 def compile_elements(elements, parameters=None):
-    """Compile a list of UFL elements and dofmaps into UFC Python objects"""
+    """Compile a list of UFL elements and dofmaps into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -132,7 +132,7 @@ def compile_elements(elements, parameters=None):
 
 
 def compile_forms(forms, parameters=None):
-    """Compile a list of UFL forms into UFC Python objects"""
+    """Compile a list of UFL forms into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -162,7 +162,7 @@ def compile_forms(forms, parameters=None):
 
 
 def compile_coordinate_maps(meshes, parameters=None):
-    """Compile a list of UFL coordinate mappings into UFC Python objects"""
+    """Compile a list of UFL coordinate mappings into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
