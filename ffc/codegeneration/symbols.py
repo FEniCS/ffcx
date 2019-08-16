@@ -106,8 +106,7 @@ class FFCBackendSymbols(object):
         return self.S("ic")
 
     def quadrature_loop_index(self):
-        """Reusing a single index name for all quadrature loops,
-        assumed not to be nested."""
+        """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")
 
     def num_custom_quadrature_points(self):

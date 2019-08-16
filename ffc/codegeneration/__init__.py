@@ -12,7 +12,7 @@ _include_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_include_path():
-    """Return location of UFC header files"""
+    """Return location of UFC header files."""
     return _include_path
 
 

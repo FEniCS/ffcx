@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-"""FEniCS Form Compiler (FFC)
+"""FEniCS Form Compiler (FFC).
 
 FFC compiles finite element variational forms into C code.
 

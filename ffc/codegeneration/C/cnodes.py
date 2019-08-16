@@ -915,8 +915,10 @@ def as_symbol(symbol):
 
 
 def flattened_indices(indices, shape):
-    """Given a tuple of indices and a shape tuple,
-    return CNode expression for flattened indexing into multidimensional
+    """Return a flattened indexing expression.
+
+    Given a tuple of indices and a shape tuple, return
+    a CNode expression for flattened indexing into multidimensional
     array.
 
     Indices and shape entries can be int values, str symbol names, or
@@ -1180,7 +1182,7 @@ def pad_innermost_dim(shape, padlen):
 
 
 def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
-    """Return a list containing a single line formatted like '{ 0.0, 1.0, 2.0 }'"""
+    """Return a list containing a single line formatted like '{ 0.0, 1.0, 2.0 }'."""
     if formatter == str:
 
         def formatter(x, p):

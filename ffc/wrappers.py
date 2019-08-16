@@ -31,8 +31,8 @@ def generate_wrapper_code(analysis: namedtuple, prefix, object_names, classnames
 
 
 def _encapsulate_elements(elements, object_names, classnames):
-    """Generate capsules for each element named in the input (no wrappers
-    for subelements will be created)"""
+    """Generate capsules for each element named in the input.
+    (no wrappers for subelements will be created)"""
 
     assert not classnames["coordinate_maps"], "Need to fix element wrappers for coordinate mappings."
 
