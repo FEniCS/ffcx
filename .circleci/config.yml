@@ -23,9 +23,9 @@ jobs:
       - run:
           name: Run flake8 tests
           command: python -m flake8 ffc/ test/
-#      - run:
-#          name: Run pydocstyle tests
-#          command: python -m pydocstyle .
+      - run:
+          name: Run pydocstyle tests
+          command: python -m pydocstyle .
       - run:
           name: Run unit tests
           command: |
