@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Runs a benchmark study on the form files found in the
-current directory. It relies on the regression test script for
-timings."""
+"""Runs a benchmark study on the form files found in the current directory.
+It relies on the regression test script for timings."""
 
 # Copyright (C) 2010 Anders Logg
 #
@@ -27,7 +26,7 @@ from utils import print_table
 
 # Test options
 test_options = ["-r tensor",
-                #"-r tensor -O",
+                # "-r tensor -O",
                 "-r quadrature",
                 "-r quadrature -O",
                 "-r uflacs"]

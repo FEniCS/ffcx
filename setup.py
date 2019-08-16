@@ -60,9 +60,7 @@ def tarball():
 
 
 def get_git_commit_hash():
-    """Return git commit hash of currently checked out revision
-    or "unknown"
-    """
+    """Return git commit hash of currently checked out revision or "unknown"."""
     try:
         hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])
     except (OSError, subprocess.CalledProcessError) as e:
@@ -76,7 +74,7 @@ def get_git_commit_hash():
 
 
 def write_config_file(infile, outfile, variables={}):
-    """Write config file based on template"""
+    """Write config file based on template."""
 
     class AtTemplate(string.Template):
         delimiter = "@"
@@ -88,7 +86,7 @@ def write_config_file(infile, outfile, variables={}):
 
 
 def generate_git_hash_file(GIT_COMMIT_HASH):
-    """Generate module with git hash"""
+    """Generate module with git hash."""
     write_config_file(
         os.path.join("ffc", "git_commit_hash.py.in"),
         os.path.join("ffc", "git_commit_hash.py"),
@@ -96,7 +94,7 @@ def generate_git_hash_file(GIT_COMMIT_HASH):
 
 
 def run_install():
-    """Run installation"""
+    """Run installation."""
 
     # Get common variables
     GIT_COMMIT_HASH = get_git_commit_hash()
@@ -130,7 +128,7 @@ def run_install():
         ],
         package_dir={"ffc": "ffc"},
         package_data={"ffc": [os.path.join('codegeneration', '*.h')]},
-        #scripts=scripts,  # Using entry_points instead
+        # scripts=scripts,  # Using entry_points instead
         entry_points=entry_points,
         install_requires=REQUIREMENTS,
         zip_safe=False)
