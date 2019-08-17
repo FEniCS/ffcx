@@ -983,6 +983,11 @@ class IntegralGenerator(object):
             for i in range(A_size):
                 if not (A_values[i] == 0.0 or A_values[i] == z):
                     parts += [L.Assign(A[i], A_values[i])]
+        elif init_mode == "add":
+            # Generate A[i] += A_values[i]
+            for i in range(A_size):
+                if not (A_values[i] == 0.0 or A_values[i] == z):
+                    parts += [L.AssignAdd(A[i], A_values[i])]
         elif init_mode == "interleaved":
             # Generate A[i] = A_values[i] with interleaved zero filling
             i = 0
