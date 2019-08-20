@@ -84,7 +84,7 @@ class FFCBackendAccess(object):
     def constant(self, e, mt, tabledata, num_points):
         """Access to a constant is handled trivially, directly through constants symbol."""
         return self.symbols.constant_index_access(mt.terminal, mt.flat_component)
-å
+
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         if mt.global_derivatives:
             raise RuntimeError("Not expecting global derivatives of SpatialCoordinate.")
