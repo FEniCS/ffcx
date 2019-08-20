@@ -125,8 +125,10 @@ def test_cmap():
 def test_laplace_bilinear_form_2d(mode, expected_result):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
+    kappa = ufl.Constant(cell, shape=(2, 2))
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
-    a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+
+    a = ufl.tr(kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
     compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
@@ -146,7 +148,9 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
-    c = np.array([], dtype=np_type)
+
+    kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
+    c = np.array(kappa_value.flatten(), dtype=np_type)
 
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
     default_integral.tabulate_tensor(
@@ -155,7 +159,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
-    assert np.allclose(A, expected_result)
+    assert np.allclose(A, np.trace(kappa_value) * expected_result)
 
 
 @pytest.mark.parametrize("mode,expected_result", [
