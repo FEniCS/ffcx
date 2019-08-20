@@ -146,11 +146,13 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
+    c = np.array([], dtype=np_type)
 
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
     default_integral.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
@@ -202,17 +204,21 @@ def test_mass_bilinear_form_2d(mode, expected_result):
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
+    c = np.array([], dtype=np_type)
+
     ffi = cffi.FFI()
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     b = np.zeros(3, dtype=np_type)
     form1.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), b.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
@@ -250,11 +256,14 @@ def test_helmholtz_form_2d(mode, expected_result):
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
+    c = np.array([], dtype=np_type)
+
     ffi = cffi.FFI()
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
@@ -275,10 +284,14 @@ def test_form_coefficient():
     form0 = compiled_forms[0][0].create_cell_integral(-1)
     A = np.zeros((3, 3), dtype=np.float64)
     w = np.array([1.0, 1.0, 1.0], dtype=np.float64)
+    c = np.array([], dtype=np.float64)
+
     ffi = cffi.FFI()
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
     form0.tabulate_tensor(
-        ffi.cast('double  *', A.ctypes.data), ffi.cast('double  *', w.ctypes.data),
+        ffi.cast('double  *', A.ctypes.data),
+        ffi.cast('double  *', w.ctypes.data),
+        ffi.cast('double  *', c.ctypes.data),
         ffi.cast('double  *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
@@ -354,6 +367,8 @@ def test_interior_facet_integral(mode):
     integral0 = form0.create_interior_facet_integral(-1)
     A = np.zeros((6, 6), dtype=np_type)
     w = np.array([], dtype=np_type)
+    c = np.array([], dtype=np.float64)
+
     facets = np.array([0, 2], dtype=np.int32)
     orients = np.array([1, 1], dtype=np.int32)
 
@@ -363,6 +378,7 @@ def test_interior_facet_integral(mode):
     integral0.tabulate_tensor(
         ffi.cast('{}  *'.format(c_type), A.ctypes.data),
         ffi.cast('{}  *'.format(c_type), w.ctypes.data),
+        ffi.cast('{}  *'.format(c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
         ffi.cast('int *', orients.ctypes.data))
 
@@ -397,11 +413,14 @@ def test_conditional(mode):
 
     A1 = np.zeros((3, 3), dtype=np_type)
     w1 = np.array([1.0, 1.0, 1.0], dtype=np_type)
+    c = np.array([], dtype=np.float64)
+
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
 
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A1.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w1.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=np_type)
@@ -414,6 +433,7 @@ def test_conditional(mode):
     form1.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A2.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w2.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.ones(3, dtype=np_type)

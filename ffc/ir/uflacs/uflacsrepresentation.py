@@ -6,6 +6,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+import numpy
 
 from ffc.fiatinterface import create_element
 from ffc.ir.representationutils import initialize_integral_ir
@@ -112,6 +113,15 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
 
     # Copy offsets also into IR
     ir["coefficient_offsets"] = offsets
+
+    # Build offsets for Constants
+    original_constant_offsets = {}
+    _offset = 0
+    for constant in form_data.original_form.constants():
+        original_constant_offsets[constant] = _offset
+        _offset += numpy.product(constant.ufl_shape)
+
+    ir["original_constant_offsets"] = original_constant_offsets
 
     # Build the more uflacs-specific intermediate representation
     uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,

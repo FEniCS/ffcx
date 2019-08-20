@@ -32,6 +32,7 @@ class FFCBackendAccess(object):
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
         self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
+                            ufl.constant.Constant: self.constant,
                             ufl.geometry.Jacobian: self.jacobian,
                             ufl.geometry.CellCoordinate: self.cell_coordinate,
                             ufl.geometry.FacetCoordinate: self.facet_coordinate,
@@ -79,6 +80,12 @@ class FFCBackendAccess(object):
         else:
             # Return symbol, see definitions for computation
             return self.symbols.coefficient_value(mt)  # , num_points)
+
+    def constant(self, e, mt, tabledata, num_points):
+        """Access to a constant is handled trivially, directly through
+        constants symbol.
+        """
+        return self.symbols.constant_index_access(mt.terminal, mt.flat_component)
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         if mt.global_derivatives:

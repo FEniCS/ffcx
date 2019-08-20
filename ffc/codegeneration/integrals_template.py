@@ -16,6 +16,7 @@ tabulate_implementation = {
     "cell":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                    const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* unused_local_index,
                                     const int* cell_orientation)
@@ -26,6 +27,7 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     "exterior_facet":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                    const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
                                     const int* cell_orientation)
@@ -36,6 +38,7 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     "interior_facet":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                    const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
                                     const int* cell_orientation)
@@ -46,6 +49,7 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     "vertex":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                    const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* vertex,
                                     const int* cell_orientation)
@@ -56,6 +60,7 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
     "custom":
     """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                          const ufc_scalar_t* c,
                           const double* restrict coordinate_dofs,
                           int num_quadrature_points,
                           const double* restrict quadrature_points,

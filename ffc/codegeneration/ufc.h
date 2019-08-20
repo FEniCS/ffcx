@@ -380,6 +380,7 @@ extern "C"
   {
     const bool* enabled_coefficients;
     void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                            const ufc_scalar_t* c,
                             const double* restrict coordinate_dofs,
                             const int* entity_local_index,
                             const int* cell_orientation);
@@ -389,6 +390,7 @@ extern "C"
   {
     const bool* enabled_coefficients;
     void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                            const ufc_scalar_t* c,
                             const double* restrict coordinate_dofs,
                             int num_quadrature_points,
                             const double* restrict quadrature_points,
