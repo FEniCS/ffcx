@@ -15,7 +15,7 @@ jobs:
           name: Install FEniCS dependencies
           command: |
             pip install git+https://bitbucket.org/fenics-project/fiat.git --user
-            pip install git+https://bitbucket.org/fenics-project/ufl.git --user
+            pip install git+https://bitbucket.org/fenics-project/ufl.git@michal/ufl-constant --user
             pip install git+https://bitbucket.org/fenics-project/dijitso.git --user
       - run:
           name: Install FFC
