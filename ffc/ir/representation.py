@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
 ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
-                                 'num_coefficients', 'original_coefficient_position',
-                                 'coefficient_names',
+                                 'num_coefficients', 'num_constants', 'original_coefficient_position',
+                                 'coefficient_names', 'constant_names',
                                  'create_coordinate_finite_element', 'create_coordinate_dofmap',
                                  'create_coordinate_mapping', 'create_finite_element',
                                  'create_dofmap', 'create_cell_integral',
@@ -391,9 +391,13 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
 
     ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
+    ir["num_constants"] = len(form_data.original_form.constants())
 
     ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
                                for j, obj in enumerate(form_data.reduced_coefficients)]
+
+    ir["constant_names"] = [object_names.get(id(obj), "w%d" % j)
+                            for j, obj in enumerate(form_data.original_form.constants())]
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 

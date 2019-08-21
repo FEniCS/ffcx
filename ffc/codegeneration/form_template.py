@@ -22,6 +22,12 @@ const char** coefficient_name_{factory_name}()
 {coefficient_name_map}
 }}
 
+// Return a list of the constant names.
+const char** constant_name_{factory_name}()
+{{
+{constant_name_map}
+}}
+
 {coordinate_finite_element_declaration}
 ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
 {{
@@ -109,9 +115,11 @@ ufc_form* create_{factory_name}(void)
   form->signature = {signature};
   form->rank = {rank};
   form->num_coefficients = {num_coefficients};
+  form->num_constants = {num_constants};
   form->original_coefficient_position = original_coefficient_position_{factory_name};
 
   form->coefficient_name_map = coefficient_name_{factory_name};
+  form->constant_name_map = constant_name_{factory_name};
 
   form->create_coordinate_finite_element = create_coordinate_finite_element_{factory_name};
   form->create_coordinate_dofmap = create_coordinate_dofmap_{factory_name};
