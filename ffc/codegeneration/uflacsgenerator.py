@@ -945,16 +945,14 @@ class IntegralGenerator(object):
 
                 if inline_table:
                     # Extract float value of PI[P_ii]
-                    Pval = table[0]  # always entity 0
-                    for i in P_arg_indices:
-                        Pval = Pval[i]
-                    A_rhs = Pval * f
+                    P_ii = (0, ) + P_arg_indices
+                    Pval = table[P_ii]
                 else:
                     # Index the static preintegrated table:
                     P_ii = P_entity_indices + P_arg_indices
-                    A_rhs = f * PI[P_ii]
+                    Pval = PI[P_ii]
 
-                A_values[A_ii] = A_values[A_ii] + A_rhs
+                A_values[A_ii] += Pval * f
 
         # Code generation
         # A[i] += A_values[i]
