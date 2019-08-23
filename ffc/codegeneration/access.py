@@ -51,11 +51,19 @@ class FFCBackendAccess(object):
 
     def get(self, e, mt, tabledata, num_points):
         # Call appropriate handler, depending on the type of e
-        etype = type(e)
-        if etype in self.call_lookup:
-            return self.call_lookup[etype](e, mt, tabledata, num_points)
+        handler = self.call_lookup.get(type(e), False)
+
+        if not handler:
+            # Look for parent class types instead
+            for k in self.call_lookup.keys():
+                if isinstance(e, k):
+                    handler = self.call_lookup[k]
+                    break
+
+        if handler:
+            return handler(e, mt, tabledata, num_points)
         else:
-            raise RuntimeError("Not handled: %s", etype)
+            raise RuntimeError("Not handled: %s", type(e))
 
     def coefficient(self, e, mt, tabledata, num_points):
         ttype = tabledata.ttype

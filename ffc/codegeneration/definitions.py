@@ -76,8 +76,17 @@ class FFCBackendDefinitions(object):
     def get(self, t, mt, tabledata, num_points, access):
         # Call appropriate handler, depending on the type of t
         ttype = type(t)
-        if ttype in self.call_lookup:
-            return self.call_lookup[ttype](t, mt, tabledata, num_points, access)
+        handler = self.call_lookup.get(ttype, False)
+
+        if not handler:
+            # Look for parent class types instead
+            for k in self.call_lookup.keys():
+                if isinstance(t, k):
+                    handler = self.call_lookup[k]
+                    break
+
+        if handler:
+            return handler(t, mt, tabledata, num_points, access)
         else:
             raise RuntimeError("Not handled: %s", ttype)
 
