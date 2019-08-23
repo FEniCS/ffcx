@@ -164,8 +164,7 @@ def uflacs_default_parameters(optimize):
         "vectorize": False,
         "alignas": 0,
         "padlen": 1,
-        "use_symbol_array": True,
-        "tensor_init_mode": "upfront",  # interleaved | direct | upfront
+        "use_symbol_array": True
     }
     if optimize:
         # Override defaults if optimization is turned on

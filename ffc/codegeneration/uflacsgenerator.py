@@ -945,82 +945,26 @@ class IntegralGenerator(object):
 
                 if inline_table:
                     # Extract float value of PI[P_ii]
-                    Pval = table[0]  # always entity 0
-                    for i in P_arg_indices:
-                        Pval = Pval[i]
-                    A_rhs = Pval * f
+                    P_ii = (0, ) + P_arg_indices
+                    Pval = table[P_ii]
                 else:
                     # Index the static preintegrated table:
                     P_ii = P_entity_indices + P_arg_indices
-                    A_rhs = f * PI[P_ii]
+                    Pval = PI[P_ii]
 
-                A_values[A_ii] = A_values[A_ii] + A_rhs
+                A_values[A_ii] += Pval * f
 
-        code = self.generate_tensor_value_initialization(A_values)
-        return L.commented_code_list(code, "UFLACS block mode: preintegrated")
+        # Code generation
+        # A[i] += A_values[i]
 
-    def generate_tensor_value_initialization(self, A_values):
-        parts = []
-
-        L = self.backend.language
-        A = self.backend.symbols.element_tensor()
-        A_size = len(A_values)
-
-        init_mode = self.ir.params["tensor_init_mode"]
         z = L.LiteralFloat(0.0)
+        code = []
+        A = self.backend.symbols.element_tensor()
+        for i in range(len(A_values)):
+            if not (A_values[i] == 0.0 or A_values[i] == z):
+                code += [L.AssignAdd(A[i], A_values[i])]
 
-        k = L.Symbol("k")  # Index for zeroing arrays
-
-        if init_mode == "direct":
-            # Generate A[i] = A_values[i] including zeros
-            for i in range(A_size):
-                parts += [L.Assign(A[i], A_values[i])]
-        elif init_mode == "upfront":
-            # Zero everything first
-            parts += [L.ForRange(k, 0, A_size, index_type="int", body=L.Assign(A[k], 0.0))]
-
-            # Generate A[i] = A_values[i] skipping zeros
-            for i in range(A_size):
-                if not (A_values[i] == 0.0 or A_values[i] == z):
-                    parts += [L.Assign(A[i], A_values[i])]
-        elif init_mode == "add":
-            # Generate A[i] += A_values[i]
-            for i in range(A_size):
-                if not (A_values[i] == 0.0 or A_values[i] == z):
-                    parts += [L.AssignAdd(A[i], A_values[i])]
-        elif init_mode == "interleaved":
-            # Generate A[i] = A_values[i] with interleaved zero filling
-            i = 0
-            zero_begin = 0
-            zero_end = zero_begin
-            while i < A_size:
-                if A_values[i] == 0.0 or A_values[i] == z:
-                    # Update range of A zeros
-                    zero_end = i + 1
-                else:
-                    # Set zeros of A just prior to A[i]
-                    if zero_end == zero_begin + 1:
-                        parts += [L.Assign(A[zero_begin], 0.0)]
-                    elif zero_end > zero_begin:
-                        parts += [
-                            L.ForRange(
-                                k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
-                        ]
-                    zero_begin = i + 1
-                    zero_end = zero_begin
-                    # Set A[i] value
-                    parts += [L.Assign(A[i], A_values[i])]
-                i += 1
-            if zero_end == zero_begin + 1:
-                parts += [L.Assign(A[zero_begin], 0.0)]
-            elif zero_end > zero_begin:
-                parts += [
-                    L.ForRange(k, zero_begin, zero_end, index_type="int", body=L.Assign(A[k], 0.0))
-                ]
-        else:
-            raise RuntimeError("Invalid init_mode parameter %s" % (init_mode, ))
-
-        return parts
+        return L.commented_code_list(code, "UFLACS block mode: preintegrated")
 
     def generate_copyout_statements(self):
         L = self.backend.language
