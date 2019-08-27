@@ -396,7 +396,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
     ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
                                for j, obj in enumerate(form_data.reduced_coefficients)]
 
-    ir["constant_names"] = [object_names.get(id(obj), "w%d" % j)
+    ir["constant_names"] = [object_names.get(id(obj), "c%d" % j)
                             for j, obj in enumerate(form_data.original_form.constants())]
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
