@@ -63,7 +63,7 @@ class FFCBackendAccess(object):
         if handler:
             return handler(e, mt, tabledata, num_points)
         else:
-            raise RuntimeError("Not handled: %s", type(e))
+            raise RuntimeError("Not handled: {}".format(type(e)))
 
     def coefficient(self, e, mt, tabledata, num_points):
         ttype = tabledata.ttype
