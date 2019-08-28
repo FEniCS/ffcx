@@ -160,8 +160,8 @@ class UFL2CNodesTranslatorCpp(object):
                             ufl.classes.OrCondition: self.or_condition,
                             ufl.classes.NotCondition: self.not_condition,
                             ufl.classes.Conditional: self.conditional,
-                            ufl.classes.MinValue: self.min_value,
-                            ufl.classes.MaxValue: self.max_value,
+                            ufl.classes.MinValue: self._cmath,
+                            ufl.classes.MaxValue: self._cmath,
                             ufl.mathfunctions.Sqrt: self._cmath,
                             ufl.mathfunctions.Ln: self._cmath,
                             ufl.mathfunctions.Exp: self._cmath,
@@ -269,22 +269,6 @@ class UFL2CNodesTranslatorCpp(object):
             raise type(e)("Math function not found:", self.scalar_type, k)
         if name is None:
             raise RuntimeError("Not supported in current scalar mode")
-        return self.L.Call(name, args)
-
-    def max_value(self, o, *args):
-        if "complex" in self.scalar_type:
-            logger.warning("Maximum is ambiguous in complex mode")
-
-        k = o._ufl_handler_name_
-        name = math_table[self.scalar_type].get(k)
-        return self.L.Call(name, args)
-
-    def min_value(self, o, *args):
-        if "complex" in self.scalar_type:
-            logger.warning("Minimum is ambiguous in complex mode")
-
-        k = o._ufl_handler_name_
-        name = math_table[self.scalar_type].get(k)
         return self.L.Call(name, args)
 
     # === Formatting rules for bessel functions ===
