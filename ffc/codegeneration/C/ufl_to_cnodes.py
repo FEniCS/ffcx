@@ -99,7 +99,9 @@ math_table = {'double': {'sqrt': 'sqrt',
                                  'ln': 'clog',
                                  'real': 'creal',
                                  'imag': 'cimag',
-                                 'conj': 'conj'},
+                                 'conj': 'conj',
+                                 'max_value': 'fmax',
+                                 'min_value': 'fmin'},
 
               'float complex': {'sqrt': 'csqrtf',
                                 'abs': 'cabsf',
@@ -120,7 +122,9 @@ math_table = {'double': {'sqrt': 'sqrt',
                                 'ln': 'clogf',
                                 'real': 'crealf',
                                 'imag': 'cimagf',
-                                'conj': 'conjf'}}
+                                'conj': 'conjf',
+                                'max_value': 'fmaxf',
+                                'min_value': 'fminf'}}
 
 
 class UFL2CNodesTranslatorCpp(object):
@@ -156,8 +160,8 @@ class UFL2CNodesTranslatorCpp(object):
                             ufl.classes.OrCondition: self.or_condition,
                             ufl.classes.NotCondition: self.not_condition,
                             ufl.classes.Conditional: self.conditional,
-                            ufl.classes.MinValue: self._cmath,
-                            ufl.classes.MaxValue: self._cmath,
+                            ufl.classes.MinValue: self.min_value,
+                            ufl.classes.MaxValue: self.max_value,
                             ufl.mathfunctions.Sqrt: self._cmath,
                             ufl.mathfunctions.Ln: self._cmath,
                             ufl.mathfunctions.Exp: self._cmath,
@@ -265,6 +269,22 @@ class UFL2CNodesTranslatorCpp(object):
             raise type(e)("Math function not found:", self.scalar_type, k)
         if name is None:
             raise RuntimeError("Not supported in current scalar mode")
+        return self.L.Call(name, args)
+
+    def max_value(self, o, *args):
+        if "complex" in self.scalar_type:
+            logger.warning("Maximum is ambiguous in complex mode")
+
+        k = o._ufl_handler_name_
+        name = math_table[self.scalar_type].get(k)
+        return self.L.Call(name, args)
+
+    def min_value(self, o, *args):
+        if "complex" in self.scalar_type:
+            logger.warning("Minimum is ambiguous in complex mode")
+
+        k = o._ufl_handler_name_
+        name = math_table[self.scalar_type].get(k)
         return self.L.Call(name, args)
 
     # === Formatting rules for bessel functions ===
