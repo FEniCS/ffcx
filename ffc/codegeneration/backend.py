@@ -25,8 +25,11 @@ class FFCBackend(object):
 
         coefficient_numbering = ir.coefficient_numbering
         coefficient_offsets = ir.coefficient_offsets
+
+        original_constant_offsets = ir.original_constant_offsets
+
         self.symbols = FFCBackendSymbols(self.language, coefficient_numbering,
-                                         coefficient_offsets)
+                                         coefficient_offsets, original_constant_offsets)
         self.definitions = FFCBackendDefinitions(ir, self.language,
                                                  self.symbols, parameters)
         self.access = FFCBackendAccess(ir, self.language, self.symbols,
