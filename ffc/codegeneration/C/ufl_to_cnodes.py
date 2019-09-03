@@ -99,7 +99,9 @@ math_table = {'double': {'sqrt': 'sqrt',
                                  'ln': 'clog',
                                  'real': 'creal',
                                  'imag': 'cimag',
-                                 'conj': 'conj'},
+                                 'conj': 'conj',
+                                 'max_value': 'fmax',
+                                 'min_value': 'fmin'},
 
               'float complex': {'sqrt': 'csqrtf',
                                 'abs': 'cabsf',
@@ -120,7 +122,9 @@ math_table = {'double': {'sqrt': 'sqrt',
                                 'ln': 'clogf',
                                 'real': 'crealf',
                                 'imag': 'cimagf',
-                                'conj': 'conjf'}}
+                                'conj': 'conjf',
+                                'max_value': 'fmaxf',
+                                'min_value': 'fminf'}}
 
 
 class UFL2CNodesTranslatorCpp(object):
