@@ -380,6 +380,7 @@ extern "C"
   {
     const bool* enabled_coefficients;
     void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                            const ufc_scalar_t* c,
                             const double* restrict coordinate_dofs,
                             const int* entity_local_index,
                             const int* cell_orientation);
@@ -389,6 +390,7 @@ extern "C"
   {
     const bool* enabled_coefficients;
     void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                            const ufc_scalar_t* c,
                             const double* restrict coordinate_dofs,
                             int num_quadrature_points,
                             const double* restrict quadrature_points,
@@ -422,6 +424,9 @@ extern "C"
     /// Number of coefficients (n)
     int num_coefficients;
 
+    /// Number of constants
+    int num_constants;
+
     /// Return original coefficient position for each coefficient
     ///
     /// @param i
@@ -431,6 +436,9 @@ extern "C"
 
     /// Return list of names of coefficients
     const char** (*coefficient_name_map)();
+
+    /// Return list of names of constants
+    const char** (*constant_name_map)();
 
     // FIXME: Remove and just use 'create_coordinate_mapping'
     /// Create a new finite element for parameterization of coordinates

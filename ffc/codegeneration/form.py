@@ -93,6 +93,17 @@ class UFCForm:
             code += [L.Return(names)]
         return L.StatementList(code)
 
+    def generate_constant_original_position_to_name_map(self, L, ir):
+        """Generate code that maps original position of a constant to its name."""
+        cnames = ir.constant_names
+        names = L.Symbol("names")
+        if (len(cnames) == 0):
+            code = [L.Return(L.Null())]
+        else:
+            code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
+            code += [L.Return(names)]
+        return L.StatementList(code)
+
     def create_coordinate_finite_element(self, L, ir):
         classnames = ir.create_coordinate_finite_element
         assert len(classnames) == 1
@@ -178,6 +189,7 @@ def generator(ir, parameters):
     d["signature"] = "\"{}\"".format(ir.signature)
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
+    d["num_constants"] = ir.num_constants
 
     d["num_cell_integrals"] = len(ir.create_cell_integral[0])
     d["num_exterior_facet_integrals"] = len(ir.create_exterior_facet_integral[0])
@@ -192,6 +204,7 @@ def generator(ir, parameters):
     d["original_coefficient_position"] = L.StatementList(statements)
 
     d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir)
+    d["constant_name_map"] = generator.generate_constant_original_position_to_name_map(L, ir)
 
     d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(L, ir)
     d["coordinate_finite_element_declaration"] = generator.coordinate_finite_element_declaration(L, ir)

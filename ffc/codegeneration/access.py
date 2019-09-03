@@ -32,6 +32,7 @@ class FFCBackendAccess(object):
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
         self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
+                            ufl.constant.Constant: self.constant,
                             ufl.geometry.Jacobian: self.jacobian,
                             ufl.geometry.CellCoordinate: self.cell_coordinate,
                             ufl.geometry.FacetCoordinate: self.facet_coordinate,
@@ -50,11 +51,19 @@ class FFCBackendAccess(object):
 
     def get(self, e, mt, tabledata, num_points):
         # Call appropriate handler, depending on the type of e
-        etype = type(e)
-        if etype in self.call_lookup:
-            return self.call_lookup[etype](e, mt, tabledata, num_points)
+        handler = self.call_lookup.get(type(e), False)
+
+        if not handler:
+            # Look for parent class types instead
+            for k in self.call_lookup.keys():
+                if isinstance(e, k):
+                    handler = self.call_lookup[k]
+                    break
+
+        if handler:
+            return handler(e, mt, tabledata, num_points)
         else:
-            raise RuntimeError("Not handled: %s", etype)
+            raise RuntimeError("Not handled: {}".format(type(e)))
 
     def coefficient(self, e, mt, tabledata, num_points):
         ttype = tabledata.ttype
@@ -79,6 +88,10 @@ class FFCBackendAccess(object):
         else:
             # Return symbol, see definitions for computation
             return self.symbols.coefficient_value(mt)  # , num_points)
+
+    def constant(self, e, mt, tabledata, num_points):
+        """Access to a constant is handled trivially, directly through constants symbol."""
+        return self.symbols.constant_index_access(mt.terminal, mt.flat_component)
 
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         if mt.global_derivatives:

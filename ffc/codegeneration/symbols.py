@@ -52,11 +52,14 @@ def format_mt_name(basename, mt):
 class FFCBackendSymbols(object):
     """FFC specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, language, coefficient_numbering, coefficient_offsets):
+    def __init__(self, language, coefficient_numbering, coefficient_offsets,
+                 original_constant_offsets):
         self.L = language
         self.S = self.L.Symbol
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
+
+        self.original_constant_offsets = original_constant_offsets
 
         # Used for padding variable names based on restriction
 #        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
@@ -175,6 +178,12 @@ class FFCBackendSymbols(object):
 
         c = self.coefficient_numbering[mt.terminal]
         return self.S(format_mt_name("w%d" % (c, ), mt))
+
+    def constant_index_access(self, constant, index):
+        offset = self.original_constant_offsets[constant]
+        c = self.S("c")
+
+        return c[offset + index]
 
     def element_table(self, tabledata, entitytype, restriction):
         if tabledata.is_uniform:
