@@ -63,7 +63,7 @@ def generate_expression_code(ir, parameters):
 class ExpressionGenerator:
     def __init__(self, ir, backend):
 
-        if len(ir.all_num_points) is not 1:
+        if len(ir.all_num_points) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
 
         self.ir = ir
