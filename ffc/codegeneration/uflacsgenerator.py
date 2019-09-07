@@ -189,8 +189,6 @@ class ExpressionGenerator:
         return parts
 
     def generate_dofblock_partition(self, quadrature_independent=False):
-        L = self.backend.language
-
         if quadrature_independent is True:  # NB! None meaning piecewise partition, not custom integral
             block_contributions = self.ir.piecewise_ir["block_contributions"]
         else:
@@ -331,7 +329,7 @@ class ExpressionGenerator:
         for i in range(A_size):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 parts += [L.Assign(A[i], A_values[i])]
-        
+
         return parts
 
     def generate_copyout_statements(self):

@@ -297,8 +297,12 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
-        # If there are any 'zero' tables, replace symbolically and rebuild graph
-        if 'zeros' in unique_table_types.values():
+        S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
+
+        if 'zeros' in unique_table_types.values() and len(S_targets) == 1:
+            # If there are any 'zero' tables, replace symbolically and rebuild graph
+            #
+            # TODO: Implement zero table elimination for non-scalar graphs
             for i, mt in initial_terminals.items():
                 # Set modified terminals with zero tables to zero
                 tr = mt_unique_table_reference.get(mt)
@@ -314,7 +318,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             # Rebuild scalar target expressions and graph (this may be
             # overkill and possible to optimize away if it turns out to be
             # costly)
-            expression = S.nodes[S_target]['expression']
+            expression = S.nodes[S_targets[0]]['expression']
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)

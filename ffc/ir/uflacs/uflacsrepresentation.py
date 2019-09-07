@@ -17,7 +17,7 @@ from ffc.ir.uflacs.tools import (accumulate_integrals,
 from ufl import custom_integral_types
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
-from ufl.algorithms import extract_arguments, compute_form_data, extract_coefficients
+from ufl.algorithms import extract_arguments, extract_coefficients
 
 logger = logging.getLogger(__name__)
 
