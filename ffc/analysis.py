@@ -78,13 +78,16 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
         # Extract unique (sub)elements
         meshes = ufl_objects
         unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
-    elif isinstance(ufl_objects[0], ufl.core.expr.Expr):
+    elif isinstance(ufl_objects[0], tuple) and isinstance(ufl_objects[0][0], ufl.core.expr.Expr):
         for expression in ufl_objects:
+            points = expression[1]
+            expression = expression[0]
+
             unique_elements.update(ufl.algorithms.extract_elements(expression))
             unique_elements.update(ufl.algorithms.extract_sub_elements(unique_elements))
 
             expression = _analyze_expression(expression, parameters)
-            expressions.append(expression)
+            expressions.append((expression, points))
     else:
         raise TypeError("UFL objects not recognised.")
 

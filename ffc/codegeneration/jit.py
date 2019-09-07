@@ -51,7 +51,7 @@ UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufc_form.*?ufc_form;', ufc_
 UFC_INTEGRAL_DECL = '\n'.join(re.findall('typedef struct ufc_integral.*?ufc_integral;', ufc_h, re.DOTALL))
 UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?ufc_custom_integral;',
                                           ufc_h, re.DOTALL))
-
+UFC_EXPRESSION_DECL = '\n'.join(re.findall('typedef struct ufc_expression.*?ufc_expression;', ufc_h, re.DOTALL))
 
 def get_cached_module(module_name, object_names, parameters):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
@@ -159,6 +159,36 @@ def compile_forms(forms, parameters=None):
         decl += form_template.format(name=name)
 
     return _compile_objects(decl, forms, form_names, module_name, p)
+
+
+def compile_expressions(expressions, parameters=None):
+    """Compile a list of UFL expressions into UFC Python objects."""
+    p = ffc.parameters.default_parameters()
+    if parameters is not None:
+        p.update(parameters)
+
+    logger.info('Compiling expressions: ' + str(expressions))
+
+    # Get a signature for these forms
+    module_name = 'libffc_expressions_' + ffc.classname.compute_signature(expressions, '', p)
+
+    expr_names = [ffc.classname.make_name("JIT", "expression", i)
+                  for i in range(len(expressions))]
+
+    if p['use_cache']:
+        obj, mod = get_cached_module(module_name, expr_names, p)
+        if obj is not None:
+            return obj, mod
+
+    scalar_type = p["scalar_type"].replace("complex", "_Complex")
+    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL + UFC_EXPRESSION_DECL
+
+    expression_template = "ufc_expression* create_{name}(void);\n"
+    for name in expr_names:
+        decl += expression_template.format(name=name)
+
+    return _compile_objects(decl, expressions, expr_names, module_name, p)
 
 
 def compile_coordinate_maps(meshes, parameters=None):

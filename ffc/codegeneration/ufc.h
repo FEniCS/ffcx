@@ -383,12 +383,6 @@ extern "C"
                                 const double* restrict coordinate_dofs);
   } ufc_expression;
 
-  // FIXME: Is this required for integrals?
-  // Number of coefficients
-  // int num_coefficients() const = 0;
-
-  // FIXME: Consider a common signature for tabulate_tensor
-
   typedef struct ufc_integral
   {
     const bool* enabled_coefficients;

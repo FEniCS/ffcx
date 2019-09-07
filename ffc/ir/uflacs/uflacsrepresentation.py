@@ -26,7 +26,9 @@ logger = logging.getLogger(__name__)
 def compute_expression_ir(expression, analysis, parameters):
     logger.info("Computing uflacs representation of expression")
 
-    points = numpy.array([[0.5, 0.0], [1.0, 0.0]])
+    points = expression[1]
+    expression = expression[0]
+
     num_points = points.shape[0]
     weights = numpy.array([1.0] * num_points)
 

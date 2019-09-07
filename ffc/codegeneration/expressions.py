@@ -19,14 +19,9 @@ def generator(ir, parameters):
     # Generate code
     code = generate_expression_code(ir, parameters)
 
-    # Format tabulate tensor body
-    tabulate_expression_declaration = expressions_template.tabulate_implementation
-    tabulate_expression_fn = tabulate_expression_declaration.format(
-        factory_name=factory_name, tabulate_expression=code["tabulate_expression"])
-
     # Format implementation code
     implementation = expressions_template.factory.format(
         factory_name=factory_name,
-        tabulate_expression=tabulate_expression_fn)
+        tabulate_expression=code["tabulate_expression"])
 
     return declaration, implementation

@@ -167,7 +167,8 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
     ]
 
     logger.info("Computing representation of expressions")
-    ir_expressions = [_compute_expression_ir(expr, analysis, parameters) for expr in analysis.expressions]
+    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters)
+                      for i, expr in enumerate(analysis.expressions)]
 
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
                    coordinate_mappings=ir_coordinate_mappings,
@@ -440,15 +441,14 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, analysis, parameters):
+def _compute_expression_ir(expression, index, prefix, analysis, parameters):
 
     # Only uflacs representation for expressions now
     from ffc.ir.uflacs.uflacsrepresentation import compute_expression_ir
 
     # Compute representation
     ir = compute_expression_ir(expression, analysis, parameters)
-
-    ir["classname"] = classname.compute_signature([expression], "", parameters)
+    ir["classname"] = classname.make_name(prefix, "expression", index)
 
     return ir_expression(**ir)
 
