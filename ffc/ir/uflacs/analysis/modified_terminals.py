@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class ModifiedTerminal(object):
-    """A modified terminal expression is an object of a Terminal subtype, wrapped in terminal modifier types.
+    """A modified terminal expression is an object of a Terminal subtype.
+    It is wrapped in terminal modifier types.
 
     The variables of this class are:
 
@@ -91,8 +92,8 @@ class ModifiedTerminal(object):
         return (t, rv, fc, gd, ld, a, r)
 
     def argument_ordering_key(self):
-        """Return a key for deterministic sorting of argument vertex
-        indices based on the properties of the modified terminal.
+        """Return a key for deterministic sorting of argument vertex indices.
+        The key is based on the properties of the modified terminal.
         Used in factorization but moved here for closeness with ModifiedTerminal attributes."""
         t = self.terminal
         assert isinstance(t, Argument)

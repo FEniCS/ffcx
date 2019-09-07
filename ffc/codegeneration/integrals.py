@@ -12,13 +12,15 @@ from ffc.codegeneration import integrals_template as ufc_integrals
 
 
 def generator(ir, parameters):
-    """Generate UFC code for an integral"""
+    """Generate UFC code for an integral."""
     factory_name = ir.classname
     integral_type = ir.integral_type
 
     # Format declaration
-    declaration = ufc_integrals.declaration.format(
-        type=integral_type, factory_name=factory_name)
+    if integral_type == "custom":
+        declaration = ufc_integrals.custom_declaration.format(factory_name=factory_name)
+    else:
+        declaration = ufc_integrals.declaration.format(factory_name=factory_name)
 
     if ir.representation == "uflacs":
         from ffc.codegeneration.uflacsgenerator import generate_integral_code
@@ -37,10 +39,16 @@ def generator(ir, parameters):
         factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
 
     # Format implementation code
-    implementation = ufc_integrals.factory.format(
-        type=integral_type,
-        factory_name=factory_name,
-        enabled_coefficients=code["enabled_coefficients"],
-        tabulate_tensor=tabulate_tensor_fn)
+
+    if integral_type == "custom":
+        implementation = ufc_integrals.custom_factory.format(
+            factory_name=factory_name,
+            enabled_coefficients=code["enabled_coefficients"],
+            tabulate_tensor=tabulate_tensor_fn)
+    else:
+        implementation = ufc_integrals.factory.format(
+            factory_name=factory_name,
+            enabled_coefficients=code["enabled_coefficients"],
+            tabulate_tensor=tabulate_tensor_fn)
 
     return declaration, implementation

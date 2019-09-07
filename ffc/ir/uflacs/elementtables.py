@@ -97,7 +97,9 @@ def strip_table_zeros(table, compress_zeros, rtol=default_rtol, atol=default_ato
 
 
 def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
-    """Given a list or dict of tables, return a list of unique tables
+    """Return list of unique tables.
+
+    Given a list or dict of tables, return a list of unique tables
     and a dict of unique table indices for each input table key."""
     unique = []
     mapping = {}
@@ -211,7 +213,9 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
 
 def generate_psi_table_name(num_points, element_counter, averaged, entitytype, derivative_counts,
                             flat_component):
-    """Generate a name for the psi table of the form:
+    """Generate a name for the psi table.
+
+    Format:
     FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be

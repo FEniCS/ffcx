@@ -164,8 +164,7 @@ def uflacs_default_parameters(optimize):
         "vectorize": False,
         "alignas": 0,
         "padlen": 1,
-        "use_symbol_array": True,
-        "tensor_init_mode": "upfront",  # interleaved | direct | upfront
+        "use_symbol_array": True
     }
     if optimize:
         # Override defaults if optimization is turned on
@@ -189,7 +188,8 @@ def uflacs_default_parameters(optimize):
 
 
 def parse_uflacs_optimization_parameters(parameters, integral_type):
-    """Following model from quadrature representation, extracting
+    """Extract parameters.
+    Following model from quadrature representation, extracting
     uflacs specific parameters from the global parameters dict."""
 
     # Get default parameters

@@ -5,7 +5,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Compiler stage 2: Code representation
+"""Compiler stage 2: Code representation.
 
 Module computes intermediate representations of forms, elements and
 dofmaps. For each UFC function, we extract the data needed for code
@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
 ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
-                                 'num_coefficients', 'original_coefficient_position',
-                                 'coefficient_names',
+                                 'num_coefficients', 'num_constants', 'original_coefficient_position',
+                                 'coefficient_names', 'constant_names',
                                  'create_coordinate_finite_element', 'create_coordinate_dofmap',
                                  'create_coordinate_mapping', 'create_finite_element',
                                  'create_dofmap', 'create_cell_integral',
@@ -71,7 +71,8 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
                                          'enabled_coefficients', 'classnames', 'element_dimensions',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
-                                         'coefficient_offsets', 'params', 'unique_tables', 'unique_table_types',
+                                         'coefficient_offsets', 'original_constant_offsets', 'params',
+                                         'unique_tables', 'unique_table_types',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
                                          'prefix', 'integrals_metadata', 'integral_metadata'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
@@ -398,9 +399,13 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
 
     ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
+    ir["num_constants"] = len(form_data.original_form.constants())
 
     ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
                                for j, obj in enumerate(form_data.reduced_coefficients)]
+
+    ir["constant_names"] = [object_names.get(id(obj), "c%d" % j)
+                            for j, obj in enumerate(form_data.original_form.constants())]
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
@@ -448,7 +453,8 @@ def _compute_expression_ir(expression, analysis, parameters):
 
 
 def _generate_reference_offsets(fiat_element, offset=0):
-    """Generate offsets: i.e value offset for each basis function
+    """Generate offsets.
+    i.e. value offset for each basis function
     relative to a reference element representation."""
     if isinstance(fiat_element, MixedElement):
         offsets = []
@@ -468,7 +474,8 @@ def _generate_reference_offsets(fiat_element, offset=0):
 
 
 def _generate_physical_offsets(ufl_element, offset=0):
-    """Generate offsets: i.e value offset for each basis function
+    """Generate offsets.
+    i.e. value offset for each basis function
     relative to a physical element representation."""
     cell = ufl_element.cell()
     gdim = cell.geometric_dimension()
@@ -499,7 +506,8 @@ def _generate_physical_offsets(ufl_element, offset=0):
 
 
 def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
-    """Generate offsets: i.e value offset for each basis function
+    """Generate offsets.
+    i.e. value offset for each basis function
     relative to a physical element representation."""
     if isinstance(ufl_element, ufl.MixedElement):
         offsets = []
@@ -751,8 +759,7 @@ def all_elements(fiat_element):
 
 
 def _num_dofs_per_entity(fiat_element):
-    """Compute list of integers representing the number of dofs
-    associated with a single mesh entity.
+    """Compute list of the number of dofs associated with a single mesh entity.
 
     Example: Lagrange of degree 3 on triangle: [1, 2, 1]
 

@@ -4,10 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Utility functions for some code shared between
-representations.
-
-"""
+"""Utility functions for some code shared between representations."""
 
 import logging
 
@@ -23,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
+
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
@@ -38,10 +36,8 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
 
 
 def integral_type_to_entity_dim(integral_type, tdim):
-    """Given integral_type and domain tdim, return the tdim of the
-    integration entity.
+    """Given integral_type and domain tdim, return the tdim of the integration entity."""
 
-    """
     if integral_type == "cell":
         entity_dim = tdim
     elif integral_type in ufl.measure.facet_integral_types:
@@ -97,7 +93,9 @@ def entity_type_from_integral_type(integral_type):
 
 
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
-    """Initialize a representation dict with common information that is
+    """Initialize a representation dict.
+
+    Initialize with common information that is
     expected independently of which representation is chosen.
 
     """
@@ -135,7 +133,9 @@ def generate_enabled_coefficients(enabled_coefficients):
 
 
 def initialize_integral_code(ir, parameters):
-    """Representation independent default initialization of code dict for
+    """Default integral IR.
+
+    Representation independent default initialization of code dict for
     integral from intermediate representation.
 
     """

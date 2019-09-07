@@ -825,7 +825,7 @@ def compute_midpoint_geometry(L, ir):
 
 
 def generator(ir, parameters):
-    """Generate UFC code for a coordinate mapping"""
+    """Generate UFC code for a coordinate mapping."""
 
     d = {}
 

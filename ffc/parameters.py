@@ -29,6 +29,7 @@ _FFC_BUILD_PARAMETERS = {
     "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
 }
 _FFC_CACHE_PARAMETERS = {
+    "use_cache": True,
     "cache_dir": "~/.cache/fenics",  # cache dir used by default
     "output_dir": ".",  # output directory for generated code
 }
@@ -58,8 +59,6 @@ def default_parameters():
 
 def default_jit_parameters():
     parameters = default_parameters()
-    # Don't postfix form names
-    parameters["form_postfix"] = False
     return parameters
 
 
@@ -73,7 +72,7 @@ def validate_parameters(parameters):
 
 
 def _validate_parameters(parameters):
-    """Does some casting of parameter values in place on the provided dictionary"""
+    """Does some casting of parameter values in place on the provided dictionary."""
     # Convert all legal default values to None
     if parameters["quadrature_rule"] in ("auto", None, "None"):
         parameters["quadrature_rule"] = None

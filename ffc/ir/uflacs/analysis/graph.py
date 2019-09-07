@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class ExpressionGraph(object):
-    """A directed multi-edge graph, allowing multiple edges
-    between the same nodes, and respecting the insertion order
-    of nodes and edges."""
+    """A directed multi-edge graph.
+    ExpressionGraph allows multiple edges between the same nodes,
+    and respects the insertion order of nodes and edges."""
 
     def __init__(self):
 
@@ -34,13 +34,13 @@ class ExpressionGraph(object):
         return len(self.nodes)
 
     def add_node(self, key, **kwargs):
-        """Add a node with optional properties"""
+        """Add a node with optional properties."""
         self.nodes[key] = kwargs
         self.out_edges[key] = []
         self.in_edges[key] = []
 
     def add_edge(self, node1, node2):
-        """Add a directed edge from node1 to node2"""
+        """Add a directed edge from node1 to node2."""
         if node1 not in self.nodes or node2 not in self.nodes:
             raise KeyError("Adding edge to unknown node")
 
@@ -69,9 +69,7 @@ def build_graph_vertices(expressions, skip_terminal_modifiers=False):
 
 
 def build_scalar_graph(expression):
-    """Build list representation of expression graph covering the given
-    expressions.
-    """
+    """Build list representation of expression graph covering the given expressions."""
 
     # Populate with vertices
     G = build_graph_vertices([expression], skip_terminal_modifiers=False)

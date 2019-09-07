@@ -22,6 +22,12 @@ const char** coefficient_name_{factory_name}()
 {coefficient_name_map}
 }}
 
+// Return a list of the constant names.
+const char** constant_name_{factory_name}()
+{{
+{constant_name_map}
+}}
+
 {coordinate_finite_element_declaration}
 ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
 {{
@@ -52,7 +58,7 @@ ufc_dofmap* create_dofmap_{factory_name}(int i)
 {create_dofmap}
 }}
 
-ufc_cell_integral* create_cell_integral_{factory_name}(int subdomain_id)
+ufc_integral* create_cell_integral_{factory_name}(int subdomain_id)
 {{
   {create_cell_integral}
 }}
@@ -62,7 +68,7 @@ void get_cell_integral_ids_{factory_name}(int *ids)
   {get_cell_integral_ids}
 }}
 
-ufc_exterior_facet_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
+ufc_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
 {{
   {create_exterior_facet_integral}
 }}
@@ -72,7 +78,7 @@ void get_exterior_facet_integral_ids_{factory_name}(int *ids)
   {get_exterior_facet_integral_ids}
 }}
 
-ufc_interior_facet_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
+ufc_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
 {{
 {create_interior_facet_integral}
 }}
@@ -82,7 +88,7 @@ void get_interior_facet_integral_ids_{factory_name}(int *ids)
   {get_interior_facet_integral_ids}
 }}
 
-ufc_vertex_integral* create_vertex_integral_{factory_name}(int subdomain_id)
+ufc_integral* create_vertex_integral_{factory_name}(int subdomain_id)
 {{
 {create_vertex_integral}
 }}
@@ -109,9 +115,11 @@ ufc_form* create_{factory_name}(void)
   form->signature = {signature};
   form->rank = {rank};
   form->num_coefficients = {num_coefficients};
+  form->num_constants = {num_constants};
   form->original_coefficient_position = original_coefficient_position_{factory_name};
 
   form->coefficient_name_map = coefficient_name_{factory_name};
+  form->constant_name_map = constant_name_{factory_name};
 
   form->create_coordinate_finite_element = create_coordinate_finite_element_{factory_name};
   form->create_coordinate_dofmap = create_coordinate_dofmap_{factory_name};

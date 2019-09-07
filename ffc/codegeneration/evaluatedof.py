@@ -16,7 +16,7 @@ index_type = "int64_t"
 
 
 def reference_to_physical_map(cellname):
-    """Returns a map from reference coordinates to physical element coordinates"""
+    """Returns a map from reference coordinates to physical element coordinates."""
 
     if cellname == "interval":
         return lambda x: (1.0 - x[0], x[0])
@@ -31,8 +31,7 @@ def reference_to_physical_map(cellname):
 
 
 def _change_variables(L, mapping, gdim, tdim, offset):
-    """Generate code for mapping function values according to
-    'mapping' and offset.
+    """Generate code for mapping function values according to 'mapping' and offset.
 
     The basics of how to map a field from a physical to the reference
     domain. (For the inverse approach -- see interpolatevertexvalues)
@@ -180,7 +179,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
 
 
 def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
-    """Generate c++ for-loop for multiple points (integral bodies)"""
+    """Generate c++ for-loop for multiple points (integral bodies)."""
 
     result = L.Symbol("result")
     code = [L.Assign(result, 0.0)]
@@ -300,9 +299,9 @@ def _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset=0):
 
 
 def generate_transform_values(L, ir):
-    """Generate code for transform_values. Transforms
-    values in physical space into reference space. These
-    values represent evaluation of the function at dof
+    """Generate code for transform_values.
+    Transforms values in physical space into reference space.
+    These values represent evaluation of the function at dof
     points (only valid for point evaluation dofs).
 
     """

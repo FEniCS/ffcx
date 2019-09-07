@@ -52,11 +52,14 @@ def format_mt_name(basename, mt):
 class FFCBackendSymbols(object):
     """FFC specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, language, coefficient_numbering, coefficient_offsets):
+    def __init__(self, language, coefficient_numbering, coefficient_offsets,
+                 original_constant_offsets):
         self.L = language
         self.S = self.L.Symbol
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
+
+        self.original_constant_offsets = original_constant_offsets
 
         # Used for padding variable names based on restriction
 #        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
@@ -76,15 +79,21 @@ class FFCBackendSymbols(object):
             # Always 0 for cells (even with restriction)
             return self.L.LiteralInt(0)
         elif entitytype == "facet":
-            return self.S("facet" + ufc_restriction_postfix(restriction))
+            postfix = "[0]"
+            if restriction == "-":
+                postfix = "[1]"
+            return self.S("facet" + postfix)
         elif entitytype == "vertex":
-            return self.S("vertex")
+            return self.S("vertex[0]")
         else:
             logging.exception("Unknown entitytype {}".format(entitytype))
 
     def cell_orientation_argument(self, restriction):
         """Cell orientation argument in ufc. Not same as cell orientation in generated code."""
-        return self.S("cell_orientation" + ufc_restriction_postfix(restriction))
+        postfix = "[0]"
+        if restriction == "-":
+            postfix = "[1]"
+        return self.S("cell_orientation" + postfix)
 
     def cell_orientation_internal(self, restriction):
         """Internal value for cell orientation in generated code."""
@@ -100,8 +109,7 @@ class FFCBackendSymbols(object):
         return self.S("ic")
 
     def quadrature_loop_index(self):
-        """Reusing a single index name for all quadrature loops,
-        assumed not to be nested."""
+        """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")
 
     def num_custom_quadrature_points(self):
@@ -143,11 +151,14 @@ class FFCBackendSymbols(object):
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
-        vc = self.S("coordinate_dofs" + ufc_restriction_postfix(restriction))
+        offset = 0
+        if restriction == "-":
+            offset = num_scalar_dofs * gdim
+        vc = self.S("coordinate_dofs")
         if self.interleaved_components:
-            return vc[gdim * dof + component]
+            return vc[gdim * dof + component + offset]
         else:
-            return vc[num_scalar_dofs * component + dof]
+            return vc[num_scalar_dofs * component + dof + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
@@ -167,6 +178,12 @@ class FFCBackendSymbols(object):
 
         c = self.coefficient_numbering[mt.terminal]
         return self.S(format_mt_name("w%d" % (c, ), mt))
+
+    def constant_index_access(self, constant, index):
+        offset = self.original_constant_offsets[constant]
+        c = self.S("c")
+
+        return c[offset + index]
 
     def element_table(self, tabledata, entitytype, restriction):
         if tabledata.is_uniform:

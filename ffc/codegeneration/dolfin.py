@@ -119,8 +119,8 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
 
 def generate_form(form, prefix, classname):
-    """Generate dolfin wrapper code associated with a form including code
-    for function spaces used in form and typedefs
+    """Generate dolfin wrapper code associated with a form.
+    Includes code for function spaces used in form and typedefs.
 
     @param form:
         A UFCFormNames instance
@@ -193,7 +193,7 @@ static const ufc_form_factory_ptr {prefix}_{classname}_create = create_{ufc_form
 
 
 def extract_coefficient_spaces(forms):
-    """Extract a list of tuples
+    """Extract a list of tuples.
 
       (classname, finite_element_classname, dofmap_classname, coordinate_mapping_classname)
 
@@ -221,10 +221,7 @@ def extract_coefficient_spaces(forms):
 
 
 def generate_function_space_typedefs(form, prefix, classname):
-    """Generate typedefs for test, trial and coefficient spaces relative
-    to a function space.
-
-    """
+    """Generate typedefs for test, trial and coefficient spaces relative to a function space."""
 
     snippets = {"functionspace": ("testspace", "trialspace")}
 
@@ -266,8 +263,10 @@ class UFCFormNames:
 
     def __init__(self, name, coefficient_names, ufc_form_classname, ufc_finite_element_classnames,
                  ufc_dofmap_classnames, ufc_coordinate_mapping_classnames):
-        """Arguments:
+        """Encapsulation of the names related to a generated UFC form.
 
+        Arguments:
+        ---------
         @param name:
             Name of form (e.g. 'a', 'L', 'M').
         @param coefficient_names:
@@ -282,6 +281,7 @@ class UFCFormNames:
             num_coefficients).
         @param ufc_coordinate_mapping_classnames:
             List of names of ufc::coordinate_mapping subclasses
+
         """
         assert len(coefficient_names) <= len(ufc_dofmap_classnames)
         assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)

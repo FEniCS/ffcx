@@ -4,11 +4,13 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Main interface for compilation of forms and breaking the compilation into
-several sequential stages. The output of each stage is the input of the next
-stage.
+"""Main interface for compilation of forms.
+
+Breaks the compilation into several sequential stages.
+The output of each stage is the input of the next stage.
 
 Compiler stages:
+---------------
 
 0. Language, parsing
 
@@ -91,7 +93,7 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
 
     Parameters
     ----------
-    ufl_objects
+    @param ufl_objects:
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
 
     """

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Work in progress translation of FFC evaluatebasis code to uflacs
-CNodes format."""
 
 import logging
 
@@ -14,7 +12,9 @@ index_type = "int64_t"
 
 
 def generate_evaluate_reference_basis(L, data, parameters):
-    """Generate code to evaluate element basisfunctions at an arbitrary
+    """Evaluate basis functions on the reference element.
+
+    Generate code to evaluate element basisfunctions at an arbitrary
     point on the reference element.
 
     The value(s) of the basisfunction is/are computed as in FIAT as

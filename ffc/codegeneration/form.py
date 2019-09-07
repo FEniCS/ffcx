@@ -27,8 +27,8 @@ def create_delegate(integral_type, declname, impl):
 
 
 def add_ufc_form_integral_methods(cls):
-    """Generate methods on the class decorated by this function,
-    for each integral name template and for each integral type.
+    """Generate methods on the class decorated by this function.
+    One for each integral name template and for each integral type.
 
     This allows implementing e.g. create_###_integrals once in the
     decorated class as '_create_foo_integrals', and this function will
@@ -85,6 +85,17 @@ class UFCForm:
         """Generate code that maps name to number."""
         cnames = ir.coefficient_names
         assert ir.num_coefficients == len(cnames)
+        names = L.Symbol("names")
+        if (len(cnames) == 0):
+            code = [L.Return(L.Null())]
+        else:
+            code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
+            code += [L.Return(names)]
+        return L.StatementList(code)
+
+    def generate_constant_original_position_to_name_map(self, L, ir):
+        """Generate code that maps original position of a constant to its name."""
+        cnames = ir.constant_names
         names = L.Symbol("names")
         if (len(cnames) == 0):
             code = [L.Return(L.Null())]
@@ -169,7 +180,7 @@ class UFCForm:
 
 
 def generator(ir, parameters):
-    """Generate UFC code for a form"""
+    """Generate UFC code for a form."""
 
     factory_name = ir.classname
 
@@ -178,6 +189,7 @@ def generator(ir, parameters):
     d["signature"] = "\"{}\"".format(ir.signature)
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
+    d["num_constants"] = ir.num_constants
 
     d["num_cell_integrals"] = len(ir.create_cell_integral[0])
     d["num_exterior_facet_integrals"] = len(ir.create_exterior_facet_integral[0])
@@ -192,6 +204,7 @@ def generator(ir, parameters):
     d["original_coefficient_position"] = L.StatementList(statements)
 
     d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir)
+    d["constant_name_map"] = generator.generate_constant_original_position_to_name_map(L, ir)
 
     d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(L, ir)
     d["coordinate_finite_element_declaration"] = generator.coordinate_finite_element_declaration(L, ir)

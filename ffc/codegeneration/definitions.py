@@ -58,6 +58,7 @@ class FFCBackendDefinitions(object):
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
         self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
+                            ufl.constant.Constant: self.constant,
                             ufl.geometry.Jacobian: self.jacobian,
                             ufl.geometry.CellVertices: self._expect_physical_coords,
                             ufl.geometry.FacetEdgeVectors: self._expect_physical_coords,
@@ -75,8 +76,17 @@ class FFCBackendDefinitions(object):
     def get(self, t, mt, tabledata, num_points, access):
         # Call appropriate handler, depending on the type of t
         ttype = type(t)
-        if ttype in self.call_lookup:
-            return self.call_lookup[ttype](t, mt, tabledata, num_points, access)
+        handler = self.call_lookup.get(ttype, False)
+
+        if not handler:
+            # Look for parent class types instead
+            for k in self.call_lookup.keys():
+                if isinstance(t, k):
+                    handler = self.call_lookup[k]
+                    break
+
+        if handler:
+            return handler(t, mt, tabledata, num_points, access)
         else:
             raise RuntimeError("Not handled: %s", ttype)
 
@@ -126,6 +136,12 @@ class FFCBackendDefinitions(object):
                 L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
         return code
+
+    def constant(self, t, mt, tabledata, num_points, access):
+        # Constants are not defined within the kernel.
+        # No definition is needed because access to them is directly
+        # via symbol c[], i.e. as passed into the kernel.
+        return []
 
     def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, num_points, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
@@ -206,7 +222,7 @@ class FFCBackendDefinitions(object):
         return []
 
     def _expect_physical_coords(self, e, mt, tabledata, num_points, access):
-        """These quantities refer to coordinate_dofs"""
+        """These quantities refer to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
         return []

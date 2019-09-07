@@ -13,7 +13,9 @@ from ufl.utils.indexflattening import flatten_multiindex, shape_to_strides
 
 
 def map_indexed_arg_components(indexed):
-    """Build integer list mapping between flattended components
+    """Build a map from flattened components to subexpression.
+
+    Builds integer list mapping between flattened components
     of indexed expression and its underlying tensor-valued subexpression."""
 
     assert isinstance(indexed, Indexed)
@@ -84,7 +86,9 @@ def map_indexed_arg_components(indexed):
 
 
 def map_component_tensor_arg_components(tensor):
-    """Build integer list mapping between flattended components
+    """Build a map from flattened components to subexpression.
+
+    Builds integer list mapping between flattended components
     of tensor and its underlying indexed subexpression."""
 
     assert isinstance(tensor, ComponentTensor)

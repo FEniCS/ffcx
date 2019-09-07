@@ -30,8 +30,8 @@ def build_argument_indices(S):
 
     # Make a canonical ordering of vertex indices for modified arguments
     def arg_ordering_key(i):
-        """Return a key for sorting argument vertex indices based on
-        the properties of the modified terminal."""
+        """Return a key for sorting argument vertex indices.
+        Key is based on the properties of the modified terminal."""
         mt = analyse_modified_terminal(S.nodes[i]['expression'])
         return mt.argument_ordering_key()
 
@@ -40,7 +40,7 @@ def build_argument_indices(S):
 
 
 def graph_insert(F, expr):
-    """Add new expression expr to factorisation graph or return existing index"""
+    """Add new expression expr to factorisation graph or return existing index."""
     fi = F.e2i.get(expr)
     if fi is None:
         fi = F.number_of_nodes()
@@ -210,8 +210,7 @@ def handle_conditional(v, fac, sf, F):
 
 
 def compute_argument_factorization(S, rank):
-    """Factorizes a scalar expression graph w.r.t. scalar Argument
-    components.
+    """Factorizes a scalar expression graph w.r.t. scalar Argument components.
 
     The result is a triplet (AV, FV, IM):
 

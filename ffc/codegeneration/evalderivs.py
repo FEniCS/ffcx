@@ -310,7 +310,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
 
 
 def generate_tabulate_dmats(L, dofs_data):
-    """Tabulate the derivatives of the polynomial base"""
+    """Tabulate the derivatives of the polynomial base."""
 
     alignas = 32
 
