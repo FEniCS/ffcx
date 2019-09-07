@@ -105,7 +105,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
 
 
 def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
-    """Analyzes and preprocesses expressions"""
+    """Analyzes and preprocesses expressions."""
 
     preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
 

@@ -10,7 +10,7 @@ from ffc.codegeneration.uflacsgenerator import generate_expression_code
 
 
 def generator(ir, parameters):
-    """Generate UFC code for an expression"""
+    """Generate UFC code for an expression."""
     factory_name = ir.classname
 
     # Format declaration

@@ -200,5 +200,5 @@ class FFCBackendSymbols(object):
         return self.S(tabledata.name)[entity][iq]
 
     def expr_component_index(self):
-        """Symbol for indexing the expression's ufl shape"""
+        """Symbol for indexing the expression's ufl shape."""
         return self.S("ec")

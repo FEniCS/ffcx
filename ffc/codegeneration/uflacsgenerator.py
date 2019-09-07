@@ -115,8 +115,6 @@ class ExpressionGenerator:
         return L.StatementList(parts)
 
     def generate_element_tables(self):
-        """Generate static tables with precomputed element basis
-        function values in expression evaluation points"""
         L = self.backend.language
         parts = []
 
