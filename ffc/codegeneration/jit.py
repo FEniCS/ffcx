@@ -53,6 +53,7 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?
                                           ufc_h, re.DOTALL))
 UFC_EXPRESSION_DECL = '\n'.join(re.findall('typedef struct ufc_expression.*?ufc_expression;', ufc_h, re.DOTALL))
 
+
 def get_cached_module(module_name, object_names, parameters):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = ffc.config.get_cache_path(parameters)
