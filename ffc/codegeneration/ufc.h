@@ -379,6 +379,7 @@ extern "C"
   typedef struct ufc_expression
   {
     void (*tabulate_expression)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                const ufc_scalar_t* c,
                                 const double* restrict coordinate_dofs);
   } ufc_expression;
 
@@ -388,7 +389,7 @@ extern "C"
 
   // FIXME: Consider a common signature for tabulate_tensor
 
-  typedef struct ufc_cell_integral
+  typedef struct ufc_integral
   {
     const bool* enabled_coefficients;
     void (*tabulate_tensor)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,

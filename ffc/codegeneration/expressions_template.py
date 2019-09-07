@@ -11,6 +11,7 @@ ufc_expression* create_expression_{factory_name}(void);
 
 tabulate_implementation = """
 void tabulate_expression_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                        const ufc_scalar_t* c,
                                         const double* restrict coordinate_dofs)
 {{
 {tabulate_expression}

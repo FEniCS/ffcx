@@ -18,6 +18,7 @@ from ufl import custom_integral_types
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
 from ufl.algorithms import extract_arguments, extract_coefficients
+from ufl.algorithms.analysis import extract_constants
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,15 @@ def compute_expression_ir(expression, analysis, parameters):
 
     ir["integral_type"] = "custom"
     ir["entitytype"] = "cell"
+
+    # Build offsets for Constants
+    original_constant_offsets = {}
+    _offset = 0
+    for constant in extract_constants(expression):
+        original_constant_offsets[constant] = _offset
+        _offset += numpy.product(constant.ufl_shape, dtype=numpy.int)
+
+    ir["original_constant_offsets"] = original_constant_offsets
 
     integrands = {num_points: expression}
     quadrature_rules = {num_points: (points, weights)}
