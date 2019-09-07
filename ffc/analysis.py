@@ -81,8 +81,9 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     elif isinstance(ufl_objects[0], ufl.core.expr.Expr):
         for expression in ufl_objects:
             unique_elements.update(ufl.algorithms.extract_elements(expression))
+            unique_elements.update(ufl.algorithms.extract_sub_elements(unique_elements))
 
-            expression = _analyze_expression(expression)
+            expression = _analyze_expression(expression, parameters)
             expressions.append(expression)
     else:
         raise TypeError("UFL objects not recognised.")
@@ -103,7 +104,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
                     expressions=expressions)
 
 
-def _analyze_expression(expression: ufl.core.expr.Expr):
+def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
     """Analyzes and preprocesses expressions"""
 
     preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
@@ -115,6 +116,11 @@ def _analyze_expression(expression: ufl.core.expr.Expr):
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
+
+    complex_mode = "complex" in parameters.get("scalar_type", "double")
+
+    if not complex_mode:
+        expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
 
     return expression
 

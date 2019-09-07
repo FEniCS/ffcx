@@ -300,39 +300,43 @@ def compute_argument_factorization(S, rank):
 
     assert len(F.nodes) == len(F.e2i)
 
-    # Find the (only) node in S that is marked as 'target'
-    # Should always be the last one.
+    # Prepare a mapping from component of expression to factors
+    factors = {}
     S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
-    assert len(S_targets) == 1
-    S_target = S_targets[0]
 
-    # Get the factorizations of the target values
-    if S.nodes[S_target]['factors'] == {}:
-        if rank == 0:
-            # Functionals and expressions: store as no args * factor
-            factors = {(): F.e2i[S.nodes[S_target]['expression']]}
+    for comp, S_target in enumerate(S_targets):
+        # Get the factorizations of the target values
+        if S.nodes[S_target]['factors'] == {}:
+            if rank == 0:
+                # Functionals and expressions: store as no args * factor
+                factors[comp] = {(): F.e2i[S.nodes[S_target]['expression']]}
+            else:
+                # Zero form of arity 1 or higher: make factors empty
+                pass
         else:
-            # Zero form of arity 1 or higher: make factors empty
-            factors = {}
-    else:
-        # Forms of arity 1 or higher:
-        # Map argkeys from indices into SV to indices into AV,
-        # and resort keys for canonical representation
-        factors = {
-            tuple(sorted(arg_indices.index(si) for si in argkey)): fi
-            for argkey, fi in S.nodes[S_target]['factors'].items()
-        }
-    # Expecting all term keys to have length == rank
-    # (this assumption will eventually have to change if we
-    # implement joint bilinear+linear form factorization here)
-    assert all(len(k) == rank for k in factors)
+            # Forms of arity 1 or higher:
+            # Map argkeys from indices into SV to indices into AV,
+            # and resort keys for canonical representation
+            for argkey, fi in S.nodes[S_target]['factors'].items():
+                ai_fi = {tuple(sorted(arg_indices.index(si) for si in argkey)): fi}
+                if factors.get(comp):
+                    factors[comp].update(ai_fi)
+                else:
+                    factors[comp] = ai_fi
 
     # Indices into F that are needed for final result
-    for i in factors.values():
-        F.nodes[i]['target'] = []
-    for k in factors:
-        i = factors[k]
-        F.nodes[i]['target'] += [k]
+    for comp, target in factors.items():
+        for argkey, fi in target.items():
+
+            if F.nodes[fi].get("target"):
+                F.nodes[fi]["target"].append(argkey)
+            else:
+                F.nodes[fi]["target"] = [argkey]
+
+            if F.nodes[fi].get("component"):
+                F.nodes[fi]["component"] += [comp]
+            else:
+                F.nodes[fi]["component"] = [comp]
 
     # Compute dependencies in FV
     for i, v in F.nodes.items():

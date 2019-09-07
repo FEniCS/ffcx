@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 def compute_expression_ir(expression, analysis, parameters):
     logger.info("Computing uflacs representation of expression")
 
-    points = numpy.array([[0.1, 0.0], [1.0, 0.7], [0.5, 0.55], [0.3, 0.3]])
+    points = numpy.array([[0.5, 0.0], [1.0, 0.0]])
     num_points = points.shape[0]
     weights = numpy.array([1.0] * num_points)
 
@@ -49,6 +49,8 @@ def compute_expression_ir(expression, analysis, parameters):
 
     tensor_shape = argument_dimensions
     ir["tensor_shape"] = tensor_shape
+
+    ir["expression_shape"] = list(expression.ufl_shape)
 
     coefficients = extract_coefficients(expression)
     coefficient_numbering = {}

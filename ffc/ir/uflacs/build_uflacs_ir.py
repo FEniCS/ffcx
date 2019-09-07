@@ -35,7 +35,7 @@ block_data_t = collections.namedtuple("block_data_t",
                                       ["block_mode",
                                        # "safe" | "full" | "preintegrated" | "premultiplied"
                                        "ttypes",  # list of table types for each block rank
-                                       "factor_index",  # int: index of factor in vertex array
+                                       "factor_indices",  # list of indices of factors
                                        "factor_is_piecewise",
                                        # bool: factor is found in piecewise vertex array
                                        # instead of quadloop specific vertex array
@@ -221,7 +221,7 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
     return p
 
 
-def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
+def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     quadrature_rules, parameters):
     # The intermediate representation dict we're building and returning
     # here
@@ -274,9 +274,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Build initial scalar list-based graph representation
         S = build_scalar_graph(expression)
-        S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
-        assert len(S_targets) == 1
-        S_target = S_targets[0]
 
         # Build terminal_data from V here before factorization. Then we
         # can use it to derive table properties for all modified
@@ -327,7 +324,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             visualise(S, 'S.pdf')
 
         # Compute factorization of arguments
-        rank = len(tensor_shape)
+        rank = len(argument_shape)
         F = compute_argument_factorization(S, rank)
 
         # Get the 'target' nodes that are factors of arguments, and insert in dict
@@ -335,7 +332,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         argument_factorization = {}
         for i in FV_targets:
             for w in F.nodes[i]['target']:
-                argument_factorization[w] = i
+                if argument_factorization.get(w):
+                    argument_factorization[w].append(i)
+                else:
+                    argument_factorization[w] = [i]
 
         # Get list of indices in F which are the arguments (should be at start)
         argkeys = set()
@@ -392,7 +392,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
                 block_restrictions.append(r)
             block_restrictions = tuple(block_restrictions)
 
-            factor_is_piecewise = F.nodes[fi]['status'] == 'piecewise'
+            # Check if each *each* factor corresponding to this argument is piecewise
+            factor_is_piecewise = all(F.nodes[ifi]["status"] == 'piecewise' for ifi in fi)
 
             # TODO: Add separate block modes for quadrature
             # Both arguments in quadrature elements

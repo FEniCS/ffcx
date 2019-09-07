@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2013-2017 Martin Sandve Alnæs
+# Copyright (C) 2013-2019 Martin Sandve Alnæs and Michal Habera
 #
 # This file is part of FFC (https://www.fenicsproject.org)
 #
@@ -49,9 +49,9 @@ def generate_integral_code(ir, parameters):
 
 
 def generate_expression_code(ir, parameters):
+
     backend = FFCBackend(ir, parameters)
     eg = ExpressionGenerator(ir, backend)
-
     code = initialize_expression_code(ir)
     parts = eg.generate()
 
@@ -69,8 +69,7 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scopes = {num_points: {} for num_points in self.ir.all_num_points}
-        self.scopes[None] = {}
+        self.scope = {}
         self._ufl_names = set()
         self.finalization_blocks = collections.defaultdict(list)
         self.symbol_counters = collections.defaultdict(int)
@@ -101,20 +100,8 @@ class ExpressionGenerator:
 
         all_finalizeparts = []
 
-        # Assure there is no preintegrated block
-        #
-        # Preintegrated blocks usually assign computed values directly
-        # into tensor A during its initialization - we are initializing
-        # zero tensor A
-        #
-        # Moreover, preintegration doesn't make sense when quadrature index
-        # is kept free - tensor is not accumulated across the index
-        block_contributions = self.ir.piecewise_ir["block_contributions"]
-        for blockmap, contributions in sorted(block_contributions.items()):
-            for blockdata in contributions:
-                assert blockdata.block_mode != "preintegrated"
-
-        A_values = [0.0] * (ufl.product(self.ir.tensor_shape) * self.num_points)
+        # Initialize a tensor to zeros
+        A_values = [0.0] * ufl.product(self.ir.expression_shape + [self.num_points] + self.ir.tensor_shape)
         all_finalizeparts = self.generate_tensor_value_initialization(A_values)
 
         # Generate code to add reusable blocks B* to element tensor A
@@ -135,7 +122,6 @@ class ExpressionGenerator:
         parts = []
 
         tables = self.ir.unique_tables
-        inline_tables = self.ir.integral_type == "cell"
 
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
@@ -143,27 +129,14 @@ class ExpressionGenerator:
 
         for name in table_names:
             table = tables[name]
-
-            # Don't pad preintegrated tables
-            if name[0] == "P":
-                p = 1
-            else:
-                p = padlen
-
-            # Skip tables that are inlined in code generation
-            if inline_tables and name[:2] == "PI":
-                continue
-
             decl = L.ArrayDecl(
-                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
+                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=padlen)
             parts += [decl]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
-            "Precomputed values of basis functions and precomputations",
+            "Precomputed values of basis functions",
             "FE* dimensions: [entities][points][dofs]",
-            "PI* dimensions: [entities][dofs][dofs] or [entities][dofs]",
-            "PM* dimensions: [entities][dofs][dofs]",
         ])
         return parts
 
@@ -186,9 +159,6 @@ class ExpressionGenerator:
         if not body:
             # Could happen for integral with everything zero and optimized away
             quadparts = []
-        elif self.num_points == 1:
-            # For now wrapping body in Scope to avoid thinking about scoping issues
-            quadparts = L.commented_code_list(L.Scope(body), "Only 1 quadrature point, no loop")
         else:
             iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, self.num_points, body=body)]
@@ -243,15 +213,12 @@ class ExpressionGenerator:
 
             # Add definitions
             preparts.extend(block_preparts)
-            preparts = L.commented_code_list(preparts, "Preparts for dofblock")
 
             # Add computations
             quadparts.extend(block_quadparts)
-            quadparts = L.commented_code_list(quadparts, "Quadparts for dofblock")
 
             # Add finalization
             postparts.extend(block_postparts)
-            postparts = L.commented_code_list(postparts, "Postparts for dofblock")
 
             # Add A[blockmap] += B[...] to finalization
             self.finalization_blocks[blockmap].append(B)
@@ -272,28 +239,6 @@ class ExpressionGenerator:
         quadparts = []
         postparts = []
 
-        # TODO: Define names in backend symbols?
-        # tempnames = self.backend.symbols.block_temp_names
-        # blocknames = self.backend.symbols.block_names
-        tempnames = {
-            # "preintegrated": "TI",
-            "premultiplied": "TM",
-            "partial": "TP",
-            "full": "TF",
-            "safe": "TS",
-            "quadrature": "TQ",
-        }
-        blocknames = {
-            # "preintegrated": "BI",
-            # "premultiplied": "BM",
-            # "partial": "BP",
-            "full": "BF",
-            "safe": "BS",
-            "quadrature": "BQ",
-        }
-
-        tempname = tempnames.get(blockdata.block_mode)
-
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
 
@@ -306,194 +251,66 @@ class ExpressionGenerator:
             raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
         iq = self.backend.symbols.quadrature_loop_index()
-        # Prepend dimensions of dofmap block with free index for quadrature points
-        blockdims = tuple([num_points, *blockdims])
 
         arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
-        B_indices = tuple([iq] + list(arg_indices))
-
-        # Define unique block symbol
-        blockname = blocknames.get(blockdata.block_mode)
-        if blockname:
-            B = self.new_temp_symbol(blockname)
-            # Add initialization of this block to parts
-            # For all modes, block definition occurs before quadloop
-            preparts.append(
-                L.ArrayDecl("ufc_scalar_t", B, blockdims, 0, alignas=alignas, padlen=padlen))
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
             F = self.ir.piecewise_ir["factorization"]
         else:
             F = self.ir.varying_irs[num_points]["factorization"]
-        v = F.nodes[blockdata.factor_index]['expression']
-        f = self.get_var(num_points, v)
 
-        weight = L.LiteralFloat(1.0)
+        # Get a temporary variables which represents the last computation
+        # of an expression with this dofblock factorized
+        #
+        # There are more temporary variables for this block, because current block
+        # could be reffered to by multiple components
+        vs = [F.nodes[index] for index in blockdata.factor_indices]
+        block_factors = [self.get_var(num_points, v["expression"]) for v in vs]
 
-        # Define fw = f * weight
-        if blockdata.block_mode in ("safe", "full", "partial"):
-            assert not blockdata.transposed, "Not handled yet"
+        # Mapping from factor index to components
+        fi_to_comps = {fi: F.nodes[fi]["component"] for fi in blockdata.factor_indices}
 
-            # Fetch code to access modified arguments
-            arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
+        assert blockdata.block_mode == "full"
+        assert not blockdata.transposed, "Not handled yet"
 
-            fw_rhs = L.float_product([f, weight])
-            if not isinstance(fw_rhs, L.Product):
-                fw = fw_rhs
-            else:
-                # Define and cache scalar temp variable
-                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
-                fw, defined = self.get_temp_symbol("fw", key)
-                if not defined:
-                    quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
+        components = ufl.product(self.ir.expression_shape)
 
-                # Plan for vectorization of fw computations over iq:
-                # 1) Define fw as arrays e.g. "double fw0[nq];" outside quadloop
-                # 2) Access as fw0[iq] of course
-                # 3) Split quadrature loops, one for fw computation and one for blocks
-                # 4) Pad quadrature rule with 0 weights and last point
+        # Prepend dimensions of dofmap block with free index
+        # for quadrature points and expression components
+        blockdims = (components, ) + (num_points, ) + blockdims
 
-                # Plan for vectorization of coefficient evaluation over iq:
-                # 1) Define w0_c1 etc as arrays e.g. "double w0_c1[nq] = {};" outside quadloop
-                # 2) Access as w0_c1[iq] of course
-                # 3) Splitquadrature loops, coefficients before fw computation
-                # 4) Possibly swap loops over iq and ic:
-                #    for(ic) for(iq) w0_c1[iq] = w[0][ic] * FE[iq][ic];
+        B = self.new_temp_symbol("B")
+        # Add initialization of this block to parts
+        # For all modes, block definition occurs before quadloop
+        preparts.append(L.Comment("B[components for block][points][dofs][dofs]"))
+        preparts.append(L.ArrayDecl("ufc_scalar_t", B, blockdims, 0, alignas=alignas, padlen=padlen))
 
-        if blockdata.block_mode == "safe":
-            # Naively accumulate integrand for this block in the innermost loop
-            assert not blockdata.transposed
-            B_rhs = L.float_product([fw] + arg_factors)
-            body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
-            for i in reversed(range(block_rank)):
-                body = L.ForRange(B_indices[i], 0, padded_blockdims[i], body=body)
-            quadparts += [body]
+        B_indices = tuple([iq] + list(arg_indices))
 
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B[arg_indices]
+        # Fetch code to access modified arguments
+        # An access to FE table data
+        arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
 
-        elif blockdata.block_mode == "full":
-            assert not blockdata.transposed, "Not handled yet"
+        # Multiply collected factors
+        # A list of computations of Bs, for each component of the factor expression
+        # Add result to block inside quadloop
+        body = []
+        for fi, f in zip(blockdata.factor_indices, block_factors):
+            for comp in fi_to_comps[fi]:
+                Brhs = L.float_product([f] + arg_factors)
+                body.append(L.AssignAdd(B[(comp,) + B_indices], Brhs))
 
-            if block_rank < 2:
-                # Multiply collected factors
-                B_rhs = L.float_product([fw] + arg_factors)
-            else:
-                # TODO: Pick arg with smallest dimension, or pick
-                # based on global optimization to reuse more blocks
-                i = 1  # Index selected for precomputation
-                j = 1 - i
+        for i in reversed(range(block_rank)):
+            if ttypes[i] != "quadrature":
+                body = L.ForRange(
+                    B_indices[i + 1], 0, padded_blockdims[i], body=body)
+        quadparts += [body]
 
-                P_index = B_indices[i]
-
-                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
-                       arg_factors[i].ce_format())
-                P, defined = self.get_temp_symbol(tempname, key)
-                if not defined:
-                    # TODO: If FE table is varying and only used in contexts
-                    # where it's multiplied by weight, we can premultiply it!
-                    # Then this would become P = f * preweighted_FE_table[:].
-
-                    # Define and compute intermediate value
-                    # P[:] = (weight * f) * args[i][:]
-                    # inside quadrature loop
-                    P_dim = blockdims[i]
-                    quadparts.append(
-                        L.ArrayDecl("ufc_scalar_t", P, P_dim, None, alignas=alignas, padlen=padlen))
-                    P_rhs = L.float_product([fw, arg_factors[i]])
-                    body = L.Assign(P[P_index], P_rhs)
-                    # if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
-                    vectorize = self.ir.params["vectorize"]
-                    body = L.ForRange(P_index, 0, P_dim, body=body, vectorize=vectorize)
-                    quadparts.append(body)
-
-                B_rhs = P[P_index] * arg_factors[j]
-
-            # Add result to block inside quadloop
-            body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
-            for i in reversed(range(block_rank)):
-                # Vectorize only the innermost loop
-                vectorize = self.ir.params["vectorize"] and (i == block_rank - 1)
-                if ttypes[i] != "quadrature":
-                    body = L.ForRange(
-                        B_indices[i + 1], 0, padded_blockdims[i], body=body, vectorize=vectorize)
-            quadparts += [body]
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B[B_indices]
-
-        elif blockdata.block_mode == "partial":
-            # TODO: To handle transpose here, must add back intermediate block B
-            assert not blockdata.transposed, "Not handled yet"
-
-            # Get indices and dimensions right here...
-            assert block_rank == 2
-            i = blockdata.piecewise_ma_index
-            not_piecewise_index = 1 - i
-
-            P_index = arg_indices[not_piecewise_index]
-
-            key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
-                   arg_factors[not_piecewise_index].ce_format())
-            P, defined = self.get_temp_symbol(tempname, key)
-            if not defined:
-                # Declare P table in preparts
-                P_dim = blockdims[not_piecewise_index]
-                preparts.append(
-                    L.ArrayDecl("ufc_scalar_t", P, P_dim, 0, alignas=alignas, padlen=padlen))
-
-                # Multiply collected factors
-                P_rhs = L.float_product([fw, arg_factors[not_piecewise_index]])
-
-                # Accumulate P += weight * f * args in quadrature loop
-                body = L.AssignAdd(P[P_index], P_rhs)
-                body = L.ForRange(P_index, 0, pad_dim(P_dim, padlen), body=body)
-                quadparts.append(body)
-
-            # Define B = B_rhs = piecewise_argument[:] * P[:],
-            # where P[:] = sum_q weight * f * other_argument[:]
-            B_rhs = arg_factors[i] * P[P_index]
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B_rhs
-
-        elif blockdata.block_mode in ("premultiplied", "preintegrated"):
-            P_ii = self.get_entities(blockdata)
-            if blockdata.transposed:
-                P_ii += arg_indices[::-1]
-            else:
-                P_ii += arg_indices
-
-            if blockdata.block_mode == "preintegrated":
-                # Preintegrated should never get into quadloops
-                assert num_points is None
-
-                # Define B = B_rhs = f * PI where PI = sum_q weight * u * v
-                PI = L.Symbol(blockdata.name)[P_ii]
-                B_rhs = L.float_product([f, PI])
-
-            elif blockdata.block_mode == "premultiplied":
-                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
-                FI, defined = self.get_temp_symbol(tempname, key)
-                if not defined:
-                    # Declare FI = 0 before quadloop
-                    preparts += [L.VariableDecl("ufc_scalar_t", FI, 0)]
-                    # Accumulate FI += weight * f in quadparts
-                    quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
-
-                # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_ii]
-                B_rhs = L.float_product([FI, PM])
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B_rhs
-
-        # Equip code with comments
-        comments = ["UFLACS block mode: {}".format(blockdata.block_mode)]
-        preparts = L.commented_code_list(preparts, comments)
-        quadparts = L.commented_code_list(quadparts, comments)
-        postparts = L.commented_code_list(postparts, comments)
+        # Define rhs expression for A[it][iq][blockmap[arg_indices]] += A_rhs
+        # This is used outside quadloop, in finalization copyout statements
+        iec = self.backend.symbols.expr_component_index()
+        A_rhs = B[(iec,) + B_indices]
 
         return A_rhs, preparts, quadparts, postparts
 
@@ -506,7 +323,7 @@ class ExpressionGenerator:
 
         z = L.LiteralFloat(0.0)
 
-        k = L.Symbol("k")  # Index for zeroing arrays
+        k = L.Symbol("k")
 
         # Zero everything first
         parts += [L.ForRange(k, 0, A_size, index_type="int", body=L.Assign(A[k], 0.0))]
@@ -528,13 +345,12 @@ class ExpressionGenerator:
 
         Asym = self.backend.symbols.element_tensor()
 
-        # Final A tensor has one more index for quadrature points
-        A = L.FlattenedArray(Asym, dims=[self.num_points] + A_shape)
+        num_expr_components = ufl.product(self.ir.expression_shape)
+        A = L.FlattenedArray(Asym, dims=[num_expr_components] + [self.num_points] + A_shape)
 
         indices = [self.backend.symbols.argument_loop_index(i) for i in range(A_rank)]
 
         dofmap_parts = []
-        dofmaps = {}
         for blockmap, contributions in sorted(self.finalization_blocks.items()):
 
             # Define mapping from B indices to A indices
@@ -547,14 +363,7 @@ class ExpressionGenerator:
                     # Dense insertion, offset B index to index A
                     j = indices[i] + begin
                 else:
-                    # Sparse insertion, map B index through dofmap
-                    DM = dofmaps.get(dofmap)
-                    if DM is None:
-                        DM = L.Symbol("DM%d" % len(dofmaps))
-                        dofmaps[dofmap] = DM
-                        dofmap_parts.append(
-                            L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
-                    j = DM[indices[i]]
+                    raise RuntimeError("Sparse insertion not handled")
                 A_indices.append(j)
 
             # Sum up all blocks contributing to this blockmap
@@ -568,13 +377,19 @@ class ExpressionGenerator:
 
             # Add components of all B's to A component in loop nest
             iq = self.backend.symbols.quadrature_loop_index()
-            body = L.AssignAdd(A[tuple([iq] + A_indices)], term)
+            iec = self.backend.symbols.expr_component_index()
+            body = L.AssignAdd(A[tuple([iec] + [iq] + A_indices)], term)
 
             for i in reversed(range(A_rank)):
                 index_range = len(blockmap[i])
                 body = L.ForRange(indices[i], 0, index_range, body=body)
 
             body = L.ForRange(iq, 0, self.num_points, body=body)
+
+            # TODO: Here we assume that block contributes to each
+            #       component of the expression. In some cases produces
+            #       suboptimal copyout statements (adding zeros to tensor A)
+            body = L.ForRange(iec, 0, num_expr_components, body=body)
 
             # Add this block to parts
             parts.append(body)
@@ -592,16 +407,7 @@ class ExpressionGenerator:
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
-            if td.is_piecewise:
-                scope = self.ir.piecewise_ir["modified_arguments"]
-            else:
-                scope = self.ir.varying_irs[num_points]["modified_arguments"]
-            mt = scope[mad.ma_index]
-
-            # Translate modified terminal to code
-            # TODO: Move element table access out of backend?
-            #       Not using self.backend.access.argument() here
-            #       now because it assumes too much about indices.
+            mt = self.ir.piecewise_ir["modified_arguments"][mad.ma_index]
 
             table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
 
@@ -617,30 +423,6 @@ class ExpressionGenerator:
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def get_entities(self, blockdata):
-        L = self.backend.language
-
-        if self.ir.integral_type == "interior_facet":
-            # Get the facet entities
-            entities = []
-            for r in blockdata.restrictions:
-                if r is None:
-                    entities.append(0)
-                else:
-                    entities.append(self.backend.symbols.entity(self.ir.entitytype, r))
-            if blockdata.transposed:
-                return (entities[1], entities[0])
-            else:
-                return tuple(entities)
-        else:
-            # Get the current cell or facet entity
-            if blockdata.is_uniform:
-                # uniform, i.e. constant across facets
-                entity = L.LiteralInt(0)
-            else:
-                entity = self.backend.symbols.entity(self.ir.entitytype, None)
-            return (entity, )
-
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
         L = self.backend.language
@@ -648,44 +430,11 @@ class ExpressionGenerator:
         self.symbol_counters[basename] += 1
         return L.Symbol(name)
 
-    def get_temp_symbol(self, tempname, key):
-        key = (tempname, ) + key
-        s = self.shared_symbols.get(key)
-        defined = s is not None
-        if not defined:
-            s = self.new_temp_symbol(tempname)
-            self.shared_symbols[key] = s
-        return s, defined
-
     def get_var(self, num_points, v):
-        """Lookup ufl expression v in variable scope dicts.
-
-        Scope is determined by num_points which identifies the
-        quadrature loop scope or None if outside quadrature loops.
-
-        If v is not found in quadrature loop scope, the piecewise
-        scope (None) is checked.
-
-        Returns the CNodes expression to access the value in the code.
-        """
         if v._ufl_is_literal_:
             return self.backend.ufl_to_language.get(v)
-        f = self.scopes[num_points].get(v)
-        if f is None:
-            f = self.scopes[None][v]
+        f = self.scope.get(v)
         return f
-
-    def set_var(self, num_points, v, vaccess):
-        """Set a new variable in variable scope dicts.
-
-        Scope is determined by num_points which identifies the
-        quadrature loop scope or None if outside quadrature loops.
-
-        v is the ufl expression and vaccess is the CNodes
-        expression to access the value in the code.
-
-        """
-        self.scopes[num_points][v] = vaccess
 
     def generate_partition(self, symbol, F, mode, num_points):
         L = self.backend.language
@@ -755,7 +504,7 @@ class ExpressionGenerator:
                         intermediates.append(L.VariableDecl("const ufc_scalar_t", vaccess, vexpr))
 
             # Store access node for future reference
-            self.set_var(num_points, v, vaccess)
+            self.scope[v] = vaccess
 
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations

@@ -48,12 +48,10 @@ class ExpressionGraph(object):
         self.in_edges[node2] += [node1]
 
 
-def build_graph_vertices(expression, scalar=False):
+def build_graph_vertices(expressions, skip_terminal_modifiers=False):
     # Count unique expression nodes
-
     G = ExpressionGraph()
-
-    G.e2i = _count_nodes_with_unique_post_traversal(expression, scalar)
+    G.e2i = _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers)
 
     # Invert the map to get index->expression
     GV = sorted(G.e2i, key=G.e2i.get)
@@ -62,9 +60,10 @@ def build_graph_vertices(expression, scalar=False):
     for i, v in enumerate(GV):
         G.add_node(i, expression=v)
 
-    # Get vertex index representing input expression root
-    V_target = G.e2i[expression]
-    G.nodes[V_target]['target'] = True
+    for expr in expressions:
+        # Get vertex index representing input expression root
+        V_target = G.e2i[expr]
+        G.nodes[V_target]['target'] = True
 
     return G
 
@@ -75,14 +74,14 @@ def build_scalar_graph(expression):
     """
 
     # Populate with vertices
-    G = build_graph_vertices(expression, scalar=False)
+    G = build_graph_vertices([expression], skip_terminal_modifiers=False)
 
-    # Build more fine grained computational graph of scalar subexpressions
-    scalar_expression = rebuild_with_scalar_subexpressions(G)
+    # # Build more fine grained computational graph of scalar subexpressions
+    scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
     # Build new list representation of graph where all
     # vertices of V represent single scalar operations
-    G = build_graph_vertices(scalar_expression, scalar=True)
+    G = build_graph_vertices(scalar_expressions, skip_terminal_modifiers=True)
 
     # Compute graph edges
     V_deps = []
@@ -115,7 +114,13 @@ def rebuild_with_scalar_subexpressions(G):
     """
 
     # Compute symbols over graph and rebuild scalar expression
+    #
+    # New expression which represents usually an algebraic operation
+    # generates a new symbol
     value_numberer = ValueNumberer(G)
+
+    # V_symbols maps an index of a node to a list of
+    # symbols which are present in that node
     V_symbols = value_numberer.compute_symbols()
     total_unique_symbols = value_numberer.symbol_count
 
@@ -129,6 +134,9 @@ def rebuild_with_scalar_subexpressions(G):
         vs = V_symbols[i]
 
         # Skip if there's nothing new here (should be the case for indexing types)
+        # New symbols are not given to indexing types, so W[symbol] already equals
+        # an expression, since it was assigned to the symbol in a previous loop
+        # cycle
         if all(W[s] is not None for s in vs):
             continue
 
@@ -184,12 +192,12 @@ def rebuild_with_scalar_subexpressions(G):
                 assert s in handled  # Result of symmetry! - but I think this never gets reached anyway (CNR)
 
     # Find symbols of final v from input graph
-    vs = V_symbols[-1][0]
-    scalar_expression = W[vs]
-    return scalar_expression
+    vs = V_symbols[-1]
+    scalar_expressions = W[vs]
+    return scalar_expressions
 
 
-def _count_nodes_with_unique_post_traversal(expr, skip_terminal_modifiers=False):
+def _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers=False):
     """Yields o for each node o in expr, child before parent.
     Never visits a node twice."""
 
@@ -202,17 +210,18 @@ def _count_nodes_with_unique_post_traversal(expr, skip_terminal_modifiers=False)
             return list(e.ufl_operands)
 
     e2i = {}
-    stack = [(expr, getops(expr))]
-    while stack:
-        expr, ops = stack[-1]
-        for i, o in enumerate(ops):
-            if o is not None and o not in e2i:
-                stack.append((o, getops(o)))
-                ops[i] = None
-                break
-        else:
-            if not isinstance(expr, (ufl.classes.MultiIndex, ufl.classes.Label)):
-                count = len(e2i)
-                e2i[expr] = count
-            stack.pop()
+    for expr in expressions:
+        stack = [(expr, getops(expr))]
+        while stack:
+            expr, ops = stack[-1]
+            for i, o in enumerate(ops):
+                if o is not None and o not in e2i:
+                    stack.append((o, getops(o)))
+                    ops[i] = None
+                    break
+            else:
+                if not isinstance(expr, (ufl.classes.MultiIndex, ufl.classes.Label)):
+                    count = len(e2i)
+                    e2i[expr] = count
+                stack.pop()
     return e2i

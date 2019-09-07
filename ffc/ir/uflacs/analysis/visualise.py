@@ -46,6 +46,10 @@ def visualise(Gx, filename):
             G.get_node(nd).attr['label'] += ':' + str(t)
             G.get_node(nd).attr['shape'] = 'hexagon'
 
+        c = v.get('component')
+        if c:
+            G.get_node(nd).attr['label'] += ', comp={}'.format(c)
+
     for nd, eds in Gx.out_edges.items():
         for ed in eds:
             G.add_edge(nd, ed)
