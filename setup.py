@@ -24,7 +24,7 @@ else:
         "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
     ]
 
-URL = "https://bitbucket.org/fenics-project/ffc/"
+URL = "https://github.com/FEniCS/ffcx/"
 
 ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main', 'ffc-3 = ffc.__main__:main']}
 

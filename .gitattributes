@@ -1,5 +1,4 @@
 release.conf export-ignore
-bitbucket-pipelines.yml export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
 .mailmap export-ignore
