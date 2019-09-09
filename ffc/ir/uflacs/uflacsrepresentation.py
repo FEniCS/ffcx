@@ -14,7 +14,7 @@ from ffc.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffc.ir.uflacs.tools import (accumulate_integrals,
                                  collect_quadrature_rules,
                                  compute_quadrature_rules)
-from ufl import custom_integral_types
+import ufl
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
 from ufl.algorithms import extract_arguments, extract_coefficients
@@ -74,7 +74,7 @@ def compute_expression_ir(expression, analysis, parameters):
     # Copy offsets also into IR
     ir["coefficient_offsets"] = offsets
 
-    ir["integral_type"] = "custom"
+    ir["integral_type"] = "expression"
     ir["entitytype"] = "cell"
 
     # Build offsets for Constants
@@ -130,7 +130,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     integral_type = itg_data.integral_type
     cell = itg_data.domain.ufl_cell()
 
-    if integral_type in custom_integral_types:
+    if integral_type in ufl.custom_integral_types:
         # Set quadrature degree to twice the highest element degree, to get
         # enough points to identify basis functions via table computations
         max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
@@ -151,7 +151,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     ir["quadrature_rules"] = quadrature_rules
 
     # Store the fake num_points for analysis in custom integrals
-    if integral_type in custom_integral_types:
+    if integral_type in ufl.custom_integral_types:
         ir["fake_num_points"], = quadrature_rules.keys()
 
     # Group and accumulate integrals on the format { num_points: integral data }

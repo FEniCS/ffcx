@@ -30,12 +30,13 @@ def float_to_type(name):
 
 def test_expression():
     e = ufl.VectorElement("P", "triangle", 1)
-
-    f = ufl.Coefficient(e)
+    mesh = ufl.Mesh(e)
+    V = ufl.FunctionSpace(mesh, e)
+    f = ufl.Coefficient(V)
 
     a_mat = np.array([[1.0, 2.0], [1.0, 1.0]])
     a = ufl.as_matrix(a_mat)
-    expr = ufl.dot(a, f)
+    expr = ufl.Constant(mesh) * ufl.dot(a, f)
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
     obj, module = ffc.codegeneration.jit.compile_expressions([(expr, points)])
@@ -47,10 +48,12 @@ def test_expression():
 
     A = np.zeros((2, 3), dtype=np_type)
     f_mat = np.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]])
+
     # Coefficient storage XXXYYY
     w = np.array(f_mat.flatten(), dtype=np_type)
-    c = np.array([], dtype=np_type)
+    c = np.array([0.5], dtype=np_type)
 
+    # Coords storage XYXYXY
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
     kernel.tabulate_expression(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
@@ -58,4 +61,4 @@ def test_expression():
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data))
 
-    assert np.allclose(A, np.dot(a_mat, f_mat))
+    assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat))

@@ -10,7 +10,7 @@ import collections
 import numpy
 
 from ffc.ir.representationutils import create_quadrature_points_and_weights
-from ufl import custom_integral_types
+import ufl
 from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum
 
@@ -67,7 +67,7 @@ def accumulate_integrals(itg_data, quadrature_rule_sizes):
 
     # Group integrands by quadrature rule
     sorted_integrands = collections.defaultdict(list)
-    if itg_data.integral_type in custom_integral_types:
+    if itg_data.integral_type in ufl.custom_integral_types:
         # Should only be one size here, ignoring irrelevant metadata and parameters
         num_points, = quadrature_rule_sizes.values()
         for integral in itg_data.integrals:

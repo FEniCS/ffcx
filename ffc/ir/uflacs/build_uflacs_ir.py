@@ -24,7 +24,7 @@ from ffc.ir.uflacs.elementtables import (build_optimized_tables,
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
-from ufl.measure import (custom_integral_types, facet_integral_types,
+from ufl.measure import (facet_integral_types,
                          point_integral_types)
 
 logger = logging.getLogger(__name__)
@@ -210,12 +210,12 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
 
     # Conditionally disable some optimizations based on integral type,
     # i.e. these options are not valid for certain integral types
-    skip_preintegrated = point_integral_types + custom_integral_types
-    if integral_type in skip_preintegrated:
+    skip_preintegrated = point_integral_types + ufl.custom_integral_types
+    if integral_type in skip_preintegrated or integral_type == "expression":
         p["enable_preintegration"] = False
 
-    skip_premultiplied = point_integral_types + custom_integral_types
-    if integral_type in skip_premultiplied:
+    skip_premultiplied = point_integral_types + ufl.custom_integral_types
+    if integral_type in skip_premultiplied or integral_type == "expression":
         p["enable_premultiplication"] = False
 
     return p
@@ -253,7 +253,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     # some cases it's just set to 1 in ufl integral scaling)
     tdim = cell.topological_dimension()
     expect_weight = (integral_type not in point_integral_types and (entitytype == "cell" or (
-        entitytype == "facet" and tdim > 1) or (integral_type in custom_integral_types)))
+        entitytype == "facet" and tdim > 1) or (integral_type in ufl.custom_integral_types)))
 
     # Analyse each num_points/integrand separately
     assert isinstance(integrands, dict)
@@ -617,7 +617,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         # Drop tables not referenced from modified terminals
         # and tables of zeros and ones
-        unused_ttypes = ("zeros", "ones", "quadrature")
+        unused_ttypes = ("zeros", "ones")
         keep_table_names = set()
         for name in active_table_names:
             ttype = ir["unique_table_types"][name]
@@ -647,8 +647,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             need_points = any(isinstance(mt.terminal, CellCoordinate) for mt in active_mts)
         elif integral_type in facet_integral_types:
             need_points = any(isinstance(mt.terminal, FacetCoordinate) for mt in active_mts)
-        elif integral_type in custom_integral_types:
+        elif integral_type in ufl.custom_integral_types:
             need_points = True  # TODO: Always?
+        elif integral_type == "expression":
+            need_points = True
         else:
             need_points = False
 
@@ -671,8 +673,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
         # If there are any blocks other than preintegrated we need weights
         if expect_weight and any(mode != "preintegrated" for mode in block_modes):
             need_weights = True
-        elif integral_type in custom_integral_types:
+        elif integral_type in ufl.custom_integral_types:
             need_weights = True  # TODO: Always?
+        elif integral_type == "expression":
+            need_weights = True
         else:
             need_weights = False
 

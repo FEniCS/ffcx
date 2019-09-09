@@ -12,7 +12,6 @@ import warnings
 import ufl
 from ffc.fiatinterface import create_element
 from ufl.finiteelement import MixedElement
-from ufl.measure import custom_integral_types
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +98,7 @@ class FFCBackendAccess(object):
         if mt.averaged:
             raise RuntimeError("Not expecting average of SpatialCoordinates.")
 
-        if self.integral_type in custom_integral_types:
+        if self.integral_type in ufl.custom_integral_types:
             if mt.local_derivatives:
                 raise RuntimeError("FIXME: Jacobian in custom integrals is not implemented.")
 
@@ -112,6 +111,10 @@ class FFCBackendAccess(object):
             else:
                 index = iq * gdim + mt.flat_component
             return x[index]
+        elif self.integral_type == "expression":
+            # Physical coordinates are computed by code generated in
+            # definitions
+            return self.symbols.x_component(mt)
         else:
             # Physical coordinates are computed by code generated in
             # definitions

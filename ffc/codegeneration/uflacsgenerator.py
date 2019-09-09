@@ -626,7 +626,7 @@ class IntegralGenerator(object):
         all_postparts = []
 
         # Go through each relevant quadrature loop
-        if self.ir.integral_type in ufl.measure.custom_integral_types:
+        if self.ir.integral_type in ufl.custom_integral_types:
             preparts, quadparts, postparts = \
                 self.generate_runtime_quadrature_loop()
             all_preparts += preparts
@@ -673,7 +673,7 @@ class IntegralGenerator(object):
 
         # No quadrature tables for custom (given argument)
         # or point (evaluation in single vertex)
-        skip = ufl.measure.custom_integral_types + ufl.measure.point_integral_types
+        skip = ufl.custom_integral_types + ufl.measure.point_integral_types
         if self.ir.integral_type in skip:
             return parts
 
@@ -722,7 +722,7 @@ class IntegralGenerator(object):
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
 
-        if self.ir.integral_type in ufl.measure.custom_integral_types:
+        if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
         else:
@@ -791,7 +791,7 @@ class IntegralGenerator(object):
         """Generate quadrature loop for custom integrals, with physical points given runtime."""
         L = self.backend.language
 
-        assert self.ir.integral_type in ufl.measure.custom_integral_types
+        assert self.ir.integral_type in ufl.custom_integral_types
 
         num_points = self.ir.fake_num_points
         chunk_size = self.ir.params["chunk_size"]
@@ -1184,7 +1184,7 @@ class IntegralGenerator(object):
         # Quadrature weight was removed in representation, add it back now
         if num_points is None:
             weight = L.LiteralFloat(1.0)
-        elif self.ir.integral_type in ufl.measure.custom_integral_types:
+        elif self.ir.integral_type in ufl.custom_integral_types:
             weights = self.backend.symbols.custom_weights_table()
             weight = weights[iq]
         else:
