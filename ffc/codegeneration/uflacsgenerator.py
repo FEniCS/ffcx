@@ -57,6 +57,9 @@ def generate_expression_code(ir, parameters):
     body = format_indented_lines(parts.cs_format(), 1)
     code["tabulate_expression"] = body
 
+    code["original_coefficient_positions"] = format_indented_lines(
+        eg.generate_original_coefficient_positions().cs_format(), 1)
+
     return code
 
 
@@ -511,6 +514,13 @@ class ExpressionGenerator:
                 alignas = self.ir.params["alignas"]
                 parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas)]
             parts += intermediates
+        return parts
+
+    def generate_original_coefficient_positions(self):
+        L = self.backend.language
+        parts = L.ArrayDecl("static const int", "original_coefficient_positions",
+                            values=self.ir.original_coefficient_positions,
+                            sizes=(len(self.ir.original_coefficient_positions), ))
         return parts
 
 

@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 def compute_expression_ir(expression, analysis, parameters):
     logger.info("Computing uflacs representation of expression")
 
+    original_expression = expression[2]
     points = expression[1]
     expression = expression[0]
 
@@ -62,6 +63,13 @@ def compute_expression_ir(expression, analysis, parameters):
 
     # Add coefficient numbering to IR
     ir["coefficient_numbering"] = coefficient_numbering
+
+    original_coefficient_positions = []
+    original_coefficients = extract_coefficients(original_expression)
+    for coeff in coefficients:
+        original_coefficient_positions.append(original_coefficients.index(coeff))
+
+    ir["original_coefficient_positions"] = original_coefficient_positions
 
     coefficient_elements = tuple(f.ufl_element() for f in coefficients)
 

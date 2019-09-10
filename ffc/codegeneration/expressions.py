@@ -22,6 +22,8 @@ def generator(ir, parameters):
     # Format implementation code
     implementation = expressions_template.factory.format(
         factory_name=factory_name,
-        tabulate_expression=code["tabulate_expression"])
+        tabulate_expression=code["tabulate_expression"],
+        original_coefficient_positions=code["original_coefficient_positions"],
+        num_coefficients=len(ir.coefficient_numbering))
 
     return declaration, implementation

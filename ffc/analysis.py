@@ -82,12 +82,13 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
         for expression in ufl_objects:
             points = expression[1]
             expression = expression[0]
+            original_expression = expression[0]
 
             unique_elements.update(ufl.algorithms.extract_elements(expression))
             unique_elements.update(ufl.algorithms.extract_sub_elements(unique_elements))
 
             expression = _analyze_expression(expression, parameters)
-            expressions.append((expression, points))
+            expressions.append((expression, points, original_expression))
     else:
         raise TypeError("UFL objects not recognised.")
 

@@ -381,6 +381,8 @@ extern "C"
     void (*tabulate_expression)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                                 const ufc_scalar_t* c,
                                 const double* restrict coordinate_dofs);
+    const int* original_coefficient_positions;
+    int num_coefficients;
   } ufc_expression;
 
   typedef struct ufc_integral
