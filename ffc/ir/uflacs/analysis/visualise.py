@@ -17,7 +17,7 @@ def visualise(Gx, filename):
     except ImportError:
         raise RuntimeError("Install pygraphviz")
 
-    if Gx.number_of_nodes() > 400:
+    if Gx.number_of_nodes() > 1000:
         print("Skipping visualisation")
         return
 

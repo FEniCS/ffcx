@@ -303,12 +303,13 @@ def compute_argument_factorization(S, rank):
     factors = {}
     S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
 
-    for comp, S_target in enumerate(S_targets):
+    for S_target in S_targets:
         # Get the factorizations of the target values
         if S.nodes[S_target]['factors'] == {}:
             if rank == 0:
                 # Functionals and expressions: store as no args * factor
-                factors[comp] = {(): F.e2i[S.nodes[S_target]['expression']]}
+                for comp in S.nodes[S_target]["component"]:
+                    factors[comp] = {(): F.e2i[S.nodes[S_target]['expression']]}
             else:
                 # Zero form of arity 1 or higher: make factors empty
                 pass
@@ -318,10 +319,11 @@ def compute_argument_factorization(S, rank):
             # and resort keys for canonical representation
             for argkey, fi in S.nodes[S_target]['factors'].items():
                 ai_fi = {tuple(sorted(arg_indices.index(si) for si in argkey)): fi}
-                if factors.get(comp):
-                    factors[comp].update(ai_fi)
-                else:
-                    factors[comp] = ai_fi
+                for comp in  S.nodes[S_target]["component"]:
+                    if factors.get(comp):
+                        factors[comp].update(ai_fi)
+                    else:
+                        factors[comp] = ai_fi
 
     # Indices into F that are needed for final result
     for comp, target in factors.items():

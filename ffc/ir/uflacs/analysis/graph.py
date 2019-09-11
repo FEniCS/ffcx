@@ -60,10 +60,12 @@ def build_graph_vertices(expressions, skip_terminal_modifiers=False):
     for i, v in enumerate(GV):
         G.add_node(i, expression=v)
 
-    for expr in expressions:
+    for comp, expr in enumerate(expressions):
         # Get vertex index representing input expression root
         V_target = G.e2i[expr]
         G.nodes[V_target]['target'] = True
+        G.nodes[V_target]['component'] = G.nodes[V_target].get("component", [])
+        G.nodes[V_target]['component'].append(comp)
 
     return G
 
@@ -92,6 +94,8 @@ def build_scalar_graph(expression):
 
     for i, edges in enumerate(V_deps):
         for j in edges:
+            if i == j:
+                continue
             G.add_edge(i, j)
 
     return G
@@ -208,18 +212,22 @@ def _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers
             return list(e.ufl_operands)
 
     e2i = {}
-    for expr in expressions:
-        stack = [(expr, getops(expr))]
-        while stack:
-            expr, ops = stack[-1]
-            for i, o in enumerate(ops):
-                if o is not None and o not in e2i:
-                    stack.append((o, getops(o)))
-                    ops[i] = None
-                    break
-            else:
-                if not isinstance(expr, (ufl.classes.MultiIndex, ufl.classes.Label)):
-                    count = len(e2i)
-                    e2i[expr] = count
-                stack.pop()
+    stack = [(expr, getops(expr)) for expr in reversed(expressions)]
+    while stack:
+        expr, ops = stack[-1]
+
+        if expr in e2i:
+            stack.pop()
+            continue
+
+        for i, o in enumerate(ops):
+            if o is not None and o not in e2i:
+                stack.append((o, getops(o)))
+                ops[i] = None
+                break
+        else:
+            if not isinstance(expr, (ufl.classes.MultiIndex, ufl.classes.Label)):
+                count = len(e2i)
+                e2i[expr] = count
+            stack.pop()
     return e2i
