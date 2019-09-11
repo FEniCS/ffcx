@@ -319,7 +319,7 @@ def compute_argument_factorization(S, rank):
             # and resort keys for canonical representation
             for argkey, fi in S.nodes[S_target]['factors'].items():
                 ai_fi = {tuple(sorted(arg_indices.index(si) for si in argkey)): fi}
-                for comp in  S.nodes[S_target]["component"]:
+                for comp in S.nodes[S_target]["component"]:
                     if factors.get(comp):
                         factors[comp].update(ai_fi)
                     else:
