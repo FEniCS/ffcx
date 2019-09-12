@@ -11,7 +11,6 @@ import logging
 import numpy
 
 import ufl
-from ffc import classname
 from ffc.fiatinterface import (create_element, create_quadrature, map_facet_points,
                                reference_cell_vertices)
 

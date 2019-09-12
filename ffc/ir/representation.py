@@ -24,6 +24,7 @@ from collections import namedtuple
 import numpy
 
 import ufl
+from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                MixedElement, QuadratureElement, SpaceOfReals,
                                create_element)
@@ -394,7 +395,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
     ir["prefix"] = prefix
 
     # Compute common data
-    ir["classname"] = classname.make_name(prefix, "form", classname.compute_signature([form_data.original_form], "", parameters))
+    ir["classname"] = classname.make_name(prefix, "form", classname.compute_signature([
+                                          form_data.original_form], "", parameters))
 
     ir["signature"] = form_data.original_form.signature()
 
@@ -738,7 +740,8 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
         raise RuntimeError("Expecting at most one default integral of each type.")
     elif len(itg_data) == 1:
         subdomain_ids += [-1]
-        classnames += [classname.make_integral_name(prefix, integral_type, form_data.original_form, 'otherwise', parameters)]
+        classnames += [classname.make_integral_name(prefix, integral_type,
+                                                    form_data.original_form, 'otherwise', parameters)]
 
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
