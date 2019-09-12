@@ -396,7 +396,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
 
     # Compute common data
     ir["classname"] = classname.make_name(prefix, "form", classname.compute_signature([
-                                          form_data.original_form], form_id, parameters))
+                                          form_data.original_form], str(form_id), parameters))
 
     ir["signature"] = form_data.original_form.signature()
 
