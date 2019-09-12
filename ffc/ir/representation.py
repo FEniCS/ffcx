@@ -24,7 +24,6 @@ from collections import namedtuple
 import numpy
 
 import ufl
-from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                MixedElement, QuadratureElement, SpaceOfReals,
                                create_element)
