@@ -17,13 +17,13 @@ int original_coefficient_position_{factory_name}(int i)
 }}
 
 // Return a list of the coefficient names.
-const char** coefficient_name_{factory_name}()
+const char** coefficient_name_{factory_name}(void)
 {{
 {coefficient_name_map}
 }}
 
 // Return a list of the constant names.
-const char** constant_name_{factory_name}()
+const char** constant_name_{factory_name}(void)
 {{
 {constant_name_map}
 }}
