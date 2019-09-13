@@ -449,7 +449,9 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters):
 
     # Compute representation
     ir = compute_expression_ir(expression, analysis, parameters)
-    ir["classname"] = classname.make_name(prefix, "expression", index)
+    original_expression = (expression[2], expression[1])
+    ir["classname"] = classname.make_name(
+        prefix, "expression", classname.compute_signature([original_expression], "", parameters))
 
     return ir_expression(**ir)
 

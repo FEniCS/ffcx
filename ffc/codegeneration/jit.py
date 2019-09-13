@@ -173,8 +173,8 @@ def compile_expressions(expressions, parameters=None):
     # Get a signature for these forms
     module_name = 'libffc_expressions_' + ffc.classname.compute_signature(expressions, '', p)
 
-    expr_names = [ffc.classname.make_name("JIT", "expression", i)
-                  for i in range(len(expressions))]
+    expr_names = [ffc.classname.make_name("JIT", "expression", ffc.classname.compute_signature([expression], "", p))
+                  for expression in expressions]
 
     if p['use_cache']:
         obj, mod = get_cached_module(module_name, expr_names, p)
