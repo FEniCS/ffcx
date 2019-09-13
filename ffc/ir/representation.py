@@ -749,8 +749,8 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
                 raise ValueError("Integral subdomain ID must be non-negative, not {}".format(itg_data.subdomain_id))
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
-                classnames += [classname.make_integral_name(prefix, integral_type,
-                                                            form_data.original_form, form_id, itg_data.subdomain_id, parameters)]
+                classnames += [classname.make_integral_name(prefix, integral_type, form_data.original_form,
+                                                            form_id, itg_data.subdomain_id, parameters)]
 
     return subdomain_ids, classnames
 
