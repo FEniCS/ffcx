@@ -444,10 +444,10 @@ extern "C"
     int (*original_coefficient_position)(int i);
 
     /// Return list of names of coefficients
-    const char** (*coefficient_name_map)();
+    const char** (*coefficient_name_map)(void);
 
     /// Return list of names of constants
-    const char** (*constant_name_map)();
+    const char** (*constant_name_map)(void);
 
     // FIXME: Remove and just use 'create_coordinate_mapping'
     /// Create a new finite element for parameterization of coordinates
