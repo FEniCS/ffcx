@@ -18,8 +18,8 @@ def make_name(prefix, basename, signature):
     return "{}{}_{}".format(pre, basename, sig)
 
 
-def make_integral_name(prefix, integral_type, original_form, subdomain_id, parameters):
-    sig = compute_signature([original_form], "", parameters)
+def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_id, parameters):
+    sig = compute_signature([original_form], str(form_id), parameters)
     basename = "{}_integral_{}".format(integral_type, sig)
     return make_name(prefix, basename, subdomain_id)
 

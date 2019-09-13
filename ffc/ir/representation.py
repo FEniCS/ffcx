@@ -366,7 +366,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
 
         # Build classname
         ir["classname"] = classname.make_integral_name(prefix, itg_data.integral_type, form_data.original_form,
-                                                       itg_data.subdomain_id, parameters)
+                                                       form_index, itg_data.subdomain_id, parameters)
         ir["classnames"] = classnames  # FIXME XXX: Use this everywhere needed?
 
         # Storing prefix here for reconstruction of classnames on code
@@ -741,7 +741,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
     elif len(itg_data) == 1:
         subdomain_ids += [-1]
         classnames += [classname.make_integral_name(prefix, integral_type,
-                                                    form_data.original_form, 'otherwise', parameters)]
+                                                    form_data.original_form, form_id, 'otherwise', parameters)]
 
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
@@ -750,7 +750,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
                 classnames += [classname.make_integral_name(prefix, integral_type,
-                                                            form_data.original_form, itg_data.subdomain_id, parameters)]
+                                                            form_data.original_form, form_id, itg_data.subdomain_id, parameters)]
 
     return subdomain_ids, classnames
 
