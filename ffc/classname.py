@@ -69,6 +69,9 @@ def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
             domains = []
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
+            for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
+                domains.append(*gc.ufl_domains())
+
             domains = ufl.algorithms.analysis.unique_tuple(domains)
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
