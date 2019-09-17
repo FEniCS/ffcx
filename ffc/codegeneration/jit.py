@@ -142,8 +142,8 @@ def compile_forms(forms, parameters=None):
     # Get a signature for these forms
     module_name = 'libffc_forms_' + ffc.classname.compute_signature(forms, '', p)
 
-    form_names = [ffc.classname.make_name("JIT", "form", i)
-                  for i in range(len(forms))]
+    form_names = [ffc.classname.make_name("JIT", "form", ffc.classname.compute_signature([form], str(i), p))
+                  for i, form in enumerate(forms)]
 
     if p['use_cache']:
         obj, mod = get_cached_module(module_name, form_names, p)
