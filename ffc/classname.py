@@ -21,6 +21,7 @@ def make_name(prefix, basename, signature):
 def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_id, parameters):
     sig = compute_signature([original_form], str(form_id), parameters)
     basename = "{}_integral_{}".format(integral_type, sig)
+    return make_name(prefix, basename, subdomain_id)
 
 
 def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
