@@ -355,8 +355,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
         ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers, classnames, parameters)
 
         # Build classname
-        ir["classname"] = classname.make_integral_name(prefix, itg_data.integral_type, form_index,
-                                                       itg_data.subdomain_id)
+        ir["classname"] = classname.make_integral_name(prefix, itg_data.integral_type, form_data.original_form,
+                                                       form_index, itg_data.subdomain_id, parameters)
         ir["classnames"] = classnames  # FIXME XXX: Use this everywhere needed?
 
         # Storing prefix here for reconstruction of classnames on code
@@ -385,7 +385,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
     ir["prefix"] = prefix
 
     # Compute common data
-    ir["classname"] = classname.make_name(prefix, "form", form_id)
+    ir["classname"] = classname.make_name(prefix, "form", classname.compute_signature([
+                                          form_data.original_form], str(form_id), parameters))
 
     ir["signature"] = form_data.original_form.signature()
 
@@ -424,7 +425,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
     # Create integral ids and names using form prefix (integrals are
     # always generated as part of form so don't get their own prefix)
     for integral_type in ufc_integral_types:
-        irdata = _create_foo_integral(prefix, form_id, integral_type, form_data)
+        irdata = _create_foo_integral(prefix, form_id, integral_type, form_data, parameters)
         ir["create_{}_integral".format(integral_type)] = irdata
         ir["get_{}_integral_ids".format(integral_type)] = irdata
 
@@ -704,7 +705,7 @@ def _tabulate_dof_coordinates(ufl_element, element):
         cell_shape=cell.cellname())
 
 
-def _create_foo_integral(prefix, form_id, integral_type, form_data):
+def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
     """Compute intermediate representation of create_foo_integral."""
 
     subdomain_ids = []
@@ -717,7 +718,8 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
         raise RuntimeError("Expecting at most one default integral of each type.")
     elif len(itg_data) == 1:
         subdomain_ids += [-1]
-        classnames += [classname.make_integral_name(prefix, integral_type, form_id, 'otherwise')]
+        classnames += [classname.make_integral_name(prefix, integral_type, form_data.original_form,
+                                                    form_id, 'otherwise', parameters)]
 
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
@@ -725,8 +727,8 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
                 raise ValueError("Integral subdomain ID must be non-negative, not {}".format(itg_data.subdomain_id))
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
-                classnames += [classname.make_integral_name(prefix, integral_type,
-                                                            form_id, itg_data.subdomain_id)]
+                classnames += [classname.make_integral_name(prefix, integral_type, form_data.original_form,
+                                                            form_id, itg_data.subdomain_id, parameters)]
 
     return subdomain_ids, classnames
 

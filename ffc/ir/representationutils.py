@@ -11,7 +11,6 @@ import logging
 import numpy
 
 import ufl
-from ffc import classname
 from ffc.fiatinterface import (create_element, create_quadrature, map_facet_points,
                                reference_cell_vertices)
 
@@ -141,8 +140,7 @@ def initialize_integral_code(ir, parameters):
     """
     code = {}
     code["class_type"] = ir.integral_type + "_integral"
-    code["classname"] = classname.make_integral_name(ir.prefix, ir.integral_type, ir.form_id,
-                                                     ir.subdomain_id)
+    code["classname"] = ir.classname
     code["members"] = ""
     code["constructor"] = ""
     code["constructor_arguments"] = ""
