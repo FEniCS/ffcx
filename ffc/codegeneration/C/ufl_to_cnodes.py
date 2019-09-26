@@ -162,6 +162,7 @@ class UFL2CNodesTranslatorCpp(object):
                             ufl.classes.Conditional: self.conditional,
                             ufl.classes.MinValue: self._cmath,
                             ufl.classes.MaxValue: self._cmath,
+                            ufl.classes.IndexSum: self.index_sum,
                             ufl.mathfunctions.Sqrt: self._cmath,
                             ufl.mathfunctions.Ln: self._cmath,
                             ufl.mathfunctions.Exp: self._cmath,
@@ -253,6 +254,13 @@ class UFL2CNodesTranslatorCpp(object):
 
     def not_condition(self, o, a):
         return self.L.Not(a)
+
+    def index_sum(self, o, *args):
+        idx = o.ufl_operands[1]
+        tmp = self.L.Add(args[0], args[1])
+        for arg in args[2:]:
+            tmp = self.L.Add(tmp, arg)
+        return tmp
 
     # === Formatting rules for cmath functions ===
 

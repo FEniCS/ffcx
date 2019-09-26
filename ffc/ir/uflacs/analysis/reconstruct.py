@@ -128,10 +128,14 @@ def handle_index_sum(o, ops):
             ind = iind + k
             sops.append([ss[ind + j * postdim] for j in range(d)])
 
-    # For each scalar output component, sum over collected subcomponents
-    # TODO: Need to split this into binary additions to work with future CRSArray format,
-    #       i.e. emitting more expressions than there are symbols for this node.
-    results = [sum(sop) for sop in sops]
+    results = []
+    for sop in sops:
+        assert len(mi.indices()) == 1
+        index = mi.indices()[0]
+        sop_tensor = ufl.as_tensor(sop)
+        IS = ufl.classes.IndexSum(sop_tensor[index], mi)
+        results.append(IS)
+
     return results
 
 # TODO: To implement compound tensor operators such as dot and inner,

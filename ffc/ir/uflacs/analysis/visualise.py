@@ -7,7 +7,8 @@
 """Utility to draw graphs."""
 
 from ffc.ir.uflacs.analysis.modified_terminals import strip_modified_terminal
-from ufl.classes import Sum, Product, Division, IntValue, FloatValue, Indexed, ReferenceValue, Argument
+from ufl.classes import (Sum, Product, Division, IntValue, FloatValue, Indexed, ReferenceValue, Argument,
+                         IndexSum)
 
 
 def visualise(Gx, filename):
@@ -17,7 +18,7 @@ def visualise(Gx, filename):
     except ImportError:
         raise RuntimeError("Install pygraphviz")
 
-    if Gx.number_of_nodes() > 400:
+    if Gx.number_of_nodes() > 1000:
         print("Skipping visualisation")
         return
 
@@ -33,8 +34,10 @@ def visualise(Gx, filename):
             label = '/'
         elif isinstance(ex, (IntValue, FloatValue)):
             label = ex.value()
-        elif isinstance(ex, (Indexed, ReferenceValue)):
+        elif isinstance(ex, (ReferenceValue)):
             label = str(ex)
+        elif isinstance(ex, Indexed):
+            label = "Indexed [{}]".format(str(ex.ufl_operands[1]))
         G.add_node(nd, label='[%d] %s' % (nd, label))
 
         arg = strip_modified_terminal(ex)

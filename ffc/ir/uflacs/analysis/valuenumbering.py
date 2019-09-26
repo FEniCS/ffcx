@@ -11,7 +11,7 @@ import logging
 import ufl
 from ffc.ir.uflacs.analysis.indexing import (map_component_tensor_arg_components,
                                              map_indexed_arg_components)
-from ffc.ir.uflacs.analysis.modified_terminals import analyse_modified_terminal
+from ffc.ir.uflacs.analysis.modified_terminals import analyse_scalar_modified_terminal
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,8 @@ class ValueNumberer(object):
                             ufl.classes.Indexed: self.indexed,
                             ufl.classes.ComponentTensor: self.component_tensor,
                             ufl.classes.ListTensor: self.list_tensor,
-                            ufl.classes.Variable: self.variable}
+                            ufl.classes.Variable: self.variable,
+                            ufl.classes.IndexSum: self.index_sum}
 
     def new_symbols(self, n):
         """Generator for new symbols with a running counter."""
@@ -83,6 +84,10 @@ class ValueNumberer(object):
 
     def expr(self, v):
         """Create new symbols for expressions that represent new values."""
+        n = ufl.product(v.ufl_shape + v.ufl_index_dimensions)
+        return self.new_symbols(n)
+
+    def index_sum(self, v):
         n = ufl.product(v.ufl_shape + v.ufl_index_dimensions)
         return self.new_symbols(n)
 
@@ -137,9 +142,9 @@ class ValueNumberer(object):
         # v is not necessary scalar here, indexing in (0,...,0) picks the first scalar component
         # to analyse, which should be sufficient to get the base shape and derivatives
         if v.ufl_shape:
-            mt = analyse_modified_terminal(v[(0, ) * len(v.ufl_shape)])
+            mt = analyse_scalar_modified_terminal(v[(0, ) * len(v.ufl_shape)])
         else:
-            mt = analyse_modified_terminal(v)
+            mt = analyse_scalar_modified_terminal(v)
 
         # Get derivatives
         num_ld = len(mt.local_derivatives)

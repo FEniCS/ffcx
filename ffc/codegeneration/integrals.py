@@ -51,4 +51,6 @@ def generator(ir, parameters):
             enabled_coefficients=code["enabled_coefficients"],
             tabulate_tensor=tabulate_tensor_fn)
 
+    print(tabulate_tensor_fn)
+
     return declaration, implementation

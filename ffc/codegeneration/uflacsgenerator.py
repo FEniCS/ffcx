@@ -466,6 +466,12 @@ class IntegralGenerator(object):
             v = attr['expression']
             mt = attr.get('mt')
 
+            if isinstance(v, (ufl.classes.ListTensor, ufl.classes.MultiIndex)):
+                continue
+
+            if isinstance(v, ufl.classes.Indexed) and v.ufl_free_indices:
+                continue
+
             if v._ufl_is_literal_:
                 vaccess = self.backend.ufl_to_language.get(v)
             elif mt is not None:
@@ -481,8 +487,14 @@ class IntegralGenerator(object):
                 assert isinstance(vdef, list)
                 definitions.extend(vdef)
             else:
-                # Get previously visited operands
-                vops = [self.get_var(num_points, op) for op in v.ufl_operands]
+
+                if isinstance(v, ufl.classes.IndexSum):
+                    idx = v.ufl_operands[0]
+                    lt = idx.ufl_operands[0]
+                    vops = [self.get_var(num_points, op) for op in lt.ufl_operands]
+                else:
+                    # Get previously visited operands
+                    vops = [self.get_var(num_points, op) for op in v.ufl_operands]
 
                 # get parent operand
                 pid = F.in_edges[i][0] if F.in_edges[i] else -1
@@ -510,6 +522,8 @@ class IntegralGenerator(object):
                 elif any(op._ufl_is_literal_ for op in v.ufl_operands):
                     # Skip intermediates for e.g. -2.0*x,
                     # resulting in lines like z = y + -2.0*x
+                    vaccess = vexpr
+                elif isinstance(v, ufl.classes.IndexSum):
                     vaccess = vexpr
                 else:
                     # Record assignment of vexpr to intermediate variable

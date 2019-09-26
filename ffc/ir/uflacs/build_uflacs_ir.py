@@ -15,8 +15,8 @@ import numpy
 import ufl
 from ffc.ir.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.ir.uflacs.analysis.graph import build_scalar_graph
-from ffc.ir.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
-                                                       is_modified_terminal)
+from ffc.ir.uflacs.analysis.modified_terminals import (analyse_scalar_modified_terminal,
+                                                       is_scalar_modified_terminal)
 from ffc.ir.uflacs.analysis.visualise import visualise
 from ffc.ir.uflacs.elementtables import (build_optimized_tables,
                                          clamp_table_small_numbers,
@@ -284,9 +284,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         # efficiently before argument factorization. We can build
         # terminal_data again after factorization if that's necessary.
 
-        initial_terminals = {i: analyse_modified_terminal(v['expression'])
+        initial_terminals = {i: analyse_scalar_modified_terminal(v['expression'])
                              for i, v in S.nodes.items()
-                             if is_modified_terminal(v['expression'])}
+                             if is_scalar_modified_terminal(v['expression'])}
 
         unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
             num_points,
@@ -324,7 +324,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Output diagnostic graph as pdf
         if parameters['visualise']:
-            visualise(S, 'S.pdf')
+            visualise(S, 'S_{}.pdf'.format(len(str(expression))))
 
         # Compute factorization of arguments
         rank = len(tensor_shape)
@@ -345,14 +345,14 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
 
         # Output diagnostic graph as pdf
         if parameters['visualise']:
-            visualise(F, 'F.pdf')
+            visualise(F, 'F_{}.pdf'.format(len(str(expression))))
 
         # Build set of modified_terminals for each mt factorized vertex in F
         # and attach tables, if appropriate
         for i, v in F.nodes.items():
             expr = v['expression']
-            if is_modified_terminal(expr):
-                mt = analyse_modified_terminal(expr)
+            if is_scalar_modified_terminal(expr):
+                mt = analyse_scalar_modified_terminal(expr)
                 F.nodes[i]['mt'] = mt
                 tr = mt_unique_table_reference.get(mt)
                 if tr is not None:
@@ -750,7 +750,7 @@ def _find_terminals_in_ufl_expression(e, etype):
     """Recursively search expression for terminals of type etype."""
     r = []
     for op in e.ufl_operands:
-        if is_modified_terminal(op) and isinstance(op, etype):
+        if is_scalar_modified_terminal(op) and isinstance(op, etype):
             r.append(op)
         else:
             r += _find_terminals_in_ufl_expression(op, etype)

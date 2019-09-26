@@ -10,11 +10,11 @@ import logging
 from functools import singledispatch
 
 from ffc.ir.uflacs.analysis.graph import ExpressionGraph
-from ffc.ir.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
-                                                       strip_modified_terminal)
-from ufl import as_ufl, conditional
+from ffc.ir.uflacs.analysis.modified_terminals import (analyse_scalar_modified_terminal,
+                                                       strip_modified_terminal, is_scalar_modified_terminal)
+from ufl import as_ufl, conditional, as_tensor
 from ufl.classes import (Argument, Conditional, Conj, Division, Product, Sum,
-                         Zero)
+                         Zero, ReferenceValue, ReferenceGrad, Indexed, ListTensor, IndexSum, ComponentTensor)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def build_argument_indices(S):
     def arg_ordering_key(i):
         """Return a key for sorting argument vertex indices.
         Key is based on the properties of the modified terminal."""
-        mt = analyse_modified_terminal(S.nodes[i]['expression'])
+        mt = analyse_scalar_modified_terminal(S.nodes[i]['expression'])
         return mt.argument_ordering_key()
 
     ordered_arg_indices = sorted(arg_indices, key=arg_ordering_key)
@@ -209,6 +209,71 @@ def handle_conditional(v, fac, sf, F):
     return factors
 
 
+@handler.register(Indexed)
+def handle_indexed(v, fac, sf, F):
+    assert len(fac) == 2
+
+    assert isinstance(v.ufl_operands[0], ListTensor)
+    fac0 = fac[0]
+    lt = list(fac0.values())[0]
+    # Fetch already factored ListTensor
+    lt = F.nodes[lt]["expression"]
+    mi = sf[1]
+    fi = graph_insert(F, Indexed(lt, mi))
+
+    factors = {}
+    for argkeys, _ in fac0.items():
+        factors[argkeys] = fi
+
+    return factors
+
+
+@handler.register(ListTensor)
+def handle_list_tensor(v, fac, sf, F):
+
+    factors = {}
+    assert len(fac) == len(v.ufl_operands)
+
+    reconstructed = []
+    argkey = list(fac[0].keys())[0]
+
+    for k, factor in enumerate(fac):
+        fi0 = list(factor.values())[0]
+        reconstructed.append(F.nodes[fi0]["expression"])
+
+    reconstructed_lt = as_tensor(reconstructed)
+    fi = graph_insert(F, reconstructed_lt)
+
+    for k, factor in enumerate(fac):
+        for argkeys, _ in factor.items():
+            factors[argkeys] = fi
+
+
+    return factors
+
+
+@handler.register(IndexSum)
+def handle_index_sum(v, fac, sf, F):
+    assert len(fac) == 2
+
+    fac0 = fac[0]
+    mi = sf[1]
+    index = mi.indices()[0]
+
+    fidx = list(fac0.values())[0]
+    # Fetch already factored Indexed
+    fidx = F.nodes[fidx]["expression"]
+    fis = IndexSum(fidx, mi)
+
+    fi = graph_insert(F, fis)
+    factors = {}
+    for argkeys, _ in fac0.items():
+        factors[argkeys] = fi
+
+
+    return factors
+
+
 def compute_argument_factorization(S, rank):
     """Factorizes a scalar expression graph w.r.t. scalar Argument components.
 
@@ -336,7 +401,7 @@ def compute_argument_factorization(S, rank):
     # Compute dependencies in FV
     for i, v in F.nodes.items():
         expr = v['expression']
-        if not expr._ufl_is_terminal_ and not expr._ufl_is_terminal_modifier_:
+        if not expr._ufl_is_terminal_ and not (expr._ufl_is_terminal_modifier_ and expr.ufl_free_indices == ()):
             for o in expr.ufl_operands:
                 F.add_edge(i, F.e2i[o])
 

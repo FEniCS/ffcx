@@ -8,9 +8,10 @@
 
 import logging
 
+
 from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
                          Grad, Indexed, Jacobian, ReferenceGrad,
-                         ReferenceValue, Restricted, SpatialCoordinate)
+                         ReferenceValue, Restricted, SpatialCoordinate, MultiIndex)
 from ufl.permutation import build_component_numbering
 
 logger = logging.getLogger(__name__)
@@ -134,8 +135,25 @@ class ModifiedTerminal(object):
         return '\n'.join(s)
 
 
+def is_scalar_modified_terminal(v):
+    """Check if v is a terminal or a terminal wrapped in terminal modifier types."""
+    if isinstance(v, MultiIndex):
+        return False
+
+    if v.ufl_free_indices:
+        return False
+
+    while not v._ufl_is_terminal_:
+        if v._ufl_is_terminal_modifier_:
+            v = v.ufl_operands[0]
+        else:
+            return False
+    return True
+
+
 def is_modified_terminal(v):
     """Check if v is a terminal or a terminal wrapped in terminal modifier types."""
+
     while not v._ufl_is_terminal_:
         if v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
@@ -147,14 +165,14 @@ def is_modified_terminal(v):
 def strip_modified_terminal(v):
     """Extract core Terminal from a modified terminal or return None."""
     while not v._ufl_is_terminal_:
-        if v._ufl_is_terminal_modifier_:
+        if v._ufl_is_terminal_modifier_ and v.ufl_free_indices == ():
             v = v.ufl_operands[0]
         else:
             return None
     return v
 
 
-def analyse_modified_terminal(expr):
+def analyse_scalar_modified_terminal(expr):
     """Analyse a so-called 'modified terminal' expression.
 
     Return its properties in more compact form as a ModifiedTerminal object.
@@ -166,6 +184,8 @@ def analyse_modified_terminal(expr):
     and 0-1 ReferenceValue, 0-1 Restricted, 0-1 Indexed,
     and 0-1 FacetAvg or CellAvg objects.
     """
+    assert expr.ufl_shape == ()
+
     # Data to determine
     component = None
     global_derivatives = []

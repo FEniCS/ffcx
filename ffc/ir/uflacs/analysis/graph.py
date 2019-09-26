@@ -11,9 +11,11 @@ import logging
 import numpy
 
 import ufl
-from ffc.ir.uflacs.analysis.modified_terminals import is_modified_terminal
+from ffc.ir.uflacs.analysis.modified_terminals import is_scalar_modified_terminal, is_modified_terminal
 from ffc.ir.uflacs.analysis.reconstruct import reconstruct
 from ffc.ir.uflacs.analysis.valuenumbering import ValueNumberer
+
+from ffc.ir.uflacs.analysis.visualise import visualise
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +50,12 @@ class ExpressionGraph(object):
         self.in_edges[node2] += [node1]
 
 
-def build_graph_vertices(expression, scalar=False):
+def build_graph_vertices(expression, skip=(), skip_terminal_modifiers=False):
     # Count unique expression nodes
 
     G = ExpressionGraph()
 
-    G.e2i = _count_nodes_with_unique_post_traversal(expression, scalar)
+    G.e2i = _count_nodes_with_unique_post_traversal(expression, skip, skip_terminal_modifiers)
 
     # Invert the map to get index->expression
     GV = sorted(G.e2i, key=G.e2i.get)
@@ -73,23 +75,27 @@ def build_scalar_graph(expression):
     """Build list representation of expression graph covering the given expressions."""
 
     # Populate with vertices
-    G = build_graph_vertices(expression, scalar=False)
+    # Skip multiindices, these are not needed for numbering the symbols
+    G = build_graph_vertices(expression, skip=(ufl.classes.MultiIndex,))
 
     # Build more fine grained computational graph of scalar subexpressions
     scalar_expression = rebuild_with_scalar_subexpressions(G)
 
     # Build new list representation of graph where all
     # vertices of V represent single scalar operations
-    G = build_graph_vertices(scalar_expression, scalar=True)
+    G = build_graph_vertices(scalar_expression, skip_terminal_modifiers=True)
 
     # Compute graph edges
     V_deps = []
     for i, v in G.nodes.items():
         expr = v['expression']
-        if expr._ufl_is_terminal_ or expr._ufl_is_terminal_modifier_:
+        if expr._ufl_is_terminal_ or (expr._ufl_is_terminal_modifier_ and expr.ufl_free_indices == ()):
             V_deps.append(())
         else:
-            V_deps.append([G.e2i[o] for o in expr.ufl_operands])
+            operand_indices = []
+            for o in expr.ufl_operands:
+                operand_indices.append(G.e2i[o])
+            V_deps.append(operand_indices)
 
     for i, edges in enumerate(V_deps):
         for j in edges:
@@ -152,15 +158,12 @@ def rebuild_with_scalar_subexpressions(G):
             sops = []
             for j, vop in enumerate(expr.ufl_operands):
                 if isinstance(vop, ufl.classes.MultiIndex):
-                    # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
-                    if not isinstance(expr, ufl.classes.IndexSum):
-                        raise RuntimeError("Not expecting a %s." % type(expr))
                     sops.append(())
-                else:
-                    # TODO: Build edge datastructure and use instead?
-                    # k = G.E[i][j]
-                    k = G.e2i[vop]
-                    sops.append(V_symbols[k])
+                    continue
+                # TODO: Build edge datastructure and use instead?
+                # k = G.E[i][j]
+                k = G.e2i[vop]
+                sops.append(V_symbols[k])
 
             # Fetch reconstructed operand expressions
             wops = [tuple(W[k] for k in so) for so in sops]
@@ -187,14 +190,13 @@ def rebuild_with_scalar_subexpressions(G):
     return scalar_expression
 
 
-def _count_nodes_with_unique_post_traversal(expr, skip_terminal_modifiers=False):
+def _count_nodes_with_unique_post_traversal(expr, skip=(), skip_terminal_modifiers=False):
     """Yields o for each node o in expr, child before parent.
     Never visits a node twice."""
 
     def getops(e):
         """Get a modifiable list of operands of e, optionally treating modified terminals as a unit."""
-        # TODO: Maybe use e._ufl_is_terminal_modifier_
-        if e._ufl_is_terminal_ or (skip_terminal_modifiers and is_modified_terminal(e)):
+        if e._ufl_is_terminal_ or (skip_terminal_modifiers and e._ufl_is_terminal_modifier_ and e.ufl_free_indices == ()):
             return []
         else:
             return list(e.ufl_operands)
@@ -209,7 +211,7 @@ def _count_nodes_with_unique_post_traversal(expr, skip_terminal_modifiers=False)
                 ops[i] = None
                 break
         else:
-            if not isinstance(expr, (ufl.classes.MultiIndex, ufl.classes.Label)):
+            if not isinstance(expr, (ufl.classes.Label,) + skip):
                 count = len(e2i)
                 e2i[expr] = count
             stack.pop()
