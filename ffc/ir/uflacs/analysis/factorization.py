@@ -213,16 +213,16 @@ def handle_conditional(v, fac, sf, F):
 def handle_indexed(v, fac, sf, F):
     assert len(fac) == 2
 
+    factors = {}
+
     assert isinstance(v.ufl_operands[0], ListTensor)
     fac0 = fac[0]
-    lt = list(fac0.values())[0]
-    # Fetch already factored ListTensor
-    lt = F.nodes[lt]["expression"]
-    mi = sf[1]
-    fi = graph_insert(F, Indexed(lt, mi))
+    for argkeys, lt_fi in fac0.items():
+        # Fetch already factored ListTensor
+        lt = F.nodes[lt_fi]["expression"]
+        mi = sf[1]
+        fi = graph_insert(F, Indexed(lt, mi))
 
-    factors = {}
-    for argkeys, _ in fac0.items():
         factors[argkeys] = fi
 
     return factors
@@ -231,23 +231,28 @@ def handle_indexed(v, fac, sf, F):
 @handler.register(ListTensor)
 def handle_list_tensor(v, fac, sf, F):
 
-    factors = {}
     assert len(fac) == len(v.ufl_operands)
 
-    reconstructed = []
-    argkey = list(fac[0].keys())[0]
+    unique_argkeys = []
+    unique_lt = []
 
-    for k, factor in enumerate(fac):
-        fi0 = list(factor.values())[0]
-        reconstructed.append(F.nodes[fi0]["expression"])
+    for k, comp_fac in enumerate(fac):
+        for argkeys, fi in comp_fac.items():
+            expr = F.nodes[fi]["expression"]
 
-    reconstructed_lt = as_tensor(reconstructed)
-    fi = graph_insert(F, reconstructed_lt)
+            if argkeys not in unique_argkeys:
+                unique_argkeys.append(argkeys)
+                unique_lt.append([])
 
-    for k, factor in enumerate(fac):
-        for argkeys, _ in factor.items():
-            factors[argkeys] = fi
+            m = unique_argkeys.index(argkeys)
 
+            unique_lt[m].append(expr)
+
+    factors = {}
+    for k, lt in enumerate(unique_lt):
+        argkey = unique_argkeys[k]
+        fi = graph_insert(F, as_tensor(lt))
+        factors[argkey] = fi
 
     return factors
 
@@ -257,19 +262,17 @@ def handle_index_sum(v, fac, sf, F):
     assert len(fac) == 2
 
     fac0 = fac[0]
-    mi = sf[1]
-    index = mi.indices()[0]
 
-    fidx = list(fac0.values())[0]
-    # Fetch already factored Indexed
-    fidx = F.nodes[fidx]["expression"]
-    fis = IndexSum(fidx, mi)
-
-    fi = graph_insert(F, fis)
     factors = {}
-    for argkeys, _ in fac0.items():
-        factors[argkeys] = fi
+    for argkeys, indx_fi in fac0.items():
+        mi = sf[1]
 
+        # Fetch already factored Indexed
+        fidx = F.nodes[indx_fi]["expression"]
+        fis = IndexSum(fidx, mi)
+
+        fi = graph_insert(F, fis)
+        factors[argkeys] = fi
 
     return factors
 

@@ -256,10 +256,15 @@ class UFL2CNodesTranslatorCpp(object):
         return self.L.Not(a)
 
     def index_sum(self, o, *args):
-        idx = o.ufl_operands[1]
+        if len(args) == 1:
+            # For a trivial sum just return
+            return args[0]
+
+        # Build inlined arg0 + arg1 + arg2 + ...
         tmp = self.L.Add(args[0], args[1])
         for arg in args[2:]:
             tmp = self.L.Add(tmp, arg)
+
         return tmp
 
     # === Formatting rules for cmath functions ===
