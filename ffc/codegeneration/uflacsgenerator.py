@@ -143,6 +143,18 @@ class IntegralGenerator(object):
 
         parts = []
 
+        alignment = self.ir.params['assume_aligned']
+        if alignment:
+            parts += [L.VerbatimStatement("A = (ufc_scalar_t*)__builtin_assume_aligned(A, {});"
+                                          .format(alignment)),
+                      L.VerbatimStatement("w = (const ufc_scalar_t*)__builtin_assume_aligned(w, {});"
+                                          .format(alignment)),
+                      L.VerbatimStatement("c = (const ufc_scalar_t*)__builtin_assume_aligned(c, {});"
+                                          .format(alignment)),
+                      L.VerbatimStatement(
+                          "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
+                          .format(alignment))]
+
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
 
