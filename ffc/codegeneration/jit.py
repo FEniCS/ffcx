@@ -199,7 +199,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
-                          extra_compile_args=['-g0', '-O3', '-march=native', '-ffast-math'])
+                          extra_compile_args=['-g0', '-O3', '-march=native'])
     ffibuilder.cdef(decl)
 
     c_filename = compile_dir.joinpath(module_name + ".c")
