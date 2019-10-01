@@ -405,7 +405,7 @@ extern "C"
   ///         1 means "down" and scales det(J) with -1.0
   ///         Applies to the case of k-dimensional surface in n-dimensional space, where k < n.
   ///
-  typedef void (*ufc_tabulate_tensor)(ufc_scalar_t* restrict A,
+  typedef void (ufc_tabulate_tensor)(ufc_scalar_t* restrict A,
       const ufc_scalar_t* w,
       const ufc_scalar_t* c,
       const double* restrict coordinate_dofs,
@@ -416,7 +416,7 @@ extern "C"
   ///
   /// @see ufc_tabulate_tensor
   ///
-  typedef void (*ufc_tabulate_tensor_custom)(ufc_scalar_t* restrict A,
+  typedef void (ufc_tabulate_tensor_custom)(ufc_scalar_t* restrict A,
       const ufc_scalar_t* w,
       const ufc_scalar_t* c,
       const double* restrict coordinate_dofs,
@@ -429,13 +429,13 @@ extern "C"
   typedef struct ufc_integral
   {
     const bool* enabled_coefficients;
-    ufc_tabulate_tensor tabulate_tensor;
+    ufc_tabulate_tensor* tabulate_tensor;
   } ufc_integral;
 
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
-    ufc_tabulate_tensor_custom tabulate_tensor;
+    ufc_tabulate_tensor_custom* tabulate_tensor;
   } ufc_custom_integral;
 
   /// This class defines the interface for the assembly of the global

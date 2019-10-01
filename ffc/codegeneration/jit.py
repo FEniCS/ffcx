@@ -49,8 +49,8 @@ UFC_COORDINATEMAPPING_DECL = '\n'.join(re.findall('typedef struct ufc_coordinate
                                                   ufc_h, re.DOTALL))
 UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufc_form.*?ufc_form;', ufc_h, re.DOTALL))
 
-UFC_INTEGRAL_DECL = '\n'.join(re.findall('typedef void \(\*ufc_tabulate_tensor\).*?\);', ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef void \(\*ufc_tabulate_tensor_custom\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL = '\n'.join(re.findall('typedef void \(ufc_tabulate_tensor\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef void \(ufc_tabulate_tensor_custom\).*?\);', ufc_h, re.DOTALL))
 UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_integral.*?ufc_integral;',
                                           ufc_h, re.DOTALL))
 UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?ufc_custom_integral;',
