@@ -397,7 +397,7 @@ extern "C"
   ///         cell geometries for both cells sharing the facet must be provided.
   /// @param[in] entity_local_index
   ///         Local index of mesh entity on which to tabulate.
-  ///         This applies to interior facet integrals.
+  ///         This applies to facet integrals.
   /// @param[in] cell_orientation
   ///         Sign of orientation of the cell with respect to the consistent
   ///         orientation of the whole mesh.
