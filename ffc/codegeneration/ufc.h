@@ -438,6 +438,15 @@ extern "C"
     ufc_tabulate_tensor_custom* tabulate_tensor;
   } ufc_custom_integral;
 
+  typedef struct ufc_expression
+  {
+    void (*tabulate_expression)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
+                                const ufc_scalar_t* c,
+                                const double* restrict coordinate_dofs);
+    const int* original_coefficient_positions;
+    int num_coefficients;
+  } ufc_expression;
+
   /// This class defines the interface for the assembly of the global
   /// tensor corresponding to a form with r + n arguments, that is, a
   /// mapping
