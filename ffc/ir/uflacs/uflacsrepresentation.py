@@ -190,10 +190,17 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
 
     index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
     offsets = {}
+
+    if integral_type in ("interior_facet"):
+        # For interior facet integrals we need + and - restrictions
+        width = 2
+    else:
+        width = 1
+
     _offset = 0
     for k, el in zip(index_to_coeff, form_data.coefficient_elements):
         offsets[k[1]] = _offset
-        _offset += ir["element_dimensions"][el]
+        _offset += width * ir["element_dimensions"][el]
 
     # Copy offsets also into IR
     ir["coefficient_offsets"] = offsets

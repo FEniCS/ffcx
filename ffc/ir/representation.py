@@ -742,8 +742,8 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
         raise RuntimeError("Expecting at most one default integral of each type.")
     elif len(itg_data) == 1:
         subdomain_ids += [-1]
-        classnames += [classname.make_integral_name(prefix, integral_type,
-                                                    form_data.original_form, form_id, 'otherwise', parameters)]
+        classnames += [classname.make_integral_name(prefix, integral_type, form_data.original_form,
+                                                    form_id, 'otherwise', parameters)]
 
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
