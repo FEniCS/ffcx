@@ -66,7 +66,7 @@ def sub_dofmap_declaration(L, ir):
 
 
 def generator(ir, parameters):
-    """Generate UFC code for a dofmap."""
+    """Generate code for a dofmap."""
 
     d = {}
 

@@ -4,7 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFC/UFC specific symbol naming."""
+"""FFC specific symbol naming."""
 
 import logging
 
@@ -89,7 +89,7 @@ class FFCBackendSymbols(object):
             logging.exception("Unknown entitytype {}".format(entitytype))
 
     def cell_orientation_argument(self, restriction):
-        """Cell orientation argument in ufc. Not same as cell orientation in generated code."""
+        """Cell orientation argument. Not same as cell orientation in generated code."""
         postfix = "[0]"
         if restriction == "-":
             postfix = "[1]"

@@ -134,7 +134,7 @@ class IntegralGenerator(object):
         """Generate entire tabulate_tensor body.
 
         Assumes that the code returned from here will be wrapped in a context
-        that matches a suitable version of the UFC tabulate_tensor signatures.
+        that matches a suitable version of the tabulate_tensor signatures.
         """
         L = self.backend.language
 

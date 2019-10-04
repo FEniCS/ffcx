@@ -74,7 +74,7 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
     code_h_pre += FORMAT_TEMPLATE["header_h"]
     code_c_pre += FORMAT_TEMPLATE["header_c"]
 
-    # Define fenics_scalar before including ufc.h
+    # Define fenics_scalar before including fenics_interface.h
     scalar_type = _define_scalar(parameters)
     code_h_pre += scalar_type
     code_c_pre += scalar_type
@@ -157,7 +157,7 @@ def _generate_comment(parameters):
 def _generate_includes(parameters):
 
     default_h_includes = [
-        "#include <ufc.h>",
+        "#include <fenics_interface.h>",
     ]
 
     default_c_includes = [
@@ -166,7 +166,7 @@ def _generate_includes(parameters):
         "#include <stdbool.h>",  # This should really be set by the backend
         "#include <stdlib.h>",  # This should really be set by the backend
         "#include <string.h>",  # This should really be set by the backend
-        "#include <ufc.h>",
+        "#include <fenics_interface.h>",
     ]
 
     s_h = set(default_h_includes)

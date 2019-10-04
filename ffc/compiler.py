@@ -39,7 +39,7 @@ Compiler stages:
    possible precomputation of integrals. Most of the complexity of
    compilation is handled in this stage.
 
-   The IR is stored as a dictionary, mapping names of UFC functions to
+   The IR is stored as a dictionary, mapping names of functions to
    data needed for generation of the corresponding code.
 
 3. Code generation
@@ -48,9 +48,9 @@ Compiler stages:
    - Output: C code
 
    This stage examines the IR and generates the actual C code for the
-   body of each UFC function.
+   body of each function.
 
-   The code is stored as a dictionary, mapping names of UFC functions to
+   The code is stored as a dictionary, mapping names of functions to
    strings containing the C code of the body of each function.
 
 4. Code formatting
@@ -59,8 +59,8 @@ Compiler stages:
    - Output: C code files
 
    This stage examines the generated C++ code and formats it according
-   to the UFC format, generating as output one or more .h/.c files
-   conforming to the UFC format.
+   to the FEniCS interface format, generating as output one or more .h/.c files
+   conforming to the format.
 
 """
 
@@ -89,7 +89,7 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
                         object_names: typing.Dict = {},
                         prefix: str = None,
                         parameters: typing.Dict = None):
-    """Generate UFC code for a given UFL objects.
+    """Generate code for a given UFL objects.
 
     Parameters
     ----------

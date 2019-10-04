@@ -180,7 +180,7 @@ class UFCForm:
 
 
 def generator(ir, parameters):
-    """Generate UFC code for a form."""
+    """Generate code for a form."""
 
     factory_name = ir.classname
 

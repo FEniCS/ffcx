@@ -39,7 +39,6 @@ def generate_return_literal_switch(L,
                                    default,
                                    literal_type,
                                    typename=None):
-    # TODO: UFC functions of this type could be replaced with return vector<T>{values}.
 
     if isinstance(i, str):
         i = L.Symbol(i)

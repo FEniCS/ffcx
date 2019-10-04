@@ -20,12 +20,12 @@ import ffc.config
 
 logger = logging.getLogger(__name__)
 
-UFC_HEADER_DECL = """
-typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
+FENICS_HEADER_DECL = """
+typedef {} fenics_scalar_t;  /* Hack to deal with scalar type */
 
-typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
-typedef struct ufc_finite_element ufc_finite_element;
-typedef struct ufc_dofmap ufc_dofmap;
+typedef struct fenics_coordinate_mapping fenics_coordinate_mapping;
+typedef struct fenics_finite_element fenics_finite_element;
+typedef struct fenics_dofmap fenics_dofmap;
 
 typedef enum
 {{
@@ -35,26 +35,26 @@ quadrilateral = 30,
 tetrahedron = 40,
 hexahedron = 50,
 vertex = 60,
-}} ufc_shape;
+}} fenics_shape;
 """
 
-# Get declarations directly from ufc.h
+# Get declarations directly from FEniCS interface
 file_dir = os.path.dirname(os.path.abspath(__file__))
-with open(file_dir + "/ufc.h", "r") as f:
-    ufc_h = ''.join(f.readlines())
+with open(file_dir + "/fenics_interface.h", "r") as f:
+    fenics_h = ''.join(f.readlines())
 
-UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
-UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
-UFC_COORDINATEMAPPING_DECL = '\n'.join(re.findall('typedef struct ufc_coordinate_mapping.*?ufc_coordinate_mapping;',
-                                                  ufc_h, re.DOTALL))
-UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufc_form.*?ufc_form;', ufc_h, re.DOTALL))
+FENICS_ELEMENT_DECL = '\n'.join(re.findall('typedef struct fenics_finite_element.*?fenics_finite_element;', fenics_h, re.DOTALL))
+FENICS_DOFMAP_DECL = '\n'.join(re.findall('typedef struct fenics_dofmap.*?fenics_dofmap;', fenics_h, re.DOTALL))
+FENICS_COORDINATEMAPPING_DECL = '\n'.join(re.findall('typedef struct fenics_coordinate_mapping.*?fenics_coordinate_mapping;',
+                                                  fenics_h, re.DOTALL))
+FENICS_FORM_DECL = '\n'.join(re.findall('typedef struct fenics_form.*?fenics_form;', fenics_h, re.DOTALL))
 
-UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void \(ufc_tabulate_tensor\).*?\);', ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void \(ufc_tabulate_tensor_custom\).*?\);', ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_integral.*?ufc_integral;',
-                                          ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?ufc_custom_integral;',
-                                          ufc_h, re.DOTALL))
+FENICS_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void \(fenics_tabulate_tensor\).*?\);', fenics_h, re.DOTALL))
+FENICS_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void \(fenics_tabulate_tensor_custom\).*?\);', fenics_h, re.DOTALL))
+FENICS_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct fenics_integral.*?fenics_integral;',
+                                          fenics_h, re.DOTALL))
+FENICS_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct fenics_custom_integral.*?fenics_custom_integral;',
+                                          fenics_h, re.DOTALL))
 
 
 def get_cached_module(module_name, object_names, parameters):
@@ -96,7 +96,7 @@ def get_cached_module(module_name, object_names, parameters):
 
 
 def compile_elements(elements, parameters=None):
-    """Compile a list of UFL elements and dofmaps into UFC Python objects."""
+    """Compile a list of UFL elements and dofmaps into Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -121,9 +121,9 @@ def compile_elements(elements, parameters=None):
             return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
-    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
-    element_template = "ufc_finite_element * create_{name}(void);\n"
-    dofmap_template = "ufc_dofmap * create_{name}(void);\n"
+    decl = FENICS_HEADER_DECL.format(scalar_type) + FENICS_ELEMENT_DECL + FENICS_DOFMAP_DECL
+    element_template = "fenics_finite_element * create_{name}(void);\n"
+    dofmap_template = "fenics_dofmap * create_{name}(void);\n"
 
     for i in range(len(elements)):
         decl += element_template.format(name=names[i * 2])
@@ -136,7 +136,7 @@ def compile_elements(elements, parameters=None):
 
 
 def compile_forms(forms, parameters=None):
-    """Compile a list of UFL forms into UFC Python objects."""
+    """Compile a list of UFL forms into Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -155,10 +155,10 @@ def compile_forms(forms, parameters=None):
             return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
-    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
-        UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL
+    decl = FENICS_HEADER_DECL.format(scalar_type) + FENICS_ELEMENT_DECL + FENICS_DOFMAP_DECL + \
+        FENICS_COORDINATEMAPPING_DECL + FENICS_INTEGRAL_DECL + FENICS_FORM_DECL
 
-    form_template = "ufc_form * create_{name}(void);\n"
+    form_template = "fenics_form * create_{name}(void);\n"
     for name in form_names:
         decl += form_template.format(name=name)
 
@@ -166,7 +166,7 @@ def compile_forms(forms, parameters=None):
 
 
 def compile_coordinate_maps(meshes, parameters=None):
-    """Compile a list of UFL coordinate mappings into UFC Python objects."""
+    """Compile a list of UFL coordinate mappings into Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -185,8 +185,8 @@ def compile_coordinate_maps(meshes, parameters=None):
             return obj, mod
 
     scalar_type = p["scalar_type"].replace("complex", "_Complex")
-    decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
-    cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
+    decl = FENICS_HEADER_DECL.format(scalar_type) + FENICS_COORDINATEMAPPING_DECL
+    cmap_template = "fenics_coordinate_mapping * create_{name}(void);\n"
 
     for name in cmap_names:
         decl += cmap_template.format(name=name)

@@ -17,7 +17,7 @@ def get_include_path():
 
 
 def _compute_signature():
-    # Compute signature of ufc header files
+    # Compute signature of fenics interface header files
     h = hashlib.sha1()
     for fn in ("fenics_interface.h", "fenics_geometry.h"):
         with open(os.path.join(get_include_path(), fn)) as f:

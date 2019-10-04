@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Code generation format strings for UFC (Unified Form-assembly Code)
+# Code generation format strings for FEniCS interface
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018

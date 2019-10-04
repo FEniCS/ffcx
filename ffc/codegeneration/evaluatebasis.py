@@ -135,7 +135,7 @@ def generate_evaluate_reference_basis(L, data, parameters):
                             coefficients[0, 0] * basisvalues[0])
             ]
 
-        # TODO: Move this mapping to its own ufc function
+        # TODO: Move this mapping to its own function
         # e.g. finite_element::apply_element_mapping(reference_values,
         # J, K)
         # code += _generate_apply_mapping_to_computed_values(L, dof_data) # Only works for affine (no-op)
@@ -220,10 +220,10 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
             basisvalues_for_degree[embedded_degree] = basisvalues
 
     if need_fiat_coordinates:
-        # Mapping from UFC reference cell coordinate X to FIAT reference cell coordinate Y
+        # Mapping from FEniCS reference cell coordinate X to FIAT reference cell coordinate Y
         fiat_coordinate_mapping = [
             L.Comment(
-                "Map from UFC reference coordinate X to FIAT reference coordinate Y"
+                "Map from FEniCS reference coordinate X to FIAT reference coordinate Y"
             ),
             L.ArrayDecl(
                 "const double",

@@ -4,7 +4,7 @@
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFC/UFC specific variable definitions."""
+"""FFC specific variable definitions."""
 
 import logging
 
@@ -208,7 +208,7 @@ class FFCBackendDefinitions(object):
 
     def cell_orientation(self, e, mt, tabledata, num_points, access):
         # Would be nicer if cell_orientation was a double variable input,
-        # but this is how dolfin/ufc/ffc currently passes this information.
+        # but this is how dolfin/ffc currently passes this information.
         # 0 means up and gives +1.0, 1 means down and gives -1.0.
         L = self.language
         co = self.symbols.cell_orientation_argument(mt.restriction)

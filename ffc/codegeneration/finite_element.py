@@ -353,7 +353,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
 
 def generator(ir, parameters):
-    """Generate UFC code for a finite element."""
+    """Generate code for a finite element."""
     d = {}
     d["factory_name"] = ir.classname
     d["signature"] = "\"{}\"".format(ir.signature)
