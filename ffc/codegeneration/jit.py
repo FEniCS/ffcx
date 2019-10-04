@@ -43,18 +43,20 @@ file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/fenics_interface.h", "r") as f:
     fenics_h = ''.join(f.readlines())
 
-FENICS_ELEMENT_DECL = '\n'.join(re.findall('typedef struct fenics_finite_element.*?fenics_finite_element;', fenics_h, re.DOTALL))
+FENICS_ELEMENT_DECL = '\n'.join(re.findall(
+    'typedef struct fenics_finite_element.*?fenics_finite_element;', fenics_h, re.DOTALL))
 FENICS_DOFMAP_DECL = '\n'.join(re.findall('typedef struct fenics_dofmap.*?fenics_dofmap;', fenics_h, re.DOTALL))
-FENICS_COORDINATEMAPPING_DECL = '\n'.join(re.findall('typedef struct fenics_coordinate_mapping.*?fenics_coordinate_mapping;',
-                                                  fenics_h, re.DOTALL))
+FENICS_COORDINATEMAPPING_DECL = '\n'.join(re.findall(
+    'typedef struct fenics_coordinate_mapping.*?fenics_coordinate_mapping;', fenics_h, re.DOTALL))
 FENICS_FORM_DECL = '\n'.join(re.findall('typedef struct fenics_form.*?fenics_form;', fenics_h, re.DOTALL))
 
 FENICS_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void \(fenics_tabulate_tensor\).*?\);', fenics_h, re.DOTALL))
-FENICS_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void \(fenics_tabulate_tensor_custom\).*?\);', fenics_h, re.DOTALL))
+FENICS_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void \(fenics_tabulate_tensor_custom\).*?\);',
+                                             fenics_h, re.DOTALL))
 FENICS_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct fenics_integral.*?fenics_integral;',
-                                          fenics_h, re.DOTALL))
+                                             fenics_h, re.DOTALL))
 FENICS_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct fenics_custom_integral.*?fenics_custom_integral;',
-                                          fenics_h, re.DOTALL))
+                                             fenics_h, re.DOTALL))
 
 
 def get_cached_module(module_name, object_names, parameters):
