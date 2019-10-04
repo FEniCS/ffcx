@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_finite_element* create_{factory_name}(void);
+fenics_finite_element* create_{factory_name}(void);
 """
 
 factory = """
@@ -46,11 +46,11 @@ int transform_reference_basis_derivatives_{factory_name}(
 }}
 
 int transform_values_{factory_name}(
-     ufc_scalar_t* restrict reference_values,
-     const ufc_scalar_t* restrict physical_values,
+     fenics_scalar_t* restrict reference_values,
+     const fenics_scalar_t* restrict physical_values,
      const double* restrict coordinate_dofs,
      int cell_orientation,
-     const ufc_coordinate_mapping* cm)
+     const fenics_coordinate_mapping* cm)
 {{
   {transform_values}
 }}
@@ -61,14 +61,14 @@ int tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference
 }}
 
 {sub_element_declaration}
-ufc_finite_element* create_sub_element_{factory_name}(int i)
+fenics_finite_element* create_sub_element_{factory_name}(int i)
 {{
   {create_sub_element}
 }}
 
-ufc_finite_element* create_{factory_name}(void)
+fenics_finite_element* create_{factory_name}(void)
 {{
-  ufc_finite_element* element = malloc(sizeof(*element));
+  fenics_finite_element* element = malloc(sizeof(*element));
 
   element->signature = {signature};
   element->cell_shape = {cell_shape};

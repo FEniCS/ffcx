@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import ffc.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
+import ffc.codegeneration.coordinate_mapping_template as fenics_coordinate_mapping
 from ffc.codegeneration.utils import generate_return_new
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
@@ -145,7 +145,7 @@ def create_coordinate_finite_element(L, ir):
 
 def coordinate_finite_element_declaration(L, ir):
     classname = ir.create_coordinate_finite_element
-    code = "ufc_finite_element* create_{name}(void);\n".format(name=classname)
+    code = "fenics_finite_element* create_{name}(void);\n".format(name=classname)
     return code
 
 
@@ -156,7 +156,7 @@ def create_coordinate_dofmap(L, ir):
 
 def coordinate_dofmap_declaration(L, ir):
     classname = ir.create_coordinate_dofmap
-    code = "ufc_dofmap* create_{name}(void);\n".format(name=classname)
+    code = "fenics_dofmap* create_{name}(void);\n".format(name=classname)
     return code
 
 
@@ -469,7 +469,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     xm = L.Symbol("xm")
     Km = L.Symbol("Km")
 
-    # Symbol for ufc_geometry cell midpoint definition
+    # Symbol for fenics_geometry cell midpoint definition
     Xm = L.Symbol("%s_midpoint" % cellname)
 
     # Variables for stopping criteria
@@ -870,15 +870,15 @@ def generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [
-        fname for _, fname, _, _ in Formatter().parse(ufc_coordinate_mapping.factory) if fname
+        fname for _, fname, _, _ in Formatter().parse(fenics_coordinate_mapping.factory) if fname
     ]
     assert set(fields) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict."
 
     # Format implementation code
-    implementation = ufc_coordinate_mapping.factory.format_map(d)
+    implementation = fenics_coordinate_mapping.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.classname)
+    declaration = fenics_coordinate_mapping.declaration.format(factory_name=ir.classname)
 
     return declaration, implementation

@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_form* create_{factory_name}(void);
+fenics_form* create_{factory_name}(void);
 """
 
 factory = """
@@ -29,36 +29,36 @@ const char** constant_name_{factory_name}(void)
 }}
 
 {coordinate_finite_element_declaration}
-ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
+fenics_finite_element* create_coordinate_finite_element_{factory_name}(void)
 {{
 {create_coordinate_finite_element}
 }}
 
 {coordinate_dofmap_declaration}
-ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
+fenics_dofmap* create_coordinate_dofmap_{factory_name}(void)
 {{
 {create_coordinate_dofmap}
 }}
 
 {coordinate_mapping_declaration}
-ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}(void)
+fenics_coordinate_mapping* create_coordinate_mapping_{factory_name}(void)
 {{
 {create_coordinate_mapping}
 }}
 
 {finite_element_declaration}
-ufc_finite_element* create_finite_element_{factory_name}(int i)
+fenics_finite_element* create_finite_element_{factory_name}(int i)
 {{
 {create_finite_element}
 }}
 
 {dofmap_declaration}
-ufc_dofmap* create_dofmap_{factory_name}(int i)
+fenics_dofmap* create_dofmap_{factory_name}(int i)
 {{
 {create_dofmap}
 }}
 
-ufc_integral* create_cell_integral_{factory_name}(int subdomain_id)
+fenics_integral* create_cell_integral_{factory_name}(int subdomain_id)
 {{
   {create_cell_integral}
 }}
@@ -68,7 +68,7 @@ void get_cell_integral_ids_{factory_name}(int *ids)
   {get_cell_integral_ids}
 }}
 
-ufc_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
+fenics_integral* create_exterior_facet_integral_{factory_name}(int subdomain_id)
 {{
   {create_exterior_facet_integral}
 }}
@@ -78,7 +78,7 @@ void get_exterior_facet_integral_ids_{factory_name}(int *ids)
   {get_exterior_facet_integral_ids}
 }}
 
-ufc_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
+fenics_integral* create_interior_facet_integral_{factory_name}(int subdomain_id)
 {{
 {create_interior_facet_integral}
 }}
@@ -88,7 +88,7 @@ void get_interior_facet_integral_ids_{factory_name}(int *ids)
   {get_interior_facet_integral_ids}
 }}
 
-ufc_integral* create_vertex_integral_{factory_name}(int subdomain_id)
+fenics_integral* create_vertex_integral_{factory_name}(int subdomain_id)
 {{
 {create_vertex_integral}
 }}
@@ -98,7 +98,7 @@ void get_vertex_integral_ids_{factory_name}(int *ids)
   {get_vertex_integral_ids}
 }}
 
-ufc_custom_integral* create_custom_integral_{factory_name}(int subdomain_id)
+fenics_custom_integral* create_custom_integral_{factory_name}(int subdomain_id)
 {{
 {create_custom_integral}
 }}
@@ -108,9 +108,9 @@ void get_custom_integral_ids_{factory_name}(int *ids)
   {get_custom_integral_ids}
 }}
 
-ufc_form* create_{factory_name}(void)
+fenics_form* create_{factory_name}(void)
 {{
-  ufc_form* form = malloc(sizeof(*form));
+  fenics_form* form = malloc(sizeof(*form));
 
   form->signature = {signature};
   form->rank = {rank};

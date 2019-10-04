@@ -33,7 +33,7 @@ from FIAT.hdiv_trace import HDivTrace
 logger = logging.getLogger(__name__)
 
 # List of supported integral types
-ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
+fenics_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
 ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank',
                                  'num_coefficients', 'num_constants', 'original_coefficient_position',
@@ -424,7 +424,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
 
     # Create integral ids and names using form prefix (integrals are
     # always generated as part of form so don't get their own prefix)
-    for integral_type in ufc_integral_types:
+    for integral_type in fenics_integral_types:
         irdata = _create_foo_integral(prefix, form_id, integral_type, form_data, parameters)
         ir["create_{}_integral".format(integral_type)] = irdata
         ir["get_{}_integral_ids".format(integral_type)] = irdata

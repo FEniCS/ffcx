@@ -30,8 +30,8 @@ def generate_wrappers(prefix, forms, common_function_space=False):
     # Typedefs for convenience factory functions
     code_h += """
 // Typedefs for convenience pointers to functions (factories)
-typedef ufc_function_space* (*ufc_function_space_factory_ptr)(void);
-typedef ufc_form* (*ufc_form_factory_ptr)(void);
+typedef fenics_function_space* (*fenics_function_space_factory_ptr)(void);
+typedef fenics_form* (*fenics_form_factory_ptr)(void);
 
 """
 
@@ -56,7 +56,7 @@ typedef ufc_form* (*ufc_form_factory_ptr)(void);
         assert (parameters["use_common_coefficient_names"])
         spaces = extract_coefficient_spaces(forms)
 
-        # Generate ufc_function_space code for common coefficient spaces
+        # Generate fenics_function_space code for common coefficient spaces
         code_h += "// Coefficient spaces helpers (number: {})\n".format(len(spaces))
         for space in spaces:
             args = {
@@ -101,7 +101,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
     # Combine data to typedef code
     typedefs = "\n".join(
-        "static const ufc_form_factory_ptr {0}_{1}_create = {0}_{2}_create;".format(prefix, fro, to)
+        "static const fenics_form_factory_ptr {0}_{1}_create = {0}_{2}_create;".format(prefix, fro, to)
         for (to, fro) in pairs)
 
     # Keepin' it simple: Add typedef for function space factory if term applies
@@ -109,7 +109,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
         for i, form in enumerate(forms):
             if form.rank:
                 # FIXME: Is this naming robust?
-                typedefs += "\n\nstatic const ufc_function_space_factory_ptr {0}_functionspace_create = {0}_form_{1}_functionspace_0_create;".format(  # noqa: E501
+                typedefs += "\n\nstatic const fenics_function_space_factory_ptr {0}_functionspace_create = {0}_form_{1}_functionspace_0_create;".format(  # noqa: E501
                     prefix, form.name)
                 break
 
@@ -139,17 +139,17 @@ def generate_form(form, prefix, classname):
         args = {
             "prefix": prefix,
             "classname": "{}_functionspace_{}".format(classname, i),
-            "finite_element_classname": form.ufc_finite_element_classnames[i],
-            "dofmap_classname": form.ufc_dofmap_classnames[i],
+            "finite_element_classname": form.fenics_finite_element_classnames[i],
+            "dofmap_classname": form.fenics_dofmap_classnames[i],
             "coordinate_map_classname":
-            "create_{}".format(form.ufc_coordinate_mapping_classnames[0])
+            "create_{}".format(form.fenics_coordinate_mapping_classnames[0])
         }
         blocks_h += [FUNCTION_SPACE_TEMPLATE_DECL.format_map(args)]
         blocks_c += [FUNCTION_SPACE_TEMPLATE_IMPL.format_map(args)]
 
     # Add factory function typedefs, e.g. Form_L_FunctionSpace_1_factory = CoefficientSpace_f_factory
     blocks_h += ["/* Coefficient function space typedefs for form \"{}\" */".format(classname)]
-    template = "static const ufc_function_space_factory_ptr {0}_{1}_functionspace_{2}_create = {0}_coefficientspace_{3}_create;"  # noqa
+    template = "static const fenics_function_space_factory_ptr {0}_{1}_functionspace_{2}_create = {0}_coefficientspace_{3}_create;"  # noqa
     blocks_h += [
         template.format(prefix, classname, form.rank + i, form.coefficient_names[i])
         for i in range(form.num_coefficients)
@@ -176,13 +176,13 @@ def generate_form_class(form, prefix, classname):
     args = {
         "prefix": prefix,
         "classname": classname,
-        "ufc_form": form.ufc_form_classname,
+        "fenics_form": form.fenics_form_classname,
         "typedefs": typedefs
     }
 
     FORM_CLASS_TEMPLATE_DECL = """\
 /*    Form helper */
-static const ufc_form_factory_ptr {prefix}_{classname}_create = create_{ufc_form};
+static const fenics_form_factory_ptr {prefix}_{classname}_create = create_{fenics_form};
 
 {typedefs}
 """
@@ -209,11 +209,11 @@ def extract_coefficient_spaces(forms):
                 continue
 
             # Map element name, dof map name, etc to this coefficient
-            assert len(form.ufc_coordinate_mapping_classnames) == 1
+            assert len(form.fenics_coordinate_mapping_classnames) == 1
             spaces[name] = ("coefficientspace_{}".format(name),
-                            form.ufc_finite_element_classnames[form.rank + i],
-                            form.ufc_dofmap_classnames[form.rank + i],
-                            form.ufc_coordinate_mapping_classnames[0])
+                            form.fenics_finite_element_classnames[form.rank + i],
+                            form.fenics_dofmap_classnames[form.rank + i],
+                            form.fenics_coordinate_mapping_classnames[0])
 
     # Return coefficient spaces sorted alphabetically by coefficient name
     names = sorted(spaces.keys())
@@ -226,14 +226,14 @@ def generate_function_space_typedefs(form, prefix, classname):
     snippets = {"functionspace": ("testspace", "trialspace")}
 
     # Add convenience pointers to factory functions
-    template0 = "static const ufc_function_space_factory_ptr {0}_{2}_{1}_create = {0}_{2}_functionspace_{3}_create;"
+    template0 = "static const fenics_function_space_factory_ptr {0}_{2}_{1}_create = {0}_{2}_functionspace_{3}_create;"
     factory0 = "\n".join(
         template0.format(prefix, snippets["functionspace"][i], classname, i)
         for i in range(form.rank))
 
     # FIXME: (GNW) These are function typedefs to functions typedefs,
     # and are giving trouble with a C compiler (fine with C++)
-    template1 = "// static ufc_function_space_factory_ptr {0}_{2}_coefficientspace_{1}_create = {0}_{2}__functionspace_{3}_create;"  # noqa
+    template1 = "// static fenics_function_space_factory_ptr {0}_{2}_coefficientspace_{1}_create = {0}_{2}__functionspace_{3}_create;"  # noqa
     factory1 = "\n".join(
         template1.format(prefix, form.coefficient_names[i], classname, form.rank + i)
         for i in range(form.num_coefficients))
@@ -243,13 +243,13 @@ def generate_function_space_typedefs(form, prefix, classname):
 
 
 FUNCTION_SPACE_TEMPLATE_DECL = """\
-ufc_function_space* {prefix}_{classname}_create(void);
+fenics_function_space* {prefix}_{classname}_create(void);
 """
 
 FUNCTION_SPACE_TEMPLATE_IMPL = """\
-ufc_function_space* {prefix}_{classname}_create(void)
+fenics_function_space* {prefix}_{classname}_create(void)
 {{
-  ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));
+  fenics_function_space* space = (fenics_function_space*) malloc(sizeof(*space));
   space->create_element = create_{finite_element_classname};
   space->create_dofmap = create_{dofmap_classname};
   space->create_coordinate_mapping = {coordinate_map_classname};
@@ -261,8 +261,8 @@ ufc_function_space* {prefix}_{classname}_create(void)
 class UFCFormNames:
     """Encapsulation of the names related to a generated UFC form."""
 
-    def __init__(self, name, coefficient_names, ufc_form_classname, ufc_finite_element_classnames,
-                 ufc_dofmap_classnames, ufc_coordinate_mapping_classnames):
+    def __init__(self, name, coefficient_names, fenics_form_classname, fenics_finite_element_classnames,
+                 fenics_dofmap_classnames, fenics_coordinate_mapping_classnames):
         """Encapsulation of the names related to a generated UFC form.
 
         Arguments:
@@ -271,29 +271,29 @@ class UFCFormNames:
             Name of form (e.g. 'a', 'L', 'M').
         @param coefficient_names:
             List of names of form coefficients (e.g. 'f', 'g').
-        @param ufc_form_classname:
+        @param fenics_form_classname:
             Name of ufc::form subclass.
-        @param ufc_finite_element_classnames:
+        @param fenics_finite_element_classnames:
             List of names of ufc::finite_element subclasses (length
             rank + num_coefficients).
-        @param ufc_dofmap_classnames:
+        @param fenics_dofmap_classnames:
             List of names of ufc::dofmap subclasses (length rank +
             num_coefficients).
-        @param ufc_coordinate_mapping_classnames:
+        @param fenics_coordinate_mapping_classnames:
             List of names of ufc::coordinate_mapping subclasses
 
         """
-        assert len(coefficient_names) <= len(ufc_dofmap_classnames)
-        assert len(ufc_finite_element_classnames) == len(ufc_dofmap_classnames)
+        assert len(coefficient_names) <= len(fenics_dofmap_classnames)
+        assert len(fenics_finite_element_classnames) == len(fenics_dofmap_classnames)
 
         self.num_coefficients = len(coefficient_names)
-        self.rank = len(ufc_finite_element_classnames) - self.num_coefficients
+        self.rank = len(fenics_finite_element_classnames) - self.num_coefficients
         self.name = name
         self.coefficient_names = coefficient_names
-        self.ufc_form_classname = ufc_form_classname
-        self.ufc_finite_element_classnames = ufc_finite_element_classnames
-        self.ufc_dofmap_classnames = ufc_dofmap_classnames
-        self.ufc_coordinate_mapping_classnames = ufc_coordinate_mapping_classnames
+        self.fenics_form_classname = fenics_form_classname
+        self.fenics_finite_element_classnames = fenics_finite_element_classnames
+        self.fenics_dofmap_classnames = fenics_dofmap_classnames
+        self.fenics_coordinate_mapping_classnames = fenics_coordinate_mapping_classnames
 
 
 class UFCElementNames:

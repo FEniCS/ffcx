@@ -39,7 +39,7 @@ unique_table_reference_t = collections.namedtuple(
 
 
 # TODO: Get restriction postfix from somewhere central
-def ufc_restriction_offset(restriction, length):
+def fenics_restriction_offset(restriction, length):
     if restriction == "-":
         return length
     else:
@@ -635,7 +635,7 @@ def build_optimized_tables(num_points,
         # Add offset to dofmap and dofrange for restricted terminals
         if mt.restriction and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of dofs before table optimization
-            offset = ufc_restriction_offset(mt.restriction, original_dim)
+            offset = fenics_restriction_offset(mt.restriction, original_dim)
             (b, e) = dofrange
             dofrange = (b + offset, e + offset)
             dofmap = tuple(i + offset for i in dofmap)

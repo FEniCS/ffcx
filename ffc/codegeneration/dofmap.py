@@ -8,7 +8,7 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-import ffc.codegeneration.dofmap_template as ufc_dofmap
+import ffc.codegeneration.dofmap_template as fenics_dofmap
 from ffc.codegeneration.utils import generate_return_new_switch
 
 
@@ -61,7 +61,7 @@ def sub_dofmap_declaration(L, ir):
     classnames = set(ir.create_sub_dofmap)
     code = ""
     for name in classnames:
-        code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
+        code += "fenics_dofmap* create_{name}(void);\n".format(name=name)
     return code
 
 
@@ -87,16 +87,16 @@ def generator(ir, parameters):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-    fields = [fname for _, fname, _, _ in Formatter().parse(ufc_dofmap.factory) if fname]
+    fields = [fname for _, fname, _, _ in Formatter().parse(fenics_dofmap.factory) if fname]
     # Remove square brackets from any field names
     fields = [f.split("[")[0] for f in fields]
     assert set(fields) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict."
 
     # Format implementation code
-    implementation = ufc_dofmap.factory.format_map(d)
+    implementation = fenics_dofmap.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_dofmap.declaration.format(factory_name=ir.classname)
+    declaration = fenics_dofmap.declaration.format(factory_name=ir.classname)
 
     return declaration, implementation

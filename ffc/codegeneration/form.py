@@ -8,12 +8,12 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
-from ffc.codegeneration import form_template as ufc_form
+from ffc.codegeneration import form_template as fenics_form
 from ffc.codegeneration.utils import (generate_return_new,
                                       generate_return_new_switch)
-from ffc.ir.representation import ufc_integral_types
+from ffc.ir.representation import fenics_integral_types
 
-# These are the method names in ufc_form that are specialized for each
+# These are the method names in fenics_form that are specialized for each
 # integral type
 integral_name_templates = ("get_{}_integral_ids", "create_{}_integral")
 
@@ -26,7 +26,7 @@ def create_delegate(integral_type, declname, impl):
     return _delegate
 
 
-def add_ufc_form_integral_methods(cls):
+def add_fenics_form_integral_methods(cls):
     """Generate methods on the class decorated by this function.
     One for each integral name template and for each integral type.
 
@@ -36,7 +36,7 @@ def add_ufc_form_integral_methods(cls):
     'create_exterior_facet_integrals', etc.
 
     Name templates are taken from 'integral_name_templates' and
-    'ufc_integral_types'.
+    'fenics_integral_types'.
 
     """
     # The dummy name "foo" is chosen for familiarity for ffc developers
@@ -45,14 +45,14 @@ def add_ufc_form_integral_methods(cls):
     for template in integral_name_templates:
         implname = "_" + (template.format(dummy_integral_type))
         impl = getattr(cls, implname)
-        for integral_type in ufc_integral_types:
+        for integral_type in fenics_integral_types:
             declname = template.format(integral_type)
             _delegate = create_delegate(integral_type, declname, impl)
             setattr(cls, declname, _delegate)
     return cls
 
 
-@add_ufc_form_integral_methods
+@add_fenics_form_integral_methods
 class UFCForm:
     """Each function maps to a keyword in the template.
 
@@ -60,7 +60,7 @@ class UFCForm:
 
         def _*_foo_*(self, L, ir, parameters, integral_type, declname)
 
-    which add_ufc_form_integral_methods will duplicate for foo = each integral type.
+    which add_fenics_form_integral_methods will duplicate for foo = each integral type.
     """
 
     def original_coefficient_position(self, L, ir):
@@ -111,7 +111,7 @@ class UFCForm:
 
     def coordinate_finite_element_declaration(self, L, ir):
         classname = ir.create_coordinate_finite_element
-        code = "ufc_finite_element* create_{name}(void);\n".format(name=classname[0])
+        code = "fenics_finite_element* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_coordinate_dofmap(self, L, ir):
@@ -121,7 +121,7 @@ class UFCForm:
 
     def coordinate_dofmap_declaration(self, L, ir):
         classname = ir.create_coordinate_dofmap
-        code = "ufc_dofmap* create_{name}(void);\n".format(name=classname[0])
+        code = "fenics_dofmap* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_coordinate_mapping(self, L, ir):
@@ -132,7 +132,7 @@ class UFCForm:
 
     def coordinate_mapping_declaration(self, L, ir):
         classname = ir.create_coordinate_mapping
-        code = "ufc_coordinate_mapping* create_{name}(void);\n".format(name=classname[0])
+        code = "fenics_coordinate_mapping* create_{name}(void);\n".format(name=classname[0])
         return code
 
     def create_finite_element(self, L, ir):
@@ -144,7 +144,7 @@ class UFCForm:
         classnames = set(ir.create_finite_element)
         code = ""
         for name in classnames:
-            code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
+            code += "fenics_finite_element* create_{name}(void);\n".format(name=name)
         return code
 
     def create_dofmap(self, L, ir):
@@ -156,11 +156,11 @@ class UFCForm:
         classnames = set(ir.create_dofmap)
         code = ""
         for name in classnames:
-            code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
+            code += "fenics_dofmap* create_{name}(void);\n".format(name=name)
         return code
 
     # This group of functions are repeated for each foo_integral by
-    # add_ufc_form_integral_methods:
+    # add_fenics_form_integral_methods:
 
     def _get_foo_integral_ids(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
@@ -233,13 +233,13 @@ def generator(ir, parameters):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-    fields = [fname for _, fname, _, _ in Formatter().parse(ufc_form.factory) if fname]
+    fields = [fname for _, fname, _, _ in Formatter().parse(fenics_form.factory) if fname]
     assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
-    implementation = ufc_form.factory.format_map(d)
+    implementation = fenics_form.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_form.declaration.format(factory_name=factory_name)
+    declaration = fenics_form.declaration.format(factory_name=factory_name)
 
     return declaration, implementation

@@ -5,20 +5,20 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
-ufc_coordinate_mapping* create_{factory_name}(void);
+fenics_coordinate_mapping* create_{factory_name}(void);
 """
 
 factory = """
 // Code for coordinate mapping {factory_name}
 
 {coordinate_finite_element_declaration}
-ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
+fenics_finite_element* create_coordinate_finite_element_{factory_name}(void)
 {{
 {create_coordinate_finite_element}
 }}
 
 {coordinate_dofmap_declaration}
-ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
+fenics_dofmap* create_coordinate_dofmap_{factory_name}(void)
 {{
 {create_coordinate_dofmap}
 }}
@@ -86,9 +86,9 @@ void compute_reference_geometry_{factory_name}(double* restrict X, double* restr
 
 
 
-ufc_coordinate_mapping* create_{factory_name}(void)
+fenics_coordinate_mapping* create_{factory_name}(void)
 {{
-  ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
+  fenics_coordinate_mapping* cmap = malloc(sizeof(*cmap));
   cmap->signature = {signature};
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};

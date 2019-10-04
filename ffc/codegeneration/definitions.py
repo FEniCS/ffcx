@@ -126,13 +126,13 @@ class FFCBackendDefinitions(object):
                 for i, idof in enumerate(tabledata.dofmap)
             ]
             value = L.Sum(values)
-            code = [L.VariableDecl("const ufc_scalar_t", access, value)]
+            code = [L.VariableDecl("const fenics_scalar_t", access, value)]
         else:
             # Loop to accumulate linear combination of dofs and tables
             ic = self.symbols.coefficient_dof_sum_index()
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic + begin)
             code = [
-                L.VariableDecl("ufc_scalar_t", access, 0.0),
+                L.VariableDecl("fenics_scalar_t", access, 0.0),
                 L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
         return code
@@ -213,11 +213,11 @@ class FFCBackendDefinitions(object):
         L = self.language
         co = self.symbols.cell_orientation_argument(mt.restriction)
         expr = L.Conditional(L.EQ(co, L.LiteralInt(1)), L.LiteralFloat(-1.0), L.LiteralFloat(+1.0))
-        code = [L.VariableDecl("const ufc_scalar_t", access, expr)]
+        code = [L.VariableDecl("const fenics_scalar_t", access, expr)]
         return code
 
     def _expect_table(self, e, mt, tabledata, num_points, access):
-        """These quantities refer to constant tables defined in ufc_geometry.h."""
+        """These quantities refer to constant tables defined in fenics_geometry.h."""
         # TODO: Inject const static table here instead?
         return []
 

@@ -5,7 +5,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_dofmap* create_{factory_name}(void);
+fenics_dofmap* create_{factory_name}(void);
 """
 
 factory = """
@@ -17,14 +17,14 @@ void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 }}
 
 {sub_dofmap_declaration}
-ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
+fenics_dofmap* create_sub_dofmap_{factory_name}(int i)
 {{
 {create_sub_dofmap}
 }}
 
-ufc_dofmap* create_{factory_name}(void)
+fenics_dofmap* create_{factory_name}(void)
 {{
-  ufc_dofmap* dofmap = malloc(sizeof(*dofmap));
+  fenics_dofmap* dofmap = malloc(sizeof(*dofmap));
   dofmap->signature = {signature};
   dofmap->num_global_support_dofs = {num_global_support_dofs};
   dofmap->num_element_support_dofs = {num_element_support_dofs};

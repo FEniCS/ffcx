@@ -74,7 +74,7 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
     code_h_pre += FORMAT_TEMPLATE["header_h"]
     code_c_pre += FORMAT_TEMPLATE["header_c"]
 
-    # Define ufc_scalar before including ufc.h
+    # Define fenics_scalar before including ufc.h
     scalar_type = _define_scalar(parameters)
     code_h_pre += scalar_type
     code_c_pre += scalar_type
@@ -179,7 +179,7 @@ def _generate_includes(parameters):
 
 
 def _define_scalar(parameters):
-    # Define the ufc_scalar type before including  the ufc header
+    # Define the fenics_scalar type before including  the ufc header
     # By default use double scalars
     scalar_type = parameters.get("scalar_type")
     if "complex" in scalar_type:
@@ -187,14 +187,14 @@ def _define_scalar(parameters):
         scalar = """
 #if defined(__cplusplus)
  #include <complex>
- typedef std::complex<{0}> ufc_scalar_t;
+ typedef std::complex<{0}> fenics_scalar_t;
 #else
  #include <complex.h>
- typedef {0} _Complex ufc_scalar_t;
+ typedef {0} _Complex fenics_scalar_t;
 #endif
 
 """.format(base_type)
     else:
-        scalar = "typedef " + scalar_type + " ufc_scalar_t;" + "\n"
+        scalar = "typedef " + scalar_type + " fenics_scalar_t;" + "\n"
 
     return scalar

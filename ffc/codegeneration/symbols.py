@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: Get restriction postfix from somewhere central
-def ufc_restriction_postfix(restriction):
+def fenics_restriction_postfix(restriction):
     if restriction == "+":
         res = "_0"
     elif restriction == "-":
@@ -32,7 +32,7 @@ def format_mt_name(basename, mt):
         access += avg
 
     # Format restriction
-    res = ufc_restriction_postfix(mt.restriction).replace("_", "_r")
+    res = fenics_restriction_postfix(mt.restriction).replace("_", "_r")
     access += res
 
     # Format local derivatives
@@ -62,7 +62,7 @@ class FFCBackendSymbols(object):
         self.original_constant_offsets = original_constant_offsets
 
         # Used for padding variable names based on restriction
-#        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
+#        self.restriction_postfix = {r: fenics_restriction_postfix(r) for r in ("+", "-", None)}
 
         # TODO: Make this configurable for easy experimentation with dolfin!
         # Coordinate dofs for each component are interleaved? Must match dolfin.
@@ -97,7 +97,7 @@ class FFCBackendSymbols(object):
 
     def cell_orientation_internal(self, restriction):
         """Internal value for cell orientation in generated code."""
-        return self.S("co" + ufc_restriction_postfix(restriction))
+        return self.S("co" + fenics_restriction_postfix(restriction))
 
     def argument_loop_index(self, iarg):
         """Loop index for argument #iarg."""

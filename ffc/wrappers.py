@@ -67,14 +67,14 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
         coefficient_names = [
             object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form.reduced_coefficients)
         ]
-        ufc_form_name = classnames["forms"][i]
-        ufc_elements = [classnames["elements"][j] for j in element_numbers]
-        ufc_dofmaps = [classnames["dofmaps"][j] for j in element_numbers]
-        ufc_cmaps = [classnames["coordinate_maps"][0]]
+        fenics_form_name = classnames["forms"][i]
+        fenics_elements = [classnames["elements"][j] for j in element_numbers]
+        fenics_dofmaps = [classnames["dofmaps"][j] for j in element_numbers]
+        fenics_cmaps = [classnames["coordinate_maps"][0]]
 
         capsules.append(
-            dolfin.UFCFormNames(name, coefficient_names, ufc_form_name, ufc_elements, ufc_dofmaps,
-                                ufc_cmaps))
+            dolfin.UFCFormNames(name, coefficient_names, fenics_form_name, fenics_elements, fenics_dofmaps,
+                                fenics_cmaps))
 
     # Build list of all argument elements to which if all are equal
     elements = [element for form in form_data for element in form.argument_elements]

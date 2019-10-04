@@ -11,7 +11,7 @@
 
 from collections import defaultdict
 
-import ffc.codegeneration.finite_element_template as ufc_finite_element
+import ffc.codegeneration.finite_element_template as fenics_finite_element
 import ufl
 from ffc.codegeneration.evalderivs import (_generate_combinations,
                                            generate_evaluate_reference_basis_derivatives)
@@ -74,7 +74,7 @@ def sub_element_declaration(L, ir):
     classnames = set(ir.create_sub_element)
     code = ""
     for name in classnames:
-        code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
+        code += "fenics_finite_element* create_{name}(void);\n".format(name=name)
     return code
 
 
@@ -396,15 +396,15 @@ def generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fieldnames = [
-        fname for _, fname, _, _ in Formatter().parse(ufc_finite_element.factory) if fname
+        fname for _, fname, _, _ in Formatter().parse(fenics_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
-    implementation = ufc_finite_element.factory.format_map(d)
+    implementation = fenics_finite_element.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_finite_element.declaration.format(factory_name=ir.classname)
+    declaration = fenics_finite_element.declaration.format(factory_name=ir.classname)
 
     return declaration, implementation

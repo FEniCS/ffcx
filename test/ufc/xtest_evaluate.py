@@ -105,18 +105,18 @@ def element_pair(request):
     """Given a UFL element, returns UFL element and a JIT-compiled and wrapped UFC element."""
 
     ufl_element = request.param
-    ufc_element, ufc_dofmap = ffc.jit(ufl_element, parameters=None)
-    ufc_element = ffc_factory.make_ufc_finite_element(ufc_element)
-    return ufl_element, ufc_element
+    fenics_element, fenics_dofmap = ffc.jit(ufl_element, parameters=None)
+    fenics_element = ffc_factory.make_fenics_finite_element(fenics_element)
+    return ufl_element, fenics_element
 
 
 def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
     """Tests ufc::finite_element::evaluate_reference_basis against data from FIAT."""
 
-    ufl_element, ufc_element = element_pair
+    ufl_element, fenics_element = element_pair
 
     # Get geometric and topological dimensions
-    tdim = ufc_element.topological_dimension()
+    tdim = fenics_element.topological_dimension()
 
     points = point_data[tdim]
 
@@ -124,7 +124,7 @@ def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
     fiat_element = ffc.fiatinterface.create_element(ufl_element)
 
     # Tabulate basis at requsted points via UFC
-    values_ufc = ufc_element.evaluate_reference_basis(points)
+    values_ufc = fenics_element.evaluate_reference_basis(points)
 
     # Tabulate basis at requsted points via FIAT
     values_fiat = fiat_element.tabulate(0, points)
@@ -135,13 +135,13 @@ def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
 
     # Shape checks
     fiat_value_size = 1
-    for i in range(ufc_element.reference_value_rank()):
+    for i in range(fenics_element.reference_value_rank()):
         fiat_value_size *= values_fiat.shape[i + 1]
-        assert values_fiat.shape[i + 1] == ufc_element.reference_value_dimension(i)
+        assert values_fiat.shape[i + 1] == fenics_element.reference_value_dimension(i)
 
     # Reshape FIAT output to compare with UFC output
     values_fiat = values_fiat.reshape((values_fiat.shape[0],
-                                       ufc_element.reference_value_size(),
+                                       fenics_element.reference_value_size(),
                                        values_fiat.shape[-1]))
 
     # Transpose
@@ -154,12 +154,12 @@ def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
     # the sub-element in UFL being the same at the UFC order.
 
     # Test sub-elements recursively
-    n = ufc_element.num_sub_elements()
+    n = fenics_element.num_sub_elements()
     ufl_subelements = ufl_element.sub_elements()
     assert n == len(ufl_subelements)
     for i, ufl_e in enumerate(ufl_subelements):
-        ufc_sub_element = ufc_element.create_sub_element(i)
-        test_evaluate_reference_basis_vs_fiat((ufl_e, ufc_sub_element), point_data)
+        fenics_sub_element = fenics_element.create_sub_element(i)
+        test_evaluate_reference_basis_vs_fiat((ufl_e, fenics_sub_element), point_data)
 
 
 def test_evaluate_basis_vs_fiat(element_pair, point_data):
@@ -168,15 +168,15 @@ def test_evaluate_basis_vs_fiat(element_pair, point_data):
     ufc::finite_element::evaluate_basis_all against data from FIAT.
     """
 
-    ufl_element, ufc_element = element_pair
+    ufl_element, fenics_element = element_pair
 
     # Get geometric and topological dimensions
-    gdim = ufc_element.geometric_dimension()
+    gdim = fenics_element.geometric_dimension()
 
     points = point_data[gdim]
 
     # Get geometric and topological dimensions
-    tdim = ufc_element.topological_dimension()
+    tdim = fenics_element.topological_dimension()
 
     # Create FIAT element via FFC
     fiat_element = ffc.fiatinterface.create_element(ufl_element)
@@ -190,13 +190,13 @@ def test_evaluate_basis_vs_fiat(element_pair, point_data):
 
     # Shape checks
     fiat_value_size = 1
-    for i in range(ufc_element.reference_value_rank()):
+    for i in range(fenics_element.reference_value_rank()):
         fiat_value_size *= values_fiat.shape[i + 1]
-        assert values_fiat.shape[i + 1] == ufc_element.reference_value_dimension(i)
+        assert values_fiat.shape[i + 1] == fenics_element.reference_value_dimension(i)
 
     # Reshape FIAT output to compare with UFC output
     values_fiat = values_fiat.reshape((values_fiat.shape[0],
-                                       ufc_element.reference_value_size(),
+                                       fenics_element.reference_value_size(),
                                        values_fiat.shape[-1]))
 
     # Transpose
@@ -208,20 +208,20 @@ def test_evaluate_basis_vs_fiat(element_pair, point_data):
 
     # Iterate over each point and test
     for i, p in enumerate(points):
-        values_ufc = ufc_element.evaluate_basis_all(p, ref_coords, 1)
+        values_ufc = fenics_element.evaluate_basis_all(p, ref_coords, 1)
         assert np.allclose(values_ufc, values_fiat[i])
 
-        for d in range(ufc_element.space_dimension()):
-            values_ufc = ufc_element.evaluate_basis(d, p, ref_coords, 1)
+        for d in range(fenics_element.space_dimension()):
+            values_ufc = fenics_element.evaluate_basis(d, p, ref_coords, 1)
             assert np.allclose(values_ufc, values_fiat[i][d])
 
     # Test sub-elements recursively
-    n = ufc_element.num_sub_elements()
+    n = fenics_element.num_sub_elements()
     ufl_subelements = ufl_element.sub_elements()
     assert n == len(ufl_subelements)
     for i, ufl_e in enumerate(ufl_subelements):
-        ufc_sub_element = ufc_element.create_sub_element(i)
-        test_evaluate_basis_vs_fiat((ufl_e, ufc_sub_element), point_data)
+        fenics_sub_element = fenics_element.create_sub_element(i)
+        test_evaluate_basis_vs_fiat((ufl_e, fenics_sub_element), point_data)
 
 
 @pytest.mark.parametrize("order", range(4))
@@ -233,11 +233,11 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
 
     """
 
-    ufl_element, ufc_element = element_pair
+    ufl_element, fenics_element = element_pair
 
     # Get geometric and topological dimensions
-    # gdim = ufc_element.geometric_dimension()
-    tdim = ufc_element.topological_dimension()
+    # gdim = fenics_element.geometric_dimension()
+    tdim = fenics_element.topological_dimension()
 
     points = point_data[tdim]
 
@@ -245,7 +245,7 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
     fiat_element = ffc.fiatinterface.create_element(ufl_element)
 
     # Tabulate basis at requsted points via UFC
-    values_ufc = ufc_element.evaluate_reference_basis_derivatives(order, points)
+    values_ufc = fenics_element.evaluate_reference_basis_derivatives(order, points)
 
     # Tabulate basis at requsted points via FIAT
     values_fiat = fiat_element.tabulate(order, points)
@@ -289,13 +289,13 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
 
         # Shape checks
         fiat_value_size = 1
-        for j in range(ufc_element.reference_value_rank()):
+        for j in range(fenics_element.reference_value_rank()):
             fiat_value_size *= values_fiat_slice.shape[j + 1]
-            assert values_fiat_slice.shape[j + 1] == ufc_element.reference_value_dimension(j)
+            assert values_fiat_slice.shape[j + 1] == fenics_element.reference_value_dimension(j)
 
         # Reshape FIAT output to compare with UFC output
         values_fiat_slice = values_fiat_slice.reshape((values_fiat_slice.shape[0],
-                                                       ufc_element.reference_value_size(),
+                                                       fenics_element.reference_value_size(),
                                                        values_fiat_slice.shape[-1]))
 
         # Transpose
@@ -305,9 +305,9 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
         assert np.allclose(values_ufc[:, :, i, :], values_fiat_slice)
 
     # Test sub-elements recursively
-    n = ufc_element.num_sub_elements()
+    n = fenics_element.num_sub_elements()
     ufl_subelements = ufl_element.sub_elements()
     assert n == len(ufl_subelements)
     for i, ufl_e in enumerate(ufl_subelements):
-        ufc_sub_element = ufc_element.create_sub_element(i)
-        test_evaluate_reference_basis_deriv_vs_fiat(order, (ufl_e, ufc_sub_element), point_data)
+        fenics_sub_element = fenics_element.create_sub_element(i)
+        test_evaluate_reference_basis_deriv_vs_fiat(order, (ufl_e, fenics_sub_element), point_data)
