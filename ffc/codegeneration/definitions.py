@@ -33,7 +33,10 @@ def num_coordinate_component_dofs(coordinate_element):
         elif entity_dim == 1:
             n = degree - 1
         elif entity_dim == 2:
-            n = (degree - 2) * (degree - 1) // 2
+            if cellname == "quadrilateral":
+                n = (degree - 1) * (degree - 1)
+            else:
+                n = (degree - 2) * (degree - 1) // 2
         elif entity_dim == 3:
             n = (degree - 3) * (degree - 2) * (degree - 1) // 6
         else:
