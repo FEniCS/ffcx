@@ -10,6 +10,8 @@ import logging
 
 import ufl
 
+from ffc.fiatinterface import create_element
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +19,6 @@ def num_coordinate_component_dofs(coordinate_element):
     """Get the number of dofs for a coordinate component for this degree.
 
     """
-    from ffc.fiatinterface import create_element
     fiat_elements = create_element(coordinate_element).elements()
     # Extracting only first component degrees of freedom from FIAT
     fiat_element = fiat_elements[0]
