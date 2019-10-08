@@ -22,13 +22,7 @@ def num_coordinate_component_dofs(coordinate_element):
     # Extracting only first component degrees of freedom from FIAT
     fiat_element = fiat_elements[0]
     assert(all(isinstance(element, type(fiat_element)) for element in fiat_elements))
-
-    dof_dict = fiat_element.entity_dofs()
-    d = 0
-    for entity_dim in dof_dict.keys():
-        for enitity in dof_dict[entity_dim]:
-            d += len(dof_dict[entity_dim][enitity])
-    return d
+    return fiat_element.space_dimension()
 
 
 class FFCBackendDefinitions(object):
