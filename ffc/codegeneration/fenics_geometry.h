@@ -7,6 +7,20 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+
+#if defined(__clang__)
+#define restrict
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define restrict __restrict__
+#else
+#define restrict
+#endif // restrict
+#endif // __cplusplus
 
 /// A note regarding data structures. All matrices are represented as
 /// row-major flattened raw C arrays.
@@ -1229,3 +1243,8 @@ compute_max_facet_edge_length_tetrahedron_3d(double* max_edge_length,
   *max_edge_length = sqrt(fmax(fmax(edge_lengths_sqr[0], edge_lengths_sqr[1]),
                                edge_lengths_sqr[2]));
 }
+
+#ifdef __cplusplus
+#undef restrict
+}
+#endif

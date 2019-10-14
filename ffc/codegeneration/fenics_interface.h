@@ -5,9 +5,7 @@
 
 #pragma once
 
-#include <fenics_geometry.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include "fenics_geometry.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -37,6 +35,7 @@ extern "C"
   typedef struct fenics_finite_element fenics_finite_element;
   typedef struct fenics_dofmap fenics_dofmap;
 
+  /// Finite element
   typedef struct fenics_finite_element
   {
     /// String identifying the finite element
@@ -117,6 +116,7 @@ extern "C"
     fenics_finite_element* (*create)(void);
   } fenics_finite_element;
 
+  /// Degrees-of-freedom mapping
   typedef struct fenics_dofmap
   {
 
@@ -409,16 +409,26 @@ extern "C"
       const double* restrict facet_normals,
       int cell_orientation);
 
+  /// Integral
   typedef struct fenics_integral
   {
+    /// True if coefficient is used in this integral
     const bool* enabled_coefficients;
+
+    /// Tabulation kernel
     fenics_tabulate_tensor* tabulate_tensor;
+
   } fenics_integral;
 
+  /// Custom (runtime quadrature) integral
   typedef struct fenics_custom_integral
   {
+    /// True is coefficient is used in this integral
     const bool* enabled_coefficients;
+
+    /// Tabulation kernel
     fenics_tabulate_tensor_custom* tabulate_tensor;
+
   } fenics_custom_integral;
 
   /// This class defines the interface for the assembly of the global
@@ -536,16 +546,16 @@ extern "C"
 
   } fenics_form;
 
-  // FIXME: Formalise a fenics 'function space'.
+  /// Function Space
   typedef struct fenics_function_space
   {
-    // Pointer to factory function that creates a new fenics_finite_element
+    /// Pointer to factory function that creates a new fenics_finite_element
     fenics_finite_element* (*create_element)(void);
 
-    // Pointer to factory function that creates a new fenics_dofmap
+    /// Pointer to factory function that creates a new fenics_dofmap
     fenics_dofmap* (*create_dofmap)(void);
 
-    // Pointer to factory function that creates a new fenics_coordinate_mapping
+    /// Pointer to factory function that creates a new fenics_coordinate_mapping
     fenics_coordinate_mapping* (*create_coordinate_mapping)(void);
   } fenics_function_space;
 
