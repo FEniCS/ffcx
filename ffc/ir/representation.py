@@ -28,6 +28,7 @@ from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                MixedElement, QuadratureElement, SpaceOfReals,
                                create_element)
+from ffc.parameters import compute_jit_signature
 from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
@@ -83,21 +84,22 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
 
 
-def make_finite_element_jit_classname(ufl_element, tag, parameters):
+def make_finite_element_jit_classname(ufl_element, tag, p):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = classname.compute_signature([ufl_element], tag, parameters)
+    sig = classname.compute_signature([ufl_element], tag + compute_jit_signature(p))
     return classname.make_name("ffc_element_{}".format(sig), "finite_element", "main")
 
 
-def make_dofmap_jit_classname(ufl_element, tag, parameters):
+def make_dofmap_jit_classname(ufl_element, tag, p):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = classname.compute_signature([ufl_element], tag, parameters)
+    sig = classname.compute_signature([ufl_element], tag + compute_jit_signature(p))
     return classname.make_name("ffc_element_{}".format(sig), "dofmap", "main")
 
 
-def make_coordinate_mapping_jit_classname(ufl_element, tag, parameters):
+def make_coordinate_mapping_jit_classname(ufl_element, tag, p):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = classname.compute_signature([ufl_element], tag, parameters, coordinate_mapping=True)
+    sig = classname.compute_signature(
+        [ufl_element], tag + compute_jit_signature(p), coordinate_mapping=True)
     return classname.make_name("ffc_coordinate_mapping_{}".format(sig), "coordinate_mapping", "main")
 
 
@@ -386,7 +388,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
 
     # Compute common data
     ir["classname"] = classname.make_name(prefix, "form", classname.compute_signature([
-                                          form_data.original_form], str(form_id), parameters))
+                                          form_data.original_form], str(form_id) + compute_jit_signature(parameters)))
 
     ir["signature"] = form_data.original_form.signature()
 

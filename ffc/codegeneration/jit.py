@@ -17,6 +17,7 @@ import cffi
 
 import ffc
 import ffc.config
+from ffc.parameters import compute_jit_signature
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,8 @@ def compile_elements(elements, parameters=None, extra_compile_args=None):
     logger.info('Compiling elements: ' + str(elements))
 
     # Get a signature for these elements
-    module_name = 'libffc_elements_' + ffc.classname.compute_signature(elements, '', p)
+    module_name = 'libffc_elements_' + \
+        ffc.classname.compute_signature(elements, compute_jit_signature(p))
 
     names = []
     for e in elements:
@@ -144,9 +146,10 @@ def compile_forms(forms, parameters=None, extra_compile_args=None):
     logger.info('Compiling forms: ' + str(forms))
 
     # Get a signature for these forms
-    module_name = 'libffc_forms_' + ffc.classname.compute_signature(forms, '', p)
+    module_name = 'libffc_forms_' + ffc.classname.compute_signature(forms, compute_jit_signature(p))
 
-    form_names = [ffc.classname.make_name("JIT", "form", ffc.classname.compute_signature([form], str(i), p))
+    form_names = [ffc.classname.make_name("JIT", "form",
+                                          ffc.classname.compute_signature([form], str(i) + compute_jit_signature(p)))
                   for i, form in enumerate(forms)]
 
     if p['use_cache']:
@@ -174,7 +177,7 @@ def compile_coordinate_maps(meshes, parameters=None, extra_compile_args=None):
     logger.info('Compiling cmaps: ' + str(meshes))
 
     # Get a signature for these cmaps
-    module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
+    module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, compute_jit_signature(p), True)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]

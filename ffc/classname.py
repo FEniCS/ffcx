@@ -19,12 +19,12 @@ def make_name(prefix, basename, signature):
 
 
 def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_id, parameters):
-    sig = compute_signature([original_form], str(form_id), parameters)
+    sig = compute_signature([original_form], str(form_id) + ffc.parameters.compute_jit_signature(parameters))
     basename = "{}_integral_{}".format(integral_type, sig)
     return make_name(prefix, basename, subdomain_id)
 
 
-def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
+def compute_signature(ufl_objects, tag, coordinate_mapping=False):
     """Compute the signature hash for jit modules.
     Based on the UFL type of the objects,
     relevant compilation parameters, signatures of this ffc version, ufc.h and ufc_geometry.h
@@ -59,12 +59,11 @@ def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
     # Compute deterministic string of relevant parameters
-    parameters_signature = ffc.parameters.compute_jit_signature(parameters)
+    # parameters_signature = ffc.parameters.compute_jit_signature(parameters)
 
     # Build combined signature
     signatures = [
         object_signature,
-        parameters_signature,
         str(ffc.__version__),
         ffc.codegeneration.get_signature(),
         kind,
