@@ -108,6 +108,6 @@ def compilation_relevant_parameters(parameters):
 
 
 def compute_jit_signature(parameters):
-    """Return parameters signature (some parameters must be ignored)."""
+    """Return parameters signature (some parameters should not affect signature)."""
     parameters = compilation_relevant_parameters(parameters)
     return str(sorted(parameters.items()))

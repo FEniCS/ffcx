@@ -128,7 +128,8 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(analysis.unique_elements)))
     ir_elements = [
-        _compute_element_ir(e, analysis.element_numbers, classnames, parameters["epsilon"]) for e in analysis.unique_elements
+        _compute_element_ir(e, analysis.element_numbers, classnames, parameters["epsilon"])
+        for e in analysis.unique_elements
     ]
 
     # Compute representation of dofmaps
