@@ -28,7 +28,6 @@ from ffc import classname
 from ffc.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                MixedElement, QuadratureElement, SpaceOfReals,
                                create_element)
-from ffc.parameters import compute_jit_signature
 from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
@@ -103,15 +102,15 @@ def make_coordinate_map_classname(ufl_element, tag):
     return classname.make_name("ffc_coordinate_mapping_{}".format(sig), "coordinate_mapping", "main")
 
 
-def make_all_element_classnames(prefix, elements, coordinate_elements, parameters):
+def make_all_element_classnames(prefix, elements, coordinate_elements):
     # Make unique classnames to match separately jit-compiled module
     classnames = {
-        "finite_element": {e: make_finite_element_classname(e, prefix + compute_jit_signature(parameters))
+        "finite_element": {e: make_finite_element_classname(e, prefix)
                            for e in elements},
-        "dofmap": {e: make_dofmap_classname(e, prefix + compute_jit_signature(parameters))
+        "dofmap": {e: make_dofmap_classname(e, prefix)
                    for e in elements},
         "coordinate_mapping":
-        {e: make_coordinate_map_classname(e, prefix + compute_jit_signature(parameters))
+        {e: make_coordinate_map_classname(e, prefix)
          for e in coordinate_elements},
     }
     return classnames
@@ -125,7 +124,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
 
     # Construct classnames for all element objects and coordinate mappings
     classnames = make_all_element_classnames(prefix, analysis.unique_elements,
-                                             analysis.unique_coordinate_elements, parameters)
+                                             analysis.unique_coordinate_elements)
 
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(analysis.unique_elements)))
@@ -358,7 +357,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
 
         # Build classname
         ir["classname"] = classname.make_integral_name(prefix, itg_data.integral_type, form_data.original_form,
-                                                       form_index, itg_data.subdomain_id, parameters)
+                                                       form_index, itg_data.subdomain_id)
         ir["classnames"] = classnames  # FIXME XXX: Use this everywhere needed?
 
         # Storing prefix here for reconstruction of classnames on code
@@ -388,7 +387,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers,
 
     # Compute common data
     ir["classname"] = classname.make_name(prefix, "form", classname.compute_signature([
-                                          form_data.original_form], str(form_id) + compute_jit_signature(parameters)))
+                                          form_data.original_form], str(form_id)))
 
     ir["signature"] = form_data.original_form.signature()
 
@@ -721,7 +720,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
     elif len(itg_data) == 1:
         subdomain_ids += [-1]
         classnames += [classname.make_integral_name(prefix, integral_type, form_data.original_form,
-                                                    form_id, 'otherwise', parameters)]
+                                                    form_id, 'otherwise')]
 
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
@@ -730,7 +729,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data, parameters):
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
                 classnames += [classname.make_integral_name(prefix, integral_type, form_data.original_form,
-                                                            form_id, itg_data.subdomain_id, parameters)]
+                                                            form_id, itg_data.subdomain_id)]
 
     return subdomain_ids, classnames
 

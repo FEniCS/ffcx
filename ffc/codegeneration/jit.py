@@ -109,9 +109,9 @@ def compile_elements(elements, parameters=None, extra_compile_args=None):
 
     names = []
     for e in elements:
-        name = ffc.ir.representation.make_finite_element_classname(e, "JIT" + compute_jit_signature(p))
+        name = ffc.ir.representation.make_finite_element_classname(e, "JIT")
         names.append(name)
-        name = ffc.ir.representation.make_dofmap_classname(e, "JIT" + compute_jit_signature(p))
+        name = ffc.ir.representation.make_dofmap_classname(e, "JIT")
         names.append(name)
 
     if p['use_cache']:
@@ -150,7 +150,7 @@ def compile_forms(forms, parameters=None, extra_compile_args=None):
         ffc.classname.compute_signature(forms, compute_jit_signature(p) + str(extra_compile_args))
 
     form_names = [ffc.classname.make_name("JIT", "form",
-                                          ffc.classname.compute_signature([form], str(i) + compute_jit_signature(p)))
+                                          ffc.classname.compute_signature([form], str(i)))
                   for i, form in enumerate(forms)]
 
     if p['use_cache']:
@@ -182,7 +182,7 @@ def compile_coordinate_maps(meshes, parameters=None, extra_compile_args=None):
         ffc.classname.compute_signature(meshes, compute_jit_signature(p) + str(extra_compile_args), True)
 
     cmap_names = [ffc.ir.representation.make_coordinate_map_classname(
-        mesh.ufl_coordinate_element(), "JIT" + compute_jit_signature(p)) for mesh in meshes]
+        mesh.ufl_coordinate_element(), "JIT") for mesh in meshes]
 
     if p['use_cache']:
         obj, mod = get_cached_module(module_name, cmap_names, p.get("cache_dir"), p.get("timeout"))
