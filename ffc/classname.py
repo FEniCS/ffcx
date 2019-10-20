@@ -58,9 +58,6 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
         else:
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
-    # Compute deterministic string of relevant parameters
-    # parameters_signature = ffc.parameters.compute_jit_signature(parameters)
-
     # Build combined signature
     signatures = [
         object_signature,
