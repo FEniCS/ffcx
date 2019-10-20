@@ -84,19 +84,19 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
 
 
-def make_finite_element_jit_classname(ufl_element, tag):
+def make_finite_element_classname(ufl_element, tag):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = classname.compute_signature([ufl_element], tag)
     return classname.make_name("ffc_element_{}".format(sig), "finite_element", "main")
 
 
-def make_dofmap_jit_classname(ufl_element, tag):
+def make_dofmap_classname(ufl_element, tag):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = classname.compute_signature([ufl_element], tag)
     return classname.make_name("ffc_element_{}".format(sig), "dofmap", "main")
 
 
-def make_coordinate_mapping_jit_classname(ufl_element, tag):
+def make_coordinate_map_classname(ufl_element, tag):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = classname.compute_signature(
         [ufl_element], tag, coordinate_mapping=True)
@@ -106,12 +106,12 @@ def make_coordinate_mapping_jit_classname(ufl_element, tag):
 def make_all_element_classnames(prefix, elements, coordinate_elements, parameters):
     # Make unique classnames to match separately jit-compiled module
     classnames = {
-        "finite_element": {e: make_finite_element_jit_classname(e, prefix + compute_jit_signature(parameters))
+        "finite_element": {e: make_finite_element_classname(e, prefix + compute_jit_signature(parameters))
                            for e in elements},
-        "dofmap": {e: make_dofmap_jit_classname(e, prefix + compute_jit_signature(parameters))
+        "dofmap": {e: make_dofmap_classname(e, prefix + compute_jit_signature(parameters))
                    for e in elements},
         "coordinate_mapping":
-        {e: make_coordinate_mapping_jit_classname(e, prefix + compute_jit_signature(parameters))
+        {e: make_coordinate_map_classname(e, prefix + compute_jit_signature(parameters))
          for e in coordinate_elements},
     }
     return classnames

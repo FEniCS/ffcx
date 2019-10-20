@@ -109,9 +109,9 @@ def compile_elements(elements, parameters=None, extra_compile_args=None):
 
     names = []
     for e in elements:
-        name = ffc.ir.representation.make_finite_element_jit_classname(e, "JIT" + compute_jit_signature(p))
+        name = ffc.ir.representation.make_finite_element_classname(e, "JIT" + compute_jit_signature(p))
         names.append(name)
-        name = ffc.ir.representation.make_dofmap_jit_classname(e, "JIT" + compute_jit_signature(p))
+        name = ffc.ir.representation.make_dofmap_classname(e, "JIT" + compute_jit_signature(p))
         names.append(name)
 
     if p['use_cache']:
@@ -181,7 +181,7 @@ def compile_coordinate_maps(meshes, parameters=None, extra_compile_args=None):
     module_name = 'libffc_cmaps_' + \
         ffc.classname.compute_signature(meshes, compute_jit_signature(p) + str(extra_compile_args), True)
 
-    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
+    cmap_names = [ffc.ir.representation.make_coordinate_map_classname(
         mesh.ufl_coordinate_element(), "JIT" + compute_jit_signature(p)) for mesh in meshes]
 
     if p['use_cache']:
