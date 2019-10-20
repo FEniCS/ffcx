@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+
 import numpy
 
 from ffc.fiatinterface import create_element
@@ -20,7 +21,8 @@ from ufl.utils.sorting import sorted_by_count
 logger = logging.getLogger(__name__)
 
 
-def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters):
+def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames,
+                        parameters, visualise):
     """Compute intermediate represention of integral."""
 
     logger.info("Computing uflacs representation")
@@ -132,7 +134,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     # Build the more uflacs-specific intermediate representation
     uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
                                 ir["entitytype"], integrands, ir["tensor_shape"],
-                                quadrature_rules, parameters)
+                                quadrature_rules, parameters, visualise)
 
     ir.update(uflacs_ir)
 

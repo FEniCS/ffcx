@@ -21,7 +21,6 @@ from collections import namedtuple
 
 from ffc import __version__ as FFC_VERSION
 from ffc.codegeneration import __version__ as UFC_VERSION
-from ffc.parameters import compilation_relevant_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -134,9 +133,6 @@ def _write_file(output, prefix, postfix, output_dir):
 
 def _generate_comment(parameters):
     """Generate code for comment on top of file."""
-
-    # Drop irrelevant parameters
-    parameters = compilation_relevant_parameters(parameters)
 
     # Generate top level comment
     comment = FORMAT_TEMPLATE["ufc comment"].format(ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)

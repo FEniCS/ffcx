@@ -30,6 +30,7 @@ parser.add_argument(
 parser.add_argument("-d", "--debug", action='store_true', help="enable debug output")
 parser.add_argument("-v", "--verbose", action='store_true', help="verbose output")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
+parser.add_argument("--visualise", type=bool, default=False, help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 parser.add_argument(
     "-q",
@@ -100,11 +101,11 @@ def main(args=None):
     # ufl.constantvalue.precision = int(parameters["precision"])
 
     # Call parser and compiler for each file
-    resultcode = _compile_files(xargs.ufl_file, xargs.output_directory, parameters, xargs.profile)
+    resultcode = _compile_files(xargs.ufl_file, xargs.output_directory, parameters, xargs.profile, xargs.visualise)
     return resultcode
 
 
-def _compile_files(args, output_directory, parameters, enable_profile):
+def _compile_files(args, output_directory, parameters, enable_profile, visualise):
     # Call parser and compiler for each file
     for filename in args:
         file = pathlib.Path(filename)
@@ -129,10 +130,10 @@ def _compile_files(args, output_directory, parameters, enable_profile):
         # Generate code
         if len(ufd.forms) > 0:
             code_h, code_c = compiler.compile_ufl_objects(
-                ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters)
+                ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters, visualise=visualise)
         else:
             code_h, code_c = compiler.compile_ufl_objects(
-                ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters)
+                ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters, visualise=visualise)
 
         # Write to file
         formatting.write_code(code_h, code_c, prefix, output_directory)

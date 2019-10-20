@@ -15,7 +15,6 @@ from pathlib import Path
 import cffi
 
 import ffc
-from ffc.parameters import compute_jit_signature
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +53,11 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_integral.*?ufc_int
                                           ufc_h, re.DOTALL))
 UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?ufc_custom_integral;',
                                           ufc_h, re.DOTALL))
+
+
+def compute_jit_signature(parameters):
+    """Return parameters signature (some parameters should not affect signature)."""
+    return str(sorted(parameters.items()))
 
 
 def get_cached_module(module_name, object_names, cache_dir, timeout):

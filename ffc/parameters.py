@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # NB! Parameters in the generate and build sets are included in jit
 # signature, log is not.
-_FFC_GENERATE_PARAMETERS = {
+FFC_PARAMETERS = {
     "representation": "auto",  # form representation / code generation strategy
     "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
     "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
@@ -23,12 +23,6 @@ _FFC_GENERATE_PARAMETERS = {
     "scalar_type": "double",
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
-_FFC_LOG_PARAMETERS = {
-    "visualise": False,
-}
-FFC_PARAMETERS = {}
-FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
-FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
 
 
 def default_parameters():
@@ -86,16 +80,3 @@ def _validate_parameters(parameters):
             logger.exception("Failed to convert precision '{}' to int".format(
                 parameters.get("precision")))
             raise
-
-
-def compilation_relevant_parameters(parameters):
-    p = parameters.copy()
-    for k in _FFC_LOG_PARAMETERS:
-        del p[k]
-    return p
-
-
-def compute_jit_signature(parameters):
-    """Return parameters signature (some parameters should not affect signature)."""
-    parameters = compilation_relevant_parameters(parameters)
-    return str(sorted(parameters.items()))
