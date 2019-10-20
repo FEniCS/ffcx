@@ -115,7 +115,7 @@ def compile_elements(elements, cache_dir, parameters=None, cffi_extra_compile_ar
         names.append(name)
 
     if cache_dir is not None:
-        obj, mod = get_cached_module(module_name, names, p.get("cache_dir"), p.get("timeout"))
+        obj, mod = get_cached_module(module_name, names, cache_dir, p.get("timeout"))
         if obj is not None:
             # Pair up elements with dofmaps
             obj = list(zip(obj[::2], obj[1::2]))
