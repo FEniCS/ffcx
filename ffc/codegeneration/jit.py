@@ -149,8 +149,7 @@ def compile_forms(forms, parameters=None, extra_compile_args=None):
     module_name = 'libffc_forms_' + \
         ffc.classname.compute_signature(forms, compute_jit_signature(p) + str(extra_compile_args))
 
-    form_names = [ffc.classname.make_name("JIT", "form",
-                                          ffc.classname.compute_signature([form], str(i)))
+    form_names = [ffc.classname.make_name("JIT", "form", ffc.classname.compute_signature([form], str(i)))
                   for i, form in enumerate(forms)]
 
     if p['use_cache']:
