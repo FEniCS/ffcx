@@ -57,10 +57,9 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?
                                           ufc_h, re.DOTALL))
 
 
-def get_cached_module(module_name, object_names, parameters):
+def get_cached_module(module_name, object_names, cache_dir, timeout):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
-    cache_dir = ffc.config.get_cache_path(parameters)
-    timeout = int(parameters.get("timeout", 10))
+    cache_dir = ffc.config.get_cache_path(cache_dir)
     c_filename = cache_dir.joinpath(module_name).with_suffix(".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
@@ -114,7 +113,7 @@ def compile_elements(elements, parameters=None, extra_compile_args=None):
         names.append(name)
 
     if p['use_cache']:
-        obj, mod = get_cached_module(module_name, names, p)
+        obj, mod = get_cached_module(module_name, names, p.get("cache_dir"), p.get("timeout"))
         if obj is not None:
             # Pair up elements with dofmaps
             obj = list(zip(obj[::2], obj[1::2]))
@@ -151,7 +150,7 @@ def compile_forms(forms, parameters=None, extra_compile_args=None):
                   for i, form in enumerate(forms)]
 
     if p['use_cache']:
-        obj, mod = get_cached_module(module_name, form_names, p)
+        obj, mod = get_cached_module(module_name, form_names, p.get("cache_dir"), p.get("timeout"))
         if obj is not None:
             return obj, mod
 
@@ -181,7 +180,7 @@ def compile_coordinate_maps(meshes, parameters=None, extra_compile_args=None):
         mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
 
     if p['use_cache']:
-        obj, mod = get_cached_module(module_name, cmap_names, p)
+        obj, mod = get_cached_module(module_name, cmap_names, p.get("cache_dir"), p.get("timeout"))
         if obj is not None:
             return obj, mod
 
@@ -198,7 +197,7 @@ def compile_coordinate_maps(meshes, parameters=None, extra_compile_args=None):
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters,
                      extra_compile_args):
     if (parameters['use_cache']):
-        compile_dir = ffc.config.get_cache_path(parameters)
+        compile_dir = ffc.config.get_cache_path(parameters.get("cache_dir"))
     else:
         compile_dir = Path(tempfile.mkdtemp())
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
