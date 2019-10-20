@@ -93,7 +93,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
-def compile_elements(elements, cache_dir, parameters=None, timeout=10, cffi_extra_compile_args=None,
+def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                      cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects."""
     p = ffc.parameters.default_parameters()
@@ -130,14 +130,14 @@ def compile_elements(elements, cache_dir, parameters=None, timeout=10, cffi_extr
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    objects, module = _compile_objects(decl, elements, names, module_name, cache_dir, p,
+    objects, module = _compile_objects(decl, elements, names, module_name, p, cache_dir,
                                        cffi_extra_compile_args, cffi_verbose, cffi_debug)
     # Pair up elements with dofmaps
     objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
 
 
-def compile_forms(forms, cache_dir, parameters=None, timeout=10, cffi_extra_compile_args=None,
+def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                   cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL forms into UFC Python objects."""
     p = ffc.parameters.default_parameters()
@@ -167,11 +167,11 @@ def compile_forms(forms, cache_dir, parameters=None, timeout=10, cffi_extra_comp
     for name in form_names:
         decl += form_template.format(name=name)
 
-    return _compile_objects(decl, forms, form_names, module_name, cache_dir, p,
+    return _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
                             cffi_extra_compile_args, cffi_verbose, cffi_debug)
 
 
-def compile_coordinate_maps(meshes, cache_dir, parameters=None, timeout=10, cffi_extra_compile_args=None,
+def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                             cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects."""
     p = ffc.parameters.default_parameters()
@@ -200,11 +200,11 @@ def compile_coordinate_maps(meshes, cache_dir, parameters=None, timeout=10, cffi
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    return _compile_objects(decl, meshes, cmap_names, module_name, cache_dir, p,
+    return _compile_objects(decl, meshes, cmap_names, module_name, p, cache_dir,
                             cffi_extra_compile_args, cffi_verbose, cffi_debug)
 
 
-def _compile_objects(decl, ufl_objects, object_names, module_name, cache_dir, parameters,
+def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
                      cffi_extra_compile_args, cffi_verbose, cffi_debug):
     if cache_dir is None:
         cache_dir = Path(tempfile.mkdtemp())

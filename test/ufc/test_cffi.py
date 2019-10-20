@@ -33,7 +33,7 @@ def lagrange_element():
     """Compile list of Lagrange elements"""
     cell = ufl.triangle
     elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements, None)
+    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
     return elements, compiled_elements, module
 
 
@@ -42,7 +42,7 @@ def quadrilateral_element():
     """Compile list of Quadrilateral elements"""
     cell = ufl.quadrilateral
     elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements, None)
+    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
     return elements, compiled_elements, module
 
 
@@ -101,7 +101,7 @@ def test_cmap():
     cell = ufl.triangle
     element = ufl.VectorElement("Lagrange", cell, 1)
     mesh = ufl.Mesh(element)
-    compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh], None)
+    compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
     x = np.array([[0.5, 0.5]], dtype=np.float64)
     x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
     X = np.zeros_like(x)
@@ -129,7 +129,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result):
 
     a = ufl.tr(kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, None, parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -195,8 +195,7 @@ def test_mass_bilinear_form_2d(mode, expected_result):
     a = ufl.inner(u, v) * ufl.dx
     L = ufl.conj(v) * ufl.dx
     forms = [a, L]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, None, parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -248,8 +247,7 @@ def test_helmholtz_form_2d(mode, expected_result):
 
     a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(k * u, v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, None, parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -279,7 +277,7 @@ def test_form_coefficient():
     g = ufl.Coefficient(element)
     a = g * ufl.inner(u, v) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, None)
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -312,8 +310,7 @@ def test_subdomains():
     a2 = ufl.inner(u, v) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx(1)
     a3 = ufl.inner(u, v) * ufl.ds(210) + ufl.inner(u, v) * ufl.ds(0)
     forms = [a0, a1, a2, a3]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, None, parameters={'scalar_type': 'double'})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': 'double'})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -351,8 +348,7 @@ def test_interior_facet_integral(mode):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a0 = ufl.inner(ufl.jump(ufl.grad(u)), ufl.jump(ufl.grad(v))) * ufl.dS
     forms = [a0]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, None, parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -405,8 +401,7 @@ def test_conditional(mode):
 
     forms = [a, b]
 
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, None, parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     form0 = compiled_forms[0][0].create_cell_integral(-1)
     form1 = compiled_forms[1][0].create_cell_integral(-1)

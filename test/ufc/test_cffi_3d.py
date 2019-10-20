@@ -27,7 +27,7 @@ def lagrange_element():
     """Compile list of Lagrange elements"""
     cell = ufl.tetrahedron
     elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements, None)
+    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
     return elements, compiled_elements, module
 
 
@@ -36,7 +36,7 @@ def hexahedral_element():
     """Compile list of Lagrange elements"""
     cell = ufl.hexahedron
     elements = [ufl.FiniteElement("Lagrange", cell, p) for p in range(1, 5)]
-    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements, None)
+    compiled_elements, module = ffc.codegeneration.jit.compile_elements(elements)
     return elements, compiled_elements, module
 
 
@@ -91,8 +91,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(
-        forms, None, parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
