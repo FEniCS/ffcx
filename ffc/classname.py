@@ -26,10 +26,8 @@ def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_
 def compute_signature(ufl_objects, tag, coordinate_mapping=False):
     """Compute the signature hash for jit modules.
 
-    Based on the UFL type of the objects, relevant compilation
-    parameters, signatures of this ffc version, ufc.h and ufc_geometry.h
-    and an additional optional 'tag' (used with filename for
-    command-line invocation).
+    Based on the UFL type of the objects and an additional optional
+    'tag'.
 
     Note:
     ----
