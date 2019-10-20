@@ -25,7 +25,6 @@ _FFC_GENERATE_PARAMETERS = {
 }
 _FFC_CACHE_PARAMETERS = {
     "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
-    "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
     "visualise": False,

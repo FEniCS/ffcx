@@ -29,7 +29,7 @@ parser.add_argument(
     "--version", action='version', version="%(prog)s " + ("(version {})".format(FFC_VERSION)))
 parser.add_argument("-d", "--debug", action='store_true', help="enable debug output")
 parser.add_argument("-v", "--verbose", action='store_true', help="verbose output")
-parser.add_argument("-o", "--output-directory", type=str, help="output directory")
+parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 parser.add_argument(
     "-q",
@@ -83,8 +83,6 @@ def main(args=None):
     parameters["representation"] = xargs.representation
     parameters["quadrature_rule"] = xargs.quadrature_rule
     parameters["quadrature_degree"] = xargs.quadrature_degree
-    if xargs.output_directory:
-        parameters["output_dir"] = xargs.output_directory
     for p in xargs.f:
         assert len(p) == 2
         if p[0] not in parameters:
@@ -102,11 +100,11 @@ def main(args=None):
     # ufl.constantvalue.precision = int(parameters["precision"])
 
     # Call parser and compiler for each file
-    resultcode = _compile_files(xargs.ufl_file, parameters, xargs.profile)
+    resultcode = _compile_files(xargs.ufl_file, xargs.output_directory, parameters, xargs.profile)
     return resultcode
 
 
-def _compile_files(args, parameters, enable_profile):
+def _compile_files(args, output_directory, parameters, enable_profile):
     # Call parser and compiler for each file
     for filename in args:
         file = pathlib.Path(filename)
@@ -137,7 +135,7 @@ def _compile_files(args, parameters, enable_profile):
                 ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters)
 
         # Write to file
-        formatting.write_code(code_h, code_c, prefix, parameters)
+        formatting.write_code(code_h, code_c, prefix, output_directory)
 
         # except Exception as exception:
         #    # Catch exceptions only when not in debug mode

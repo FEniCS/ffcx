@@ -119,16 +119,16 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
     return code_h, code_c
 
 
-def write_code(code_h, code_c, prefix, parameters):
+def write_code(code_h, code_c, prefix, output_dir):
     # Write file(s)
-    _write_file(code_h, prefix, ".h", parameters)
+    _write_file(code_h, prefix, ".h", output_dir)
     if code_c:
-        _write_file(code_c, prefix, ".c", parameters)
+        _write_file(code_c, prefix, ".c", output_dir)
 
 
-def _write_file(output, prefix, postfix, parameters):
+def _write_file(output, prefix, postfix, output_dir):
     """Write generated code to file."""
-    filename = os.path.join(parameters["output_dir"], prefix + postfix)
+    filename = os.path.join(output_dir, prefix + postfix)
     with open(filename, "w") as hfile:
         hfile.write(output)
     logger.info("Output written to " + filename + ".")
