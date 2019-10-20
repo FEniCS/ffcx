@@ -105,7 +105,7 @@ def compile_elements(elements, parameters=None, extra_compile_args=None):
 
     # Get a signature for these elements
     module_name = 'libffc_elements_' + \
-        ffc.classname.compute_signature(elements, compute_jit_signature(p))
+        ffc.classname.compute_signature(elements, compute_jit_signature(p) + str(extra_compile_args))
 
     names = []
     for e in elements:
@@ -146,7 +146,8 @@ def compile_forms(forms, parameters=None, extra_compile_args=None):
     logger.info('Compiling forms: ' + str(forms))
 
     # Get a signature for these forms
-    module_name = 'libffc_forms_' + ffc.classname.compute_signature(forms, compute_jit_signature(p))
+    module_name = 'libffc_forms_' + \
+        ffc.classname.compute_signature(forms, compute_jit_signature(p) + str(extra_compile_args))
 
     form_names = [ffc.classname.make_name("JIT", "form",
                                           ffc.classname.compute_signature([form], str(i) + compute_jit_signature(p)))
@@ -177,7 +178,8 @@ def compile_coordinate_maps(meshes, parameters=None, extra_compile_args=None):
     logger.info('Compiling cmaps: ' + str(meshes))
 
     # Get a signature for these cmaps
-    module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, compute_jit_signature(p), True)
+    module_name = 'libffc_cmaps_' + \
+        ffc.classname.compute_signature(meshes, compute_jit_signature(p) + str(extra_compile_args), True)
 
     cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
         mesh.ufl_coordinate_element(), "JIT" + compute_jit_signature(p)) for mesh in meshes]

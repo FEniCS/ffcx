@@ -26,15 +26,18 @@ def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_
 
 def compute_signature(ufl_objects, tag, coordinate_mapping=False):
     """Compute the signature hash for jit modules.
-    Based on the UFL type of the objects,
-    relevant compilation parameters, signatures of this ffc version, ufc.h and ufc_geometry.h
-    and an additional optional 'tag' (used with filename for command-line invocation).
+
+    Based on the UFL type of the objects, relevant compilation
+    parameters, signatures of this ffc version, ufc.h and ufc_geometry.h
+    and an additional optional 'tag' (used with filename for
+    command-line invocation).
 
     Note:
     ----
-    The parameter `coordinate_mapping` is used to force compilation of finite element
-    as a coordinate mapping element. There is no way to find this information
-    just by looking at type of `ufl_object` passed.
+    The parameter `coordinate_mapping` is used to force compilation of
+    finite element as a coordinate mapping element. There is no way to
+    find this information just by looking at type of `ufl_object`
+    passed.
 
     """
 
@@ -59,14 +62,6 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
     # Build combined signature
-    signatures = [
-        object_signature,
-        str(ffc.__version__),
-        ffc.codegeneration.get_signature(),
-        kind,
-        tag
-    ]
+    signatures = [object_signature, str(ffc.__version__), ffc.codegeneration.get_signature(), kind, tag]
     string = ";".join(signatures)
-    sig = hashlib.sha1(string.encode('utf-8')).hexdigest()
-
-    return sig
+    return hashlib.sha1(string.encode('utf-8')).hexdigest()
