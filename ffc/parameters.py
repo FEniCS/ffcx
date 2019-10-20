@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2005-2017 Anders Logg
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -25,21 +24,15 @@ _FFC_GENERATE_PARAMETERS = {
     "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
-_FFC_BUILD_PARAMETERS = {
-    "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
-}
 _FFC_CACHE_PARAMETERS = {
     "use_cache": True,
     "cache_dir": "~/.cache/fenics",  # cache dir used by default
     "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
-    # "log_level": INFO + 5,  # log level, displaying only messages with level >= log_level
-    "log_prefix": "",  # log prefix
     "visualise": False,
 }
 FFC_PARAMETERS = {}
-FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_CACHE_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
@@ -112,7 +105,6 @@ def compilation_relevant_parameters(parameters):
 
 
 def compute_jit_signature(parameters):
-    """Return parameters signature (some parameters must be ignored)."""
-    from ufl.utils.sorting import canonicalize_metadata
+    """Return parameters signature (some parameters should not affect signature)."""
     parameters = compilation_relevant_parameters(parameters)
-    return str(canonicalize_metadata(parameters))
+    return str(sorted(parameters.items()))

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2009-2018 Anders Logg and Garth N. Wells
 #
 # This file is part of FFC (https://www.fenicsproject.org)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 "Unit tests for FFC"
 
 # Copyright (C) 2007-2017 Anders Logg and Garth N. Wells

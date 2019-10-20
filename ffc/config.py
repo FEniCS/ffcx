@@ -11,14 +11,13 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def get_cache_path(parameters):
+def get_cache_path(cache_dir):
     """Get the path for the JIT cache."""
+    # Use local cache if cache_dir is None
+    if cache_dir is None:
+        cache_dir = Path.cwd() / "compile-cache"
 
-    # Get cache path from parameters, with fallback to current working
-    # directory
-    cache_dir = parameters.get("cache_dir", Path.cwd() / "compile-cache")
-
-    # Check for cache environment variable
+    # If cache environment variable is set, override
     cache_dir = os.getenv('FENICS_CACHE_DIR', cache_dir)
 
     return Path(cache_dir).expanduser()

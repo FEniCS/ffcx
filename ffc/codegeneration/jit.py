@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# Copyright (C) 2018 Garth N. Wells
+# Copyright (C) 2004-2018 Garth N. Wells
 #
 # This file is part of FFC (https://www.fenicsproject.org)
 #
@@ -17,6 +16,7 @@ import cffi
 
 import ffc
 import ffc.config
+from ffc.parameters import compute_jit_signature
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +57,9 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?
                                           ufc_h, re.DOTALL))
 
 
-def get_cached_module(module_name, object_names, parameters):
+def get_cached_module(module_name, object_names, cache_dir, timeout):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
-    cache_dir = ffc.config.get_cache_path(parameters)
-    timeout = int(parameters.get("timeout", 10))
+    cache_dir = ffc.config.get_cache_path(cache_dir)
     c_filename = cache_dir.joinpath(module_name).with_suffix(".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
@@ -95,7 +94,8 @@ def get_cached_module(module_name, object_names, parameters):
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
-def compile_elements(elements, parameters=None):
+def compile_elements(elements, parameters=None, cffi_extra_compile_args=None,
+                     cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
@@ -104,17 +104,19 @@ def compile_elements(elements, parameters=None):
     logger.info('Compiling elements: ' + str(elements))
 
     # Get a signature for these elements
-    module_name = 'libffc_elements_' + ffc.classname.compute_signature(elements, '', p)
+    module_name = 'libffc_elements_' + \
+        ffc.classname.compute_signature(elements, compute_jit_signature(
+            p) + str(cffi_extra_compile_args) + str(cffi_debug))
 
     names = []
     for e in elements:
-        name = ffc.ir.representation.make_finite_element_jit_classname(e, "JIT", p)
+        name = ffc.ir.representation.make_finite_element_classname(e, "JIT")
         names.append(name)
-        name = ffc.ir.representation.make_dofmap_jit_classname(e, "JIT", p)
+        name = ffc.ir.representation.make_dofmap_classname(e, "JIT")
         names.append(name)
 
     if p['use_cache']:
-        obj, mod = get_cached_module(module_name, names, p)
+        obj, mod = get_cached_module(module_name, names, p.get("cache_dir"), p.get("timeout"))
         if obj is not None:
             # Pair up elements with dofmaps
             obj = list(zip(obj[::2], obj[1::2]))
@@ -129,13 +131,14 @@ def compile_elements(elements, parameters=None):
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    objects, module = _compile_objects(decl, elements, names, module_name, p)
+    objects, module = _compile_objects(decl, elements, names, module_name, p,
+                                       cffi_extra_compile_args, cffi_verbose, cffi_debug)
     # Pair up elements with dofmaps
     objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
 
 
-def compile_forms(forms, parameters=None):
+def compile_forms(forms, parameters=None, cffi_extra_compile_args=None, cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL forms into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
@@ -144,13 +147,15 @@ def compile_forms(forms, parameters=None):
     logger.info('Compiling forms: ' + str(forms))
 
     # Get a signature for these forms
-    module_name = 'libffc_forms_' + ffc.classname.compute_signature(forms, '', p)
+    module_name = 'libffc_forms_' + \
+        ffc.classname.compute_signature(forms, compute_jit_signature(
+            p) + str(cffi_extra_compile_args) + str(cffi_debug))
 
-    form_names = [ffc.classname.make_name("JIT", "form", ffc.classname.compute_signature([form], str(i), p))
+    form_names = [ffc.classname.make_name("JIT", "form", ffc.classname.compute_signature([form], str(i)))
                   for i, form in enumerate(forms)]
 
     if p['use_cache']:
-        obj, mod = get_cached_module(module_name, form_names, p)
+        obj, mod = get_cached_module(module_name, form_names, p.get("cache_dir"), p.get("timeout"))
         if obj is not None:
             return obj, mod
 
@@ -162,10 +167,10 @@ def compile_forms(forms, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    return _compile_objects(decl, forms, form_names, module_name, p)
+    return _compile_objects(decl, forms, form_names, module_name, p, cffi_extra_compile_args, cffi_verbose, cffi_debug)
 
 
-def compile_coordinate_maps(meshes, parameters=None):
+def compile_coordinate_maps(meshes, parameters=None, cffi_extra_compile_args=None, cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
@@ -174,13 +179,15 @@ def compile_coordinate_maps(meshes, parameters=None):
     logger.info('Compiling cmaps: ' + str(meshes))
 
     # Get a signature for these cmaps
-    module_name = 'libffc_cmaps_' + ffc.classname.compute_signature(meshes, '', p, True)
+    module_name = 'libffc_cmaps_' + \
+        ffc.classname.compute_signature(meshes, compute_jit_signature(
+            p) + str(cffi_extra_compile_args) + str(cffi_debug), True)
 
-    cmap_names = [ffc.ir.representation.make_coordinate_mapping_jit_classname(
-        mesh.ufl_coordinate_element(), "JIT", p) for mesh in meshes]
+    cmap_names = [ffc.ir.representation.make_coordinate_map_classname(
+        mesh.ufl_coordinate_element(), "JIT") for mesh in meshes]
 
     if p['use_cache']:
-        obj, mod = get_cached_module(module_name, cmap_names, p)
+        obj, mod = get_cached_module(module_name, cmap_names, p.get("cache_dir"), p.get("timeout"))
         if obj is not None:
             return obj, mod
 
@@ -191,19 +198,20 @@ def compile_coordinate_maps(meshes, parameters=None):
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    return _compile_objects(decl, meshes, cmap_names, module_name, p)
+    return _compile_objects(decl, meshes, cmap_names, module_name, p, cffi_extra_compile_args, cffi_verbose, cffi_debug)
 
 
-def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
-    if (parameters['use_cache']):
-        compile_dir = ffc.config.get_cache_path(parameters)
+def _compile_objects(decl, ufl_objects, object_names, module_name, parameters,
+                     cffi_extra_compile_args, cffi_verbose, cffi_debug):
+    if parameters['use_cache']:
+        compile_dir = ffc.config.get_cache_path(parameters.get("cache_dir"))
     else:
         compile_dir = Path(tempfile.mkdtemp())
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
-                          extra_compile_args=['-g0', '-O3', '-march=native'])
+                          extra_compile_args=cffi_extra_compile_args)
     ffibuilder.cdef(decl)
 
     c_filename = compile_dir.joinpath(module_name + ".c")
@@ -211,7 +219,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     # Compile (ensuring that compile dir exists)
     compile_dir.mkdir(exist_ok=True, parents=True)
-    ffibuilder.compile(tmpdir=compile_dir, verbose=False)
+    ffibuilder.compile(tmpdir=compile_dir, verbose=cffi_verbose, debug=cffi_debug)
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.

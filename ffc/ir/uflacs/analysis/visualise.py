@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2018 Chris Richardson
 #
 # This file is part of FFC (https://www.fenicsproject.org)

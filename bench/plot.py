@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Plots the results found in bench.log."""
 
 # Copyright (C) 2010 Anders Logg
