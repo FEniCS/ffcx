@@ -219,7 +219,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters,
 
     # Compile (ensuring that compile dir exists)
     compile_dir.mkdir(exist_ok=True, parents=True)
-    ffibuilder.compile(tmpdir=compile_dir, verbose=False)
+    ffibuilder.compile(tmpdir=compile_dir, verbose=cffi_verbose, debug=cffi_debug)
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
