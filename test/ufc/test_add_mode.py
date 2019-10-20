@@ -35,7 +35,7 @@ def test_additive_facet_integral(mode):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.ds
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms,
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, None,
                                                                   parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -78,7 +78,7 @@ def test_additive_cell_integral(mode):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms,
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, None,
                                                                   parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):

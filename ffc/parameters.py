@@ -11,7 +11,7 @@ import os
 logger = logging.getLogger(__name__)
 
 # NB! Parameters in the generate and build sets are included in jit
-# signature, cache and log are not.
+# signature, log is not.
 _FFC_GENERATE_PARAMETERS = {
     "representation": "auto",  # form representation / code generation strategy
     "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
@@ -21,12 +21,10 @@ _FFC_GENERATE_PARAMETERS = {
     # Scalar type to be used in generated code (real or complex
     # C double precision floating-point types)
     "scalar_type": "double",
-    "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
 _FFC_CACHE_PARAMETERS = {
-    "use_cache": True,
-    "cache_dir": "~/.cache/fenics",  # cache dir used by default
+    "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
     "output_dir": ".",  # output directory for generated code
 }
 _FFC_LOG_PARAMETERS = {
