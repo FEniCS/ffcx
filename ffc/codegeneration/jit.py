@@ -166,7 +166,7 @@ def compile_forms(forms, parameters=None, extra_compile_args=None):
     return _compile_objects(decl, forms, form_names, module_name, p, extra_compile_args)
 
 
-def compile_coordinate_maps(meshes, parameters=None):
+def compile_coordinate_maps(meshes, parameters=None, extra_compile_args=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
