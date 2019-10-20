@@ -25,9 +25,6 @@ _FFC_GENERATE_PARAMETERS = {
     "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
-_FFC_BUILD_PARAMETERS = {
-    "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
-}
 _FFC_CACHE_PARAMETERS = {
     "use_cache": True,
     "cache_dir": "~/.cache/fenics",  # cache dir used by default
@@ -39,7 +36,6 @@ _FFC_LOG_PARAMETERS = {
     "visualise": False,
 }
 FFC_PARAMETERS = {}
-FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_CACHE_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
