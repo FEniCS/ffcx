@@ -23,14 +23,10 @@ _FFC_GENERATE_PARAMETERS = {
     "scalar_type": "double",
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
-_FFC_CACHE_PARAMETERS = {
-    "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
-}
 _FFC_LOG_PARAMETERS = {
     "visualise": False,
 }
 FFC_PARAMETERS = {}
-FFC_PARAMETERS.update(_FFC_CACHE_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
 FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
 
@@ -95,8 +91,6 @@ def _validate_parameters(parameters):
 def compilation_relevant_parameters(parameters):
     p = parameters.copy()
     for k in _FFC_LOG_PARAMETERS:
-        del p[k]
-    for k in _FFC_CACHE_PARAMETERS:
         del p[k]
     return p
 

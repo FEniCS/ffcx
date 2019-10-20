@@ -93,7 +93,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
-def compile_elements(elements, cache_dir, parameters=None, cffi_extra_compile_args=None,
+def compile_elements(elements, cache_dir, parameters=None, timeout=10, cffi_extra_compile_args=None,
                      cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects."""
     p = ffc.parameters.default_parameters()
@@ -115,7 +115,7 @@ def compile_elements(elements, cache_dir, parameters=None, cffi_extra_compile_ar
         names.append(name)
 
     if cache_dir is not None:
-        obj, mod = get_cached_module(module_name, names, cache_dir, p.get("timeout"))
+        obj, mod = get_cached_module(module_name, names, cache_dir, timeout)
         if obj is not None:
             # Pair up elements with dofmaps
             obj = list(zip(obj[::2], obj[1::2]))
@@ -137,7 +137,7 @@ def compile_elements(elements, cache_dir, parameters=None, cffi_extra_compile_ar
     return objects, module
 
 
-def compile_forms(forms, cache_dir, parameters=None, cffi_extra_compile_args=None,
+def compile_forms(forms, cache_dir, parameters=None, timeout=10, cffi_extra_compile_args=None,
                   cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL forms into UFC Python objects."""
     p = ffc.parameters.default_parameters()
@@ -155,7 +155,7 @@ def compile_forms(forms, cache_dir, parameters=None, cffi_extra_compile_args=Non
                   for i, form in enumerate(forms)]
 
     if cache_dir is not None:
-        obj, mod = get_cached_module(module_name, form_names, cache_dir, p.get("timeout"))
+        obj, mod = get_cached_module(module_name, form_names, cache_dir, timeout)
         if obj is not None:
             return obj, mod
 
@@ -171,7 +171,7 @@ def compile_forms(forms, cache_dir, parameters=None, cffi_extra_compile_args=Non
                             cffi_extra_compile_args, cffi_verbose, cffi_debug)
 
 
-def compile_coordinate_maps(meshes, cache_dir, parameters=None, cffi_extra_compile_args=None,
+def compile_coordinate_maps(meshes, cache_dir, parameters=None, timeout=10, cffi_extra_compile_args=None,
                             cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects."""
     p = ffc.parameters.default_parameters()
@@ -189,7 +189,7 @@ def compile_coordinate_maps(meshes, cache_dir, parameters=None, cffi_extra_compi
         mesh.ufl_coordinate_element(), "JIT") for mesh in meshes]
 
     if cache_dir is not None:
-        obj, mod = get_cached_module(module_name, cmap_names, cache_dir, p.get("timeout"))
+        obj, mod = get_cached_module(module_name, cmap_names, cache_dir, timeout)
         if obj is not None:
             return obj, mod
 
