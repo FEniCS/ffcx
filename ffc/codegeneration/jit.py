@@ -95,7 +95,7 @@ def get_cached_module(module_name, object_names, parameters):
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
 
 
-def compile_elements(elements, parameters=None):
+def compile_elements(elements, parameters=None, extra_compile_args=None):
     """Compile a list of UFL elements and dofmaps into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
@@ -129,13 +129,14 @@ def compile_elements(elements, parameters=None):
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
 
-    objects, module = _compile_objects(decl, elements, names, module_name, p)
+    objects, module = _compile_objects(decl, elements, names, module_name, p,
+                                       extra_compile_args)
     # Pair up elements with dofmaps
     objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
 
 
-def compile_forms(forms, parameters=None):
+def compile_forms(forms, parameters=None, extra_compile_args=None):
     """Compile a list of UFL forms into UFC Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
@@ -162,7 +163,7 @@ def compile_forms(forms, parameters=None):
     for name in form_names:
         decl += form_template.format(name=name)
 
-    return _compile_objects(decl, forms, form_names, module_name, p)
+    return _compile_objects(decl, forms, form_names, module_name, p, extra_compile_args)
 
 
 def compile_coordinate_maps(meshes, parameters=None):
@@ -191,10 +192,11 @@ def compile_coordinate_maps(meshes, parameters=None):
     for name in cmap_names:
         decl += cmap_template.format(name=name)
 
-    return _compile_objects(decl, meshes, cmap_names, module_name, p)
+    return _compile_objects(decl, meshes, cmap_names, module_name, p, extra_compile_args)
 
 
-def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
+def _compile_objects(decl, ufl_objects, object_names, module_name, parameters,
+                     extra_compile_args):
     if (parameters['use_cache']):
         compile_dir = ffc.config.get_cache_path(parameters)
     else:
@@ -203,7 +205,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters):
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
-                          extra_compile_args=['-g0', '-O3', '-march=native'])
+                          extra_compile_args=extra_compile_args)
     ffibuilder.cdef(decl)
 
     c_filename = compile_dir.joinpath(module_name + ".c")
