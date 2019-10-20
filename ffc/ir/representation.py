@@ -128,20 +128,20 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
     # Compute representation of elements
     logger.info("Computing representation of {} elements".format(len(analysis.unique_elements)))
     ir_elements = [
-        _compute_element_ir(e, analysis.element_numbers, classnames, parameters) for e in analysis.unique_elements
+        _compute_element_ir(e, analysis.element_numbers, classnames, parameters["epsilon"]) for e in analysis.unique_elements
     ]
 
     # Compute representation of dofmaps
     logger.info("Computing representation of {} dofmaps".format(len(analysis.unique_elements)))
     ir_dofmaps = [
-        _compute_dofmap_ir(e, analysis.element_numbers, classnames, parameters) for e in analysis.unique_elements
+        _compute_dofmap_ir(e, analysis.element_numbers, classnames) for e in analysis.unique_elements
     ]
 
     # Compute representation of coordinate mappings
     logger.info("Computing representation of {} coordinate mappings".format(
         len(analysis.unique_coordinate_elements)))
     ir_coordinate_mappings = [
-        _compute_coordinate_mapping_ir(e, analysis.element_numbers, classnames, parameters)
+        _compute_coordinate_mapping_ir(e, analysis.element_numbers, classnames)
         for e in analysis.unique_coordinate_elements
     ]
 
@@ -166,7 +166,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
                    integrals=ir_integrals, forms=ir_forms)
 
 
-def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
+def _compute_element_ir(ufl_element, element_numbers, classnames, epsilon):
     """Compute intermediate representation of element."""
     # Create FIAT element
     fiat_element = create_element(ufl_element)
@@ -189,7 +189,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     ir["degree"] = ufl_element.degree()
     ir["family"] = ufl_element.family()
 
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, parameters["epsilon"])
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, epsilon)
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
@@ -198,7 +198,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, parameters):
     return ir_element(**ir)
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, classnames, parameters):
+def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     """Compute intermediate representation of dofmap."""
     # Create FIAT element
     fiat_element = create_element(ufl_element)
@@ -278,8 +278,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
 
 def _compute_coordinate_mapping_ir(ufl_coordinate_element,
                                    element_numbers,
-                                   classnames,
-                                   parameters):
+                                   classnames):
     """Compute intermediate representation of coordinate mapping."""
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
