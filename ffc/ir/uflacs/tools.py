@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2009-2017 Kristian B. Oelgaard and Martin Sandve Alnæs
 #
 # This file is part of FFC (https://www.fenicsproject.org)
