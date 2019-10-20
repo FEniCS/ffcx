@@ -120,10 +120,8 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
 
 
 def write_code(code_h, code_c, prefix, output_dir):
-    # Write file(s)
     _write_file(code_h, prefix, ".h", output_dir)
-    if code_c:
-        _write_file(code_c, prefix, ".c", output_dir)
+    _write_file(code_c, prefix, ".c", output_dir)
 
 
 def _write_file(output, prefix, postfix, output_dir):
