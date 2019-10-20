@@ -10,8 +10,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# NB! Parameters in the generate and build sets are included in jit
-# signature, log is not.
 FFC_PARAMETERS = {
     "representation": "auto",  # form representation / code generation strategy
     "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
