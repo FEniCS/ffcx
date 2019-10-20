@@ -451,7 +451,7 @@ def _generate_reference_offsets(fiat_element, offset=0):
 def _generate_physical_offsets(ufl_element, offset=0):
     """Generate offsets.
 
-    I.e.. value offset for each basis function relative to a physical
+    I.e., value offset for each basis function relative to a physical
     element representation.
 
     """
