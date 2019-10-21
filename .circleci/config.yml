@@ -29,5 +29,5 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            python -m pytest --cov=ffc/ -n auto -v test/
+            python -m pytest --cov=ffc/ -n 4 -v test/
             coveralls
