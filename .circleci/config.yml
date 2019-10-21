@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/python:3.7
-    working_directory:  ~/ffc-test
+    working_directory: ~/ffc-test
     steps:
       - checkout
       - run:
@@ -29,10 +29,5 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            python -m pytest --cov=ffc/ -v test/
+            python -m pytest --cov=ffc/ -n 4 -v test/
             coveralls
-      - run:
-          name: Rerun tests (check caching)
-          command: |
-            export PATH=$PATH:$HOME/.local/bin
-            python3 -m pytest -v test/
