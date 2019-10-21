@@ -29,7 +29,7 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            python -m pytest --cov=ffc -v test/
+            python -m pytest --cov=ffc/ -v test/
             coveralls
       - run:
           name: Rerun tests (check caching)
