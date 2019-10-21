@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import sys
+
 import ffc.codegeneration.jit
 import ufl
 

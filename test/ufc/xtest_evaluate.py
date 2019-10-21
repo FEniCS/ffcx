@@ -18,10 +18,10 @@
 import numpy as np
 import pytest
 
-from ufl import FiniteElement, VectorElement, MixedElement
-from ufl import interval, triangle, tetrahedron
 import ffc
 import ffc_factory
+from ufl import (FiniteElement, MixedElement, VectorElement, interval,
+                 tetrahedron, triangle)
 
 
 @pytest.fixture(scope="module")
