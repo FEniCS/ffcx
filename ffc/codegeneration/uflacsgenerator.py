@@ -60,6 +60,9 @@ def generate_expression_code(ir, parameters):
     code["original_coefficient_positions"] = format_indented_lines(
         eg.generate_original_coefficient_positions().cs_format(), 1)
 
+    code["points"] = format_indented_lines(eg.generate_points().cs_format(), 1)
+    code["value_shape"] = format_indented_lines(eg.generate_value_shape().cs_format(), 1)
+
     return code
 
 
@@ -521,6 +524,18 @@ class ExpressionGenerator:
         parts = L.ArrayDecl("static const int", "original_coefficient_positions",
                             values=self.ir.original_coefficient_positions,
                             sizes=(len(self.ir.original_coefficient_positions), ))
+        return parts
+
+    def generate_points(self):
+        L = self.backend.language
+        parts = L.ArrayDecl("static const double", "points", values=self.ir.points,
+                            sizes=self.ir.points.shape)
+        return parts
+
+    def generate_value_shape(self):
+        L = self.backend.language
+        parts = L.ArrayDecl("static const int", "value_shape", values=self.ir.expression_shape,
+                            sizes=len(self.ir.expression_shape))
         return parts
 
 

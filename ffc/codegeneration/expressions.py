@@ -24,6 +24,11 @@ def generator(ir, parameters):
         factory_name=factory_name,
         tabulate_expression=code["tabulate_expression"],
         original_coefficient_positions=code["original_coefficient_positions"],
-        num_coefficients=len(ir.coefficient_numbering))
+        num_coefficients=len(ir.coefficient_numbering),
+        num_points=ir.points.shape[0],
+        point_dim=ir.points.shape[1],
+        num_components=len(ir.expression_shape),
+        points=code["points"],
+        value_shape=code["value_shape"])
 
     return declaration, implementation

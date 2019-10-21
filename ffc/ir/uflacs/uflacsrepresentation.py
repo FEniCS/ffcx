@@ -94,6 +94,8 @@ def compute_expression_ir(expression, analysis, parameters):
 
     ir["original_constant_offsets"] = original_constant_offsets
 
+    ir["points"] = points
+
     integrands = {num_points: expression}
     quadrature_rules = {num_points: (points, weights)}
 

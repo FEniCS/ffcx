@@ -83,7 +83,7 @@ ir_expression = namedtuple('ir_expression', ['classname', 'element_dimensions', 
                                              'unique_table_types', 'piecewise_ir', 'varying_irs',
                                              'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
-                                             'original_constant_offsets', 'original_coefficient_positions'])
+                                             'original_constant_offsets', 'original_coefficient_positions', 'points'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
 

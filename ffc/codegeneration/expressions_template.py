@@ -23,11 +23,19 @@ ufc_expression* create_{factory_name}(void)
 {{
 
   {original_coefficient_positions}
+  {points}
+  {value_shape}
 
   ufc_expression* expression = malloc(sizeof(*expression));
   expression->tabulate_expression = tabulate_expression_{factory_name};
   expression->original_coefficient_positions = original_coefficient_positions;
   expression->num_coefficients = {num_coefficients};
+  expression->num_points = {num_points};
+  expression->point_dim = {point_dim};
+  expression->points = points;
+  expression->value_shape = value_shape;
+  expression->num_components = {num_components};
+
   return expression;
 }};
 

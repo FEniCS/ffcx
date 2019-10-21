@@ -62,3 +62,13 @@ def test_expression():
         ffi.cast('double *', coords.ctypes.data))
 
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat))
+
+    # Prepare NumPy array of points attached to the expression
+    length = kernel.num_points * kernel.point_dim
+    points_kernel = np.frombuffer(ffi.buffer(kernel.points, length * ffi.sizeof("double")), np.double)
+    points_kernel = points_kernel.reshape(points.shape)
+    assert np.allclose(points, points_kernel)
+
+    # Check the value shape attached to the expression
+    value_shape = np.frombuffer(ffi.buffer(kernel.value_shape, kernel.num_components * ffi.sizeof("int")), np.intc)
+    assert np.allclose(expr.ufl_shape, value_shape)

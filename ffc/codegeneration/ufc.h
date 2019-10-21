@@ -440,11 +440,48 @@ extern "C"
 
   typedef struct ufc_expression
   {
+
+    /// Evaluate expression into tensor A with compiled evaluation points
+    ///
+    /// @param[out] A
+    /// @param[in] w
+    ///         Coefficients attached to the expression.
+    ///         Dimensions: w[coefficient][dof].
+    /// @param[in] c
+    ///         Constants attached to the expression.
+    ///         Dimensions: c[constant][dim].
+    /// @param[in] coordinate_dofs
+    ///         Values of degrees of freedom of coordinate element.
+    ///         Defines the geometry of the cell.
+    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
+    ///
     void (*tabulate_expression)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
                                 const ufc_scalar_t* c,
                                 const double* restrict coordinate_dofs);
+
+    /// Positions of coefficients in original expression
     const int* original_coefficient_positions;
+
+    /// Number of coefficients
     int num_coefficients;
+
+    /// Number of evaluation points
+    int num_points;
+
+    /// Dimension of evaluation point, i.e. topological dimension of
+    /// reference cell
+    int point_dim;
+
+    /// Coordinates of evaluations points.
+    /// Dimensions: points[num_points][point_dim].
+    double* points;
+
+    /// Return shape of expression
+    /// Dimension: value_shape[num_components].
+    int* value_shape;
+
+    /// Number of components of return_shape
+    int num_components;
   } ufc_expression;
 
   /// This class defines the interface for the assembly of the global
