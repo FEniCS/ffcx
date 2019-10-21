@@ -108,8 +108,8 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
 
     # Get a signature for these elements
     module_name = 'libffc_elements_' + \
-        ffc.classname.compute_signature(elements, _compute_parameter_signature(p) +
-                                        str(cffi_extra_compile_args) + str(cffi_debug))
+        ffc.classname.compute_signature(elements, _compute_parameter_signature(p)
+                                        + str(cffi_extra_compile_args) + str(cffi_debug))
 
     names = []
     for e in elements:
@@ -151,8 +151,8 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
 
     # Get a signature for these forms
     module_name = 'libffc_forms_' + \
-        ffc.classname.compute_signature(forms, _compute_parameter_signature(p) +
-                                        str(cffi_extra_compile_args) + str(cffi_debug))
+        ffc.classname.compute_signature(forms, _compute_parameter_signature(p)
+                                        + str(cffi_extra_compile_args) + str(cffi_debug))
 
     form_names = [ffc.classname.make_name("JIT", "form", ffc.classname.compute_signature([form], str(i)))
                   for i, form in enumerate(forms)]
