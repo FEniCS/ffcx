@@ -10,7 +10,7 @@ jobs:
           name: Install dependencies
           command: |
             sudo apt-get update && sudo apt-get install --no-install-recommends graphviz libgraphviz-dev
-            sudo pip install cffi flake8 pydocstyle pytest pytest-xdist pygraphviz coverage coveralls --upgrade
+            sudo pip install cffi flake8 pydocstyle pytest pytest-cov pytest-xdist pygraphviz coveralls --upgrade
       - run:
           name: Install FEniCS dependencies
           command: |
@@ -29,7 +29,7 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            coverage run --source ffc -m pytest -n 4 -v test/
+            coverage run --source ffc -m pytest --cov -n 4 -v test/
             coveralls
       - run:
           name: Rerun tests (check caching)
