@@ -30,7 +30,7 @@ parser.add_argument(
 parser.add_argument("-d", "--debug", action='store_true', help="enable debug output")
 parser.add_argument("-v", "--verbose", action='store_true', help="verbose output")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
-parser.add_argument("--visualise", type=bool, default=False, help="visualise the IR graph")
+parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 parser.add_argument(
     "-q",
