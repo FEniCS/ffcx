@@ -9,7 +9,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update && sudo apt-get install libboost-math-dev graphviz libgraphviz-dev
+            sudo apt-get update && sudo apt-get install graphviz libgraphviz-dev
             sudo pip install cffi flake8 pydocstyle pytest pygraphviz coverage coveralls --upgrade
       - run:
           name: Install FEniCS dependencies
@@ -29,7 +29,7 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            coverage run --source ffc -m pytest -v test/
+            coverage run --source ffc -m pytest -n4 -v test/
             coveralls
       - run:
           name: Rerun tests (check caching)
