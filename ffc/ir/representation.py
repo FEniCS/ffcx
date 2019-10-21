@@ -110,7 +110,7 @@ def make_all_element_classnames(prefix, elements, coordinate_elements):
     return classnames
 
 
-def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
+def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise):
     """Compute intermediate representation.
 
     """
@@ -144,7 +144,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters):
     # Compute and flatten representation of integrals
     logger.info("Computing representation of integrals")
     irs = [
-        _compute_integral_ir(fd, i, prefix, analysis.element_numbers, classnames, parameters)
+        _compute_integral_ir(fd, i, prefix, analysis.element_numbers, classnames, parameters, visualise)
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
@@ -331,7 +331,8 @@ def _num_global_support_dofs(fiat_element):
     return num_reals
 
 
-def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames, parameters):
+def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classnames,
+                         parameters, visualise):
     """Compute intermediate represention for form integrals."""
     if form_data.representation == "uflacs":
         from ffc.ir.uflacs.uflacsrepresentation import compute_integral_ir
@@ -345,7 +346,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, classna
     for itg_data in form_data.integral_data:
         # FIXME: Can we remove form_index?
         # Compute representation
-        ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers, classnames, parameters)
+        ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers, classnames,
+                                 parameters, visualise)
 
         # Build classname
         ir["classname"] = classname.make_integral_name(prefix, itg_data.integral_type, form_data.original_form,

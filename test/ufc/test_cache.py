@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import sys
+
 import ffc.codegeneration.jit
 import ufl
 
@@ -17,14 +18,14 @@ def test_cache_modes():
     forms = [a]
 
     # Load form from /tmp
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'use_cache': False})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms)
     tmpname = module.__name__
     tmpfile = module.__file__
     print(tmpname, tmpfile)
     del sys.modules[tmpname]
 
     # Load form from cache
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'use_cache': True})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, cache_dir="./compile-cache")
     newname = module.__name__
     newfile = module.__file__
     print(newname, newfile)

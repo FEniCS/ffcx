@@ -16,7 +16,7 @@ from ffc.ir.uflacs.analysis.factorization import compute_argument_factorization
 from ffc.ir.uflacs.analysis.graph import build_scalar_graph
 from ffc.ir.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
                                                        is_modified_terminal)
-from ffc.ir.uflacs.analysis.visualise import visualise
+from ffc.ir.uflacs.analysis.visualise import visualise_graph
 from ffc.ir.uflacs.elementtables import (build_optimized_tables,
                                          clamp_table_small_numbers,
                                          piecewise_ttypes)
@@ -221,7 +221,7 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
 
 
 def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
-                    quadrature_rules, parameters):
+                    quadrature_rules, parameters, visualise):
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -322,8 +322,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
             S = build_scalar_graph(expression)
 
         # Output diagnostic graph as pdf
-        if parameters['visualise']:
-            visualise(S, 'S.pdf')
+        if visualise:
+            visualise_graph(S, 'S.pdf')
 
         # Compute factorization of arguments
         rank = len(tensor_shape)
@@ -343,8 +343,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, tensor_shape,
         argkeys = list(argkeys)
 
         # Output diagnostic graph as pdf
-        if parameters['visualise']:
-            visualise(F, 'F.pdf')
+        if visualise:
+            visualise_graph(F, 'F.pdf')
 
         # Build set of modified_terminals for each mt factorized vertex in F
         # and attach tables, if appropriate
