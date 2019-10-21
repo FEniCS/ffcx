@@ -24,7 +24,7 @@ def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_
 
 
 def compute_signature(ufl_objects, tag, coordinate_mapping=False):
-    """Compute the signature hash for jit modules.
+    """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional
     'tag'.

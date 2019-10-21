@@ -35,11 +35,6 @@ def default_parameters():
     return parameters
 
 
-def default_jit_parameters():
-    parameters = default_parameters()
-    return parameters
-
-
 def validate_parameters(parameters):
     """Initial check of parameters."""
     p = default_parameters()

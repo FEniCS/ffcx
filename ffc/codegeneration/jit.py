@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2018 Garth N. Wells
+# Copyright (C) 2004-2019 Garth N. Wells
 #
 # This file is part of FFC (https://www.fenicsproject.org)
 #
@@ -55,7 +55,7 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?
                                           ufc_h, re.DOTALL))
 
 
-def compute_jit_signature(parameters):
+def _compute_parameter_signature(parameters):
     """Return parameters signature (some parameters should not affect signature)."""
     return str(sorted(parameters.items()))
 
@@ -99,7 +99,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
 
 def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                      cffi_verbose=False, cffi_debug=None):
-    """Compile a list of UFL elements and dofmaps into UFC Python objects."""
+    """Compile a list of UFL elements and dofmaps into Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -108,8 +108,8 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
 
     # Get a signature for these elements
     module_name = 'libffc_elements_' + \
-        ffc.classname.compute_signature(elements, compute_jit_signature(
-            p) + str(cffi_extra_compile_args) + str(cffi_debug))
+        ffc.classname.compute_signature(elements, _compute_parameter_signature(p) +
+                                        str(cffi_extra_compile_args) + str(cffi_debug))
 
     names = []
     for e in elements:
@@ -129,7 +129,6 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
     element_template = "ufc_finite_element * create_{name}(void);\n"
     dofmap_template = "ufc_dofmap * create_{name}(void);\n"
-
     for i in range(len(elements)):
         decl += element_template.format(name=names[i * 2])
         decl += dofmap_template.format(name=names[i * 2 + 1])
@@ -152,8 +151,8 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
 
     # Get a signature for these forms
     module_name = 'libffc_forms_' + \
-        ffc.classname.compute_signature(forms, compute_jit_signature(
-            p) + str(cffi_extra_compile_args) + str(cffi_debug))
+        ffc.classname.compute_signature(forms, _compute_parameter_signature(p) +
+                                        str(cffi_extra_compile_args) + str(cffi_debug))
 
     form_names = [ffc.classname.make_name("JIT", "form", ffc.classname.compute_signature([form], str(i)))
                   for i, form in enumerate(forms)]
@@ -177,7 +176,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
 
 def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                             cffi_verbose=False, cffi_debug=None):
-    """Compile a list of UFL coordinate mappings into UFC Python objects."""
+    """Compile a list of UFL coordinate maps into Python objects."""
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
@@ -186,7 +185,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
     # Get a signature for these cmaps
     module_name = 'libffc_cmaps_' + \
-        ffc.classname.compute_signature(meshes, compute_jit_signature(
+        ffc.classname.compute_signature(meshes, _compute_parameter_signature(
             p) + str(cffi_extra_compile_args) + str(cffi_debug), True)
 
     cmap_names = [ffc.ir.representation.make_coordinate_map_classname(
@@ -215,6 +214,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
     else:
         cache_dir = Path(cache_dir)
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
+    print(code_body)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
