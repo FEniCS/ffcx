@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2019 Michal Habera
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -31,7 +30,7 @@ ufc_expression* create_{factory_name}(void)
   expression->original_coefficient_positions = original_coefficient_positions;
   expression->num_coefficients = {num_coefficients};
   expression->num_points = {num_points};
-  expression->point_dim = {point_dim};
+  expression->topological_dimension = {topological_dimension};
   expression->points = points;
   expression->value_shape = value_shape;
   expression->num_components = {num_components};

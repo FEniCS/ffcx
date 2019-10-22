@@ -76,7 +76,7 @@ def build_scalar_graph(expression):
     # Populate with vertices
     G = build_graph_vertices([expression], skip_terminal_modifiers=False)
 
-    # # Build more fine grained computational graph of scalar subexpressions
+    # Build more fine grained computational graph of scalar subexpressions
     scalar_expressions = rebuild_with_scalar_subexpressions(G)
 
     # Build new list representation of graph where all

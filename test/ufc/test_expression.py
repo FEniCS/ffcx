@@ -64,7 +64,7 @@ def test_expression():
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat))
 
     # Prepare NumPy array of points attached to the expression
-    length = kernel.num_points * kernel.point_dim
+    length = kernel.num_points * kernel.topological_dimension
     points_kernel = np.frombuffer(ffi.buffer(kernel.points, length * ffi.sizeof("double")), np.double)
     points_kernel = points_kernel.reshape(points.shape)
     assert np.allclose(points, points_kernel)

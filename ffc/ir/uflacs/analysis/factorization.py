@@ -328,16 +328,11 @@ def compute_argument_factorization(S, rank):
     # Indices into F that are needed for final result
     for comp, target in factors.items():
         for argkey, fi in target.items():
+            F.nodes[fi]["target"] = F.nodes[fi].get("target", [])
+            F.nodes[fi]["target"].append(argkey)
 
-            if F.nodes[fi].get("target"):
-                F.nodes[fi]["target"].append(argkey)
-            else:
-                F.nodes[fi]["target"] = [argkey]
-
-            if F.nodes[fi].get("component"):
-                F.nodes[fi]["component"] += [comp]
-            else:
-                F.nodes[fi]["component"] = [comp]
+            F.nodes[fi]["component"] = F.nodes[fi].get("component", [])
+            F.nodes[fi]["component"].append(comp)
 
     # Compute dependencies in FV
     for i, v in F.nodes.items():

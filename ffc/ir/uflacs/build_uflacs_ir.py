@@ -336,10 +336,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
         argument_factorization = {}
         for i in FV_targets:
             for w in F.nodes[i]['target']:
-                if argument_factorization.get(w):
-                    argument_factorization[w].append(i)
-                else:
-                    argument_factorization[w] = [i]
+                argument_factorization[w] = argument_factorization.get(w, [])
+                argument_factorization[w].append(i)
 
         # Get list of indices in F which are the arguments (should be at start)
         argkeys = set()

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2019 Michal Habera
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -26,7 +25,7 @@ def generator(ir, parameters):
         original_coefficient_positions=code["original_coefficient_positions"],
         num_coefficients=len(ir.coefficient_numbering),
         num_points=ir.points.shape[0],
-        point_dim=ir.points.shape[1],
+        topological_dimension=ir.points.shape[1],
         num_components=len(ir.expression_shape),
         points=code["points"],
         value_shape=code["value_shape"])

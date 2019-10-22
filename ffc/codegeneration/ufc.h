@@ -470,10 +470,10 @@ extern "C"
 
     /// Dimension of evaluation point, i.e. topological dimension of
     /// reference cell
-    int point_dim;
+    int topological_dimension;
 
     /// Coordinates of evaluations points.
-    /// Dimensions: points[num_points][point_dim].
+    /// Dimensions: points[num_points][topological_dimension].
     double* points;
 
     /// Return shape of expression
