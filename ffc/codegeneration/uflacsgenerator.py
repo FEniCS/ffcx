@@ -341,6 +341,7 @@ class ExpressionGenerator:
         indices = [self.backend.symbols.argument_loop_index(i) for i in range(A_rank)]
 
         dofmap_parts = []
+        dofmaps = {}
         for blockmap, contributions in sorted(self.finalization_blocks.items()):
 
             # Define mapping from B indices to A indices
@@ -353,7 +354,14 @@ class ExpressionGenerator:
                     # Dense insertion, offset B index to index A
                     j = indices[i] + begin
                 else:
-                    raise RuntimeError("Sparse insertion not handled")
+                    # Sparse insertion, map B index through dofmap
+                    DM = dofmaps.get(dofmap)
+                    if DM is None:
+                        DM = L.Symbol("DM%d" % len(dofmaps))
+                        dofmaps[dofmap] = DM
+                        dofmap_parts.append(
+                            L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
+                    j = DM[indices[i]]
                 A_indices.append(j)
 
             # Sum up all blocks contributing to this blockmap
