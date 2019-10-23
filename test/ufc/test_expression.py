@@ -108,7 +108,7 @@ def test_rank1():
 
     # 2 components for vector components of expression
     # 3 points of evaluation
-    # 3 degrees of freedom for rank1 form
+    # 6 degrees of freedom for rank1 form
     A = np.zeros((2, 3, 6), dtype=np_type)
 
     # Coefficient storage XXXYYY
