@@ -1400,7 +1400,7 @@ class IntegralGenerator(object):
 
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
-            factor_index = blockdata.factor_indices[0][0]
+            factor_index = blockdata.factor_indices_comp_indices[0][0]
 
             # Get factor expression
             v = self.ir.piecewise_ir["factorization"].nodes[factor_index]['expression']
