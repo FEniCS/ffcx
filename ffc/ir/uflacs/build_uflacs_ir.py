@@ -35,7 +35,7 @@ block_data_t = collections.namedtuple("block_data_t",
                                       ["block_mode",
                                        # "safe" | "full" | "preintegrated" | "premultiplied"
                                        "ttypes",  # list of table types for each block rank
-                                       "factor_indices",  # list of indices of factors
+                                       "factor_indices_comp_indices",  # list of tuples (factor index, component index)
                                        "factor_is_piecewise",
                                        # bool: factor is found in piecewise vertex array
                                        # instead of quadloop specific vertex array
@@ -334,10 +334,21 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
         # Get the 'target' nodes that are factors of arguments, and insert in dict
         FV_targets = [i for i, v in F.nodes.items() if v.get('target', False)]
         argument_factorization = {}
-        for i in FV_targets:
-            for w in F.nodes[i]['target']:
+
+        for fi in FV_targets:
+            # Number of blocks using this factor must agree with number of components
+            # to which this factor contributes. I.e. there are more blocks iff there are more
+            # components
+            assert len(F.nodes[fi]['target']) == len(F.nodes[fi]['component'])
+
+            k = 0
+            for w in F.nodes[fi]['target']:
+                comp = F.nodes[fi]['component'][k]
                 argument_factorization[w] = argument_factorization.get(w, [])
-                argument_factorization[w].append(i)
+
+                # Store tuple of (factor index, component index)
+                argument_factorization[w].append((fi, comp))
+                k += 1
 
         # Get list of indices in F which are the arguments (should be at start)
         argkeys = set()
@@ -370,7 +381,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         # Loop over factorization terms
         block_contributions = collections.defaultdict(list)
-        for ma_indices, fi in sorted(argument_factorization.items()):
+        for ma_indices, fi_ci in sorted(argument_factorization.items()):
             # Get a bunch of information about this term
             assert rank == len(ma_indices)
             trs = tuple(F.nodes[ai]['tr'] for ai in ma_indices)
@@ -395,7 +406,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             block_restrictions = tuple(block_restrictions)
 
             # Check if each *each* factor corresponding to this argument is piecewise
-            factor_is_piecewise = all(F.nodes[ifi]["status"] == 'piecewise' for ifi in fi)
+            factor_is_piecewise = all(F.nodes[ifi[0]]["status"] == 'piecewise' for ifi in fi_ci)
 
             # TODO: Add separate block modes for quadrature
             # Both arguments in quadrature elements
@@ -490,7 +501,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                 assert factor_is_piecewise
                 block_unames = (pname, )
                 blockdata = block_data_t(
-                    block_mode, ttypes, fi, factor_is_piecewise, block_unames,
+                    block_mode, ttypes, fi_ci, factor_is_piecewise, block_unames,
                     block_restrictions, block_is_transposed, block_is_uniform, pname,
                     None, None)
                 block_is_piecewise = True
@@ -529,7 +540,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
                 block_unames = (pname, )
                 blockdata = block_data_t(
-                    block_mode, ttypes, fi, factor_is_piecewise, block_unames,
+                    block_mode, ttypes, fi_ci, factor_is_piecewise, block_unames,
                     block_restrictions, block_is_transposed, block_is_uniform, pname, None, None)
                 block_is_piecewise = False
 
@@ -568,7 +579,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     assert rank == 2
                     not_piecewise_ma_index = 1 - piecewise_ma_index
                     block_unames = (unames[not_piecewise_ma_index], )
-                    blockdata = block_data_t(block_mode, ttypes, fi,
+                    blockdata = block_data_t(block_mode, ttypes, fi_ci,
                                              factor_is_piecewise, block_unames,
                                              block_restrictions, block_is_transposed,
                                              None, None, tuple(ma_data), piecewise_ma_index)
@@ -578,7 +589,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     # A[blockmap] += B[i];                    generated after quadloop
 
                     block_unames = unames
-                    blockdata = block_data_t(block_mode, ttypes, fi,
+                    blockdata = block_data_t(block_mode, ttypes, fi_ci,
                                              factor_is_piecewise, block_unames,
                                              block_restrictions, block_is_transposed,
                                              None, None, tuple(ma_data), None)

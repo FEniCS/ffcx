@@ -261,17 +261,6 @@ class ExpressionGenerator:
         else:
             F = self.ir.varying_irs[num_points]["factorization"]
 
-        # Get a temporary variables which represents the last computation
-        # of an expression with this dofblock factorized
-        #
-        # There are more temporary variables for this block, because current block
-        # could be reffered to by multiple components
-        vs = [F.nodes[index] for index in blockdata.factor_indices]
-        block_factors = [self.get_var(num_points, v["expression"]) for v in vs]
-
-        # Mapping from factor index to components
-        fi_to_comps = {fi: F.nodes[fi]["component"] for fi in blockdata.factor_indices}
-
         assert blockdata.block_mode == "full"
         assert not blockdata.transposed, "Not handled yet"
 
@@ -297,15 +286,15 @@ class ExpressionGenerator:
         # A list of computations of Bs, for each component of the factor expression
         # Add result to block inside quadloop
         body = []
-        for fi, f in zip(blockdata.factor_indices, block_factors):
-            for comp in fi_to_comps[fi]:
-                Brhs = L.float_product([f] + arg_factors)
-                body.append(L.AssignAdd(B[(comp,) + B_indices], Brhs))
+
+        for fi_ci in blockdata.factor_indices_comp_indices:
+            f = self.get_var(num_points, F.nodes[fi_ci[0]]["expression"])
+            Brhs = L.float_product([f] + arg_factors)
+            body.append(L.AssignAdd(B[(fi_ci[1],) + B_indices], Brhs))
 
         for i in reversed(range(block_rank)):
-            if ttypes[i] != "quadrature":
-                body = L.ForRange(
-                    B_indices[i + 1], 0, padded_blockdims[i], body=body)
+            body = L.ForRange(
+                B_indices[i + 1], 0, padded_blockdims[i], body=body)
         quadparts += [body]
 
         # Define rhs expression for A[it][iq][blockmap[arg_indices]] += A_rhs
@@ -370,12 +359,6 @@ class ExpressionGenerator:
             # Sum up all blocks contributing to this blockmap
             term = L.Sum([B_rhs for B_rhs in contributions])
 
-            # TODO: need ttypes associated with this block to deal
-            # with loop dropping for quadrature elements:
-            ttypes = ()
-            if ttypes == ("quadrature", "quadrature"):
-                logger.debug("quadrature element block insertion not optimized")
-
             # Add components of all B's to A component in loop nest
             iq = self.backend.symbols.quadrature_loop_index()
             iec = self.backend.symbols.expr_component_index()
@@ -416,8 +399,6 @@ class ExpressionGenerator:
 
             if td.ttype == "ones":
                 arg_factor = L.LiteralFloat(1.0)
-            elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor = table[indices[i + 1]]
@@ -1199,9 +1180,11 @@ class IntegralGenerator(object):
         else:
             F = self.ir.varying_irs[num_points]["factorization"]
 
-        if len(blockdata.factor_indices) > 1:
+        if len(blockdata.factor_indices_comp_indices) > 1:
             raise RuntimeError("Code generation for non-scalar integrals unsupported")
-        factor_index = blockdata.factor_indices[0]
+
+        # We have scalar integrand here, take just the factor index
+        factor_index = blockdata.factor_indices_comp_indices[0][0]
 
         v = F.nodes[factor_index]['expression']
         f = self.get_var(num_points, v)
@@ -1415,9 +1398,9 @@ class IntegralGenerator(object):
             table = tables[blockdata.name]
             inline_table = self.ir.integral_type == "cell"
 
-            if len(blockdata.factor_indices) > 1:
+            if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
-            factor_index = blockdata.factor_indices[0]
+            factor_index = blockdata.factor_indices[0][0]
 
             # Get factor expression
             v = self.ir.piecewise_ir["factorization"].nodes[factor_index]['expression']

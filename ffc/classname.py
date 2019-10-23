@@ -61,14 +61,18 @@ def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
             # FIXME Move this to UFL, cache the computation
             coeffs = ufl.algorithms.extract_coefficients(expr)
             consts = ufl.algorithms.analysis.extract_constants(expr)
+            args = ufl.algorithms.analysis.extract_arguments(expr)
 
             rn = dict()
             rn.update(dict((c, i) for i, c in enumerate(coeffs)))
             rn.update(dict((c, i) for i, c in enumerate(consts)))
+            rn.update(dict((c, i) for i, c in enumerate(args)))
 
             domains = []
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
+            for arg in args:
+                domains.append(*arg.ufl_domains())
             for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
                 domains.append(*gc.ufl_domains())
 

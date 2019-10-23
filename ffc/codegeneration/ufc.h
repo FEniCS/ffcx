@@ -474,11 +474,11 @@ extern "C"
 
     /// Coordinates of evaluations points.
     /// Dimensions: points[num_points][topological_dimension].
-    double* points;
+    const double* points;
 
     /// Return shape of expression
     /// Dimension: value_shape[num_components].
-    int* value_shape;
+    const int* value_shape;
 
     /// Number of components of return_shape
     int num_components;

@@ -31,7 +31,7 @@ ufc_expression* create_{factory_name}(void)
   expression->num_coefficients = {num_coefficients};
   expression->num_points = {num_points};
   expression->topological_dimension = {topological_dimension};
-  expression->points = points;
+  expression->points = *points;
   expression->value_shape = value_shape;
   expression->num_components = {num_components};
 
