@@ -86,8 +86,7 @@ def test_rank1():
     """Tests evaluation of rank-1 form.
 
     Builds a linear operator which takes vector-valued functions in P1 space
-    and evaluates expression [u_y, u_x] + u at specified points. It essentially
-    creates a sum of original function with function which has vector components swapped.
+    and evaluates expression [u_y, u_x] + grad(u_x) at specified points.
 
     """
     e = ufl.VectorElement("P", "triangle", 1)
@@ -96,7 +95,7 @@ def test_rank1():
     V = ufl.FunctionSpace(mesh, e)
     u = ufl.TrialFunction(V)
 
-    expr = ufl.as_vector([u[1], u[0]]) + u
+    expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
     obj, module = ffc.codegeneration.jit.compile_expressions([(expr, points)])
@@ -113,7 +112,7 @@ def test_rank1():
 
     # Coefficient storage XXXYYY
     w = np.array([0.0], dtype=np_type)
-    c = np.array([0.5], dtype=np_type)
+    c = np.array([0.0], dtype=np_type)
 
     # Coords storage XYXYXY
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
@@ -129,6 +128,10 @@ def test_rank1():
     u_ffc = np.einsum("ijk,k", A, f.flatten())
 
     # Compute the correct values using NumPy
-    u_correct = np.array([f[1], f[0]]) + f
+    # Gradf0 is gradient of f[0], each component of the gradient is constant
+    gradf0 = np.array([[f[0, 1] - f[0, 0], f[0, 1] - f[0, 0], f[0, 1] - f[0, 0]],
+                       [f[0, 2] - f[0, 0], f[0, 2] - f[0, 0], f[0, 2] - f[0, 0]]])
+
+    u_correct = np.array([f[1], f[0]]) + gradf0
 
     assert np.allclose(u_ffc, u_correct)
