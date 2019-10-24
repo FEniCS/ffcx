@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2013-2019 Martin Sandve Alnæs and Michal Habera
 #
 # This file is part of FFC (https://www.fenicsproject.org)

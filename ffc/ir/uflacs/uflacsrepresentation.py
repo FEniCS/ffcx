@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2013-2017 Martin Sandve Alnæs
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -6,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+
 import numpy
 
 from ffc.fiatinterface import create_element
@@ -23,7 +23,7 @@ from ufl.algorithms.analysis import extract_constants
 logger = logging.getLogger(__name__)
 
 
-def compute_expression_ir(expression, analysis, parameters):
+def compute_expression_ir(expression, analysis, parameters, visualise):
     logger.info("Computing uflacs representation of expression")
 
     original_expression = expression[2]
@@ -100,14 +100,15 @@ def compute_expression_ir(expression, analysis, parameters):
     quadrature_rules = {num_points: (points, weights)}
 
     uflacs_ir = build_uflacs_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
-                                quadrature_rules, parameters)
+                                quadrature_rules, parameters, visualise)
 
     ir.update(uflacs_ir)
 
     return ir
 
 
-def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters):
+def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters,
+                        visualise):
     """Compute intermediate represention of integral."""
 
     logger.info("Computing uflacs representation")
@@ -219,7 +220,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     # Build the more uflacs-specific intermediate representation
     uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
                                 ir["entitytype"], integrands, ir["tensor_shape"],
-                                quadrature_rules, parameters)
+                                quadrature_rules, parameters, visualise)
 
     ir.update(uflacs_ir)
 

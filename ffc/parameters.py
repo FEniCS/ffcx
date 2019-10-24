@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2005-2017 Anders Logg
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -11,9 +10,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# NB! Parameters in the generate and build sets are included in jit
-# signature, cache and log are not.
-_FFC_GENERATE_PARAMETERS = {
+FFC_PARAMETERS = {
     "representation": "auto",  # form representation / code generation strategy
     "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
     "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
@@ -22,27 +19,8 @@ _FFC_GENERATE_PARAMETERS = {
     # Scalar type to be used in generated code (real or complex
     # C double precision floating-point types)
     "scalar_type": "double",
-    "timeout": 10,  # Max time to wait on cache if not building on this process (seconds)
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
 }
-_FFC_BUILD_PARAMETERS = {
-    "external_include_dirs": "",  # ':' separated list of include dirs to add when JIT compiling
-}
-_FFC_CACHE_PARAMETERS = {
-    "use_cache": True,
-    "cache_dir": "~/.cache/fenics",  # cache dir used by default
-    "output_dir": ".",  # output directory for generated code
-}
-_FFC_LOG_PARAMETERS = {
-    # "log_level": INFO + 5,  # log level, displaying only messages with level >= log_level
-    "log_prefix": "",  # log prefix
-    "visualise": False,
-}
-FFC_PARAMETERS = {}
-FFC_PARAMETERS.update(_FFC_BUILD_PARAMETERS)
-FFC_PARAMETERS.update(_FFC_CACHE_PARAMETERS)
-FFC_PARAMETERS.update(_FFC_LOG_PARAMETERS)
-FFC_PARAMETERS.update(_FFC_GENERATE_PARAMETERS)
 
 
 def default_parameters():
@@ -54,11 +32,6 @@ def default_parameters():
     if r:
         parameters["representation"] = r
 
-    return parameters
-
-
-def default_jit_parameters():
-    parameters = default_parameters()
     return parameters
 
 
@@ -100,19 +73,3 @@ def _validate_parameters(parameters):
             logger.exception("Failed to convert precision '{}' to int".format(
                 parameters.get("precision")))
             raise
-
-
-def compilation_relevant_parameters(parameters):
-    p = parameters.copy()
-    for k in _FFC_LOG_PARAMETERS:
-        del p[k]
-    for k in _FFC_CACHE_PARAMETERS:
-        del p[k]
-    return p
-
-
-def compute_jit_signature(parameters):
-    """Return parameters signature (some parameters must be ignored)."""
-    from ufl.utils.sorting import canonicalize_metadata
-    parameters = compilation_relevant_parameters(parameters)
-    return str(canonicalize_metadata(parameters))

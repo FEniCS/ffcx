@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2010 Anders Logg
 #
 # This file is part of FFC.

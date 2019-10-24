@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2009-2018 Anders Logg and Garth N. Wells
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -22,7 +21,6 @@ from collections import namedtuple
 
 from ffc import __version__ as FFC_VERSION
 from ffc.codegeneration import __version__ as UFC_VERSION
-from ffc.parameters import compilation_relevant_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -107,16 +105,14 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
     return code_h, code_c
 
 
-def write_code(code_h, code_c, prefix, parameters):
-    # Write file(s)
-    _write_file(code_h, prefix, ".h", parameters)
-    if code_c:
-        _write_file(code_c, prefix, ".c", parameters)
+def write_code(code_h, code_c, prefix, output_dir):
+    _write_file(code_h, prefix, ".h", output_dir)
+    _write_file(code_c, prefix, ".c", output_dir)
 
 
-def _write_file(output, prefix, postfix, parameters):
+def _write_file(output, prefix, postfix, output_dir):
     """Write generated code to file."""
-    filename = os.path.join(parameters["output_dir"], prefix + postfix)
+    filename = os.path.join(output_dir, prefix + postfix)
     with open(filename, "w") as hfile:
         hfile.write(output)
     logger.info("Output written to " + filename + ".")
@@ -124,9 +120,6 @@ def _write_file(output, prefix, postfix, parameters):
 
 def _generate_comment(parameters):
     """Generate code for comment on top of file."""
-
-    # Drop irrelevant parameters
-    parameters = compilation_relevant_parameters(parameters)
 
     # Generate top level comment
     comment = FORMAT_TEMPLATE["ufc comment"].format(ffc_version=FFC_VERSION, ufc_version=UFC_VERSION)
