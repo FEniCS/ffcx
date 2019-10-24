@@ -214,7 +214,6 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
     else:
         cache_dir = Path(cache_dir)
     _, code_body = ffc.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
-    print(code_body)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffc.codegeneration.get_include_path()],
