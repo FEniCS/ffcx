@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import collections
-import itertools
 import logging
 
 import ufl
@@ -496,4 +495,3 @@ class ExpressionGenerator:
         parts = L.ArrayDecl("static const int", "value_shape", values=self.ir.expression_shape,
                             sizes=len(self.ir.expression_shape))
         return parts
-
