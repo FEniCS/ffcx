@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def compute_expression_ir(expression, analysis, parameters, visualise):
-    """Compute IR for expression
+    """Compute IR for expression.
 
     Parameters
     ----------
