@@ -177,7 +177,14 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
 
 def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                         cffi_verbose=False, cffi_debug=None):
-    """Compile a list of UFL expressions into UFC Python objects."""
+    """Compile a list of UFL expressions into UFC Python objects.
+
+    Parameters
+    ----------
+    expressions
+        List of (UFL expression, evaluation points).
+
+    """
     p = ffc.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
