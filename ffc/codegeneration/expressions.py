@@ -5,7 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 from ffc.codegeneration import expressions_template
-from ffc.codegeneration.uflacsgenerator import generate_expression_code
+from ffc.codegeneration.expressions_generator import generate_expression_code
 
 
 def generator(ir, parameters):
