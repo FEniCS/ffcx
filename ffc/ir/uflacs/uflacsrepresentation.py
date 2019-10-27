@@ -24,6 +24,18 @@ logger = logging.getLogger(__name__)
 
 
 def compute_expression_ir(expression, analysis, parameters, visualise):
+    """Compute IR for expression
+
+    Parameters
+    ----------
+    expression
+        Triple of (UFL expression, array of evaluation points, original UFL expression).
+
+    Note
+    ----
+    Original UFL expression is needed to compute original positions of coefficients.
+
+    """
     logger.info("Computing uflacs representation of expression")
 
     original_expression = expression[2]
