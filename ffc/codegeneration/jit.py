@@ -198,7 +198,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
                   for expression in expressions]
 
     if cache_dir is not None:
-        obj, mod = get_cached_module(module_name, expr_names, p)
+        obj, mod = get_cached_module(module_name, expr_names, cache_dir, timeout)
         if obj is not None:
             return obj, mod
 
