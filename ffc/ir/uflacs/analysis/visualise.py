@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2018 Chris Richardson
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -10,7 +9,7 @@ from ffc.ir.uflacs.analysis.modified_terminals import strip_modified_terminal
 from ufl.classes import Sum, Product, Division, IntValue, FloatValue, Indexed, ReferenceValue, Argument
 
 
-def visualise(Gx, filename):
+def visualise_graph(Gx, filename):
 
     try:
         import pygraphviz as pgv

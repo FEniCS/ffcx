@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2009-2018 FEniCS Project
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -8,12 +7,6 @@
 """FEniCS Form Compiler (FFC).
 
 FFC compiles finite element variational forms into C code.
-
-The interface consists of the following functions:
-
-    jit                - Just-In-Time compilation of forms and elements
-
-    default_parameters - Default parameter values for FFC
 
 """
 
@@ -33,7 +26,7 @@ logging.captureWarnings(capture=True)
 from ffc.main import main  # noqa: F401
 
 # Import default parameters
-from ffc.parameters import (default_jit_parameters, default_parameters)  # noqa: F401
+from ffc.parameters import default_parameters  # noqa: F401
 
 # Duplicate list of supported elements from FIAT and emove elements from
 # list that we don't support or don't trust

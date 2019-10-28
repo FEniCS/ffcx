@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2011-2018 Marie E. Rognes and Garth N. Wells
 #
 # This file is part of FFC (https://www.fenicsproject.org)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2009-2017 Anders Logg
 #
 # This file is part of FFC (https://www.fenicsproject.org)
@@ -18,23 +17,24 @@ def make_name(prefix, basename, signature):
     return "{}{}_{}".format(pre, basename, sig)
 
 
-def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_id, parameters):
-    sig = compute_signature([original_form], str(form_id), parameters)
+def make_integral_name(prefix, integral_type, original_form, form_id, subdomain_id):
+    sig = compute_signature([original_form], str(form_id))
     basename = "{}_integral_{}".format(integral_type, sig)
     return make_name(prefix, basename, subdomain_id)
 
 
-def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
-    """Compute the signature hash for jit modules.
-    Based on the UFL type of the objects,
-    relevant compilation parameters, signatures of this ffc version, ufc.h and ufc_geometry.h
-    and an additional optional 'tag' (used with filename for command-line invocation).
+def compute_signature(ufl_objects, tag, coordinate_mapping=False):
+    """Compute the signature hash.
+
+    Based on the UFL type of the objects and an additional optional
+    'tag'.
 
     Note:
     ----
-    The parameter `coordinate_mapping` is used to force compilation of finite element
-    as a coordinate mapping element. There is no way to find this information
-    just by looking at type of `ufl_object` passed.
+    The parameter `coordinate_mapping` is used to force compilation of
+    finite element as a coordinate mapping element. There is no way to
+    find this information just by looking at type of `ufl_object`
+    passed.
 
     """
 
@@ -58,19 +58,7 @@ def compute_signature(ufl_objects, tag, parameters, coordinate_mapping=False):
         else:
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 
-    # Compute deterministic string of relevant parameters
-    parameters_signature = ffc.parameters.compute_jit_signature(parameters)
-
     # Build combined signature
-    signatures = [
-        object_signature,
-        parameters_signature,
-        str(ffc.__version__),
-        ffc.codegeneration.get_signature(),
-        kind,
-        tag
-    ]
+    signatures = [object_signature, str(ffc.__version__), ffc.codegeneration.get_signature(), kind, tag]
     string = ";".join(signatures)
-    sig = hashlib.sha1(string.encode('utf-8')).hexdigest()
-
-    return sig
+    return hashlib.sha1(string.encode('utf-8')).hexdigest()

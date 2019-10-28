@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2018 Chris N. Richardson
 #
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import subprocess
 import os
 import os.path
+import subprocess
 
 
 def test_cmdline_simple():
@@ -17,8 +16,8 @@ def test_cmdline_simple():
     subprocess.run(["ffc", "Poisson.ufl"])
 
 
-def xtest_visualise():
+def test_visualise():
     os.chdir(os.path.dirname(__file__))
-    subprocess.run(["ffc", "-f", "visualise", "1", "Poisson.ufl"])
+    subprocess.run(["ffc", "--visualise", "Poisson.ufl"])
     assert os.path.isfile("S.pdf")
     assert os.path.isfile("F.pdf")

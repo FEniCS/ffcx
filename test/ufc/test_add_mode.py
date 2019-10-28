@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2019 Chris Richardson
 #
 # This file is part of FFC (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import cffi
 import numpy as np
 import pytest
-import cffi
 
 import ffc.codegeneration.jit
 import ufl
@@ -36,8 +35,7 @@ def test_additive_facet_integral(mode):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.ds
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms,
-                                                                  parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -79,8 +77,7 @@ def test_additive_cell_integral(mode):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms,
-                                                                  parameters={'scalar_type': mode})
+    compiled_forms, module = ffc.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())

@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-"Unit tests for FFC"
-
 # Copyright (C) 2007-2017 Anders Logg and Garth N. Wells
 #
 # This file is part of FFC.
@@ -20,13 +17,14 @@
 #
 # Modified by Marie E. Rognes, 2010
 # Modified by Lizao Li, 2016
+"Unit tests for FFC"
 
 
-import pytest
 import numpy
+import pytest
 
-from ufl import FiniteElement
 from ffc.fiatinterface import create_element
+from ufl import FiniteElement
 
 
 def element_coords(cell):
