@@ -20,17 +20,17 @@ from ffc.codegeneration.coordinate_mapping import \
 from ffc.codegeneration.dofmap import generator as dofmap_generator
 from ffc.codegeneration.form import generator as form_generator
 from ffc.codegeneration.integrals import generator as integral_generator
+from ffc.codegeneration.expressions import generator as expression_generator
 
 logger = logging.getLogger(__name__)
 
 code_blocks = namedtuple('code_blocks', ['elements', 'dofmaps',
-                                         'coordinate_mappings', 'integrals', 'forms'])
+                                         'coordinate_mappings', 'integrals',
+                                         'forms', 'expressions'])
 
 
 def generate_code(ir, parameters):
-    """Generate code blocks from intermediate representation.
-
-    """
+    """Generate code blocks from intermediate representation."""
 
     logger.debug("Compiler stage 4: Generating code")
 
@@ -54,6 +54,9 @@ def generate_code(ir, parameters):
     logger.debug("Generating code for forms")
     code_forms = [form_generator(form_ir, parameters) for form_ir in ir.forms]
 
+    logger.debug("Generating code for expressions")
+    code_expressions = [expression_generator(expression_ir, parameters) for expression_ir in ir.expressions]
+
     return code_blocks(elements=code_finite_elements, dofmaps=code_dofmaps,
                        coordinate_mappings=code_coordinate_mappings, integrals=code_integrals,
-                       forms=code_forms)
+                       forms=code_forms, expressions=code_expressions)
