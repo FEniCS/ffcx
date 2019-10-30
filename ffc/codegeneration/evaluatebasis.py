@@ -327,7 +327,28 @@ def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
         by[r] *= numpy.sqrt(r + 0.5)
 
     for r in range(p * p):
-        code += [L.Assign(basisvalues[r], bx[r % p] * by[r // p])]
+        # Assumes lexicographical ordering
+        # print(r // p, r % p)
+        # print(r, r % p, r // p)
+        code += [L.Assign(basisvalues[r], bx[r % p] * by[r // p])] # Lexicographic
+        # code += [L.Assign(basisvalues[r], bx[r // p] * by[r % p])] # Correct for P1
+
+    # Add basis values in tensor product ordering, (x0, y0), (x0, yp), ...
+    # rows = [0, p-1, ] +[i for i in range(1,p-1)]
+    # c = 0
+    # for r in rows:
+    #     code += [L.Assign(basisvalues[c], bx[r] * by[0])]
+    #     #print(c, r, 0)
+    #     c+=1
+    #     code += [L.Assign(basisvalues[c], bx[r] * by[p-1])]
+    #     #print(c, r, p-1)
+    #     c+=1
+    #     for y_coord in range(1, p-1):
+    #         code += [L.Assign(basisvalues[c], bx[r] * by[y_coord])]
+    #         #print(c, r, y_coord)
+    #         c+=1
+    # for i in range(c, c+p*p):
+    #     code += [L.Assign(basisvalues[i], bx[(i-p*p) % p] * by[(i-p*p) // p])]
 
     return code
 
