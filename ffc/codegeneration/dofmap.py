@@ -76,6 +76,9 @@ def generator(ir, parameters):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
+    d["vector_type"] = ir.vector_type
+    d["face_arrangement_type"] = ir.face_arrangement_type
+    d["volume_arrangement_type"] = ir.volume_arrangement_type
 
     import ffc.codegeneration.C.cnodes as L
 

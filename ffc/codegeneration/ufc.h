@@ -140,6 +140,24 @@ extern "C"
     /// Return a string identifying the dofmap
     const char* signature;
 
+    /// The vector type of the function space
+    /// 0 = scalar
+    /// 1 = div
+    /// 2 = curl
+    int vector_type;
+
+    /// The shape in which the dofs on the faces of the element are arranged
+    /// 0 - match the shape of the face
+    /// 3 - force triangle
+    /// 4 - force quad
+    int face_arrangement_type;
+
+    /// The shape in which the dofs in the volume of the element are arranged
+    /// 0 - match the shape of the volume (use this for 2D elements)
+    /// 4 - force tetrahedron
+    /// 6 - force hexahedron
+    int volume_arrangement_type;
+
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
 

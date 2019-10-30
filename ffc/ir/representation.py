@@ -52,6 +52,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
                                        'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
+                                     'vector_type', 'face_arrangement_type', 'volume_arrangement_type',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs',
                                      'num_sub_dofmaps', 'create_sub_dofmap'])
@@ -224,6 +225,20 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
+
+    ir["vector_type"] = 0
+    ir["face_arrangement_type"] = 0
+    ir["volume_arrangement_type"] = 0
+
+    family = ufl_element.family()
+
+    # H(curl) elements:
+    if "curl" in family:
+        ir["vector_type"] = 2
+
+    # H(div) elements:
+    if "Brezzi" in family or "Raviart" in family:
+        ir["vector_type"] = 1
 
     return ir_dofmap(**ir)
 
