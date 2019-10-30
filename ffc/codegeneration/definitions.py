@@ -144,7 +144,6 @@ class FFCBackendDefinitions(object):
         assert end - begin <= num_scalar_dofs
         assert ttype != "zeros"
         assert ttype != "ones"
-        assert ttype != "quadrature"
 
         # Get access to element table
         #        if tabledata.is_uniform and tabledata.is_piecewise:
@@ -171,11 +170,13 @@ class FFCBackendDefinitions(object):
         If reference facet coordinates are given:
           x = sum_k xdof_k xphi_k(Xf)
         """
-        if self.integral_type in ufl.measure.custom_integral_types:
+        if self.integral_type in ufl.custom_integral_types:
             # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
+        elif self.integral_type == "expression":
+            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
         else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 

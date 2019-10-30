@@ -55,6 +55,33 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
         elif isinstance(ufl_object, ufl.FiniteElementBase):
             object_signature += repr(ufl_object)
             kind = "element"
+        elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
+            expr = ufl_object[0]
+
+            # FIXME Move this to UFL, cache the computation
+            coeffs = ufl.algorithms.extract_coefficients(expr)
+            consts = ufl.algorithms.analysis.extract_constants(expr)
+            args = ufl.algorithms.analysis.extract_arguments(expr)
+
+            rn = dict()
+            rn.update(dict((c, i) for i, c in enumerate(coeffs)))
+            rn.update(dict((c, i) for i, c in enumerate(consts)))
+            rn.update(dict((c, i) for i, c in enumerate(args)))
+
+            domains = []
+            for coeff in coeffs:
+                domains.append(*coeff.ufl_domains())
+            for arg in args:
+                domains.append(*arg.ufl_domains())
+            for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
+                domains.append(*gc.ufl_domains())
+
+            domains = ufl.algorithms.analysis.unique_tuple(domains)
+            rn.update(dict((d, i) for i, d in enumerate(domains)))
+
+            siganture = ufl.algorithms.signature.compute_expression_signature(expr, rn)
+            object_signature += siganture
+            kind = "expression"
         else:
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
 

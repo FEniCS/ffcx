@@ -158,7 +158,7 @@ class IntegralGenerator(object):
         all_postparts = []
 
         # Go through each relevant quadrature loop
-        if self.ir.integral_type in ufl.measure.custom_integral_types:
+        if self.ir.integral_type in ufl.custom_integral_types:
             preparts, quadparts, postparts = \
                 self.generate_runtime_quadrature_loop()
             all_preparts += preparts
@@ -205,7 +205,7 @@ class IntegralGenerator(object):
 
         # No quadrature tables for custom (given argument)
         # or point (evaluation in single vertex)
-        skip = ufl.measure.custom_integral_types + ufl.measure.point_integral_types
+        skip = ufl.custom_integral_types + ufl.measure.point_integral_types
         if self.ir.integral_type in skip:
             return parts
 
@@ -254,7 +254,7 @@ class IntegralGenerator(object):
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
 
-        if self.ir.integral_type in ufl.measure.custom_integral_types:
+        if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
         else:
@@ -323,7 +323,7 @@ class IntegralGenerator(object):
         """Generate quadrature loop for custom integrals, with physical points given runtime."""
         L = self.backend.language
 
-        assert self.ir.integral_type in ufl.measure.custom_integral_types
+        assert self.ir.integral_type in ufl.custom_integral_types
 
         num_points = self.ir.fake_num_points
         chunk_size = self.ir.params["chunk_size"]
@@ -705,13 +705,20 @@ class IntegralGenerator(object):
             F = self.ir.piecewise_ir["factorization"]
         else:
             F = self.ir.varying_irs[num_points]["factorization"]
-        v = F.nodes[blockdata.factor_index]['expression']
+
+        if len(blockdata.factor_indices_comp_indices) > 1:
+            raise RuntimeError("Code generation for non-scalar integrals unsupported")
+
+        # We have scalar integrand here, take just the factor index
+        factor_index = blockdata.factor_indices_comp_indices[0][0]
+
+        v = F.nodes[factor_index]['expression']
         f = self.get_var(num_points, v)
 
         # Quadrature weight was removed in representation, add it back now
         if num_points is None:
             weight = L.LiteralFloat(1.0)
-        elif self.ir.integral_type in ufl.measure.custom_integral_types:
+        elif self.ir.integral_type in ufl.custom_integral_types:
             weights = self.backend.symbols.custom_weights_table()
             weight = weights[iq]
         else:
@@ -730,7 +737,7 @@ class IntegralGenerator(object):
                 fw = fw_rhs
             else:
                 # Define and cache scalar temp variable
-                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
+                key = (num_points, factor_index, blockdata.factor_is_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
                     quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
@@ -774,7 +781,7 @@ class IntegralGenerator(object):
 
                 P_index = B_indices[i]
 
-                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
+                key = (num_points, factor_index, blockdata.factor_is_piecewise,
                        arg_factors[i].ce_format(self.precision))
                 P, defined = self.get_temp_symbol(tempname, key)
                 if not defined:
@@ -821,7 +828,7 @@ class IntegralGenerator(object):
 
             P_index = arg_indices[not_piecewise_index]
 
-            key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise,
+            key = (num_points, factor_index, blockdata.factor_is_piecewise,
                    arg_factors[not_piecewise_index].ce_format(self.precision))
             P, defined = self.get_temp_symbol(tempname, key)
             if not defined:
@@ -861,7 +868,7 @@ class IntegralGenerator(object):
                 B_rhs = L.float_product([f, PI])
 
             elif blockdata.block_mode == "premultiplied":
-                key = (num_points, blockdata.factor_index, blockdata.factor_is_piecewise)
+                key = (num_points, factor_index, blockdata.factor_is_piecewise)
                 FI, defined = self.get_temp_symbol(tempname, key)
                 if not defined:
                     # Declare FI = 0 before quadloop
@@ -917,8 +924,12 @@ class IntegralGenerator(object):
             table = tables[blockdata.name]
             inline_table = self.ir.integral_type == "cell"
 
+            if len(blockdata.factor_indices_comp_indices) > 1:
+                raise RuntimeError("Code generation for non-scalar integrals unsupported")
+            factor_index = blockdata.factor_indices_comp_indices[0][0]
+
             # Get factor expression
-            v = self.ir.piecewise_ir["factorization"].nodes[blockdata.factor_index]['expression']
+            v = self.ir.piecewise_ir["factorization"].nodes[factor_index]['expression']
             f = self.get_var(None, v)
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs

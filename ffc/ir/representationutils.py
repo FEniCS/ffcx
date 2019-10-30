@@ -26,7 +26,9 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
                                               rule)
     elif integral_type in ufl.measure.point_integral_types:
         (points, weights) = create_quadrature("vertex", degree, rule)
-    elif integral_type in ufl.measure.custom_integral_types:
+    elif integral_type in ufl.custom_integral_types:
+        (points, weights) = (None, None)
+    elif integral_type == "expression":
         (points, weights) = (None, None)
     else:
         logging.exception("Unknown integral type: {}".format(integral_type))
@@ -42,7 +44,9 @@ def integral_type_to_entity_dim(integral_type, tdim):
         entity_dim = tdim - 1
     elif integral_type in ufl.measure.point_integral_types:
         entity_dim = 0
-    elif integral_type in ufl.measure.custom_integral_types:
+    elif integral_type in ufl.custom_integral_types:
+        entity_dim = tdim
+    elif integral_type == "expression":
         entity_dim = tdim
     else:
         raise RuntimeError("Unknown integral_type: {}".format(integral_type))
@@ -147,5 +151,12 @@ def initialize_integral_code(ir, parameters):
     code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir.enabled_coefficients)
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
+
+    return code
+
+
+def initialize_expression_code(ir):
+    code = {}
+    code["classname"] = "{}_expression".format(ir.classname)
 
     return code

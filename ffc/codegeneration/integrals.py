@@ -22,7 +22,7 @@ def generator(ir, parameters):
         declaration = ufc_integrals.declaration.format(factory_name=factory_name)
 
     if ir.representation == "uflacs":
-        from ffc.codegeneration.uflacsgenerator import generate_integral_code
+        from ffc.codegeneration.integrals_generator import generate_integral_code
     elif ir.representation == "tsfc":
         from ffc.codegeneration.tsfcgenerator import generate_integral_code
     else:

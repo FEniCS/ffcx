@@ -78,8 +78,13 @@ ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim',
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
                                                  'physical_offsets', 'cell_shape'])
+ir_expression = namedtuple('ir_expression', ['classname', 'element_dimensions', 'params', 'unique_tables',
+                                             'unique_table_types', 'piecewise_ir', 'varying_irs',
+                                             'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
+                                             'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
+                                             'original_constant_offsets', 'original_coefficient_positions', 'points'])
 
-ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms'])
+ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
 
 
 def make_finite_element_classname(ufl_element, tag):
@@ -156,8 +161,14 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    return ir_data(elements=ir_elements, dofmaps=ir_dofmaps, coordinate_mappings=ir_coordinate_mappings,
-                   integrals=ir_integrals, forms=ir_forms)
+    logger.info("Computing representation of expressions")
+    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise)
+                      for i, expr in enumerate(analysis.expressions)]
+
+    return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
+                   coordinate_mappings=ir_coordinate_mappings,
+                   integrals=ir_integrals, forms=ir_forms,
+                   expressions=ir_expressions)
 
 
 def _compute_element_ir(ufl_element, element_numbers, classnames, epsilon):
@@ -424,6 +435,20 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, ob
         ir["get_{}_integral_ids".format(integral_type)] = irdata
 
     return ir_form(**ir)
+
+
+def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
+
+    # Only uflacs representation for expressions now
+    from ffc.ir.uflacs.uflacsrepresentation import compute_expression_ir
+
+    # Compute representation
+    ir = compute_expression_ir(expression, analysis, parameters, visualise)
+    original_expression = (expression[2], expression[1])
+    ir["classname"] = classname.make_name(
+        prefix, "expression", classname.compute_signature([original_expression], "", parameters))
+
+    return ir_expression(**ir)
 
 
 def _generate_reference_offsets(fiat_element, offset=0):

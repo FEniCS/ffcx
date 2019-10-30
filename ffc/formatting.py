@@ -86,25 +86,12 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
     code_h_pre += c_extern_pre
     code_h_post = c_extern_post
 
-    # Add code for new finite_elements
-    code_h = "".join([e[0] for e in code.elements])
-    code_c = "".join([e[1] for e in code.elements])
+    code_h = ""
+    code_c = ""
 
-    # Add code for dofmaps
-    code_h += "".join([e[0] for e in code.dofmaps])
-    code_c += "".join([e[1] for e in code.dofmaps])
-
-    # Add code for code_coordinate mappings
-    code_h += "".join([c[0] for c in code.coordinate_mappings])
-    code_c += "".join([c[1] for c in code.coordinate_mappings])
-
-    # Add code for integrals
-    code_h += "".join([integral[0] for integral in code.integrals])
-    code_c += "".join([integral[1] for integral in code.integrals])
-
-    # Add code for form
-    code_h += "".join([form[0] for form in code.forms])
-    code_c += "".join([form[1] for form in code.forms])
+    for parts_code in code:
+        code_h += "".join([c[0] for c in parts_code])
+        code_c += "".join([c[1] for c in parts_code])
 
     # Add wrappers
     if wrapper_code:
