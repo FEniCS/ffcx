@@ -34,6 +34,29 @@ tetrahedron = 40,
 hexahedron = 50,
 vertex = 60,
 }} ufc_shape;
+
+typedef enum
+{{
+match_face = 0,
+trianglular_arrangement = 3,
+quadrilateral_arrangement = 4,
+}} ufc_face_arrangement_type;
+
+typedef enum
+{{
+match_volume = 0,
+tetrahedral_arrangement = 4,
+hexahedral_arrangement = 6,
+}} ufc_volume_arrangement_type;
+
+typedef enum
+{{
+mixed = -1,
+L2 = 0,
+H1 = 1,
+Hcurl = 2,
+Hdiv = 3,
+}} ufc_sobolev_space_type;
 """
 
 # Get declarations directly from ufc.h

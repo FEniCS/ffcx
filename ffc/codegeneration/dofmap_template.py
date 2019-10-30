@@ -27,7 +27,7 @@ ufc_dofmap* create_{factory_name}(void)
   dofmap->signature = {signature};
   dofmap->num_global_support_dofs = {num_global_support_dofs};
   dofmap->num_element_support_dofs = {num_element_support_dofs};
-  dofmap->vector_type = {vector_type};
+  dofmap->sobolev_space_type = {sobolev_space_type};
   dofmap->face_arrangement_type = {face_arrangement_type};
   dofmap->volume_arrangement_type = {volume_arrangement_type};
   dofmap->num_entity_dofs[0] = {num_entity_dofs[0]};

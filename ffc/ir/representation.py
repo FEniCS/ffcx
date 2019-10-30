@@ -52,7 +52,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
                                        'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
-                                     'vector_type', 'face_arrangement_type', 'volume_arrangement_type',
+                                     'sobolev_space_type', 'face_arrangement_type', 'volume_arrangement_type',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs',
                                      'num_sub_dofmaps', 'create_sub_dofmap'])
@@ -226,19 +226,32 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
 
-    ir["vector_type"] = 0
     ir["face_arrangement_type"] = 0
     ir["volume_arrangement_type"] = 0
+    ir["sobolev_space_type"] = 0
+
+    ir["face_arrangement_type"] = "match_face"
+    ir["volume_arrangement_type"] = "match_volume"
 
     family = ufl_element.family()
 
+    ir["sobolev_space_type"] = "mixed"
+
+    # L^2 elements:
+    if "Disc" in family:
+        ir["sobolev_space_type"] = "L2"
+
+    # H^1 elements:
+    if "Lagrange" in family:
+        ir["sobolev_space_type"] = "H1"
+
     # H(curl) elements:
     if "curl" in family:
-        ir["vector_type"] = 2
+        ir["sobolev_space_type"] = "Hcurl"
 
     # H(div) elements:
     if "Brezzi" in family or "Raviart" in family:
-        ir["vector_type"] = 1
+        ir["sobolev_space_type"] = "Hdiv"
 
     return ir_dofmap(**ir)
 

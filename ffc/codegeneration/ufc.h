@@ -49,6 +49,29 @@ extern "C"
     vertex = 60,
   } ufc_shape;
 
+  typedef enum
+  {
+    match_face = 0,
+    trianglular_arrangement = 3,
+    quadrilateral_arrangement = 4,
+  } ufc_face_arrangement_type;
+
+  typedef enum
+  {
+    match_volume = 0,
+    tetrahedral_arrangement = 4,
+    hexahedral_arrangement = 6,
+  } ufc_volume_arrangement_type;
+
+  typedef enum
+  {
+    mixed = -1,
+    L2 = 0,
+    H1 = 1,
+    Hcurl = 2,
+    Hdiv = 3,
+  } ufc_sobolev_space_type;
+
   /// Forward declarations
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
@@ -141,22 +164,13 @@ extern "C"
     const char* signature;
 
     /// The vector type of the function space
-    /// 0 = scalar
-    /// 1 = div
-    /// 2 = curl
-    int vector_type;
+    ufc_sobolev_space_type sobolev_space_type;
 
     /// The shape in which the dofs on the faces of the element are arranged
-    /// 0 - match the shape of the face
-    /// 3 - force triangle
-    /// 4 - force quad
-    int face_arrangement_type;
+    ufc_face_arrangement_type face_arrangement_type;
 
     /// The shape in which the dofs in the volume of the element are arranged
-    /// 0 - match the shape of the volume (use this for 2D elements)
-    /// 4 - force tetrahedron
-    /// 6 - force hexahedron
-    int volume_arrangement_type;
+    ufc_volume_arrangement_type volume_arrangement_type;
 
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
