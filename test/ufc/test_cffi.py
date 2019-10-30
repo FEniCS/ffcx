@@ -113,6 +113,28 @@ def test_cmap():
     assert(np.isclose(X[0, 1], 0.125))
 
 
+@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [0, 2], [2, 0], [2, 2]], dtype=np.float64)),
+                                           (2, np.array([[0, 0], [0, 2], [0, 1], [2, 0],
+                                                         [2, 2], [2, 1], [1, 0], [1, 2], [1, 1]], dtype=np.float64))])
+def test_cmap_quads(degree, coords):
+    # Test for first and second order quadrilateral meshes,
+    # assuming FIAT Tensor Product layout of cell.
+
+    cell = ufl.quadrilateral
+    e = ufl.VectorElement("Lagrange", cell, degree)
+    mesh = ufl.Mesh(e)
+    compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
+    x = np.array([[1, 0.5]], dtype=np.float64)
+    x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
+    X = np.zeros_like(x)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+
+    coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
+    compiled_cmap[0].compute_reference_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr, 0)
+    assert(np.isclose(X[0, 0], x[0, 0] / 2))
+    assert(np.isclose(X[0, 1], x[0, 1] / 2))
+
+
 @pytest.mark.parametrize("mode,expected_result", [
     ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
     ("double complex",
