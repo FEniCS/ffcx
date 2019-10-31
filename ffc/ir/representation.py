@@ -226,32 +226,16 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
 
-    ir["face_arrangement_type"] = 0
-    ir["volume_arrangement_type"] = 0
-    ir["sobolev_space_type"] = 0
+    if ufl_element.num_sub_elements() == 0:
+        ir["sobolev_space_type"] = ufl_element.sobolev_space().name
+    else:
+        ir["sobolev_space_type"] = "mixed"
 
     ir["face_arrangement_type"] = "match_face"
     ir["volume_arrangement_type"] = "match_volume"
 
-    family = ufl_element.family()
-
-    ir["sobolev_space_type"] = "mixed"
-
-    # L^2 elements:
-    if "Disc" in family:
-        ir["sobolev_space_type"] = "L2"
-
-    # H^1 elements:
-    if "Lagrange" in family:
-        ir["sobolev_space_type"] = "H1"
-
-    # H(curl) elements:
-    if "curl" in family:
-        ir["sobolev_space_type"] = "Hcurl"
-
-    # H(div) elements:
-    if "Brezzi" in family or "Raviart" in family:
-        ir["sobolev_space_type"] = "Hdiv"
+    # TODO: change values of face_arrangement_type and volume_arrangement_type for elements
+    #       where dof arrangement shape does not match face shape
 
     return ir_dofmap(**ir)
 

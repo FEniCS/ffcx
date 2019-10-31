@@ -54,8 +54,11 @@ typedef enum
 mixed = -1,
 L2 = 0,
 H1 = 1,
-Hcurl = 2,
-Hdiv = 3,
+H2 = 2,
+HCurl = 3,
+HDiv = 4,
+HEin = 5,
+HDivDiv = 6,
 }} ufc_sobolev_space_type;
 """
 
