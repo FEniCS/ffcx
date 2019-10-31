@@ -37,16 +37,16 @@ vertex = 60,
 
 typedef enum
 {{
-match_face = 0,
-trianglular_arrangement = 3,
-quadrilateral_arrangement = 4,
+ufc_match_face = 0,
+ufc_trianglular_arrangement = 3,
+ufc_quadrilateral_arrangement = 4,
 }} ufc_face_arrangement_type;
 
 typedef enum
 {{
-match_volume = 0,
-tetrahedral_arrangement = 4,
-hexahedral_arrangement = 6,
+ufc_match_volume = 0,
+ufc_tetrahedral_arrangement = 4,
+ufc_hexahedral_arrangement = 6,
 }} ufc_volume_arrangement_type;
 
 typedef enum

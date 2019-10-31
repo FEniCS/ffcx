@@ -231,8 +231,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     else:
         ir["sobolev_space_type"] = "mixed"
 
-    ir["face_arrangement_type"] = "match_face"
-    ir["volume_arrangement_type"] = "match_volume"
+    ir["face_arrangement_type"] = "ufc_match_face"
+    ir["volume_arrangement_type"] = "ufc_match_volume"
 
     # TODO: change values of face_arrangement_type and volume_arrangement_type for elements
     #       where dof arrangement shape does not match face shape
