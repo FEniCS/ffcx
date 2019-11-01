@@ -52,9 +52,8 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
                                        'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
-                                     'sobolev_space_type', 'face_arrangement_type', 'volume_arrangement_type',
                                      'num_element_support_dofs', 'num_entity_dofs',
-                                     'tabulate_entity_dofs',
+                                     'entity_block_size', 'tabulate_entity_dofs',
                                      'num_sub_dofmaps', 'create_sub_dofmap'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
@@ -226,16 +225,24 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
 
+    ir["entity_block_size"] = [-1, -1, -1, -1]
+
+    # FIXME: Get this info from FIAT or UFL, rather than inferring it from the Sobolev space
     if ufl_element.num_sub_elements() == 0:
-        ir["sobolev_space_type"] = ufl_element.sobolev_space().name
-    else:
-        ir["sobolev_space_type"] = "mixed"
-
-    ir["face_arrangement_type"] = "ufc_match_face"
-    ir["volume_arrangement_type"] = "ufc_match_volume"
-
-    # TODO: change values of face_arrangement_type and volume_arrangement_type for elements
-    #       where dof arrangement shape does not match face shape
+        space_type = ufl_element.sobolev_space().name
+        if space_type == "L2":
+            ir["entity_block_size"] = [1, 1, 1, 1]
+        elif space_type == "H1":
+            ir["entity_block_size"] = [1, 1, 1, 1]
+        elif space_type == "H2":
+            ir["entity_block_size"] = [1, 1, 1, 1]
+        elif space_type == "HDiv":
+            if ufl_element.cell().geometric_dimension() == 2:
+                ir["entity_block_size"] = [1, 1, 2, 3]
+            if ufl_element.cell().geometric_dimension() == 3:
+                ir["entity_block_size"] = [1, 1, 1, 3]
+        elif space_type == "HCurl":
+            ir["entity_block_size"] = [1, 1, 1, 3]
 
     return ir_dofmap(**ir)
 
