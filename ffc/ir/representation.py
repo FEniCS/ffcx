@@ -242,7 +242,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
             if ufl_element.cell().geometric_dimension() == 3:
                 ir["entity_block_size"] = [1, 1, 1, 3]
         elif space_type == "HCurl":
-            ir["entity_block_size"] = [1, 1, 1, 3]
+            ir["entity_block_size"] = [1, 1, 2, 3]
 
     return ir_dofmap(**ir)
 
