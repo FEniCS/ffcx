@@ -132,10 +132,14 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
     """
     deriv_order = sum(derivative_counts)
 
-    if integral_type in ufl.measure.custom_integral_types:
+    if integral_type in ufl.custom_integral_types:
         # Use quadrature points on cell for analysis in custom integral types
         integral_type = "cell"
         assert not avg
+
+    if integral_type == "expression":
+        # FFC tables for expression are generated as interior cell points
+        integral_type = "cell"
 
     if avg in ("cell", "facet"):
         # Redefine points to compute average tables

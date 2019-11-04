@@ -14,15 +14,113 @@ from ffc.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffc.ir.uflacs.tools import (accumulate_integrals,
                                  collect_quadrature_rules,
                                  compute_quadrature_rules)
-from ufl import custom_integral_types
+import ufl
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count
+from ufl.algorithms import extract_arguments, extract_coefficients
+from ufl.algorithms.analysis import extract_constants
 
 logger = logging.getLogger(__name__)
 
 
-def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames,
-                        parameters, visualise):
+def compute_expression_ir(expression, analysis, parameters, visualise):
+    """Compute IR for expression.
+
+    Parameters
+    ----------
+    expression
+        Triple of (UFL expression, array of evaluation points, original UFL expression).
+
+    Note
+    ----
+    Original UFL expression is needed to compute original positions of coefficients.
+
+    """
+    logger.info("Computing uflacs representation of expression")
+
+    original_expression = expression[2]
+    points = expression[1]
+    expression = expression[0]
+
+    num_points = points.shape[0]
+    weights = numpy.array([1.0] * num_points)
+
+    cell = expression.ufl_domain().ufl_cell()
+
+    ir = {}
+
+    # Prepare dimensions of all unique element in expression,
+    # including elements for arguments, coefficients and coordinate mappings
+    ir["element_dimensions"] = {
+        ufl_element: create_element(ufl_element).space_dimension()
+        for ufl_element in analysis.unique_elements
+    }
+
+    # Extract dimensions for elements of arguments only
+    arguments = extract_arguments(expression)
+    argument_elements = tuple(f.ufl_element() for f in arguments)
+    argument_dimensions = [
+        ir["element_dimensions"][ufl_element] for ufl_element in argument_elements
+    ]
+
+    tensor_shape = argument_dimensions
+    ir["tensor_shape"] = tensor_shape
+
+    ir["expression_shape"] = list(expression.ufl_shape)
+
+    coefficients = extract_coefficients(expression)
+    coefficient_numbering = {}
+    for i, coeff in enumerate(coefficients):
+        coefficient_numbering[coeff] = i
+
+    # Add coefficient numbering to IR
+    ir["coefficient_numbering"] = coefficient_numbering
+
+    original_coefficient_positions = []
+    original_coefficients = extract_coefficients(original_expression)
+    for coeff in coefficients:
+        original_coefficient_positions.append(original_coefficients.index(coeff))
+
+    ir["original_coefficient_positions"] = original_coefficient_positions
+
+    coefficient_elements = tuple(f.ufl_element() for f in coefficients)
+
+    offsets = {}
+    _offset = 0
+    for i, el in enumerate(coefficient_elements):
+        offsets[coefficients[i]] = _offset
+        _offset += ir["element_dimensions"][el]
+
+    # Copy offsets also into IR
+    ir["coefficient_offsets"] = offsets
+
+    ir["integral_type"] = "expression"
+    ir["entitytype"] = "cell"
+
+    # Build offsets for Constants
+    original_constant_offsets = {}
+    _offset = 0
+    for constant in extract_constants(expression):
+        original_constant_offsets[constant] = _offset
+        _offset += numpy.product(constant.ufl_shape, dtype=numpy.int)
+
+    ir["original_constant_offsets"] = original_constant_offsets
+
+    ir["points"] = points
+
+    integrands = {num_points: expression}
+    quadrature_rules = {num_points: (points, weights)}
+
+    uflacs_ir = build_uflacs_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
+                                quadrature_rules, parameters, visualise)
+
+    ir.update(uflacs_ir)
+
+    return ir
+
+
+def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters,
+                        visualise):
     """Compute intermediate represention of integral."""
 
     logger.info("Computing uflacs representation")
@@ -55,7 +153,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     integral_type = itg_data.integral_type
     cell = itg_data.domain.ufl_cell()
 
-    if integral_type in custom_integral_types:
+    if integral_type in ufl.custom_integral_types:
         # Set quadrature degree to twice the highest element degree, to get
         # enough points to identify basis functions via table computations
         max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
@@ -76,7 +174,7 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     ir["quadrature_rules"] = quadrature_rules
 
     # Store the fake num_points for analysis in custom integrals
-    if integral_type in custom_integral_types:
+    if integral_type in ufl.custom_integral_types:
         ir["fake_num_points"], = quadrature_rules.keys()
 
     # Group and accumulate integrals on the format { num_points: integral data }
