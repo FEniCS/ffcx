@@ -72,6 +72,40 @@ def test_evaluate_reference_basis_hex(hexahedral_element):
         assert np.isclose(np.sum(vals), npoint)
 
 
+@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [0, 0, 3],
+                                                         [0, 2, 0], [0, 2, 3],
+                                                         [1, 0, 0], [2, 0, 3],
+                                                         [1, 2, 0], [2, 2, 3]], dtype=np.float64)),
+                                           (2, np.array([[0, 0, 0], [0, 0, 3], [0, 0, 1.5],
+                                                         [0, 2, 0], [0, 2, 3], [0, 2, 1.5],
+                                                         [0, 1, 0], [0, 1, 3], [0, 1, 1.5],
+                                                         [1, 0, 0], [1, 0, 3], [1, 0, 1.5],
+                                                         [1, 2, 0], [1, 2, 3], [1, 2, 1.5],
+                                                         [1, 1, 0], [1, 1, 3], [1, 1, 1.5],
+                                                         [0.5, 0, 0], [0.5, 0, 3], [0.5, 0, 1.5],
+                                                         [0.5, 2, 0], [0.5, 2, 3], [0.5, 2, 1.5],
+                                                         [0.5, 1, 0], [0.5, 1, 3], [0.5, 1, 1.5]], dtype=np.float64))])
+def test_cmap_hex(degree, coords):
+    # Test for first and second order quadrilateral meshes,
+    # assuming FIAT Tensor Product layout of cell.
+
+    cell = ufl.hexahedron
+    e = ufl.VectorElement("Lagrange", cell, degree)
+    mesh = ufl.Mesh(e)
+    compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
+    x = np.array([[0.5, 0.5, 0.5]], dtype=np.float64)
+    x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
+    X = np.zeros_like(x)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+
+    coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
+    compiled_cmap[0].compute_reference_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr, 0)
+
+    assert(np.isclose(X[0, 0], x[0, 0] / 1))
+    assert(np.isclose(X[0, 1], x[0, 1] / 2))
+    assert(np.isclose(X[0, 2], x[0, 2] / 3))
+
+
 @pytest.mark.parametrize("mode,expected_result", [
     ("double", np.array([[0.5, -1 / 6, -1 / 6, -1 / 6],
                          [-1 / 6, 1 / 6, 0.0, 0.0],
