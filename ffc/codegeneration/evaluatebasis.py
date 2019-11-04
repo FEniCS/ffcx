@@ -364,7 +364,7 @@ def _generate_compute_hex_basisvalues(L, basisvalues, Y, embedded_degree,
         bz[r] *= numpy.sqrt(r + 0.5)
 
     for r in range(p * p * p):
-        code += [L.Assign(basisvalues[r], bx[r % p] * by[(r // p) % p] * bz[r // (p * p)])]
+        code += [L.Assign(basisvalues[r], bx[r // (p * p)] * by[(r // p) % p] * bz[r % p])]
 
     return code
 
