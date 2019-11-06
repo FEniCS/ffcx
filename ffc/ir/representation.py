@@ -231,8 +231,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
 
 def entity_block_size(fiat_element):
     # FIXME: Move this to FIAT
-    # FIXME: This assumed that all the points on entities of a given dimension have the same
-    #        functional_type. What should be done on mixed elements?
     e_ids = fiat_element.dual.get_entity_ids()
     output = []
     for entity in range(4):
@@ -269,6 +267,12 @@ def entity_block_size(fiat_element):
             output.append(1)
         else:
             raise ValueError("Point functional type not recognised")
+
+        # If the dofs on an entity don't all have the sam functional_type, overwrite value with -1
+        for i in e_ids[entity][0]:
+            if fiat_element.dual.nodes[i].functional_type != p.functional_type:
+                output[-1] = -1
+                break
     return output
 
 
