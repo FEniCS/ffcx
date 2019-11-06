@@ -268,7 +268,7 @@ def entity_block_size(fiat_element):
         else:
             raise ValueError("Point functional type not recognised")
 
-        # If the dofs on an entity don't all have the sam functional_type, overwrite value with -1
+        # If the dofs on an entity don't all have the same functional_type, overwrite value with -1
         for i in e_ids[entity][0]:
             if fiat_element.dual.nodes[i].functional_type != p.functional_type:
                 output[-1] = -1
