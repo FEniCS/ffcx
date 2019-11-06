@@ -224,27 +224,52 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
-
-    ir["entity_block_size"] = [-1, -1, -1, -1]
-
-    # FIXME: Get this info from FIAT or UFL, rather than inferring it from the Sobolev space
-    if ufl_element.num_sub_elements() == 0:
-        space_type = ufl_element.sobolev_space().name
-        if space_type == "L2":
-            ir["entity_block_size"] = [1, 1, 1, 1]
-        elif space_type == "H1":
-            ir["entity_block_size"] = [1, 1, 1, 1]
-        elif space_type == "H2":
-            ir["entity_block_size"] = [1, 1, 1, 1]
-        elif space_type == "HDiv":
-            if ufl_element.cell().geometric_dimension() == 2:
-                ir["entity_block_size"] = [1, 1, 2, 3]
-            if ufl_element.cell().geometric_dimension() == 3:
-                ir["entity_block_size"] = [1, 1, 1, 3]
-        elif space_type == "HCurl":
-            ir["entity_block_size"] = [1, 1, 2, 3]
+    ir["entity_block_size"] = entity_block_size(fiat_element)
 
     return ir_dofmap(**ir)
+
+
+def entity_block_size(fiat_element):
+    # FIXME: Move this to FIAT
+    # FIXME: This assumed that all the points on entities of a given dimension have the same
+    #        functional_type. What should be done on mixed elements?
+    e_ids = fiat_element.dual.get_entity_ids()
+    output = []
+    for entity in range(4):
+        if entity not in e_ids or len(e_ids[entity]) == 0 or len(e_ids[entity][0]) == 0:
+            output.append(-1)
+            continue
+        p = fiat_element.dual.nodes[e_ids[entity][0][0]]
+
+        if p.functional_type == "PointEval":
+            output.append(1)
+        elif p.functional_type == "ComponentPointEval":
+            output.append(entity)
+        elif p.functional_type == "PointNormalDeriv":
+            output.append(1)
+        elif p.functional_type == "IntegralMoment":
+            output.append(1)
+        elif p.functional_type == "FrobeniusIntegralMoment":
+            output.append(1)
+        elif p.functional_type == "PointEdgeTangent":
+            output.append(1)
+        elif p.functional_type == "PointFaceTangent":
+            output.append(2)
+        elif p.functional_type == "PointScaledNormalEval":
+            output.append(1)
+
+        # The following are not used in dolfin tests so may be incorrect
+        elif p.functional_type == "PointDeriv":
+            output.append(1)
+        elif p.functional_type == "IntegralMomentOfNormalDerivative":
+            output.append(1)
+        elif p.functional_type == "PointNormalEval":
+            output.append(1)
+        elif p.functional_type == "PointwiseInnerProductEval":
+            output.append(1)
+        else:
+            raise ValueError("Point functional type not recognised")
+    return output
 
 
 _midpoints = {
