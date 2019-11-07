@@ -76,6 +76,7 @@ def generator(ir, parameters):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
+    d["entity_block_size"] = ir.entity_block_size
 
     import ffc.codegeneration.C.cnodes as L
 
