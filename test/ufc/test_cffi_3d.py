@@ -93,20 +93,18 @@ def test_cmap_hex(degree, coords):
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
     compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
-    X = np.zeros_like(x)
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
 
     x = np.array([[1 / 3, 3 / 2, 1]], dtype=np.float64)
     x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
-    X_physical = np.zeros_like(x)
-    X_physical_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X_physical))
-    compiled_cmap[0].compute_physical_coordinates(X_physical_ptr, X.shape[0], x_ptr, coords_ptr)
+    X = np.zeros_like(x)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+    compiled_cmap[0].compute_physical_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr)
 
-    assert(np.isclose(X_physical[0, 0], x[0, 0]))
-    assert(np.isclose(X_physical[0, 1], 2 * x[0, 1]))
-    assert(np.isclose(X_physical[0, 2], 3 * x[0, 2]))
+    assert(np.isclose(X[0, 0], x[0, 0]))
+    assert(np.isclose(X[0, 1], 2 * x[0, 1]))
+    assert(np.isclose(X[0, 2], 3 * x[0, 2]))
 
 
 @pytest.mark.parametrize("mode,expected_result", [
