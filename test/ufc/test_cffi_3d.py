@@ -74,8 +74,8 @@ def test_evaluate_reference_basis_hex(hexahedral_element):
 
 @pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [0, 0, 3],
                                                          [0, 2, 0], [0, 2, 3],
-                                                         [1, 0, 0], [2, 0, 3],
-                                                         [1, 2, 0], [2, 2, 3]], dtype=np.float64)),
+                                                         [1, 0, 0], [1, 0, 3],
+                                                         [1, 2, 0], [1, 2, 3]], dtype=np.float64)),
                                            (2, np.array([[0, 0, 0], [0, 0, 3], [0, 0, 1.5],
                                                          [0, 2, 0], [0, 2, 3], [0, 2, 1.5],
                                                          [0, 1, 0], [0, 1, 3], [0, 1, 1.5],
@@ -104,6 +104,16 @@ def test_cmap_hex(degree, coords):
     assert(np.isclose(X[0, 0], x[0, 0] / 1))
     assert(np.isclose(X[0, 1], x[0, 1] / 2))
     assert(np.isclose(X[0, 2], x[0, 2] / 3))
+
+    x = np.array([[1 / 3, 3 / 2, 1]], dtype=np.float64)
+    x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
+    X_physical = np.zeros_like(x)
+    X_physical_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X_physical))
+    compiled_cmap[0].compute_physical_coordinates(X_physical_ptr, X.shape[0], x_ptr, coords_ptr)
+
+    assert(np.isclose(X_physical[0, 0], x[0, 0]))
+    assert(np.isclose(X_physical[0, 1], 2 * x[0, 1]))
+    assert(np.isclose(X_physical[0, 2], 3 * x[0, 2]))
 
 
 @pytest.mark.parametrize("mode,expected_result", [
