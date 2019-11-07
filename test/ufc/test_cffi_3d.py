@@ -93,17 +93,10 @@ def test_cmap_hex(degree, coords):
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
     compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
-    x = np.array([[0.5, 0.5, 0.5]], dtype=np.float64)
-    x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
     X = np.zeros_like(x)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
-    compiled_cmap[0].compute_reference_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr, 0)
-
-    assert(np.isclose(X[0, 0], x[0, 0] / 1))
-    assert(np.isclose(X[0, 1], x[0, 1] / 2))
-    assert(np.isclose(X[0, 2], x[0, 2] / 3))
 
     x = np.array([[1 / 3, 3 / 2, 1]], dtype=np.float64)
     x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
