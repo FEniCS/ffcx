@@ -269,7 +269,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
     try:
         ffibuilder.compile(tmpdir=cache_dir, verbose=cffi_verbose, debug=cffi_debug)
     except Exception:
-        os.unlink(c_filename)
+        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
     # Create a "status ready" file. If this fails, it is an error,
