@@ -265,7 +265,12 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     # Compile (ensuring that compile dir exists)
     cache_dir.mkdir(exist_ok=True, parents=True)
-    ffibuilder.compile(tmpdir=cache_dir, verbose=cffi_verbose, debug=cffi_debug)
+
+    try:
+        ffibuilder.compile(tmpdir=cache_dir, verbose=cffi_verbose, debug=cffi_debug)
+    except Exception:
+        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
+        raise
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
