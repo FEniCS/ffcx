@@ -130,7 +130,7 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     # Stage 3.1: generate convenience wrappers, e.g. for DOLFIN
     cpu_time = time()
 
-    # FIXME: Simplify and make robist w.r.t. naming
+    # FIXME: Simplify and make robust w.r.t. naming
     # Extract class names from the IR and add to a dict
     # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
     if len(object_names) > 0:

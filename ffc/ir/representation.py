@@ -46,11 +46,11 @@ ir_form = namedtuple('ir_form', ['id', 'prefix', 'classname', 'signature', 'rank
                                  'get_vertex_integral_ids', 'create_custom_integral',
                                  'get_custom_integral_ids'])
 ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_shape',
-                                       'topological_dimension',
-                                       'geometric_dimension', 'space_dimension', 'value_shape',
-                                       'reference_value_shape', 'degree', 'family', 'evaluate_basis',
-                                       'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                       'create_sub_element'])
+                                       'topological_dimension', 'geometric_dimension',
+                                       'space_dimension', 'value_shape', 'reference_value_shape',
+                                       'degree', 'family', 'evaluate_basis', 'evaluate_dof',
+                                       'point_functional' 'tabulate_dof_coordinates',
+                                       'num_sub_elements', 'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'entity_block_size', 'tabulate_entity_dofs',
@@ -196,6 +196,7 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, epsilon):
 
     ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, epsilon)
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
+    ir["point_functional"] = only_point_functionals(fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [classnames["finite_element"][e] for e in ufl_element.sub_elements()]
@@ -834,3 +835,10 @@ def needs_oriented_jacobian(fiat_element):
     # Check whether this element needs an oriented jacobian (only
     # contravariant piolas seem to need it)
     return "contravariant piola" in fiat_element.mapping()
+
+
+def only_point_functionals(fiat_element):
+    """True if element uses only simple point functionals for its degrees of freedom."""
+    tags = set([L.get_type_tag() for L in fiat_element.dual_basis() if L])
+    point_tags = ["PointEval"]
+    return all([True if tag in point_tags else False for tag in tags])
