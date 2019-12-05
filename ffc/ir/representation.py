@@ -49,7 +49,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'topological_dimension', 'geometric_dimension',
                                        'space_dimension', 'value_shape', 'reference_value_shape',
                                        'degree', 'family', 'evaluate_basis', 'evaluate_dof',
-                                       'point_functional' 'tabulate_dof_coordinates',
+                                       'point_functional', 'tabulate_dof_coordinates',
                                        'num_sub_elements', 'create_sub_element'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
@@ -841,4 +841,7 @@ def only_point_functionals(fiat_element):
     """True if element uses only simple point functionals for its degrees of freedom."""
     tags = set([L.get_type_tag() for L in fiat_element.dual_basis() if L])
     point_tags = ["PointEval"]
-    return all([True if tag in point_tags else False for tag in tags])
+    for tag in tags:
+        if tag not in point_tags:
+            return "false"
+    return "true"
