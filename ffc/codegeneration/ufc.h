@@ -391,8 +391,7 @@ extern "C"
   ///         belongs.
   ///         Dimensions: w[coefficient][restriction][dof].
   ///         Restriction dimension applies to interior facet integrals, where
-  ///         coefficients restricted to both cells sharing the facet must be
-  ///         provided.
+  ///         coefficients restricted to both cells sharing the facet must be provided.
   /// @param[in] c
   ///         Constants attached to the form to which the tabulated integral
   ///         belongs.
@@ -411,26 +410,28 @@ extern "C"
   ///         orientation of the whole mesh.
   ///         0 means "up"
   ///         1 means "down" and scales det(J) with -1.0
-  ///         Applies to the case of k-dimensional surface in n-dimensional
-  ///         space, where k < n.
+  ///         Applies to the case of k-dimensional surface in n-dimensional space, where k < n.
   ///
-  typedef void(ufc_tabulate_tensor)(ufc_scalar_t* restrict A,
-                                    const ufc_scalar_t* w,
-                                    const ufc_scalar_t* c,
-                                    const double* restrict coordinate_dofs,
-                                    const int* entity_local_index,
-                                    const int* cell_orientation);
+  typedef void (ufc_tabulate_tensor)(ufc_scalar_t* restrict A,
+      const ufc_scalar_t* w,
+      const ufc_scalar_t* c,
+      const double* restrict coordinate_dofs,
+      const int* entity_local_index,
+      const int* cell_orientation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
   /// @see ufc_tabulate_tensor
   ///
-  typedef void(ufc_tabulate_tensor_custom)(
-      ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
-      const double* restrict coordinate_dofs, int num_quadrature_points,
+  typedef void (ufc_tabulate_tensor_custom)(ufc_scalar_t* restrict A,
+      const ufc_scalar_t* w,
+      const ufc_scalar_t* c,
+      const double* restrict coordinate_dofs,
+      int num_quadrature_points,
       const double* restrict quadrature_points,
       const double* restrict quadrature_weights,
-      const double* restrict facet_normals, int cell_orientation);
+      const double* restrict facet_normals,
+      int cell_orientation);
 
   typedef struct ufc_integral
   {
