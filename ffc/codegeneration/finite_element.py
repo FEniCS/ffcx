@@ -364,6 +364,7 @@ def generator(ir, parameters):
     d["value_size"] = ufl.product(ir.value_shape)
     d["reference_value_rank"] = len(ir.reference_value_shape)
     d["reference_value_size"] = ufl.product(ir.reference_value_shape)
+    d["point_functional"] = ir.point_functional
     d["degree"] = ir.degree
     d["family"] = "\"{}\"".format(ir.family)
     d["num_sub_elements"] = ir.num_sub_elements

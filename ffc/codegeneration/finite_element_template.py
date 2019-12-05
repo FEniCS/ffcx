@@ -77,6 +77,7 @@ ufc_finite_element* create_{factory_name}(void)
   element->value_rank = {value_rank};
   element->value_dimension = value_dimension_{factory_name};
   element->value_size = {value_size};
+  element->point_functional = {point_functional};
   element->reference_value_rank = {reference_value_rank};
   element->reference_value_dimension = reference_value_dimension_{factory_name};
   element->reference_value_size = {reference_value_size};
