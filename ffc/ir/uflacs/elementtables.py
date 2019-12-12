@@ -200,8 +200,6 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
         # Tabulating MixedElement in FIAT would result in tabulated subelements
         # padded with zeros
         sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
-        sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
-                              for e in fiat_element.elements())
         irange = numpy.cumsum(sub_dims)
 
         for entity in range(num_entities):
@@ -215,7 +213,7 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
             padded_tbl = numpy.zeros((padded_size, tbl.shape[1]), dtype=tbl.dtype)
 
             # Insert into zero-padded to get [0, 0, ..., 0, a, b, c, 0, ..., 0]
-            padded_tbl[irange[flat_component]:irange[flat_component+1], :] = tbl
+            padded_tbl[irange[flat_component]:irange[flat_component + 1], :] = tbl
 
             component_tables.append(padded_tbl)
 
