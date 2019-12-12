@@ -24,7 +24,7 @@ jobs:
           command: python -m flake8 ffc/ test/
       - run:
           name: Run pydocstyle tests
-          command: python -m pydocstyle .
+          command: python -m pydocstyle --ignore=D417 .
       - run:
           name: Run unit tests
           command: |
