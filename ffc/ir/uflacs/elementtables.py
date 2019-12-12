@@ -195,10 +195,29 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
         # and tabulate only this subcomponent
         component_sub_element = fiat_element.elements()[flat_component]
 
+        # Fetch positions of this sub element within the mixed element
+        # Follows from FIAT's MixedElement tabulation
+        # Tabulating MixedElement in FIAT would result in tabulated subelements
+        # padded with zeros
+        sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
+        sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
+                              for e in fiat_element.elements())
+        irange = numpy.cumsum(sub_dims)
+
         for entity in range(num_entities):
             entity_points = map_integral_points(points, integral_type, cell, entity)
+
+            # Tabulate subelement, this is dense nonzero table, [a, b, c]
             tbl = component_sub_element.tabulate(deriv_order, entity_points)[derivative_counts]
-            component_tables.append(tbl)
+
+            # Prepare a padded table with zeros
+            padded_size = fiat_element.space_dimension()
+            padded_tbl = numpy.zeros((padded_size, tbl.shape[1]), dtype=tbl.dtype)
+
+            # Insert into zero-padded to get [0, 0, ..., 0, a, b, c, 0, ..., 0]
+            padded_tbl[irange[flat_component]:irange[flat_component+1], :] = tbl
+
+            component_tables.append(padded_tbl)
 
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table
