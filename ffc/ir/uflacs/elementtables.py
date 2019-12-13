@@ -190,32 +190,41 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
             component_tables.append(tbl[:, t_comp[0], t_comp[1], :])
     else:
         # Vector-valued or mixed element
-        #
+
+        sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
+        sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
+                              for e in fiat_element.elements())
+        irange = numpy.cumsum(sub_dims)
+        crange = numpy.cumsum(sub_cmps)
+
+        component_element_index = numpy.where(crange <= flat_component)[0].shape[0] - 1
+
+        ir = irange[component_element_index:component_element_index + 2]
+        cr = crange[component_element_index:component_element_index + 2]
+
         # Fetch a subelement coresponding to current flat component
         # and tabulate only this subcomponent
-        component_sub_element = fiat_element.elements()[flat_component]
+        component_element = fiat_element.elements()[component_element_index]
 
         # Fetch positions of this sub element within the mixed element
         # Follows from FIAT's MixedElement tabulation
         # Tabulating MixedElement in FIAT would result in tabulated subelements
         # padded with zeros
-        sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
-        irange = numpy.cumsum(sub_dims)
 
         for entity in range(num_entities):
             entity_points = map_integral_points(points, integral_type, cell, entity)
 
             # Tabulate subelement, this is dense nonzero table, [a, b, c]
-            tbl = component_sub_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            tbl = component_element.tabulate(deriv_order, entity_points)[derivative_counts]
 
             # Prepare a padded table with zeros
-            padded_size = fiat_element.space_dimension()
-            padded_tbl = numpy.zeros((padded_size, tbl.shape[1]), dtype=tbl.dtype)
+            padded_shape = (fiat_element.space_dimension(),) + fiat_element.value_shape() + (len(entity_points), )
+            padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
-            # Insert into zero-padded to get [0, 0, ..., 0, a, b, c, 0, ..., 0]
-            padded_tbl[irange[flat_component]:irange[flat_component + 1], :] = tbl
+            tab = tbl.reshape(ir[1] - ir[0], cr[1] - cr[0], -1)
+            padded_tbl[slice(*ir), slice(*cr)] = tab
 
-            component_tables.append(padded_tbl)
+            component_tables.append(padded_tbl[:, flat_component, :])
 
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table
