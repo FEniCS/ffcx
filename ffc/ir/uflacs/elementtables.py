@@ -190,27 +190,23 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
             component_tables.append(tbl[:, t_comp[0], t_comp[1], :])
     else:
         # Vector-valued or mixed element
-
         sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
         sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
                               for e in fiat_element.elements())
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
 
+        # Find index of sub element which corresponds to the current flat component
         component_element_index = numpy.where(crange <= flat_component)[0].shape[0] - 1
 
         ir = irange[component_element_index:component_element_index + 2]
         cr = crange[component_element_index:component_element_index + 2]
 
-        # Fetch a subelement coresponding to current flat component
-        # and tabulate only this subcomponent
         component_element = fiat_element.elements()[component_element_index]
 
-        # Fetch positions of this sub element within the mixed element
         # Follows from FIAT's MixedElement tabulation
         # Tabulating MixedElement in FIAT would result in tabulated subelements
         # padded with zeros
-
         for entity in range(num_entities):
             entity_points = map_integral_points(points, integral_type, cell, entity)
 
