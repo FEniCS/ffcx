@@ -838,10 +838,7 @@ def needs_oriented_jacobian(fiat_element):
 
 
 def only_point_functionals(fiat_element):
-    """True if element uses only simple point functionals for its degrees of freedom."""
-    tags = set([L.get_type_tag() for L in fiat_element.dual_basis() if L])
+    """True if element uses only simple point functionals for all its degrees of freedom."""
+    type_tags = set([L.get_type_tag() for L in fiat_element.dual_basis() if L])
     point_tags = ["PointEval"]
-    for tag in tags:
-        if tag not in point_tags:
-            return "false"
-    return "true"
+    return all([True if tag in point_tags else False for tag in type_tags])

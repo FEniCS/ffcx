@@ -12,6 +12,7 @@ from collections import defaultdict
 
 import ffc.codegeneration.finite_element_template as ufc_finite_element
 import ufl
+from ffc.codegeneration.C import cnodes
 from ffc.codegeneration.evalderivs import (_generate_combinations,
                                            generate_evaluate_reference_basis_derivatives)
 from ffc.codegeneration.evaluatebasis import generate_evaluate_reference_basis
@@ -364,7 +365,7 @@ def generator(ir, parameters):
     d["value_size"] = ufl.product(ir.value_shape)
     d["reference_value_rank"] = len(ir.reference_value_shape)
     d["reference_value_size"] = ufl.product(ir.reference_value_shape)
-    d["point_functional"] = ir.point_functional
+    d["point_functional"] = cnodes.as_cexpr(ir.point_functional)
     d["degree"] = ir.degree
     d["family"] = "\"{}\"".format(ir.family)
     d["num_sub_elements"] = ir.num_sub_elements
