@@ -130,14 +130,14 @@ def _analyze_expression(expression: ufl.core.expr.Expr, params: typing.Dict):
     return expression
 
 
-def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(form: ufl.form.Form, params: typing.Dict) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
     Parameters
     ----------
     form
         Form object to be analyzed
-    parameters
+    params
         Dict of FFC parameters
 
     Returns
