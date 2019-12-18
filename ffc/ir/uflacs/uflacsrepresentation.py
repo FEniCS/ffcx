@@ -30,6 +30,12 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     ----------
     expression
         Triple of (UFL expression, array of evaluation points, original UFL expression).
+    analysis
+        Preprocessed UFL expression
+    parameters
+        Dict of FFC parameters
+    visualise
+        Visualise the IR graph
 
     Note
     ----

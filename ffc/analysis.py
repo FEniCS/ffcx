@@ -30,13 +30,15 @@ ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numb
 
 def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], typing.List[ufl.FiniteElement],
                                                   typing.List],
-                        parameters: typing.Dict) -> ufl_data:
+                        params: typing.Dict) -> ufl_data:
     """Analyze ufl object(s).
 
     Parameters
     ----------
     ufl_objects
         Objects to be analysed. Accepts elements, forms, expressions, meshes.
+    params
+        Dict of FFC parameters
 
     Returns
     -------
@@ -60,7 +62,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     # ufl_objects? Is this reasonable?
     if isinstance(ufl_objects[0], ufl.form.Form):
         forms = ufl_objects
-        form_data = tuple(_analyze_form(form, parameters) for form in forms)
+        form_data = tuple(_analyze_form(form, params) for form in forms)
 
         # Extract unique elements across forms
         for data in form_data:
@@ -86,7 +88,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
             unique_elements.update(ufl.algorithms.extract_elements(expression))
             unique_elements.update(ufl.algorithms.extract_sub_elements(unique_elements))
 
-            expression = _analyze_expression(expression, parameters)
+            expression = _analyze_expression(expression, params)
             expressions.append((expression, points, original_expression))
     else:
         raise TypeError("UFL objects not recognised.")
@@ -107,7 +109,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
                     expressions=expressions)
 
 
-def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
+def _analyze_expression(expression: ufl.core.expr.Expr, params: typing.Dict):
     """Analyzes and preprocesses expressions."""
 
     preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
@@ -120,7 +122,7 @@ def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
 
-    complex_mode = "complex" in parameters.get("scalar_type", "double")
+    complex_mode = "complex" in params.get("scalar_type", "double")
 
     if not complex_mode:
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
@@ -133,8 +135,10 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
     Parameters
     ----------
-    ufl_objects
+    form
         Form object to be analyzed
+    parameters
+        Dict of FFC parameters
 
     Returns
     -------
@@ -143,7 +147,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     Note
     ----
     The main workload of this function is extraction of unique/default metadata
-    from parameters, integral metadata or inherited from UFL
+    from params, integral metadata or inherited from UFL
     (in case of quadrature degree)
 
     """
@@ -158,14 +162,14 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     # The priority of representation determination is following
     #
     # 1. Environment variable FFC_FORCE_REPRESENTATION
-    # 2. parameters["representation"]
+    # 2. params["representation"]
     # 3. specified in metadata of integral
     representations = set(
         integral.metadata().get("representation", "auto") for integral in form.integrals())
 
     # Remove "auto" to see representations set by user
-    if parameters["representation"] in ("uflacs", "tsfc"):
-        representation = parameters["representation"]
+    if params["representation"] in ("uflacs", "tsfc"):
+        representation = params["representation"]
     elif len(representations - {"auto"}) == 1:
         # User has set just one
         representation = (representations - {"auto"}).pop()
@@ -184,7 +188,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     logger.info("Determined representation '{}' for form {}.".format(representation, str(form)))
 
     # Check for complex mode
-    complex_mode = "complex" in parameters.get("scalar_type", "double")
+    complex_mode = "complex" in params.get("scalar_type", "double")
 
     # Compute form metadata
     if representation == "uflacs":
@@ -224,7 +228,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # The priority of quadrature degree determination is following
         #
-        # 1. parameters["quadrature_degree"]
+        # 1. params["quadrature_degree"]
         # 2. specified in metadata of integral
         # 3. estimated by UFL
         quadrature_degrees = set([integral.metadata().get("quadrature_degree", "auto")
@@ -236,9 +240,9 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         estimated_quadrature_degrees = [integral.metadata()["estimated_polynomial_degree"]
                                         for integral in integral_data.integrals]
 
-        if isinstance(parameters["quadrature_degree"], int):
+        if isinstance(params["quadrature_degree"], int):
             # Quadrature degree is forced by FFC paramaters
-            qd = parameters["quadrature_degree"]
+            qd = params["quadrature_degree"]
         elif len(quadrature_degrees) == 1:
             qd = quadrature_degrees.pop()
         elif len(quadrature_degrees) == 0:
@@ -261,14 +265,14 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # The priority of quadrature rule determination is following
         #
-        # 1. parameters["quadrature_rule"]
+        # 1. params["quadrature_rule"]
         # 2. specified in metadata of integral
         quadrature_rules = set([integral.metadata().get("quadrature_rule", None)
                                 for integral in integral_data.integrals])
         quadrature_rules.discard(None)
 
-        if isinstance(parameters["quadrature_rule"], str):
-            qr = parameters["quadrature_rule"]
+        if isinstance(params["quadrature_rule"], str):
+            qr = params["quadrature_rule"]
         elif len(quadrature_rules) == 1:
             qr = quadrature_rules.pop()
         elif len(quadrature_rules) == 0:
@@ -282,14 +286,14 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # The priority of precision determination is following
         #
-        # 1. parameters["precision"]
+        # 1. params["precision"]
         # 2. specified in metadata of integral
         precisions = set([integral.metadata().get("precision", None)
                           for integral in integral_data.integrals])
         precisions.discard(None)
 
-        if isinstance(parameters["precision"], int):
-            p = parameters["precision"]
+        if isinstance(params["precision"], int):
+            p = params["precision"]
         elif len(precisions) == 1:
             p = precisions.pop()
         elif len(precisions) == 0:

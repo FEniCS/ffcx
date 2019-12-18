@@ -95,6 +95,14 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     ----------
     ufl_objects:
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
+    object_names
+        Object names
+    prefix
+        prefix for all ufl object names
+    parameters
+        Dict of FFC parameters
+    visualise
+        visualise the IR graph
 
     """
     logger.info("Compiling {}\n".format(prefix))
