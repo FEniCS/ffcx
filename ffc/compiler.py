@@ -91,9 +91,9 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
                         visualise: bool = False):
     """Generate UFC code for a given UFL objects.
 
-    Parameters
+    Attributes
     ----------
-    @param ufl_objects:
+    ufl_objects:
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
 
     """

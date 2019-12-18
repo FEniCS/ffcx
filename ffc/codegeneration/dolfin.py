@@ -264,21 +264,21 @@ class UFCFormNames:
                  ufc_dofmap_classnames, ufc_coordinate_mapping_classnames):
         """Encapsulation of the names related to a generated UFC form.
 
-        Arguments:
-        ---------
-        @param name:
+        Attributes
+        ----------
+        name
             Name of form (e.g. 'a', 'L', 'M').
-        @param coefficient_names:
+        coefficient_names
             List of names of form coefficients (e.g. 'f', 'g').
-        @param ufc_form_classname:
+        ufc_form_classname
             Name of ufc::form subclass.
-        @param ufc_finite_element_classnames:
+        ufc_finite_element_classnames
             List of names of ufc::finite_element subclasses (length
             rank + num_coefficients).
-        @param ufc_dofmap_classnames:
+        ufc_dofmap_classnames
             List of names of ufc::dofmap subclasses (length rank +
             num_coefficients).
-        @param ufc_coordinate_mapping_classnames:
+        ufc_coordinate_mapping_classnames
             List of names of ufc::coordinate_mapping subclasses
 
         """

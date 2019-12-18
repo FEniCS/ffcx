@@ -33,10 +33,10 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
                         parameters: typing.Dict) -> ufl_data:
     """Analyze ufl object(s).
 
-    Parameters
+    Attributes
     ----------
     ufl_objects
-    parameters
+        Objects to be analysed. Accepts elements, forms, expressions, meshes.
 
     Returns
     -------
@@ -128,13 +128,15 @@ def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict)
     return expression
 
 
-def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(form: ufl.form.Form, params: typing.Dict) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
-    Parameters
+    Attributes
     ----------
     form
+        teste
     parameters
+        teste
 
     Returns
     -------
