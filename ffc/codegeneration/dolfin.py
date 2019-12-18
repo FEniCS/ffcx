@@ -264,7 +264,7 @@ class UFCFormNames:
                  ufc_dofmap_classnames, ufc_coordinate_mapping_classnames):
         """Encapsulation of the names related to a generated UFC form.
 
-        Attributes
+        Parameters
         ----------
         name
             Name of form (e.g. 'a', 'L', 'M').

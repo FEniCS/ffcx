@@ -179,7 +179,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
                         cffi_verbose=False, cffi_debug=None):
     """Compile a list of UFL expressions into UFC Python objects.
 
-    Attributes
+    Parameters
     ----------
     expressions
         List of (UFL expression, evaluation points).
