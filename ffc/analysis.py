@@ -133,10 +133,8 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
     Attributes
     ----------
-    form
-        teste
-    parameters
-        teste
+    ufl_objects
+        Form object to be analyzed
 
     Returns
     -------
