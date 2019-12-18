@@ -28,7 +28,7 @@ from ffc.main import main  # noqa: F401
 # Import default parameters
 from ffc.parameters import default_parameters  # noqa: F401
 
-# Duplicate list of supported elements from FIAT and remove elements from
+# Duplicate list of supported elements from FIAT and emove elements from
 # list that we don't support or don't trust
 supported_elements = sorted(supported_elements.keys())
 supported_elements.remove("Argyris")
