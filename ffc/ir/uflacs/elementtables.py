@@ -163,36 +163,64 @@ def get_ffc_table_values(points, cell, integral_type, ufl_element, avg, entityty
                                                                ufl_element.degree(), "default")
 
     # Tabulate table of basis functions and derivatives in points for each entity
-    fiat_element = create_element(ufl_element)
     tdim = cell.topological_dimension()
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
-    entity_tables = []
-    for entity in range(num_entities):
-        entity_points = map_integral_points(points, integral_type, cell, entity)
-        tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
-        entity_tables.append(tbl)
+
+    fiat_element = create_element(ufl_element)
 
     # Extract arrays for the right scalar component
     component_tables = []
     sh = ufl_element.value_shape()
     if sh == ():
         # Scalar valued element
-        for entity, entity_table in enumerate(entity_tables):
-            component_tables.append(entity_table)
+        for entity in range(num_entities):
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+            tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            component_tables.append(tbl)
     elif len(sh) == 2 and ufl_element.num_sub_elements() == 0:
         # 2-tensor-valued elements, not a tensor product
         # mapping flat_component back to tensor component
         (_, f2t) = ufl.permutation.build_component_numbering(sh, ufl_element.symmetry())
         t_comp = f2t[flat_component]
-        for entity, entity_table in enumerate(entity_tables):
-            tbl = entity_table[:, t_comp[0], t_comp[1], :]
-            component_tables.append(tbl)
+
+        for entity in range(num_entities):
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+            tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            component_tables.append(tbl[:, t_comp[0], t_comp[1], :])
     else:
         # Vector-valued or mixed element
-        for entity, entity_table in enumerate(entity_tables):
-            tbl = entity_table[:, flat_component, :]
-            component_tables.append(tbl)
+        sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
+        sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
+                              for e in fiat_element.elements())
+        irange = numpy.cumsum(sub_dims)
+        crange = numpy.cumsum(sub_cmps)
+
+        # Find index of sub element which corresponds to the current flat component
+        component_element_index = numpy.where(crange <= flat_component)[0].shape[0] - 1
+
+        ir = irange[component_element_index:component_element_index + 2]
+        cr = crange[component_element_index:component_element_index + 2]
+
+        component_element = fiat_element.elements()[component_element_index]
+
+        # Follows from FIAT's MixedElement tabulation
+        # Tabulating MixedElement in FIAT would result in tabulated subelements
+        # padded with zeros
+        for entity in range(num_entities):
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+
+            # Tabulate subelement, this is dense nonzero table, [a, b, c]
+            tbl = component_element.tabulate(deriv_order, entity_points)[derivative_counts]
+
+            # Prepare a padded table with zeros
+            padded_shape = (fiat_element.space_dimension(),) + fiat_element.value_shape() + (len(entity_points), )
+            padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
+
+            tab = tbl.reshape(ir[1] - ir[0], cr[1] - cr[0], -1)
+            padded_tbl[slice(*ir), slice(*cr)] = tab
+
+            component_tables.append(padded_tbl[:, flat_component, :])
 
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table

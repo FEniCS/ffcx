@@ -20,3 +20,4 @@ def test_forms():
     ffc.main(["-v", "VectorLaplaceGradCurl.ufl"])
     ffc.main(["-v", "ProjectionManifold.ufl"])
     ffc.main(["-v", "Symmetry.ufl"])
+    ffc.main(["-v", "MixedGradient.ufl"])
