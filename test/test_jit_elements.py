@@ -4,7 +4,6 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import cffi
 import numpy as np
 import pytest
 
@@ -16,9 +15,9 @@ import ufl
 cells = [ufl.triangle, ufl.quadrilateral, ufl.tetrahedron, ufl.hexahedron]
 degrees = [1, 2, 3, 4]
 
+
 @pytest.fixture(scope="module")
 def lagrange_elements():
-    print("Called lagrange_elements fixture")
     elements = {}
     for cell in cells:
         for degree in degrees:
