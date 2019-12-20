@@ -11,7 +11,7 @@ import ffc
 
 
 def test_forms():
-    os.chdir(os.path.join("ufl_forms", os.path.dirname(__file__)))
+    os.chdir(os.path.join(os.path.dirname(__file__), "ufl_forms"))
     ffc.main(["-v", "Poisson.ufl"])
     ffc.main(["--visualise", "1", "Poisson.ufl"])
     ffc.main(["-v", "PoissonDG.ufl"])
