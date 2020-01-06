@@ -7,7 +7,6 @@
 
 import collections
 import logging
-import pdb
 
 import numpy
 
