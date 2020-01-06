@@ -95,7 +95,7 @@ class FFCBackendDefinitions(object):
         assert begin < end
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+        FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction, num_points)
 
         unroll = len(tabledata.dofmap) != end - begin
         # unroll = True
@@ -116,6 +116,7 @@ class FFCBackendDefinitions(object):
                 L.VariableDecl("ufc_scalar_t", access, 0.0),
                 L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
+
         return code
 
     def constant(self, t, mt, tabledata, num_points, access):

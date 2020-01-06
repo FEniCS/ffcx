@@ -413,7 +413,8 @@ extern "C"
       const ufc_scalar_t* c,
       const double* restrict coordinate_dofs,
       const int* entity_local_index,
-      const int* cell_orientation);
+      const int* cell_orientation,
+      const int* quadrature_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///

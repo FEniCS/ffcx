@@ -111,6 +111,17 @@ class FFCBackendSymbols(object):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")
 
+    def permuted_quadrature_loop_index(self, offset, num_points):
+        """Reusing a single index name for all quadrature loops, assumed not to be nested."""
+        iq = self.quadrature_loop_index()
+        perm = self.quadrature_permutation()
+        out = self.L.Conditional(self.L.EQ(perm[offset], 1), num_points - 1 - iq, iq)
+        return out
+
+    def quadrature_permutation(self):
+        """Quadrature permutation, as input to the function."""
+        return self.S("quadrature_permutation")
+
     def num_custom_quadrature_points(self):
         """Number of quadrature points, argument to custom integrals."""
         return self.S("num_quadrature_points")
@@ -194,6 +205,23 @@ class FFCBackendSymbols(object):
             iq = 0
         else:
             iq = self.quadrature_loop_index()
+
+        # Return direct access to element table
+        return self.S(tabledata.name)[entity][iq]
+
+    def element_table_flip(self, tabledata, entitytype, restriction, num_points):
+        if tabledata.is_uniform:
+            entity = 0
+        else:
+            entity = self.entity(entitytype, restriction)
+
+        if tabledata.is_piecewise:
+            iq = 0
+        else:
+            if restriction == "+":
+                iq = self.permuted_quadrature_loop_index(0, num_points)
+            else:
+                iq = self.permuted_quadrature_loop_index(1, num_points)
 
         # Return direct access to element table
         return self.S(tabledata.name)[entity][iq]

@@ -18,7 +18,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* unused_local_index,
-                                    const int* cell_orientation)
+                                    const int* cell_orientation,
+                                    const int* quadrature_permutation)
 {{
 {tabulate_tensor}
 }}
@@ -29,7 +30,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
-                                    const int* cell_orientation)
+                                    const int* cell_orientation,
+                                    const int* quadrature_permutation)
 {{
 {tabulate_tensor}
 }}
@@ -40,7 +42,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
-                                    const int* cell_orientation)
+                                    const int* cell_orientation,
+                                    const int* quadrature_permutation)
 {{
 {tabulate_tensor}
 }}
@@ -51,7 +54,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* vertex,
-                                    const int* cell_orientation)
+                                    const int* cell_orientation,
+                                    const int* quadrature_permutation)
 {{
 {tabulate_tensor}
 }}

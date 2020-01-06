@@ -15,6 +15,7 @@ void tabulate_expression_{factory_name}(ufc_scalar_t* restrict A, const ufc_scal
                                         const ufc_scalar_t* c,
                                         const double* restrict coordinate_dofs)
 {{
+    const int* quadrature_permutation[2] = {{0, 0}};
 {tabulate_expression}
 }}
 

@@ -147,6 +147,6 @@ def test_laplace_bilinear_form_3d(mode, expected_result):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
