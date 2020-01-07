@@ -10,14 +10,14 @@ import subprocess
 
 
 def test_cmdline_simple():
-    os.chdir(os.path.dirname(__file__))
+    os.chdir(os.path.join(os.path.dirname(__file__), "ufl_forms"))
     subprocess.run("ffc")
     subprocess.run(["ffc", "-v", "Poisson.ufl"])
     subprocess.run(["ffc", "Poisson.ufl"])
 
 
 def test_visualise():
-    os.chdir(os.path.dirname(__file__))
+    os.chdir(os.path.join(os.path.dirname(__file__), "ufl_forms"))
     subprocess.run(["ffc", "--visualise", "Poisson.ufl"])
     assert os.path.isfile("S.pdf")
     assert os.path.isfile("F.pdf")

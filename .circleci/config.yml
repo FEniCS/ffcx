@@ -10,7 +10,7 @@ jobs:
           name: Install dependencies
           command: |
             sudo apt-get update && sudo apt-get install --no-install-recommends graphviz libgraphviz-dev
-            sudo pip install cffi flake8 pydocstyle pytest pytest-cov pytest-xdist pygraphviz coveralls --upgrade
+            sudo pip install cffi 'coverage<5' flake8 pydocstyle pytest pytest-cov pytest-xdist pygraphviz coveralls --upgrade
       - run:
           name: Install FEniCS dependencies
           command: |
@@ -31,3 +31,7 @@ jobs:
             export PATH=$PATH:$HOME/.local/bin
             python -m pytest --cov=ffc/ -n 4 -v test/
             coveralls
+      - run:
+          name: Run demos
+          command: |
+            ffc demo/*.ufl -v
