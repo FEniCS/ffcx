@@ -111,12 +111,63 @@ class FFCBackendSymbols(object):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")
 
-    def permuted_quadrature_loop_index(self, offset, num_points):
+    def permuted_quadrature_loop_index(self, offset, num_points, celltype):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         iq = self.quadrature_loop_index()
         perm = self.quadrature_permutation()
-        out = self.L.Conditional(self.L.EQ(perm[offset], 1), num_points - 1 - iq, iq)
-        return out
+        if celltype == "line":
+            return self.L.Conditional(self.L.EQ(perm[offset], 1), num_points - 1 - iq, iq)
+        if celltype == "square" or celltype == "triangle":
+            return self.rotation_of_point(iq, num_points, (perm[offset]-2)//2, (perm[offset]-2)%2, celltype)
+        return iq
+
+    def rotation_of_point(self, iq, num_points, num_rotations, num_reflections, celltype):
+        """Maybe the worst code I've ever written. Please replace me"""
+        if celltype == "square":
+            rotation, reflection = self.square_rotation_of_point(iq, num_points, num_rotations, num_reflections)
+        if celltype == "triangle":
+            rotation, reflection = self.triangle_rotation_of_point(iq, num_points, num_rotations, num_reflections)
+
+        assert len(rotation) == len(reflection) == num_points
+
+        permed = ""
+        ls = list(range(num_points))
+        for i in range(num_points):
+            iq_p = ""
+            for j in range(num_points):
+                if_ref = self.L.Conditional(self.L.EQ(num_reflections, 1), reflection[ls[j]], ls[j])
+                if iq_p == "":
+                    iq_p = if_ref
+                else:
+                    iq_p = self.L.Conditional(self.L.EQ(iq, j), if_ref, iq_p)
+            if permed == "":
+                permed = iq_p
+            else:
+                permed = self.L.Conditional(self.L.EQ(num_rotations, i), iq_p, permed)
+            ls = [rotation[a] for a in ls]
+            #ls = [ls[a] for a in rotation]
+        return permed
+
+    def square_rotation_of_point(self, iq, num_points, num_rotations, num_reflections):
+        """Maybe the worst code I've ever written. Please replace me"""
+        #### TODO: look at generated code to debug this...
+        side = 0
+        while side ** 2 < num_points:
+            side += 1
+        assert num_points == side ** 2
+        rotation = [side - 1 - j + side * i for j in range(side) for i in range(side)]
+        reflection = [j + side * i for j in range(side) for i in range(side)]
+        return rotation, reflection
+
+    def triangle_rotation_of_point(self, iq, num_points, num_rotations, num_reflections):
+        """Maybe the worst code I've ever written. Please replace me"""
+        side = 0
+        while side * (side + 1) //  2 < num_points:
+            side += 1
+        assert num_points == side * (side + 1) // 2
+        rotation = [side - j - 1 + i * side - i * (i + 1) // 2 for j in range(side) for i in range(side-j)]
+        reflection = [j + i * (side + 1) - i * (i + 1) // 2 for j in range(side) for i in range(side-j)]
+        return rotation, reflection
 
     def quadrature_permutation(self):
         """Quadrature permutation, as input to the function."""
@@ -209,7 +260,7 @@ class FFCBackendSymbols(object):
         # Return direct access to element table
         return self.S(tabledata.name)[entity][iq]
 
-    def element_table_flip(self, tabledata, entitytype, restriction, num_points):
+    def element_table_flip(self, tabledata, entitytype, restriction, num_points, celltype):
         if tabledata.is_uniform:
             entity = 0
         else:
@@ -219,9 +270,9 @@ class FFCBackendSymbols(object):
             iq = 0
         else:
             if restriction == "+":
-                iq = self.permuted_quadrature_loop_index(0, num_points)
+                iq = self.permuted_quadrature_loop_index(0, num_points, celltype)
             else:
-                iq = self.permuted_quadrature_loop_index(1, num_points)
+                iq = self.permuted_quadrature_loop_index(1, num_points, celltype)
 
         # Return direct access to element table
         return self.S(tabledata.name)[entity][iq]
