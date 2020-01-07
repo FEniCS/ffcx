@@ -118,7 +118,7 @@ class FFCBackendSymbols(object):
         if celltype == "line":
             return self.L.Conditional(self.L.EQ(perm[offset], 1), num_points - 1 - iq, iq)
         if celltype == "square" or celltype == "triangle":
-            return self.rotation_of_point(iq, num_points, (perm[offset]-2)//2, (perm[offset]-2)%2, celltype)
+            return self.rotation_of_point(iq, num_points, (perm[offset] - 2) // 2, (perm[offset] - 2) % 2, celltype)
         return iq
 
     def rotation_of_point(self, iq, num_points, num_rotations, num_reflections, celltype):
@@ -145,12 +145,10 @@ class FFCBackendSymbols(object):
             else:
                 permed = self.L.Conditional(self.L.EQ(num_rotations, i), iq_p, permed)
             ls = [rotation[a] for a in ls]
-            #ls = [ls[a] for a in rotation]
         return permed
 
     def square_rotation_of_point(self, iq, num_points, num_rotations, num_reflections):
         """Maybe the worst code I've ever written. Please replace me"""
-        #### TODO: look at generated code to debug this...
         side = 0
         while side ** 2 < num_points:
             side += 1
@@ -162,11 +160,11 @@ class FFCBackendSymbols(object):
     def triangle_rotation_of_point(self, iq, num_points, num_rotations, num_reflections):
         """Maybe the worst code I've ever written. Please replace me"""
         side = 0
-        while side * (side + 1) //  2 < num_points:
+        while side * (side + 1) // 2 < num_points:
             side += 1
         assert num_points == side * (side + 1) // 2
-        rotation = [side - j - 1 + i * side - i * (i + 1) // 2 for j in range(side) for i in range(side-j)]
-        reflection = [j + i * (side + 1) - i * (i + 1) // 2 for j in range(side) for i in range(side-j)]
+        rotation = [side - j - 1 + i * side - i * (i + 1) // 2 for j in range(side) for i in range(side - j)]
+        reflection = [j + i * (side + 1) - i * (i + 1) // 2 for j in range(side) for i in range(side - j)]
         return rotation, reflection
 
     def quadrature_permutation(self):
