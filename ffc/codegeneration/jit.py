@@ -183,6 +183,18 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     ----------
     expressions
         List of (UFL expression, evaluation points).
+    parameters
+        TODO: document this
+    cache_dir
+        TODO: document this
+    timeout
+        TODO: document this
+    cffi_extra_compile_args
+        TODO: document this
+    cffi_verbose
+        TODO: document this
+    cffi_debug
+        TODO: document this
 
     """
     p = ffc.parameters.default_parameters()

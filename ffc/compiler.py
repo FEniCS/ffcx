@@ -95,7 +95,14 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     ----------
     @param ufl_objects:
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
-
+    @param object_names:
+        Names of objects
+    @param prefix:
+        Prefix
+    @param parameters:
+        Parameters
+    @param visualise
+        Toggle visualisation
     """
     logger.info("Compiling {}\n".format(prefix))
     if prefix != os.path.basename(prefix):
