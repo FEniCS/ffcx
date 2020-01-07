@@ -267,9 +267,8 @@ class FFCBackendSymbols(object):
         if tabledata.is_piecewise:
             iq = 0
         else:
-            if restriction == "+":
-                iq = self.permuted_quadrature_loop_index(0, num_points, celltype)
-            else:
+            iq = self.permuted_quadrature_loop_index(0, num_points, celltype)
+            if restriction == "-":
                 iq = self.permuted_quadrature_loop_index(1, num_points, celltype)
 
         # Return direct access to element table
