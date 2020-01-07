@@ -100,12 +100,15 @@ class FFCBackendDefinitions(object):
             tdim = mt.terminal.ufl_domain().topological_dimension()
             cell = mt.terminal.ufl_domain().ufl_cell().cellname()
             if tdim == 2:
-                FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction, num_points, "line")
+                FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction,
+                                                     num_points, "line")
             elif tdim == 3:
                 if cell == "tetrahedron":
-                    FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction, num_points, "triangle")
+                    FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction,
+                                                         num_points, "triangle")
                 if cell == "hexahedron":
-                    FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction, num_points, "square")
+                    FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction,
+                                                         num_points, "square")
 
         unroll = len(tabledata.dofmap) != end - begin
         # unroll = True
