@@ -122,7 +122,7 @@ class FFCBackendSymbols(object):
         return iq
 
     def rotation_of_point(self, iq, num_points, num_rotations, num_reflections, celltype):
-        """Maybe the worst code I've ever written. Please replace me"""
+        """Maybe the worst code I've ever written. Please replace me."""
         if celltype == "square":
             rotation, reflection = self.square_rotation_of_point(iq, num_points, num_rotations, num_reflections)
         if celltype == "triangle":
@@ -148,7 +148,7 @@ class FFCBackendSymbols(object):
         return permed
 
     def square_rotation_of_point(self, iq, num_points, num_rotations, num_reflections):
-        """Maybe the worst code I've ever written. Please replace me"""
+        """Maybe the worst code I've ever written. Please replace me."""
         side = 0
         while side ** 2 < num_points:
             side += 1
@@ -158,7 +158,7 @@ class FFCBackendSymbols(object):
         return rotation, reflection
 
     def triangle_rotation_of_point(self, iq, num_points, num_rotations, num_reflections):
-        """Maybe the worst code I've ever written. Please replace me"""
+        """Maybe the worst code I've ever written. Please replace me."""
         side = 0
         while side * (side + 1) // 2 < num_points:
             side += 1
