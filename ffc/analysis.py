@@ -35,8 +35,8 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
 
     Parameters
     ----------
-    ufl_objects - UFL objects
-    parameters - Parameters
+    ufl_objects
+    parameters
 
     Returns
     -------
@@ -133,8 +133,8 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
     Parameters
     ----------
-    form - The UFL form
-    parameters - Parameters
+    form
+    parameters
 
     Returns
     -------
