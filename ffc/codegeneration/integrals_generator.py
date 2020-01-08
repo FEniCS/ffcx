@@ -624,6 +624,18 @@ class IntegralGenerator(object):
             #       now because it assumes too much about indices.
 
             table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
+            if self.ir.entitytype == "facet":
+                tdim = self.ir.topological_dimension
+                if tdim == 2:
+                    table = self.backend.symbols.element_table_flip(td, self.ir.entitytype, mt.restriction,
+                                                                    num_points, "line")
+                if tdim == 3:
+                    if self.ir.num_vertices == 4:
+                        table = self.backend.symbols.element_table_flip(td, self.ir.entitytype, mt.restriction,
+                                                                        num_points, "triangle")
+                    if self.ir.num_vertices == 8:
+                        table = self.backend.symbols.element_table_flip(td, self.ir.entitytype, mt.restriction,
+                                                                        num_points, "square")
 
             assert td.ttype != "zeros"
 

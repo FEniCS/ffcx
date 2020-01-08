@@ -164,6 +164,19 @@ class FFCBackendDefinitions(object):
         #            FE = tabledata.values[0][0]
         #        else:
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+        if self.entitytype == 'facet':
+            tdim = mt.terminal.ufl_domain().topological_dimension()
+            cell = mt.terminal.ufl_domain().ufl_cell().cellname()
+            if tdim == 2:
+                FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction,
+                                                     num_points, "line")
+            elif tdim == 3:
+                if cell == "tetrahedron":
+                    FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction,
+                                                         num_points, "triangle")
+                if cell == "hexahedron":
+                    FE = self.symbols.element_table_flip(tabledata, self.entitytype, mt.restriction,
+                                                         num_points, "square")
 
         # Inlined version (we know this is bounded by a small number)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
