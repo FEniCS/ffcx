@@ -54,7 +54,7 @@ def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    num_entities = max([1] + [tbl.shape[1] for tbl in tables if tbl is not None])
     ptable = numpy.zeros((num_entities, ) * rank + num_dofs)
     for facets in itertools.product(*[range(num_entities)] * rank):
         vectors = []
@@ -63,10 +63,11 @@ def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
                 assert ttypes[i] == "ones"
                 vectors.append(numpy.ones((num_dofs[i], )))
             else:
+                assert len(tbl.shape) == 4
                 # Some tables are compacted along entities or points
-                e = 0 if tbl.shape[0] == 1 else facets[i]
-                q = 0 if tbl.shape[1] == 1 else point_index
-                vectors.append(tbl[e, q, :])
+                e = 0 if tbl.shape[1] == 1 else facets[i]
+                q = 0 if tbl.shape[2] == 1 else point_index
+                vectors.append(tbl[0, e, q, :])
         if rank > 1:
             assert rank == 2
             ptable[facets[0], facets[1], ...] = numpy.outer(*vectors)
@@ -83,7 +84,7 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
     ptable = numpy.zeros((num_entities, ) + num_dofs)
     for entity in range(num_entities):
         vectors = []
@@ -92,6 +93,8 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
                 assert ttypes[i] == "ones"
                 vectors.append(numpy.ones((num_dofs[i], )))
             else:
+                if len(tbl.shape) == 4:
+                    tbl = tbl[0]
                 # Some tables are compacted along entities or points
                 e = 0 if tbl.shape[0] == 1 else entity
                 q = 0 if tbl.shape[1] == 1 else point_index
@@ -110,7 +113,7 @@ def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dof
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
     ptable = numpy.zeros((num_entities, ) + num_dofs)
     for iq, w in enumerate(weights):
         ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
@@ -123,7 +126,7 @@ def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, uniq
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
-    num_entities = max([1] + [tbl.shape[0] for tbl in tables if tbl is not None])
+    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
     ptable = numpy.zeros((num_entities, ) * rank + num_dofs)
     for iq, w in enumerate(weights):
         mtable = multiply_block_interior_facets(iq, unames, ttypes, unique_tables,

@@ -337,6 +337,43 @@ def get_modified_terminal_element(mt):
     return element, mt.averaged, local_derivatives, fc
 
 
+def permute_quadrature_interval(points, reflections=0):
+    output = points.copy()
+    for p in output:
+        assert len(p) < 2 or numpy.isclose(p[1], 0)
+        assert len(p) < 3 or numpy.isclose(p[2], 0)
+    for i in range(reflections):
+        for n, p in enumerate(output):
+            output[n] = [1 - p[0]]
+    return output
+
+
+def permute_quadrature_triangle(points, reflections=0, rotations=0):
+    output = points.copy()
+    for p in output:
+        assert len(p) < 3 or numpy.isclose(p[2], 0)
+    for i in range(rotations):
+        for n, p in enumerate(output):
+            output[n] = [p[1], 1 - p[0] - p[1]]
+    for i in range(reflections):
+        for n, p in enumerate(output):
+            output[n] = [p[1], p[0]]
+    return output
+
+
+def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
+    output = points.copy()
+    for p in output:
+        assert len(p) < 3 or numpy.isclose(p[2], 0)
+    for i in range(rotations):
+        for n, p in enumerate(output):
+            output[n] = [1 + p[1], 1 - p[0]]
+    for i in range(reflections):
+        for n, p in enumerate(output):
+            output[n] = [p[1], p[0]]
+    return output
+
+
 def build_element_tables(num_points,
                          quadrature_rules,
                          cell,
@@ -383,12 +420,49 @@ def build_element_tables(num_points,
         element_number = element_numbers[element]
         name = generate_psi_table_name(num_points, element_number, avg, entitytype,
                                        local_derivatives, flat_component)
-
-        # Extract the values of the table from ffc table format
         if name not in tables:
-            tables[name] = get_ffc_table_values(quadrature_rules[num_points][0], cell,
-                                                integral_type, element, avg, entitytype,
-                                                local_derivatives, flat_component)
+            tdim = cell.topological_dimension()
+            if entitytype == "facet":
+                if tdim == 1:
+                    tables[name] = [get_ffc_table_values(quadrature_rules[num_points][0], cell,
+                                                         integral_type, element, avg, entitytype,
+                                                         local_derivatives, flat_component)]
+                elif tdim == 2:
+                    # Extract the values of the table from ffc table format
+                    new_table = []
+                    for ref in range(2):
+                        new_table.append(get_ffc_table_values(
+                            permute_quadrature_interval(quadrature_rules[num_points][0], ref),
+                            cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+
+                    tables[name] = new_table
+                elif tdim == 3:
+                    cell_type = cell.cellname()
+                    if cell_type == "tetrahedron":
+                        # Extract the values of the table from ffc table format
+                        new_table = []
+                        for rot in range(3):
+                            for ref in range(2):
+                                new_table.append(get_ffc_table_values(
+                                    permute_quadrature_triangle(quadrature_rules[num_points][0], ref, rot),
+                                    cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+
+                        tables[name] = new_table
+                    elif cell_type == "hexahedron":
+                        # Extract the values of the table from ffc table format
+                        new_table = []
+                        for rot in range(4):
+                            for ref in range(2):
+                                new_table.append(get_ffc_table_values(
+                                    permute_quadrature_quadrilateral(quadrature_rules[num_points][0], ref, rot),
+                                    cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+
+                        tables[name] = new_table
+            else:
+                # Extract the values of the table from ffc table format
+                tables[name] = get_ffc_table_values(quadrature_rules[num_points][0], cell,
+                                                    integral_type, element, avg, entitytype,
+                                                    local_derivatives, flat_component)
 
             # Track table origin for custom integrals:
             table_origins[name] = res
@@ -511,15 +585,21 @@ def optimize_element_tables(tables,
 
 
 def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
+    if len(table.shape) == 4:
+        return is_zeros_table(table[0])
     return (ufl.utils.sequences.product(table.shape) == 0
             or numpy.allclose(table, numpy.zeros(table.shape), rtol=rtol, atol=atol))
 
 
 def is_ones_table(table, rtol=default_rtol, atol=default_atol):
+    if len(table.shape) == 4:
+        return is_ones_table(table[0])
     return numpy.allclose(table, numpy.ones(table.shape), rtol=rtol, atol=atol)
 
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
+    if len(table.shape) == 4:
+        return is_quadrature_table(table[0])
     num_entities, num_points, num_dofs = table.shape
     Id = numpy.eye(num_points)
     return (num_points == num_dofs and all(
@@ -527,18 +607,24 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
+    if len(table.shape) == 4:
+        return is_piecewise_table(table[0])
     return all(
         numpy.allclose(table[:, 0, :], table[:, i, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[1]))
 
 
 def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
+    if len(table.shape) == 4:
+        return is_uniform_table(table[0])
     return all(
         numpy.allclose(table[0, :, :], table[i, :, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[0]))
 
 
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
+    if len(table.shape) == 4:
+        return analyse_table_type(table[0])
     num_entities, num_points, num_dofs = table.shape
     if is_zeros_table(table, rtol=rtol, atol=atol):
         # Table is empty or all values are 0.0
@@ -588,6 +674,7 @@ def build_optimized_tables(num_points,
                            compress_zeros,
                            rtol=default_rtol,
                            atol=default_atol):
+
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = build_element_tables(
         num_points,
@@ -604,7 +691,7 @@ def build_optimized_tables(num_points,
         optimize_element_tables(tables, table_origins, compress_zeros, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
-    unique_table_num_dofs = {uname: tbl.shape[2] for uname, tbl in unique_tables.items()}
+    unique_table_num_dofs = {uname: tbl.shape[-1] for uname, tbl in unique_tables.items()}
 
     # Analyze tables for properties useful for optimization
     unique_table_ttypes = analyse_table_types(unique_tables, rtol=rtol, atol=atol)

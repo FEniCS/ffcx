@@ -129,6 +129,19 @@ class IntegralGenerator(object):
             self.shared_symbols[key] = s
         return s, defined
 
+    def generate_quadrature_permutations(self):
+        L = self.backend.language
+        parts = []
+        parts += [L.VariableDecl("const int", self.backend.symbols.quadrature_permutation(0),
+                                 L.Conditional(L.EQ(self.backend.symbols.quadrature_permutation(),
+                                                    L.as_symbol("NULL")),
+                                               0, self.backend.symbols.quadrature_permutation()[0]))]
+        parts += [L.VariableDecl("const int", self.backend.symbols.quadrature_permutation(1),
+                                 L.Conditional(L.EQ(self.backend.symbols.quadrature_permutation(),
+                                                    L.as_symbol("NULL")),
+                                               0, self.backend.symbols.quadrature_permutation()[1]))]
+        return parts
+
     def generate(self):
         """Generate entire tabulate_tensor body.
 
@@ -153,6 +166,9 @@ class IntegralGenerator(object):
                       L.VerbatimStatement(
                           "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
                           .format(alignment))]
+
+        # Parse the quadrature permutations
+        parts += self.generate_quadrature_permutations()
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -286,14 +302,19 @@ class IntegralGenerator(object):
             if inline_tables and name[:2] == "PI":
                 continue
 
-            decl = L.ArrayDecl(
-                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
-            parts += [decl]
+            if len(table.shape) == 4:
+                decl = L.ArrayDecl(
+                    "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
+                parts += [decl]
+            else:
+                decl = L.ArrayDecl(
+                    "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
+                parts += [decl]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [entities][points][dofs]",
+            "FE* dimensions: [entities][points][dofs] or [permutation][entities][points][dofs]",
             "PI* dimensions: [entities][dofs][dofs] or [entities][dofs]",
             "PM* dimensions: [entities][dofs][dofs]",
         ])
@@ -624,18 +645,6 @@ class IntegralGenerator(object):
             #       now because it assumes too much about indices.
 
             table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
-            if self.ir.entitytype == "facet":
-                tdim = self.ir.topological_dimension
-                if tdim == 2:
-                    table = self.backend.symbols.element_table_flip(td, self.ir.entitytype, mt.restriction,
-                                                                    num_points, "line")
-                if tdim == 3:
-                    if self.ir.num_vertices == 4:
-                        table = self.backend.symbols.element_table_flip(td, self.ir.entitytype, mt.restriction,
-                                                                        num_points, "triangle")
-                    if self.ir.num_vertices == 8:
-                        table = self.backend.symbols.element_table_flip(td, self.ir.entitytype, mt.restriction,
-                                                                        num_points, "square")
 
             assert td.ttype != "zeros"
 
