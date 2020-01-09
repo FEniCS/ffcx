@@ -132,6 +132,7 @@ class IntegralGenerator(object):
     def generate_quadrature_permutations(self):
         L = self.backend.language
         parts = []
+        # TODO: only add these if they are used
         parts += [L.VariableDecl("const int", self.backend.symbols.quadrature_permutation(0),
                                  L.Conditional(L.EQ(self.backend.symbols.quadrature_permutation(),
                                                     L.as_symbol("NULL")),
