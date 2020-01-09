@@ -311,8 +311,8 @@ class IntegralGenerator(object):
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
             "FE* dimensions: [permutation][entities][points][dofs]",
-            "PI* dimensions: [entities][dofs][dofs] or [entities][dofs]",
-            "PM* dimensions: [entities][dofs][dofs]",
+            "PI* dimensions: [permutations][entities][dofs][dofs] or [permutations][entities][dofs]",
+            "PM* dimensions: [permutations][entities][dofs][dofs]",
         ])
         return parts
 
@@ -621,6 +621,22 @@ class IntegralGenerator(object):
                 entity = self.backend.symbols.entity(self.ir.entitytype, None)
             return (entity, )
 
+    def get_permutations(self, blockdata):
+        # Get the facet permutations
+        perms = []
+        for r in blockdata.restrictions:
+            if blockdata.is_permuted:
+                qp = self.backend.symbols.quadrature_permutation(0)
+                if r == "-":
+                    qp = self.backend.symbols.quadrature_permutation(1)
+            else:
+                qp = 0
+            perms.append(qp)
+        if blockdata.transposed:
+            return (perms[1], perms[0])
+        else:
+            return tuple(perms)
+
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
         L = self.backend.language
 
@@ -886,7 +902,6 @@ class IntegralGenerator(object):
                 P_ii += arg_indices[::-1]
             else:
                 P_ii += arg_indices
-
             if blockdata.block_mode == "preintegrated":
                 # Preintegrated should never get into quadloops
                 assert num_points is None
@@ -966,6 +981,7 @@ class IntegralGenerator(object):
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
+            P_permutation_indices = self.get_permutations(blockdata)
             if inline_table:
                 assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
@@ -983,11 +999,11 @@ class IntegralGenerator(object):
 
                 if inline_table:
                     # Extract float value of PI[P_ii]
-                    P_ii = (0, ) + P_arg_indices
+                    P_ii = P_permutation_indices + (0, ) + P_arg_indices
                     Pval = table[P_ii]
                 else:
                     # Index the static preintegrated table:
-                    P_ii = P_entity_indices + P_arg_indices
+                    P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
                 A_values[A_ii] += Pval * f

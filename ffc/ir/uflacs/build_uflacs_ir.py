@@ -44,69 +44,69 @@ block_data_t = collections.namedtuple("block_data_t",
                                        "is_uniform",  # used in "preintegrated" and "premultiplied"
                                        "name",  # used in "preintegrated" and "premultiplied"
                                        "ma_data",  # used in "full", "safe" and "partial"
-                                       "piecewise_ma_index"  # used in "partial"
+                                       "piecewise_ma_index",  # used in "partial"
+                                       "is_permuted"  # used
                                        ])
 
 
 def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
                                    unique_table_num_dofs):
-    # TODO: Fix this for tables that have len(tbl.shape) == 4
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
+    num_perms = tuple(t.shape[0] for t in tables)
 
     num_entities = max([1] + [tbl.shape[1] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities, ) * rank + num_dofs)
-    for facets in itertools.product(*[range(num_entities)] * rank):
-        vectors = []
-        for i, tbl in enumerate(tables):
-            if tbl is None:
-                assert ttypes[i] == "ones"
-                vectors.append(numpy.ones((num_dofs[i], )))
+    ptable = numpy.zeros(num_perms + (num_entities, ) * rank + num_dofs)
+    for perms in itertools.product(*[range(i) for i in num_perms]):
+        for facets in itertools.product(*[range(num_entities)] * rank):
+            vectors = []
+            for i, tbl in enumerate(tables):
+                if tbl is None:
+                    assert ttypes[i] == "ones"
+                    vectors.append(numpy.ones((num_dofs[i], )))
+                else:
+                    # Some tables are compacted along entities or points
+                    e = 0 if tbl.shape[1] == 1 else facets[i]
+                    q = 0 if tbl.shape[2] == 1 else point_index
+                    vectors.append(tbl[perms[i], e, q, :])
+            if rank > 1:
+                assert rank == 2
+                ptable[perms[0], perms[1], facets[0], facets[1], ...] = numpy.outer(*vectors)
+            elif rank == 1:
+                ptable[perms[0], facets[0], :] = vectors[0]
             else:
-                assert len(tbl.shape) == 4
-                # Some tables are compacted along entities or points
-                e = 0 if tbl.shape[1] == 1 else facets[i]
-                q = 0 if tbl.shape[2] == 1 else point_index
-                vectors.append(tbl[0, e, q, :])
-        if rank > 1:
-            assert rank == 2
-            ptable[facets[0], facets[1], ...] = numpy.outer(*vectors)
-        elif rank == 1:
-            ptable[facets[0], :] = vectors[0]
-        else:
-            raise RuntimeError("Nothing to multiply!")
+                raise RuntimeError("Nothing to multiply!")
 
     return ptable
 
 
 def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_dofs):
-    # TODO: Fix this for tables that have len(tbl.shape) == 4
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
+    num_perms = tuple(t.shape[0] for t in tables)
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
 
     num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities, ) + num_dofs)
-    for entity in range(num_entities):
-        vectors = []
-        for i, tbl in enumerate(tables):
-            if tbl is None:
-                assert ttypes[i] == "ones"
-                vectors.append(numpy.ones((num_dofs[i], )))
+    ptable = numpy.zeros(num_perms + (num_entities, ) + num_dofs)
+    for perms in itertools.product(*[range(i) for i in num_perms]):
+        for entity in range(num_entities):
+            vectors = []
+            for i, tbl in enumerate(tables):
+                if tbl is None:
+                    assert ttypes[i] == "ones"
+                    vectors.append(numpy.ones((num_dofs[i], )))
+                else:
+                    # Some tables are compacted along entities or points
+                    e = 0 if tbl.shape[0] == 1 else entity
+                    q = 0 if tbl.shape[1] == 1 else point_index
+                    vectors.append(tbl[perms[i], e, q, :])
+            if rank > 1:
+                ptable[perms[0], perms[1], entity, ...] = numpy.outer(*vectors)
+            elif rank == 1:
+                ptable[perms[0], entity, :] = vectors[0]
             else:
-                if len(tbl.shape) == 4:
-                    tbl = tbl[0]
-                # Some tables are compacted along entities or points
-                e = 0 if tbl.shape[0] == 1 else entity
-                q = 0 if tbl.shape[1] == 1 else point_index
-                vectors.append(tbl[e, q, :])
-        if rank > 1:
-            ptable[entity, ...] = numpy.outer(*vectors)
-        elif rank == 1:
-            ptable[entity, :] = vectors[0]
-        else:
-            raise RuntimeError("Nothing to multiply!")
+                raise RuntimeError("Nothing to multiply!")
 
     return ptable
 
@@ -114,9 +114,10 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
 def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
+    num_perms = tuple(t.shape[0] for t in tables)
 
     num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities, ) + num_dofs)
+    ptable = numpy.zeros(num_perms + (num_entities, ) + num_dofs)
     for iq, w in enumerate(weights):
         ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
 
@@ -127,9 +128,10 @@ def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, uniq
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
+    num_perms = tuple(t.shape[0] for t in tables)
 
     num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros((num_entities, ) * rank + num_dofs)
+    ptable = numpy.zeros(num_perms + (num_entities, ) * rank + num_dofs)
     for iq, w in enumerate(weights):
         mtable = multiply_block_interior_facets(iq, unames, ttypes, unique_tables,
                                                 unique_table_num_dofs)
@@ -477,6 +479,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                 cache = ir["piecewise_ir"]["preintegrated_blocks"]
 
                 block_is_transposed = False
+                block_is_permuted = False
                 pname = cache.get(unames)
 
                 # Reuse transpose to save memory
@@ -492,6 +495,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     if integral_type == "interior_facet":
                         ptable = integrate_block_interior_facets(
                             weights, unames, ttypes, unique_tables, unique_table_num_dofs)
+                        block_is_permuted = True  # TODO: make this true only when one of the tables is permuted
                     else:
                         ptable = integrate_block(weights, unames, ttypes, unique_tables,
                                                  unique_table_num_dofs)
@@ -508,7 +512,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                 blockdata = block_data_t(
                     block_mode, ttypes, fi_ci, factor_is_piecewise, block_unames,
                     block_restrictions, block_is_transposed, block_is_uniform, pname,
-                    None, None)
+                    None, None, block_is_permuted)
                 block_is_piecewise = True
 
             elif block_mode == "premultiplied":
@@ -521,6 +525,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                 cache = ir["piecewise_ir"]["premultiplied_blocks"]
 
                 block_is_transposed = False
+                block_is_permuted = False
                 pname = cache.get(unames)
 
                 # Reuse transpose to save memory
@@ -535,6 +540,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     if integral_type == "interior_facet":
                         ptable = multiply_block_interior_facets(0, unames, ttypes, unique_tables,
                                                                 unique_table_num_dofs)
+                        block_is_permuted = True  # TODO: make this true only when one of the tables is permuted
                     else:
                         ptable = multiply_block(0, unames, ttypes, unique_tables,
                                                 unique_table_num_dofs)
@@ -546,7 +552,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                 block_unames = (pname, )
                 blockdata = block_data_t(
                     block_mode, ttypes, fi_ci, factor_is_piecewise, block_unames,
-                    block_restrictions, block_is_transposed, block_is_uniform, pname, None, None)
+                    block_restrictions, block_is_transposed, block_is_uniform, pname, None, None,
+                    block_is_permuted)
                 block_is_piecewise = False
 
 #           elif block_mode == "scaled":
@@ -562,6 +569,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
             elif block_mode in ("partial", "full", "safe"):
                 block_is_piecewise = factor_is_piecewise and not expect_weight
+                block_is_permuted = False
                 ma_data = []
                 for i, ma in enumerate(ma_indices):
                     if not trs[i].is_piecewise:
@@ -587,7 +595,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     blockdata = block_data_t(block_mode, ttypes, fi_ci,
                                              factor_is_piecewise, block_unames,
                                              block_restrictions, block_is_transposed,
-                                             None, None, tuple(ma_data), piecewise_ma_index)
+                                             None, None, tuple(ma_data), piecewise_ma_index, block_is_permuted)
                 elif block_mode in ("full", "safe"):
                     # Add to contributions:
                     # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
@@ -597,7 +605,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     blockdata = block_data_t(block_mode, ttypes, fi_ci,
                                              factor_is_piecewise, block_unames,
                                              block_restrictions, block_is_transposed,
-                                             None, None, tuple(ma_data), None)
+                                             None, None, tuple(ma_data), None, block_is_permuted)
             else:
                 raise RuntimeError("Invalid block_mode %s" % (block_mode, ))
 

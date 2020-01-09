@@ -610,6 +610,7 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
 
 def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
     return table.shape[0] > 1
+    # TODO: if all permutations have the same result, crush them down to one
 
 
 def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
