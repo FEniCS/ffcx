@@ -180,6 +180,7 @@ class IntegralGenerator(object):
         # Generate code to compute piecewise constant scalar factors
         parts += self.generate_unstructured_piecewise_partition()
 
+
         # Loop generation code will produce parts to go before quadloops,
         # to define the quadloops, and to go after the quadloops
         all_preparts = []

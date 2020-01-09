@@ -698,12 +698,23 @@ def build_optimized_tables(num_points,
 
     # Compress tables that are constant along num_entities or num_points
     for uname, tabletype in unique_table_ttypes.items():
-        if tabletype in piecewise_ttypes:
-            # Reduce table to dimension 1 along num_points axis in generated code
-            unique_tables[uname] = unique_tables[uname][:, 0:1, :]
-        if tabletype in uniform_ttypes:
-            # Reduce table to dimension 1 along num_entities axis in generated code
-            unique_tables[uname] = unique_tables[uname][0:1, :, :]
+        if len(unique_tables[uname].shape) == 3:
+            if tabletype in piecewise_ttypes:
+                # Reduce table to dimension 1 along num_points axis in generated code
+                unique_tables[uname] = unique_tables[uname][:, 0:1, :]
+            if tabletype in uniform_ttypes:
+                # Reduce table to dimension 1 along num_entities axis in generated code
+                unique_tables[uname] = unique_tables[uname][0:1, :, :]
+        else:
+            assert len(unique_tables[uname].shape) == 4
+            # If the table respresents an integral over a facet, the first index is the permutation
+            # and should be left alone
+            if tabletype in piecewise_ttypes:
+                # Reduce table to dimension 1 along num_points axis in generated code
+                unique_tables[uname] = unique_tables[uname][:, :, 0:1, :]
+            if tabletype in uniform_ttypes:
+                # Reduce table to dimension 1 along num_entities axis in generated code
+                unique_tables[uname] = unique_tables[uname][:, 0:1, :, :]
 
     # Delete tables not referenced by modified terminals
     used_unames = set(table_unames[name] for name in mt_table_names.values())

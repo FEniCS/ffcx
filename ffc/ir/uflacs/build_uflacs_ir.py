@@ -50,6 +50,7 @@ block_data_t = collections.namedtuple("block_data_t",
 
 def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
                                    unique_table_num_dofs):
+    # TODO: Fix this for tables that have len(tbl.shape) == 4
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
@@ -80,6 +81,7 @@ def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
 
 
 def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_dofs):
+    # TODO: Fix this for tables that have len(tbl.shape) == 4
     rank = len(unames)
     tables = [unique_tables.get(name) for name in unames]
     num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
