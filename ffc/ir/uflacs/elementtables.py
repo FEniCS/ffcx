@@ -368,7 +368,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
         assert len(p) < 3 or numpy.isclose(p[2], 0)
     for i in range(rotations):
         for n, p in enumerate(output):
-            output[n] = [1 + p[1], 1 - p[0]]
+            output[n] = [p[1], 1 - p[0]]
     for i in range(reflections):
         for n, p in enumerate(output):
             output[n] = [p[1], p[0]]
