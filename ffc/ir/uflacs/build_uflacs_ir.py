@@ -98,8 +98,8 @@ def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_
                     vectors.append(numpy.ones((num_dofs[i], )))
                 else:
                     # Some tables are compacted along entities or points
-                    e = 0 if tbl.shape[0] == 1 else entity
-                    q = 0 if tbl.shape[1] == 1 else point_index
+                    e = 0 if tbl.shape[1] == 1 else entity
+                    q = 0 if tbl.shape[2] == 1 else point_index
                     vectors.append(tbl[perms[i], e, q, :])
             if rank > 1:
                 ptable[perms[0], perms[1], entity, ...] = numpy.outer(*vectors)
