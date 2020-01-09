@@ -201,14 +201,15 @@ class FFCBackendSymbols(object):
         else:
             iq = self.quadrature_loop_index()
 
-        if entitytype == "facet":
+        if tabledata.is_permuted:
             qp = self.quadrature_permutation(0)
             if restriction == "-":
                 qp = self.quadrature_permutation(1)
-            return self.S(tabledata.name)[qp][entity][iq]
+        else:
+            qp = 0
 
         # Return direct access to element table
-        return self.S(tabledata.name)[entity][iq]
+        return self.S(tabledata.name)[qp][entity][iq]
 
     def expr_component_index(self):
         """Symbol for indexing the expression's ufl shape."""

@@ -180,7 +180,6 @@ class IntegralGenerator(object):
         # Generate code to compute piecewise constant scalar factors
         parts += self.generate_unstructured_piecewise_partition()
 
-
         # Loop generation code will produce parts to go before quadloops,
         # to define the quadloops, and to go after the quadloops
         all_preparts = []
@@ -304,19 +303,14 @@ class IntegralGenerator(object):
             if inline_tables and name[:2] == "PI":
                 continue
 
-            if len(table.shape) == 4:
-                decl = L.ArrayDecl(
-                    "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
-                parts += [decl]
-            else:
-                decl = L.ArrayDecl(
-                    "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
-                parts += [decl]
+            decl = L.ArrayDecl(
+                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
+            parts += [decl]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [entities][points][dofs] or [permutation][entities][points][dofs]",
+            "FE* dimensions: [permutation][entities][points][dofs]",
             "PI* dimensions: [entities][dofs][dofs] or [entities][dofs]",
             "PM* dimensions: [entities][dofs][dofs]",
         ])
@@ -351,7 +345,6 @@ class IntegralGenerator(object):
             else:
                 iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
-
         return preparts, quadparts, postparts
 
     def generate_runtime_quadrature_loop(self):
