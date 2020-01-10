@@ -495,7 +495,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     if integral_type == "interior_facet":
                         ptable = integrate_block_interior_facets(
                             weights, unames, ttypes, unique_tables, unique_table_num_dofs)
-                        block_is_permuted = True  # TODO: make this true only when one of the tables is permuted
+                        block_is_permuted = False
+                        for n in unames:
+                            if unique_tables[n].shape[0] > 1:
+                                block_is_permuted = True
                     else:
                         ptable = integrate_block(weights, unames, ttypes, unique_tables,
                                                  unique_table_num_dofs)
@@ -540,7 +543,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     if integral_type == "interior_facet":
                         ptable = multiply_block_interior_facets(0, unames, ttypes, unique_tables,
                                                                 unique_table_num_dofs)
-                        block_is_permuted = True  # TODO: make this true only when one of the tables is permuted
+                        block_is_permuted = False
+                        for n in unames:
+                            if unique_tables[n].shape[0] > 1:
+                                block_is_permuted = True
                     else:
                         ptable = multiply_block(0, unames, ttypes, unique_tables,
                                                 unique_table_num_dofs)
