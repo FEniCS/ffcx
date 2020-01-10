@@ -539,10 +539,7 @@ def optimize_element_tables(tables,
         tbl = clamp_table_small_numbers(tbl, rtol=rtol, atol=atol)
 
         # Store original dof dimension before compressing
-        if len(tbl.shape) == 3:
-            num_dofs = tbl.shape[2]
-        else:
-            num_dofs = tbl.shape[3]
+        num_dofs = tbl.shape[3]
 
         # Strip contiguous zero blocks at the ends of all tables
         dofrange, dofmap, tbl = strip_table_zeros(tbl, compress_zeros, rtol=rtol, atol=atol)
@@ -609,8 +606,9 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
-    return table.shape[0] > 1
-    # TODO: if all permutations have the same result, crush them down to one
+    return not all(
+        numpy.allclose(table[0, :, :, :], table[i, :, :, :], rtol=rtol, atol=atol)
+        for i in range(1, table.shape[0]))
 
 
 def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
@@ -687,11 +685,6 @@ def build_optimized_tables(num_points,
         rtol=rtol,
         atol=atol)
 
-    # TODO: remove this assert once new FE structure is done
-    for i, j in tables.items():
-        if i[:2] == "FE":
-            assert len(j.shape) == 4
-
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
         table_original_num_dofs = optimize_element_tables(tables, table_origins, compress_zeros, rtol=rtol, atol=atol)
@@ -709,10 +702,12 @@ def build_optimized_tables(num_points,
         # and should be left alone
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
-            unique_tables[uname] = unique_tables[uname][:, :, 0:1, :]
+            unique_tables[uname] = unique_tables[uname][:, :, :1, :]
         if tabletype in uniform_ttypes:
             # Reduce table to dimension 1 along num_entities axis in generated code
-            unique_tables[uname] = unique_tables[uname][:, 0:1, :, :]
+            unique_tables[uname] = unique_tables[uname][:, :1, :, :]
+        if not table_permuted[uname]:
+            unique_tables[uname] = unique_tables[uname][:1, :, :, :]
 
     # Delete tables not referenced by modified terminals
     used_unames = set(table_unames[name] for name in mt_table_names.values())

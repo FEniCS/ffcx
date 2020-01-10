@@ -129,21 +129,6 @@ class IntegralGenerator(object):
             self.shared_symbols[key] = s
         return s, defined
 
-    def generate_quadrature_permutations(self):
-        L = self.backend.language
-        parts = []
-        # FIXME: only add these if they are used
-        # FIXME: remove these completely and use direct access to input
-        parts += [L.VariableDecl("const int", self.backend.symbols.quadrature_permutation(0),
-                                 L.Conditional(L.EQ(self.backend.symbols.quadrature_permutation(),
-                                                    L.as_symbol("NULL")),
-                                               0, self.backend.symbols.quadrature_permutation()[0]))]
-        parts += [L.VariableDecl("const int", self.backend.symbols.quadrature_permutation(1),
-                                 L.Conditional(L.EQ(self.backend.symbols.quadrature_permutation(),
-                                                    L.as_symbol("NULL")),
-                                               0, self.backend.symbols.quadrature_permutation()[1]))]
-        return parts
-
     def generate(self):
         """Generate entire tabulate_tensor body.
 
@@ -168,9 +153,6 @@ class IntegralGenerator(object):
                       L.VerbatimStatement(
                           "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
                           .format(alignment))]
-
-        # Parse the quadrature permutations
-        parts += self.generate_quadrature_permutations()
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()

@@ -111,11 +111,9 @@ class FFCBackendSymbols(object):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")
 
-    def quadrature_permutation(self, index=None):
+    def quadrature_permutation(self, index):
         """Quadrature permutation, as input to the function."""
-        if index is None:
-            return self.S("quadrature_permutation")
-        return self.S("qp" + str(index))
+        return self.S("quadrature_permutation")[index]
 
     def num_custom_quadrature_points(self):
         """Number of quadrature points, argument to custom integrals."""
