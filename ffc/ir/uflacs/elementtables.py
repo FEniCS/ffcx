@@ -697,9 +697,6 @@ def build_optimized_tables(num_points,
 
     # Compress tables that are constant along num_entities or num_points
     for uname, tabletype in unique_table_ttypes.items():
-        assert len(unique_tables[uname].shape) == 4
-        # If the table respresents an integral over a facet, the first index is the permutation
-        # and should be left alone
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             unique_tables[uname] = unique_tables[uname][:, :, :1, :]
@@ -707,6 +704,7 @@ def build_optimized_tables(num_points,
             # Reduce table to dimension 1 along num_entities axis in generated code
             unique_tables[uname] = unique_tables[uname][:, :1, :, :]
         if not table_permuted[uname]:
+            # Reduce table to dimenstion 2 along num_perms axis in generated code
             unique_tables[uname] = unique_tables[uname][:1, :, :, :]
 
     # Delete tables not referenced by modified terminals
