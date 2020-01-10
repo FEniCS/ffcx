@@ -606,7 +606,7 @@ class IntegralGenerator(object):
             return (entity, )
 
     def get_permutations(self, blockdata):
-        """Get the quadrature permutations for facets"""
+        """Get the quadrature permutations for facets."""
         perms = []
         for r in blockdata.restrictions:
             if blockdata.is_permuted:
