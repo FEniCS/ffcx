@@ -45,7 +45,7 @@ block_data_t = collections.namedtuple("block_data_t",
                                        "name",  # used in "preintegrated" and "premultiplied"
                                        "ma_data",  # used in "full", "safe" and "partial"
                                        "piecewise_ma_index",  # used in "partial"
-                                       "is_permuted"  # used
+                                       "is_permuted"  # Do quad points on facets need to be permuted?
                                        ])
 
 

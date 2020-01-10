@@ -8,6 +8,8 @@ declaration = """
 ufc_expression* create_expression_{factory_name}(void);
 """
 
+# FIXME: is a quadrature permutation ever needed here, or is hard coding this as NULL ok?
+
 factory = """
 // Code for expression {factory_name}
 

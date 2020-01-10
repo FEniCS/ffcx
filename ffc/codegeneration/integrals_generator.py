@@ -132,7 +132,8 @@ class IntegralGenerator(object):
     def generate_quadrature_permutations(self):
         L = self.backend.language
         parts = []
-        # TODO: only add these if they are used
+        # FIXME: only add these if they are used
+        # FIXME: remove these completely and use direct access to input
         parts += [L.VariableDecl("const int", self.backend.symbols.quadrature_permutation(0),
                                  L.Conditional(L.EQ(self.backend.symbols.quadrature_permutation(),
                                                     L.as_symbol("NULL")),
@@ -311,7 +312,7 @@ class IntegralGenerator(object):
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
             "FE* dimensions: [permutation][entities][points][dofs]",
-            "PI* dimensions: [permutations][entities][dofs][dofs] or [permutations][entities][dofs]",
+            "PI* dimensions: [permutations][permutations][entities][dofs][dofs] or [permutations][entities][dofs]",
             "PM* dimensions: [permutations][entities][dofs][dofs]",
         ])
         return parts
@@ -345,6 +346,7 @@ class IntegralGenerator(object):
             else:
                 iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
+
         return preparts, quadparts, postparts
 
     def generate_runtime_quadrature_loop(self):
@@ -622,7 +624,7 @@ class IntegralGenerator(object):
             return (entity, )
 
     def get_permutations(self, blockdata):
-        # Get the facet permutations
+        """Get the quadrature permutations for facets"""
         perms = []
         for r in blockdata.restrictions:
             if blockdata.is_permuted:
@@ -902,6 +904,7 @@ class IntegralGenerator(object):
                 P_ii += arg_indices[::-1]
             else:
                 P_ii += arg_indices
+
             if blockdata.block_mode == "preintegrated":
                 # Preintegrated should never get into quadloops
                 assert num_points is None
