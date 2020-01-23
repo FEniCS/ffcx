@@ -307,34 +307,82 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         msg = "Using %s transform to map values back to the physical element." % mapping.replace(
             "piola", "Piola")
 
-        mapped_value = L.Symbol("mapped_value")
-        transform_apply_code += [
-            L.ForRanges(
-                dofrange,
-                (s, 0, num_derivatives_t),
-                (i, 0, num_physical_components),
-                index_type=index_type,
-                body=[
-                    # Unrolled application of mapping to one physical component,
-                    # for affine this automatically reduces to
-                    #   mapped_value = reference_values[..., reference_offset]
-                    L.Comment(msg),
-                    L.VariableDecl(
-                        "const double", mapped_value,
-                        M_scale * sum(
-                            M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
-                            for jj in range(num_reference_components))),
-                    # Apply derivative transformation, for order=0 this reduces to
-                    # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
-                    L.Comment("Mapping derivatives back to the physical element"),
-                    L.ForRanges((r, 0, num_derivatives_g),
-                                index_type=index_type,
-                                body=[
-                                    L.AssignAdd(values[ip, idof, r, physical_offset + i],
-                                                transform[r, s] * mapped_value)])
-                ])
-        ]
+        vector_types = ["PointScaledNormalEval"]
+        entities_of_reflected_dofs = [-1 for i in range(ir.space_dimension)]
+        reflect = False
+        ent_n = 0
+        for dim, e_dofs in ir.entity_dofs.items():
+            for n, dofs in e_dofs.items():
+                for d in dofs:
+                    if dim > 0:
+                        t = ir.dof_types[d]
+                        if t in vector_types:
+                            entities_of_reflected_dofs[d] = ent_n
+                            reflect = True
+                ent_n += 1
 
+        mapped_value = L.Symbol("mapped_value")
+
+        if reflect:
+            e_of_rd = L.Symbol("entities_of_reflected_dofs")
+            entity_reflections = L.Symbol("entity_reflections")
+            dof_attributes_code.append(L.ArrayDecl(
+                "const " + index_type, e_of_rd, (ir.space_dimension, ), values=entities_of_reflected_dofs))
+            transform_apply_code += [
+                L.ForRanges(
+                    dofrange,
+                    (s, 0, num_derivatives_t),
+                    (i, 0, num_physical_components),
+                    index_type=index_type,
+                    body=[
+                        # Unrolled application of mapping to one physical component,
+                        # for affine this automatically reduces to
+                        #   mapped_value = reference_values[..., reference_offset]
+                        L.Comment(msg),
+                        L.VariableDecl(
+                            "const double", mapped_value,
+                            M_scale * L.Conditional(L.Or(L.EQ(e_of_rd[idof], -1),
+                                                    L.Not(entity_reflections[e_of_rd[idof]])), 1, -1)
+                            * sum(
+                                M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
+                                for jj in range(num_reference_components))),
+                        # Apply derivative transformation, for order=0 this reduces to
+                        # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
+                        L.Comment("Mapping derivatives back to the physical element"),
+                        L.ForRanges((r, 0, num_derivatives_g),
+                                    index_type=index_type,
+                                    body=[
+                                        L.AssignAdd(values[ip, idof, r, physical_offset + i],
+                                                    transform[r, s] * mapped_value)])
+                    ])
+            ]
+        else:
+            transform_apply_code += [
+                L.ForRanges(
+                    dofrange,
+                    (s, 0, num_derivatives_t),
+                    (i, 0, num_physical_components),
+                    index_type=index_type,
+                    body=[
+                        # Unrolled application of mapping to one physical component,
+                        # for affine this automatically reduces to
+                        #   mapped_value = reference_values[..., reference_offset]
+                        L.Comment(msg),
+                        L.VariableDecl(
+                            "const double", mapped_value,
+                            M_scale * sum(
+                                M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
+                                for jj in range(num_reference_components))),
+                        # Apply derivative transformation, for order=0 this reduces to
+                        # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
+                        L.Comment("Mapping derivatives back to the physical element"),
+                        L.ForRanges((r, 0, num_derivatives_g),
+                                    index_type=index_type,
+                                    body=[
+                                        L.AssignAdd(values[ip, idof, r, physical_offset + i],
+                                                    transform[r, s] * mapped_value)])
+                    ])
+            ]
     # Transform for each point
     point_loop_code = [
         L.ForRange(

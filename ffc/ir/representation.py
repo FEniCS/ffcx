@@ -50,7 +50,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'geometric_dimension', 'space_dimension', 'value_shape',
                                        'reference_value_shape', 'degree', 'family', 'evaluate_basis',
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                       'create_sub_element'])
+                                       'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'entity_block_size', 'tabulate_entity_dofs',
@@ -199,6 +199,9 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, epsilon):
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [classnames["finite_element"][e] for e in ufl_element.sub_elements()]
+
+    ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
+    ir["entity_dofs"] = fiat_element.entity_dofs()
 
     return ir_element(**ir)
 
