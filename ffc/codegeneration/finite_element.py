@@ -307,10 +307,15 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         msg = "Using %s transform to map values back to the physical element." % mapping.replace(
             "piola", "Piola")
 
+        # List of dof types that require multiplying by -1 if their entity has been reflected
         vector_types = ["PointScaledNormalEval"]
+        # For each dof that needs reflection this will contain the entity number that the dof is associated with.
+        # Entities are numbered: Point0, Point1, ..., Edge0, Edge1, ..., Face0, [Face1, ..., Volume]
+        # If no reflection needed, this will be -1
         entities_of_reflected_dofs = [-1 for i in range(ir.space_dimension)]
         reflect = False
         ent_n = 0
+        # Run through the entities and mark vector dofs on each entity
         for dim, e_dofs in ir.entity_dofs.items():
             for n, dofs in e_dofs.items():
                 for d in dofs:
@@ -323,6 +328,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
         mapped_value = L.Symbol("mapped_value")
 
+        # If at least one vector dof needs reflecting
         if reflect:
             e_of_rd = L.Symbol("entities_of_reflected_dofs")
             entity_reflections = L.Symbol("entity_reflections")
@@ -341,6 +347,8 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                         L.Comment(msg),
                         L.VariableDecl(
                             "const double", mapped_value,
+                            # The Conditional here will multiply by 1 if the dof is not a vector, or the
+                            # entity is not reflected; and -1 if the dof is vector and reflected
                             M_scale * L.Conditional(L.Or(L.EQ(e_of_rd[idof], -1),
                                                     L.Not(entity_reflections[e_of_rd[idof]])), 1, -1)
                             * sum(
@@ -356,6 +364,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                                                     transform[r, s] * mapped_value)])
                     ])
             ]
+        # If no dof needs reflecting, leave out the Conditional
         else:
             transform_apply_code += [
                 L.ForRanges(
