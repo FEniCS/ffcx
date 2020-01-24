@@ -308,7 +308,9 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "piola", "Piola")
 
         # List of dof types that require multiplying by -1 if their entity has been reflected
-        vector_types = ["PointScaledNormalEval"]
+        # TODO: check that these are all vector and that no other types are vector
+        vector_types = ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
+                        "PointFaceTangent", "PointScaledNormalEval", "PointNormalEval"]
         # For each dof that needs reflection this will contain the entity number that the dof is associated with.
         # Entities are numbered: Point0, Point1, ..., Edge0, Edge1, ..., Face0, [Face1, ..., Volume]
         # If no reflection needed, this will be -1
