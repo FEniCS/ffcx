@@ -387,7 +387,8 @@ extern "C"
   ///         belongs.
   ///         Dimensions: w[coefficient][restriction][dof].
   ///         Restriction dimension applies to interior facet integrals, where
-  ///         coefficients restricted to both cells sharing the facet must be provided.
+  ///         coefficients restricted to both cells sharing the facet must be
+  ///         provided.
   /// @param[in] c
   ///         Constants attached to the form to which the tabulated integral
   ///         belongs.
@@ -406,7 +407,16 @@ extern "C"
   ///         orientation of the whole mesh.
   ///         0 means "up"
   ///         1 means "down" and scales det(J) with -1.0
-  ///         Applies to the case of k-dimensional surface in n-dimensional space, where k < n.
+  ///         Applies to the case of k-dimensional surface in n-dimensional
+  ///         space, where k < n.
+  /// @param[in] quadrature_permutation
+  ///         For facet integrals, numbers to indicate the permutation to be
+  ///         applied to each side of the facet to make the orientations of the
+  ///         faces matched up should be passed in. If N is passed in, then:
+  ///         floor(N / 2) gives the number of rotations to apply to the facet
+  ///         N % 2 gives the number of reflections to apply to the facet
+  ///         For integrals not on facets, this has no effect (and a null
+  ///         pointer can be passed in)
   ///
   typedef void (ufc_tabulate_tensor)(ufc_scalar_t* restrict A,
       const ufc_scalar_t* w,
