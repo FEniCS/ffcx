@@ -63,8 +63,8 @@ class FFCXBackendSymbols(object):
         # Used for padding variable names based on restriction
 #        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
 
-        # TODO: Make this configurable for easy experimentation with dolfin!
-        # Coordinate dofs for each component are interleaved? Must match dolfin.
+        # TODO: Make this configurable for easy experimentation with dolfinx!
+        # Coordinate dofs for each component are interleaved? Must match dolfinx.
         # True = XYZXYZXYZXYZ, False = XXXXYYYYZZZZ
         self.interleaved_components = True
 

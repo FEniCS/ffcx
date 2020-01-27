@@ -256,7 +256,7 @@ def entity_block_size(fiat_element):
         elif p.functional_type == "PointScaledNormalEval":
             output.append(1)
 
-        # The following are not used in dolfin tests so may be incorrect
+        # The following are not used in dolfinx tests so may be incorrect
         elif p.functional_type == "PointDeriv":
             output.append(1)
         elif p.functional_type == "IntegralMomentOfNormalDerivative":
@@ -456,7 +456,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, classnames, ob
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
     # TODO: Remove create_coordinate_{finite_element,dofmap} and access
-    # through coordinate_mapping instead in dolfin, when that's in place
+    # through coordinate_mapping instead in dolfinx, when that's in place
     ir["create_coordinate_finite_element"] = [
         classnames["finite_element"][e] for e in form_data.coordinate_elements
     ]

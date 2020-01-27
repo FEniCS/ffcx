@@ -7,7 +7,7 @@
 import logging
 from collections import namedtuple
 
-from ffcx.codegeneration import dolfin
+from ffcx.codegeneration import dolfinx
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def generate_wrapper_code(analysis: namedtuple, prefix, object_names, classnames
             prefix, object_names, classnames, analysis.form_data, analysis.element_numbers)
 
     # Generate code
-    code_h, code_c = dolfin.generate_wrappers(prefix, capsules, common_space)
+    code_h, code_c = dolfinx.generate_wrappers(prefix, capsules, common_space)
     code_h += "\n"
     code_c += "\n"
 
@@ -45,7 +45,7 @@ def _encapsulate_elements(elements, object_names, classnames):
                 "dofmap_classname": classnames["dofmaps"][i],
                 "coordinate_mapping_classname": None
             }
-            capsules.append(dolfin.UFCElementNames(**args))
+            capsules.append(dolfinx.UFCElementNames(**args))
 
     return capsules
 
@@ -72,8 +72,8 @@ def _encapsule_forms(prefix, object_names, classnames, form_data, element_map):
         ufc_cmaps = [classnames["coordinate_maps"][0]]
 
         capsules.append(
-            dolfin.UFCFormNames(name, coefficient_names, ufc_form_name, ufc_elements, ufc_dofmaps,
-                                ufc_cmaps))
+            dolfinx.UFCFormNames(name, coefficient_names, ufc_form_name, ufc_elements, ufc_dofmaps,
+                                 ufc_cmaps))
 
     # Build list of all argument elements to which if all are equal
     elements = [element for form in form_data for element in form.argument_elements]

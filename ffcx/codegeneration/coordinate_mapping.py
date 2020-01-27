@@ -236,7 +236,7 @@ def compute_reference_geometry(L, ir):
         return _compute_reference_coordinates_newton(L, ir, output_all=True)
 
 
-# TODO: Maybe we don't need this version, see what we need in dolfin first
+# TODO: Maybe we don't need this version, see what we need in dolfinx first
 def compute_reference_coordinates(L, ir):
     degree = ir.coordinate_element_degree
     if degree == 1:

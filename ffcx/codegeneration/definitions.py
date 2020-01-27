@@ -190,7 +190,7 @@ class FFCXBackendDefinitions(object):
 
     def cell_orientation(self, e, mt, tabledata, num_points, access):
         # Would be nicer if cell_orientation was a double variable input,
-        # but this is how dolfin/ufc/ffcx currently passes this information.
+        # but this is how dolfinx/ufc/ffcx currently passes this information.
         # 0 means up and gives +1.0, 1 means down and gives -1.0.
         L = self.language
         co = self.symbols.cell_orientation_argument(mt.restriction)

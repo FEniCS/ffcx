@@ -6,14 +6,14 @@
 #
 # Based on original implementation by Martin Alnes and Anders Logg
 
-# NB: generate_dolfin_namespace(...) assumes that if a coefficient has
+# NB: generate_dolfinx_namespace(...) assumes that if a coefficient has
 # the same name in multiple forms, it is indeed the same coefficient:
 
 parameters = {"use_common_coefficient_names": True}
 
 
 def generate_wrappers(prefix, forms, common_function_space=False):
-    """Generate complete dolfin wrapper code with given generated names.
+    """Generate complete dolfinx wrapper code with given generated names.
 
     @param prefix:
         String, prefix for all form names
@@ -34,7 +34,7 @@ typedef ufc_form* (*ufc_form_factory_ptr)(void);
 
 """
 
-    # Generate body of dolfin wrappers
+    # Generate body of dolfinx wrappers
     if all(isinstance(element, UFCElementNames) for element in forms):
         # NOTE: This is messy because an element doesn't (at the
         # moment) have a coordinate map
@@ -118,7 +118,7 @@ def generate_namespace_typedefs(forms, prefix, common_function_space):
 
 
 def generate_form(form, prefix, classname):
-    """Generate dolfin wrapper code associated with a form.
+    """Generate dolfinx wrapper code associated with a form.
     Includes code for function spaces used in form and typedefs.
 
     @param form:
@@ -165,7 +165,7 @@ def generate_form(form, prefix, classname):
 
 
 def generate_form_class(form, prefix, classname):
-    """Generate dolfin wrapper code for a single Form class."""
+    """Generate dolfinx wrapper code for a single Form class."""
 
     # Generate typedefs for FunctionSpace subclasses for Coefficients
     typedefs = "/*    Typedefs (function spaces for {}) */\n".format(
