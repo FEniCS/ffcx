@@ -1,6 +1,6 @@
 # Copyright (C) 2012 Marie E. Rognes and David Ham
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
 # This demo illustrates use of finite element spaces defined over
 # simplicies embedded in higher dimensions
 #
-# Compile this form with FFC: ffc ProjectionManifold.ufl
+# Compile this form with FFC: ffcx ProjectionManifold.ufl
 
 # Define interval embedded in 3D:
 domain = Cell("triangle", geometric_dimension=3)

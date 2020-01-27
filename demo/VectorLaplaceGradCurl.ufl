@@ -1,6 +1,6 @@
 # Copyright (C) 2007 Marie Rognes
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,7 +19,7 @@
 # problem using 0- and 1-forms. Intended to demonstrate use of N1curl
 # elements.
 
-# Compile this form with FFC: ffc VectorLaplaceGradCurl.ufl
+# Compile this form with FFC: ffcx VectorLaplaceGradCurl.ufl
 
 def HodgeLaplaceGradCurl(element, felement):
     """This is a formulation of the Hodge Laplacian using k=1 and n=3,

@@ -1,6 +1,6 @@
 # Copyright (C) 2017 Garth N. Wells
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,8 +18,8 @@
 import numpy as np
 import pytest
 
-import ffc
-import ffc_factory
+import ffcx
+import ffcx_factory
 from ufl import (FiniteElement, MixedElement, VectorElement, interval,
                  tetrahedron, triangle)
 
@@ -104,8 +104,8 @@ def element_pair(request):
     """Given a UFL element, returns UFL element and a JIT-compiled and wrapped UFC element."""
 
     ufl_element = request.param
-    ufc_element, ufc_dofmap = ffc.jit(ufl_element, parameters=None)
-    ufc_element = ffc_factory.make_ufc_finite_element(ufc_element)
+    ufc_element, ufc_dofmap = ffcx.jit(ufl_element, parameters=None)
+    ufc_element = ffcx_factory.make_ufc_finite_element(ufc_element)
     return ufl_element, ufc_element
 
 
@@ -119,8 +119,8 @@ def test_evaluate_reference_basis_vs_fiat(element_pair, point_data):
 
     points = point_data[tdim]
 
-    # Create FIAT element via FFC
-    fiat_element = ffc.fiatinterface.create_element(ufl_element)
+    # Create FIAT element via FFCX
+    fiat_element = ffcx.fiatinterface.create_element(ufl_element)
 
     # Tabulate basis at requsted points via UFC
     values_ufc = ufc_element.evaluate_reference_basis(points)
@@ -177,8 +177,8 @@ def test_evaluate_basis_vs_fiat(element_pair, point_data):
     # Get geometric and topological dimensions
     tdim = ufc_element.topological_dimension()
 
-    # Create FIAT element via FFC
-    fiat_element = ffc.fiatinterface.create_element(ufl_element)
+    # Create FIAT element via FFCX
+    fiat_element = ffcx.fiatinterface.create_element(ufl_element)
 
     # Tabulate basis at requsted points via FIAT
     values_fiat = fiat_element.tabulate(0, points)
@@ -203,7 +203,7 @@ def test_evaluate_basis_vs_fiat(element_pair, point_data):
 
     # Get reference cell
     cell = ufl_element.cell()
-    ref_coords = ffc.fiatinterface.reference_cell(cell.cellname()).get_vertices()
+    ref_coords = ffcx.fiatinterface.reference_cell(cell.cellname()).get_vertices()
 
     # Iterate over each point and test
     for i, p in enumerate(points):
@@ -240,8 +240,8 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
 
     points = point_data[tdim]
 
-    # Create FIAT element via FFC
-    fiat_element = ffc.fiatinterface.create_element(ufl_element)
+    # Create FIAT element via FFCX
+    fiat_element = ffcx.fiatinterface.create_element(ufl_element)
 
     # Tabulate basis at requsted points via UFC
     values_ufc = ufc_element.evaluate_reference_basis_derivatives(order, points)
@@ -249,7 +249,7 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
     # Tabulate basis at requsted points via FIAT
     values_fiat = fiat_element.tabulate(order, points)
 
-    # Compute 'FFC' style derivative indicators
+    # Compute 'FFCX' style derivative indicators
     deriv_order = order
     geo_dim = tdim
     num_derivatives = geo_dim**deriv_order
@@ -269,7 +269,7 @@ def test_evaluate_reference_basis_deriv_vs_fiat(order, element_pair,
         """Convert a list of combinations of derivatives to a fiat tuple of derivatives.
         FIAT expects a list with the number of
         derivatives in each spatial direction.  E.g., in 2D: u_{xyy}
-        --> [0, 1, 1] in FFC --> (1, 2) in FIAT.
+        --> [0, 1, 1] in FFCX --> (1, 2) in FIAT.
 
         """
         new_comb = [0] * gdim

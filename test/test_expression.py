@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2019 Michal Habera
 #
-# This file is part of FFC (https://www.fenicsproject.org)
+# This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -9,7 +9,7 @@ import numpy as np
 import cffi
 
 import ufl
-import ffc.codegeneration.jit
+import ffcx.codegeneration.jit
 
 
 def float_to_type(name):
@@ -46,7 +46,7 @@ def test_matvec():
     expr = ufl.Constant(mesh) * ufl.dot(a, f)
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffc.codegeneration.jit.compile_expressions([(expr, points)])
+    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)])
 
     ffi = cffi.FFI()
     kernel = obj[0][0]
@@ -98,7 +98,7 @@ def test_rank1():
     expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffc.codegeneration.jit.compile_expressions([(expr, points)])
+    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)])
 
     ffi = cffi.FFI()
     kernel = obj[0][0]
@@ -125,7 +125,7 @@ def test_rank1():
     f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
 
     # Apply the operator on some test input data
-    u_ffc = np.einsum("ijk,k", A, f.flatten())
+    u_ffcx = np.einsum("ijk,k", A, f.flatten())
 
     # Compute the correct values using NumPy
     # Gradf0 is gradient of f[0], each component of the gradient is constant
@@ -134,4 +134,4 @@ def test_rank1():
 
     u_correct = np.array([f[1], f[0]]) + gradf0
 
-    assert np.allclose(u_ffc, u_correct)
+    assert np.allclose(u_ffcx, u_correct)

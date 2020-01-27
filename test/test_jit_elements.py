@@ -1,14 +1,14 @@
 # Copyright (C) 2018-2019 Chris Richardson and Michal Habera
 #
-# This file is part of FFC (https://www.fenicsproject.org)
+# This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numpy as np
 import pytest
 
-import ffc
-import ffc.codegeneration.jit
+import ffcx
+import ffcx.codegeneration.jit
 import ufl
 
 
@@ -22,7 +22,7 @@ def lagrange_elements():
     for cell in cells:
         for degree in degrees:
             ufl_element = ufl.FiniteElement("Lagrange", cell, degree)
-            compiled_elements, module = ffc.codegeneration.jit.compile_elements([ufl_element])
+            compiled_elements, module = ffcx.codegeneration.jit.compile_elements([ufl_element])
             elements[(cell, degree)] = (ufl_element, compiled_elements[0], module)
 
     return elements
@@ -56,7 +56,7 @@ def test_dim_degree(cell, degree, lagrange_elements):
 @pytest.mark.parametrize("degree", degrees)
 def test_tabulate_reference_dof_coordinates(cell, degree, lagrange_elements):
     ufl_element, compiled_element, module = lagrange_elements[(cell, degree)]
-    fiat_element = ffc.fiatinterface._create_fiat_element(ufl_element)
+    fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
 
     tdim = compiled_element[0].topological_dimension
     space_dim = compiled_element[0].space_dimension
@@ -72,7 +72,7 @@ def test_tabulate_reference_dof_coordinates(cell, degree, lagrange_elements):
 @pytest.mark.parametrize("degree", degrees)
 def test_evaluate_reference_basis(cell, degree, lagrange_elements, reference_points):
     ufl_element, compiled_element, module = lagrange_elements[(cell, degree)]
-    fiat_element = ffc.fiatinterface._create_fiat_element(ufl_element)
+    fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
 
     space_dim = compiled_element[0].space_dimension
     tdim = compiled_element[0].topological_dimension
@@ -93,7 +93,7 @@ def test_cmap_triangle():
     cell = ufl.triangle
     element = ufl.VectorElement("Lagrange", cell, 1)
     mesh = ufl.Mesh(element)
-    compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
+    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps([mesh])
     x = np.array([[0.5, 0.5]], dtype=np.float64)
     x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
     X = np.zeros_like(x)
@@ -117,7 +117,7 @@ def test_cmap_quads(degree, coords):
     cell = ufl.quadrilateral
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
-    compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
+    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps([mesh])
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
 
@@ -152,7 +152,7 @@ def test_cmap_hex(degree, coords):
     cell = ufl.hexahedron
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
-    compiled_cmap, module = ffc.codegeneration.jit.compile_coordinate_maps([mesh])
+    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps([mesh])
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
 

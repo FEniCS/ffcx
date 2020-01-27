@@ -1,6 +1,6 @@
 # Copyright (C) 2007 Anders Logg
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
 #
 # A mixed element of mixed elements
 #
-# Compile this form with FFC: ffc MixedMixedElement.ufl
+# Compile this form with FFC: ffcx MixedMixedElement.ufl
 
 cell = triangle
 

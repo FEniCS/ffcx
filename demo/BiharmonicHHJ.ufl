@@ -1,6 +1,6 @@
 # Copyright (C) 2016 Lizao Li
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,7 +19,7 @@
 # Biharmonic equation in Hellan-Herrmann-Johnson (HHJ)
 # formulation.
 #
-# Compile this form with FFC: ffc BiharmonicHHJ.ufl
+# Compile this form with FFC: ffcx BiharmonicHHJ.ufl
 
 HHJ = FiniteElement('HHJ', triangle, 2)
 CG =  FiniteElement('CG', triangle, 3)

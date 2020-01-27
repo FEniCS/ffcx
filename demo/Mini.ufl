@@ -1,6 +1,6 @@
 # Copyright (C) 2010 Marie E. Rognes
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,7 +20,7 @@
 # formulation involving the Mini element. The velocity element is
 # composed of a P1 element augmented by the cubic bubble function.
 
-# Compile this form with FFC: ffc Mini.ufl
+# Compile this form with FFC: ffcx Mini.ufl
 
 P1 = FiniteElement("Lagrange", triangle, 1)
 B = FiniteElement("Bubble", triangle, 3)

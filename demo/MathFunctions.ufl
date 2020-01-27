@@ -1,6 +1,6 @@
 # Copyright (C) 2010 Kristian B. Oelgaard
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
 #
 # Test all algebra operators on Coefficients.
 #
-# Compile this form with FFC: ffc MathFunctions.ufl
+# Compile this form with FFC: ffcx MathFunctions.ufl
 
 element = FiniteElement("Lagrange", triangle, 1)
 

@@ -1,6 +1,6 @@
 # Copyright (C) 2008-2016 Kristian B. Oelgaard
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
 # The linearised bilinear form a(u, v) and linear form L(v) for
 # the nonlinear equation -div (1 + u) grad u = f (nonlinear Poisson)
 #
-# Compile this form with FFC: ffc QuadratureElement.ufl
+# Compile this form with FFC: ffcx QuadratureElement.ufl
 
 # Configure measure with specific quadrature rule
 scheme = "default"

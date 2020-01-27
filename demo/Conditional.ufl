@@ -1,6 +1,6 @@
 # Copyright (C) 2010-2011 Kristian B. Oelgaard
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
 #
 # Illustration on how to use Conditional to define a source term
 #
-# Compile this form with FFC: ffc Conditional.ufl
+# Compile this form with FFC: ffcx Conditional.ufl
 
 element = FiniteElement("Lagrange", triangle, 2)
 

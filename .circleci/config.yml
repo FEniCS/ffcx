@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/python:3.7
-    working_directory: ~/ffc-test
+    working_directory: ~/ffcx-test
     steps:
       - checkout
       - run:
@@ -17,11 +17,11 @@ jobs:
             pip install git+https://github.com/FEniCS/fiat.git --user
             pip install git+https://github.com/FEniCS/ufl.git --user
       - run:
-          name: Install FFC
+          name: Install FFCX
           command: pip install . --user -v
       - run:
           name: Run flake8 tests
-          command: python -m flake8 ffc/ test/
+          command: python -m flake8 ffcx/ test/
       - run:
           name: Run pydocstyle tests
           command: python -m pydocstyle .
@@ -29,9 +29,9 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            python -m pytest --cov=ffc/ -n 4 -v test/
+            python -m pytest --cov=ffcx/ -n 4 -v test/
             coveralls
       - run:
           name: Run demos
           command: |
-            ffc demo/*.ufl -v
+            ffcx demo/*.ufl -v
