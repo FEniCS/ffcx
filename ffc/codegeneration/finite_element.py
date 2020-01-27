@@ -336,64 +336,38 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             entity_reflections = L.Symbol("entity_reflections")
             dof_attributes_code.append(L.ArrayDecl(
                 "const " + index_type, e_of_rd, (ir.space_dimension, ), values=entities_of_reflected_dofs))
-            transform_apply_code += [
-                L.ForRanges(
-                    dofrange,
-                    (s, 0, num_derivatives_t),
-                    (i, 0, num_physical_components),
-                    index_type=index_type,
-                    body=[
-                        # Unrolled application of mapping to one physical component,
-                        # for affine this automatically reduces to
-                        #   mapped_value = reference_values[..., reference_offset]
-                        L.Comment(msg),
-                        L.VariableDecl(
-                            "const double", mapped_value,
-                            # The Conditional here will multiply by 1 if the dof is not a vector, or the
-                            # entity is not reflected; and -1 if the dof is vector and reflected
-                            M_scale * L.Conditional(L.Or(L.EQ(e_of_rd[idof], -1),
-                                                    L.Not(entity_reflections[e_of_rd[idof]])), 1, -1)
-                            * sum(
-                                M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
-                                for jj in range(num_reference_components))),
-                        # Apply derivative transformation, for order=0 this reduces to
-                        # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
-                        L.Comment("Mapping derivatives back to the physical element"),
-                        L.ForRanges((r, 0, num_derivatives_g),
-                                    index_type=index_type,
-                                    body=[
-                                        L.AssignAdd(values[ip, idof, r, physical_offset + i],
-                                                    transform[r, s] * mapped_value)])
-                    ])
-            ]
+            vec_scale = L.Conditional(L.Or(L.EQ(e_of_rd[idof], -1),
+                                           L.Not(entity_reflections[e_of_rd[idof]])), 1, -1)
         # If no dof needs reflecting, leave out the Conditional
         else:
-            transform_apply_code += [
-                L.ForRanges(
-                    dofrange,
-                    (s, 0, num_derivatives_t),
-                    (i, 0, num_physical_components),
-                    index_type=index_type,
-                    body=[
-                        # Unrolled application of mapping to one physical component,
-                        # for affine this automatically reduces to
-                        #   mapped_value = reference_values[..., reference_offset]
-                        L.Comment(msg),
-                        L.VariableDecl(
-                            "const double", mapped_value,
-                            M_scale * sum(
-                                M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
-                                for jj in range(num_reference_components))),
-                        # Apply derivative transformation, for order=0 this reduces to
-                        # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
-                        L.Comment("Mapping derivatives back to the physical element"),
-                        L.ForRanges((r, 0, num_derivatives_g),
-                                    index_type=index_type,
-                                    body=[
-                                        L.AssignAdd(values[ip, idof, r, physical_offset + i],
-                                                    transform[r, s] * mapped_value)])
-                    ])
-            ]
+            vec_scale = 1
+
+        transform_apply_code += [
+            L.ForRanges(
+                dofrange,
+                (s, 0, num_derivatives_t),
+                (i, 0, num_physical_components),
+                index_type=index_type,
+                body=[
+                    # Unrolled application of mapping to one physical component,
+                    # for affine this automatically reduces to
+                    #   mapped_value = reference_values[..., reference_offset]
+                    L.Comment(msg),
+                    L.VariableDecl(
+                        "const double", mapped_value,
+                        M_scale * vec_scale * sum(
+                            M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
+                            for jj in range(num_reference_components))),
+                    # Apply derivative transformation, for order=0 this reduces to
+                    # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
+                    L.Comment("Mapping derivatives back to the physical element"),
+                    L.ForRanges((r, 0, num_derivatives_g),
+                                index_type=index_type,
+                                body=[
+                                    L.AssignAdd(values[ip, idof, r, physical_offset + i],
+                                                transform[r, s] * mapped_value)])
+                ])
+        ]
     # Transform for each point
     point_loop_code = [
         L.ForRange(
