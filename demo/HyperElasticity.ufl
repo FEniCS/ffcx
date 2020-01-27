@@ -1,6 +1,6 @@
 # Copyright (C) 2009 Harish Narayanan
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # a hyperelastic model. (Copied from dolfin/demo/pde/hyperelasticity/cpp)
 #
-# Compile this form with FFC: ffc HyperElasticity.ufl.
+# Compile this form with FFC: ffcx HyperElasticity.ufl.
 
 # Coefficient spaces
 element = VectorElement("Lagrange", tetrahedron, 1)

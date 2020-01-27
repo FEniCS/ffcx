@@ -25,7 +25,7 @@ else:
 
 URL = "https://github.com/FEniCS/ffcx/"
 
-ENTRY_POINTS = {'console_scripts': ['ffc = ffc.__main__:main', 'ffc-3 = ffc.__main__:main']}
+ENTRY_POINTS = {'console_scripts': ['ffcx = ffcx.__main__:main', 'ffcx-3 = ffcx.__main__:main']}
 
 AUTHORS = """\
 Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,
@@ -55,7 +55,7 @@ Topic :: Software Development :: Code Generators
 def tarball():
     if "dev" in VERSION:
         return None
-    return URL + "downloads/fenics-ffc-{}.tar.gz".format(VERSION)
+    return URL + "downloads/fenics-ffcx-{}.tar.gz".format(VERSION)
 
 
 def get_git_commit_hash():
@@ -87,8 +87,8 @@ def write_config_file(infile, outfile, variables={}):
 def generate_git_hash_file(GIT_COMMIT_HASH):
     """Generate module with git hash."""
     write_config_file(
-        os.path.join("ffc", "git_commit_hash.py.in"),
-        os.path.join("ffc", "git_commit_hash.py"),
+        os.path.join("ffcx", "git_commit_hash.py.in"),
+        os.path.join("ffcx", "git_commit_hash.py"),
         variables=dict(GIT_COMMIT_HASH=GIT_COMMIT_HASH))
 
 
@@ -106,7 +106,7 @@ def run_install():
 
     # Call distutils to perform installation
     setuptools.setup(
-        name="fenics-ffc",
+        name="fenics-ffcx",
         description="The FEniCS Form Compiler",
         version=VERSION,
         author=AUTHORS,
@@ -118,15 +118,15 @@ def run_install():
         download_url=tarball(),
         platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
         packages=[
-            "ffc",
-            "ffc.codegeneration",
-            "ffc.codegeneration.C",
-            "ffc.ir",
-            "ffc.ir.uflacs",
-            "ffc.ir.uflacs.analysis",
+            "ffcx",
+            "ffcx.codegeneration",
+            "ffcx.codegeneration.C",
+            "ffcx.ir",
+            "ffcx.ir.uflacs",
+            "ffcx.ir.uflacs.analysis",
         ],
-        package_dir={"ffc": "ffc"},
-        package_data={"ffc": [os.path.join('codegeneration', '*.h')]},
+        package_dir={"ffcx": "ffcx"},
+        package_data={"ffcx": [os.path.join('codegeneration', '*.h')]},
         # scripts=scripts,  # Using entry_points instead
         entry_points=entry_points,
         install_requires=REQUIREMENTS,

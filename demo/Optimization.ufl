@@ -1,6 +1,6 @@
 # Copyright (C) 2004-2007 Anders Logg
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation.
 #
-# Compile this form with FFC: ffc -O Optimization.ufl
+# Compile this form with FFC: ffcx -O Optimization.ufl
 
 element = FiniteElement("Lagrange", triangle, 3)
 

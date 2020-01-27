@@ -1,6 +1,6 @@
 # Copyright (C) 2016 Jan Blechta
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation using bilinear elements on bilinear mesh geometry.
 #
-# Compile this form with FFC: ffc PoissonQuad.ufl
+# Compile this form with FFC: ffcx PoissonQuad.ufl
 
 coords = VectorElement("P", triangle, 2)
 mesh = Mesh(coords)

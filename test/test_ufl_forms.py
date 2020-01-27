@@ -1,23 +1,23 @@
 # Copyright (C) 2018 Chris N. Richardson
 #
-# This file is part of FFC (https://www.fenicsproject.org)
+# This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import os
 import os.path
 
-import ffc
+import ffcx
 
 
 def test_forms():
     os.chdir(os.path.join(os.path.dirname(__file__), "ufl_forms"))
-    ffc.main(["-v", "Poisson.ufl"])
-    ffc.main(["--visualise", "1", "Poisson.ufl"])
-    ffc.main(["-v", "PoissonDG.ufl"])
-    ffc.main(["-v", "Conditional.ufl"])
-    ffc.main(["-v", "HyperElasticity.ufl"])
-    ffc.main(["-v", "VectorLaplaceGradCurl.ufl"])
-    ffc.main(["-v", "ProjectionManifold.ufl"])
-    ffc.main(["-v", "Symmetry.ufl"])
-    ffc.main(["-v", "MixedGradient.ufl"])
+    ffcx.main(["-v", "Poisson.ufl"])
+    ffcx.main(["--visualise", "1", "Poisson.ufl"])
+    ffcx.main(["-v", "PoissonDG.ufl"])
+    ffcx.main(["-v", "Conditional.ufl"])
+    ffcx.main(["-v", "HyperElasticity.ufl"])
+    ffcx.main(["-v", "VectorLaplaceGradCurl.ufl"])
+    ffcx.main(["-v", "ProjectionManifold.ufl"])
+    ffcx.main(["-v", "Symmetry.ufl"])
+    ffcx.main(["-v", "MixedGradient.ufl"])

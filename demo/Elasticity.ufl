@@ -1,6 +1,6 @@
 # Copyright (C) 2005 Johan Jansson
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@
 # The bilinear form e(v) : e(u) for linear
 # elasticity with e(v) = 1/2 (grad(v) + grad(v)^T)
 #
-# Compile this form with FFC: ffc Elasticity.ufl
+# Compile this form with FFC: ffcx Elasticity.ufl
 
 element = VectorElement("Lagrange", tetrahedron, 1)
 

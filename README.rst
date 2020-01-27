@@ -19,9 +19,9 @@ FFC-X is a compiler for finite element variational forms. From a
 high-level description of the form, it generates efficient low-level C
 code that can be used to assemble the corresponding discrete operator
 (tensor). In particular, a bilinear form may be assembled into a
-matrix and a linear form may be assembled into a vector.  FFC may be
-used either from the command line (by invoking the ``ffc`` command) or
-as a Python module (``import ffc``).
+matrix and a linear form may be assembled into a vector.  FFCX may be
+used either from the command line (by invoking the ``ffcx`` command) or
+as a Python module (``import ffcx``).
 
 FFC-X is part of the FEniCS Project.
 

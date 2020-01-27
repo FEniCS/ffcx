@@ -1,6 +1,6 @@
 # Copyright (C) 2011 Garth N. Wells
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
 #
 # This example demonstrates how to create vectors component-wise
 #
-# Compile this form with FFC: ffc Component.ufl
+# Compile this form with FFC: ffcx Component.ufl
 
 element = VectorElement("Lagrange", tetrahedron, 1)
 
