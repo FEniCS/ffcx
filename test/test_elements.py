@@ -1,6 +1,6 @@
 # Copyright (C) 2007-2017 Anders Logg and Garth N. Wells
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,13 +17,13 @@
 #
 # Modified by Marie E. Rognes, 2010
 # Modified by Lizao Li, 2016
-"Unit tests for FFC"
+"Unit tests for FFCX"
 
 
 import numpy
 import pytest
 
-from ffc.fiatinterface import create_element
+from ffcx.fiatinterface import create_element
 from ufl import FiniteElement
 
 

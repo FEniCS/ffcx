@@ -1,6 +1,6 @@
 # Copyright (C) 2009 Anders Logg
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -18,7 +18,7 @@
 # The bilinear form a(u, v) and linear form L(v) for a simple
 # reaction-diffusion equation using simplified tuple notation.
 #
-# Compile this form with FFC: ffc ReactionDiffusion.ufl
+# Compile this form with FFC: ffcx ReactionDiffusion.ufl
 
 element = FiniteElement("Lagrange", triangle, 1)
 

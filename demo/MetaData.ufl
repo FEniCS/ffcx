@@ -1,6 +1,6 @@
 # Copyright (C) 2009 Kristian B. Oelgaard
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
 #
 # Test form for metadata
 #
-# Compile this form with FFC: ffc MetaData.ufl
+# Compile this form with FFC: ffcx MetaData.ufl
 
 element = FiniteElement("Lagrange", triangle, 1)
 

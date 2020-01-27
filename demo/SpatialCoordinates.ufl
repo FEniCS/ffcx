@@ -1,6 +1,6 @@
 # Copyright (C) 2010 Kristian B. Oelgaard
 #
-# This file is part of FFC.
+# This file is part of FFCX.
 #
 # FFC is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -19,7 +19,7 @@
 # Poisson's equation where spatial coordinates are used to define the source
 # and boundary flux terms.
 #
-# Compile this form with FFC: ffc SpatialCoordinates.ufl
+# Compile this form with FFC: ffcx SpatialCoordinates.ufl
 
 element = FiniteElement("Lagrange", triangle, 2)
 
