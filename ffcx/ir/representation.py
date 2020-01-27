@@ -25,8 +25,8 @@ import numpy
 import ufl
 from ffcx import classname
 from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
-                               MixedElement, QuadratureElement, SpaceOfReals,
-                               create_element)
+                                MixedElement, QuadratureElement, SpaceOfReals,
+                                create_element)
 from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)

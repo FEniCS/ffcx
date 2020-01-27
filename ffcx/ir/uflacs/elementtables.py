@@ -14,8 +14,8 @@ import ufl
 import ufl.utils.derivativetuples
 from ffcx.fiatinterface import create_element
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
-                                        integral_type_to_entity_dim,
-                                        map_integral_points)
+                                         integral_type_to_entity_dim,
+                                         map_integral_points)
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
 
 
 def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
-                         derivative_counts, flat_component):
+                          derivative_counts, flat_component):
     """Extract values from ffcx element table.
 
     Returns a 3D numpy array with axes
@@ -387,8 +387,8 @@ def build_element_tables(num_points,
         # Extract the values of the table from ffcx table format
         if name not in tables:
             tables[name] = get_ffcx_table_values(quadrature_rules[num_points][0], cell,
-                                                integral_type, element, avg, entitytype,
-                                                local_derivatives, flat_component)
+                                                 integral_type, element, avg, entitytype,
+                                                 local_derivatives, flat_component)
 
             # Track table origin for custom integrals:
             table_origins[name] = res

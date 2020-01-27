@@ -12,8 +12,8 @@ from ffcx.fiatinterface import create_element
 from ffcx.ir.representationutils import initialize_integral_ir
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffcx.ir.uflacs.tools import (accumulate_integrals,
-                                 collect_quadrature_rules,
-                                 compute_quadrature_rules)
+                                  collect_quadrature_rules,
+                                  compute_quadrature_rules)
 import ufl
 from ufl.algorithms import replace
 from ufl.utils.sorting import sorted_by_count

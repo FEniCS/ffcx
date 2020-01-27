@@ -11,7 +11,7 @@ import numpy
 
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
 from ffcx.codegeneration.C.format_value import (format_float, format_int,
-                                               format_value)
+                                                format_value)
 from ffcx.codegeneration.C.precedence import PRECEDENCE
 
 logger = logging.getLogger(__name__)

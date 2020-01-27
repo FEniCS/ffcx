@@ -9,7 +9,7 @@
 
 from ffcx.codegeneration import form_template as ufc_form
 from ffcx.codegeneration.utils import (generate_return_new,
-                                      generate_return_new_switch)
+                                       generate_return_new_switch)
 from ffcx.ir.representation import ufc_integral_types
 
 # These are the method names in ufc_form that are specialized for each

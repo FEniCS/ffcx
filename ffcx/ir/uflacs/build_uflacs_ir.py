@@ -15,11 +15,11 @@ import ufl
 from ffcx.ir.uflacs.analysis.factorization import compute_argument_factorization
 from ffcx.ir.uflacs.analysis.graph import build_scalar_graph
 from ffcx.ir.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
-                                                       is_modified_terminal)
+                                                        is_modified_terminal)
 from ffcx.ir.uflacs.analysis.visualise import visualise_graph
 from ffcx.ir.uflacs.elementtables import (build_optimized_tables,
-                                         clamp_table_small_numbers,
-                                         piecewise_ttypes)
+                                          clamp_table_small_numbers,
+                                          piecewise_ttypes)
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
