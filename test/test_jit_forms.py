@@ -255,7 +255,7 @@ def test_form_coefficient():
         ffi.cast('double  *', w.ctypes.data),
         ffi.cast('double  *', c.ctypes.data),
         ffi.cast('double  *', coords.ctypes.data), ffi.NULL, ffi.NULL,
-        ffi.cast('int *', perm.ctypes.data))
+        ffi.cast('uint8_t *', perm.ctypes.data))
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
     A_diff = (A - A_analytic)
@@ -343,7 +343,7 @@ def test_interior_facet_integral(mode):
         ffi.cast('{}  *'.format(c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
         ffi.cast('int *', orients.ctypes.data),
-        ffi.cast('int *', perms.ctypes.data))
+        ffi.cast('uint8_t *', perms.ctypes.data))
 
     print(A)
 

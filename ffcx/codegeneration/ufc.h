@@ -425,7 +425,7 @@ extern "C"
       const double* restrict coordinate_dofs,
       const int* entity_local_index,
       const int* cell_orientation,
-      const int* quadrature_permutation);
+      const uint8_t* quadrature_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
