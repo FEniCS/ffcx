@@ -455,7 +455,7 @@ def build_element_tables(num_points,
                         new_table = []
                         for rot in range(4):
                             for ref in range(2):
-                                new_table.append(xget_ffc_table_values(
+                                new_table.append(get_ffcx_table_values(
                                     permute_quadrature_quadrilateral(quadrature_rules[num_points][0], ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
