@@ -426,14 +426,14 @@ def build_element_tables(num_points,
             if entitytype == "facet":
                 if tdim == 1:
                     tables[name] = numpy.array([
-                        get_ffc_table_values(quadrature_rules[num_points][0], cell,
-                                             integral_type, element, avg, entitytype,
-                                             local_derivatives, flat_component)])
+                        get_ffcx_table_values(quadrature_rules[num_points][0], cell,
+                                              integral_type, element, avg, entitytype,
+                                              local_derivatives, flat_component)])
                 elif tdim == 2:
                     # Extract the values of the table from ffc table format
                     new_table = []
                     for ref in range(2):
-                        new_table.append(get_ffc_table_values(
+                        new_table.append(get_ffcx_table_values(
                             permute_quadrature_interval(quadrature_rules[num_points][0], ref),
                             cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
@@ -445,7 +445,7 @@ def build_element_tables(num_points,
                         new_table = []
                         for rot in range(3):
                             for ref in range(2):
-                                new_table.append(get_ffc_table_values(
+                                new_table.append(get_ffcx_table_values(
                                     permute_quadrature_triangle(quadrature_rules[num_points][0], ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
@@ -455,16 +455,16 @@ def build_element_tables(num_points,
                         new_table = []
                         for rot in range(4):
                             for ref in range(2):
-                                new_table.append(get_ffc_table_values(
+                                new_table.append(xget_ffc_table_values(
                                     permute_quadrature_quadrilateral(quadrature_rules[num_points][0], ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                         tables[name] = numpy.array(new_table)
             else:
                 # Extract the values of the table from ffc table format
-                tables[name] = numpy.array([get_ffc_table_values(quadrature_rules[num_points][0], cell,
-                                            integral_type, element, avg, entitytype,
-                                            local_derivatives, flat_component)])
+                tables[name] = numpy.array([get_ffcx_table_values(quadrature_rules[num_points][0], cell,
+                                                                  integral_type, element, avg, entitytype,
+                                                                  local_derivatives, flat_component)])
 
             # Track table origin for custom integrals:
             table_origins[name] = res
