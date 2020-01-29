@@ -103,6 +103,7 @@ extern "C"
         double* restrict reference_values, int order, int num_points,
         const double* restrict X);
 
+    /// @todo Document this function
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
@@ -367,39 +368,39 @@ extern "C"
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
   /// @param[out] A
-  /// @param[in] w
-  ///         Coefficients attached to the form to which the tabulated integral
-  ///         belongs.
-  ///         Dimensions: w[coefficient][restriction][dof].
-  ///         Restriction dimension applies to interior facet integrals, where
-  ///         coefficients restricted to both cells sharing the facet must be
-  ///         provided.
-  /// @param[in] c
-  ///         Constants attached to the form to which the tabulated integral
-  ///         belongs.
-  ///         Dimensions: c[constant][dim].
-  /// @param[in] coordinate_dofs
-  ///         Values of degrees of freedom of coordinate element.
-  ///         Defines the geometry of the cell.
-  ///         Dimensions: coordinate_dofs[restriction][num_dofs][gdim].
-  ///         Restriction dimension applies to interior facet integrals, where
-  ///         cell geometries for both cells sharing the facet must be provided.
-  /// @param[in] entity_local_index
-  ///         Local index of mesh entity on which to tabulate.
-  ///         This applies to facet integrals.
-  /// @param[in] quadrature_permutation
-  ///         For facet integrals, numbers to indicate the permutation to be
-  ///         applied to each side of the facet to make the orientations of the
-  ///         faces matched up should be passed in. If N is passed in, then:
-  ///         floor(N / 2) gives the number of rotations to apply to the facet
-  ///         N % 2 gives the number of reflections to apply to the facet
-  ///         For integrals not on facets, this has no effect (and a null
-  ///         pointer can be passed in).
-  ///         For interior facets, this will have size 2 (one permutation for
-  ///         each cell adjacent to the facet). For exterior facets, this will
-  ///         have size 1. For non-facet integrals, a null pointer can be passed
-  ///         in.
+  /// @param[in] w Coefficients attached to the form to which the
+  ///         tabulated integral belongs.
   ///
+  ///         Dimensions: w[coefficient][restriction][dof].
+  ///
+  ///         Restriction dimension
+  ///         applies to interior facet integrals, where coefficients
+  ///         restricted to both cells sharing the facet must be
+  ///         provided.
+  /// @param[in] c Constants attached to the form to which the tabulated
+  ///         integral belongs. Dimensions: c[constant][dim].
+  /// @param[in] coordinate_dofs Values of degrees of freedom of
+  ///         coordinate element. Defines the geometry of the cell.
+  ///         Dimensions: coordinate_dofs[restriction][num_dofs][gdim].
+  ///         Restriction dimension applies to interior facet integrals,
+  ///         where cell geometries for both cells sharing the facet
+  ///         must be provided.
+  /// @param[in] entity_local_index Local index of mesh entity on which
+  ///         to tabulate. This applies to facet integrals.
+  /// @param[in] quadrature_permutation For facet integrals, numbers to
+  ///         indicate the permutation to be applied to each side of the
+  ///         facet to make the orientations of the faces matched up
+  ///         should be passed in. If an integer of value N is passed
+  ///         in, then:
+  ///
+  ///          - floor(N / 2) gives the number of rotations to apply to the facet
+  ///          - N % 2 gives the number of reflections to apply to the facet
+  ///
+  ///         For integrals not on facets, this argument has not effect
+  ///         and a null pointer can be passed. For
+  ///         interior facets the array will have size 2 (one permutation
+  ///         for each cell adjacent to the facet). For exterior facets,
+  ///         this will have size 1.
   typedef void (ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
       const double* restrict coordinate_dofs, const int* entity_local_index,
