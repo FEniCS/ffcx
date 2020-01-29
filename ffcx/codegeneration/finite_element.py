@@ -316,7 +316,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         # If no reflection needed, this will be -1
         entities_of_reflected_dofs = [-1 for i in range(ir.space_dimension)]
         reflect = False
-        ent_n = 0
         # Run through the entities and mark vector dofs on each entity
         for dim, e_dofs in ir.entity_dofs.items():
             for n, dofs in e_dofs.items():
@@ -324,20 +323,29 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                     if dim > 0:
                         t = ir.dof_types[d]
                         if t in vector_types:
-                            entities_of_reflected_dofs[d] = ent_n
+                            entities_of_reflected_dofs[d] = (dim, n)
                             reflect = True
-                ent_n += 1
 
         mapped_value = L.Symbol("mapped_value")
 
         # If at least one vector dof needs reflecting
         if reflect:
             e_of_rd = L.Symbol("entities_of_reflected_dofs")
-            entity_reflections = L.Symbol("entity_reflections")
+            d_of_rd = L.Symbol("dims_of_reflected_dofs")
+            face_reflections = L.Symbol("face_reflections")
+            edge_reflections = L.Symbol("edge_reflections")
             dof_attributes_code.append(L.ArrayDecl(
-                "const " + index_type, e_of_rd, (ir.space_dimension, ), values=entities_of_reflected_dofs))
+                "const " + index_type, e_of_rd, (ir.space_dimension, ),
+                values=[i[1] for i in entities_of_reflected_dofs]))
+            dof_attributes_code.append(L.ArrayDecl(
+                "const " + index_type, d_of_rd, (ir.space_dimension, ),
+                values=[i[0] for i in entities_of_reflected_dofs]))
             vec_scale = L.Conditional(L.Or(L.EQ(e_of_rd[idof], -1),
-                                           L.Not(entity_reflections[e_of_rd[idof]])), 1, -1)
+                                           L.EQ(d_of_rd[idof], 0),
+                                           L.EQ(d_of_rd[idof], 3),
+                                           L.And(L.EQ(d_of_rd[idof], 1), L.Not(edge_reflections[e_of_rd[idof]])),
+                                           L.And(L.EQ(d_of_rd[idof], 2), L.Not(face_reflections[e_of_rd[idof]]))),
+                                      1, -1)
         # If no dof needs reflecting, leave out the Conditional
         else:
             vec_scale = 1

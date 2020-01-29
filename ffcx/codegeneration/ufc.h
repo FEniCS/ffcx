@@ -107,7 +107,8 @@ extern "C"
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
-        const double* restrict K, const bool* entity_reflections);
+        const double* restrict K, const bool* edge_reflections,
+        const bool* face_reflections);
 
     /// Map values of field from physical to reference space which has
     /// been evaluated at points given by

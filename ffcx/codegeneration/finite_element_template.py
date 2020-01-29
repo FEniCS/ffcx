@@ -39,7 +39,7 @@ int transform_reference_basis_derivatives_{factory_name}(
     const double * restrict reference_values,
     const double * restrict X, const double * restrict J,
     const double * restrict detJ, const double * restrict K,
-    const bool* entity_reflections)
+    const bool* edge_reflections, const bool* face_reflections)
 {{
   {transform_reference_basis_derivatives}
 }}
