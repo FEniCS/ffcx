@@ -103,7 +103,15 @@ extern "C"
         double* restrict reference_values, int order, int num_points,
         const double* restrict X);
 
-    /// @todo Document this function
+    /// Map the reference values on to the cell
+    /// @param[in] edge_reflections An array of bools to say whether or not each
+    /// each edge has been reflected. This is used to ensure that vector dofs
+    /// are correctly oriented.
+    /// @param[in] face_reflections An array of bools to say whether or not each
+    /// each face has been reflected. This is used to ensure that vector dofs
+    /// are correctly oriented.
+    /// TODO: Use std::vector<int32_t> to store 1/0 marker for each edge/face
+
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
