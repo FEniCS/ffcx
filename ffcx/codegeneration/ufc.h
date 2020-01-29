@@ -393,7 +393,11 @@ extern "C"
   ///         floor(N / 2) gives the number of rotations to apply to the facet
   ///         N % 2 gives the number of reflections to apply to the facet
   ///         For integrals not on facets, this has no effect (and a null
-  ///         pointer can be passed in)
+  ///         pointer can be passed in).
+  ///         For interior facets, this will have size 2 (one permutation for
+  ///         each cell adjacent to the facet). For exterior facets, this will
+  ///         have size 1. For non-facet integrals, a null pointer can be passed
+  ///         in.
   ///
   typedef void (ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
