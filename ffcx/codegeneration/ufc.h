@@ -395,7 +395,7 @@ extern "C"
   ///         For integrals not on facets, this has no effect (and a null
   ///         pointer can be passed in)
   ///
-  typedef void(ufc_tabulate_tensor)(
+  typedef void (ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
       const double* restrict coordinate_dofs, const int* entity_local_index,
       const uint8_t* restrict quadrature_permutation);
@@ -404,7 +404,7 @@ extern "C"
   ///
   /// @see ufc_tabulate_tensor
   ///
-  typedef void(ufc_tabulate_tensor_custom)(
+  typedef void (ufc_tabulate_tensor_custom)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
       const double* restrict coordinate_dofs, int num_quadrature_points,
       const double* restrict quadrature_points,
