@@ -329,10 +329,10 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                         if t in vector_types:
                             if dim == 1:
                                 reflect_dofs[dof_n] = edge_reflections[n]
-                            if dim == 1:
+                            if dim == 2:
                                 reflect_dofs[dof_n] = face_reflections[n]
                             reflect = True
-                    dof_n += 1
+                        dof_n += 1
                 else:
                     dof_n += len(dofs)
 
