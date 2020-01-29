@@ -100,7 +100,7 @@ def test_cmap_triangle():
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
     coords = np.array([0.0, 0.0, 2.0, 0.0, 0.0, 4.0], dtype=np.float64)
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
-    compiled_cmap[0].compute_reference_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr, 0)
+    compiled_cmap[0].compute_reference_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr)
 
     assert(np.isclose(X[0, 0], 0.25))
     assert(np.isclose(X[0, 1], 0.125))

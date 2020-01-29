@@ -8,7 +8,7 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
-from ffcx.codegeneration.jacobian import inverse_jacobian, jacobian, orientation
+from ffcx.codegeneration.jacobian import inverse_jacobian, jacobian
 from ufl.permutation import build_component_numbering
 
 index_type = "int64_t"
@@ -329,8 +329,6 @@ def generate_transform_values(L, ir):
 
         if needs_inverse_jacobian:
             code += inverse_jacobian(L, gdim, tdim, cell_shape)
-            if tdim != gdim:
-                code += orientation(L)
 
     # Extract variables
     mappings = ir.mappings

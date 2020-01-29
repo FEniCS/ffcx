@@ -87,13 +87,6 @@ class FFCXBackendSymbols(object):
         else:
             logging.exception("Unknown entitytype {}".format(entitytype))
 
-    def cell_orientation_argument(self, restriction):
-        """Cell orientation argument in ufc. Not same as cell orientation in generated code."""
-        postfix = "[0]"
-        if restriction == "-":
-            postfix = "[1]"
-        return self.S("cell_orientation" + postfix)
-
     def cell_orientation_internal(self, restriction):
         """Internal value for cell orientation in generated code."""
         return self.S("co" + ufc_restriction_postfix(restriction))

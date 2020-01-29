@@ -50,8 +50,8 @@ class FFCXBackendDefinitions(object):
                             ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
                             ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
                             ufl.geometry.ReferenceNormal: self._expect_table,
-                            ufl.geometry.FacetOrientation: self._expect_table,
                             ufl.geometry.CellOrientation: self.cell_orientation,
+                            ufl.geometry.FacetOrientation: self._expect_table,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
     def get(self, t, mt, tabledata, num_points, access):
@@ -186,12 +186,8 @@ class FFCXBackendDefinitions(object):
         return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
     def cell_orientation(self, e, mt, tabledata, num_points, access):
-        # Would be nicer if cell_orientation was a double variable input,
-        # but this is how dolfinx/ufc/ffcx currently passes this information.
-        # 0 means up and gives +1.0, 1 means down and gives -1.0.
         L = self.language
-        co = self.symbols.cell_orientation_argument(mt.restriction)
-        expr = L.Conditional(L.EQ(co, L.LiteralInt(1)), L.LiteralFloat(-1.0), L.LiteralFloat(+1.0))
+        expr = L.LiteralFloat(+1.0)
         code = [L.VariableDecl("const ufc_scalar_t", access, expr)]
         return code
 

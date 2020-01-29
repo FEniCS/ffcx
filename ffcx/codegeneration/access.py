@@ -43,8 +43,8 @@ class FFCXBackendAccess(object):
                             ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
                             ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
                             ufl.geometry.ReferenceNormal: self.reference_normal,
-                            ufl.geometry.FacetOrientation: self.facet_orientation,
                             ufl.geometry.CellOrientation: self.cell_orientation,
+                            ufl.geometry.FacetOrientation: self.facet_orientation,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
     def get(self, e, mt, tabledata, num_points):
