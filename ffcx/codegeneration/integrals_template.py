@@ -18,7 +18,9 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* unused_local_index,
-                                    const uint8_t* restrict quadrature_permutation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections)
 {{
 {tabulate_tensor}
 }}
@@ -29,7 +31,9 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
-                                    const uint8_t* restrict quadrature_permutation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections)
 {{
 {tabulate_tensor}
 }}
@@ -40,7 +44,9 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
-                                    const uint8_t* restrict quadrature_permutation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections)
 {{
 {tabulate_tensor}
 }}
@@ -51,7 +57,9 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* vertex,
-                                    const uint8_t* restrict quadrature_permutation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections)
 {{
 {tabulate_tensor}
 }}

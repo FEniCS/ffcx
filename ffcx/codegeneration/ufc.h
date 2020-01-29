@@ -401,7 +401,8 @@ extern "C"
   ///         should be passed in. If an integer of value N is passed
   ///         in, then:
   ///
-  ///          - floor(N / 2) gives the number of rotations to apply to the facet
+  ///          - floor(N / 2) gives the number of rotations to apply to the
+  ///          facet
   ///          - N % 2 gives the number of reflections to apply to the facet
   ///
   ///         For integrals not on facets, this argument has not effect
@@ -409,10 +410,20 @@ extern "C"
   ///         interior facets the array will have size 2 (one permutation
   ///         for each cell adjacent to the facet). For exterior facets,
   ///         this will have size 1.
+  /// @param[in] edge_reflections An array of bools to say whether or not each
+  ///         each edge has been reflected. This is used to ensure that vector
+  ///         dofs are correctly oriented. This array will have one entry for
+  ///         each edge of the cell.
+  /// @param[in] face_reflections An array of bools to say whether or not each
+  ///         each face has been reflected. This is used to ensure that vector
+  ///         dofs are correctly oriented. This array will have one entry for
+  ///         each face of the cell.
+  /// TODO: Use std::vector<int32_t> to store 1/0 marker for each edge/face
   typedef void (ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
       const double* restrict coordinate_dofs, const int* entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
+      const uint8_t* restrict quadrature_permutation,
+      const bool* edge_reflections, const bool* face_reflections);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
