@@ -311,41 +311,39 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         # TODO: check that these are all vector and that no other types are vector
         vector_types = ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
                         "PointFaceTangent", "PointScaledNormalEval", "PointNormalEval"]
-        # For each dof that needs reflection this will contain the entity number that the dof is associated with.
+        # For each dof that needs reflection this will contain the edge of face reflection that the dof is associated
+        # with, or False if the dof is on a Point or inside a volume.
         # Entities are numbered: Point0, Point1, ..., Edge0, Edge1, ..., Face0, [Face1, ..., Volume]
         # If no reflection needed, this will be -1
-        entities_of_reflected_dofs = [-1 for i in range(ir.space_dimension)]
+        reflect_dofs = [False for i in range(ir.space_dimension)]
         reflect = False
+        dof_n = 0
+        face_reflections = L.Symbol("face_reflections")
+        edge_reflections = L.Symbol("edge_reflections")
         # Run through the entities and mark vector dofs on each entity
         for dim, e_dofs in ir.entity_dofs.items():
             for n, dofs in e_dofs.items():
-                for d in dofs:
-                    if dim > 0:
+                if dim == 1 or dim == 2:
+                    for d in dofs:
                         t = ir.dof_types[d]
                         if t in vector_types:
-                            entities_of_reflected_dofs[d] = (dim, n)
+                            if dim == 1:
+                                reflect_dofs[dof_n] = edge_reflections[n]
+                            if dim == 1:
+                                reflect_dofs[dof_n] = face_reflections[n]
                             reflect = True
+                    dof_n += 1
+                else:
+                    dof_n += len(dofs)
 
         mapped_value = L.Symbol("mapped_value")
 
         # If at least one vector dof needs reflecting
         if reflect:
-            e_of_rd = L.Symbol("entities_of_reflected_dofs")
-            d_of_rd = L.Symbol("dims_of_reflected_dofs")
-            face_reflections = L.Symbol("face_reflections")
-            edge_reflections = L.Symbol("edge_reflections")
+            rd = L.Symbol("reflected_dofs")
             dof_attributes_code.append(L.ArrayDecl(
-                "const " + index_type, e_of_rd, (ir.space_dimension, ),
-                values=[i[1] for i in entities_of_reflected_dofs]))
-            dof_attributes_code.append(L.ArrayDecl(
-                "const " + index_type, d_of_rd, (ir.space_dimension, ),
-                values=[i[0] for i in entities_of_reflected_dofs]))
-            vec_scale = L.Conditional(L.Or(L.EQ(e_of_rd[idof], -1),
-                                           L.EQ(d_of_rd[idof], 0),
-                                           L.EQ(d_of_rd[idof], 3),
-                                           L.And(L.EQ(d_of_rd[idof], 1), L.Not(edge_reflections[e_of_rd[idof]])),
-                                           L.And(L.EQ(d_of_rd[idof], 2), L.Not(face_reflections[e_of_rd[idof]]))),
-                                      1, -1)
+                "const bool", rd, (ir.space_dimension, ), values=reflect_dofs))
+            vec_scale = L.Conditional(rd[idof], 1, -1)
         # If no dof needs reflecting, leave out the Conditional
         else:
             vec_scale = 1
