@@ -109,9 +109,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
 
 def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
     """Analyzes and preprocesses expressions."""
-
     preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
-
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
     expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
@@ -121,7 +119,6 @@ def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
 
     complex_mode = "complex" in parameters.get("scalar_type", "double")
-
     if not complex_mode:
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
 
@@ -211,11 +208,10 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data
     for integral_data in form_data.integral_data:
-        # Iterate through groups of integral data
+        # Iterate through groups of integral data. There is one integral
+        # data for all integrals with same domain, itype, subdomain_id
+        # (but possibly different metadata).
         #
-        # There is one integral data for all integrals with same domain,
-        # itype, subdomain_id (but possibly different metadata)
-
         # Quadrature degree and quadrature scheme must be the same for
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
@@ -224,13 +220,12 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # The priority of quadrature degree determination is following
         #
-        # 1. parameters["quadrature_degree"]
-        # 2. specified in metadata of integral
-        # 3. estimated by UFL
+        # 1. Parameters["quadrature_degree"]
+        # 2. Specified in metadata of integral
+        # 3. Estimated by UFL
         quadrature_degrees = set([integral.metadata().get("quadrature_degree", "auto")
                                   for integral in integral_data.integrals])
         quadrature_degrees.discard("auto")
-
 
         if isinstance(parameters["quadrature_degree"], int):
             # Quadrature degree is forced by FFCX parameters
@@ -240,31 +235,33 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         elif len(quadrature_degrees) == 0:
             # If there are more integrals in this integral data group
             # and UFL estimated different degrees we pick maximum
-            #
-            # Quadrature degree is then unnecessary high for some integrals
-            # in this integral data group, but no approximation error is introduced
-            # TODO: Possibly add warning for user
 
             # Find all estimated polynomial degrees by UFL for all integrals in this
             # integral data group
             estimated_quadrature_degrees = [integral.metadata()["estimated_polynomial_degree"]
                                             for integral in integral_data.integrals]
-
             qd = max(estimated_quadrature_degrees)
+
+            # The quadrature degree from UFL can be very high for some
+            # integrals.  Print warning if number of quadrature points
+            # exceeds 100.
+            tdim = integral_data.domain.topological_dimension()
+            num_points = ((qd + 1 + 1) // 2)**tdim
+            if num_points >= 100:
+                warnings.warn(
+                    "Number of integration points per cell is: {}. Consider using 'quadrature_degree' "
+                    "to reduce number.".format(num_points))
         elif len(quadrature_degrees) > 1:
             raise RuntimeError("Only one quadrature degree allowed within integrals grouped by subdomain.")
         else:
             raise RuntimeError("Unable to determine quadrature degree.")
-
-        tdim = integral_data.domain.topological_dimension()
-        _check_quadrature_degree(qd, tdim)
 
         # ----- Extract common quadrature rule
         #
         # The priority of quadrature rule determination is following
         #
         # 1. parameters["quadrature_rule"]
-        # 2. specified in metadata of integral
+        # 2. Specified in metadata of integral
         quadrature_rules = set([integral.metadata().get("quadrature_rule", None)
                                 for integral in integral_data.integrals])
         quadrature_rules.discard(None)
@@ -327,16 +324,3 @@ def _has_custom_integrals(o) -> bool:
         return any(_has_custom_integrals(itg) for itg in o)
     else:
         raise NotImplementedError
-
-
-def _check_quadrature_degree(degree: int, top_dim: int) -> None:
-    """Check quadrature degree.
-    Check that it does not result in a unreasonable high
-    number of integration points.
-
-    """
-    num_points = ((degree + 1 + 1) // 2)**top_dim
-    if num_points >= 100:
-        warnings.warn(
-            "Number of integration points per cell is : {}. Consider using 'quadrature_degree' "
-            "to reduce number.".format(num_points))
