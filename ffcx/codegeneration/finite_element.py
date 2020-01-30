@@ -336,8 +336,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 else:
                     dof_n += len(dofs)
 
-        mapped_value = L.Symbol("mapped_value")
-
         # If at least one vector dof needs reflecting
         if reflect:
             rd = L.Symbol("reflected_dofs")
@@ -347,6 +345,8 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         # If no dof needs reflecting, leave out the Conditional
         else:
             vec_scale = 1
+
+        mapped_value = L.Symbol("mapped_value")
 
         transform_apply_code += [
             L.ForRanges(
