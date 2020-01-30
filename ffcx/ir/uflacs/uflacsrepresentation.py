@@ -137,6 +137,18 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
         ufl_element: create_element(ufl_element).space_dimension()
         for ufl_element in unique_elements
     }
+    ir["element_entity_dofs"] = {
+        ufl_element: create_element(ufl_element).entity_dofs()
+        for ufl_element in unique_elements
+    }
+    ir["element_dof_types"] = {
+        ufl_element: [i.functional_type for i in create_element(ufl_element).dual_basis()]
+        for ufl_element in unique_elements
+    }
+    ir["element_ids"] = {
+        ufl_element: i
+        for i, ufl_element in enumerate(unique_elements)
+    }
 
     # Create dimensions of primary indices, needed to reset the argument 'A'
     # given to tabulate_tensor() by the assembler.

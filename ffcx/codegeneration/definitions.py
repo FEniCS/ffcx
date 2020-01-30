@@ -11,6 +11,8 @@ import ufl
 
 from ffcx.fiatinterface import create_element
 
+# from ffcx.codegeneration.utils import get_vector_reflection
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +37,8 @@ class FFCXBackendDefinitions(object):
         self.language = language
         self.symbols = symbols
         self.parameters = parameters
+
+        self.ir = ir
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.

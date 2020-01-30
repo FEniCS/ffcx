@@ -69,6 +69,7 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'form_id', 'rank', 'geometric_dimension', 'topological_dimension',
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
                                          'enabled_coefficients', 'classnames', 'element_dimensions',
+                                         'element_dof_types', 'element_ids', 'element_entity_dofs',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
                                          'coefficient_offsets', 'original_constant_offsets', 'params',
                                          'unique_tables', 'unique_table_types',

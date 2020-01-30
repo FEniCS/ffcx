@@ -17,7 +17,8 @@ from ffcx.codegeneration.evalderivs import (_generate_combinations,
 from ffcx.codegeneration.evaluatebasis import generate_evaluate_reference_basis
 from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
-                                       generate_return_new_switch)
+                                       generate_return_new_switch,
+                                       get_vector_reflection, get_vector_reflection_array)
 
 index_type = "int64_t"
 
@@ -131,47 +132,6 @@ def evaluate_reference_basis_derivatives(L, ir, parameters):
         return [L.Comment(msg), L.Return(-1)]
 
     return generate_evaluate_reference_basis_derivatives(L, data, ir.classname, parameters)
-
-
-def get_vec_scale(L, ir, idof):
-    # List of dof types that require multiplying by -1 if their entity has been reflected
-    # TODO: check that these are all vector and that no other types are vector
-    vector_types = ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
-                    "PointFaceTangent", "PointScaledNormalEval", "PointNormalEval"]
-    # For each dof that needs reflection this will contain the edge of face reflection that the dof is associated
-    # with, or False if the dof is on a Point or inside a volume.
-    # Entities are numbered: Point0, Point1, ..., Edge0, Edge1, ..., Face0, [Face1, ..., Volume]
-    # If no reflection needed, this will be -1
-    reflect_dofs = [False for i in range(ir.space_dimension)]
-    reflect = False
-    dof_n = 0
-    face_reflections = L.Symbol("face_reflections")
-    edge_reflections = L.Symbol("edge_reflections")
-    # Run through the entities and mark vector dofs on each entity
-    for dim, e_dofs in ir.entity_dofs.items():
-        for n, dofs in e_dofs.items():
-            if dim == 1 or dim == 2:
-                for d in dofs:
-                    t = ir.dof_types[d]
-                    if t in vector_types:
-                        if dim == 1:
-                            reflect_dofs[dof_n] = edge_reflections[n]
-                        if dim == 2:
-                            reflect_dofs[dof_n] = face_reflections[n]
-                        reflect = True
-                    dof_n += 1
-            else:
-                dof_n += len(dofs)
-
-    # If at least one vector dof needs reflecting
-    if reflect:
-        rd = L.Symbol("reflected_dofs")
-        return [L.ArrayDecl(
-            "const bool", rd, (ir.space_dimension, ),
-            values=reflect_dofs)], L.Conditional(rd[idof], 1, -1)
-    # If no dof needs reflecting, leave out the Conditional
-    else:
-        return [], 1
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):
@@ -300,7 +260,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "const " + index_type,
             physical_offsets, (num_dofs, ),
             values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
-    ]
+    ] + get_vector_reflection_array(L, ir.dof_types, ir.space_dimension, ir.entity_dofs)
 
     # Build dof lists for each mapping type
     mapping_dofs = defaultdict(list)
@@ -348,10 +308,8 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         msg = "Using %s transform to map values back to the physical element." % mapping.replace(
             "piola", "Piola")
 
-        dat_new, vec_scale = get_vec_scale(L, ir, idof)
-        dof_attributes_code += dat_new
-
         mapped_value = L.Symbol("mapped_value")
+        vec_scale = get_vector_reflection(L, ir.dof_types, idof)
 
         transform_apply_code += [
             L.ForRanges(

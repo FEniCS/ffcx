@@ -15,6 +15,7 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
+from ffcx.codegeneration.utils import get_vector_reflection_array
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +154,12 @@ class IntegralGenerator(object):
                       L.VerbatimStatement(
                           "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
                           .format(alignment))]
+
+        for element, id in self.ir.element_ids.items():
+            parts += get_vector_reflection_array(L, self.ir.element_dof_types[element],
+                                                 self.ir.element_dimensions[element],
+                                                 self.ir.element_entity_dofs[element],
+                                                 "ref_dof" + str(id))
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
