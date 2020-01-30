@@ -287,7 +287,7 @@ class IntegralGenerator(object):
                 continue
 
             decl = L.ArrayDecl(
-                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
+                "static const double", name, table.shape, table, alignas=alignas, padlen=p)
             parts += [decl]
 
         # Add leading comment if there are any tables
