@@ -231,13 +231,9 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                                   for integral in integral_data.integrals])
         quadrature_degrees.discard("auto")
 
-        # Find all estimated polynomial degrees by UFL for all integrals in this
-        # integral data group
-        estimated_quadrature_degrees = [integral.metadata()["estimated_polynomial_degree"]
-                                        for integral in integral_data.integrals]
 
         if isinstance(parameters["quadrature_degree"], int):
-            # Quadrature degree is forced by FFCX paramaters
+            # Quadrature degree is forced by FFCX parameters
             qd = parameters["quadrature_degree"]
         elif len(quadrature_degrees) == 1:
             qd = quadrature_degrees.pop()
@@ -248,6 +244,12 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
             # Quadrature degree is then unnecessary high for some integrals
             # in this integral data group, but no approximation error is introduced
             # TODO: Possibly add warning for user
+
+            # Find all estimated polynomial degrees by UFL for all integrals in this
+            # integral data group
+            estimated_quadrature_degrees = [integral.metadata()["estimated_polynomial_degree"]
+                                            for integral in integral_data.integrals]
+
             qd = max(estimated_quadrature_degrees)
         elif len(quadrature_degrees) > 1:
             raise RuntimeError("Only one quadrature degree allowed within integrals grouped by subdomain.")
