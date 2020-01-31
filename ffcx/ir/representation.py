@@ -80,7 +80,7 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
                                                  'physical_offsets', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', ['classname', 'element_dimensions', 'params', 'unique_tables',
-                                             'unique_table_types', 'piecewise_ir', 'varying_irs',
+                                             'unique_table_types', 'piecewise_ir', 'varying_irs', 'table_origins',
                                              'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points'])
