@@ -13,7 +13,7 @@ from ffcx.fiatinterface import create_element
 from ffcx.ir.representationutils import initialize_integral_ir
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffcx.ir.uflacs.tools import accumulate_integrals, compute_quadrature_rules
-from ufl.algorithms import extract_arguments, extract_coefficients, replace
+from ufl.algorithms import extract_arguments, extract_coefficients
 from ufl.algorithms.analysis import extract_constants
 from ufl.utils.sorting import sorted_by_count
 
