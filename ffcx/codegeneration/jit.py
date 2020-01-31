@@ -120,11 +120,15 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
         names.append(name)
 
     if cache_dir is not None:
+        cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, names, cache_dir, timeout)
         if obj is not None:
             # Pair up elements with dofmaps
             obj = list(zip(obj[::2], obj[1::2]))
             return obj, mod
+    else:
+        cache_dir = Path(tempfile.mkdtemp())
+
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
@@ -166,9 +170,12 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
                   for i, form in enumerate(forms)]
 
     if cache_dir is not None:
+        cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, form_names, cache_dir, timeout)
         if obj is not None:
             return obj, mod
+    else:
+        cache_dir = Path(tempfile.mkdtemp())
 
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
@@ -214,9 +221,13 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
                   for expression in expressions]
 
     if cache_dir is not None:
+        cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, expr_names, cache_dir, timeout)
         if obj is not None:
             return obj, mod
+    else:
+        cache_dir = Path(tempfile.mkdtemp())
+
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
@@ -256,9 +267,12 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
         mesh.ufl_coordinate_element(), "JIT") for mesh in meshes]
 
     if cache_dir is not None:
+        cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, cmap_names, cache_dir, timeout)
         if obj is not None:
             return obj, mod
+    else:
+        cache_dir = Path(tempfile.mkdtemp())
 
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
@@ -282,10 +296,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
                      cffi_extra_compile_args, cffi_verbose, cffi_debug):
-    if cache_dir is None:
-        cache_dir = Path(tempfile.mkdtemp())
-    else:
-        cache_dir = Path(cache_dir)
+
     _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
     ffibuilder = cffi.FFI()
