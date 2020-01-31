@@ -191,14 +191,9 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
 
     # Build coefficient numbering for UFC interface here, to avoid
     # renumbering in UFL and application of replace mapping
-
-    # Using the mapped coefficients, numbered by UFL
     coefficient_numbering = {}
-    sorted_coefficients = sorted_by_count(form_data.function_replace_map.keys())
-    for i, f in enumerate(sorted_coefficients):
-        g = form_data.function_replace_map[f]
-        coefficient_numbering[g] = i
-        assert i == g.count()
+    for i, f in enumerate(form_data.reduced_coefficients):
+        coefficient_numbering[f] = i
 
     # Get map from number of quadrature points -> integrand
     integrands = {num_points: integral.integrand() for num_points, integral in sorted_integrals.items()}
