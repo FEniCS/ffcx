@@ -34,4 +34,4 @@ jobs:
       - run:
           name: Run demos
           command: |
-            ffcx demo/*.ufl -v
+            ffcx demo/*.ufl
