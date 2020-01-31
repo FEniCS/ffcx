@@ -15,7 +15,6 @@ from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffcx.ir.uflacs.tools import accumulate_integrals, compute_quadrature_rules
 from ufl.algorithms import extract_arguments, extract_coefficients
 from ufl.algorithms.analysis import extract_constants
-from ufl.utils.sorting import sorted_by_count
 
 logger = logging.getLogger(__name__)
 
@@ -189,21 +188,21 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
     # data}
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)
 
+    # TODO: See if coefficient_numbering can be removed
     # Build coefficient numbering for UFC interface here, to avoid
     # renumbering in UFL and application of replace mapping
     coefficient_numbering = {}
     for i, f in enumerate(form_data.reduced_coefficients):
         coefficient_numbering[f] = i
 
-    # Get map from number of quadrature points -> integrand
-    integrands = {num_points: integral.integrand() for num_points, integral in sorted_integrals.items()}
-
     # Add coefficient numbering to IR
     ir["coefficient_numbering"] = coefficient_numbering
 
+    # Get map from number of quadrature points -> integrand
+    integrands = {num_points: integral.integrand() for num_points, integral in sorted_integrals.items()}
+
     index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
     offsets = {}
-
     if integral_type in ("interior_facet"):
         # For interior facet integrals we need + and - restrictions
         width = 2
