@@ -134,16 +134,17 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
             decl += element_template.format(name=names[i * 2])
             decl += dofmap_template.format(name=names[i * 2 + 1])
 
-        objects, module = _compile_objects(decl, elements, names, module_name, p, cache_dir,
-                                           cffi_extra_compile_args, cffi_verbose, cffi_debug)
-        # Pair up elements with dofmaps
-        objects = list(zip(objects[::2], objects[1::2]))
+        _compile_objects(decl, elements, names, module_name, p, cache_dir,
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
         os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
+    objects, module = _load_objects(cache_dir, module_name, names)
+    # Pair up elements with dofmaps
+    objects = list(zip(objects[::2], objects[1::2]))
     return objects, module
 
 
@@ -178,15 +179,15 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         for name in form_names:
             decl += form_template.format(name=name)
 
-        obj, mod = _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
-                                    cffi_extra_compile_args, cffi_verbose, cffi_debug)
+        _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
         os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
-    return obj, mod
+    return _load_objects(cache_dir, module_name, form_names)
 
 
 def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
@@ -224,15 +225,15 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         for name in expr_names:
             decl += expression_template.format(name=name)
 
-        obj, mod = _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
-                                    cffi_extra_compile_args, cffi_verbose, cffi_debug)
+        _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
         os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
-    return obj, mod
+    return _load_objects(cache_dir, module_name, expr_names)
 
 
 def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
@@ -265,15 +266,15 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
         for name in cmap_names:
             decl += cmap_template.format(name=name)
 
-        obj, mod = _compile_objects(decl, meshes, cmap_names, module_name, p, cache_dir,
-                                    cffi_extra_compile_args, cffi_verbose, cffi_debug)
+        _compile_objects(decl, meshes, cmap_names, module_name, p, cache_dir,
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
         os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
-    return obj, mod
+    return _load_objects(cache_dir, module_name, cmap_names)
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
@@ -300,6 +301,9 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
     # because it should not exist yet.
     fd = open(ready_name, "x")
     fd.close()
+
+
+def _load_objects(cache_dir, module_name, object_names):
 
     # Create module finder that searches the compile path
     finder = importlib.machinery.FileFinder(
