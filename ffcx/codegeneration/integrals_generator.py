@@ -1069,11 +1069,14 @@ class IntegralGenerator(object):
 
         return parts
 
-    def _get_vector_reflection(self, pname, P_ii):
+    def _get_vector_reflection(self, pname, indices):
+        """Get the vector reflection for entry the table pname accessed using indices"""
         origin = self.ir.table_origins[pname]
         if isinstance(origin[0], str):
+            # If the table is preintegrated, then origin will be a tuple of strings
+            # to identify which tables were used for each dof dimension
             output = 1
-            for i, n in zip(origin, P_ii[-len(origin):]):
+            for i, n in zip(origin, indices[-len(origin):]):
                 element = self.ir.table_origins[i][0]
                 output *= get_vector_reflection(self.backend.language,
                                                 self.ir.element_dof_types[element], n,
@@ -1082,5 +1085,5 @@ class IntegralGenerator(object):
         else:
             element = origin[0]
             return get_vector_reflection(self.backend.language,
-                                         self.ir.element_dof_types[element], P_ii[-1],
+                                         self.ir.element_dof_types[element], indices[-1],
                                          "ref_dof" + str(self.ir.element_ids[element]))
