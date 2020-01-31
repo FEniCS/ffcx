@@ -13,8 +13,6 @@ from ffcx.fiatinterface import create_element
 from ffcx.ir.representationutils import initialize_integral_ir
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffcx.ir.uflacs.tools import accumulate_integrals, compute_quadrature_rules
-from ufl.algorithms import extract_arguments, extract_coefficients
-from ufl.algorithms.analysis import extract_constants
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +51,7 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     }
 
     # Extract dimensions for elements of arguments only
-    arguments = extract_arguments(expression)
+    arguments = ufl.algorithms.extract_arguments(expression)
     argument_elements = tuple(f.ufl_element() for f in arguments)
     argument_dimensions = [
         ir["element_dimensions"][ufl_element] for ufl_element in argument_elements
@@ -64,7 +62,7 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
 
     ir["expression_shape"] = list(expression.ufl_shape)
 
-    coefficients = extract_coefficients(expression)
+    coefficients = ufl.algorithms.extract_coefficients(expression)
     coefficient_numbering = {}
     for i, coeff in enumerate(coefficients):
         coefficient_numbering[coeff] = i
@@ -73,7 +71,7 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     ir["coefficient_numbering"] = coefficient_numbering
 
     original_coefficient_positions = []
-    original_coefficients = extract_coefficients(original_expression)
+    original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
 
@@ -96,7 +94,7 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     # Build offsets for Constants
     original_constant_offsets = {}
     _offset = 0
-    for constant in extract_constants(expression):
+    for constant in ufl.algorithms.analysis.extract_constants(expression):
         original_constant_offsets[constant] = _offset
         _offset += numpy.product(constant.ufl_shape, dtype=numpy.int)
 
@@ -198,17 +196,9 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
     # Add coefficient numbering to IR
     ir["coefficient_numbering"] = coefficient_numbering
 
-    # Get map from number of quadrature points -> integrand
-    integrands = {num_points: integral.integrand() for num_points, integral in sorted_integrals.items()}
-
     index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
     offsets = {}
-    if integral_type in ("interior_facet"):
-        # For interior facet integrals we need + and - restrictions
-        width = 2
-    else:
-        width = 1
-
+    width = 2 if integral_type in ("interior_facet") else 1
     _offset = 0
     for k, el in zip(index_to_coeff, form_data.coefficient_elements):
         offsets[k[1]] = _offset
@@ -225,6 +215,9 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
         _offset += numpy.product(constant.ufl_shape, dtype=numpy.int)
 
     ir["original_constant_offsets"] = original_constant_offsets
+
+    # Create map from number of quadrature points -> integrand
+    integrands = {num_points: integral.integrand() for num_points, integral in sorted_integrals.items()}
 
     # Build the more uflacs-specific intermediate representation
     uflacs_ir = build_uflacs_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
