@@ -120,7 +120,6 @@ class FFCXBackendDefinitions(object):
                 L.VariableDecl("ufc_scalar_t", access, 0.0),
                 L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
-
         return code
 
     def constant(self, t, mt, tabledata, num_points, access):

@@ -15,7 +15,7 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
-from ffcx.codegeneration.utils import get_vector_reflection_array
+from ffcx.codegeneration.utils import get_vector_reflection_array, get_vector_reflection
 
 logger = logging.getLogger(__name__)
 
@@ -998,7 +998,7 @@ class IntegralGenerator(object):
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
-                A_values[A_ii] += Pval * f
+                A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
         # Code generation
         # A[i] += A_values[i]
@@ -1009,8 +1009,23 @@ class IntegralGenerator(object):
         for i in range(len(A_values)):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
-
         return L.commented_code_list(code, "UFLACS block mode: preintegrated")
+
+    def get_vector_reflection(self, pname, P_ii):
+        origin = self.ir.table_origins[pname]
+        if isinstance(origin[0], str):
+            output = 1
+            for i, n in zip(origin, P_ii[-len(origin):]):
+                element = self.ir.table_origins[i][0]
+                output *= get_vector_reflection(self.backend.language,
+                                                self.ir.element_dof_types[element], n,
+                                                "ref_dof" + str(self.ir.element_ids[element]))
+            return output
+        else:
+            element = origin[0]
+            return get_vector_reflection(self.backend.language,
+                                         self.ir.element_dof_types[element], P_ii[-1],
+                                         "ref_dof" + str(self.ir.element_ids[element]))
 
     def generate_copyout_statements(self):
         L = self.backend.language

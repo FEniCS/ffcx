@@ -771,4 +771,4 @@ def build_optimized_tables(num_points,
             ename, unique_tables[ename], dofrange, dofmap, original_dim, ttype,
             ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted)
 
-    return unique_tables, unique_table_ttypes, unique_table_num_dofs, mt_unique_table_reference
+    return unique_tables, unique_table_ttypes, unique_table_num_dofs, mt_unique_table_reference, table_origins

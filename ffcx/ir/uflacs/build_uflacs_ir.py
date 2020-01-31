@@ -268,6 +268,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     cases = [(num_points, [integrands[num_points]]) for num_points in all_num_points]
     ir["all_num_points"] = all_num_points
 
+    ir["table_origins"] = {}
+
     for num_points, expressions in cases:
 
         assert len(expressions) == 1
@@ -292,7 +294,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                              for i, v in S.nodes.items()
                              if is_modified_terminal(v['expression'])}
 
-        unique_tables, unique_table_types, unique_table_num_dofs, mt_unique_table_reference = build_optimized_tables(
+        (unique_tables, unique_table_types, unique_table_num_dofs,
+         mt_unique_table_reference, table_origins) = build_optimized_tables(
             num_points,
             quadrature_rules,
             cell,
@@ -303,6 +306,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             p["enable_table_zero_compression"],
             rtol=p["table_rtol"],
             atol=p["table_atol"])
+
+        for k, v in table_origins.items():
+            ir["table_origins"][k] = v
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
 
@@ -509,6 +515,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                     cache[unames] = pname
                     unique_tables[pname] = ptable
                     unique_table_types[pname] = "preintegrated"
+                    ir["table_origins"][pname] = unames
 
                 assert factor_is_piecewise
                 block_unames = (pname, )
