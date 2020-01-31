@@ -188,13 +188,13 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
 
         _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
                          cffi_extra_compile_args, cffi_verbose, cffi_debug)
-        obj, module = _load_objects(cache_dir, module_name, form_names)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
         os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
+    obj, module = _load_objects(cache_dir, module_name, form_names)
     return obj, module
 
 
@@ -239,13 +239,13 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
 
         _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
                          cffi_extra_compile_args, cffi_verbose, cffi_debug)
-        obj, module = _load_objects(cache_dir, module_name, expr_names)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
         os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
+    obj, module = _load_objects(cache_dir, module_name, expr_names)
     return obj, module
 
 
@@ -284,13 +284,13 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
         _compile_objects(decl, meshes, cmap_names, module_name, p, cache_dir,
                          cffi_extra_compile_args, cffi_verbose, cffi_debug)
-        obj, module = _load_objects(cache_dir, module_name, cmap_names)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
         os.replace(c_filename, c_filename.with_suffix(".c.failed"))
         raise
 
+    obj, module = _load_objects(cache_dir, module_name, cmap_names)
     return obj, module
 
 
