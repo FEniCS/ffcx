@@ -200,16 +200,8 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
         coefficient_numbering[g] = i
         assert i == g.count()
 
-    # Replace coefficients so they all have proper element and domain
-    # for what's to come
-    # TODO: We can avoid the replace call when proper Expression support
-    #       is in place and element/domain assignment is removed from
-    #       compute_form_data.
-    integrands = {
-        num_points: replace(sorted_integrals[num_points].integrand(),
-                            form_data.function_replace_map)
-        for num_points in sorted(sorted_integrals)
-    }
+    # Get map from number of quadrature points -> integrand
+    integrands = {num_points: integral.integrand() for num_points, integral in sorted_integrals.items()}
 
     # Add coefficient numbering to IR
     ir["coefficient_numbering"] = coefficient_numbering
