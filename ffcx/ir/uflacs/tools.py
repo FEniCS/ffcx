@@ -8,31 +8,17 @@ import collections
 
 import numpy
 
-from ffcx.ir.representationutils import create_quadrature_points_and_weights
 import ufl
+from ffcx.ir.representationutils import create_quadrature_points_and_weights
 from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum
-
-
-def collect_quadrature_rules(integrals, default_scheme, default_degree):
-    """Collect quadrature rules found in list of integrals."""
-    rules = set()
-    for integral in integrals:
-        md = integral.metadata() or {}
-        scheme = md.get("quadrature_rule", default_scheme)
-        degree = md.get("quadrature_degree", default_degree)
-        rule = (scheme, degree)
-        rules.add(rule)
-    return rules
 
 
 def compute_quadrature_rules(rules, integral_type, cell):
     """Compute points and weights for a set of quadrature rules."""
     quadrature_rules = {}
     quadrature_rule_sizes = {}
-    for rule in rules:
-        scheme, degree = rule
-
+    for scheme, degree in rules:
         # Compute quadrature points and weights
         (points, weights) = create_quadrature_points_and_weights(integral_type, cell, degree,
                                                                  scheme)
@@ -46,7 +32,7 @@ def compute_quadrature_rules(rules, integral_type, cell):
         else:
             num_points = len(weights)
 
-        # Assuming all rules with the same number of points are equal
+        # Assuming all rules with the same number of points are the same
         if num_points in quadrature_rules:
             assert quadrature_rules[num_points][0] == points
             assert quadrature_rules[num_points][0] == weights
@@ -55,7 +41,8 @@ def compute_quadrature_rules(rules, integral_type, cell):
                     quadrature_rules))
 
         quadrature_rules[num_points] = (points, weights)
-        quadrature_rule_sizes[rule] = num_points
+        quadrature_rule_sizes[(scheme, degree)] = num_points
+
     return quadrature_rules, quadrature_rule_sizes
 
 

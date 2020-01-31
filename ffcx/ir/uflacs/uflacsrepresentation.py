@@ -8,17 +8,14 @@ import logging
 
 import numpy
 
+import ufl
 from ffcx.fiatinterface import create_element
 from ffcx.ir.representationutils import initialize_integral_ir
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
-from ffcx.ir.uflacs.tools import (accumulate_integrals,
-                                  collect_quadrature_rules,
-                                  compute_quadrature_rules)
-import ufl
-from ufl.algorithms import replace
-from ufl.utils.sorting import sorted_by_count
-from ufl.algorithms import extract_arguments, extract_coefficients
+from ffcx.ir.uflacs.tools import accumulate_integrals, compute_quadrature_rules
+from ufl.algorithms import extract_arguments, extract_coefficients, replace
 from ufl.algorithms.analysis import extract_constants
+from ufl.utils.sorting import sorted_by_count
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +46,8 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
 
     ir = {}
 
-    # Prepare dimensions of all unique element in expression,
-    # including elements for arguments, coefficients and coordinate mappings
+    # Prepare dimensions of all unique element in expression, including
+    # elements for arguments, coefficients and coordinate mappings
     ir["element_dimensions"] = {
         ufl_element: create_element(ufl_element).space_dimension()
         for ufl_element in analysis.unique_elements
@@ -119,8 +116,10 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     return ir
 
 
-def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classnames, parameters,
-                        visualise):
+def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
+                        form_data: ufl.algorithms.formdata.FormData,
+                        form_id: int, element_numbers: dict, classnames: dict, parameters: dict,
+                        visualise: bool):
     """Compute intermediate represention of integral."""
 
     logger.info("Computing uflacs representation")
@@ -138,8 +137,8 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
         for ufl_element in unique_elements
     }
 
-    # Create dimensions of primary indices, needed to reset the argument 'A'
-    # given to tabulate_tensor() by the assembler.
+    # Create dimensions of primary indices, needed to reset the argument
+    # 'A' given to tabulate_tensor() by the assembler.
     argument_dimensions = [
         ir["element_dimensions"][ufl_element] for ufl_element in form_data.argument_elements
     ]
@@ -153,31 +152,41 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
     integral_type = itg_data.integral_type
     cell = itg_data.domain.ufl_cell()
 
+    # Get the quadrature schemes that appear in the integral
     if integral_type in ufl.custom_integral_types:
-        # Set quadrature degree to twice the highest element degree, to get
-        # enough points to identify basis functions via table computations
+        # Set quadrature degree to twice the highest element degree, to
+        # get enough points to identify basis functions via table
+        # computations
         max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
         rules = [("default", 2 * max_element_degree)]
         quadrature_integral_type = "cell"
     else:
-        # Collect which quadrature rules occur in integrals
+        # Collect the quadrature rules occur in integrals
         default_scheme = itg_data.metadata["quadrature_rule"]
         default_degree = itg_data.metadata["quadrature_degree"]
-        rules = collect_quadrature_rules(itg_data.integrals, default_scheme, default_degree)
+        rules = set()
+        for integral in itg_data.integrals:
+            md = integral.metadata() or {}
+            scheme = md.get("quadrature_rule", default_scheme)
+            degree = md.get("quadrature_degree", default_degree)
+            rules.add((scheme, degree))
         quadrature_integral_type = integral_type
 
     # Compute actual points and weights
     quadrature_rules, quadrature_rule_sizes = compute_quadrature_rules(
         rules, quadrature_integral_type, cell)
 
-    # Store quadrature rules in format { num_points: (points, weights) }
+    # Store quadrature rules in format {num_points: (points, weights)}.
+    # There is an assumption that schemes with the same number of points
+    # are identical.
     ir["quadrature_rules"] = quadrature_rules
 
     # Store the fake num_points for analysis in custom integrals
     if integral_type in ufl.custom_integral_types:
         ir["fake_num_points"], = quadrature_rules.keys()
 
-    # Group and accumulate integrals on the format { num_points: integral data }
+    # Group and accumulate integrals on the format {num_points: integral
+    # data}
     sorted_integrals = accumulate_integrals(itg_data, quadrature_rule_sizes)
 
     # Build coefficient numbering for UFC interface here, to avoid
@@ -191,9 +200,11 @@ def compute_integral_ir(itg_data, form_data, form_id, element_numbers, classname
         coefficient_numbering[g] = i
         assert i == g.count()
 
-    # Replace coefficients so they all have proper element and domain for what's to come
-    # TODO: We can avoid the replace call when proper Expression support is in place
-    #       and element/domain assignment is removed from compute_form_data.
+    # Replace coefficients so they all have proper element and domain
+    # for what's to come
+    # TODO: We can avoid the replace call when proper Expression support
+    #       is in place and element/domain assignment is removed from
+    #       compute_form_data.
     integrands = {
         num_points: replace(sorted_integrals[num_points].integrand(),
                             form_data.function_replace_map)
