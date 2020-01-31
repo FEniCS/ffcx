@@ -629,8 +629,6 @@ class IntegralGenerator(object):
             return tuple(perms)
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
-        L = self.backend.language
-
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -651,12 +649,12 @@ class IntegralGenerator(object):
             assert td.ttype != "zeros"
 
             if td.ttype == "ones":
-                arg_factor = L.LiteralFloat(1.0)
+                arg_factor = self._get_vector_reflection(td.name, indices)
             elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
                 arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = table[indices[i]]
+                arg_factor = self._get_vector_reflection(td.name, indices) * table[indices[i]]
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -998,7 +996,7 @@ class IntegralGenerator(object):
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
-                A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
+                A_values[A_ii] += self._get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
         # Code generation
         # A[i] += A_values[i]
@@ -1010,22 +1008,6 @@ class IntegralGenerator(object):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
         return L.commented_code_list(code, "UFLACS block mode: preintegrated")
-
-    def get_vector_reflection(self, pname, P_ii):
-        origin = self.ir.table_origins[pname]
-        if isinstance(origin[0], str):
-            output = 1
-            for i, n in zip(origin, P_ii[-len(origin):]):
-                element = self.ir.table_origins[i][0]
-                output *= get_vector_reflection(self.backend.language,
-                                                self.ir.element_dof_types[element], n,
-                                                "ref_dof" + str(self.ir.element_ids[element]))
-            return output
-        else:
-            element = origin[0]
-            return get_vector_reflection(self.backend.language,
-                                         self.ir.element_dof_types[element], P_ii[-1],
-                                         "ref_dof" + str(self.ir.element_ids[element]))
 
     def generate_copyout_statements(self):
         L = self.backend.language
@@ -1086,3 +1068,19 @@ class IntegralGenerator(object):
         parts = dofmap_parts + parts
 
         return parts
+
+    def _get_vector_reflection(self, pname, P_ii):
+        origin = self.ir.table_origins[pname]
+        if isinstance(origin[0], str):
+            output = 1
+            for i, n in zip(origin, P_ii[-len(origin):]):
+                element = self.ir.table_origins[i][0]
+                output *= get_vector_reflection(self.backend.language,
+                                                self.ir.element_dof_types[element], n,
+                                                "ref_dof" + str(self.ir.element_ids[element]))
+            return output
+        else:
+            element = origin[0]
+            return get_vector_reflection(self.backend.language,
+                                         self.ir.element_dof_types[element], P_ii[-1],
+                                         "ref_dof" + str(self.ir.element_ids[element]))
