@@ -26,5 +26,8 @@ u = TrialFunction(element)
 v = TestFunction(element)
 f = Coefficient(element)
 
-a = inner(grad(u), grad(v))*dx
+kappa1 = Constant(triangle, shape=(2,2))
+kappa2 = Constant(triangle, shape=(2,2))
+
+a = inner(kappa1, kappa2) * inner(grad(u), grad(v))*dx
 L = f*v*dx
