@@ -1070,7 +1070,7 @@ class IntegralGenerator(object):
         return parts
 
     def _get_vector_reflection(self, pname, indices):
-        """Get the vector reflection for entry the table pname accessed using indices"""
+        """Get the vector reflection for entry the table pname accessed using indices."""
         origin = self.ir.table_origins[pname]
         if isinstance(origin[0], str):
             # If the table is preintegrated, then origin will be a tuple of strings
