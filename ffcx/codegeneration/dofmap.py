@@ -78,6 +78,10 @@ def generator(ir, parameters):
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
     d["entity_block_size"] = ir.entity_block_size
 
+    d["dof_types"] = "dofmap->dof_types = malloc(sizeof(ufc_doftype) * " + str(len(ir.dof_types)) + ");\n"
+    for i, j in enumerate(ir.dof_types):
+        d["dof_types"] += "  dofmap->dof_types[" + str(i) + "] = " + j + ";\n"
+
     import ffcx.codegeneration.C.cnodes as L
 
     # Functions

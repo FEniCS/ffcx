@@ -75,9 +75,6 @@ extern "C"
     /// String identifying the finite element
     const char* signature;
 
-    /// The type of each dof
-    ufc_doftype* dof_types;
-
     /// Return the cell shape
     ufc_shape cell_shape;
 
@@ -167,6 +164,9 @@ extern "C"
 
     /// Return a string identifying the dofmap
     const char* signature;
+
+    /// The type of each dof
+    ufc_doftype* dof_types;
 
     /// Blocksizes on each entity
     int entity_block_size[4];

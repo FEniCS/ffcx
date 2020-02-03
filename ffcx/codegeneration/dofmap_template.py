@@ -39,6 +39,7 @@ ufc_dofmap* create_{factory_name}(void)
   dofmap->num_sub_dofmaps = {num_sub_dofmaps};
   dofmap->create_sub_dofmap = create_sub_dofmap_{factory_name};
   dofmap->create = create_{factory_name};
+  {dof_types}
 
   return dofmap;
 }};

@@ -54,7 +54,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'entity_block_size', 'tabulate_entity_dofs',
-                                     'num_sub_dofmaps', 'create_sub_dofmap'])
+                                     'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
                                                      'geometric_dimension', 'create_coordinate_finite_element',
@@ -229,6 +229,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
     ir["entity_block_size"] = entity_block_size(fiat_element)
+    ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
 
     return ir_dofmap(**ir)
 

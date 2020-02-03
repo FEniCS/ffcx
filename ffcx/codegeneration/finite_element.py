@@ -371,10 +371,6 @@ def generator(ir, parameters):
     d["family"] = "\"{}\"".format(ir.family)
     d["num_sub_elements"] = ir.num_sub_elements
 
-    d["dof_types"] = "element->dof_types = malloc(sizeof(ufc_doftype) * " + str(len(ir.dof_types)) + ");\n"
-    for i, j in enumerate(ir.dof_types):
-        d["dof_types"] += "  element->dof_types[" + str(i) + "] = " + j + ";\n"
-
     import ffcx.codegeneration.C.cnodes as L
 
     d["value_dimension"] = value_dimension(L, ir.value_shape)
