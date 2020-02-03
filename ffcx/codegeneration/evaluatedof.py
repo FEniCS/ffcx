@@ -150,7 +150,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     # Generate different code if multiple points. (Otherwise ffcx
     # compile time blows up.)
     if len(points) > 1:
-        return -1
+        return ([], -1)
         # FIXME
         # return _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset)
 
