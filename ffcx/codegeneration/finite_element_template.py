@@ -90,6 +90,7 @@ ufc_finite_element* create_{factory_name}(void)
   element->create_sub_element = create_sub_element_{factory_name};
   element->create = create_{factory_name};
 
+  {dof_types}
   return element;
 }};
 

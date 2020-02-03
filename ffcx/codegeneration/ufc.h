@@ -49,6 +49,22 @@ extern "C"
     vertex = 60,
   } ufc_shape;
 
+  typedef enum
+  {
+    PointEval = 1,
+    ComponentPointEval = 2,
+    PointNormalDeriv = 3,
+    IntegralMoment = 4,
+    FrobeniusIntegralMoment = 5,
+    PointEdgeTangent = 6,
+    PointFaceTangent = 7,
+    PointScaledNormalEval = 8,
+    PointDeriv = 9,
+    IntegralMomentOfNormalDerivative = 10,
+    PointNormalEval = 11,
+    PointwiseInnerProductEval = 12,
+  } ufc_doftype;
+
   /// Forward declarations
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
@@ -58,6 +74,9 @@ extern "C"
   {
     /// String identifying the finite element
     const char* signature;
+
+    /// The type of each dof
+    ufc_doftype* dof_types;
 
     /// Return the cell shape
     ufc_shape cell_shape;
