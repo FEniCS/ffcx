@@ -651,7 +651,7 @@ class IntegralGenerator(object):
             if td.ttype == "ones":
                 arg_factor = self._get_vector_reflection(td.name, indices)
             elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                arg_factor = table[iq]
+                arg_factor = table[iq] * self._get_vector_reflection(td.name, iq)
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor = self._get_vector_reflection(td.name, indices) * table[indices[i]]
@@ -910,7 +910,8 @@ class IntegralGenerator(object):
                     quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
                 # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_ii]
+                PM = L.Symbol(blockdata.name)[P_ii] * self._get_vector_reflection(blockdata.name, P_ii)
+
                 B_rhs = L.float_product([FI, PM])
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
