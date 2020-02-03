@@ -243,7 +243,7 @@ class IntegralGenerator(object):
                 wsym = self.backend.symbols.weights_table(num_points)
                 parts += [
                     L.ArrayDecl(
-                        "static const ufc_scalar_t", wsym, num_points, weights, alignas=alignas)
+                        "static const double", wsym, num_points, weights, alignas=alignas)
                 ]
 
             # Generate quadrature points array
@@ -254,7 +254,7 @@ class IntegralGenerator(object):
                 psym = self.backend.symbols.points_table(num_points)
                 parts += [
                     L.ArrayDecl(
-                        "static const ufc_scalar_t", psym, N, flattened_points, alignas=alignas)
+                        "static const double", psym, N, flattened_points, alignas=alignas)
                 ]
 
         # Add leading comment if there are any tables
@@ -294,7 +294,7 @@ class IntegralGenerator(object):
                 continue
 
             decl = L.ArrayDecl(
-                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=p)
+                "static const double", name, table.shape, table, alignas=alignas, padlen=p)
             parts += [decl]
 
         # Add leading comment if there are any tables
