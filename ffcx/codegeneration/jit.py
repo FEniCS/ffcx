@@ -18,44 +18,13 @@ import ffcx
 
 logger = logging.getLogger(__name__)
 
-UFC_HEADER_DECL = """
-typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
-
-typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
-typedef struct ufc_finite_element ufc_finite_element;
-typedef struct ufc_dofmap ufc_dofmap;
-
-typedef enum
-{{
-interval = 10,
-triangle = 20,
-quadrilateral = 30,
-tetrahedron = 40,
-hexahedron = 50,
-vertex = 60,
-}} ufc_shape;
-
-typedef enum
-{{
-PointEval = 1,
-ComponentPointEval = 2,
-PointNormalDeriv = 3,
-IntegralMoment = 4,
-FrobeniusIntegralMoment = 5,
-PointEdgeTangent = 6,
-PointFaceTangent = 7,
-PointScaledNormalEval = 8,
-PointDeriv = 9,
-IntegralMomentOfNormalDerivative = 10,
-PointNormalEval = 11,
-PointwiseInnerProductEval = 12,
-}} ufc_doftype;
-"""
-
 # Get declarations directly from ufc.h
 file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/ufc.h", "r") as f:
     ufc_h = ''.join(f.readlines())
+
+UFC_HEADER_DECL = "typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */\n"
+UFC_HEADER_DECL += ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n") + "\n"
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
 UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))

@@ -39,6 +39,8 @@ extern "C"
 #endif // restrict
 #endif // __cplusplus
 
+// <HEADER_DECL>
+
   typedef enum
   {
     interval = 10,
@@ -69,6 +71,8 @@ extern "C"
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
+
+// </HEADER_DECL>
 
   typedef struct ufc_finite_element
   {
