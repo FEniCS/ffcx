@@ -67,36 +67,22 @@ def generate_return_int_switch(L, i, values, default):
                                           "int")
 
 
-def get_vector_reflection(L, dof_types, idof, vname="reflected_dofs"):
-    # List of dof types that require multiplying by -1 if their entity has been reflected
-    # TODO: check that these are all vector and that no other types are vector
-    vector_types = ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
-                    "PointFaceTangent", "PointScaledNormalEval", "PointNormalEval"]
-    reflect = False
-    for v in vector_types:
-        if v in dof_types:
-            reflect = True
-            break
-
-    # If at least one vector dof needs reflecting
-    if reflect:
-        return L.Conditional(L.Symbol(vname)[idof], 1, -1)
-    # If no dofs need reflecting
-    else:
-        return 1
+_vnames_to_reflect = {}
 
 
 def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vname="reflected_dofs"):
     # List of dof types that require multiplying by -1 if their entity has been reflected
     # TODO: check that these are all vector and that no other types are vector
     vector_types = ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
-                    "PointFaceTangent", "PointScaledNormalEval", "PointNormalEval"]
-    reflect = False
+                    "PointFaceTangent", "PointScaledNormalEval", "PointNormalEval",
+                    "FrobeniusIntegralMoment", "IntegralMoment"]
+    _vnames_to_reflect[vname] = False
     for v in vector_types:
         if v in dof_types:
-            reflect = True
+            _vnames_to_reflect[vname] = True
             break
-    if not reflect:
+
+    if not _vnames_to_reflect[vname]:
         return []
 
     # For each dof that needs reflection this will contain the edge of face reflection that the dof is associated
@@ -125,3 +111,13 @@ def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vnam
     # If at least one vector dof needs reflecting
     return [L.ArrayDecl(
         "const bool", L.Symbol(vname), (space_dimension, ), values=reflect_dofs)]
+
+
+def get_vector_reflection(L, dof_types, idof, vname="reflected_dofs"):
+    assert vname in _vnames_to_reflect
+    # If at least one vector dof needs reflecting
+    if _vnames_to_reflect[vname]:
+        return L.Conditional(L.Symbol(vname)[idof], 1, -1)
+    # If no dofs need reflecting
+    else:
+        return 1
