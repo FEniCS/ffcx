@@ -72,7 +72,7 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'element_dof_types', 'element_ids', 'element_entity_dofs',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
                                          'coefficient_offsets', 'original_constant_offsets', 'params',
-                                         'unique_tables', 'unique_table_types', 'table_origins',
+                                         'unique_tables', 'unique_table_types', 'table_origins', 'table_dofmaps',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
                                          'prefix', 'integrals_metadata', 'integral_metadata'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
@@ -81,6 +81,7 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
                                                  'physical_offsets', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', ['classname', 'element_dimensions', 'params', 'unique_tables',
                                              'unique_table_types', 'piecewise_ir', 'varying_irs', 'table_origins',
+                                             'table_dofmaps',
                                              'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points'])

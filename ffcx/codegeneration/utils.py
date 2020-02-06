@@ -68,6 +68,7 @@ def generate_return_int_switch(L, i, values, default):
 
 
 _vnames_to_reflect = {}
+_table_dofmaps = {}
 
 
 def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vname="reflected_dofs"):
@@ -113,11 +114,30 @@ def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vnam
         "const bool", L.Symbol(vname), (space_dimension, ), values=reflect_dofs)]
 
 
-def get_vector_reflection(L, dof_types, idof, vname="reflected_dofs"):
+def get_vector_reflection(L, dof_types, idof, vname="reflected_dofs", tablename=None):
     assert vname in _vnames_to_reflect
     # If at least one vector dof needs reflecting
     if _vnames_to_reflect[vname]:
-        return L.Conditional(L.Symbol(vname)[idof], 1, -1)
+        if tablename is None:
+            return L.Conditional(L.Symbol(vname)[idof], 1, -1)
+        return L.Conditional(L.Symbol(vname)[get_table_dofmap(L, tablename, idof)], 1, -1)
     # If no dofs need reflecting
     else:
         return 1
+
+
+def get_table_dofmap_array(L, dofmap, pname):
+    for i, j in enumerate(dofmap):
+        if i != j:
+            _table_dofmaps[pname] = L.Symbol(pname + "_dofmap")
+            return [L.ArrayDecl(
+                "const int", _table_dofmaps[pname], (len(dofmap), ), values=dofmap)]
+    _table_dofmaps[pname] = None
+    return []
+
+
+def get_table_dofmap(L, pname, idof):
+    assert pname in _table_dofmaps
+    if _table_dofmaps[pname] is None:
+        return idof
+    return _table_dofmaps[pname][idof]

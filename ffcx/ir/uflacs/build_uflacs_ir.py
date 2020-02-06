@@ -269,6 +269,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     ir["all_num_points"] = all_num_points
 
     ir["table_origins"] = {}
+    ir["table_dofmaps"] = {}
 
     for num_points, expressions in cases:
 
@@ -309,6 +310,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         for k, v in table_origins.items():
             ir["table_origins"][k] = v
+
+        for td in mt_unique_table_reference.values():
+            ir["table_dofmaps"][td.name] = td.dofmap
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
 

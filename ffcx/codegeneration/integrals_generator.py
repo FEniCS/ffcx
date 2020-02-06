@@ -15,7 +15,7 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
-from ffcx.codegeneration.utils import get_vector_reflection_array, get_vector_reflection
+from ffcx.codegeneration.utils import get_vector_reflection_array, get_vector_reflection, get_table_dofmap_array
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +160,9 @@ class IntegralGenerator(object):
                                                  self.ir.element_dimensions[element],
                                                  self.ir.element_entity_dofs[element],
                                                  "ref_dof" + str(id))
+
+        for tname, dofmap in self.ir.table_dofmaps.items():
+            parts += get_table_dofmap_array(L, dofmap, tname)
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -651,7 +654,8 @@ class IntegralGenerator(object):
             if td.ttype == "ones":
                 arg_factor = self._get_vector_reflection(td.name, indices)
             elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                arg_factor = table[iq] * self._get_vector_reflection(td.name, iq)
+                assert self._get_vector_reflection(td.name, iq) == 1
+                arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor = self._get_vector_reflection(td.name, indices) * table[indices[i]]
@@ -891,7 +895,6 @@ class IntegralGenerator(object):
                 P_ii += arg_indices[::-1]
             else:
                 P_ii += arg_indices
-
             if blockdata.block_mode == "preintegrated":
                 # Preintegrated should never get into quadloops
                 assert num_points is None
@@ -911,7 +914,6 @@ class IntegralGenerator(object):
 
                 # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
                 PM = L.Symbol(blockdata.name)[P_ii] * self._get_vector_reflection(blockdata.name, P_ii)
-
                 B_rhs = L.float_product([FI, PM])
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -1081,10 +1083,10 @@ class IntegralGenerator(object):
                 element = self.ir.table_origins[i][0]
                 output *= get_vector_reflection(self.backend.language,
                                                 self.ir.element_dof_types[element], n,
-                                                "ref_dof" + str(self.ir.element_ids[element]))
+                                                "ref_dof" + str(self.ir.element_ids[element]), i)
             return output
         else:
             element = origin[0]
             return get_vector_reflection(self.backend.language,
                                          self.ir.element_dof_types[element], indices[-1],
-                                         "ref_dof" + str(self.ir.element_ids[element]))
+                                         "ref_dof" + str(self.ir.element_ids[element]), pname)
