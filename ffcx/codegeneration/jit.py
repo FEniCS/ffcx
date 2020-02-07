@@ -24,8 +24,9 @@ with open(file_dir + "/ufc.h", "r") as f:
     ufc_h = ''.join(f.readlines())
 
 UFC_HEADER_DECL = "typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */\n"
-UFC_HEADER_DECL += ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n") + "\n"
-UFC_HEADER_DECL = UFC_HEADER_DECL.replace("{", "{{").replace("}", "}}")
+header = ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
+header = header.replace("{", "{{").replace("}", "}}")
+UFC_HEADER_DECL += header + "\n"
 
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
