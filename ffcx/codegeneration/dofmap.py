@@ -77,6 +77,7 @@ def generator(ir, parameters):
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
     d["entity_block_size"] = ir.entity_block_size
+    d["entity_dof_arrangement"] = ir.entity_dof_arrangement + [0, 0, 0, 0]
 
     d["dof_types"] = "dofmap->dof_types = malloc(sizeof(ufc_doftype) * " + str(len(ir.dof_types)) + ");\n"
     for i, j in enumerate(ir.dof_types):

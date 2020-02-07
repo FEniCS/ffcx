@@ -35,6 +35,10 @@ ufc_dofmap* create_{factory_name}(void)
   dofmap->entity_block_size[1] = {entity_block_size[1]};
   dofmap->entity_block_size[2] = {entity_block_size[2]};
   dofmap->entity_block_size[3] = {entity_block_size[3]};
+  dofmap->entity_dof_arrangement[0] = {entity_dof_arrangement[0]};
+  dofmap->entity_dof_arrangement[1] = {entity_dof_arrangement[1]};
+  dofmap->entity_dof_arrangement[2] = {entity_dof_arrangement[2]};
+  dofmap->entity_dof_arrangement[3] = {entity_dof_arrangement[3]};
   dofmap->tabulate_entity_dofs = tabulate_entity_dofs_{factory_name};
   dofmap->num_sub_dofmaps = {num_sub_dofmaps};
   dofmap->create_sub_dofmap = create_sub_dofmap_{factory_name};

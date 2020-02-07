@@ -67,6 +67,18 @@ extern "C"
     PointwiseInnerProductEval = 12,
   } ufc_doftype;
 
+  typedef enum
+  {
+    ufcda_do_not_permute = 0,
+    ufcda_point = 1,
+    ufcda_interval = 2,
+    ufcda_triangle = 3,
+    ufcda_quadrilateral = 4,
+    ufcda_tetrahedron = 5,
+    ufcda_hexahedron = 6,
+    ufcda_triangle_in_lines = 7,
+  } ufc_dof_arrangement;
+
   /// Forward declarations
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
@@ -172,7 +184,11 @@ extern "C"
     /// The type of each dof
     ufc_doftype* dof_types;
 
+    /// The arrangement type for each entity (by dimension)
+    ufc_dof_arrangement entity_dof_arrangement[4];
+
     /// Blocksizes on each entity
+    // FIXME: what should be done if different parts of an entity have different blocksizes?
     int entity_block_size[4];
 
     /// Number of dofs with global support (i.e. global constants)

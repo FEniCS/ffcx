@@ -53,7 +53,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
-                                     'entity_block_size', 'tabulate_entity_dofs',
+                                     'entity_block_size', 'tabulate_entity_dofs', 'entity_dof_arrangement',
                                      'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
@@ -232,7 +232,33 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["entity_block_size"] = entity_block_size(fiat_element)
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
 
+    ir["entity_dof_arrangement"] = entity_dof_arrangement(ufl_element)
+
     return ir_dofmap(**ir)
+
+
+def entity_dof_arrangement(element):
+    # TODO: add more exceptions in here
+    cell = element.cell().cellname()
+    family = element.family()
+    ar = []
+    if cell == "interval":
+        ar = ["ufcda_point"]
+    elif cell == "triangle":
+        ar = ["ufcda_point", "ufcda_interval", "ufcda_triangle"]
+        if family == "Brezzi-Douglas-Marini":
+            ar[2] = "ufcda_triangle_in_lines"
+    elif cell == "tetrahedron":
+        ar = ["ufcda_point", "ufcda_interval", "ufcda_triangle", "ufcda_tetrahedron"]
+        if family == "Nedelec 2nd kind H(curl)":
+            ar[2] = "ufcda_triangle_in_lines"
+            ar[3] = "ufcda_do_not_permute"  # FIXME: what shape are these in?
+    elif cell == "quadrilateral":
+        ar = ["ufcda_point", "ufcda_interval", "ufcda_quadrilateral"]
+    elif cell == "hexahedron":
+        ar = ["ufcda_point", "ufcda_interval", "ufcda_quadrilateral", "ufcda_hexahedron"]
+
+    return ar
 
 
 def entity_block_size(fiat_element):
