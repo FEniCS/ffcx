@@ -309,7 +309,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "piola", "Piola")
 
         mapped_value = L.Symbol("mapped_value")
-        vec_scale = get_vector_reflection(L, ir.dof_types, idof)
+        vec_scale = get_vector_reflection(L, idof)
 
         transform_apply_code += [
             L.ForRanges(

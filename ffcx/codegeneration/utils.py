@@ -75,8 +75,10 @@ def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vnam
     # List of dof types that require multiplying by -1 if their entity has been reflected
     # TODO: check that these are all vector and that no other types are vector
     vector_types = ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
-                    "PointFaceTangent", "PointScaledNormalEval", "PointNormalEval",
-                    "FrobeniusIntegralMoment", "IntegralMoment"]
+                    # "PointFaceTangent",
+                    "PointScaledNormalEval", "PointNormalEval",
+                    "IntegralMoment", "FrobeniusIntegralMoment"
+                    ]
     _vnames_to_reflect[vname] = False
     for v in vector_types:
         if v in dof_types:
@@ -94,6 +96,7 @@ def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vnam
     dof_n = 0
     face_reflections = L.Symbol("face_reflections")
     edge_reflections = L.Symbol("edge_reflections")
+
     # Run through the entities and mark vector dofs on each entity
     for dim, e_dofs in entity_dofs.items():
         for n, dofs in e_dofs.items():
@@ -114,7 +117,7 @@ def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vnam
         "const bool", L.Symbol(vname), (space_dimension, ), values=reflect_dofs)]
 
 
-def get_vector_reflection(L, dof_types, idof, vname="reflected_dofs", tablename=None):
+def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):
     assert vname in _vnames_to_reflect
     # If at least one vector dof needs reflecting
     if _vnames_to_reflect[vname]:

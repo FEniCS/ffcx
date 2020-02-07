@@ -234,6 +234,9 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
 
     ir["entity_dof_arrangement"] = entity_dof_arrangement(ufl_element)
 
+    print(ir["dof_types"])
+    print(entity_dofs)
+
     return ir_dofmap(**ir)
 
 
@@ -241,18 +244,24 @@ def entity_dof_arrangement(element):
     # TODO: add more exceptions in here
     cell = element.cell().cellname()
     family = element.family()
-    ar = []
+    ar = [0]
     if cell == "interval":
         ar = ["ufcda_point"]
     elif cell == "triangle":
         ar = ["ufcda_point", "ufcda_interval", "ufcda_triangle"]
-        if family == "Brezzi-Douglas-Marini":
-            ar[2] = "ufcda_triangle_in_lines"
+        if family == "Brezzi-Douglas-Marini" or family == "Nedelec 2nd kind H(curl)":
+            ar[2] = "ufcda_triangle_bdm_type"
+        if family == "Nedelec 1st kind H(curl)":
+            ar[2] = "ufcda_triangle_flipblocks"
     elif cell == "tetrahedron":
         ar = ["ufcda_point", "ufcda_interval", "ufcda_triangle", "ufcda_tetrahedron"]
         if family == "Nedelec 2nd kind H(curl)":
-            ar[2] = "ufcda_triangle_in_lines"
+            ar[2] = "ufcda_triangle_bdm_type"
             ar[3] = "ufcda_do_not_permute"  # FIXME: what shape are these in?
+        if family == "Brezzi-Douglas-Marini" or family == "Raviart-Thomas":
+            ar[3] = "ufcda_do_not_permute"  # FIXME: what shape are these in?
+        if family == "Nedelec 1st kind H(curl)":
+            ar[2] = "ufcda_triangle_flipblocks"
     elif cell == "quadrilateral":
         ar = ["ufcda_point", "ufcda_interval", "ufcda_quadrilateral"]
     elif cell == "hexahedron":
@@ -278,7 +287,7 @@ def entity_block_size(fiat_element):
         elif p.functional_type == "PointNormalDeriv":
             output.append(1)
         elif p.functional_type == "IntegralMoment":
-            output.append(1)
+            output.append(entity)
         elif p.functional_type == "FrobeniusIntegralMoment":
             output.append(1)
         elif p.functional_type == "PointEdgeTangent":

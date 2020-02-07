@@ -76,7 +76,8 @@ extern "C"
     ufcda_quadrilateral = 4,
     ufcda_tetrahedron = 5,
     ufcda_hexahedron = 6,
-    ufcda_triangle_in_lines = 7,
+    ufcda_triangle_bdm_type = 7,
+    ufcda_triangle_flipblocks = 8,
   } ufc_dof_arrangement;
 
   /// Forward declarations
