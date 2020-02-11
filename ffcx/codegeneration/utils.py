@@ -114,7 +114,7 @@ def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vnam
         "const bool", L.Symbol(vname), (space_dimension, ), values=reflect_dofs)]
 
 
-def get_vector_reflection(L, dof_types, idof, vname="reflected_dofs", tablename=None):
+def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):
     assert vname in _vnames_to_reflect
     # If at least one vector dof needs reflecting
     if _vnames_to_reflect[vname]:

@@ -1081,12 +1081,10 @@ class IntegralGenerator(object):
             output = 1
             for i, n in zip(origin, indices[-len(origin):]):
                 element = self.ir.table_origins[i][0]
-                output *= get_vector_reflection(self.backend.language,
-                                                self.ir.element_dof_types[element], n,
+                output *= get_vector_reflection(self.backend.language, n,
                                                 "ref_dof" + str(self.ir.element_ids[element]), i)
             return output
         else:
             element = origin[0]
-            return get_vector_reflection(self.backend.language,
-                                         self.ir.element_dof_types[element], indices[-1],
+            return get_vector_reflection(self.backend.language, indices[-1],
                                          "ref_dof" + str(self.ir.element_ids[element]), pname)
