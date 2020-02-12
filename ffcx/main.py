@@ -34,7 +34,8 @@ parser.add_argument("-p", "--profile", action='store_true', help="enable profili
 # Add all parameters from FFC parameter system
 parameters = default_parameters()
 for param_name, param_val in parameters.items():
-    parser.add_argument("--{}".format(param_name), default=param_val, type=type(param_val))
+    parser.add_argument("--{}".format(param_name), default=param_val,
+                        type=type(param_val), help="default \"{}\"".format(param_val))
 
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
