@@ -85,7 +85,7 @@ ufc_integral* create_{factory_name}(void)
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;
-}};
+}}
 
 // End of code for integral {factory_name}
 """
@@ -103,7 +103,7 @@ ufc_custom_integral* create_{factory_name}(void)
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;
-}};
+}}
 
 // End of code for custom integral {factory_name}
 """
