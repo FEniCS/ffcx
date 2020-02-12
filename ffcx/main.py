@@ -30,15 +30,17 @@ parser.add_argument("-v", "--verbosity", action="count", help="verbose output (-
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
-parser.add_argument("--param", action="append", default=[], nargs=2, metavar=("name", "value"),
-                    help="set existing parameter value in the parameter system,"
-                    "where \"name\" is the FFCX parameter name")
+
+# Add all parameters from FFC parameter system
+parameters = default_parameters()
+for param_name, param_val in parameters.items():
+    parser.add_argument("--{}".format(param_name), default=param_val, type=type(param_val))
+
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
 
 def main(args=None):
     xargs = parser.parse_args(args)
-    parameters = default_parameters()
 
     ffcx_logger = logging.getLogger("ffcx")
     if xargs.verbosity == 1:
@@ -46,13 +48,10 @@ def main(args=None):
     if xargs.verbosity == 2:
         ffcx_logger.setLevel(logging.DEBUG)
 
-    for p in xargs.param:
-        assert len(p) == 2
-        if p[0] not in parameters:
-            raise RuntimeError(
-                "Command parameter does not exist in parameters system."
-                "Supported parameters are {}".format(parameters.keys()))
-        parameters[p[0]] = p[1]
+    # Parse all other parameters
+    parameters = default_parameters()
+    for param_name, param_val in parameters.items():
+        parameters[param_name] = xargs.__dict__.get(param_name)
 
     # Call parser and compiler for each file
     for filename in xargs.ufl_file:
