@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2019 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
+# Copyright (C) 2007-2020 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 #                         Michal Habera and others
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
@@ -263,11 +263,11 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # 1. parameters["quadrature_rule"]
         # 2. specified in metadata of integral
-        quadrature_rules = set([integral.metadata().get("quadrature_rule", None)
+        quadrature_rules = set([integral.metadata().get("quadrature_rule", "auto")
                                 for integral in integral_data.integrals])
-        quadrature_rules.discard(None)
+        quadrature_rules.discard("auto")
 
-        if isinstance(parameters["quadrature_rule"], str):
+        if parameters["quadrature_rule"] != "auto":
             qr = parameters["quadrature_rule"]
         elif len(quadrature_rules) == 1:
             qr = quadrature_rules.pop()
