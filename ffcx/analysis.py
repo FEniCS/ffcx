@@ -227,9 +227,9 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                                   for integral in integral_data.integrals])
         quadrature_degrees.discard("auto")
 
-        if isinstance(parameters["quadrature_degree"], int):
+        if parameters["quadrature_degree"] != "auto":
             # Quadrature degree is forced by FFCX parameters
-            qd = parameters["quadrature_degree"]
+            qd = int(parameters["quadrature_degree"])
         elif len(quadrature_degrees) == 1:
             qd = quadrature_degrees.pop()
         elif len(quadrature_degrees) == 0:
