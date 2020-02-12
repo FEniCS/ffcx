@@ -74,7 +74,7 @@ def base_permutations_from_subdofmap(ufl_element):
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
-                         "PointScaledNormalEval", "PointDeriv", "PointNormalEval", "PointwiseInnerProductEval"]:
+                         "PointScaledNormalEval", "PointDeriv", "PointNormalEval"]:
                     # Dof is a point evaluation, use blocksize 1
                     permuted = entity_functions[dim](dofs, 1)
                 elif t in ["ComponentPointEval", "IntegralMoment"]:
@@ -83,7 +83,7 @@ def base_permutations_from_subdofmap(ufl_element):
                 elif t == "PointFaceTangent":
                     # Dof blocksize is 2
                     permuted = entity_functions[dim](dofs, 2)
-                elif t == "FrobeniusIntegralMoment":
+                elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
                     # FIXME: temporarily does no permutation; needs replacing
                     permuted = [dofs for i in range(2 ** (dim - 1))]
                 else:
