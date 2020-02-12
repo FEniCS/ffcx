@@ -27,6 +27,7 @@ from ffcx import classname
 from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                 MixedElement, QuadratureElement, SpaceOfReals,
                                 create_element)
+from ffcx.ir.dof_permutations import base_permutations
 from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
-                                     'entity_block_size', 'tabulate_entity_dofs', 'entity_dof_arrangement',
+                                     'tabulate_entity_dofs', 'base_permutations',
                                      'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
@@ -229,13 +230,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
-    ir["entity_block_size"] = entity_block_size(fiat_element)
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
-
-    ir["entity_dof_arrangement"] = entity_dof_arrangement(ufl_element)
-
-    print(ir["dof_types"])
-    print(entity_dofs)
+    ir["base_permutations"] = base_permutations(ufl_element, fiat_element)
 
     return ir_dofmap(**ir)
 

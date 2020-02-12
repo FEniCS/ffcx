@@ -76,12 +76,18 @@ def generator(ir, parameters):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
-    d["entity_block_size"] = ir.entity_block_size
-    d["entity_dof_arrangement"] = ir.entity_dof_arrangement + [0, 0, 0, 0]
 
-    d["dof_types"] = "dofmap->dof_types = malloc(sizeof(ufc_doftype) * " + str(len(ir.dof_types)) + ");\n"
-    for i, j in enumerate(ir.dof_types):
-        d["dof_types"] += "  dofmap->dof_types[" + str(i) + "] = " + j + ";\n"
+    num_perms = len(ir.base_permutations)
+    if num_perms == 0:
+        num_dofs = 0
+    else:
+        num_dofs = len(ir.base_permutations[0])
+    d["base_permutations"] = ("dofmap->base_permutations = malloc(sizeof(int) * "
+                              + str(num_perms * num_dofs) + ");\n")
+    for i, perm in enumerate(ir.base_permutations):
+        for j, val in enumerate(perm):
+            d["base_permutations"] += ("  dofmap->base_permutations["
+                                       + str(i * num_dofs + j) + "] = " + str(val) + ";\n")
 
     import ffcx.codegeneration.C.cnodes as L
 

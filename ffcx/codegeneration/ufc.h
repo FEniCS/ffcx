@@ -182,15 +182,8 @@ extern "C"
     /// Return a string identifying the dofmap
     const char* signature;
 
-    /// The type of each dof
-    ufc_doftype* dof_types;
-
-    /// The arrangement type for each entity (by dimension)
-    ufc_dof_arrangement entity_dof_arrangement[4];
-
-    /// Blocksizes on each entity
-    // FIXME: what should be done if different parts of an entity have different blocksizes?
-    int entity_block_size[4];
+    /// The base DoF permutations
+    int* base_permutations;
 
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
