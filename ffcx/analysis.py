@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2019 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
+# Copyright (C) 2007-2020 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 #                         Michal Habera and others
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
@@ -20,7 +20,7 @@ from collections import namedtuple
 import numpy
 
 import ufl
-
+from ffcx.parameters import FFCX_PARAMETERS
 logger = logging.getLogger(__name__)
 
 
@@ -223,11 +223,12 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         # 1. Parameters["quadrature_degree"]
         # 2. Specified in metadata of integral
         # 3. Estimated by UFL
-        quadrature_degrees = set([integral.metadata().get("quadrature_degree", "auto")
+        default = FFCX_PARAMETERS["quadrature_degree"]
+        quadrature_degrees = set([integral.metadata().get("quadrature_degree", default)
                                   for integral in integral_data.integrals])
-        quadrature_degrees.discard("auto")
+        quadrature_degrees.discard(default)
 
-        if isinstance(parameters["quadrature_degree"], int):
+        if parameters["quadrature_degree"] != default:
             # Quadrature degree is forced by FFCX parameters
             qd = parameters["quadrature_degree"]
         elif len(quadrature_degrees) == 1:
@@ -261,12 +262,13 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         # The priority of quadrature rule determination is following
         #
         # 1. parameters["quadrature_rule"]
-        # 2. Specified in metadata of integral
-        quadrature_rules = set([integral.metadata().get("quadrature_rule", None)
+        # 2. specified in metadata of integral
+        default = FFCX_PARAMETERS["quadrature_rule"]
+        quadrature_rules = set([integral.metadata().get("quadrature_rule", default)
                                 for integral in integral_data.integrals])
-        quadrature_rules.discard(None)
+        quadrature_rules.discard(default)
 
-        if isinstance(parameters["quadrature_rule"], str):
+        if parameters["quadrature_rule"] != default:
             qr = parameters["quadrature_rule"]
         elif len(quadrature_rules) == 1:
             qr = quadrature_rules.pop()
@@ -283,11 +285,12 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # 1. parameters["precision"]
         # 2. specified in metadata of integral
-        precisions = set([integral.metadata().get("precision", None)
+        default = FFCX_PARAMETERS["precision"]
+        precisions = set([integral.metadata().get("precision", default)
                           for integral in integral_data.integrals])
-        precisions.discard(None)
+        precisions.discard(default)
 
-        if isinstance(parameters["precision"], int):
+        if parameters["precision"] != default:
             p = parameters["precision"]
         elif len(precisions) == 1:
             p = precisions.pop()

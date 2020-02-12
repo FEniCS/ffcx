@@ -42,7 +42,7 @@ ufc_dofmap* create_{factory_name}(void)
   {dof_types}
 
   return dofmap;
-}};
+}}
 
 // End of code for dofmap {factory_name}
 """
