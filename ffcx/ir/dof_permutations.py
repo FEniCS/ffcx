@@ -74,18 +74,18 @@ def base_permutations_from_subdofmap(ufl_element):
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
-                         "PointScaledNormalEval", "PointDeriv", "PointNormalEval"]:
+                         "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
                     # Dof is a point evaluation, use blocksize 1
-                    permuted = entity_functions[dim](dofs, 1)
+                    permuted = entity_functions[dim](type_dofs, 1)
                 elif t in ["ComponentPointEval", "IntegralMoment"]:
                     # Dof blocksize is equal to entity dimension
-                    permuted = entity_functions[dim](dofs, dim)
+                    permuted = entity_functions[dim](type_dofs, dim)
                 elif t == "PointFaceTangent":
                     # Dof blocksize is 2
-                    permuted = entity_functions[dim](dofs, 2)
+                    permuted = entity_functions[dim](type_dofs, 2)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
                     # FIXME: temporarily does no permutation; needs replacing
-                    permuted = [dofs for i in range(2 ** (dim - 1))]
+                    permuted = [type_dofs for i in range(2 ** (dim - 1))]
                 else:
                     # TODO: What to do with other dof types
                     raise ValueError("Permutations are not currently implemented for this dof type (" + t + ").")
@@ -290,8 +290,6 @@ def hexahedron_rotations(dofs, blocksize=1):
         for dof in range(st, n, area):
             for k in range(blocksize):
                 rot3.append(blocksize * dof + k)
-        print(rot3)
-    print(rot3, dofs)
     assert len(rot3) == len(dofs)
 
     return [[dofs[i] for i in rot1], [dofs[i] for i in rot2], [dofs[i] for i in rot3]]
