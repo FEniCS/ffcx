@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 FFCX_PARAMETERS = {
-    "representation": None,  # form representation / code generation strategy
+    "representation": "auto",  # form representation / code generation strategy
     "quadrature_rule": "auto",  # quadrature rule used for integration of element tensors (None is auto)
     "quadrature_degree": "auto",  # quadrature degree used for computing integrals (None is auto)
     "precision": "max",  # precision used when writing numbers (None for max precision)

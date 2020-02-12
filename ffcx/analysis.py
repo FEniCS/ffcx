@@ -283,9 +283,9 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # 1. parameters["precision"]
         # 2. specified in metadata of integral
-        precisions = set([integral.metadata().get("precision", None)
+        precisions = set([integral.metadata().get("precision", "max")
                           for integral in integral_data.integrals])
-        precisions.discard(None)
+        precisions.discard("max")
 
         if isinstance(parameters["precision"], int):
             p = parameters["precision"]
