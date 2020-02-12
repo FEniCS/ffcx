@@ -1,162 +1,162 @@
-# Copyright (C) 2020 Matthew Scroggs
+# Copyright (C) 2020 Matthew W. Scroggs
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import math
+from ffcx.fiatinterface import create_element
+
+# TODO: currently these dof types are not correctly handled:
+#       FrobeniusIntegralMoment
+# TODO: currently these dof types are not handled at all:
+#       PointEdgeTangent
+#       PointFaceTangent
+#       IntegralMomentOfNormalDerivative
+#       PointwiseInnerProductEval
 
 
-def base_permutations(ufl_element, fiat_element):
+def base_permutations(ufl_element):
+    if ufl_element.num_sub_elements() == 0:
+        return base_permutations_from_subdofmap(ufl_element)
+
+    perms = None
+    for e in ufl_element.sub_elements():
+        bp = base_permutations(e)
+        if perms is None:
+            perms = [[] for i in bp]
+        if len(bp) > 0:
+            start = len(perms[0])
+            for i, b in enumerate(bp):
+                perms[i] += [a + start for a in b]
+    return perms
+
+
+def base_permutations_from_subdofmap(ufl_element):
     cname = ufl_element.cell().cellname()
     if cname == 'point':
         return []
+
     if cname == 'interval':
-        return base_permutations_interval(ufl_element, fiat_element)
-    if cname == 'triangle':
-        return base_permutations_triangle(ufl_element, fiat_element)
-    if cname == 'tetrahedron':
-        return base_permutations_tetrahedron(ufl_element, fiat_element)
-    if cname == 'quadrilateral':
-        return base_permutations_quadrilateral(ufl_element, fiat_element)
-    if cname == 'hexahedron':
-        return base_permutations_hexahedron(ufl_element, fiat_element)
+        entity_counts = [2, 1, 0, 0]
+        entity_functions = [None, permute_edge, None, None]
+    elif cname == 'triangle':
+        entity_counts = [3, 3, 1, 0]
+        entity_functions = [None, permute_edge, permute_triangle, None]
+    elif cname == 'tetrahedron':
+        entity_counts = [4, 6, 4, 1]
+        entity_functions = [None, permute_edge, permute_triangle, permute_tetrahedron]
+    elif cname == 'quadrilateral':
+        entity_counts = [4, 4, 1, 0]
+        entity_functions = [None, permute_edge, permute_quadrilateral, None]
+    elif cname == 'hexahedron':
+        entity_counts = [8, 12, 6, 1]
+        entity_functions = [None, permute_edge, permute_quadrilateral, permute_hexahedron]
+    else:
+        raise ValueError("Unrecognised cell type")
 
-    raise ValueError("Unrecognised cell type")
+    fiat_element = create_element(ufl_element)
 
-
-def base_permutations_interval(ufl_element, fiat_element):
     num_dofs = len(fiat_element.dual_basis())
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
-    if all_equal(dof_types, "PointEval"):
-        return [edge_flip(range(num_dofs))]
+    entity_dofs = fiat_element.entity_dofs()
+    num_perms = entity_counts[1] + 2 * entity_counts[2] + 4 * entity_counts[3]
 
-    # TODO: What to do if the dofs are not all PointEvals
+    perms = empty_permutations(num_perms, num_dofs)
+    perm_n = 0
+    for dim in range(1, 4):
+        for n in range(entity_counts[dim]):
+            dofs = entity_dofs[dim][n]
+            types = [dof_types[i] for i in dofs]
+            unique_types = []
+            for t in types:
+                if t not in unique_types:
+                    unique_types.append(t)
+            for t in unique_types:
+                type_dofs = [i for i, j in zip(dofs, types) if j == t]
+                print(t)
+                permuted = entity_functions[dim](dofs, t)
+                for p in range(2 ** (dim - 1)):
+                    for i, j in zip(type_dofs, permuted[p]):
+                        perms[perm_n + p][i] = j
+            perm_n += 2 ** (dim - 1)
 
-    return empty_permutations(1, num_dofs)
-
-
-def base_permutations_triangle(ufl_element, fiat_element):
-    num_dofs = len(fiat_element.dual_basis())
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
-
-    perms = empty_permutations(5, num_dofs)
-    if all_equal(dof_types, "PointEval"):
-        entity_dofs = fiat_element.entity_dofs()
-
-        # Edge flips
-        for edge, dofs in entity_dofs[1].items():
-            for i, j in zip(dofs, edge_flip(dofs)):
-                perms[edge][i] = j
-
-        # Face rotation and reflection
-        dofs = entity_dofs[2][0]
-        for i, j in zip(dofs, triangle_rotation(dofs)):
-            perms[3][i] = j
-        for i, j in zip(dofs, triangle_reflection(dofs)):
-            perms[4][i] = j
-
-    # TODO: What to do if the dofs are not all PointEvals
     return perms
 
 
-def base_permutations_quadrilateral(ufl_element, fiat_element):
-    num_dofs = len(fiat_element.dual_basis())
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+def is_point_eval_type(dof_type):
+    return dof_type in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
+                        "PointScaledNormalEval", "PointDeriv", "PointNormalEval"]
 
-    perms = empty_permutations(6, num_dofs)
-    if all_equal(dof_types, "PointEval"):
-        entity_dofs = fiat_element.entity_dofs()
 
-        # Edge flips
-        for edge, dofs in entity_dofs[1].items():
-            for i, j in zip(dofs, edge_flip(dofs)):
-                perms[edge][i] = j
-
-        # Face rotation and reflection
-        dofs = entity_dofs[2][0]
-        for i, j in zip(dofs, quadrilateral_rotation(dofs)):
-            perms[4][i] = j
-        for i, j in zip(dofs, quadrilateral_reflection(dofs)):
-            perms[5][i] = j
+def permute_edge(dofs, dof_type):
+    if is_point_eval_type(dof_type):
+        return [edge_flip(dofs)]
+    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
+        return [edge_flip(dofs, 1)]
+    if dof_type == "PointFaceTangent":
+        return [edge_flip(dofs, 2)]
 
     # TODO: What to do if the dofs are not all PointEvals
-    return perms
+    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
 
 
-def base_permutations_tetrahedron(ufl_element, fiat_element):
-    num_dofs = len(fiat_element.dual_basis())
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
-
-    perms = empty_permutations(18, num_dofs)
-    if all_equal(dof_types, "PointEval"):
-        entity_dofs = fiat_element.entity_dofs()
-
-        # Edge flips
-        for edge, dofs in entity_dofs[1].items():
-            for i, j in zip(dofs, edge_flip(dofs)):
-                perms[edge][i] = j
-
-        # Face rotations and reflections
-        for face, dofs in entity_dofs[2].items():
-            for i, j in zip(dofs, triangle_rotation(dofs)):
-                perms[6 + 2 * face][i] = j
-            for i, j in zip(dofs, triangle_reflection(dofs)):
-                perms[7 + 2 * face][i] = j
-
-        # Volume rotations and reflection
-        dofs = entity_dofs[3][0]
-        for n, r in enumerate(tetrahedron_rotations(dofs)):
-            for i, j in zip(dofs, r):
-                perms[14 + n][i] = j
-        for i, j in zip(dofs, tetrahedron_reflection(dofs)):
-            perms[17][i] = j
+def permute_triangle(dofs, dof_type):
+    if is_point_eval_type(dof_type):
+        return [triangle_rotation(dofs), triangle_reflection(dofs)]
+    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
+        return [triangle_rotation(dofs, 2), triangle_reflection(dofs, 2)]
+    if dof_type == "PointFaceTangent":
+        return [triangle_rotation(dofs, 2), triangle_reflection(dofs, 2)]
+    if dof_type == "FrobeniusIntegralMoment":
+        # TODO: what should this permutation be? Currently these are not permuted
+        return [dofs, dofs, dofs, dofs]
 
     # TODO: What to do if the dofs are not all PointEvals
-    return perms
+    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
 
 
-def base_permutations_hexahedron(ufl_element, fiat_element):
-    num_dofs = len(fiat_element.dual_basis())
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
-
-    perms = empty_permutations(28, num_dofs)
-    if all_equal(dof_types, "PointEval"):
-        entity_dofs = fiat_element.entity_dofs()
-
-        # Edge flips
-        for edge, dofs in entity_dofs[1].items():
-            for i, j in zip(dofs, edge_flip(dofs)):
-                perms[edge][i] = j
-
-        # Face rotations and reflections
-        for face, dofs in entity_dofs[2].items():
-            for i, j in zip(dofs, quadrilateral_rotation(dofs)):
-                perms[12 + 2 * face][i] = j
-            for i, j in zip(dofs, quadrilateral_reflection(dofs)):
-                perms[13 + 2 * face][i] = j
-
-        # Volume rotations and reflection
-        dofs = entity_dofs[3][0]
-        for n, r in enumerate(hexahedron_rotations(dofs)):
-            for i, j in zip(dofs, r):
-                perms[24 + n][i] = j
-        for i, j in zip(dofs, hexahedron_reflection(dofs)):
-            perms[27][i] = j
+def permute_quadrilateral(dofs, dof_type):
+    if is_point_eval_type(dof_type):
+        return [quadrilateral_rotation(dofs), quadrilateral_reflection(dofs)]
+    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
+        return [quadrilateral_rotation(dofs, 2), quadrilateral_reflection(dofs, 2)]
+    if dof_type == "PointFaceTangent":
+        return [quadrilateral_rotation(dofs, 2), quadrilateral_reflection(dofs, 2)]
 
     # TODO: What to do if the dofs are not all PointEvals
-    return perms
+    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
+
+
+def permute_tetrahedron(dofs, dof_type):
+    if is_point_eval_type(dof_type):
+        return tetrahedron_rotations(dofs) + [tetrahedron_reflection(dofs)]
+    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
+        return tetrahedron_rotations(dofs, 3) + [tetrahedron_reflection(dofs, 3)]
+    if dof_type == "PointFaceTangent":
+        return tetrahedron_rotations(dofs, 2) + [tetrahedron_reflection(dofs, 2)]
+    if dof_type == "FrobeniusIntegralMoment":
+        # TODO: what should this permutation be? Currently these are not permuted
+        return [dofs, dofs, dofs, dofs]
+
+    # TODO: What to do if the dofs are not all PointEvals
+    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
+
+
+def permute_hexahedron(dofs, dof_type):
+    if is_point_eval_type(dof_type):
+        return hexahedron_rotations(dofs) + [hexahedron_reflection(dofs)]
+    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
+        return hexahedron_rotations(dofs, 3) + [hexahedron_reflection(dofs, 3)]
+    if dof_type == "PointFaceTangent":
+        return hexahedron_rotations(dofs, 2) + [hexahedron_reflection(dofs, 2)]
+
+    # TODO: What to do if the dofs are not all PointEvals
+    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
 
 
 def empty_permutations(num_perms, num_dofs):
     return [list(range(num_dofs)) for i in range(num_perms)]
-
-
-def all_equal(ls, val):
-    for i in ls:
-        if i != val:
-            return False
-    return True
 
 
 def edge_flip(dofs, blocksize=1):
@@ -173,16 +173,18 @@ def edge_flip(dofs, blocksize=1):
 
 def triangle_rotation(dofs, blocksize=1):
     n = len(dofs) // blocksize
-    s = (math.floor(math.sqrt(1 + 4 * n ** 2)) - 1) // 2
+    s = (math.floor(math.sqrt(1 + 8 * n)) - 1) // 2
     assert s * (s + 1) == 2 * n
 
     perm = []
-    for i in range(n):
-        dof = n - 1 - i
-        for sub in range(i, s):
+    st = n - 1
+    for i in range(1, s + 1):
+        dof = st
+        for sub in range(i, s + 1):
             for k in range(blocksize):
                 perm.append(blocksize * dof + k)
             dof -= sub + 1
+        st -= i
     assert len(perm) == len(dofs)
 
     return [dofs[i] for i in perm]
@@ -190,7 +192,7 @@ def triangle_rotation(dofs, blocksize=1):
 
 def triangle_reflection(dofs, blocksize=1):
     n = len(dofs) // blocksize
-    s = (math.floor(math.sqrt(1 + 4 * n ** 2)) - 1) // 2
+    s = (math.floor(math.sqrt(1 + 8 * n)) - 1) // 2
     assert s * (s + 1) == 2 * n
 
     perm = []
@@ -212,7 +214,7 @@ def quadrilateral_rotation(dofs, blocksize=1):
 
     perm = []
     for st in range(n - s, n):
-        for dof in range(st, -1, -1):
+        for dof in range(st, -1, -s):
             for k in range(blocksize):
                 perm.append(blocksize * dof + k)
     assert len(perm) == len(dofs)
@@ -224,6 +226,8 @@ def quadrilateral_reflection(dofs, blocksize=1):
     n = len(dofs) // blocksize
     s = math.floor(math.sqrt(n))
     assert s ** 2 == n
+    if s == 0:
+        return dofs
 
     perm = []
     for st in range(s):
@@ -243,15 +247,15 @@ def tetrahedron_rotations(dofs, blocksize=1):
     assert s * (s + 1) * (s + 2) == 6 * n
 
     rot1 = []
-    for side in range(s, -1, -1):
-        face_dofs = list(range(len(rot1), len(rot1) + n * s * (s + 1) // 2))
+    for side in range(s, 0, -1):
+        face_dofs = list(range(len(rot1), len(rot1) + blocksize * side * (side + 1) // 2))
         rot1 += triangle_rotation(face_dofs, blocksize)
     assert len(rot1) == len(dofs)
 
     rot2 = []
     for side in range(s, -1, -1):
         face_dofs = []
-        start = side * s - 1 - s * (s - 1) // 2
+        start = side * s - 1 - side * (side - 1) // 2
         for row in range(side):
             dof = start
             for k in range(blocksize):
@@ -286,7 +290,7 @@ def tetrahedron_reflection(dofs, blocksize=1):
             for dof in range(st, st + i - layer):
                 for k in range(blocksize):
                     perm.append(dof * blocksize + k)
-            st += i * (i + 1) / 2 - layer
+            st += i * (i + 1) // 2 - layer
         layerst += s - layer
     assert len(perm) == len(dofs)
 
@@ -295,7 +299,9 @@ def tetrahedron_reflection(dofs, blocksize=1):
 
 def hexahedron_rotations(dofs, blocksize=1):
     n = len(dofs) // blocksize
-    s = math.floor(math.cbrt(n))
+    s = 0
+    while s ** 3 < n:
+        s += 1
     area = s ** 2
     assert s ** 3 == n
 
@@ -316,10 +322,12 @@ def hexahedron_rotations(dofs, blocksize=1):
     assert len(rot2) == len(dofs)
 
     rot3 = []
-    for st in range(area):
+    for st in range(0, area):
         for dof in range(st, n, area):
             for k in range(blocksize):
-                rot2.append(blocksize * dof + k)
+                rot3.append(blocksize * dof + k)
+        print(rot3)
+    print(rot3, dofs)
     assert len(rot3) == len(dofs)
 
     return [[dofs[i] for i in rot1], [dofs[i] for i in rot2], [dofs[i] for i in rot3]]
@@ -327,7 +335,9 @@ def hexahedron_rotations(dofs, blocksize=1):
 
 def hexahedron_reflection(dofs, blocksize=1):
     n = len(dofs) // blocksize
-    s = math.floor(math.cbrt(n))
+    s = 0
+    while s ** 3 < n:
+        s += 1
     area = s ** 2
     assert s ** 3 == n
 

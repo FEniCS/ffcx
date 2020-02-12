@@ -231,7 +231,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
-    ir["base_permutations"] = base_permutations(ufl_element, fiat_element)
+    ir["base_permutations"] = base_permutations(ufl_element)
 
     return ir_dofmap(**ir)
 
