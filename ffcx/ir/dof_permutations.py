@@ -74,8 +74,24 @@ def base_permutations_from_subdofmap(ufl_element):
                     unique_types.append(t)
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
-                print(t)
-                permuted = entity_functions[dim](dofs, t)
+                if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
+                         "PointScaledNormalEval", "PointDeriv", "PointNormalEval"]:
+                    # Dof is a point evaluation, use blocksize 1
+                    permuted = entity_functions[dim](dofs, 1)
+                elif t in ["ComponentPointEval", "IntegralMoment"]:
+                    # Dof blocksize is equal to entity dimension
+                    permuted = entity_functions[dim](dofs, dim)
+                elif t == "PointFaceTangent":
+                    # Dof blocksize is 2
+                    permuted = entity_functions[dim](dofs, 2)
+                elif t == "FrobeniusIntegralMoment":
+                    # FIXME: temporarily does no permutation; needs replacing
+                    permuted = [dofs for i in range(2 ** (dim - 1))]
+                else:
+                    # TODO: What to do with other dof types
+                    raise ValueError("Permutations are not currently implemented for this dof type (" + t + ").")
+
+                # Apply these permutations
                 for p in range(2 ** (dim - 1)):
                     for i, j in zip(type_dofs, permuted[p]):
                         perms[perm_n + p][i] = j
@@ -84,75 +100,24 @@ def base_permutations_from_subdofmap(ufl_element):
     return perms
 
 
-def is_point_eval_type(dof_type):
-    return dof_type in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
-                        "PointScaledNormalEval", "PointDeriv", "PointNormalEval"]
+def permute_edge(dofs, blocksize):
+    return [edge_flip(dofs, blocksize)]
 
 
-def permute_edge(dofs, dof_type):
-    if is_point_eval_type(dof_type):
-        return [edge_flip(dofs)]
-    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
-        return [edge_flip(dofs, 1)]
-    if dof_type == "PointFaceTangent":
-        return [edge_flip(dofs, 2)]
-
-    # TODO: What to do if the dofs are not all PointEvals
-    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
+def permute_triangle(dofs, blocksize):
+    return [triangle_rotation(dofs, blocksize), triangle_reflection(dofs, blocksize)]
 
 
-def permute_triangle(dofs, dof_type):
-    if is_point_eval_type(dof_type):
-        return [triangle_rotation(dofs), triangle_reflection(dofs)]
-    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
-        return [triangle_rotation(dofs, 2), triangle_reflection(dofs, 2)]
-    if dof_type == "PointFaceTangent":
-        return [triangle_rotation(dofs, 2), triangle_reflection(dofs, 2)]
-    if dof_type == "FrobeniusIntegralMoment":
-        # TODO: what should this permutation be? Currently these are not permuted
-        return [dofs, dofs, dofs, dofs]
-
-    # TODO: What to do if the dofs are not all PointEvals
-    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
+def permute_quadrilateral(dofs, blocksize):
+    return [quadrilateral_rotation(dofs, blocksize), quadrilateral_reflection(dofs, blocksize)]
 
 
-def permute_quadrilateral(dofs, dof_type):
-    if is_point_eval_type(dof_type):
-        return [quadrilateral_rotation(dofs), quadrilateral_reflection(dofs)]
-    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
-        return [quadrilateral_rotation(dofs, 2), quadrilateral_reflection(dofs, 2)]
-    if dof_type == "PointFaceTangent":
-        return [quadrilateral_rotation(dofs, 2), quadrilateral_reflection(dofs, 2)]
-
-    # TODO: What to do if the dofs are not all PointEvals
-    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
+def permute_tetrahedron(dofs, blocksize):
+    return tetrahedron_rotations(dofs, blocksize) + [tetrahedron_reflection(dofs, blocksize)]
 
 
-def permute_tetrahedron(dofs, dof_type):
-    if is_point_eval_type(dof_type):
-        return tetrahedron_rotations(dofs) + [tetrahedron_reflection(dofs)]
-    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
-        return tetrahedron_rotations(dofs, 3) + [tetrahedron_reflection(dofs, 3)]
-    if dof_type == "PointFaceTangent":
-        return tetrahedron_rotations(dofs, 2) + [tetrahedron_reflection(dofs, 2)]
-    if dof_type == "FrobeniusIntegralMoment":
-        # TODO: what should this permutation be? Currently these are not permuted
-        return [dofs, dofs, dofs, dofs]
-
-    # TODO: What to do if the dofs are not all PointEvals
-    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
-
-
-def permute_hexahedron(dofs, dof_type):
-    if is_point_eval_type(dof_type):
-        return hexahedron_rotations(dofs) + [hexahedron_reflection(dofs)]
-    if dof_type == "ComponentPointEval" or dof_type == "IntegralMoment":
-        return hexahedron_rotations(dofs, 3) + [hexahedron_reflection(dofs, 3)]
-    if dof_type == "PointFaceTangent":
-        return hexahedron_rotations(dofs, 2) + [hexahedron_reflection(dofs, 2)]
-
-    # TODO: What to do if the dofs are not all PointEvals
-    raise ValueError("Permutations are not currently implemented for this dof type (" + dof_type + ").")
+def permute_hexahedron(dofs, blocksize):
+    return hexahedron_rotations(dofs, blocksize) + [hexahedron_reflection(dofs, blocksize)]
 
 
 def empty_permutations(num_perms, num_dofs):
