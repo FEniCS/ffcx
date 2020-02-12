@@ -13,7 +13,6 @@ from ffcx.fiatinterface import create_element
 #       PointEdgeTangent
 #       PointFaceTangent
 #       IntegralMomentOfNormalDerivative
-#       PointwiseInnerProductEval
 
 
 def base_permutations(ufl_element):
@@ -75,7 +74,7 @@ def base_permutations_from_subdofmap(ufl_element):
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
-                         "PointScaledNormalEval", "PointDeriv", "PointNormalEval"]:
+                         "PointScaledNormalEval", "PointDeriv", "PointNormalEval", "PointwiseInnerProductEval"]:
                     # Dof is a point evaluation, use blocksize 1
                     permuted = entity_functions[dim](dofs, 1)
                 elif t in ["ComponentPointEval", "IntegralMoment"]:
