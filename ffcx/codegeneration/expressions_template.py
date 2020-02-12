@@ -36,7 +36,7 @@ ufc_expression* create_{factory_name}(void)
   expression->num_components = {num_components};
 
   return expression;
-}};
+}}
 
 // End of code for expression {factory_name}
 """
