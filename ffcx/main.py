@@ -26,13 +26,13 @@ parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFCX, https://fenicsproject.org)")
 parser.add_argument(
     "--version", action='version', version="%(prog)s " + ("(version {})".format(FFCX_VERSION)))
-parser.add_argument("-v", "--verbosity", type=int, default=logging.WARNING,
-                    help="verbosity level (from logging module), INFO=20, DEBUG=10")
+parser.add_argument("-v", "--verbosity", action="count", help="verbose output (-vv for more verbosity)")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 parser.add_argument("--param", action="append", default=[], nargs=2, metavar=("name", "value"),
-    help="set existing parameter value in the parameter system, where \"name\" is the FFCX parameter name")
+                    help="set existing parameter value in the parameter system,"
+                    "where \"name\" is the FFCX parameter name")
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
 
@@ -41,13 +41,16 @@ def main(args=None):
     parameters = default_parameters()
 
     ffcx_logger = logging.getLogger("ffcx")
-    ffcx_logger.setLevel(xargs.verbosity)
+    if xargs.verbosity == 1:
+        ffcx_logger.setLevel(logging.INFO)
+    if xargs.verbosity == 2:
+        ffcx_logger.setLevel(logging.DEBUG)
 
     for p in xargs.param:
         assert len(p) == 2
         if p[0] not in parameters:
             raise RuntimeError(
-                "Command parameter does not exist in parameters system."\
+                "Command parameter does not exist in parameters system."
                 "Supported parameters are {}".format(parameters.keys()))
         parameters[p[0]] = p[1]
 

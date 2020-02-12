@@ -11,7 +11,6 @@ import subprocess
 
 def test_cmdline_simple():
     os.chdir(os.path.dirname(__file__))
-    subprocess.run("ffcx")
     subprocess.run(["ffcx", "-v", "Poisson.ufl"])
     subprocess.run(["ffcx", "Poisson.ufl"])
 
