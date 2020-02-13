@@ -71,26 +71,41 @@ _vnames_to_reflect = {}
 _table_dofmaps = {}
 
 
-def get_vector_reflection_array(L, dof_reflection_entities, vname="reflected_dofs"):
-    # List of dof types that require multiplying by -1 if their entity has been reflected
-    # TODO: check that these are all vector and that no other types are vector
+def get_reflection(L, i):
     face_reflections = L.Symbol("face_reflections")
     edge_reflections = L.Symbol("edge_reflections")
 
+    if i[0] == 1:
+        return edge_reflections[i[1]]
+    elif i[0] == 2:
+        return face_reflections[i[1]]
+    else:
+        return L.LiteralBool(False)
+
+
+def get_vector_reflection_array(L, dof_reflection_entities, vname="reflected_dofs"):
+    # List of dof types that require multiplying by -1 if their entity has been reflected
+    # TODO: check that these are all vector and that no other types are vector
+
     _vnames_to_reflect[vname] = False
     reflect_dofs = []
+    c_false = L.LiteralBool(False)
     for i in dof_reflection_entities:
         if i is None:
-            reflect_dofs.append(False)
+            reflect_dofs.append(c_false)
         else:
-            _vnames_to_reflect[vname] = True
-            if i[0] == 1:
-                reflect_dofs.append(edge_reflections[i[1]])
-            elif i[0] == 2:
-                reflect_dofs.append(face_reflections[i[1]])
-            else:
-                # TODO: do we need to check volume reflections?
-                reflect_dofs.append(False)
+            ref = c_false
+            for j in i:
+                if ref == c_false:
+                    ref = get_reflection(L, j)
+                else:
+                    ref = L.Conditional(get_reflection(L, j), L.Not(ref), ref)
+            reflect_dofs.append(ref)
+            if ref != c_false:
+                _vnames_to_reflect[vname] = True
+
+    if not _vnames_to_reflect[vname]:
+        return []
 
     # If at least one vector dof needs reflecting
     return [L.ArrayDecl(

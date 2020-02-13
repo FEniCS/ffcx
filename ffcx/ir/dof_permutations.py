@@ -78,11 +78,17 @@ def base_permutations_from_subdofmap(ufl_element):
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
                          "PointScaledNormalEval", "PointNormalEval",
-                         "IntegralMoment", "FrobeniusIntegralMoment"]:
+                         "IntegralMoment"]:
                     for i in type_dofs:
-                        reflections[i] = (dim, n)
+                        reflections[i] = [(dim, n)]
                 elif t == "PointFaceTangent":
-                    raise ValueError("PointFaceTangent not yet supported")
+                    pass  # raise ValueError("PointFaceTangent not yet supported")
+                elif t == "FrobeniusIntegralMoment":
+                    if dim == 2:
+                        if len(type_dofs) != 3:
+                            raise ValueError("Not yet implemented")
+                        for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
+                            reflections[a] = [(dim, n), (dim - 1, b)]
 
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                          "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
@@ -94,6 +100,8 @@ def base_permutations_from_subdofmap(ufl_element):
                 elif t == "PointFaceTangent":
                     # Dof blocksize is 2
                     permuted = entity_functions[dim](type_dofs, 2)
+                elif t in ["FrobeniusIntegralMoment"] and dim == 2:
+                    permuted = permute_frobenius_face(type_dofs, 1)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
                     # FIXME: temporarily does no permutation; needs replacing
                     permuted = [type_dofs for i in range(2 ** (dim - 1))]
@@ -106,7 +114,39 @@ def base_permutations_from_subdofmap(ufl_element):
                     for i, j in zip(type_dofs, permuted[p]):
                         perms[perm_n + p][i] = j
             perm_n += 2 ** (dim - 1)
+
     return perms, reflections
+
+
+def permute_frobenius_face(dofs, blocksize):
+    n = len(dofs) // blocksize
+    s = 0
+    while 6 * s + s * (s - 1) < 2 * n:
+        s += 1
+    assert 6 * s + s * (s - 1) == 2 * n
+
+    rot = []
+    for dof in range(2 * s, 3 * s):
+        rot += [dof * blocksize + k for k in range(blocksize)]
+    for dof in range(s - 1, -1, -1):
+        rot += [dof * blocksize + k for k in range(blocksize)]
+    for dof in range(2 * s - 1, s - 1, -1):
+        rot += [dof * blocksize + k for k in range(blocksize)]
+    rot += triangle_rotation(list(range(3 * s * blocksize, n)), blocksize)
+    assert len(rot) == len(dofs)
+
+    ref = []
+    for dof in range(s - 1, -1, -1):
+        ref += [dof * blocksize + k for k in range(blocksize)]
+    for dof in range(2 * s, 3 * s):
+        ref += [dof * blocksize + k for k in range(blocksize)]
+    for dof in range(s, 2 * s):
+        ref += [dof * blocksize + k for k in range(blocksize)]
+    ref += triangle_reflection(list(range(3 * s * blocksize, n)), blocksize)
+    assert len(ref) == len(dofs)
+
+    return [[dofs[i] for i in rot],
+            [dofs[i] for i in ref]]
 
 
 def permute_edge(dofs, blocksize, reverse_blocks=False):
