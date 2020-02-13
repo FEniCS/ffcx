@@ -156,9 +156,7 @@ class IntegralGenerator(object):
                           .format(alignment))]
 
         for element, id in self.ir.element_ids.items():
-            parts += get_vector_reflection_array(L, self.ir.element_dof_types[element],
-                                                 self.ir.element_dimensions[element],
-                                                 self.ir.element_entity_dofs[element],
+            parts += get_vector_reflection_array(L, self.ir.element_dof_reflection_entities[element],
                                                  "ref_dof" + str(id))
 
         for tname, dofmap in self.ir.table_dofmaps.items():

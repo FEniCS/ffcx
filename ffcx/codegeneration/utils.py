@@ -71,50 +71,30 @@ _vnames_to_reflect = {}
 _table_dofmaps = {}
 
 
-def get_vector_reflection_array(L, dof_types, space_dimension, entity_dofs, vname="reflected_dofs"):
+def get_vector_reflection_array(L, dof_reflection_entities, vname="reflected_dofs"):
     # List of dof types that require multiplying by -1 if their entity has been reflected
     # TODO: check that these are all vector and that no other types are vector
-    vector_types = ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
-                    # "PointFaceTangent",
-                    "PointScaledNormalEval", "PointNormalEval",
-                    "IntegralMoment", "FrobeniusIntegralMoment"
-                    ]
-    _vnames_to_reflect[vname] = False
-    for v in vector_types:
-        if v in dof_types:
-            _vnames_to_reflect[vname] = True
-            break
-
-    if not _vnames_to_reflect[vname]:
-        return []
-
-    # For each dof that needs reflection this will contain the edge of face reflection that the dof is associated
-    # with, or False if the dof is on a Point or inside a volume.
-    # Entities are numbered: Point0, Point1, ..., Edge0, Edge1, ..., Face0, [Face1, ..., Volume]
-    # If no reflection needed, this will be -1
-    reflect_dofs = [False for i in range(space_dimension)]
-    dof_n = 0
     face_reflections = L.Symbol("face_reflections")
     edge_reflections = L.Symbol("edge_reflections")
 
-    # Run through the entities and mark vector dofs on each entity
-    for dim, e_dofs in entity_dofs.items():
-        for n, dofs in e_dofs.items():
-            if dim == 1 or dim == 2:
-                for d in dofs:
-                    t = dof_types[d]
-                    if t in vector_types:
-                        if dim == 1:
-                            reflect_dofs[dof_n] = edge_reflections[n]
-                        if dim == 2:
-                            reflect_dofs[dof_n] = face_reflections[n]
-                    dof_n += 1
+    _vnames_to_reflect[vname] = False
+    reflect_dofs = []
+    for i in dof_reflection_entities:
+        if i is None:
+            reflect_dofs.append(False)
+        else:
+            _vnames_to_reflect[vname] = True
+            if i[0] == 1:
+                reflect_dofs.append(edge_reflections[i[1]])
+            elif i[0] == 2:
+                reflect_dofs.append(face_reflections[i[1]])
             else:
-                dof_n += len(dofs)
+                # TODO: do we need to check volume reflections?
+                reflect_dofs.append(False)
 
     # If at least one vector dof needs reflecting
     return [L.ArrayDecl(
-        "const bool", L.Symbol(vname), (space_dimension, ), values=reflect_dofs)]
+        "const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs)]
 
 
 def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):

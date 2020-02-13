@@ -260,7 +260,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "const " + index_type,
             physical_offsets, (num_dofs, ),
             values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
-    ] + get_vector_reflection_array(L, ir.dof_types, ir.space_dimension, ir.entity_dofs)
+    ] + get_vector_reflection_array(L, ir.dof_reflection_entities)
 
     # Build dof lists for each mapping type
     mapping_dofs = defaultdict(list)
