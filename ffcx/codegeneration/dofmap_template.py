@@ -39,7 +39,7 @@ ufc_dofmap* create_{factory_name}(void)
   {base_permutations}
 
   return dofmap;
-}};
+}}
 
 // End of code for dofmap {factory_name}
 """
