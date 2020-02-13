@@ -130,7 +130,7 @@ def generate_enabled_coefficients(enabled_coefficients):
     if enabled_coefficients:
         code = '\n'.join(["[{}] = {{ {} }};".format(len(enabled_coefficients), initializer_list)])
     else:
-        code = "[] = {};"
+        code = "[1] = {false};  /* No coefficients, but C does not permit zero-sized arrays */"
     return code
 
 

@@ -73,7 +73,6 @@ from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.codegeneration import generate_code
 from ffcx.formatting import format_code
 from ffcx.ir.representation import compute_ir
-from ffcx.parameters import validate_parameters
 from ffcx.wrappers import generate_wrapper_code
 
 logger = logging.getLogger(__name__)
@@ -103,14 +102,6 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
 
     # Reset timing
     cpu_time_0 = time()
-
-    # Note that jit will always pass validated parameters so this is
-    # only for commandline and direct call from Python
-    parameters = validate_parameters(parameters)
-
-    # Convert single input arguments to tuple. All types should be the same.
-    if not isinstance(ufl_objects, (list, tuple)):
-        ufl_objects = (ufl_objects, )
 
     # Stage 1: analysis
     cpu_time = time()

@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2017 Anders Logg
+# Copyright (C) 2005-2020 Anders Logg, Michal Habera
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
@@ -6,15 +6,14 @@
 
 import copy
 import logging
-import os
 
 logger = logging.getLogger(__name__)
 
 FFCX_PARAMETERS = {
     "representation": "auto",  # form representation / code generation strategy
-    "quadrature_rule": None,  # quadrature rule used for integration of element tensors (None is auto)
-    "quadrature_degree": None,  # quadrature degree used for computing integrals (None is auto)
-    "precision": None,  # precision used when writing numbers (None for max precision)
+    "quadrature_rule": "auto",  # quadrature rule used for integration of element tensors
+    "quadrature_degree": -1,  # quadrature degree used for computing integrals (-1 means auto)
+    "precision": -1,  # precision used when writing numbers (-1 for max precision)
     "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
     # Scalar type to be used in generated code (real or complex
     # C double precision floating-point types)
@@ -27,49 +26,4 @@ def default_parameters():
     """Return (a copy of) the default parameter values for FFCX."""
     parameters = copy.deepcopy(FFCX_PARAMETERS)
 
-    # HACK
-    r = os.environ.get("FFCX_FORCE_REPRESENTATION")
-    if r:
-        parameters["representation"] = r
-
     return parameters
-
-
-def validate_parameters(parameters):
-    """Initial check of parameters."""
-    p = default_parameters()
-    if parameters is not None:
-        p.update(parameters)
-    _validate_parameters(p)
-    return p
-
-
-def _validate_parameters(parameters):
-    """Does some casting of parameter values in place on the provided dictionary."""
-    # Convert all legal default values to None
-    if parameters["quadrature_rule"] in ("auto", None, "None"):
-        parameters["quadrature_rule"] = None
-
-    # Convert all legal default values to None and cast nondefaults from
-    # str to int
-    if parameters["quadrature_degree"] in ("auto", -1, None, "None"):
-        parameters["quadrature_degree"] = None
-    else:
-        try:
-            parameters["quadrature_degree"] = int(parameters["quadrature_degree"])
-        except Exception:
-            logger.exception("Failed to convert quadrature degree '%s' to int" %
-                             parameters.get("quadrature_degree"))
-            raise
-
-    # Convert all legal default values to None and cast nondefaults from
-    # str to int
-    if parameters["precision"] in ["auto", None, "None"]:
-        parameters["precision"] = None
-    else:
-        try:
-            parameters["precision"] = int(parameters["precision"])
-        except Exception:
-            logger.exception("Failed to convert precision '{}' to int".format(
-                parameters.get("precision")))
-            raise

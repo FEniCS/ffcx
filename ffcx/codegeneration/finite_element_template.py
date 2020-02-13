@@ -91,7 +91,7 @@ ufc_finite_element* create_{factory_name}(void)
   element->create = create_{factory_name};
 
   return element;
-}};
+}}
 
 // End of code for element {factory_name}
 """

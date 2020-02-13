@@ -145,7 +145,7 @@ ufc_form* create_{factory_name}(void)
   form->create_custom_integral = create_custom_integral_{factory_name};
 
   return form;
-}};
+}}
 
 // End of code for form {factory_name}
 """
