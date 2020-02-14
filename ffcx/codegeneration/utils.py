@@ -72,7 +72,7 @@ _table_dofmaps = {}
 
 
 def get_reflection(L, i):
-    """Returns the bool that says whether or not an entity has been reflected"""
+    """Returns the bool that says whether or not an entity has been reflected."""
     if i[0] == 1:
         edge_reflections = L.Symbol("edge_reflections")
         return edge_reflections[i[1]]
@@ -84,7 +84,7 @@ def get_reflection(L, i):
 
 
 def get_vector_reflection_array(L, dof_reflection_entities, vname="reflected_dofs"):
-    """Returns array containing true for dofs that require multiplying by -1"""
+    """Returns array containing true for dofs that require multiplying by -1."""
     _vnames_to_reflect[vname] = False
     reflect_dofs = []
     c_false = L.LiteralBool(False)
