@@ -9,6 +9,7 @@ import collections
 import itertools
 import logging
 
+import numpy as np
 import ufl
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
@@ -630,6 +631,7 @@ class IntegralGenerator(object):
             return tuple(perms)
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
+        L = self.backend.language
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -655,8 +657,27 @@ class IntegralGenerator(object):
                 assert self._get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
+                """print(indices)
+                table_value = table[indices[i]]
+                dof_rots = self.ir.table_dof_rotations[td.name]
+                dofmap = self.ir.table_dofmaps[td.name]
+                for dim, entity_n, dofs, mat, order in dof_rots:
+                    assert dim == 2
+                    if dofs[0] not in dofmap:
+                        continue
+                    dofs = [dofmap.index(d) for d in dofs]
+                    for o in range(1, order):
+                        values = [table[d] for d in dofs]
+                        for n in range(o):
+                            values = [sum(mat[i][j] * d for j, d in enumerate(values)) for i in range(len(values))]
+                        for n, v in enumerate(values):
+                            table_value = L.Conditional(L.And(L.EQ(indices[i], dofs[n]),
+                                                              L.EQ(L.Symbol("face_rotations")[entity_n], o)), v, table_value)"""
+                table_value = self._get_rotated_item_from_table(table, [], [indices[i]], [td.name])
+
+                arg_factor = self._get_vector_reflection(td.name, indices) * table_value
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = self._get_vector_reflection(td.name, indices) * table[indices[i]]
+
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -724,6 +745,7 @@ class IntegralGenerator(object):
                 B_indices.append(iq)
             else:
                 B_indices.append(arg_indices[i])
+
         B_indices = tuple(B_indices)
 
         # Define unique block symbol
@@ -958,6 +980,8 @@ class IntegralGenerator(object):
             table = tables[blockdata.name]
             inline_table = self.ir.integral_type == "cell"
 
+            origins = self.ir.table_origins[blockdata.name]
+
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
             factor_index = blockdata.factor_indices_comp_indices[0][0]
@@ -985,17 +1009,26 @@ class IntegralGenerator(object):
                 A_ii = sum(A_strides[i] * blockmap[i][ii[i]] for i in range(len(ii)))
                 if blockdata.transposed:
                     P_arg_indices = (ii[1], ii[0])
+                    P_origins = origins[::-1]
                 else:
                     P_arg_indices = ii
+                    P_origins = origins
 
                 if inline_table:
                     # Extract float value of PI[P_ii]
                     P_ii = P_permutation_indices + (0, ) + P_arg_indices
-                    Pval = table[P_ii]
+                    Pval = self._get_rotated_item_from_table(table,
+                        P_permutation_indices + (0, ), P_arg_indices, P_origins)
+                    #Pval = table[P_ii]
                 else:
                     # Index the static preintegrated table:
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
-                    Pval = PI[P_ii]
+                    Pval = self._get_rotated_item_from_table(PI,
+                        P_permutation_indices + P_entity_indices, P_arg_indices, P_origins)
+                    #Pval = PI[P_ii]
+
+                #from IPython import embed; embed()()
+
 
                 A_values[A_ii] += self._get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
@@ -1009,6 +1042,74 @@ class IntegralGenerator(object):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
         return L.commented_code_list(code, "UFLACS block mode: preintegrated")
+
+
+    def _get_rotated_item_from_table(self, table, indices, dof_indices, tablenames):
+        L = self.backend.language
+        if len(dof_indices) == 0:
+            return table[indices + dof_indices]
+        if len(dof_indices) == 1:
+            table_value = table[indices + dof_indices]
+            name = tablenames[0]
+            ind = dof_indices[0]
+            dof_rots = self.ir.table_dof_rotations[name]
+            dofmap = self.ir.table_dofmaps[name]
+            for dim, entity_n, dofs, mat, order in dof_rots:
+                assert dim == 2
+                if dofs[0] not in dofmap:
+                    continue
+                dofs = [dofmap.index(d) for d in dofs]
+                for o in range(1, order):
+                    values = [table[d] for d in dofs]
+                    for n in range(o):
+                        values = [sum(mat[i][j] * d for j, d in enumerate(values)) for i in range(len(values))]
+                    for n, v in enumerate(values):
+                        table_value = L.Conditional(L.And(L.EQ(ind, dofs[n]),
+                                                          L.EQ(L.Symbol("face_rotations")[entity_n], o)), v, table_value)
+            return table_value
+
+        table_value = table[indices + dof_indices]
+
+        dof_rots = [self.ir.table_dof_rotations[name] for name in tablenames]
+        dofmaps = [self.ir.table_dofmaps[name] for name in tablenames]
+        for rots in itertools.product(*dof_rots):
+            for orders in itertools.product(*[range(j[4]) for j in rots]):
+                matrices = [np.eye(len(j[2])) for j in rots]
+                for i, o in enumerate(orders):
+                    for j in range(o):
+                        matrices[i] = np.dot(matrices[i], rots[i][3])
+                order_condition = L.EQ(L.Symbol("face_rotations")[rots[0][1]], orders[0])
+                for i in range(1, len(rots)):
+                    order_condition = L.And(order_condition,
+                                            L.EQ(L.Symbol("face_rotations")[rots[i][1]], orders[i]))
+
+                for ns in itertools.product(*[range(len(j[2])) for j in rots]):
+                    try:
+                        dofs = [d.index(j[2][i]) for i, j, d in zip(ns, rots, dofmaps)]
+                    except ValueError:
+                        continue
+                    dof_condition = L.EQ(dof_indices[0], dofs[0])
+                    for i, j in zip(dof_indices[1:], dofs[1:]):
+                        dof_condition = L.And(dof_condition,
+                                              L.EQ(i, j))
+                    condition = L.And(dof_condition, order_condition)
+
+                    this_value = 0
+                    for inds in itertools.product(*[range(len(j[2])) for j in rots]):
+#                    for coeffs in itertools.product(*[m[j] for m, j in zip(matrices, ns)]):
+                        prod = 1
+                        for m, i, j in zip(matrices, inds, ns):
+                            if m[j][i] == 0:
+                                break
+                            prod *= m[j][i]
+                        else:
+                            this_value += prod * table[indices + tuple(d.index(j[2][i])
+                                for i, j, d in zip(inds, rots, dofmaps))]
+
+                    table_value = L.Conditional(condition, this_value, table_value)
+
+        return table_value
+
 
     def generate_copyout_statements(self):
         L = self.backend.language

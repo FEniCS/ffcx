@@ -150,7 +150,7 @@ extern "C"
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
         const double* restrict K, const bool* edge_reflections,
-        const bool* face_reflections);
+        const bool* face_reflections, const uint8_t* face_rotations);
 
     /// Map values of field from physical to reference space which has
     /// been evaluated at points given by
@@ -456,7 +456,8 @@ extern "C"
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
       const double* restrict coordinate_dofs, const int* entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      const bool* edge_reflections, const bool* face_reflections);
+      const bool* edge_reflections, const bool* face_reflections,
+                                    const uint8_t* face_rotations);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///

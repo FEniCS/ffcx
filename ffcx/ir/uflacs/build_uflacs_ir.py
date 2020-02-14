@@ -25,6 +25,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
 from ufl.measure import facet_integral_types, point_integral_types
+from ffcx.ir.dof_permutations import base_permutations_and_reflection_entities
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +226,8 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
     if integral_type in skip_premultiplied or integral_type == "expression":
         p["enable_premultiplication"] = False
 
+#    p["enable_preintegration"] = False
+
     return p
 
 
@@ -270,6 +273,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
     ir["table_origins"] = {}
     ir["table_dofmaps"] = {}
+    ir["table_dof_rotations"] = {}
 
     for num_points, expressions in cases:
 
@@ -310,6 +314,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         for k, v in table_origins.items():
             ir["table_origins"][k] = v
+            ir["table_dof_rotations"][k] = base_permutations_and_reflection_entities(v[0])[2]
 
         for td in mt_unique_table_reference.values():
             ir["table_dofmaps"][td.name] = td.dofmap

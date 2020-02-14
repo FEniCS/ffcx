@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import math
+import numpy as np
 from ffcx.fiatinterface import create_element
 
 # TODO: currently these dof types are not correctly handled:
@@ -16,13 +17,16 @@ from ffcx.fiatinterface import create_element
 
 
 def base_permutations_and_reflection_entities(ufl_element):
+    # If this element has no sub elements
     if ufl_element.num_sub_elements() == 0:
         return base_permutations_from_subdofmap(ufl_element)
 
+    # If this element has sub elements, combine the permutations from them all
     perms = None
     reflections = []
+    rotations = []
     for e in ufl_element.sub_elements():
-        bp, re = base_permutations_and_reflection_entities(e)
+        bp, re, ro = base_permutations_and_reflection_entities(e)
         if perms is None:
             perms = [[] for i in bp]
         if len(bp) > 0:
@@ -30,10 +34,12 @@ def base_permutations_and_reflection_entities(ufl_element):
             for i, b in enumerate(bp):
                 perms[i] += [a + start for a in b]
         reflections += re
-    return perms, reflections
+        rotations += ro
+    return perms, reflections, rotations
 
 
 def base_permutations_from_subdofmap(ufl_element):
+    # FIXME: This information should be added to FIAT instead of reverse engineered here
     cname = ufl_element.cell().cellname()
     if cname == 'point':
         return []
@@ -65,6 +71,7 @@ def base_permutations_from_subdofmap(ufl_element):
 
     perms = empty_permutations(num_perms, num_dofs)
     reflections = [None for i in range(num_dofs)]
+    rotations = []
     perm_n = 0
     for dim in range(1, 4):
         for n in range(entity_counts[dim]):
@@ -81,11 +88,16 @@ def base_permutations_from_subdofmap(ufl_element):
                          "IntegralMoment"]:
                     for i in type_dofs:
                         reflections[i] = [(dim, n)]
-                elif t == "PointFaceTangent":
-                    pass  # raise ValueError("PointFaceTangent not yet supported")
+                elif t == "PointFaceTangent" and cname in ["triangle","tetrahedron"]:
+                    assert dim == 2
+                    for dofs in zip(type_dofs[::2], type_dofs[1::2]):
+                        # entity dimension, entity number, first dof, second dof,
+                        #   matrix that represents a rotation, order
+                        rotations.append((dim, n, dofs, np.array([[0, -1], [1, -1]]), 3))
                 elif t == "FrobeniusIntegralMoment":
                     if dim == 2:
                         if len(type_dofs) != 3:
+                            # FIXME
                             raise ValueError("Not yet implemented")
                         for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
                             reflections[a] = [(dim, n), (dim - 1, b)]
@@ -99,7 +111,7 @@ def base_permutations_from_subdofmap(ufl_element):
                     permuted = entity_functions[dim](type_dofs, dim)
                 elif t == "PointFaceTangent":
                     # Dof blocksize is 2
-                    permuted = entity_functions[dim](type_dofs, 2)
+                    permuted = entity_functions[dim](type_dofs, 2, True)
                 elif t in ["FrobeniusIntegralMoment"] and dim == 2:
                     permuted = permute_frobenius_face(type_dofs, 1)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
@@ -115,7 +127,7 @@ def base_permutations_from_subdofmap(ufl_element):
                         perms[perm_n + p][i] = j
             perm_n += 2 ** (dim - 1)
 
-    return perms, reflections
+    return perms, reflections, rotations
 
 
 def permute_frobenius_face(dofs, blocksize):

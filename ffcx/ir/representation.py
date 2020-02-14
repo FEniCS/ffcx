@@ -51,11 +51,12 @@ ir_element = namedtuple('ir_element', ['id', 'classname', 'signature', 'cell_sha
                                        'geometric_dimension', 'space_dimension', 'value_shape',
                                        'reference_value_shape', 'degree', 'family', 'evaluate_basis',
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                       'base_permutations', 'dof_reflection_entities',
+                                       'base_permutations', 'dof_reflection_entities', 'dof_rotations',
                                        'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'classname', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
+                                     'dof_rotations',
                                      'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'classname', 'signature', 'cell_shape',
                                                      'topological_dimension',
@@ -72,10 +73,11 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
                                          'enabled_coefficients', 'classnames', 'element_dimensions',
                                          'element_base_permutations', 'element_dof_reflection_entities',
-                                         'element_ids',
+                                         'element_ids', 'element_dof_rotations',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
                                          'coefficient_offsets', 'original_constant_offsets', 'params',
                                          'unique_tables', 'unique_table_types', 'table_origins', 'table_dofmaps',
+                                         'table_dof_rotations',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'classname',
                                          'prefix', 'integrals_metadata', 'integral_metadata'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
@@ -85,6 +87,7 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
 ir_expression = namedtuple('ir_expression', ['classname', 'element_dimensions', 'params', 'unique_tables',
                                              'unique_table_types', 'piecewise_ir', 'varying_irs', 'table_origins',
                                              'table_dofmaps',
+                                             'table_dof_rotations',
                                              'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points'])
@@ -206,7 +209,8 @@ def _compute_element_ir(ufl_element, element_numbers, classnames, epsilon):
     ir["create_sub_element"] = [classnames["finite_element"][e] for e in ufl_element.sub_elements()]
 
     (ir["base_permutations"],
-     ir["dof_reflection_entities"]) = base_permutations_and_reflection_entities(ufl_element)
+     ir["dof_reflection_entities"],
+     ir["dof_rotations"]) = base_permutations_and_reflection_entities(ufl_element)
 
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["entity_dofs"] = fiat_element.entity_dofs()
@@ -237,7 +241,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, classnames):
     ir["create_sub_dofmap"] = [classnames["dofmap"][e] for e in ufl_element.sub_elements()]
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     (ir["base_permutations"],
-     ir["dof_reflection_entities"]) = base_permutations_and_reflection_entities(ufl_element)
+     ir["dof_reflection_entities"],
+     ir["dof_rotations"]) = base_permutations_and_reflection_entities(ufl_element)
 
     return ir_dofmap(**ir)
 

@@ -20,7 +20,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const int* unused_local_index,
                                     const uint8_t* restrict quadrature_permutation,
                                     const bool* edge_reflections,
-                                    const bool* face_reflections)
+                                    const bool* face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}
@@ -33,7 +34,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const int* facet,
                                     const uint8_t* restrict quadrature_permutation,
                                     const bool* edge_reflections,
-                                    const bool* face_reflections)
+                                    const bool* face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}
@@ -46,7 +48,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const int* facet,
                                     const uint8_t* restrict quadrature_permutation,
                                     const bool* edge_reflections,
-                                    const bool* face_reflections)
+                                    const bool* face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}
@@ -59,7 +62,8 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const int* vertex,
                                     const uint8_t* restrict quadrature_permutation,
                                     const bool* edge_reflections,
-                                    const bool* face_reflections)
+                                    const bool* face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}

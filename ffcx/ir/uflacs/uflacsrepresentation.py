@@ -137,9 +137,11 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
 
     ir["element_base_permutations"] = {}
     ir["element_dof_reflection_entities"] = {}
+    ir["element_dof_rotations"] = {}
     for ufl_element in unique_elements:
         (ir["element_base_permutations"][ufl_element],
-         ir["element_dof_reflection_entities"][ufl_element]) = base_permutations_and_reflection_entities(ufl_element)
+         ir["element_dof_reflection_entities"][ufl_element],
+         ir["element_dof_rotations"][ufl_element]) = base_permutations_and_reflection_entities(ufl_element)
 
     ir["element_ids"] = {
         ufl_element: i
