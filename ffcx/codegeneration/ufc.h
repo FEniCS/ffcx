@@ -67,19 +67,6 @@ extern "C"
     PointwiseInnerProductEval = 12,
   } ufc_doftype;
 
-  typedef enum
-  {
-    ufcda_do_not_permute = 0,
-    ufcda_point = 1,
-    ufcda_interval = 2,
-    ufcda_triangle = 3,
-    ufcda_quadrilateral = 4,
-    ufcda_tetrahedron = 5,
-    ufcda_hexahedron = 6,
-    ufcda_triangle_bdm_type = 7,
-    ufcda_triangle_flipblocks = 8,
-  } ufc_dof_arrangement;
-
   /// Forward declarations
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;

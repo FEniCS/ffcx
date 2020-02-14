@@ -4,40 +4,52 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import warnings
 import math
 from ffcx.fiatinterface import create_element
+
+# TODO: This information should be moved to FIAT instead of being reverse engineered here
+
 
 # TODO: currently these dof types are not correctly handled:
 #       FrobeniusIntegralMoment
 # TODO: currently these dof types are not handled at all:
-#       PointEdgeTangent
 #       PointFaceTangent
 #       IntegralMomentOfNormalDerivative
 
 
 def base_permutations_and_reflection_entities(ufl_element):
+    """Returns the base permutations and the entities that the direction of vector-valued
+    functions depend on."""
     if ufl_element.num_sub_elements() == 0:
+        # If the element has no sub elements, return its permutations
         return base_permutations_from_subdofmap(ufl_element)
 
+    # If the element has sub elements, combine their permutations
     perms = None
     reflections = []
     for e in ufl_element.sub_elements():
         bp, re = base_permutations_and_reflection_entities(e)
         if perms is None:
             perms = [[] for i in bp]
-        if len(bp) > 0:
-            start = len(perms[0])
-            for i, b in enumerate(bp):
-                perms[i] += [a + start for a in b]
+        for i, b in enumerate(bp):
+            perms[i] += [a + len(perms[i]) for a in b]
         reflections += re
     return perms, reflections
 
 
 def base_permutations_from_subdofmap(ufl_element):
+    """Calculates the base permutations and the entities that the direction of vector-valued
+    functions depend on for an element with no sub elements."""
+    fiat_element = create_element(ufl_element)
+    num_dofs = len(fiat_element.dual_basis())
+
     cname = ufl_element.cell().cellname()
     if cname == 'point':
-        return []
+        # There are no permutations or reflections for points
+        return [], [None for i in range(num_dofs)]
 
+    # Get the entity counts and shape of each entity for the cell type
     if cname == 'interval':
         entity_counts = [2, 1, 0, 0]
         entity_functions = [None, permute_edge, None, None]
@@ -56,24 +68,25 @@ def base_permutations_from_subdofmap(ufl_element):
     else:
         raise ValueError("Unrecognised cell type")
 
-    fiat_element = create_element(ufl_element)
-
-    num_dofs = len(fiat_element.dual_basis())
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
+    # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
     num_perms = entity_counts[1] + 2 * entity_counts[2] + 4 * entity_counts[3]
 
     perms = empty_permutations(num_perms, num_dofs)
     reflections = [None for i in range(num_dofs)]
     perm_n = 0
+    # Iterate through the entities of the reference element
     for dim in range(1, 4):
         for n in range(entity_counts[dim]):
             dofs = entity_dofs[dim][n]
             types = [dof_types[i] for i in dofs]
+            # Find the unique dof types
             unique_types = []
             for t in types:
                 if t not in unique_types:
                     unique_types.append(t)
+            # Permute the dofs of each entity type separately
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
@@ -82,13 +95,20 @@ def base_permutations_from_subdofmap(ufl_element):
                     for i in type_dofs:
                         reflections[i] = [(dim, n)]
                 elif t == "PointFaceTangent":
-                    pass  # raise ValueError("PointFaceTangent not yet supported")
+                    # FIXME: Implement dof permuting for PointFaceTangent dofs
+                    warnings.warn("Permutations of PointFaceTangent dofs not yet implemented. "
+                                  "Results on unordered meshes may be incorrect")
                 elif t == "FrobeniusIntegralMoment":
                     if dim == 2:
                         if len(type_dofs) != 3:
-                            raise ValueError("Not yet implemented")
-                        for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
-                            reflections[a] = [(dim, n), (dim - 1, b)]
+                            # FIXME: Implement dof permuting for FrobeniusIntegralMoment dofs
+                            #        Integral moments in higher order spaces will be the products with
+                            #        PointFaceTangents, so these need implementing first
+                            warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
+                                          "implemented. Results on unordered meshes may be incorrect")
+                        else:
+                            for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
+                                reflections[a] = [(dim, n), (dim - 1, b)]
 
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                          "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
@@ -119,12 +139,14 @@ def base_permutations_from_subdofmap(ufl_element):
 
 
 def permute_frobenius_face(dofs, blocksize):
+    """Permute the FrobeniusIntegralMoment dofs of a face of a N2curl space."""
     n = len(dofs) // blocksize
     s = 0
     while 6 * s + s * (s - 1) < 2 * n:
         s += 1
     assert 6 * s + s * (s - 1) == 2 * n
 
+    # Make the rotation
     rot = []
     for dof in range(2 * s, 3 * s):
         rot += [dof * blocksize + k for k in range(blocksize)]
@@ -135,6 +157,7 @@ def permute_frobenius_face(dofs, blocksize):
     rot += triangle_rotation(list(range(3 * s * blocksize, n)), blocksize)
     assert len(rot) == len(dofs)
 
+    # Make the reflection
     ref = []
     for dof in range(s - 1, -1, -1):
         ref += [dof * blocksize + k for k in range(blocksize)]
@@ -150,35 +173,43 @@ def permute_frobenius_face(dofs, blocksize):
 
 
 def permute_edge(dofs, blocksize, reverse_blocks=False):
+    """Permute the dofs on an edge."""
     return [edge_flip(dofs, blocksize, reverse_blocks)]
 
 
 def permute_triangle(dofs, blocksize, reverse_blocks=False):
+    """Permute the dofs on a triangle."""
     return [triangle_rotation(dofs, blocksize), triangle_reflection(dofs, blocksize, reverse_blocks)]
 
 
 def permute_quadrilateral(dofs, blocksize, reverse_blocks=False):
+    """Permute the dofs on a quadrilateral."""
     return [quadrilateral_rotation(dofs, blocksize), quadrilateral_reflection(dofs, blocksize, reverse_blocks)]
 
 
 def permute_tetrahedron(dofs, blocksize, reverse_blocks=False):
+    """Permute the dofs on a tetrahedron."""
     return tetrahedron_rotations(dofs, blocksize) + [tetrahedron_reflection(dofs, blocksize, reverse_blocks)]
 
 
 def permute_hexahedron(dofs, blocksize, reverse_blocks=False):
+    """Permute the dofs on a hexahedron."""
     return hexahedron_rotations(dofs, blocksize) + [hexahedron_reflection(dofs, blocksize, reverse_blocks)]
 
 
-def empty_permutations(num_perms, num_dofs, reverse_blocks=False):
+def empty_permutations(num_perms, num_dofs):
+    """Return empty permutations of the given shape."""
     return [list(range(num_dofs)) for i in range(num_perms)]
 
 
 def edge_flip(dofs, blocksize=1, reverse_blocks=False):
+    """Flip the dofs on an edge"""
     n = len(dofs) // blocksize
 
     perm = []
     for dof in range(n - 1, -1, -1):
         if reverse_blocks:
+            # Reverse the dofs within a block
             perm += [dof * blocksize + k for k in range(blocksize)][::-1]
         else:
             perm += [dof * blocksize + k for k in range(blocksize)]
@@ -189,6 +220,7 @@ def edge_flip(dofs, blocksize=1, reverse_blocks=False):
 
 
 def triangle_rotation(dofs, blocksize=1, reverse_blocks=False):
+    """Rotate the dofs in a triangle."""
     n = len(dofs) // blocksize
     s = (math.floor(math.sqrt(1 + 8 * n)) - 1) // 2
     assert s * (s + 1) == 2 * n
@@ -210,6 +242,7 @@ def triangle_rotation(dofs, blocksize=1, reverse_blocks=False):
 
 
 def triangle_reflection(dofs, blocksize=1, reverse_blocks=False):
+    """Reflect the dofs in a triangle."""
     n = len(dofs) // blocksize
     s = (math.floor(math.sqrt(1 + 8 * n)) - 1) // 2
     assert s * (s + 1) == 2 * n
@@ -229,6 +262,7 @@ def triangle_reflection(dofs, blocksize=1, reverse_blocks=False):
 
 
 def quadrilateral_rotation(dofs, blocksize=1, reverse_blocks=False):
+    """Rotate the dofs in a quadrilateral."""
     n = len(dofs) // blocksize
     s = math.floor(math.sqrt(n))
     assert s ** 2 == n
@@ -246,6 +280,7 @@ def quadrilateral_rotation(dofs, blocksize=1, reverse_blocks=False):
 
 
 def quadrilateral_reflection(dofs, blocksize=1, reverse_blocks=False):
+    """Reflect the dofs in a quadrilateral."""
     n = len(dofs) // blocksize
     s = math.floor(math.sqrt(n))
     assert s ** 2 == n
@@ -265,6 +300,8 @@ def quadrilateral_reflection(dofs, blocksize=1, reverse_blocks=False):
 
 
 def tetrahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
+    """Rotate the dofs in a tetrahedron. This will return three rotations corresponding to
+    rotation each of the origin's three neighbours to be the new origin."""
     n = len(dofs) // blocksize
     s = 0
     while s * (s + 1) * (s + 2) < 6 * n:
@@ -301,6 +338,7 @@ def tetrahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
 
 
 def tetrahedron_reflection(dofs, blocksize=1, reverse_blocks=False):
+    """Reflect the dofs in a tetrahedron."""
     n = len(dofs) // blocksize
     s = 0
     while s * (s + 1) * (s + 2) < 6 * n:
@@ -325,6 +363,8 @@ def tetrahedron_reflection(dofs, blocksize=1, reverse_blocks=False):
 
 
 def hexahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
+    """Rotate the dofs in a hexahedron. This will return three rotations corresponding to
+    rotation each of the origin's three neighbours to be the new origin."""
     n = len(dofs) // blocksize
     s = 0
     while s ** 3 < n:
@@ -365,6 +405,7 @@ def hexahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
 
 
 def hexahedron_reflection(dofs, blocksize=1, reverse_blocks=False):
+    """Reflect the dofs in a hexahedron."""
     n = len(dofs) // blocksize
     s = 0
     while s ** 3 < n:
