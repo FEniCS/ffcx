@@ -125,7 +125,7 @@ def base_permutations_from_subdofmap(ufl_element):
                         # FIXME
                         warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
                                       "implemented. Results on unordered meshes may be incorrect")
-                        permuted = []
+                        permuted = type_dofs
                     else:
                         permuted = permute_frobenius_face(type_dofs, 1)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
@@ -135,7 +135,7 @@ def base_permutations_from_subdofmap(ufl_element):
                     # TODO: What to do with other dof types
                     warnings.warn("Permutations of " + t + " dofs not yet "
                                   "implemented. Results on unordered meshes may be incorrect")
-                    permuted = []
+                    permuted = type_dofs
 
                 # Apply these permutations
                 for p in range(2 ** (dim - 1)):
