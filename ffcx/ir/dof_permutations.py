@@ -19,8 +19,7 @@ from ffcx.fiatinterface import create_element
 
 
 def base_permutations_and_reflection_entities(ufl_element):
-    """Returns the base permutations and the entities that the direction of vector-valued
-    functions depend on."""
+    """Returns the base permutations and the entities that the direction of vector-valued functions depend on."""
     if ufl_element.num_sub_elements() == 0:
         # If the element has no sub elements, return its permutations
         return base_permutations_from_subdofmap(ufl_element)
@@ -39,7 +38,8 @@ def base_permutations_and_reflection_entities(ufl_element):
 
 
 def base_permutations_from_subdofmap(ufl_element):
-    """Calculates the base permutations and the entities that the direction of vector-valued
+    """Calculate permutations and reflection entites for a root element.
+    Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
     fiat_element = create_element(ufl_element)
     num_dofs = len(fiat_element.dual_basis())
@@ -203,7 +203,7 @@ def empty_permutations(num_perms, num_dofs):
 
 
 def edge_flip(dofs, blocksize=1, reverse_blocks=False):
-    """Flip the dofs on an edge"""
+    """Flip the dofs on an edge."""
     n = len(dofs) // blocksize
 
     perm = []
@@ -300,8 +300,9 @@ def quadrilateral_reflection(dofs, blocksize=1, reverse_blocks=False):
 
 
 def tetrahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
-    """Rotate the dofs in a tetrahedron. This will return three rotations corresponding to
-    rotation each of the origin's three neighbours to be the new origin."""
+    """Rotate the dofs in a tetrahedron.
+    This will return three rotations corresponding to rotation each of the origin's three
+    neighbours to be the new origin."""
     n = len(dofs) // blocksize
     s = 0
     while s * (s + 1) * (s + 2) < 6 * n:
@@ -363,8 +364,9 @@ def tetrahedron_reflection(dofs, blocksize=1, reverse_blocks=False):
 
 
 def hexahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
-    """Rotate the dofs in a hexahedron. This will return three rotations corresponding to
-    rotation each of the origin's three neighbours to be the new origin."""
+    """Rotate the dofs in a hexahedron.
+    This will return three rotations corresponding to rotation each of the origin's
+    three neighbours to be the new origin."""
     n = len(dofs) // blocksize
     s = 0
     while s ** 3 < n:

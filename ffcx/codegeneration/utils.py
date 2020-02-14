@@ -132,8 +132,7 @@ def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):
 
 
 def get_table_dofmap_array(L, dofmap, pname):
-    """If some dofs have been stripped from a table, return an array to map table entries
-    to dofs."""
+    """If some dofs have been stripped from a table, return an array to map table entries to dofs."""
     for i, j in enumerate(dofmap):
         if i != j:
             # If a dof has been removed, write the data
