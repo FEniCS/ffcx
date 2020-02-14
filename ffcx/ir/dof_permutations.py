@@ -121,13 +121,21 @@ def base_permutations_from_subdofmap(ufl_element):
                     # Dof blocksize is 2
                     permuted = entity_functions[dim](type_dofs, 2)
                 elif t in ["FrobeniusIntegralMoment"] and dim == 2:
-                    permuted = permute_frobenius_face(type_dofs, 1)
+                    if len(type_dofs) != 3:
+                        # FIXME
+                        warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
+                                      "implemented. Results on unordered meshes may be incorrect")
+                        permuted = []
+                    else:
+                        permuted = permute_frobenius_face(type_dofs, 1)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
                     # FIXME: temporarily does no permutation; needs replacing
                     permuted = [type_dofs for i in range(2 ** (dim - 1))]
                 else:
                     # TODO: What to do with other dof types
-                    raise ValueError("Permutations are not currently implemented for this dof type (" + t + ").")
+                    warnings.warn("Permutations of " + t + " dofs not yet "
+                                  "implemented. Results on unordered meshes may be incorrect")
+                    permuted = []
 
                 # Apply these permutations
                 for p in range(2 ** (dim - 1)):
