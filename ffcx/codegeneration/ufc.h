@@ -439,11 +439,12 @@ extern "C"
   ///         dofs are correctly oriented. This array will have one entry for
   ///         each face of the cell.
   /// TODO: Use std::vector<int32_t> to store 1/0 marker for each edge/face
-  typedef void (ufc_tabulate_tensor)(
+  typedef void(ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
       const double* restrict coordinate_dofs, const int* entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      const bool* edge_reflections, const bool* face_reflections);
+      const bool* edge_reflections, const bool* face_reflections,
+      const uint8_t* face_rotations);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
