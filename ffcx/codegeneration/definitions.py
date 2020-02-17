@@ -54,7 +54,7 @@ class FFCXBackendDefinitions(object):
                             ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
                             ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
                             ufl.geometry.ReferenceNormal: self._expect_table,
-                            ufl.geometry.CellOrientation: self.cell_orientation,
+                            ufl.geometry.CellOrientation: self._pass,
                             ufl.geometry.FacetOrientation: self._expect_table,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
@@ -188,12 +188,6 @@ class FFCXBackendDefinitions(object):
         # TODO: Jacobian may need adjustment for custom_integral_types
         return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
-    def cell_orientation(self, e, mt, tabledata, num_points, access):
-        L = self.language
-        expr = L.LiteralFloat(+1.0)
-        code = [L.VariableDecl("const ufc_scalar_t", access, expr)]
-        return code
-
     def _expect_table(self, e, mt, tabledata, num_points, access):
         """These quantities refer to constant tables defined in ufc_geometry.h."""
         # TODO: Inject const static table here instead?
@@ -203,4 +197,8 @@ class FFCXBackendDefinitions(object):
         """These quantities refer to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
+        return []
+
+    def _pass(self, *args, **kwargs):
+        """Return nothing"""
         return []

@@ -87,10 +87,6 @@ class FFCXBackendSymbols(object):
         else:
             logging.exception("Unknown entitytype {}".format(entitytype))
 
-    def cell_orientation_internal(self, restriction):
-        """Internal value for cell orientation in generated code."""
-        return self.S("co" + ufc_restriction_postfix(restriction))
-
     def argument_loop_index(self, iarg):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
