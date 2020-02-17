@@ -366,4 +366,5 @@ class FFCXBackendAccess(object):
         return expr
 
     def _pass(self, *args, **kwargs):
+        """Return one."""
         return 1

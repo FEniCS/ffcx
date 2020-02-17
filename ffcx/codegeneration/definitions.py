@@ -198,5 +198,5 @@ class FFCXBackendDefinitions(object):
         return []
 
     def _pass(self, *args, **kwargs):
-        """Return nothing"""
+        """Return nothing."""
         return []
