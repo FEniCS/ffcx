@@ -11,8 +11,6 @@ import ufl
 
 from ffcx.fiatinterface import create_element
 
-# from ffcx.codegeneration.utils import get_vector_reflection
-
 logger = logging.getLogger(__name__)
 
 
