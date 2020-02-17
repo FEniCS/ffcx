@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
-from ffcx.codegeneration.utils import generate_return_new
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 

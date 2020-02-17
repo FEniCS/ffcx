@@ -66,7 +66,6 @@ Compiler stages:
 import logging
 import os
 import typing
-from collections import defaultdict
 from time import time
 
 from ffcx.analysis import analyze_ufl_objects

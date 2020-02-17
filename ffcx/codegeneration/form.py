@@ -153,7 +153,6 @@ class UFCForm:
             code += [L.If(L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0), body)]
         return L.StatementList(code)
 
-
     # This group of functions are repeated for each foo_integral by
     # add_ufc_form_integral_methods:
 
@@ -234,6 +233,5 @@ def generator(ir, parameters):
     # Format declaration
     declaration = ufc_form.declaration.format(factory_name=d["factory_name"],
                                               name_from_uflfile=d["name_from_uflfile"])
-
 
     return declaration, implementation

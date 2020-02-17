@@ -421,7 +421,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
 
     # Compute common data
     ir["name"] = "form_{!s}".format(naming.compute_signature([
-                                         form_data.original_form], str(form_id)))
+                                    form_data.original_form], str(form_id)))
 
     form_name = object_names.get(id(form_data.original_form), form_id)
     ir["name_from_uflfile"] = "form_{}_{}".format(prefix, form_name)

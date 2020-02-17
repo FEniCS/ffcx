@@ -7,7 +7,7 @@ declaration = """
 ufc_form* create_{factory_name}(void);
 
 // Helper used to create form using name which was given to the
-// form in the UFL file. 
+// form in the UFL file.
 // This helper is called in user c++ code.
 //
 ufc_form* create_{name_from_uflfile}(void);
