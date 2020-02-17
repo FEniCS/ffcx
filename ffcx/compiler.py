@@ -73,7 +73,6 @@ from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.codegeneration import generate_code
 from ffcx.formatting import format_code
 from ffcx.ir.representation import compute_ir
-from ffcx.wrappers import generate_wrapper_code
 
 logger = logging.getLogger(__name__)
 
@@ -118,31 +117,9 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     code = generate_code(ir, parameters)
     _print_timing(4, time() - cpu_time)
 
-    # Stage 3.1: generate convenience wrappers, e.g. for DOLFIN
-    cpu_time = time()
-
-    # FIXME: Simplify and make robist w.r.t. naming
-    # Extract class names from the IR and add to a dict
-    # ir_finite_elements, ir_dofmaps, ir_coordinate_mappings, ir_integrals, ir_forms = ir
-    if len(object_names) > 0:
-        classnames = defaultdict(list)
-        comp = ["elements", "dofmaps", "coordinate_maps", "integrals", "forms"]
-        for ir_comp, e_name in zip(ir, comp):
-            try:
-                for e in ir_comp:
-                    classnames[e_name].append(e["classname"])
-            except TypeError:
-                for e in ir_comp:
-                    classnames[e_name].append(e.classname)
-        wrapper_code = generate_wrapper_code(analysis, prefix, object_names, classnames, parameters)
-    else:
-        wrapper_code = None
-
-    _print_timing(4.1, time() - cpu_time)
-
     # Stage 4: format code
     cpu_time = time()
-    code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
+    code_h, code_c = format_code(code, parameters)
     _print_timing(5, time() - cpu_time)
 
     logger.info("FFCX finished in {} seconds.".format(time() - cpu_time_0))

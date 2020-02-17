@@ -143,7 +143,7 @@ def initialize_integral_code(ir, parameters):
     """
     code = {}
     code["class_type"] = ir.integral_type + "_integral"
-    code["classname"] = ir.classname
+    code["name"] = ir.name
     code["members"] = ""
     code["constructor"] = ""
     code["constructor_arguments"] = ""
@@ -157,6 +157,6 @@ def initialize_integral_code(ir, parameters):
 
 def initialize_expression_code(ir):
     code = {}
-    code["classname"] = "{}_expression".format(ir.classname)
+    code["name"] = "{}_expression".format(ir.name)
 
     return code

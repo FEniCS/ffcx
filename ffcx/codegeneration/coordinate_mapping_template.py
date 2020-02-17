@@ -10,18 +10,6 @@ ufc_coordinate_mapping* create_{factory_name}(void);
 factory = """
 // Code for coordinate mapping {factory_name}
 
-{coordinate_finite_element_declaration}
-ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
-{{
-{create_coordinate_finite_element}
-}}
-
-{coordinate_dofmap_declaration}
-ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
-{{
-{create_coordinate_dofmap}
-}}
-
 {evaluate_reference_basis_derivatives_declaration}
 void compute_jacobians_{factory_name}(double* restrict J, int num_points,
                                       const double* restrict X,
@@ -93,8 +81,6 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
   cmap->cell_shape = {cell_shape};
-  cmap->create_coordinate_finite_element = create_coordinate_finite_element_{factory_name};
-  cmap->create_coordinate_dofmap = create_coordinate_dofmap_{factory_name};
   cmap->compute_physical_coordinates = compute_physical_coordinates_{factory_name};
   cmap->compute_reference_coordinates = compute_reference_coordinates_{factory_name};
   cmap->compute_reference_geometry = compute_reference_geometry_{factory_name};

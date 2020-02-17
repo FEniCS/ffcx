@@ -70,7 +70,7 @@ def generator(ir, parameters):
     d = {}
 
     # Attributes
-    d["factory_name"] = ir.classname
+    d["factory_name"] = ir.name
     d["signature"] = "\"{}\"".format(ir.signature)
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
@@ -97,6 +97,6 @@ def generator(ir, parameters):
     implementation = ufc_dofmap.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_dofmap.declaration.format(factory_name=ir.classname)
+    declaration = ufc_dofmap.declaration.format(factory_name=ir.name)
 
     return declaration, implementation
