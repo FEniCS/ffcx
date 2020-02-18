@@ -141,16 +141,20 @@ class UFCForm:
     def create_functionspace(self, L, ir):
         code = []
         function_name = L.Symbol("function_name")
+
+        code += ["ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));\n"]
+
         for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
-            body = "ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));\n"
-            body += "space->create_element = create_{finite_element_classname};\n".format(
+            body = "space->create_element = create_{finite_element_classname};\n".format(
                 finite_element_classname=element)
             body += "space->create_dofmap = create_{dofmap_classname};\n".format(dofmap_classname=dofmap)
-            body += "space->create_coordinate_mapping = create_{coordinate_map_classname};\n".format(
+            body += "space->create_coordinate_mapping = create_{coordinate_map_classname};".format(
                 coordinate_map_classname=cmap)
-            body += "return space;\n"
 
             code += [L.If(L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0), body)]
+
+        code += ["return space;\n"]
+
         return L.StatementList(code)
 
     # This group of functions are repeated for each foo_integral by

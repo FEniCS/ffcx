@@ -166,8 +166,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         ffcx.naming.compute_signature(forms, _compute_parameter_signature(p)
                                       + str(cffi_extra_compile_args) + str(cffi_debug))
 
-    form_names = ["form_{!s}".format(ffcx.naming.compute_signature([form], str(i)))
-                  for i, form in enumerate(forms)]
+    form_names = [ffcx.naming.form_name(form, i) for i, form in enumerate(forms)]
 
     if cache_dir is not None:
         cache_dir = Path(cache_dir)

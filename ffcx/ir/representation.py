@@ -420,11 +420,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     ir["prefix"] = prefix
 
     # Compute common data
-    ir["name"] = "form_{!s}".format(naming.compute_signature([
-                                    form_data.original_form], str(form_id)))
-
-    form_name = object_names.get(id(form_data.original_form), form_id)
-    ir["name_from_uflfile"] = "form_{}_{}".format(prefix, form_name)
+    ir["name"] = naming.form_name(form_data.original_form, form_id)
 
     ir["signature"] = form_data.original_form.signature()
 
@@ -453,12 +449,15 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
 
     fs = {}
     for function in form_data.original_form.arguments() + form_data.original_form.coefficients():
-        name = object_names.get(id(function))
+        name = object_names.get(id(function), str(function))
         el = function.ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         fs[name] = (finite_element_names[el], dofmap_names[el], coordinate_mapping_names[cmap])
 
+    form_name = object_names.get(id(form_data.original_form), form_id)
+
     ir["function_spaces"] = fs
+    ir["name_from_uflfile"] = "form_{}_{}".format(prefix, form_name)
 
     # Create integral ids and names using form prefix (integrals are
     # always generated as part of form so don't get their own prefix)
