@@ -124,9 +124,6 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
     # Initialise representation
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
 
-    # # Store element classnames
-    # ir["classnames"] = classnames
-
     # Get element space dimensions
     unique_elements = element_numbers.keys()
     ir["element_dimensions"] = {
