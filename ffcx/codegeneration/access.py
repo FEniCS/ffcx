@@ -43,7 +43,7 @@ class FFCXBackendAccess(object):
                             ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
                             ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
                             ufl.geometry.ReferenceNormal: self.reference_normal,
-                            ufl.geometry.CellOrientation: self.cell_orientation,
+                            ufl.geometry.CellOrientation: self._pass,
                             ufl.geometry.FacetOrientation: self.facet_orientation,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
@@ -249,12 +249,6 @@ class FFCXBackendAccess(object):
         else:
             raise RuntimeError("Unhandled cell types {0}.".format(cellname))
 
-    def cell_orientation(self, e, mt, tabledata, num_points):
-        # Error if not in manifold case:
-        domain = mt.terminal.ufl_domain()
-        assert domain.geometric_dimension() > domain.topological_dimension()
-        return self.symbols.cell_orientation_internal(mt.restriction)
-
     def facet_orientation(self, e, mt, tabledata, num_points):
         L = self.language
         cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
@@ -370,3 +364,7 @@ class FFCXBackendAccess(object):
             - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
 
         return expr
+
+    def _pass(self, *args, **kwargs):
+        """Return one."""
+        return 1
