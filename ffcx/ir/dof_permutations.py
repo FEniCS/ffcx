@@ -73,7 +73,7 @@ def base_permutations_from_subdofmap(ufl_element):
     # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
     num_perms = entity_counts[1] + 2 * entity_counts[2] + 4 * entity_counts[3]
 
-    perms = empty_permutations(num_perms, num_dofs)
+    perms = identity_permutations(num_perms, num_dofs)
     reflections = [None for i in range(num_dofs)]
     perm_n = 0
     # Iterate through the entities of the reference element
@@ -207,8 +207,8 @@ def permute_hexahedron(dofs, blocksize, reverse_blocks=False):
     return hexahedron_rotations(dofs, blocksize) + [hexahedron_reflection(dofs, blocksize, reverse_blocks)]
 
 
-def empty_permutations(num_perms, num_dofs):
-    """Return empty permutations of the given shape."""
+def identity_permutations(num_perms, num_dofs):
+    """Return identity permutations of the given shape."""
     return [list(range(num_dofs)) for i in range(num_perms)]
 
 
