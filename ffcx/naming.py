@@ -21,6 +21,7 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
     finite element as a coordinate mapping element. There is no way to
     find this information just by looking at type of `ufl_object`
     passed.
+
     """
 
     object_signature = ""
