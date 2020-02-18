@@ -448,7 +448,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     ]
 
     fs = {}
-    for function in form_data.original_form.arguments() + form_data.original_form.coefficients():
+    for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
         name = object_names.get(id(function), str(function))
         el = function.ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
