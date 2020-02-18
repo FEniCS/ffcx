@@ -114,7 +114,7 @@ def get_vector_reflection_array(L, dof_reflection_entities, vname="reflected_dof
 
     # If at least one vector dof needs reflecting
     return [L.ArrayDecl(
-        "const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs)]
+        "status const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs)]
 
 
 def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):
@@ -138,7 +138,7 @@ def get_table_dofmap_array(L, dofmap, pname):
             # If a dof has been removed, write the data
             _table_dofmaps[pname] = L.Symbol(pname + "_dofmap")
             return [L.ArrayDecl(
-                "const int", _table_dofmaps[pname], (len(dofmap), ), values=dofmap)]
+                "static const int", _table_dofmaps[pname], (len(dofmap), ), values=dofmap)]
     # If no dofs  have been removed, return nothing
     _table_dofmaps[pname] = None
     return []
