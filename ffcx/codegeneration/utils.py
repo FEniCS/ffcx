@@ -114,7 +114,7 @@ def get_vector_reflection_array(L, dof_reflection_entities, vname="reflected_dof
 
     # If at least one vector dof needs reflecting
     return [L.ArrayDecl(
-        "status const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs)]
+        "static const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs)]
 
 
 def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):
