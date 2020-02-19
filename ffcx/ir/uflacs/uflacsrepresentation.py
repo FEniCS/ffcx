@@ -30,7 +30,7 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     Original UFL expression is needed to compute original positions of coefficients.
 
     """
-    logger.info("Computing uflacs representation of expression")
+    logger.info("Computing uflacs representation of expression {}".format(expression))
 
     original_expression = expression[2]
     points = expression[1]
@@ -115,11 +115,11 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
 
 def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
                         form_data: ufl.algorithms.formdata.FormData,
-                        form_id: int, element_numbers: dict, classnames: dict, parameters: dict,
+                        form_id: int, element_numbers: dict, parameters: dict,
                         visualise: bool):
     """Compute intermediate represention of integral."""
 
-    logger.info("Computing uflacs representation")
+    logger.info("Computing uflacs representation for integral {}".format(itg_data))
 
     # Initialise representation
     ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)

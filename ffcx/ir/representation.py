@@ -74,7 +74,7 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'coefficient_offsets', 'original_constant_offsets', 'params',
                                          'unique_tables', 'unique_table_types',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'name',
-                                         'prefix', 'integrals_metadata', 'integral_metadata'])
+                                         'integrals_metadata', 'integral_metadata'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
@@ -388,15 +388,11 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
         # FIXME: Can we remove form_index?
         # Compute representation
-        ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers, "",
+        ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers,
                                  parameters, visualise)
 
         # Fetch name
         ir["name"] = integral_names[(form_index, itg_data_index)]
-
-        # Storing prefix here for reconstruction of classnames on code
-        # generation side
-        ir["prefix"] = prefix  # FIXME: Drop this?
 
         # Store metadata for later reference (eg. printing as comment)
         # NOTE: We make a commitment not to modify it!
