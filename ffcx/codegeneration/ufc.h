@@ -67,19 +67,6 @@ extern "C"
     PointwiseInnerProductEval = 12,
   } ufc_doftype;
 
-  typedef enum
-  {
-    ufcda_do_not_permute = 0,
-    ufcda_point = 1,
-    ufcda_interval = 2,
-    ufcda_triangle = 3,
-    ufcda_quadrilateral = 4,
-    ufcda_tetrahedron = 5,
-    ufcda_hexahedron = 6,
-    ufcda_triangle_bdm_type = 7,
-    ufcda_triangle_flipblocks = 8,
-  } ufc_dof_arrangement;
-
   /// Forward declarations
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
@@ -143,7 +130,9 @@ extern "C"
     /// @param[in] face_reflections An array of bools to say whether or not each
     /// each face has been reflected. This is used to ensure that vector dofs
     /// are correctly oriented.
-    /// TODO: Use std::vector<int32_t> to store 1/0 marker for each edge/face
+    /// @param[in] face_rotations An array of integers to say how many times
+    /// each face needs to be rotated to match the low-to-high ordering. This
+    /// is used to ensure that FaceTangent vector dofs are correctly oriented.
 
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
@@ -451,13 +440,16 @@ extern "C"
   ///         each face has been reflected. This is used to ensure that vector
   ///         dofs are correctly oriented. This array will have one entry for
   ///         each face of the cell.
-  /// TODO: Use std::vector<int32_t> to store 1/0 marker for each edge/face
-  typedef void (ufc_tabulate_tensor)(
+  /// @param[in] face_rotations An array of integers to say how many times
+  ///         each face needs to be rotated to match the low-to-high ordering.
+  ///         This is used to ensure that FaceTangent vector dofs are correctly
+  ///         oriented.
+  typedef void(ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
       const double* restrict coordinate_dofs, const int* entity_local_index,
       const uint8_t* restrict quadrature_permutation,
       const bool* edge_reflections, const bool* face_reflections,
-                                    const uint8_t* face_rotations);
+      const uint8_t* face_rotations);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///

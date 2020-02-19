@@ -151,7 +151,7 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     # compile time blows up.)
     if len(points) > 1:
         return ([], -1)
-        # FIXME
+        # FIXME: this currently returns empty code as the line below returns code that fails to compile
         # return _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset)
 
     # Get weights for mapping reference point to physical

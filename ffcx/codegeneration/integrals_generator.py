@@ -657,7 +657,7 @@ class IntegralGenerator(object):
                 assert self._get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
-                """print(indices)
+                print(indices)
                 table_value = table[indices[i]]
                 dof_rots = self.ir.table_dof_rotations[td.name]
                 dofmap = self.ir.table_dofmaps[td.name]
@@ -672,8 +672,8 @@ class IntegralGenerator(object):
                             values = [sum(mat[i][j] * d for j, d in enumerate(values)) for i in range(len(values))]
                         for n, v in enumerate(values):
                             table_value = L.Conditional(L.And(L.EQ(indices[i], dofs[n]),
-                                                              L.EQ(L.Symbol("face_rotations")[entity_n], o)), v, table_value)"""
-                table_value = self._get_rotated_item_from_table(table, [], [indices[i]], [td.name])
+                                                              L.EQ(L.Symbol("face_rotations")[entity_n], o)), v,
+                                                        table_value)
 
                 arg_factor = self._get_vector_reflection(td.name, indices) * table_value
                 # Assuming B sparsity follows element table sparsity
@@ -1017,23 +1017,15 @@ class IntegralGenerator(object):
                 if inline_table:
                     # Extract float value of PI[P_ii]
                     P_ii = P_permutation_indices + (0, ) + P_arg_indices
-                    Pval = self._get_rotated_item_from_table(table,
-                        P_permutation_indices + (0, ), P_arg_indices, P_origins)
-                    #Pval = table[P_ii]
+                    Pval = self._get_rotated_item_from_table(
+                        table, P_permutation_indices + (0, ), P_arg_indices, P_origins)
                 else:
                     # Index the static preintegrated table:
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
-                    Pval = self._get_rotated_item_from_table(PI,
-                        P_permutation_indices + P_entity_indices, P_arg_indices, P_origins)
-                    #Pval = PI[P_ii]
-
-                #from IPython import embed; embed()()
-
+                    Pval = self._get_rotated_item_from_table(
+                        PI, P_permutation_indices + P_entity_indices, P_arg_indices, P_origins)
 
                 A_values[A_ii] += self._get_vector_reflection(blockdata.name, P_ii) * Pval * f
-
-        # Code generation
-        # A[i] += A_values[i]
 
         z = L.LiteralFloat(0.0)
         code = []
@@ -1042,7 +1034,6 @@ class IntegralGenerator(object):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
         return L.commented_code_list(code, "UFLACS block mode: preintegrated")
-
 
     def _get_rotated_item_from_table(self, table, indices, dof_indices, tablenames):
         L = self.backend.language
@@ -1065,7 +1056,8 @@ class IntegralGenerator(object):
                         values = [sum(mat[i][j] * d for j, d in enumerate(values)) for i in range(len(values))]
                     for n, v in enumerate(values):
                         table_value = L.Conditional(L.And(L.EQ(ind, dofs[n]),
-                                                          L.EQ(L.Symbol("face_rotations")[entity_n], o)), v, table_value)
+                                                          L.EQ(L.Symbol("face_rotations")[entity_n], o)), v,
+                                                    table_value)
             return table_value
 
         table_value = table[indices + dof_indices]
@@ -1096,20 +1088,18 @@ class IntegralGenerator(object):
 
                     this_value = 0
                     for inds in itertools.product(*[range(len(j[2])) for j in rots]):
-#                    for coeffs in itertools.product(*[m[j] for m, j in zip(matrices, ns)]):
                         prod = 1
                         for m, i, j in zip(matrices, inds, ns):
                             if m[j][i] == 0:
                                 break
                             prod *= m[j][i]
                         else:
-                            this_value += prod * table[indices + tuple(d.index(j[2][i])
-                                for i, j, d in zip(inds, rots, dofmaps))]
+                            this_value += prod * table[indices + tuple(
+                                d.index(j[2][i]) for i, j, d in zip(inds, rots, dofmaps))]
 
                     table_value = L.Conditional(condition, this_value, table_value)
 
         return table_value
-
 
     def generate_copyout_statements(self):
         L = self.backend.language

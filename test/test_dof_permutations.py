@@ -35,12 +35,14 @@ from ffcx.ir import dof_permutations
     (dof_permutations.hexahedron_rotations, lambda s: s ** 3),
     (dof_permutations.hexahedron_reflection, lambda s: s ** 3)])
 def test_permutations(s, perm_f, dof_f, blocksize):
-    "Test that permutations are valid"
+    """Test that permutations are valid."""
     dofs = dof_f(s) * blocksize
     perms = perm_f(list(range(dofs)), blocksize)
     if not isinstance(perms[0], list):
         perms = [perms]
     for p in perms:
         for i in p:
+            # Each number must appear exactly once in the permutation
             assert p.count(i) == 1
+            # Each number must be less than the number of dofs
             assert i < dofs
