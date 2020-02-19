@@ -31,7 +31,7 @@ void compute_jacobians_{factory_name}(double* restrict J, int num_points,
 }}
 
 void compute_jacobian_determinants_{factory_name}(double* restrict detJ, int num_points,
-                                                  const double* restrict J, int cell_orientation)
+                                                  const double* restrict J)
 {{
 {compute_jacobian_determinants}
 }}
@@ -53,8 +53,7 @@ void compute_physical_coordinates_{factory_name}(double* restrict x, int num_poi
 void compute_geometry_{factory_name}(double* restrict x, double* restrict J,
                                      double* restrict detJ, double* restrict K,
                                      int num_points, const double* restrict X,
-                                     const double* restrict coordinate_dofs,
-                                     int cell_orientation)
+                                     const double* restrict coordinate_dofs)
 {{
 {compute_geometry}
 }}
@@ -67,8 +66,7 @@ void compute_midpoint_geometry_{factory_name}(double* restrict x, double* restri
 
 void compute_reference_coordinates_{factory_name}(double* restrict X, int num_points,
                                                   const double* restrict x,
-                                                  const double* restrict coordinate_dofs,
-                                                  int cell_orientation)
+                                                  const double* restrict coordinate_dofs)
 {{
 {compute_reference_coordinates}
 }}
@@ -76,8 +74,7 @@ void compute_reference_coordinates_{factory_name}(double* restrict X, int num_po
 void compute_reference_geometry_{factory_name}(double* restrict X, double* restrict J,
                                                double* restrict detJ, double* restrict K,
                                                int num_points, const double* restrict x,
-                                               const double* restrict coordinate_dofs,
-                                               int cell_orientation)
+                                               const double* restrict coordinate_dofs)
 {{
 {compute_reference_geometry}
 }}

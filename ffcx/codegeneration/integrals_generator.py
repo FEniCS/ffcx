@@ -15,6 +15,7 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
+from ffcx.codegeneration.utils import get_vector_reflection_array, get_vector_reflection, get_table_dofmap_array
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +154,13 @@ class IntegralGenerator(object):
                       L.VerbatimStatement(
                           "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
                           .format(alignment))]
+
+        for element, id in self.ir.element_ids.items():
+            parts += get_vector_reflection_array(L, self.ir.element_dof_reflection_entities[element],
+                                                 "ref_dof" + str(id))
+
+        for tname, dofmap in self.ir.table_dofmaps.items():
+            parts += get_table_dofmap_array(L, dofmap, tname)
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -293,9 +301,9 @@ class IntegralGenerator(object):
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [entities][points][dofs]",
-            "PI* dimensions: [entities][dofs][dofs] or [entities][dofs]",
-            "PM* dimensions: [entities][dofs][dofs]",
+            "FE* dimensions: [permutation][entities][points][dofs]",
+            "PI* dimensions: [permutations][permutations][entities][dofs][dofs] or [permutations][entities][dofs]",
+            "PM* dimensions: [permutations][entities][dofs][dofs]",
         ])
         return parts
 
@@ -605,9 +613,23 @@ class IntegralGenerator(object):
                 entity = self.backend.symbols.entity(self.ir.entitytype, None)
             return (entity, )
 
-    def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
-        L = self.backend.language
+    def get_permutations(self, blockdata):
+        """Get the quadrature permutations for facets."""
+        perms = []
+        for r in blockdata.restrictions:
+            if blockdata.is_permuted:
+                qp = self.backend.symbols.quadrature_permutation(0)
+                if r == "-":
+                    qp = self.backend.symbols.quadrature_permutation(1)
+            else:
+                qp = 0
+            perms.append(qp)
+        if blockdata.transposed:
+            return (perms[1], perms[0])
+        else:
+            return tuple(perms)
 
+    def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -628,12 +650,13 @@ class IntegralGenerator(object):
             assert td.ttype != "zeros"
 
             if td.ttype == "ones":
-                arg_factor = L.LiteralFloat(1.0)
+                arg_factor = self._get_vector_reflection(td.name, indices)
             elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
+                assert self._get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = table[indices[i]]
+                arg_factor = self._get_vector_reflection(td.name, indices) * table[indices[i]]
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -870,7 +893,6 @@ class IntegralGenerator(object):
                 P_ii += arg_indices[::-1]
             else:
                 P_ii += arg_indices
-
             if blockdata.block_mode == "preintegrated":
                 # Preintegrated should never get into quadloops
                 assert num_points is None
@@ -889,7 +911,7 @@ class IntegralGenerator(object):
                     quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
                 # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_ii]
+                PM = L.Symbol(blockdata.name)[P_ii] * self._get_vector_reflection(blockdata.name, P_ii)
                 B_rhs = L.float_product([FI, PM])
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -950,6 +972,7 @@ class IntegralGenerator(object):
 
             # Define indices into preintegrated block
             P_entity_indices = self.get_entities(blockdata)
+            P_permutation_indices = self.get_permutations(blockdata)
             if inline_table:
                 assert P_entity_indices == (L.LiteralInt(0), )
                 assert table.shape[0] == 1
@@ -967,14 +990,14 @@ class IntegralGenerator(object):
 
                 if inline_table:
                     # Extract float value of PI[P_ii]
-                    P_ii = (0, ) + P_arg_indices
+                    P_ii = P_permutation_indices + (0, ) + P_arg_indices
                     Pval = table[P_ii]
                 else:
                     # Index the static preintegrated table:
-                    P_ii = P_entity_indices + P_arg_indices
+                    P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
-                A_values[A_ii] += Pval * f
+                A_values[A_ii] += self._get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
         # Code generation
         # A[i] += A_values[i]
@@ -985,7 +1008,6 @@ class IntegralGenerator(object):
         for i in range(len(A_values)):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
-
         return L.commented_code_list(code, "UFLACS block mode: preintegrated")
 
     def generate_copyout_statements(self):
@@ -1047,3 +1069,20 @@ class IntegralGenerator(object):
         parts = dofmap_parts + parts
 
         return parts
+
+    def _get_vector_reflection(self, pname, indices):
+        """Get the vector reflection for entry the table pname accessed using indices."""
+        origin = self.ir.table_origins[pname]
+        if isinstance(origin[0], str):
+            # If the table is preintegrated, then origin will be a tuple of strings
+            # to identify which tables were used for each dof dimension
+            output = 1
+            for i, n in zip(origin, indices[-len(origin):]):
+                element = self.ir.table_origins[i][0]
+                output *= get_vector_reflection(self.backend.language, n,
+                                                "ref_dof" + str(self.ir.element_ids[element]), i)
+            return output
+        else:
+            element = origin[0]
+            return get_vector_reflection(self.backend.language, indices[-1],
+                                         "ref_dof" + str(self.ir.element_ids[element]), pname)

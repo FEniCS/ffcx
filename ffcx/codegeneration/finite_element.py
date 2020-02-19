@@ -17,7 +17,8 @@ from ffcx.codegeneration.evalderivs import (_generate_combinations,
 from ffcx.codegeneration.evaluatebasis import generate_evaluate_reference_basis
 from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
-                                       generate_return_new_switch)
+                                       generate_return_new_switch,
+                                       get_vector_reflection, get_vector_reflection_array)
 
 index_type = "int64_t"
 
@@ -259,7 +260,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "const " + index_type,
             physical_offsets, (num_dofs, ),
             values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
-    ]
+    ] + get_vector_reflection_array(L, ir.dof_reflection_entities)
 
     # Build dof lists for each mapping type
     mapping_dofs = defaultdict(list)
@@ -308,6 +309,8 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "piola", "Piola")
 
         mapped_value = L.Symbol("mapped_value")
+        vec_scale = get_vector_reflection(L, idof)
+
         transform_apply_code += [
             L.ForRanges(
                 dofrange,
@@ -321,7 +324,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                     L.Comment(msg),
                     L.VariableDecl(
                         "const double", mapped_value,
-                        M_scale * sum(
+                        M_scale * vec_scale * sum(
                             M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
                             for jj in range(num_reference_components))),
                     # Apply derivative transformation, for order=0 this reduces to
@@ -334,7 +337,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                                                 transform[r, s] * mapped_value)])
                 ])
         ]
-
     # Transform for each point
     point_loop_code = [
         L.ForRange(
@@ -353,6 +355,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
+
     d = {}
     d["factory_name"] = ir.classname
     d["signature"] = "\"{}\"".format(ir.signature)
