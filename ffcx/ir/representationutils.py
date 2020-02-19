@@ -10,7 +10,7 @@ import logging
 import numpy
 
 import ufl
-from ffcx.fiatinterface import (create_element, create_quadrature, map_facet_points,
+from ffcx.fiatinterface import (create_quadrature, map_facet_points,
                                 reference_cell_vertices)
 
 logger = logging.getLogger(__name__)
