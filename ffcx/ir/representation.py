@@ -383,12 +383,39 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
     else:
         raise RuntimeError("Unknown representation: {}".format(form_data.representation))
 
+    _entity_types = {
+        "cell": "cell",
+        "exterior_facet": "facet",
+        "interior_facet": "facet",
+        "vertex": "vertex",
+        "custom": "cell"
+    }
+
     # Iterate over integrals
     irs = []
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
-        # FIXME: Can we remove form_index?
+
         # Compute representation
-        ir = compute_integral_ir(itg_data, form_data, element_numbers,
+        entitytype = _entity_types[itg_data.integral_type]
+        cell = itg_data.domain.ufl_cell()
+        tdim = cell.topological_dimension()
+        assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
+
+        ir = {
+            "representation": form_data.representation,
+            "integral_type": itg_data.integral_type,
+            "subdomain_id": itg_data.subdomain_id,
+            "rank": form_data.rank,
+            "geometric_dimension": form_data.geometric_dimension,
+            "topological_dimension": tdim,
+            "entitytype": entitytype,
+            "num_facets": cell.num_facets(),
+            "num_vertices": cell.num_vertices(),
+            "needs_oriented": form_needs_oriented_jacobian(form_data),
+            "enabled_coefficients": itg_data.enabled_coefficients
+        }
+
+        ir = compute_integral_ir(ir, itg_data, form_data, element_numbers,
                                  parameters, visualise)
 
         # Fetch name
@@ -625,7 +652,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         "topological_dimension": cell.topological_dimension(),
         "geometric_dimension": cell.geometric_dimension(),
         "space_dimension": fiat_element.space_dimension(),
-        "needs_oriented": needs_oriented_jacobian(fiat_element),
+        "needs_oriented": element_needs_oriented_jacobian(fiat_element),
         "max_degree": max([e.degree() for e in elements])
     }
 
@@ -805,7 +832,17 @@ def uses_integral_moments(fiat_element):
     return len(integrals & tags) > 0
 
 
-def needs_oriented_jacobian(fiat_element):
+def element_needs_oriented_jacobian(fiat_element):
     # Check whether this element needs an oriented jacobian (only
     # contravariant piolas seem to need it)
     return "contravariant piola" in fiat_element.mapping()
+
+
+def form_needs_oriented_jacobian(form_data):
+    # Check whether this form needs an oriented jacobian (only forms
+    # involving contravariant piola mappings seem to need it)
+    for ufl_element in form_data.unique_elements:
+        element = create_element(ufl_element)
+        if "contravariant piola" in element.mapping():
+            return True
+    return False

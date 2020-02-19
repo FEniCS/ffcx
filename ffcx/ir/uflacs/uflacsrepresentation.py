@@ -10,7 +10,6 @@ import numpy
 
 import ufl
 from ffcx.fiatinterface import create_element
-from ffcx.ir.representationutils import initialize_integral_ir
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffcx.ir.uflacs.tools import accumulate_integrals, compute_quadrature_rules
 
@@ -113,16 +112,14 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     return ir
 
 
-def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
+def compute_integral_ir(ir: dict,
+                        itg_data: ufl.algorithms.domain_analysis.IntegralData,
                         form_data: ufl.algorithms.formdata.FormData,
                         element_numbers: dict, parameters: dict,
                         visualise: bool):
     """Compute intermediate represention of integral."""
 
     logger.info("Computing uflacs representation for integral")
-
-    # Initialise representation
-    ir = initialize_integral_ir("uflacs", itg_data, form_data)
 
     # Get element space dimensions
     unique_elements = element_numbers.keys()

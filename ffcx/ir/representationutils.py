@@ -70,58 +70,6 @@ def map_integral_points(points, integral_type, cell, entity):
         raise RuntimeError("Can't map points from entity_dim=%s" % (entity_dim, ))
 
 
-def needs_oriented_jacobian(form_data):
-    # Check whether this form needs an oriented jacobian (only forms
-    # involgin contravariant piola mappings seem to need it)
-    for ufl_element in form_data.unique_elements:
-        element = create_element(ufl_element)
-        if "contravariant piola" in element.mapping():
-            return True
-    return False
-
-
-# Mapping from recognized domain types to entity types
-_entity_types = {
-    "cell": "cell",
-    "exterior_facet": "facet",
-    "interior_facet": "facet",
-    "vertex": "vertex",
-    "custom": "cell"
-}
-
-
-def entity_type_from_integral_type(integral_type):
-    return _entity_types[integral_type]
-
-
-def initialize_integral_ir(representation, itg_data, form_data):
-    """Initialize a representation dict.
-
-    Initialize with common information that is
-    expected independently of which representation is chosen.
-
-    """
-
-    entitytype = entity_type_from_integral_type(itg_data.integral_type)
-    cell = itg_data.domain.ufl_cell()
-    tdim = cell.topological_dimension()
-    assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
-
-    return {
-        "representation": representation,
-        "integral_type": itg_data.integral_type,
-        "subdomain_id": itg_data.subdomain_id,
-        "rank": form_data.rank,
-        "geometric_dimension": form_data.geometric_dimension,
-        "topological_dimension": tdim,
-        "entitytype": entitytype,
-        "num_facets": cell.num_facets(),
-        "num_vertices": cell.num_vertices(),
-        "needs_oriented": needs_oriented_jacobian(form_data),
-        "enabled_coefficients": itg_data.enabled_coefficients
-    }
-
-
 def generate_enabled_coefficients(enabled_coefficients):
     # TODO: I don't know how to implement this using the format dict,
     # this will do for now:
