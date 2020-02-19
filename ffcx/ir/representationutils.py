@@ -94,7 +94,7 @@ def entity_type_from_integral_type(integral_type):
     return _entity_types[integral_type]
 
 
-def initialize_integral_ir(representation, itg_data, form_data, form_id):
+def initialize_integral_ir(representation, itg_data, form_data):
     """Initialize a representation dict.
 
     Initialize with common information that is
@@ -111,7 +111,6 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
         "representation": representation,
         "integral_type": itg_data.integral_type,
         "subdomain_id": itg_data.subdomain_id,
-        "form_id": form_id,
         "rank": form_data.rank,
         "geometric_dimension": form_data.geometric_dimension,
         "topological_dimension": tdim,

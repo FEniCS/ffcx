@@ -67,14 +67,14 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'name', 'signature', 
                                                      'coordinate_finite_element_classname',
                                                      'scalar_coordinate_finite_element_classname'])
 ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'subdomain_id',
-                                         'form_id', 'rank', 'geometric_dimension', 'topological_dimension',
+                                         'rank', 'geometric_dimension', 'topological_dimension',
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
                                          'enabled_coefficients', 'element_dimensions',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
                                          'coefficient_offsets', 'original_constant_offsets', 'params',
                                          'unique_tables', 'unique_table_types',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'name',
-                                         'integrals_metadata', 'integral_metadata'])
+                                         'precision'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
@@ -388,16 +388,11 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
         # FIXME: Can we remove form_index?
         # Compute representation
-        ir = compute_integral_ir(itg_data, form_data, form_index, element_numbers,
+        ir = compute_integral_ir(itg_data, form_data, element_numbers,
                                  parameters, visualise)
 
         # Fetch name
         ir["name"] = integral_names[(form_index, itg_data_index)]
-
-        # Store metadata for later reference (eg. printing as comment)
-        # NOTE: We make a commitment not to modify it!
-        ir["integrals_metadata"] = itg_data.metadata
-        ir["integral_metadata"] = [integral.metadata() for integral in itg_data.integrals]
 
         irs.append(ir_integral(**ir))
 

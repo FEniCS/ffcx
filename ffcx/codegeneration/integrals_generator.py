@@ -24,20 +24,17 @@ def generate_integral_code(ir, parameters):
 
     logger.info("Generating code from ffcx.ir.uflacs representation")
 
-    # FIXME: Is this the right precision value to use? Make it default to None or 0.
-    precision = ir.integrals_metadata["precision"]
-
     # Create FFCX C backend
     backend = FFCXBackend(ir, parameters)
 
     # Configure kernel generator
-    ig = IntegralGenerator(ir, backend, precision)
+    ig = IntegralGenerator(ir, backend)
 
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
 
     # Format code as string
-    body = format_indented_lines(parts.cs_format(precision), 1)
+    body = format_indented_lines(parts.cs_format(ir.precision), 1)
 
     # Generate generic ffcx code snippets and add uflacs specific parts
     code = initialize_integral_code(ir, parameters)
@@ -47,12 +44,9 @@ def generate_integral_code(ir, parameters):
 
 
 class IntegralGenerator(object):
-    def __init__(self, ir, backend, precision):
+    def __init__(self, ir, backend):
         # Store ir
         self.ir = ir
-
-        # Formatting precision
-        self.precision = precision
 
         # Backend specific plugin with attributes
         # - language: for translating ufl operators to target language

@@ -11,13 +11,13 @@ from ffcx.ir.representationutils import initialize_integral_ir
 logger = logging.getLogger(__name__)
 
 
-def compute_integral_ir(integral_data, form_data, form_id, element_numbers, classnames, parameters):
+def compute_integral_ir(integral_data, form_data, element_numbers, classnames, parameters):
     """Compute intermediate represention of integral."""
 
     logger.info("Computing tsfc representation")
 
     # Initialise representation
-    ir = initialize_integral_ir("tsfc", integral_data, form_data, form_id)
+    ir = initialize_integral_ir("tsfc", integral_data, form_data)
 
     # TSFC treats None and unset differently, so remove None values.
     parameters = {k: v for k, v in parameters.items() if v is not None}
