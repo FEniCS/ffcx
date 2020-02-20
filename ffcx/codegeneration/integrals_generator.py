@@ -295,9 +295,15 @@ class IntegralGenerator(object):
             if inline_tables and name[:2] == "PI":
                 continue
 
-            decl = L.ArrayDecl(
-                "static const double", name, table.shape, table, alignas=alignas, padlen=p)
-            parts += [decl]
+            if len(self.ir.table_dof_rotations[name]) > 0:
+                from IPython import embed; embed()
+                parts.append(L.ArrayDecl(
+                    "double", name, table.shape, table, alignas=alignas, padlen=p))
+                # TODO: use table_dof_rotations to permute this table
+            else:
+                decl = L.ArrayDecl(
+                    "static const double", name, table.shape, table, alignas=alignas, padlen=p)
+                parts += [decl]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
@@ -657,7 +663,6 @@ class IntegralGenerator(object):
                 assert self._get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
-                print(indices)
                 table_value = table[indices[i]]
                 dof_rots = self.ir.table_dof_rotations[td.name]
                 dofmap = self.ir.table_dofmaps[td.name]
@@ -1009,21 +1014,17 @@ class IntegralGenerator(object):
                 A_ii = sum(A_strides[i] * blockmap[i][ii[i]] for i in range(len(ii)))
                 if blockdata.transposed:
                     P_arg_indices = (ii[1], ii[0])
-                    P_origins = origins[::-1]
                 else:
                     P_arg_indices = ii
-                    P_origins = origins
 
                 if inline_table:
                     # Extract float value of PI[P_ii]
                     P_ii = P_permutation_indices + (0, ) + P_arg_indices
-                    Pval = self._get_rotated_item_from_table(
-                        table, P_permutation_indices + (0, ), P_arg_indices, P_origins)
+                    Pval = table[P_ii]
                 else:
                     # Index the static preintegrated table:
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
-                    Pval = self._get_rotated_item_from_table(
-                        PI, P_permutation_indices + P_entity_indices, P_arg_indices, P_origins)
+                    Pval = PI[P_ii]
 
                 A_values[A_ii] += self._get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
