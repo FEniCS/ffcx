@@ -331,6 +331,7 @@ class IntegralGenerator(object):
                                 sets.append(L.Assign(t[indices],
                                                      L.Sum([m[j, k] * L.Symbol("temp" + str(k))
                                                             for k, _ in enumerate(dofs)])))
+                                # FIXME: if one of these dofs has been removed, then it may no longer be always 0
                             else:
                                 temps.append(L.VariableDecl("const double", "temp" + str(j), 0))
                         body = temps + sets

@@ -93,6 +93,7 @@ def base_permutations_from_subdofmap(ufl_element):
             # Permute the dofs of each entity type separately
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
+                print(t, len(type_dofs))
                 if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
                          "PointScaledNormalEval", "PointNormalEval",
                          "IntegralMoment"]:
