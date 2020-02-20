@@ -87,17 +87,6 @@ class FFCXBackendSymbols(object):
         else:
             logging.exception("Unknown entitytype {}".format(entitytype))
 
-    def cell_orientation_argument(self, restriction):
-        """Cell orientation argument in ufc. Not same as cell orientation in generated code."""
-        postfix = "[0]"
-        if restriction == "-":
-            postfix = "[1]"
-        return self.S("cell_orientation" + postfix)
-
-    def cell_orientation_internal(self, restriction):
-        """Internal value for cell orientation in generated code."""
-        return self.S("co" + ufc_restriction_postfix(restriction))
-
     def argument_loop_index(self, iarg):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
@@ -110,6 +99,10 @@ class FFCXBackendSymbols(object):
     def quadrature_loop_index(self):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")
+
+    def quadrature_permutation(self, index):
+        """Quadrature permutation, as input to the function."""
+        return self.S("quadrature_permutation")[index]
 
     def num_custom_quadrature_points(self):
         """Number of quadrature points, argument to custom integrals."""
@@ -195,8 +188,15 @@ class FFCXBackendSymbols(object):
         else:
             iq = self.quadrature_loop_index()
 
+        if tabledata.is_permuted:
+            qp = self.quadrature_permutation(0)
+            if restriction == "-":
+                qp = self.quadrature_permutation(1)
+        else:
+            qp = 0
+
         # Return direct access to element table
-        return self.S(tabledata.name)[entity][iq]
+        return self.S(tabledata.name)[qp][entity][iq]
 
     def expr_component_index(self):
         """Symbol for indexing the expression's ufl shape."""

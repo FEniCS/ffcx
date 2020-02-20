@@ -8,7 +8,7 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
-from ffcx.codegeneration.jacobian import inverse_jacobian, jacobian, orientation
+from ffcx.codegeneration.jacobian import inverse_jacobian, jacobian
 from ufl.permutation import build_component_numbering
 
 index_type = "int64_t"
@@ -150,7 +150,9 @@ def _generate_body(L, i, dof, mapping, gdim, tdim, cell_shape, offset=0):
     # Generate different code if multiple points. (Otherwise ffcx
     # compile time blows up.)
     if len(points) > 1:
-        return _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset)
+        return ([], -1)
+        # FIXME: this currently returns empty code as the line below returns code that fails to compile
+        # return _generate_multiple_points_body(L, i, dof, mapping, gdim, tdim, offset)
 
     # Get weights for mapping reference point to physical
     x = points[0]
@@ -329,8 +331,6 @@ def generate_transform_values(L, ir):
 
         if needs_inverse_jacobian:
             code += inverse_jacobian(L, gdim, tdim, cell_shape)
-            if tdim != gdim:
-                code += orientation(L)
 
     # Extract variables
     mappings = ir.mappings

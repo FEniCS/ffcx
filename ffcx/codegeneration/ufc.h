@@ -39,6 +39,8 @@ extern "C"
 #endif // restrict
 #endif // __cplusplus
 
+// <HEADER_DECL>
+
   typedef enum
   {
     interval = 10,
@@ -49,10 +51,28 @@ extern "C"
     vertex = 60,
   } ufc_shape;
 
+  typedef enum
+  {
+    PointEval = 1,
+    ComponentPointEval = 2,
+    PointNormalDeriv = 3,
+    IntegralMoment = 4,
+    FrobeniusIntegralMoment = 5,
+    PointEdgeTangent = 6,
+    PointFaceTangent = 7,
+    PointScaledNormalEval = 8,
+    PointDeriv = 9,
+    IntegralMomentOfNormalDerivative = 10,
+    PointNormalEval = 11,
+    PointwiseInnerProductEval = 12,
+  } ufc_doftype;
+
   /// Forward declarations
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
+
+// </HEADER_DECL>
 
   typedef struct ufc_finite_element
   {
@@ -103,11 +123,23 @@ extern "C"
         double* restrict reference_values, int order, int num_points,
         const double* restrict X);
 
+    /// Map the reference values on to the cell
+    /// @param[in] edge_reflections An array of bools to say whether or not each
+    /// each edge has been reflected. This is used to ensure that vector dofs
+    /// are correctly oriented.
+    /// @param[in] face_reflections An array of bools to say whether or not each
+    /// each face has been reflected. This is used to ensure that vector dofs
+    /// are correctly oriented.
+    /// @param[in] face_rotations An array of integers to say how many times
+    /// each face needs to be rotated to match the low-to-high ordering. This
+    /// is used to ensure that FaceTangent vector dofs are correctly oriented.
+
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
-        const double* restrict K, int cell_orientation);
+        const double* restrict K, const bool* edge_reflections,
+        const bool* face_reflections, const uint8_t* face_rotations);
 
     /// Map values of field from physical to reference space which has
     /// been evaluated at points given by
@@ -115,7 +147,6 @@ extern "C"
     int (*transform_values)(ufc_scalar_t* restrict reference_values,
                             const ufc_scalar_t* restrict physical_values,
                             const double* restrict coordinate_dofs,
-                            int cell_orientation,
                             const ufc_coordinate_mapping* cm);
 
     // FIXME: change to 'const double* reference_dof_coordinates()'
@@ -140,8 +171,8 @@ extern "C"
     /// Return a string identifying the dofmap
     const char* signature;
 
-    /// Blocksizes on each entity
-    int entity_block_size[4];
+    /// The base DoF permutations
+    int* base_permutations;
 
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
@@ -220,13 +251,10 @@ extern "C"
     /// @param[in] coordinate_dofs
     ///         Dofs of the coordinate field on the cell.
     ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    /// @param[in] cell_orientation
-    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
-    ///         Only relevant on manifolds (tdim < gdim).
     ///
     void (*compute_reference_coordinates)(
         double* restrict X, int num_points, const double* restrict x,
-        const double* restrict coordinate_dofs, int cell_orientation);
+        const double* restrict coordinate_dofs);
 
     /// Compute X, J, detJ, K from physical coordinates x on a cell
     ///
@@ -250,16 +278,12 @@ extern "C"
     /// @param[in] coordinate_dofs
     ///         Dofs of the coordinate field on the cell.
     ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    /// @param[in] cell_orientation
-    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
-    ///         Only relevant on manifolds (tdim < gdim).
     ///
     void (*compute_reference_geometry)(double* restrict X, double* restrict J,
                                        double* restrict detJ,
                                        double* restrict K, int num_points,
                                        const double* restrict x,
-                                       const double* restrict coordinate_dofs,
-                                       int cell_orientation);
+                                       const double* restrict coordinate_dofs);
 
     /// Compute Jacobian of coordinate mapping J = dx/dX at reference
     /// coordinates
@@ -291,13 +315,9 @@ extern "C"
     /// @param[in] J
     ///         Jacobian of coordinate field, J = dx/dX.
     ///         Dimensions: J[num_points][gdim][tdim]
-    /// @param[in] cell_orientation
-    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
-    ///         Only relevant on manifolds (tdim < gdim).
     ///
     void (*compute_jacobian_determinants)(double* restrict detJ, int num_points,
-                                          const double* restrict J,
-                                          int cell_orientation);
+                                          const double* restrict J);
 
     /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
     ///
@@ -341,15 +361,11 @@ extern "C"
     /// @param[in] coordinate_dofs
     ///         Dofs of the coordinate field on the cell.
     ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    /// @param[in] cell_orientation
-    ///         Orientation of the cell, 1 means flipped w.r.t. reference cell.
-    ///         Only relevant on manifolds (tdim < gdim).
     ///
     void (*compute_geometry)(double* restrict x, double* restrict J,
                              double* restrict detJ, double* restrict K,
                              int num_points, const double* restrict X,
-                             const double* restrict coordinate_dofs,
-                             int cell_orientation);
+                             const double* restrict coordinate_dofs);
 
     /// Compute x and J at midpoint of cell
     ///
@@ -371,52 +387,69 @@ extern "C"
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
   /// @param[out] A
-  /// @param[in] w
-  ///         Coefficients attached to the form to which the tabulated integral
-  ///         belongs.
-  ///         Dimensions: w[coefficient][restriction][dof].
-  ///         Restriction dimension applies to interior facet integrals, where
-  ///         coefficients restricted to both cells sharing the facet must be provided.
-  /// @param[in] c
-  ///         Constants attached to the form to which the tabulated integral
-  ///         belongs.
-  ///         Dimensions: c[constant][dim].
-  /// @param[in] coordinate_dofs
-  ///         Values of degrees of freedom of coordinate element.
-  ///         Defines the geometry of the cell.
-  ///         Dimensions: coordinate_dofs[restriction][num_dofs][gdim].
-  ///         Restriction dimension applies to interior facet integrals, where
-  ///         cell geometries for both cells sharing the facet must be provided.
-  /// @param[in] entity_local_index
-  ///         Local index of mesh entity on which to tabulate.
-  ///         This applies to facet integrals.
-  /// @param[in] cell_orientation
-  ///         Sign of orientation of the cell with respect to the consistent
-  ///         orientation of the whole mesh.
-  ///         0 means "up"
-  ///         1 means "down" and scales det(J) with -1.0
-  ///         Applies to the case of k-dimensional surface in n-dimensional space, where k < n.
+  /// @param[in] w Coefficients attached to the form to which the
+  ///         tabulated integral belongs.
   ///
-  typedef void (ufc_tabulate_tensor)(ufc_scalar_t* restrict A,
-      const ufc_scalar_t* w,
-      const ufc_scalar_t* c,
-      const double* restrict coordinate_dofs,
-      const int* entity_local_index,
-      const int* cell_orientation);
+  ///         Dimensions: w[coefficient][restriction][dof].
+  ///
+  ///         Restriction dimension
+  ///         applies to interior facet integrals, where coefficients
+  ///         restricted to both cells sharing the facet must be
+  ///         provided.
+  /// @param[in] c Constants attached to the form to which the tabulated
+  ///         integral belongs. Dimensions: c[constant][dim].
+  /// @param[in] coordinate_dofs Values of degrees of freedom of
+  ///         coordinate element. Defines the geometry of the cell.
+  ///         Dimensions: coordinate_dofs[restriction][num_dofs][gdim].
+  ///         Restriction dimension applies to interior facet integrals,
+  ///         where cell geometries for both cells sharing the facet
+  ///         must be provided.
+  /// @param[in] entity_local_index Local index of mesh entity on which
+  ///         to tabulate. This applies to facet integrals.
+  /// @param[in] quadrature_permutation For facet integrals, numbers to
+  ///         indicate the permutation to be applied to each side of the
+  ///         facet to make the orientations of the faces matched up
+  ///         should be passed in. If an integer of value N is passed
+  ///         in, then:
+  ///
+  ///          - floor(N / 2) gives the number of rotations to apply to the
+  ///          facet
+  ///          - N % 2 gives the number of reflections to apply to the facet
+  ///
+  ///         For integrals not on facets, this argument has not effect
+  ///         and a null pointer can be passed. For
+  ///         interior facets the array will have size 2 (one permutation
+  ///         for each cell adjacent to the facet). For exterior facets,
+  ///         this will have size 1.
+  /// @param[in] edge_reflections An array of bools to say whether or not each
+  ///         each edge has been reflected. This is used to ensure that vector
+  ///         dofs are correctly oriented. This array will have one entry for
+  ///         each edge of the cell.
+  /// @param[in] face_reflections An array of bools to say whether or not each
+  ///         each face has been reflected. This is used to ensure that vector
+  ///         dofs are correctly oriented. This array will have one entry for
+  ///         each face of the cell.
+  /// @param[in] face_rotations An array of integers to say how many times
+  ///         each face needs to be rotated to match the low-to-high ordering.
+  ///         This is used to ensure that FaceTangent vector dofs are correctly
+  ///         oriented.
+  typedef void(ufc_tabulate_tensor)(
+      ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
+      const double* restrict coordinate_dofs, const int* entity_local_index,
+      const uint8_t* restrict quadrature_permutation,
+      const bool* edge_reflections, const bool* face_reflections,
+      const uint8_t* face_rotations);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
   /// @see ufc_tabulate_tensor
   ///
-  typedef void (ufc_tabulate_tensor_custom)(ufc_scalar_t* restrict A,
-      const ufc_scalar_t* w,
-      const ufc_scalar_t* c,
-      const double* restrict coordinate_dofs,
-      int num_quadrature_points,
+  typedef void (ufc_tabulate_tensor_custom)(
+      ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
+      const double* restrict coordinate_dofs, int num_quadrature_points,
       const double* restrict quadrature_points,
       const double* restrict quadrature_weights,
-      const double* restrict facet_normals,
-      int cell_orientation);
+      const double* restrict facet_normals);
 
   typedef struct ufc_integral
   {

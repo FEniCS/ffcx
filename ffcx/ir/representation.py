@@ -27,6 +27,7 @@ from ffcx import naming
 from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                 MixedElement, QuadratureElement, SpaceOfReals,
                                 create_element)
+from ffcx.ir.dof_permutations import base_permutations_and_reflection_entities
 from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
@@ -51,11 +52,12 @@ ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
                                        'geometric_dimension', 'space_dimension', 'value_shape',
                                        'reference_value_shape', 'degree', 'family', 'evaluate_basis',
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                       'create_sub_element'])
+                                       'base_permutations', 'dof_reflection_entities',
+                                       'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
-                                     'entity_block_size', 'tabulate_entity_dofs',
-                                     'num_sub_dofmaps', 'create_sub_dofmap'])
+                                     'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
+                                     'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'name', 'signature', 'cell_shape',
                                                      'topological_dimension',
                                                      'geometric_dimension',
@@ -70,9 +72,11 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'rank', 'geometric_dimension', 'topological_dimension',
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
                                          'enabled_coefficients', 'element_dimensions',
+                                         'element_base_permutations', 'element_dof_reflection_entities',
+                                         'element_ids',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
                                          'coefficient_offsets', 'original_constant_offsets', 'params',
-                                         'unique_tables', 'unique_table_types',
+                                         'unique_tables', 'unique_table_types', 'table_origins', 'table_dofmaps',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'name',
                                          'precision'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
@@ -80,7 +84,8 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
                                                  'physical_offsets', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'params', 'unique_tables',
-                                             'unique_table_types', 'piecewise_ir', 'varying_irs',
+                                             'unique_table_types', 'piecewise_ir', 'varying_irs', 'table_origins',
+                                             'table_dofmaps',
                                              'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points'])
@@ -184,6 +189,12 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
+    (ir["base_permutations"],
+     ir["dof_reflection_entities"]) = base_permutations_and_reflection_entities(ufl_element)
+
+    ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
+    ir["entity_dofs"] = fiat_element.entity_dofs()
+
     return ir_element(**ir)
 
 
@@ -208,56 +219,11 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
-    ir["entity_block_size"] = entity_block_size(fiat_element)
+    ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
+    (ir["base_permutations"],
+     ir["dof_reflection_entities"]) = base_permutations_and_reflection_entities(ufl_element)
 
     return ir_dofmap(**ir)
-
-
-def entity_block_size(fiat_element):
-    # FIXME: Move this to FIAT
-    e_ids = fiat_element.dual.get_entity_ids()
-    output = []
-    for entity in range(4):
-        if entity not in e_ids or len(e_ids[entity]) == 0 or len(e_ids[entity][0]) == 0:
-            output.append(-1)
-            continue
-        p = fiat_element.dual.nodes[e_ids[entity][0][0]]
-
-        if p.functional_type == "PointEval":
-            output.append(1)
-        elif p.functional_type == "ComponentPointEval":
-            output.append(entity)
-        elif p.functional_type == "PointNormalDeriv":
-            output.append(1)
-        elif p.functional_type == "IntegralMoment":
-            output.append(1)
-        elif p.functional_type == "FrobeniusIntegralMoment":
-            output.append(1)
-        elif p.functional_type == "PointEdgeTangent":
-            output.append(1)
-        elif p.functional_type == "PointFaceTangent":
-            output.append(2)
-        elif p.functional_type == "PointScaledNormalEval":
-            output.append(1)
-
-        # The following are not used in dolfinx tests so may be incorrect
-        elif p.functional_type == "PointDeriv":
-            output.append(1)
-        elif p.functional_type == "IntegralMomentOfNormalDerivative":
-            output.append(1)
-        elif p.functional_type == "PointNormalEval":
-            output.append(1)
-        elif p.functional_type == "PointwiseInnerProductEval":
-            output.append(1)
-        else:
-            raise ValueError("Point functional type not recognised")
-
-        # If the dofs on an entity don't all have the same functional_type, overwrite value with -1
-        for i in e_ids[entity][0]:
-            if fiat_element.dual.nodes[i].functional_type != p.functional_type:
-                output[-1] = -1
-                break
-    return output
 
 
 _midpoints = {

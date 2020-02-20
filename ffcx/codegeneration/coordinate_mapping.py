@@ -256,7 +256,6 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
 
     # Input cell data
     coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
-    cell_orientation = L.Symbol("cell_orientation")
 
     init_input = [
         L.ForRange(
@@ -332,7 +331,7 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     # Compute K = inv(J) (and intermediate value det(J))
     compute_K0 = [
         L.Call("compute_jacobian_determinants_{}".format(classname),
-               (detJsym, 1, Jsym, cell_orientation)),
+               (detJsym, 1, Jsym)),
         L.Call("compute_jacobian_inverses_{}".format(classname), (Ksym, 1, Jsym, detJsym)),
     ]
 
@@ -404,7 +403,6 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
 
     # Input cell data
     coordinate_dofs = L.Symbol("coordinate_dofs")
-    cell_orientation = L.Symbol("cell_orientation")
 
     # Output geometry
     X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
@@ -484,7 +482,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.Call("compute_midpoint_geometry_{}".format(ir.name),
                (xm, J, coordinate_dofs)),
         L.Call("compute_jacobian_determinants_{}".format(ir.name),
-               (detJ, one_point, J, cell_orientation)),
+               (detJ, one_point, J)),
         L.Call("compute_jacobian_inverses_{}".format(ir.name),
                (Km, one_point, J, detJ)),
     ]
@@ -506,7 +504,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
         L.Comment("intermediate storage inside compute_geometry, not used out here"),
         L.Call("compute_geometry_{}".format(ir.name),
-               (xk, J, detJ, K, one_point, Xk, coordinate_dofs, cell_orientation)),
+               (xk, J, detJ, K, one_point, Xk, coordinate_dofs)),
     ]
 
     # Newton body with stopping criteria |dX|^2 < epsilon
@@ -639,21 +637,17 @@ def compute_jacobian_determinants(L, ir):
 
     # Input geometry
     J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
-    cell_orientation = L.Symbol("cell_orientation")
-    orientation_scaling = L.Conditional(L.EQ(cell_orientation, 1), -1.0, +1.0)
 
     # Assign det expression to detJ
     if gdim == tdim:
         body = L.Assign(detJ, det_nn(J[ip], gdim))
     elif tdim == 1:
-        body = L.Assign(detJ, orientation_scaling * pdet_m1(L, J[ip], gdim))
-    # elif tdim == 2 and gdim == 3:
-    #    body = L.Assign(detJ, orientation_scaling*pdet_32(L, J[ip])) # Possible optimization not implemented here
+        body = L.Assign(detJ, pdet_m1(L, J[ip], gdim))
     else:
         JTJ = L.Symbol("JTJ")
         body = [
             generate_compute_ATA(L, JTJ, J[ip], gdim, tdim),
-            L.Assign(detJ, orientation_scaling * L.Sqrt(det_nn(JTJ, tdim))),
+            L.Assign(detJ, L.Sqrt(det_nn(JTJ, tdim))),
         ]
 
     # Carry out for all points
@@ -702,7 +696,6 @@ def compute_geometry(L, ir):
 
     # Input cell data
     coordinate_dofs = L.Symbol("coordinate_dofs")
-    cell_orientation = L.Symbol("cell_orientation")
 
     # Just chain calls to other functions here
     code = [
@@ -710,7 +703,7 @@ def compute_geometry(L, ir):
                (x, num_points, X, coordinate_dofs)),
         L.Call("compute_jacobians_{}".format(classname), (J, num_points, X, coordinate_dofs)),
         L.Call("compute_jacobian_determinants_{}".format(classname),
-               (detJ, num_points, J, cell_orientation)),
+               (detJ, num_points, J)),
         L.Call("compute_jacobian_inverses_{}".format(classname), (K, num_points, J, detJ)),
     ]
 

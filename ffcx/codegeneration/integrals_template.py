@@ -18,7 +18,10 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* unused_local_index,
-                                    const int* cell_orientation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections,
+                                    const uint8_t* face_rotations)
 {{
 {tabulate_tensor}
 }}
@@ -29,7 +32,10 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
-                                    const int* cell_orientation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections,
+                                    const uint8_t* face_rotations)
 {{
 {tabulate_tensor}
 }}
@@ -40,7 +46,10 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* facet,
-                                    const int* cell_orientation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections,
+                                    const uint8_t* face_rotations)
 {{
 {tabulate_tensor}
 }}
@@ -51,7 +60,10 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                                     const ufc_scalar_t* c,
                                     const double* restrict coordinate_dofs,
                                     const int* vertex,
-                                    const int* cell_orientation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* edge_reflections,
+                                    const bool* face_reflections,
+                                    const uint8_t* face_rotations)
 {{
 {tabulate_tensor}
 }}
@@ -64,8 +76,7 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t
                           int num_quadrature_points,
                           const double* restrict quadrature_points,
                           const double* restrict quadrature_weights,
-                          const double* restrict facet_normals,
-                          int cell_orientation)
+                          const double* restrict facet_normals)
 {{
 {tabulate_tensor}
 }}
