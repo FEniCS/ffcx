@@ -301,7 +301,8 @@ class IntegralGenerator(object):
         return parts
 
     def declare_table(self, name, table, alignas, padlen):
-        """Please document me"""
+        """Declare a table.
+        If the dof dimensions of the table have dof rotations, apply these rotations."""
         L = self.backend.language
         if name in self.ir.table_dof_rotations:
             names = [name]
