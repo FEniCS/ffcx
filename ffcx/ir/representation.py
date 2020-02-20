@@ -193,7 +193,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
     (ir["base_permutations"],
-     ir["dof_reflection_entities"]) = base_permutations_and_reflection_entities(ufl_element)
+     ir["dof_reflection_entities"],
+     ir["dof_rotations"]) = base_permutations_and_reflection_entities(ufl_element)
 
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["entity_dofs"] = fiat_element.entity_dofs()

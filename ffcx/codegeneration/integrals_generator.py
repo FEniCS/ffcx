@@ -289,15 +289,7 @@ class IntegralGenerator(object):
             if inline_tables and name[:2] == "PI":
                 continue
 
-            if len(self.ir.table_dof_rotations[name]) > 0:
-                from IPython import embed; embed()
-                parts.append(L.ArrayDecl(
-                    "double", name, table.shape, table, alignas=alignas, padlen=p))
-                # TODO: use table_dof_rotations to permute this table
-            else:
-                decl = L.ArrayDecl(
-                    "static const double", name, table.shape, table, alignas=alignas, padlen=p)
-                parts += [decl]
+            parts += self.declare_table(name, table, alignas, p)
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
@@ -307,6 +299,53 @@ class IntegralGenerator(object):
             "PM* dimensions: [permutations][entities][dofs][dofs]",
         ])
         return parts
+
+    def declare_table(self, name, table, alignas, padlen):
+        """Please document me"""
+        L = self.backend.language
+        if name in self.ir.table_dof_rotations:
+            names = [name]
+        else:
+            names = self.ir.table_origins[name]
+        rots = [self.ir.table_dof_rotations[n] for n in names]
+        if sum(len(i) for i in rots) > 0:
+            parts = []
+            parts.append(L.ArrayDecl(
+                "double", name, table.shape, table, alignas=alignas, padlen=padlen))
+            t = L.Symbol(name)
+            index_names = ["ind_" + str(i) for i, j in enumerate(table.shape)]
+            for i, rot in enumerate(rots):
+                dofmap = self.ir.table_dofmaps[names[i]]
+                for entity_dim, entity_n, dofs, mat, order in rot:
+                    for a in range(1, order):
+                        m = np.eye(len(mat))
+                        for j in range(a):
+                            m = np.dot(mat, m)
+                        temps = []
+                        sets = []
+                        for j, dof in enumerate(dofs):
+                            if dof in dofmap:
+                                indices = [dofmap.index(dof) if k == len(table.shape) - 1 - i else index
+                                           for k, index in enumerate(index_names)]
+                                temps.append(L.VariableDecl("const double", "temp" + str(j), t[indices]))
+                                sets.append(L.Assign(t[indices],
+                                                     L.Sum([m[j, k] * L.Symbol("temp" + str(k))
+                                                            for k, _ in enumerate(dofs)])))
+                            else:
+                                temps.append(L.VariableDecl("const double", "temp" + str(j), 0))
+                        body = temps + sets
+
+                        for k, index in enumerate(index_names):
+                            if j != len(table.shape) - 1 - i:
+                                body = L.ForRange(index, 0, table.shape[k], body)
+                        if entity_dim == 2:
+                            entity_rot = L.Symbol("face_rotations")
+                            parts.append(L.If(L.EQ(entity_rot[entity_n], a), body))
+
+            return parts
+
+        return [L.ArrayDecl(
+            "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
     def generate_quadrature_loop(self, num_points):
         """Generate quadrature loop with for this num_points."""
@@ -631,7 +670,6 @@ class IntegralGenerator(object):
             return tuple(perms)
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
-        L = self.backend.language
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -960,8 +998,6 @@ class IntegralGenerator(object):
             tables = self.ir.unique_tables
             table = tables[blockdata.name]
             inline_table = self.ir.integral_type == "cell"
-
-            origins = self.ir.table_origins[blockdata.name]
 
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
