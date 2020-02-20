@@ -80,8 +80,6 @@ class FFCXBackendDefinitions(object):
         ttype = tabledata.ttype
         begin, end = tabledata.dofrange
 
-        # fe_classname = ir.classnames["finite_element"][t.ufl_element()]
-
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
             return []

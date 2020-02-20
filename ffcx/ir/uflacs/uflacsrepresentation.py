@@ -10,7 +10,6 @@ import numpy
 
 import ufl
 from ffcx.fiatinterface import create_element
-from ffcx.ir.representationutils import initialize_integral_ir
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffcx.ir.uflacs.tools import accumulate_integrals, compute_quadrature_rules
 from ffcx.ir.dof_permutations import base_permutations_and_reflection_entities
@@ -114,19 +113,14 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     return ir
 
 
-def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
+def compute_integral_ir(ir: dict,
+                        itg_data: ufl.algorithms.domain_analysis.IntegralData,
                         form_data: ufl.algorithms.formdata.FormData,
-                        form_id: int, element_numbers: dict, classnames: dict, parameters: dict,
+                        element_numbers: dict, parameters: dict,
                         visualise: bool):
     """Compute intermediate represention of integral."""
 
-    logger.info("Computing uflacs representation")
-
-    # Initialise representation
-    ir = initialize_integral_ir("uflacs", itg_data, form_data, form_id)
-
-    # Store element classnames
-    ir["classnames"] = classnames
+    logger.info("Computing uflacs representation for integral")
 
     # Get element space dimensions
     unique_elements = element_numbers.keys()
@@ -229,6 +223,8 @@ def compute_integral_ir(itg_data: ufl.algorithms.domain_analysis.IntegralData,
         _offset += numpy.product(constant.ufl_shape, dtype=numpy.int)
 
     ir["original_constant_offsets"] = original_constant_offsets
+
+    ir["precision"] = itg_data.metadata["precision"]
 
     # Create map from number of quadrature points -> integrand
     integrands = {num_points: integral.integrand() for num_points, integral in sorted_integrals.items()}

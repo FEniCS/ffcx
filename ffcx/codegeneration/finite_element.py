@@ -131,7 +131,7 @@ def evaluate_reference_basis_derivatives(L, ir, parameters):
         msg = "evaluate_reference_basis_derivatives: {}".format(data)
         return [L.Comment(msg), L.Return(-1)]
 
-    return generate_evaluate_reference_basis_derivatives(L, data, ir.classname, parameters)
+    return generate_evaluate_reference_basis_derivatives(L, data, ir.name, parameters)
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):
@@ -357,7 +357,7 @@ def generator(ir, parameters):
     """Generate UFC code for a finite element."""
 
     d = {}
-    d["factory_name"] = ir.classname
+    d["factory_name"] = ir.name
     d["signature"] = "\"{}\"".format(ir.signature)
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
@@ -407,6 +407,6 @@ def generator(ir, parameters):
     implementation = ufc_finite_element.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_finite_element.declaration.format(factory_name=ir.classname)
+    declaration = ufc_finite_element.declaration.format(factory_name=ir.name)
 
     return declaration, implementation

@@ -218,17 +218,6 @@ extern "C"
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
 
-    // FIXME: Remove and just use 'create'?
-    // FIXME: Is this for a single coordinate component, or a vector?
-    /// Create finite_element object representing the coordinate
-    /// parameterization
-    ufc_finite_element* (*create_coordinate_finite_element)(void);
-
-    // FIXME: Remove and just use 'create'?
-    // FIXME: Is this for a single coordinate component, or a vector?
-    /// Create dofmap object representing the coordinate parameterization
-    ufc_dofmap* (*create_coordinate_dofmap)(void);
-
     /// Compute physical coordinates x from reference coordinates X,
     /// the inverse of compute_reference_coordinates
     ///
@@ -560,14 +549,6 @@ extern "C"
 
     /// Return list of names of constants
     const char** (*constant_name_map)(void);
-
-    // FIXME: Remove and just use 'create_coordinate_mapping'
-    /// Create a new finite element for parameterization of coordinates
-    ufc_finite_element* (*create_coordinate_finite_element)(void);
-
-    // FIXME: Remove and just use 'create_coordinate_mapping'
-    /// Create a new dofmap for parameterization of coordinates
-    ufc_dofmap* (*create_coordinate_dofmap)(void);
 
     /// Create a new coordinate mapping
     ufc_coordinate_mapping* (*create_coordinate_mapping)(void);

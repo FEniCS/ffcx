@@ -26,20 +26,17 @@ def generate_integral_code(ir, parameters):
 
     logger.info("Generating code from ffcx.ir.uflacs representation")
 
-    # FIXME: Is this the right precision value to use? Make it default to None or 0.
-    precision = ir.integrals_metadata["precision"]
-
     # Create FFCX C backend
     backend = FFCXBackend(ir, parameters)
 
     # Configure kernel generator
-    ig = IntegralGenerator(ir, backend, precision)
+    ig = IntegralGenerator(ir, backend)
 
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
 
     # Format code as string
-    body = format_indented_lines(parts.cs_format(precision), 1)
+    body = format_indented_lines(parts.cs_format(ir.precision), 1)
 
     # Generate generic ffcx code snippets and add uflacs specific parts
     code = initialize_integral_code(ir, parameters)
@@ -49,12 +46,9 @@ def generate_integral_code(ir, parameters):
 
 
 class IntegralGenerator(object):
-    def __init__(self, ir, backend, precision):
+    def __init__(self, ir, backend):
         # Store ir
         self.ir = ir
-
-        # Formatting precision
-        self.precision = precision
 
         # Backend specific plugin with attributes
         # - language: for translating ufl operators to target language
@@ -663,26 +657,8 @@ class IntegralGenerator(object):
                 assert self._get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
-                table_value = table[indices[i]]
-                dof_rots = self.ir.table_dof_rotations[td.name]
-                dofmap = self.ir.table_dofmaps[td.name]
-                for dim, entity_n, dofs, mat, order in dof_rots:
-                    assert dim == 2
-                    if dofs[0] not in dofmap:
-                        continue
-                    dofs = [dofmap.index(d) for d in dofs]
-                    for o in range(1, order):
-                        values = [table[d] for d in dofs]
-                        for n in range(o):
-                            values = [sum(mat[i][j] * d for j, d in enumerate(values)) for i in range(len(values))]
-                        for n, v in enumerate(values):
-                            table_value = L.Conditional(L.And(L.EQ(indices[i], dofs[n]),
-                                                              L.EQ(L.Symbol("face_rotations")[entity_n], o)), v,
-                                                        table_value)
-
-                arg_factor = self._get_vector_reflection(td.name, indices) * table_value
                 # Assuming B sparsity follows element table sparsity
-
+                arg_factor = self._get_vector_reflection(td.name, indices) * table[indices[i]]
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -844,7 +820,7 @@ class IntegralGenerator(object):
                 P_index = B_indices[i]
 
                 key = (num_points, factor_index, blockdata.factor_is_piecewise,
-                       arg_factors[i].ce_format(self.precision))
+                       arg_factors[i].ce_format(self.ir.precision))
                 P, defined = self.get_temp_symbol(tempname, key)
                 if not defined:
                     # TODO: If FE table is varying and only used in contexts
@@ -891,7 +867,7 @@ class IntegralGenerator(object):
             P_index = arg_indices[not_piecewise_index]
 
             key = (num_points, factor_index, blockdata.factor_is_piecewise,
-                   arg_factors[not_piecewise_index].ce_format(self.precision))
+                   arg_factors[not_piecewise_index].ce_format(self.ir.precision))
             P, defined = self.get_temp_symbol(tempname, key)
             if not defined:
                 # Declare P table in preparts

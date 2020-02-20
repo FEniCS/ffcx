@@ -41,7 +41,6 @@ def base_permutations_and_reflection_entities(ufl_element):
 
 
 def base_permutations_from_subdofmap(ufl_element):
-    # FIXME: This information should be added to FIAT instead of reverse engineered here
     """Calculate permutations and reflection entites for a root element.
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""

@@ -97,14 +97,14 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
 
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
-        ffcx.classname.compute_signature(elements, _compute_parameter_signature(p)
-                                         + str(cffi_extra_compile_args) + str(cffi_debug))
+        ffcx.naming.compute_signature(elements, _compute_parameter_signature(p)
+                                      + str(cffi_extra_compile_args) + str(cffi_debug))
 
     names = []
     for e in elements:
-        name = ffcx.ir.representation.make_finite_element_classname(e, "JIT")
+        name = ffcx.naming.finite_element_name(e, "JIT")
         names.append(name)
-        name = ffcx.ir.representation.make_dofmap_classname(e, "JIT")
+        name = ffcx.naming.dofmap_name(e, "JIT")
         names.append(name)
 
     if cache_dir is not None:
@@ -151,11 +151,10 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
 
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
-        ffcx.classname.compute_signature(forms, _compute_parameter_signature(p)
-                                         + str(cffi_extra_compile_args) + str(cffi_debug))
+        ffcx.naming.compute_signature(forms, _compute_parameter_signature(p)
+                                      + str(cffi_extra_compile_args) + str(cffi_debug))
 
-    form_names = [ffcx.classname.make_name("JIT", "form", ffcx.classname.compute_signature([form], str(i)))
-                  for i, form in enumerate(forms)]
+    form_names = [ffcx.naming.form_name(form, i) for i, form in enumerate(forms)]
 
     if cache_dir is not None:
         cache_dir = Path(cache_dir)
@@ -203,9 +202,9 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     logger.info('Compiling expressions: ' + str(expressions))
 
     # Get a signature for these forms
-    module_name = 'libffcx_expressions_' + ffcx.classname.compute_signature(expressions, '', p)
+    module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, '', p)
 
-    expr_names = [ffcx.classname.make_name("JIT", "expression", ffcx.classname.compute_signature([expression], "", p))
+    expr_names = ["expression_{!s}".format(ffcx.naming.compute_signature([expression], "", p))
                   for expression in expressions]
 
     if cache_dir is not None:
@@ -248,10 +247,10 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
     # Get a signature for these cmaps
     module_name = 'libffcx_cmaps_' + \
-        ffcx.classname.compute_signature(meshes, _compute_parameter_signature(
+        ffcx.naming.compute_signature(meshes, _compute_parameter_signature(
             p) + str(cffi_extra_compile_args) + str(cffi_debug), True)
 
-    cmap_names = [ffcx.ir.representation.make_coordinate_map_classname(
+    cmap_names = [ffcx.naming.coordinate_map_name(
         mesh.ufl_coordinate_element(), "JIT") for mesh in meshes]
 
     if cache_dir is not None:
