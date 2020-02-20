@@ -59,7 +59,7 @@ c_extern_post = """
 """
 
 
-def format_code(code: namedtuple, wrapper_code, prefix, parameters):
+def format_code(code: namedtuple, parameters):
     """Format given code in UFC format. Returns two strings with header and source file contents."""
 
     logger.debug("Compiler stage 5: Formatting code")
@@ -92,11 +92,6 @@ def format_code(code: namedtuple, wrapper_code, prefix, parameters):
     for parts_code in code:
         code_h += "".join([c[0] for c in parts_code])
         code_c += "".join([c[1] for c in parts_code])
-
-    # Add wrappers
-    if wrapper_code:
-        code_h += wrapper_code[0]
-        code_c += wrapper_code[1]
 
     # Add headers to body
     code_h = code_h_pre + code_h + code_h_post

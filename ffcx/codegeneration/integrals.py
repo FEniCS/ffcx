@@ -12,7 +12,7 @@ from ffcx.codegeneration import integrals_template as ufc_integrals
 
 def generator(ir, parameters):
     """Generate UFC code for an integral."""
-    factory_name = ir.classname
+    factory_name = ir.name
     integral_type = ir.integral_type
 
     # Format declaration

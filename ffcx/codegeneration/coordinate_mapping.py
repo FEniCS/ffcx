@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
-from ffcx.codegeneration.utils import generate_return_new
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
@@ -137,28 +136,6 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
             return L.StatementList(code)
 
 
-def create_coordinate_finite_element(L, ir):
-    classname = ir.create_coordinate_finite_element
-    return generate_return_new(L, classname)
-
-
-def coordinate_finite_element_declaration(L, ir):
-    classname = ir.create_coordinate_finite_element
-    code = "ufc_finite_element* create_{name}(void);\n".format(name=classname)
-    return code
-
-
-def create_coordinate_dofmap(L, ir):
-    classname = ir.create_coordinate_dofmap
-    return generate_return_new(L, classname)
-
-
-def coordinate_dofmap_declaration(L, ir):
-    classname = ir.create_coordinate_dofmap
-    code = "ufc_dofmap* create_{name}(void);\n".format(name=classname)
-    return code
-
-
 def evaluate_reference_basis_declaration(L, ir):
     scalar_coordinate_element_classname = ir.scalar_coordinate_finite_element_classname
     code = """
@@ -250,7 +227,7 @@ def compute_reference_coordinates(L, ir):
 
 def _compute_reference_coordinates_affine(L, ir, output_all=False):
     # Class name
-    classname = ir.classname
+    classname = ir.name
 
     # Dimensions
     gdim = ir.geometric_dimension
@@ -502,11 +479,11 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.Comment("Compute K = J^-1 and x at midpoint of cell"),
         L.ArrayDecl("double", xm, (gdim, ), 0.0),
         L.ArrayDecl("double", Km, (tdim * gdim, )),
-        L.Call("compute_midpoint_geometry_{}".format(ir.classname),
+        L.Call("compute_midpoint_geometry_{}".format(ir.name),
                (xm, J, coordinate_dofs)),
-        L.Call("compute_jacobian_determinants_{}".format(ir.classname),
+        L.Call("compute_jacobian_determinants_{}".format(ir.name),
                (detJ, one_point, J)),
-        L.Call("compute_jacobian_inverses_{}".format(ir.classname),
+        L.Call("compute_jacobian_inverses_{}".format(ir.name),
                (Km, one_point, J, detJ)),
     ]
 
@@ -526,7 +503,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     part1 = [
         L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
         L.Comment("intermediate storage inside compute_geometry, not used out here"),
-        L.Call("compute_geometry_{}".format(ir.classname),
+        L.Call("compute_geometry_{}".format(ir.name),
                (xk, J, detJ, K, one_point, Xk, coordinate_dofs)),
     ]
 
@@ -703,7 +680,7 @@ def compute_jacobian_inverses(L, ir):
 
 def compute_geometry(L, ir):
     # Class name
-    classname = ir.classname
+    classname = ir.name
 
     # Output geometry
     x = L.Symbol("x")
@@ -822,19 +799,13 @@ def generator(ir, parameters):
     d = {}
 
     # Attributes
-    d["factory_name"] = ir.classname
+    d["factory_name"] = ir.name
     d["signature"] = "\"{}\"".format(ir.signature)
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
 
     import ffcx.codegeneration.C.cnodes as L
-
-    # Functions
-    d["create_coordinate_finite_element"] = create_coordinate_finite_element(L, ir)
-    d["coordinate_finite_element_declaration"] = coordinate_finite_element_declaration(L, ir)
-    d["create_coordinate_dofmap"] = create_coordinate_dofmap(L, ir)
-    d["coordinate_dofmap_declaration"] = coordinate_dofmap_declaration(L, ir)
 
     statements = compute_physical_coordinates(L, ir)
     d["compute_physical_coordinates"] = L.StatementList(statements)
@@ -871,6 +842,6 @@ def generator(ir, parameters):
     implementation = ufc_coordinate_mapping.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.classname)
+    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.name)
 
     return declaration, implementation

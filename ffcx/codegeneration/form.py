@@ -103,26 +103,6 @@ class UFCForm:
             code += [L.Return(names)]
         return L.StatementList(code)
 
-    def create_coordinate_finite_element(self, L, ir):
-        classnames = ir.create_coordinate_finite_element
-        assert len(classnames) == 1
-        return generate_return_new(L, classnames[0])
-
-    def coordinate_finite_element_declaration(self, L, ir):
-        classname = ir.create_coordinate_finite_element
-        code = "ufc_finite_element* create_{name}(void);\n".format(name=classname[0])
-        return code
-
-    def create_coordinate_dofmap(self, L, ir):
-        classnames = ir.create_coordinate_dofmap
-        assert len(classnames) == 1
-        return generate_return_new(L, classnames[0])
-
-    def coordinate_dofmap_declaration(self, L, ir):
-        classname = ir.create_coordinate_dofmap
-        code = "ufc_dofmap* create_{name}(void);\n".format(name=classname[0])
-        return code
-
     def create_coordinate_mapping(self, L, ir):
         classnames = ir.create_coordinate_mapping
         # list of length 1 until we support multiple domains
@@ -158,6 +138,25 @@ class UFCForm:
             code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
         return code
 
+    def create_functionspace(self, L, ir):
+        code = []
+        function_name = L.Symbol("function_name")
+
+        code += ["ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));\n"]
+
+        for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
+            body = "space->create_element = create_{finite_element_classname};\n".format(
+                finite_element_classname=element)
+            body += "space->create_dofmap = create_{dofmap_classname};\n".format(dofmap_classname=dofmap)
+            body += "space->create_coordinate_mapping = create_{coordinate_map_classname};".format(
+                coordinate_map_classname=cmap)
+
+            code += [L.If(L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0), body)]
+
+        code += ["return space;\n"]
+
+        return L.StatementList(code)
+
     # This group of functions are repeated for each foo_integral by
     # add_ufc_form_integral_methods:
 
@@ -181,10 +180,9 @@ class UFCForm:
 def generator(ir, parameters):
     """Generate UFC code for a form."""
 
-    factory_name = ir.classname
-
     d = {}
-    d["factory_name"] = factory_name
+    d["factory_name"] = ir.name
+    d["name_from_uflfile"] = ir.name_from_uflfile
     d["signature"] = "\"{}\"".format(ir.signature)
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
@@ -205,16 +203,14 @@ def generator(ir, parameters):
     d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir)
     d["constant_name_map"] = generator.generate_constant_original_position_to_name_map(L, ir)
 
-    d["create_coordinate_finite_element"] = generator.create_coordinate_finite_element(L, ir)
-    d["coordinate_finite_element_declaration"] = generator.coordinate_finite_element_declaration(L, ir)
-    d["create_coordinate_dofmap"] = generator.create_coordinate_dofmap(L, ir)
-    d["coordinate_dofmap_declaration"] = generator.coordinate_dofmap_declaration(L, ir)
     d["create_coordinate_mapping"] = generator.create_coordinate_mapping(L, ir)
     d["coordinate_mapping_declaration"] = generator.coordinate_mapping_declaration(L, ir)
     d["create_finite_element"] = generator.create_finite_element(L, ir)
     d["finite_element_declaration"] = generator.finite_element_declaration(L, ir)
     d["create_dofmap"] = generator.create_dofmap(L, ir)
     d["dofmap_declaration"] = generator.dofmap_declaration(L, ir)
+
+    d["create_functionspace"] = generator.create_functionspace(L, ir)
 
     d["get_cell_integral_ids"] = generator.get_cell_integral_ids(L, ir, parameters)
     d["get_exterior_facet_integral_ids"] = generator.get_exterior_facet_integral_ids(L, ir, parameters)
@@ -239,6 +235,7 @@ def generator(ir, parameters):
     implementation = ufc_form.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_form.declaration.format(factory_name=factory_name)
+    declaration = ufc_form.declaration.format(factory_name=d["factory_name"],
+                                              name_from_uflfile=d["name_from_uflfile"])
 
     return declaration, implementation
