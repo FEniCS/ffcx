@@ -82,12 +82,14 @@ def generator(ir, parameters):
         num_dofs = 0
     else:
         num_dofs = len(ir.base_permutations[0])
-    d["base_permutations"] = ("dofmap->base_permutations = malloc(sizeof(int) * "
-                              + str(num_perms * num_dofs) + ");\n")
+
+    bp = []
     for i, perm in enumerate(ir.base_permutations):
         for j, val in enumerate(perm):
-            d["base_permutations"] += ("  dofmap->base_permutations["
-                                       + str(i * num_dofs + j) + "] = " + str(val) + ";\n")
+            bp.append(str(val))
+    d["base_permutations"] = ("static const int bp[" + str(num_perms * num_dofs) + "] = {"
+                              + ",".join(bp) + "};\n  dofmap->base_permutations = bp;\n")
+    d["size_base_permutations"] = num_perms * num_dofs
 
     import ffcx.codegeneration.C.cnodes as L
 
