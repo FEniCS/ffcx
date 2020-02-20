@@ -89,6 +89,7 @@ def generator(ir, parameters):
             bp.append(str(val))
     d["base_permutations"] = ("static const int bp[" + str(num_perms * num_dofs) + "] = {"
                               + ",".join(bp) + "};\n  dofmap->base_permutations = bp;\n")
+    d["size_base_permutations"] = num_perms * num_dofs
 
     import ffcx.codegeneration.C.cnodes as L
 
