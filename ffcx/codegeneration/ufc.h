@@ -174,6 +174,9 @@ extern "C"
     /// The base DoF permutations
     int* base_permutations;
 
+    /// The size of the base DoF permutations array
+    int size_base_permutations;
+
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
 
