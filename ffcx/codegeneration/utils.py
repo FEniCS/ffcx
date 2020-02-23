@@ -133,12 +133,13 @@ def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):
 
 def get_table_dofmap_array(L, dofmap, pname):
     """If some dofs have been stripped from a table, return an array to map table entries to dofs."""
-    for i, j in enumerate(dofmap):
-        if i != j:
-            # If a dof has been removed, write the data
-            _table_dofmaps[pname] = L.Symbol(pname + "_dofmap")
-            return [L.ArrayDecl(
-                "const int", _table_dofmaps[pname], (len(dofmap), ), values=dofmap)]
+    begin = dofmap[0]
+    end = dofmap[-1] + 1
+    if len(dofmap) != end - begin:
+        # If a dof has been removed, write the data
+        _table_dofmaps[pname] = L.Symbol(pname + "_dofmap")
+        return [L.ArrayDecl(
+            "static const int", _table_dofmaps[pname], (len(dofmap), ), values=dofmap)]
     # If no dofs  have been removed, return nothing
     _table_dofmaps[pname] = None
     return []
