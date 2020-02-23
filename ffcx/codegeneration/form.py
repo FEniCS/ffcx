@@ -155,7 +155,7 @@ class UFCForm:
             condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
             if i == 0:
                 code += [L.If(condition, body)]
-            elif i > 0:
+            else:
                 code += [L.ElseIf(condition, body)]
 
             i += 1
