@@ -148,9 +148,9 @@ class UFCForm:
             body += "space->create_element = create_{finite_element_classname};\n".format(
                 finite_element_classname=element)
             body += "space->create_dofmap = create_{dofmap_classname};\n".format(dofmap_classname=dofmap)
-            body += "space->create_coordinate_mapping = create_{coordinate_map_classname};".format(
+            body += "space->create_coordinate_mapping = create_{coordinate_map_classname};\n".format(
                 coordinate_map_classname=cmap)
-            body += "return space;\n"
+            body += "return space;"
 
             condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
             if i == 0:
