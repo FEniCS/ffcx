@@ -142,18 +142,25 @@ class UFCForm:
         code = []
         function_name = L.Symbol("function_name")
 
-        code += ["ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));\n"]
-
+        i = 0
         for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
-            body = "space->create_element = create_{finite_element_classname};\n".format(
+            body = "ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));\n"
+            body += "space->create_element = create_{finite_element_classname};\n".format(
                 finite_element_classname=element)
             body += "space->create_dofmap = create_{dofmap_classname};\n".format(dofmap_classname=dofmap)
             body += "space->create_coordinate_mapping = create_{coordinate_map_classname};".format(
                 coordinate_map_classname=cmap)
+            body += "return space;\n"
 
-            code += [L.If(L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0), body)]
+            condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
+            if i == 0:
+                code += [L.If(condition, body)]
+            elif i > 0:
+                code += [L.ElseIf(condition, body)]
 
-        code += ["return space;\n"]
+            i += 1
+
+        code += ["return NULL;\n"]
 
         return L.StatementList(code)
 
