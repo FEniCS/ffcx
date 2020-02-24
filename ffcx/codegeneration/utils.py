@@ -65,28 +65,3 @@ def generate_return_literal_switch(L,
 def generate_return_int_switch(L, i, values, default):
     return generate_return_literal_switch(L, i, values, default, L.LiteralInt,
                                           "int")
-
-
-_table_dofmaps = {}
-
-
-def get_table_dofmap_array(L, dofmap, pname):
-    """If some dofs have been stripped from a table, return an array to map table entries to dofs."""
-    for i, j in enumerate(dofmap):
-        if i != j:
-            # If a dof has been removed, write the data
-            _table_dofmaps[pname] = L.Symbol(pname + "_dofmap")
-            return [L.ArrayDecl(
-                "const int", _table_dofmaps[pname], (len(dofmap), ), values=dofmap)]
-    # If no dofs  have been removed, return nothing
-    _table_dofmaps[pname] = None
-    return []
-
-
-def get_table_dofmap(L, pname, idof):
-    """Returns the dof number corresponding to a row in the table."""
-    assert pname in _table_dofmaps
-    if _table_dofmaps[pname] is None:
-        # If no dofs have been removed, then idof is the dof number
-        return idof
-    return _table_dofmaps[pname][idof]
