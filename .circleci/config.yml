@@ -29,8 +29,7 @@ jobs:
           name: Run unit tests
           command: |
             export PATH=$PATH:$HOME/.local/bin
-            cd test/
-            python -m pytest --cov=ffcx/ -n 4 -v .
+            python -m pytest --cov=ffcx/ -n 4 -v test/
             coveralls
       - run:
           name: Run demos
