@@ -153,7 +153,7 @@ class IntegralGenerator(object):
         c_false = L.LiteralBool(False)
         for element, id in self.ir.element_ids.items():
             vname = "ref_dof" + str(id)
-            self.contains_reflections[vname] = False
+            self.contains_reflections[id] = False
             reflect_dofs = []
             for dre in self.ir.element_dof_reflection_entities[element]:
                 if dre is None:
@@ -173,18 +173,19 @@ class IntegralGenerator(object):
                     reflect_dofs.append(ref)
                     if ref != c_false:
                         # Mark this space as needing reflections
-                        self.contains_reflections[vname] = True
+                        self.contains_reflections[id] = True
 
             # If no dofs need reflecting, don't write any array
-            if self.contains_reflections[vname]:
+            if self.contains_reflections[id]:
                 parts.append(L.ArrayDecl(
                     "const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs))
 
-        # TODO: remove these
-        #    parts += get_vector_reflection_array(L, self.ir.element_dof_reflection_entities[element],
-        #                                         "ref_dof" + str(id))
         for tname, dofmap in self.ir.table_dofmaps.items():
-            parts += get_table_dofmap_array(L, dofmap, tname)
+            origin = self.ir.table_origins[tname]
+            if origin in self.ir.element_ids:
+                id = self.ir.element_ids[origin]
+                if self.contains_reflections[id]:
+                    parts += get_table_dofmap_array(L, dofmap, tname)
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -1110,9 +1111,9 @@ class IntegralGenerator(object):
         output = 1
         for tablename, index in zip(tablenames, used_indices):
             element = self.ir.table_origins[tablename][0]
-            vname = "ref_dof" + str(self.ir.element_ids[element])
-            if self.contains_reflections[vname]:
+            id = self.ir.element_ids[element]
+            if self.contains_reflections[id]:
                 # If at least one vector dof needs reflecting, return a conditional that gives -1
                 # if the dof needs negating
-                output *= L.Conditional(L.Symbol(vname)[get_table_dofmap(L, tablename, index)], 1, -1)
+                output *= L.Conditional(L.Symbol("ref_dof" + str(id))[get_table_dofmap(L, tablename, index)], 1, -1)
         return output
