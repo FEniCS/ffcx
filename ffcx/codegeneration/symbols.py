@@ -92,7 +92,7 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
-    def get_reflection(self, L, i):
+    def entity_reflection(self, L, i):
         """Returns the bool that says whether or not an entity has been reflected."""
         if i[0] == 1:
             edge_reflections = L.Symbol("edge_reflections")

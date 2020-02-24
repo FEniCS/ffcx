@@ -165,10 +165,10 @@ class IntegralGenerator(object):
                     for j in dre:
                         if ref == c_false:
                             # No condition has been added yet, so overwrite false
-                            ref = self.backend.symbols.get_reflection(L, j)
+                            ref = self.backend.symbols.entity_reflection(L, j)
                         else:
                             # This is not the first condition, so XOR
-                            ref = L.Conditional(self.backend.symbols.get_reflection(L, j), L.Not(ref), ref)
+                            ref = L.Conditional(self.backend.symbols.entity_reflection(L, j), L.Not(ref), ref)
                     reflect_dofs.append(ref)
                     if ref != c_false:
                         # Mark this space as needing reflections

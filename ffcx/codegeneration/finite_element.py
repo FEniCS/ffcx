@@ -133,7 +133,7 @@ def evaluate_reference_basis_derivatives(L, ir, parameters):
     return generate_evaluate_reference_basis_derivatives(L, data, ir.name, parameters)
 
 
-def get_reflection(L, i):
+def entity_reflection(L, i):
     """Returns the bool that says whether or not an entity has been reflected."""
     if i[0] == 1:
         edge_reflections = L.Symbol("edge_reflections")
@@ -289,10 +289,10 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             for j in dre:
                 if ref == c_false:
                     # No condition has been added yet, so overwrite false
-                    ref = get_reflection(L, j)
+                    ref = entity_reflection(L, j)
                 else:
                     # This is not the first condition, so XOR
-                    ref = L.Conditional(get_reflection(L, j), L.Not(ref), ref)
+                    ref = L.Conditional(entity_reflection(L, j), L.Not(ref), ref)
             reflect_dofs.append(ref)
             if ref != c_false:
                 # Mark this space as needing reflections
