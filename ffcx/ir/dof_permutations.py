@@ -93,7 +93,6 @@ def base_permutations_from_subdofmap(ufl_element):
             # Permute the dofs of each entity type separately
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
-                print(t, len(type_dofs))
                 if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
                          "PointScaledNormalEval", "PointNormalEval",
                          "IntegralMoment"]:
@@ -123,14 +122,7 @@ def base_permutations_from_subdofmap(ufl_element):
                     # Dof blocksize is 2
                     permuted = entity_functions[dim](type_dofs, 2, True)
                 elif t in ["FrobeniusIntegralMoment"] and dim == 2:
-                    if len(type_dofs) != 3:
-                        # FIXME
-                        warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
-                                      "implemented. Results on unordered meshes may be incorrect")
-                        # FIXME: temporarily does no permutation; needs replacing
-                        permuted = [type_dofs for i in range(2 ** (dim - 1))]
-                    else:
-                        permuted = permute_frobenius_face(type_dofs, 1)
+                    permuted = permute_frobenius_face(type_dofs, 1)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
                     # FIXME: temporarily does no permutation; needs replacing
                     permuted = [type_dofs for i in range(2 ** (dim - 1))]
