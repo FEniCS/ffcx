@@ -15,7 +15,6 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
-# from ffcx.codegeneration.utils import get_vector_reflection_array, get_vector_reflection, get_table_dofmap_array
 from ffcx.codegeneration.utils import get_table_dofmap_array, get_table_dofmap
 
 logger = logging.getLogger(__name__)
