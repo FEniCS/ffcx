@@ -133,6 +133,18 @@ def evaluate_reference_basis_derivatives(L, ir, parameters):
     return generate_evaluate_reference_basis_derivatives(L, data, ir.name, parameters)
 
 
+def get_reflection(L, i):
+    """Returns the bool that says whether or not an entity has been reflected."""
+    if i[0] == 1:
+        edge_reflections = L.Symbol("edge_reflections")
+        return edge_reflections[i[1]]
+    elif i[0] == 2:
+        face_reflections = L.Symbol("face_reflections")
+        return face_reflections[i[1]]
+    else:
+        return L.LiteralBool(False)
+
+
 def transform_reference_basis_derivatives(L, ir, parameters):
     data = ir.evaluate_basis
     if isinstance(data, str):
@@ -265,17 +277,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     contains_reflections = False
     reflect_dofs = []
     c_false = L.LiteralBool(False)
-
-    def get_reflection(L, i):
-        """Returns the bool that says whether or not an entity has been reflected."""
-        if i[0] == 1:
-            edge_reflections = L.Symbol("edge_reflections")
-            return edge_reflections[i[1]]
-        elif i[0] == 2:
-            face_reflections = L.Symbol("face_reflections")
-            return face_reflections[i[1]]
-        else:
-            return L.LiteralBool(False)
 
     for dre in ir.dof_reflection_entities:
         if dre is None:
