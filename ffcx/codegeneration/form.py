@@ -72,7 +72,7 @@ class UFCForm:
             code = [L.If(L.GE(i, len(positions)), [L.Comment(msg), L.Return(-1)])]
             position = L.Symbol("position")
             code += [
-                L.ArrayDecl("static const int64_t", position, len(positions), positions),
+                L.ArrayDecl("static const int", position, len(positions), positions),
                 L.Return(position[i]),
             ]
             return code
