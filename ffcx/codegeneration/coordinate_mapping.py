@@ -8,7 +8,7 @@ import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
-index_type = "int64_t"
+index_type = "int"
 
 # Code generation utilities:
 

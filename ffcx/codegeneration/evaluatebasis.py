@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 # Used for various indices and arrays in this file
-index_type = "int64_t"
+index_type = "int"
 
 
 def generate_evaluate_reference_basis(L, data, parameters):

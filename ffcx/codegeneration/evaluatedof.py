@@ -11,7 +11,7 @@
 from ffcx.codegeneration.jacobian import inverse_jacobian, jacobian
 from ufl.permutation import build_component_numbering
 
-index_type = "int64_t"
+index_type = "int"
 
 
 def reference_to_physical_map(cellname):
