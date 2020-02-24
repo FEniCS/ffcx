@@ -172,7 +172,7 @@ extern "C"
     const char* signature;
 
     /// The base DoF permutations
-    int* base_permutations;
+    const int* base_permutations;
 
     /// The size of the base DoF permutations array
     int size_base_permutations;
