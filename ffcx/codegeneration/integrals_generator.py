@@ -71,6 +71,14 @@ class IntegralGenerator(object):
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
 
+        # Dictionary to say whether or not each space contains vector dofs that need to
+        # their direction to be reversed if entities are reflected
+        self.contains_reflections = {}
+
+        # Contains the variable names of the dofmaps for the spaces whose dofs need to be
+        # reversed
+        self.table_dofmaps = {}
+
     def init_scopes(self):
         """Initialize variable scope dicts."""
         # Reset variables, separate sets for quadrature loop
@@ -148,49 +156,12 @@ class IntegralGenerator(object):
                           "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
                           .format(alignment))]
 
-        self.contains_reflections = {}
-        c_false = L.LiteralBool(False)
-        for element, id in self.ir.element_ids.items():
-            vname = "ref_dof" + str(id)
-            self.contains_reflections[id] = False
-            reflect_dofs = []
-            for dre in self.ir.element_dof_reflection_entities[element]:
-                if dre is None:
-                    # Dof does not need reflecting, so put false in array
-                    reflect_dofs.append(c_false)
-                else:
-                    # Loop through entities that the direction of the dof depends on to
-                    # make a conditional
-                    ref = c_false
-                    for j in dre:
-                        if ref == c_false:
-                            # No condition has been added yet, so overwrite false
-                            ref = self.backend.symbols.entity_reflection(L, j)
-                        else:
-                            # This is not the first condition, so XOR
-                            ref = L.Conditional(self.backend.symbols.entity_reflection(L, j), L.Not(ref), ref)
-                    reflect_dofs.append(ref)
-                    if ref != c_false:
-                        # Mark this space as needing reflections
-                        self.contains_reflections[id] = True
+        # Generate array of bools to say whether or not each dof needs to be reversed
+        # (for vector valued basis functions)
+        parts += self.generate_dof_reflections()
 
-            # If no dofs need reflecting, don't write any array
-            if self.contains_reflections[id]:
-                parts.append(L.ArrayDecl(
-                    "const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs))
-
-        self.table_dofmaps = {}
-        for tname, dofmap in self.ir.table_dofmaps.items():
-            id = self.ir.element_ids[self.ir.table_origins[tname][0]]
-            if self.contains_reflections[id]:
-                # Write the dofmap as it will be needed
-                for i, j in enumerate(dofmap):
-                    if i != j:
-                        # If a dof has been removed, write the data
-                        self.table_dofmaps[tname] = L.Symbol(tname + "_dofmap")
-                        parts.append(L.ArrayDecl(
-                            "const int", self.table_dofmaps[tname], (len(dofmap), ), values=dofmap))
-                        break
+        # Generate dofmaps for spaces whose dofs need to be reversed
+        parts += self.generate_table_dofmaps()
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -246,6 +217,59 @@ class IntegralGenerator(object):
         parts += all_finalizeparts
 
         return L.StatementList(parts)
+
+    def generate_dof_reflections(self):
+        """Generate arrays of bool saying whether each dof needs to be reflected."""
+        L = self.backend.language
+
+        parts = []
+        for element, id in self.ir.element_ids.items():
+            c_false = L.LiteralBool(False)
+            self.contains_reflections[id] = False
+            reflect_dofs = []
+            for dre in self.ir.element_dof_reflection_entities[element]:
+                if dre is None:
+                    # Dof does not need reflecting, so put false in array
+                    reflect_dofs.append(c_false)
+                else:
+                    # Loop through entities that the direction of the dof depends on to
+                    # make a conditional
+                    ref = c_false
+                    for j in dre:
+                        if ref == c_false:
+                            # No condition has been added yet, so overwrite false
+                            ref = self.backend.symbols.entity_reflection(L, j)
+                        else:
+                            # This is not the first condition, so XOR
+                            ref = L.Conditional(self.backend.symbols.entity_reflection(L, j), L.Not(ref), ref)
+                    reflect_dofs.append(ref)
+                    if ref != c_false:
+                        # Mark this space as needing reflections
+                        self.contains_reflections[id] = True
+
+            # If no dofs need reflecting, don't write any array
+            if self.contains_reflections[id]:
+                parts.append(L.ArrayDecl(
+                    "const bool", L.Symbol("ref_dof" + str(id)), (len(reflect_dofs), ), values=reflect_dofs))
+        return parts
+
+    def generate_table_dofmaps(self):
+        """Generate dofmaps for spaces whose dofs need to be reflected."""
+        L = self.backend.language
+
+        parts = []
+        for tname, dofmap in self.ir.table_dofmaps.items():
+            id = self.ir.element_ids[self.ir.table_origins[tname][0]]
+            if self.contains_reflections[id]:
+                # Write the dofmap as it will be needed
+                for i, j in enumerate(dofmap):
+                    if i != j:
+                        # If a dof has been removed, write the data
+                        self.table_dofmaps[tname] = L.Symbol(tname + "_dofmap")
+                        parts.append(L.ArrayDecl(
+                            "const int", self.table_dofmaps[tname], (len(dofmap), ), values=dofmap))
+                        break
+        return parts
 
     def generate_quadrature_tables(self):
         """Generate static tables of quadrature points and weights."""
