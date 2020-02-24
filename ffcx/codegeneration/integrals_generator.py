@@ -1102,31 +1102,18 @@ class IntegralGenerator(object):
         if isinstance(origin[0], str):
             # If the table is preintegrated, then origin will be a tuple of strings
             # to identify which tables were used for each dof dimension
-            output = 1
-            for i, n in zip(origin, indices[-len(origin):]):
-                element = self.ir.table_origins[i][0]
-                vname = "ref_dof" + str(self.ir.element_ids[element])
-                if self.contains_reflections[vname]:
-                    # If at least one vector dof needs reflecting, return a conditional that gives -1
-                    # if the dof needs negating
-                    output *= L.Conditional(L.Symbol(vname)[get_table_dofmap(L, i, n)], 1, -1)
-
-                # TODO: remove these
-                # output *= get_vector_reflection(self.backend.language, n,
-                #                                "ref_dof" + str(self.ir.element_ids[element]), i)
-            return output
+            tablenames = origin
         else:
-            element = origin[0]
-            vname = "ref_dof" + str(self.ir.element_ids[element])
+            # Otherwise, there is only one tablename; put it in a list so we can iterate
+            tablenames = [pname]
+        used_indices = indices[-len(tablenames):]
 
+        output = 1
+        for tablename, index in zip(tablenames, used_indices):
+            element = self.ir.table_origins[tablename][0]
+            vname = "ref_dof" + str(self.ir.element_ids[element])
             if self.contains_reflections[vname]:
                 # If at least one vector dof needs reflecting, return a conditional that gives -1
                 # if the dof needs negating
-                return L.Conditional(L.Symbol(vname)[get_table_dofmap(L, pname, indices[-1])], 1, -1)
-            else:
-                # If no dofs need reflecting, return 1
-                return 1
-
-            # TODO: remove these
-            # return get_vector_reflection(self.backend.language, indices[-1],
-            #                             "ref_dof" + str(self.ir.element_ids[element]), pname)
+                output *= L.Conditional(L.Symbol(vname)[get_table_dofmap(L, tablename, index)], 1, -1)
+        return output
