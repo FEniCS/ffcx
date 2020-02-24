@@ -181,18 +181,16 @@ class IntegralGenerator(object):
 
         self.table_dofmaps = {}
         for tname, dofmap in self.ir.table_dofmaps.items():
-            origin = self.ir.table_origins[tname]
-            if origin in self.ir.element_ids:
-                id = self.ir.element_ids[origin]
-                if self.contains_reflections[id]:
-                    # Write the dofmap as it will be needed
-                    for i, j in enumerate(dofmap):
-                        if i != j:
-                            # If a dof has been removed, write the data
-                            self.table_dofmaps[tname] = L.Symbol(tname + "_dofmap")
-                            parts.append(L.ArrayDecl(
-                                "const int", self.table_dofmaps[tname], (len(dofmap), ), values=dofmap))
-                            break
+            id = self.ir.element_ids[self.ir.table_origins[tname][0]]
+            if self.contains_reflections[id]:
+                # Write the dofmap as it will be needed
+                for i, j in enumerate(dofmap):
+                    if i != j:
+                        # If a dof has been removed, write the data
+                        self.table_dofmaps[tname] = L.Symbol(tname + "_dofmap")
+                        parts.append(L.ArrayDecl(
+                            "const int", self.table_dofmaps[tname], (len(dofmap), ), values=dofmap))
+                        break
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
