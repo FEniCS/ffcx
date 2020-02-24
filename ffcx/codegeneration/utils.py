@@ -67,68 +67,7 @@ def generate_return_int_switch(L, i, values, default):
                                           "int")
 
 
-_vnames_to_reflect = {}
 _table_dofmaps = {}
-
-
-def get_reflection(L, i):
-    """Returns the bool that says whether or not an entity has been reflected."""
-    if i[0] == 1:
-        edge_reflections = L.Symbol("edge_reflections")
-        return edge_reflections[i[1]]
-    elif i[0] == 2:
-        face_reflections = L.Symbol("face_reflections")
-        return face_reflections[i[1]]
-    else:
-        return L.LiteralBool(False)
-
-
-def get_vector_reflection_array(L, dof_reflection_entities, vname="reflected_dofs"):
-    """Returns array containing true for dofs that require multiplying by -1."""
-    _vnames_to_reflect[vname] = False
-    reflect_dofs = []
-    c_false = L.LiteralBool(False)
-    for i in dof_reflection_entities:
-        if i is None:
-            # Dof does not need reflecting, so put false in array
-            reflect_dofs.append(c_false)
-        else:
-            # Loop through entities that the direction of the dof depends on to
-            # make a conditional
-            ref = c_false
-            for j in i:
-                if ref == c_false:
-                    # No condition has been added yet, so overwrite false
-                    ref = get_reflection(L, j)
-                else:
-                    # This is not the first condition, so XOR
-                    ref = L.Conditional(get_reflection(L, j), L.Not(ref), ref)
-            reflect_dofs.append(ref)
-            if ref != c_false:
-                # Mark this space as needing reflections
-                _vnames_to_reflect[vname] = True
-
-    # If no dofs need reflecting, don't write any array
-    if not _vnames_to_reflect[vname]:
-        return []
-
-    # If at least one vector dof needs reflecting
-    return [L.ArrayDecl(
-        "const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs)]
-
-
-def get_vector_reflection(L, idof, vname="reflected_dofs", tablename=None):
-    """Gives 1 or -1 to scale a vector."""
-    assert vname in _vnames_to_reflect
-    if _vnames_to_reflect[vname]:
-        # If at least one vector dof needs reflecting, return a conditional that gives -1
-        # if the dof needs negating
-        if tablename is None:
-            return L.Conditional(L.Symbol(vname)[idof], 1, -1)
-        return L.Conditional(L.Symbol(vname)[get_table_dofmap(L, tablename, idof)], 1, -1)
-    else:
-        # If no dofs need reflecting, return 1
-        return 1
 
 
 def get_table_dofmap_array(L, dofmap, pname):
