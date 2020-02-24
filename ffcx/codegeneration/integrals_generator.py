@@ -15,7 +15,8 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
-from ffcx.codegeneration.utils import get_vector_reflection_array, get_vector_reflection, get_table_dofmap_array
+# from ffcx.codegeneration.utils import get_vector_reflection_array, get_vector_reflection, get_table_dofmap_array
+from ffcx.codegeneration.utils import get_table_dofmap_array, get_table_dofmap
 
 logger = logging.getLogger(__name__)
 
@@ -149,10 +150,40 @@ class IntegralGenerator(object):
                           "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
                           .format(alignment))]
 
+        self.contains_reflections = {}
+        c_false = L.LiteralBool(False)
         for element, id in self.ir.element_ids.items():
-            parts += get_vector_reflection_array(L, self.ir.element_dof_reflection_entities[element],
-                                                 "ref_dof" + str(id))
+            vname = "ref_dof" + str(id)
+            self.contains_reflections[vname] = False
+            reflect_dofs = []
+            for dre in self.ir.element_dof_reflection_entities[element]:
+                if dre is None:
+                    # Dof does not need reflecting, so put false in array
+                    reflect_dofs.append(c_false)
+                else:
+                    # Loop through entities that the direction of the dof depends on to
+                    # make a conditional
+                    ref = c_false
+                    for j in dre:
+                        if ref == c_false:
+                            # No condition has been added yet, so overwrite false
+                            ref = self.backend.symbols.get_reflection(L, j)
+                        else:
+                            # This is not the first condition, so XOR
+                            ref = L.Conditional(self.backend.symbols.get_reflection(L, j), L.Not(ref), ref)
+                    reflect_dofs.append(ref)
+                    if ref != c_false:
+                        # Mark this space as needing reflections
+                        self.contains_reflections[vname] = True
 
+            # If no dofs need reflecting, don't write any array
+            if self.contains_reflections[vname]:
+                parts.append(L.ArrayDecl(
+                    "const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs))
+
+        # TODO: remove these
+        #    parts += get_vector_reflection_array(L, self.ir.element_dof_reflection_entities[element],
+        #                                         "ref_dof" + str(id))
         for tname, dofmap in self.ir.table_dofmaps.items():
             parts += get_table_dofmap_array(L, dofmap, tname)
 
@@ -644,13 +675,13 @@ class IntegralGenerator(object):
             assert td.ttype != "zeros"
 
             if td.ttype == "ones":
-                arg_factor = self._get_vector_reflection(td.name, indices)
+                arg_factor = self.get_vector_reflection(td.name, indices)
             elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                assert self._get_vector_reflection(td.name, iq) == 1
+                assert self.get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = self._get_vector_reflection(td.name, indices) * table[indices[i]]
+                arg_factor = self.get_vector_reflection(td.name, indices) * table[indices[i]]
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -905,7 +936,7 @@ class IntegralGenerator(object):
                     quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
                 # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_ii] * self._get_vector_reflection(blockdata.name, P_ii)
+                PM = L.Symbol(blockdata.name)[P_ii] * self.get_vector_reflection(blockdata.name, P_ii)
                 B_rhs = L.float_product([FI, PM])
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -991,7 +1022,7 @@ class IntegralGenerator(object):
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
-                A_values[A_ii] += self._get_vector_reflection(blockdata.name, P_ii) * Pval * f
+                A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
         # Code generation
         # A[i] += A_values[i]
@@ -1064,8 +1095,9 @@ class IntegralGenerator(object):
 
         return parts
 
-    def _get_vector_reflection(self, pname, indices):
+    def get_vector_reflection(self, pname, indices):
         """Get the vector reflection for entry the table pname accessed using indices."""
+        L = self.backend.language
         origin = self.ir.table_origins[pname]
         if isinstance(origin[0], str):
             # If the table is preintegrated, then origin will be a tuple of strings
@@ -1073,10 +1105,28 @@ class IntegralGenerator(object):
             output = 1
             for i, n in zip(origin, indices[-len(origin):]):
                 element = self.ir.table_origins[i][0]
-                output *= get_vector_reflection(self.backend.language, n,
-                                                "ref_dof" + str(self.ir.element_ids[element]), i)
+                vname = "ref_dof" + str(self.ir.element_ids[element])
+                if self.contains_reflections[vname]:
+                    # If at least one vector dof needs reflecting, return a conditional that gives -1
+                    # if the dof needs negating
+                    output *= L.Conditional(L.Symbol(vname)[get_table_dofmap(L, i, n)], 1, -1)
+
+                # TODO: remove these
+                # output *= get_vector_reflection(self.backend.language, n,
+                #                                "ref_dof" + str(self.ir.element_ids[element]), i)
             return output
         else:
             element = origin[0]
-            return get_vector_reflection(self.backend.language, indices[-1],
-                                         "ref_dof" + str(self.ir.element_ids[element]), pname)
+            vname = "ref_dof" + str(self.ir.element_ids[element])
+
+            if self.contains_reflections[vname]:
+                # If at least one vector dof needs reflecting, return a conditional that gives -1
+                # if the dof needs negating
+                return L.Conditional(L.Symbol(vname)[get_table_dofmap(L, pname, indices[-1])], 1, -1)
+            else:
+                # If no dofs need reflecting, return 1
+                return 1
+
+            # TODO: remove these
+            # return get_vector_reflection(self.backend.language, indices[-1],
+            #                             "ref_dof" + str(self.ir.element_ids[element]), pname)

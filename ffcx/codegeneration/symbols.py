@@ -92,6 +92,17 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
+    def get_reflection(self, L, i):
+        """Returns the bool that says whether or not an entity has been reflected."""
+        if i[0] == 1:
+            edge_reflections = L.Symbol("edge_reflections")
+            return edge_reflections[i[1]]
+        elif i[0] == 2:
+            face_reflections = L.Symbol("face_reflections")
+            return face_reflections[i[1]]
+        else:
+            return L.LiteralBool(False)
+
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
         return self.S("ic")
