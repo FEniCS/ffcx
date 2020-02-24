@@ -119,7 +119,8 @@ def test_cmap_quads(degree, coords, compile_args):
     cell = ufl.quadrilateral
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
-    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps([mesh], cffi_extra_compile_args=compile_args)
+    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
+        [mesh], cffi_extra_compile_args=compile_args)
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
 
