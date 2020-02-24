@@ -20,7 +20,7 @@ from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch,
                                        get_vector_reflection, get_vector_reflection_array)
 
-index_type = "int64_t"
+index_type = "int"
 
 
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
