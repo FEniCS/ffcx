@@ -87,7 +87,7 @@ def generator(ir, parameters):
     for i, perm in enumerate(ir.base_permutations):
         for j, val in enumerate(perm):
             bp.append(str(val))
-    d["base_permutations"] = ("static const int bp[" + str(num_perms * num_dofs) + "] = {"
+    d["base_permutations"] = ("static int bp[" + str(num_perms * num_dofs) + "] = {"
                               + ",".join(bp) + "};\n  dofmap->base_permutations = bp;\n")
     d["size_base_permutations"] = num_perms * num_dofs
 
