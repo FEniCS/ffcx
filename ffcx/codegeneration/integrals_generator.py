@@ -15,7 +15,6 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
-from ffcx.codegeneration.utils import get_table_dofmap_array, get_table_dofmap
 
 logger = logging.getLogger(__name__)
 
@@ -180,12 +179,20 @@ class IntegralGenerator(object):
                 parts.append(L.ArrayDecl(
                     "const bool", L.Symbol(vname), (len(reflect_dofs), ), values=reflect_dofs))
 
+        self.table_dofmaps = {}
         for tname, dofmap in self.ir.table_dofmaps.items():
             origin = self.ir.table_origins[tname]
             if origin in self.ir.element_ids:
                 id = self.ir.element_ids[origin]
                 if self.contains_reflections[id]:
-                    parts += get_table_dofmap_array(L, dofmap, tname)
+                    # Write the dofmap as it will be needed
+                    for i, j in enumerate(dofmap):
+                        if i != j:
+                            # If a dof has been removed, write the data
+                            self.table_dofmaps[tname] = L.Symbol(tname + "_dofmap")
+                            parts.append(L.ArrayDecl(
+                                "const int", self.table_dofmaps[tname], (len(dofmap), ), values=dofmap))
+                            break
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -1115,5 +1122,7 @@ class IntegralGenerator(object):
             if self.contains_reflections[id]:
                 # If at least one vector dof needs reflecting, return a conditional that gives -1
                 # if the dof needs negating
-                output *= L.Conditional(L.Symbol("ref_dof" + str(id))[get_table_dofmap(L, tablename, index)], 1, -1)
+                if tablename in self.table_dofmaps:
+                    index = self.table_dofmaps[tablename][index]
+                output *= L.Conditional(L.Symbol("ref_dof" + str(id))[index], 1, -1)
         return output
