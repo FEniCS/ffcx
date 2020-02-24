@@ -17,8 +17,7 @@ from ffcx.codegeneration.evalderivs import (_generate_combinations,
 from ffcx.codegeneration.evaluatebasis import generate_evaluate_reference_basis
 from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
-                                       generate_return_new_switch,
-                                       get_vector_reflection, get_vector_reflection_array)
+                                       generate_return_new_switch)
 
 index_type = "int64_t"
 
@@ -259,8 +258,49 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         L.ArrayDecl(
             "const " + index_type,
             physical_offsets, (num_dofs, ),
-            values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
-    ] + get_vector_reflection_array(L, ir.dof_reflection_entities)
+            values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]])
+    ]
+
+    # Make array of which vector dofs to reflect the direction of
+    contains_reflections = False
+    reflect_dofs = []
+    c_false = L.LiteralBool(False)
+
+    def get_reflection(L, i):
+        """Returns the bool that says whether or not an entity has been reflected."""
+        if i[0] == 1:
+            edge_reflections = L.Symbol("edge_reflections")
+            return edge_reflections[i[1]]
+        elif i[0] == 2:
+            face_reflections = L.Symbol("face_reflections")
+            return face_reflections[i[1]]
+        else:
+            return L.LiteralBool(False)
+
+    for dre in ir.dof_reflection_entities:
+        if dre is None:
+            # Dof does not need reflecting, so put false in array
+            reflect_dofs.append(c_false)
+        else:
+            # Loop through entities that the direction of the dof depends on to
+            # make a conditional
+            ref = c_false
+            for j in dre:
+                if ref == c_false:
+                    # No condition has been added yet, so overwrite false
+                    ref = get_reflection(L, j)
+                else:
+                    # This is not the first condition, so XOR
+                    ref = L.Conditional(get_reflection(L, j), L.Not(ref), ref)
+            reflect_dofs.append(ref)
+            if ref != c_false:
+                # Mark this space as needing reflections
+                contains_reflections = True
+
+    # If one or more dofs need reflecting, write the array
+    if contains_reflections:
+        dof_attributes_code.append(L.ArrayDecl(
+            "const bool", L.Symbol("reflected_dofs"), (len(reflect_dofs), ), values=reflect_dofs))
 
     # Build dof lists for each mapping type
     mapping_dofs = defaultdict(list)
@@ -309,7 +349,10 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "piola", "Piola")
 
         mapped_value = L.Symbol("mapped_value")
-        vec_scale = get_vector_reflection(L, idof)
+        if contains_reflections:
+            vec_scale = L.Conditional(L.Symbol("reflected_dofs")[idof], 1, -1)
+        else:
+            vec_scale = 1
 
         transform_apply_code += [
             L.ForRanges(
@@ -350,6 +393,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     # Join code
     code = (combinations_code + values_init_code + dof_attributes_code + point_loop_code
             + [L.Comment(msg), L.Return(0)])
+
     return code
 
 
