@@ -19,7 +19,7 @@ from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch)
 
-index_type = "int64_t"
+index_type = "int"
 
 
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
