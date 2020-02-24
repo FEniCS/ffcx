@@ -71,12 +71,14 @@ class IntegralGenerator(object):
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
 
-        # Dictionary to say whether or not each space contains vector dofs that need to
-        # their direction to be reversed if entities are reflected
-        self.contains_reflections = {}
+        # Contains the variable names to say whether or not each dof in a space needs its direction
+        # to be reversed (for vector dofs)
+        # If a space's id is not in this, then no reversals are needed
+        self.dof_reflections = {}
 
         # Contains the variable names of the dofmaps for the spaces whose dofs need to be
         # reversed
+        # If a space's id is not in this, then no reversals are needed or the dofmap is trivial
         self.table_dofmaps = {}
 
     def init_scopes(self):
@@ -221,12 +223,12 @@ class IntegralGenerator(object):
     def generate_dof_reflections(self):
         """Generate arrays of bool saying whether each dof needs to be reflected."""
         L = self.backend.language
+        c_false = L.LiteralBool(False)
 
         parts = []
         for element, id in self.ir.element_ids.items():
-            c_false = L.LiteralBool(False)
-            self.contains_reflections[id] = False
             reflect_dofs = []
+            contains_reflections = False
             for dre in self.ir.element_dof_reflection_entities[element]:
                 if dre is None:
                     # Dof does not need reflecting, so put false in array
@@ -245,12 +247,13 @@ class IntegralGenerator(object):
                     reflect_dofs.append(ref)
                     if ref != c_false:
                         # Mark this space as needing reflections
-                        self.contains_reflections[id] = True
+                        contains_reflections = True
 
             # If no dofs need reflecting, don't write any array
-            if self.contains_reflections[id]:
+            if contains_reflections:
+                self.dof_reflections[id] = L.Symbol("ref_dof" + str(id))
                 parts.append(L.ArrayDecl(
-                    "const bool", L.Symbol("ref_dof" + str(id)), (len(reflect_dofs), ), values=reflect_dofs))
+                    "const bool", self.dof_reflections[id], (len(reflect_dofs), ), values=reflect_dofs))
         return parts
 
     def generate_table_dofmaps(self):
@@ -260,7 +263,7 @@ class IntegralGenerator(object):
         parts = []
         for tname, dofmap in self.ir.table_dofmaps.items():
             id = self.ir.element_ids[self.ir.table_origins[tname][0]]
-            if self.contains_reflections[id]:
+            if id in self.dof_reflections:
                 # Write the dofmap as it will be needed
                 for i, j in enumerate(dofmap):
                     if i != j:
@@ -1141,10 +1144,10 @@ class IntegralGenerator(object):
         for tablename, index in zip(tablenames, used_indices):
             element = self.ir.table_origins[tablename][0]
             id = self.ir.element_ids[element]
-            if self.contains_reflections[id]:
+            if id in self.dof_reflections:
                 # If at least one vector dof needs reflecting, return a conditional that gives -1
                 # if the dof needs negating
                 if tablename in self.table_dofmaps:
                     index = self.table_dofmaps[tablename][index]
-                output *= L.Conditional(L.Symbol("ref_dof" + str(id))[index], 1, -1)
+                output *= L.Conditional(self.dof_reflections[id][index], 1, -1)
         return output
