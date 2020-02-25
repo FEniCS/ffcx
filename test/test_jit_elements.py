@@ -17,12 +17,13 @@ degrees = [1, 2, 3, 4]
 
 
 @pytest.fixture(scope="module")
-def lagrange_elements():
+def lagrange_elements(compile_args):
     elements = {}
     for cell in cells:
         for degree in degrees:
             ufl_element = ufl.FiniteElement("Lagrange", cell, degree)
-            compiled_elements, module = ffcx.codegeneration.jit.compile_elements([ufl_element])
+            compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
+                [ufl_element], cffi_extra_compile_args=compile_args)
             elements[(cell, degree)] = (ufl_element, compiled_elements[0], module)
 
     return elements
@@ -89,11 +90,12 @@ def test_evaluate_reference_basis(cell, degree, lagrange_elements, reference_poi
     assert (np.isclose(vals.T, fiat_vals[(0,) * tdim])).all()
 
 
-def test_cmap_triangle():
+def test_cmap_triangle(compile_args):
     cell = ufl.triangle
     element = ufl.VectorElement("Lagrange", cell, 1)
     mesh = ufl.Mesh(element)
-    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps([mesh])
+    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
+        [mesh], cffi_extra_compile_args=compile_args)
     x = np.array([[0.5, 0.5]], dtype=np.float64)
     x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
     X = np.zeros_like(x)
@@ -110,14 +112,15 @@ def test_cmap_triangle():
                                            (2, np.array([[0, 0], [0, 2], [0, 1], [3, 0],
                                                          [3, 2], [3, 1], [1.5, 0], [1.5, 2], [1.5, 1]],
                                                         dtype=np.float64))])
-def test_cmap_quads(degree, coords):
+def test_cmap_quads(degree, coords, compile_args):
     # Test for first and second order quadrilateral meshes,
     # assuming FIAT Tensor Product layout of cell.
 
     cell = ufl.quadrilateral
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
-    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps([mesh])
+    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
+        [mesh], cffi_extra_compile_args=compile_args)
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
 
@@ -145,14 +148,15 @@ def test_cmap_quads(degree, coords):
                                                          [0.5, 0, 0], [0.5, 0, 3], [0.5, 0, 1.5],
                                                          [0.5, 2, 0], [0.5, 2, 3], [0.5, 2, 1.5],
                                                          [0.5, 1, 0], [0.5, 1, 3], [0.5, 1, 1.5]], dtype=np.float64))])
-def test_cmap_hex(degree, coords):
+def test_cmap_hex(degree, coords, compile_args):
     # Test for first and second order quadrilateral meshes,
     # assuming FIAT Tensor Product layout of cell.
 
     cell = ufl.hexahedron
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
-    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps([mesh])
+    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
+        [mesh], cffi_extra_compile_args=compile_args)
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
 

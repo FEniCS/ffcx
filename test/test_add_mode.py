@@ -29,13 +29,14 @@ def float_to_type(name):
 
 
 @pytest.mark.parametrize("mode", ["double", "float", "long double", "double complex", "float complex"])
-def test_additive_facet_integral(mode):
+def test_additive_facet_integral(mode, compile_args):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.ds
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
+    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -71,13 +72,14 @@ def test_additive_facet_integral(mode):
 
 
 @pytest.mark.parametrize("mode", ["double", "float", "long double", "double complex", "float complex"])
-def test_additive_cell_integral(mode):
+def test_additive_cell_integral(mode, compile_args):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, parameters={'scalar_type': mode})
+    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
