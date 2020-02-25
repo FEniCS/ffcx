@@ -21,13 +21,13 @@ void tabulate_expression_{factory_name}(ufc_scalar_t* restrict A, const ufc_scal
 ufc_expression* create_{factory_name}(void)
 {{
 
+  ufc_expression* expression = malloc(sizeof(*expression));
+
   {original_coefficient_positions}
   {points}
   {value_shape}
 
-  ufc_expression* expression = malloc(sizeof(*expression));
   expression->tabulate_expression = tabulate_expression_{factory_name};
-  expression->original_coefficient_positions = original_coefficient_positions;
   expression->num_coefficients = {num_coefficients};
   expression->num_points = {num_points};
   expression->topological_dimension = {topological_dimension};
