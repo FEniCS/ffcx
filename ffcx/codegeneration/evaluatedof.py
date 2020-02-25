@@ -8,9 +8,12 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
+import logging
+
 from ffcx.codegeneration.jacobian import inverse_jacobian, jacobian
 from ufl.permutation import build_component_numbering
 
+logger = logging.getLogger(__name__)
 index_type = "int"
 
 
@@ -323,8 +326,9 @@ def generate_transform_values(L, ir):
         # Intermediate variable needed for multiple point dofs
         needs_temporary = any(dof is not None and len(dof) > 1 for dof in ir.dofs)
         if needs_temporary:
-            result = L.Symbol("result")
-            code += [L.VariableDecl("double", result)]
+            logger.warning("Generating code for evaluation of multiple-point dofs not working properly.")
+            # result = L.Symbol("result")
+            # code += [L.VariableDecl("double", result)]
 
         if needs_jacobian or needs_inverse_jacobian:
             code += jacobian(L, gdim, tdim, cell_shape)
