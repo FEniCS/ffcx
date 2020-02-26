@@ -39,8 +39,8 @@ int transform_reference_basis_derivatives_{factory_name}(
     const double * restrict reference_values,
     const double * restrict X, const double * restrict J,
     const double * restrict detJ, const double * restrict K,
-    const bool* edge_reflections, const bool* face_reflections,
-    const uint8_t* face_rotations)
+    const bool* restrict edge_reflections, const bool* restrict face_reflections,
+    const uint8_t* restrict face_rotations)
 {{
   {transform_reference_basis_derivatives}
 }}
@@ -49,7 +49,7 @@ int transform_values_{factory_name}(
      ufc_scalar_t* restrict reference_values,
      const ufc_scalar_t* restrict physical_values,
      const double* restrict coordinate_dofs,
-     const ufc_coordinate_mapping* cm)
+     const ufc_coordinate_mapping* restrict cm)
 {{
   {transform_values}
 }}

@@ -138,8 +138,9 @@ extern "C"
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
-        const double* restrict K, const bool* edge_reflections,
-        const bool* face_reflections, const uint8_t* face_rotations);
+        const double* restrict K, const bool* restrict edge_reflections,
+        const bool* restrict face_reflections,
+        const uint8_t* restrict face_rotations);
 
     /// Map values of field from physical to reference space which has
     /// been evaluated at points given by
@@ -147,7 +148,7 @@ extern "C"
     int (*transform_values)(ufc_scalar_t* restrict reference_values,
                             const ufc_scalar_t* restrict physical_values,
                             const double* restrict coordinate_dofs,
-                            const ufc_coordinate_mapping* cm);
+                            const ufc_coordinate_mapping* restrict cm);
 
     // FIXME: change to 'const double* reference_dof_coordinates()'
     /// Tabulate the coordinates of all dofs on a reference cell
@@ -437,20 +438,22 @@ extern "C"
   ///         This is used to ensure that FaceTangent vector dofs are correctly
   ///         oriented.
   typedef void(ufc_tabulate_tensor)(
-      ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
-      const double* restrict coordinate_dofs, const int* entity_local_index,
+      ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
+      const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
+      const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      const bool* edge_reflections, const bool* face_reflections,
-      const uint8_t* face_rotations);
+      const bool* restrict edge_reflections,
+      const bool* restrict face_reflections,
+      const uint8_t* restrict face_rotations);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
   /// @see ufc_tabulate_tensor
   ///
-  typedef void (ufc_tabulate_tensor_custom)(
-      ufc_scalar_t* restrict A, const ufc_scalar_t* w, const ufc_scalar_t* c,
-      const double* restrict coordinate_dofs, int num_quadrature_points,
-      const double* restrict quadrature_points,
+  typedef void(ufc_tabulate_tensor_custom)(
+      ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
+      const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
+      int num_quadrature_points, const double* restrict quadrature_points,
       const double* restrict quadrature_weights,
       const double* restrict facet_normals);
 
@@ -483,8 +486,9 @@ extern "C"
     ///         Defines the geometry of the cell.
     ///         Dimensions: coordinate_dofs[num_dofs][gdim].
     ///
-    void (*tabulate_expression)(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                const ufc_scalar_t* c,
+    void (*tabulate_expression)(ufc_scalar_t* restrict A,
+                                const ufc_scalar_t* restrict w,
+                                const ufc_scalar_t* restrict c,
                                 const double* restrict coordinate_dofs);
 
     /// Positions of coefficients in original expression
