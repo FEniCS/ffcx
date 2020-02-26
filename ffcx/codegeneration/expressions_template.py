@@ -11,8 +11,9 @@ ufc_expression* create_expression_{factory_name}(void);
 factory = """
 // Code for expression {factory_name}
 
-void tabulate_expression_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                        const ufc_scalar_t* c,
+void tabulate_expression_{factory_name}(ufc_scalar_t* restrict A,
+                                        const ufc_scalar_t* restrict w,
+                                        const ufc_scalar_t* restrict c,
                                         const double* restrict coordinate_dofs)
 {{
 {tabulate_expression}
