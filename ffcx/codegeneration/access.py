@@ -75,14 +75,6 @@ class FFCXBackendAccess(object):
             # cell offset)
             idof = begin
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
-        elif ttype == "quadrature":
-            # Dofmap should be contiguous in this case
-            assert len(tabledata.dofmap) == end - begin
-            # f(x_q) = sum_i f_i * delta_iq = f_q, just return direct
-            # reference to dof array at quadrature point index + begin
-            iq = self.symbols.quadrature_loop_index()
-            idof = begin + iq
-            return self.symbols.coefficient_dof_access(mt.terminal, idof)
         else:
             # Return symbol, see definitions for computation
             return self.symbols.coefficient_value(mt)  # , num_points)

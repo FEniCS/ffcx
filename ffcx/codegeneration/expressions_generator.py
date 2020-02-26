@@ -479,10 +479,16 @@ class ExpressionGenerator:
 
     def generate_original_coefficient_positions(self):
         L = self.backend.language
-        parts = L.ArrayDecl("static const int", "original_coefficient_positions",
-                            values=self.ir.original_coefficient_positions,
-                            sizes=(len(self.ir.original_coefficient_positions), ))
-        return parts
+        num_coeffs = len(self.ir.original_coefficient_positions)
+        orig_pos = L.Symbol("original_coefficient_positions")
+        if num_coeffs > 0:
+            parts = [L.ArrayDecl("static const int", orig_pos,
+                                 values=self.ir.original_coefficient_positions,
+                                 sizes=(num_coeffs, ))]
+            parts += [L.Assign("expression->original_coefficient_positions", orig_pos)]
+        else:
+            parts = []
+        return L.StatementList(parts)
 
     def generate_points(self):
         L = self.backend.language

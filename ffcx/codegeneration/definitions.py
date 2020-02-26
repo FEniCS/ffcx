@@ -88,10 +88,6 @@ class FFCXBackendDefinitions(object):
         if ttype == "ones" and (end - begin) == 1:
             return []
 
-        # For quadrature elements we reference the dofs directly, so no definition needed
-        if ttype == "quadrature":
-            return []
-
         assert begin < end
 
         # Get access to element table
