@@ -9,7 +9,6 @@ import collections
 import itertools
 import logging
 
-import numpy as np
 import ufl
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
@@ -327,7 +326,7 @@ class IntegralGenerator(object):
 
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-        inline_tables = self.ir.integral_type == "cell"
+        inline_tables = self.ir.integral_type == "cell" and False
 
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
@@ -371,41 +370,48 @@ class IntegralGenerator(object):
             names = [name]
         else:
             names = self.ir.table_origins[name]
+
+        index_names = ["ind_" + str(i) if j > 1 else 0 for i, j in enumerate(table.shape)]
+
         rots = [self.ir.table_dof_rotations[n] for n in names]
         if sum(len(i) for i in rots) > 0:
             parts = []
             parts.append(L.ArrayDecl(
                 "double", name, table.shape, table, alignas=alignas, padlen=padlen))
             t = L.Symbol(name)
-            index_names = ["ind_" + str(i) for i, j in enumerate(table.shape)]
+
             for i, rot in enumerate(rots):
+                dof_index = len(table.shape) - 1 - i
                 dofmap = self.ir.table_dofmaps[names[i]]
-                for entity_dim, entity_n, dofs, mat, order in rot:
-                    for a in range(1, order):
-                        m = np.eye(len(mat))
-                        for j in range(a):
-                            m = np.dot(mat, m)
+                for entity_dim, entity_n, dofs, matrices in rot:
+                    for a, m in enumerate(matrices):
                         temps = []
                         sets = []
                         for j, dof in enumerate(dofs):
                             if dof in dofmap:
-                                indices = [dofmap.index(dof) if k == len(table.shape) - 1 - i else index
+                                indices = [dofmap.index(dof) if k == dof_index else index
                                            for k, index in enumerate(index_names)]
                                 temps.append(L.VariableDecl("const double", "temp" + str(j), t[indices]))
-                                sets.append(L.Assign(t[indices],
-                                                     L.Sum([m[j, k] * L.Symbol("temp" + str(k))
-                                                            for k, _ in enumerate(dofs)])))
                                 # FIXME: if one of these dofs has been removed, then it may no longer be always 0
+                                sets.append(L.Assign(t[indices],
+                                                     L.Sum([m[j][k] * L.Symbol("temp" + str(k))
+                                                            for k, _ in enumerate(dofs) if m[j][k] != 0])))
                             else:
                                 temps.append(L.VariableDecl("const double", "temp" + str(j), 0))
+                                warnings.warn("Non-zero dof may have been stripped from table.")
                         body = temps + sets
 
                         for k, index in enumerate(index_names):
-                            if j != len(table.shape) - 1 - i:
+                            if isinstance(index, str) and k != dof_index:
                                 body = L.ForRange(index, 0, table.shape[k], body)
                         if entity_dim == 2:
                             entity_rot = L.Symbol("face_rotations")
-                            parts.append(L.If(L.EQ(entity_rot[entity_n], a), body))
+                            if a == 0:
+                                parts.append(L.If(L.EQ(entity_rot[entity_n], a + 1), body))
+                            else:
+                                parts.append(L.ElseIf(L.EQ(entity_rot[entity_n], a + 1), body))
+                        else:
+                            warnings.warn("Rotations of dofs on an entity of dim != 2 not supported.")
 
             return parts
 
@@ -1062,7 +1068,7 @@ class IntegralGenerator(object):
             # Get table for inlining
             tables = self.ir.unique_tables
             table = tables[blockdata.name]
-            inline_table = self.ir.integral_type == "cell"
+            inline_table = self.ir.integral_type == "cell" and False
 
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
@@ -1097,11 +1103,15 @@ class IntegralGenerator(object):
                 if inline_table:
                     # Extract float value of PI[P_ii]
                     P_ii = P_permutation_indices + (0, ) + P_arg_indices
+                    # FIXME: Apply rotations to table
+                    #        Currently inline tables are disabled to avoid this
                     Pval = table[P_ii]
                 else:
                     # Index the static preintegrated table:
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
+
+                #from IPython import embed; embed()()
 
                 A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
@@ -1111,7 +1121,7 @@ class IntegralGenerator(object):
         for i in range(len(A_values)):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
-        return L.commented_code_list(code, "UFLACS block mode: preintegrated")
+        return L.commented_code_list(code, "UFLACS block mode: preintegrated RRRRRRRRRRRRRrrrRRrrrRRrrrRRrrRRRrRRRrrrrr")
 
     def generate_copyout_statements(self):
         L = self.backend.language

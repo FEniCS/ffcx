@@ -6,7 +6,6 @@
 
 import warnings
 import math
-import numpy as np
 from ffcx.fiatinterface import create_element
 
 # TODO: This information should be moved to FIAT instead of being reverse engineered here
@@ -103,7 +102,10 @@ def base_permutations_from_subdofmap(ufl_element):
                     for dofs in zip(type_dofs[::2], type_dofs[1::2]):
                         # entity dimension, entity number, first dof, second dof,
                         #   matrix that represents a rotation, order
-                        rotations.append((dim, n, dofs, np.array([[0, -1], [1, -1]]), 3))
+                        rotations.append((dim, n, dofs, [
+                            [[0, -1], [1, -1]],  # Apply rotation once
+                            [[-1, 1], [-1, 0]],  # Apply twice
+                        ]))
                 elif t == "FrobeniusIntegralMoment":
                     if dim == 2:
                         if len(type_dofs) != 3:
