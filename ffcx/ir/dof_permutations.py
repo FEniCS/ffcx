@@ -100,12 +100,13 @@ def base_permutations_from_subdofmap(ufl_element):
                 elif t == "PointFaceTangent" and cname in ["triangle", "tetrahedron"]:
                     assert dim == 2
                     for dofs in zip(type_dofs[::2], type_dofs[1::2]):
-                        # entity dimension, entity number, first dof, second dof,
-                        #   matrix that represents a rotation, order
-                        rotations.append((dim, n, dofs, [
-                            [[0, -1], [1, -1]],  # Apply rotation once
-                            [[-1, 1], [-1, 0]],  # Apply twice
-                        ]))
+                        # (entity_dim, entity_number), dofs, {order: matrix}
+                        rotations.append(((dim, n), dofs, {
+                            1: [[0, -1], [1, -1]],  # Apply rotation once
+                            2: [[-1, 1], [-1, 0]],  # Apply twice
+                        }))
+                        reflections[dofs[0]] = [(dim - 1, fiat_element.ref_el.connectivity[dim, dim - 1][n][2])]
+                        reflections[dofs[1]] = [(dim - 1, fiat_element.ref_el.connectivity[dim, dim - 1][n][1])]
                 elif t == "FrobeniusIntegralMoment":
                     if dim == 2:
                         if len(type_dofs) != 3:

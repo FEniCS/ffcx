@@ -15,6 +15,7 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -383,8 +384,9 @@ class IntegralGenerator(object):
             for i, rot in enumerate(rots):
                 dof_index = len(table.shape) - 1 - i
                 dofmap = self.ir.table_dofmaps[names[i]]
-                for entity_dim, entity_n, dofs, matrices in rot:
-                    for a, m in enumerate(matrices):
+                for entity, dofs, matrices in rot:
+                    first = True
+                    for a, m in matrices.items():
                         temps = []
                         sets = []
                         for j, dof in enumerate(dofs):
@@ -404,12 +406,12 @@ class IntegralGenerator(object):
                         for k, index in enumerate(index_names):
                             if isinstance(index, str) and k != dof_index:
                                 body = L.ForRange(index, 0, table.shape[k], body)
-                        if entity_dim == 2:
+                        if entity[0] == 2:
                             entity_rot = L.Symbol("face_rotations")
-                            if a == 0:
-                                parts.append(L.If(L.EQ(entity_rot[entity_n], a + 1), body))
+                            if first:
+                                parts.append(L.If(L.EQ(entity_rot[entity[1]], a), body))
                             else:
-                                parts.append(L.ElseIf(L.EQ(entity_rot[entity_n], a + 1), body))
+                                parts.append(L.ElseIf(L.EQ(entity_rot[entity[1]], a), body))
                         else:
                             warnings.warn("Rotations of dofs on an entity of dim != 2 not supported.")
 
@@ -1111,8 +1113,6 @@ class IntegralGenerator(object):
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
-                #from IPython import embed; embed()()
-
                 A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
 
         z = L.LiteralFloat(0.0)
@@ -1121,7 +1121,7 @@ class IntegralGenerator(object):
         for i in range(len(A_values)):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
-        return L.commented_code_list(code, "UFLACS block mode: preintegrated RRRRRRRRRRRRRrrrRRrrrRRrrrRRrrRRRrRRRrrrrr")
+        return L.commented_code_list(code, "UFLACS block mode: preintegrated")
 
     def generate_copyout_statements(self):
         L = self.backend.language
@@ -1205,5 +1205,5 @@ class IntegralGenerator(object):
                 # if the dof needs negating
                 if tablename in self.table_dofmaps:
                     index = self.table_dofmaps[tablename][index]
-                output *= L.Conditional(self.dof_reflections[id][index], 1, -1)
+                output *= L.Conditional(self.dof_reflections[id][index], -1, 1)
         return output
