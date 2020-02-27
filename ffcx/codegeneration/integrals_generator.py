@@ -367,6 +367,7 @@ class IntegralGenerator(object):
         """Declare a table.
         If the dof dimensions of the table have dof rotations, apply these rotations."""
         L = self.backend.language
+        c_false = L.LiteralBool(False)
         if name in self.ir.table_dof_rotations:
             names = [name]
         else:
@@ -375,12 +376,47 @@ class IntegralGenerator(object):
         index_names = ["ind_" + str(i) if j > 1 else 0 for i, j in enumerate(table.shape)]
 
         rots = [self.ir.table_dof_rotations[n] for n in names]
+        refs = [self.ir.table_dof_reflections[n] for n in names]
+
         if sum(len(i) for i in rots) > 0:
             parts = []
             parts.append(L.ArrayDecl(
                 "double", name, table.shape, table, alignas=alignas, padlen=padlen))
             t = L.Symbol(name)
 
+            # Apply reflections (for vector dofs)
+            for i, item in enumerate(refs):
+                affected_dofs = []
+                for entity, dofs, matrices in rots[i]:
+                    affected_dofs += dofs
+
+                dof_index = len(table.shape) - 1 - i
+                dofmap = self.ir.table_dofmaps[names[i]]
+                for dof, ref in enumerate(item):
+                    if ref is not None:
+                        if dof in dofmap and dof in affected_dofs:
+                            indices = [dofmap.index(dof) if k == dof_index else index
+                                       for k, index in enumerate(index_names)]
+                            condition = c_false
+                            for entity in ref:
+                                body = L.AssignMul(t[indices], -1)
+                                if entity[0] == 1:
+                                    entity_ref = L.Symbol("edge_reflections")
+                                elif entity[0] == 2:
+                                    entity_ref = L.Symbol("face_reflections")
+                                else:
+                                    warnings.warn("?!")
+                                    continue
+                                if condition == c_false:
+                                    condition = entity_ref[entity[1]]
+                                else:
+                                    condition = L.And(entity_ref[entity[1]], condition)
+                            for k, index in enumerate(index_names):
+                                if isinstance(index, str) and k != dof_index:
+                                    body = L.ForRange(index, 0, table.shape[k], body)
+                            parts.append(L.If(condition, body))
+
+            # Apply rotations (for FaceTangent dofs)
             for i, rot in enumerate(rots):
                 dof_index = len(table.shape) - 1 - i
                 dofmap = self.ir.table_dofmaps[names[i]]
