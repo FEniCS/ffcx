@@ -110,8 +110,11 @@ def base_permutations_from_subdofmap(ufl_element):
                 elif t == "FrobeniusIntegralMoment":
                     if dim == 2:
                         if len(type_dofs) != 3:
-                            # FIXME
-                            raise ValueError("Not yet implemented")
+                            # FIXME: Implement dof permuting for FrobeniusIntegralMoment dofs
+                            #        Integral moments in higher order spaces will be the products with
+                            #        PointFaceTangents, so these need implementing first
+                            warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
+                                          "implemented. Results on unordered meshes may be incorrect")
                         for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
                             reflections[a] = [(dim, n), (dim - 1, b)]
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
