@@ -127,7 +127,7 @@ def base_permutations_from_subdofmap(ufl_element):
                 elif t == "PointFaceTangent":
                     # Dof blocksize is 2
                     permuted = entity_functions[dim](type_dofs, 2, True)
-                elif t in ["FrobeniusIntegralMoment"] and dim == 2:
+                elif t in ["FrobeniusIntegralMoment"] and dim == 2 and len(type_dofs) == 3:
                     permuted = permute_frobenius_face(type_dofs, 1)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
                     # FIXME: temporarily does no permutation; needs replacing
