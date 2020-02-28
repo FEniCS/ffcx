@@ -9,6 +9,7 @@ import pytest
 import ufl
 import ffcx
 
+
 @pytest.fixture(scope="module")
 def elements():
     return [("Lagrange", ufl.interval, 1),
@@ -63,7 +64,7 @@ def compiled_elements(compile_args, elements):
     for element in elements:
         ufl_element = ufl.FiniteElement(*element)
         jit_compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
-                [ufl_element], cffi_extra_compile_args=compile_args)
+            [ufl_element], cffi_extra_compile_args=compile_args)
         comp_elements[element] = (ufl_element, jit_compiled_elements[0], module)
 
     return comp_elements
