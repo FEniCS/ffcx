@@ -296,6 +296,8 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     # Compile (ensuring that compile dir exists)
     cache_dir.mkdir(exist_ok=True, parents=True)
+
+    logger.warning("Calling CFFI JIT compiler")
     ffibuilder.compile(tmpdir=cache_dir, verbose=cffi_verbose, debug=cffi_debug)
 
     # Create a "status ready" file. If this fails, it is an error,
