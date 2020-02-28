@@ -6,10 +6,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numpy as np
-import cffi
 
-import ufl
+import cffi
 import ffcx.codegeneration.jit
+import ufl
 
 
 def float_to_type(name):

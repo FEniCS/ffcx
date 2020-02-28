@@ -5,10 +5,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numpy as np
-import pytest
 
 import ffcx
 import ffcx.codegeneration.jit
+import pytest
 import ufl
 
 families = ["Lagrange", "Brezzi-Douglas-Marini", "Raviart-Thomas", "N1curl", "N2curl"]

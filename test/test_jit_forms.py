@@ -4,11 +4,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import cffi
 import numpy as np
-import pytest
 
+import cffi
 import ffcx.codegeneration.jit
+import pytest
 import ufl
 
 
