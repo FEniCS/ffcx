@@ -60,6 +60,12 @@ def compile_args():
 
 @pytest.fixture(scope="module")
 def compiled_elements(compile_args, elements):
+    """Precompiled finite elements
+
+    Returns
+    -------
+    {(family, cell, degree): (ufl_element, compiled_element, compiled_module)}
+    """
     comp_elements = {}
     for element in elements:
         ufl_element = ufl.FiniteElement(*element)
