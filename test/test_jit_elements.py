@@ -18,6 +18,7 @@ degrees = [1, 2, 3]
 
 @pytest.fixture(scope="module")
 def reference_points():
+    """Returns an example reference points in reference cells"""
     points = {}
 
     points[ufl.interval] = np.array([[0.0], [0.3], [0.9]])

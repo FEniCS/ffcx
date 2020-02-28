@@ -13,6 +13,7 @@ import ufl
 
 
 def test_cmap_triangle(compile_args):
+    """Test computation of reference coordinates for triangle cell."""
     cell = ufl.triangle
     element = ufl.VectorElement("Lagrange", cell, 1)
     mesh = ufl.Mesh(element)
@@ -35,8 +36,8 @@ def test_cmap_triangle(compile_args):
                                                          [3, 2], [3, 1], [1.5, 0], [1.5, 2], [1.5, 1]],
                                                         dtype=np.float64))])
 def test_cmap_quads(degree, coords, compile_args):
-    # Test for first and second order quadrilateral meshes,
-    # assuming FIAT Tensor Product layout of cell.
+    """Test computation of physical coordinates for quadrilateral cell"""
+    # Assuming FIAT Tensor Product layout of cell.
 
     cell = ufl.quadrilateral
     e = ufl.VectorElement("Lagrange", cell, degree)
@@ -71,8 +72,8 @@ def test_cmap_quads(degree, coords, compile_args):
                                                          [0.5, 2, 0], [0.5, 2, 3], [0.5, 2, 1.5],
                                                          [0.5, 1, 0], [0.5, 1, 3], [0.5, 1, 1.5]], dtype=np.float64))])
 def test_cmap_hex(degree, coords, compile_args):
-    # Test for first and second order quadrilateral meshes,
-    # assuming FIAT Tensor Product layout of cell.
+    """Test computation of physical coordinates for hexahedron cell"""
+    # Assuming FIAT Tensor Product layout of cell.
 
     cell = ufl.hexahedron
     e = ufl.VectorElement("Lagrange", cell, degree)
