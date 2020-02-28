@@ -87,21 +87,21 @@ class FFCXBackendSymbols(object):
         else:
             logging.exception("Unknown entitytype {}".format(entitytype))
 
-    def cell_orientation_argument(self, restriction):
-        """Cell orientation argument in ufc. Not same as cell orientation in generated code."""
-        postfix = "[0]"
-        if restriction == "-":
-            postfix = "[1]"
-        return self.S("cell_orientation" + postfix)
-
-    def cell_orientation_internal(self, restriction):
-        """Internal value for cell orientation in generated code."""
-        return self.S("co" + ufc_restriction_postfix(restriction))
-
     def argument_loop_index(self, iarg):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
+
+    def entity_reflection(self, L, i):
+        """Returns the bool that says whether or not an entity has been reflected."""
+        if i[0] == 1:
+            edge_reflections = L.Symbol("edge_reflections")
+            return edge_reflections[i[1]]
+        elif i[0] == 2:
+            face_reflections = L.Symbol("face_reflections")
+            return face_reflections[i[1]]
+        else:
+            return L.LiteralBool(False)
 
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
@@ -110,6 +110,10 @@ class FFCXBackendSymbols(object):
     def quadrature_loop_index(self):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")
+
+    def quadrature_permutation(self, index):
+        """Quadrature permutation, as input to the function."""
+        return self.S("quadrature_permutation")[index]
 
     def num_custom_quadrature_points(self):
         """Number of quadrature points, argument to custom integrals."""
@@ -195,8 +199,15 @@ class FFCXBackendSymbols(object):
         else:
             iq = self.quadrature_loop_index()
 
+        if tabledata.is_permuted:
+            qp = self.quadrature_permutation(0)
+            if restriction == "-":
+                qp = self.quadrature_permutation(1)
+        else:
+            qp = 0
+
         # Return direct access to element table
-        return self.S(tabledata.name)[entity][iq]
+        return self.S(tabledata.name)[qp][entity][iq]
 
     def expr_component_index(self):
         """Symbol for indexing the expression's ufl shape."""

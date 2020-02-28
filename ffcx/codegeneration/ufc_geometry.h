@@ -829,7 +829,7 @@ new_compute_jacobian_inverse_tetrahedron_3d(double K[UFC_TDIM_3 * UFC_GDIM_3],
 
 /// Compute edge scaling factors for triangle embedded in R^2
 static inline void compute_edge_scaling_factors_triangle_2d(
-    double dx[2], const double coordinate_dofs[6], int64_t facet)
+    double dx[2], const double coordinate_dofs[6], int facet)
 {
   // Get vertices on edge
   const unsigned int v0 = triangle_facet_vertices[facet][0];
@@ -850,7 +850,7 @@ static inline void compute_facet_scaling_factor_triangle_2d(double* det,
 
 /// Compute edge scaling factors for triangle embedded in R^3
 static inline void compute_edge_scaling_factors_triangle_3d(
-    double dx[3], const double coordinate_dofs[9], int64_t facet)
+    double dx[3], const double coordinate_dofs[9], int facet)
 {
   // Get vertices on edge
   const unsigned int v0 = triangle_facet_vertices[facet][0];
@@ -872,7 +872,7 @@ static inline void compute_facet_scaling_factor_triangle_3d(double* det,
 
 /// Compute face scaling factors for tetrahedron embedded in R^3
 static inline void compute_face_scaling_factors_tetrahedron_3d(
-    double a[3], const double coordinate_dofs[12], int64_t facet)
+    double a[3], const double coordinate_dofs[12], int facet)
 {
   // Get vertices on face
   const unsigned int v0 = tetrahedron_facet_vertices[facet][0];
@@ -913,7 +913,7 @@ compute_facet_scaling_factor_tetrahedron_3d(double* det, const double a[3])
 
 /// Compute facet direction for interval embedded in R^1
 static inline void compute_facet_normal_direction_interval_1d(
-    bool* direction, const double coordinate_dofs[2], int64_t facet)
+    bool* direction, const double coordinate_dofs[2], int facet)
 {
   *direction = facet == 0 ? coordinate_dofs[0] > coordinate_dofs[1]
                           : coordinate_dofs[1] > coordinate_dofs[0];
@@ -923,7 +923,7 @@ static inline void compute_facet_normal_direction_interval_1d(
 static inline void
 compute_facet_normal_direction_triangle_2d(bool* direction,
                                            const double coordinate_dofs[6],
-                                           const double dx[2], int64_t facet)
+                                           const double dx[2], int facet)
 {
   const unsigned int v0 = triangle_facet_vertices[facet][0];
   *direction = dx[1] * (coordinate_dofs[2 * facet] - coordinate_dofs[2 * v0])
@@ -937,7 +937,7 @@ compute_facet_normal_direction_triangle_2d(bool* direction,
 static inline void
 compute_facet_normal_direction_tetrahedron_3d(bool* direction,
                                               const double coordinate_dofs[9],
-                                              const double a[3], int64_t facet)
+                                              const double a[3], int facet)
 {
   const unsigned int v0 = tetrahedron_facet_vertices[facet][0];
   *direction = a[0] * (coordinate_dofs[3 * facet] - coordinate_dofs[3 * v0])
@@ -963,7 +963,7 @@ static inline void compute_facet_normal_interval_1d(double n[UFC_GDIM_1],
 /// Compute facet normal for interval embedded in R^2
 static inline void
 compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
-                                 const double coordinate_dofs[4], int64_t facet)
+                                 const double coordinate_dofs[4], int facet)
 {
   if (facet == 0)
   {
@@ -983,7 +983,7 @@ compute_facet_normal_interval_2d(double n[UFC_GDIM_2],
 /// Compute facet normal for interval embedded in R^3
 static inline void
 compute_facet_normal_interval_3d(double n[UFC_GDIM_3],
-                                 const double coordinate_dofs[6], int64_t facet)
+                                 const double coordinate_dofs[6], int facet)
 {
   if (facet == 0)
   {
@@ -1017,7 +1017,7 @@ static inline void compute_facet_normal_triangle_2d(double n[UFC_GDIM_2],
 /// Compute facet normal for triangle embedded in R^3
 static inline void
 compute_facet_normal_triangle_3d(double n[UFC_GDIM_3],
-                                 const double coordinate_dofs[6], int64_t facet)
+                                 const double coordinate_dofs[6], int facet)
 {
   // Compute facet normal for triangles in 3D
   const unsigned int vertex0 = facet;

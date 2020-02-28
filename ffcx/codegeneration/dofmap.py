@@ -70,13 +70,26 @@ def generator(ir, parameters):
     d = {}
 
     # Attributes
-    d["factory_name"] = ir.classname
+    d["factory_name"] = ir.name
     d["signature"] = "\"{}\"".format(ir.signature)
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
-    d["entity_block_size"] = ir.entity_block_size
+
+    num_perms = len(ir.base_permutations)
+    if num_perms == 0:
+        num_dofs = 0
+    else:
+        num_dofs = len(ir.base_permutations[0])
+
+    bp = []
+    for i, perm in enumerate(ir.base_permutations):
+        for j, val in enumerate(perm):
+            bp.append(str(val))
+    d["base_permutations"] = ("static const int bp[" + str(num_perms * num_dofs) + "] = {"
+                              + ",".join(bp) + "};\n  dofmap->base_permutations = bp;\n")
+    d["size_base_permutations"] = num_perms * num_dofs
 
     import ffcx.codegeneration.C.cnodes as L
 
@@ -97,6 +110,6 @@ def generator(ir, parameters):
     implementation = ufc_dofmap.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_dofmap.declaration.format(factory_name=ir.classname)
+    declaration = ufc_dofmap.declaration.format(factory_name=ir.name)
 
     return declaration, implementation

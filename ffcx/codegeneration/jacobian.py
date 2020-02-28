@@ -32,15 +32,3 @@ def inverse_jacobian(L, gdim, tdim, element_cellname):
                (K, L.AddressOf(detJ), J))
     ]
     return code
-
-
-def orientation(L):
-    detJ = L.Symbol("detJ")
-    cell_orientation = L.Symbol("cell_orientation")
-    code = [
-        L.Comment("Check orientation and return error code"),
-        L.If(L.EQ(cell_orientation, -1), [L.Return(-1)]),
-        L.Comment("(If cell_orientation == 1 = down, multiply det(J) by -1)"),
-        L.ElseIf(L.EQ(cell_orientation, 1), [L.AssignMul(detJ, -1)])
-    ]
-    return code

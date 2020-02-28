@@ -14,58 +14,74 @@ ufc_custom_integral* create_{factory_name}(void);
 tabulate_implementation = {
     "cell":
     """
-void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                    const ufc_scalar_t* c,
+void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
+                                    const ufc_scalar_t* restrict w,
+                                    const ufc_scalar_t* restrict c,
                                     const double* restrict coordinate_dofs,
-                                    const int* unused_local_index,
-                                    const int* cell_orientation)
+                                    const int* restrict unused_local_index,
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* restrict edge_reflections,
+                                    const bool* restrict face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}
 """,
     "exterior_facet":
     """
-void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                    const ufc_scalar_t* c,
+void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
+                                    const ufc_scalar_t* restrict w,
+                                    const ufc_scalar_t* restrict c,
                                     const double* restrict coordinate_dofs,
-                                    const int* facet,
-                                    const int* cell_orientation)
+                                    const int* restrict facet,
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* restrict edge_reflections,
+                                    const bool* restrict face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}
 """,
     "interior_facet":
     """
-void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                    const ufc_scalar_t* c,
+void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
+                                    const ufc_scalar_t* restrict w,
+                                    const ufc_scalar_t* restrict c,
                                     const double* restrict coordinate_dofs,
-                                    const int* facet,
-                                    const int* cell_orientation)
+                                    const int* restrict facet,
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* restrict edge_reflections,
+                                    const bool* restrict face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}
 """,
     "vertex":
     """
-void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                                    const ufc_scalar_t* c,
+void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
+                                    const ufc_scalar_t* restrict w,
+                                    const ufc_scalar_t* restrict c,
                                     const double* restrict coordinate_dofs,
-                                    const int* vertex,
-                                    const int* cell_orientation)
+                                    const int* restrict vertex,
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const bool* restrict edge_reflections,
+                                    const bool* restrict face_reflections,
+                                    const uint8_t* restrict face_rotations)
 {{
 {tabulate_tensor}
 }}
 """,
     "custom":
     """
-void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A, const ufc_scalar_t* w,
-                          const ufc_scalar_t* c,
-                          const double* restrict coordinate_dofs,
-                          int num_quadrature_points,
-                          const double* restrict quadrature_points,
-                          const double* restrict quadrature_weights,
-                          const double* restrict facet_normals,
-                          int cell_orientation)
+void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
+                                    const ufc_scalar_t* restrict w,
+                                    const ufc_scalar_t* restrict c,
+                                    const double* restrict coordinate_dofs,
+                                    int num_quadrature_points,
+                                    const double* restrict quadrature_points,
+                                    const double* restrict quadrature_weights,
+                                    const double* restrict facet_normals)
 {{
 {tabulate_tensor}
 }}
@@ -80,12 +96,11 @@ factory = """
 ufc_integral* create_{factory_name}(void)
 {{
   static const bool enabled{enabled_coefficients}
-
   ufc_integral* integral = malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;
-}};
+}}
 
 // End of code for integral {factory_name}
 """
@@ -98,12 +113,11 @@ custom_factory = """
 ufc_custom_integral* create_{factory_name}(void)
 {{
   static const bool enabled{enabled_coefficients}
-
   ufc_custom_integral* integral = malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;
-}};
+}}
 
 // End of code for custom integral {factory_name}
 """

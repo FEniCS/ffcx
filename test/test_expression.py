@@ -28,7 +28,7 @@ def float_to_type(name):
         raise RuntimeError("Unknown C type for: {}".format(name))
 
 
-def test_matvec():
+def test_matvec(compile_args):
     """Test evaluation of linear rank-0 form.
 
     Evaluates expression c * A_ij * f_j where c is a Constant,
@@ -46,7 +46,7 @@ def test_matvec():
     expr = ufl.Constant(mesh) * ufl.dot(a, f)
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)])
+    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     kernel = obj[0][0]
@@ -82,7 +82,7 @@ def test_matvec():
     assert np.allclose(expr.ufl_shape, value_shape)
 
 
-def test_rank1():
+def test_rank1(compile_args):
     """Tests evaluation of rank-1 form.
 
     Builds a linear operator which takes vector-valued functions in P1 space
@@ -98,7 +98,7 @@ def test_rank1():
     expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)])
+    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     kernel = obj[0][0]

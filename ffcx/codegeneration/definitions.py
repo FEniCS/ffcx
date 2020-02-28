@@ -36,6 +36,8 @@ class FFCXBackendDefinitions(object):
         self.symbols = symbols
         self.parameters = parameters
 
+        self.ir = ir
+
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
         self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
@@ -50,8 +52,8 @@ class FFCXBackendDefinitions(object):
                             ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
                             ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
                             ufl.geometry.ReferenceNormal: self._expect_table,
+                            ufl.geometry.CellOrientation: self._pass,
                             ufl.geometry.FacetOrientation: self._expect_table,
-                            ufl.geometry.CellOrientation: self.cell_orientation,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
     def get(self, t, mt, tabledata, num_points, access):
@@ -78,18 +80,12 @@ class FFCXBackendDefinitions(object):
         ttype = tabledata.ttype
         begin, end = tabledata.dofrange
 
-        # fe_classname = ir.classnames["finite_element"][t.ufl_element()]
-
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
             return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
         if ttype == "ones" and (end - begin) == 1:
-            return []
-
-        # For quadrature elements we reference the dofs directly, so no definition needed
-        if ttype == "quadrature":
             return []
 
         assert begin < end
@@ -145,10 +141,6 @@ class FFCXBackendDefinitions(object):
         assert ttype != "zeros"
         assert ttype != "ones"
 
-        # Get access to element table
-        #        if tabledata.is_uniform and tabledata.is_piecewise:
-        #            FE = tabledata.values[0][0]
-        #        else:
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         # Inlined version (we know this is bounded by a small number)
@@ -188,16 +180,6 @@ class FFCXBackendDefinitions(object):
         # TODO: Jacobian may need adjustment for custom_integral_types
         return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
-    def cell_orientation(self, e, mt, tabledata, num_points, access):
-        # Would be nicer if cell_orientation was a double variable input,
-        # but this is how dolfinx/ufc/ffcx currently passes this information.
-        # 0 means up and gives +1.0, 1 means down and gives -1.0.
-        L = self.language
-        co = self.symbols.cell_orientation_argument(mt.restriction)
-        expr = L.Conditional(L.EQ(co, L.LiteralInt(1)), L.LiteralFloat(-1.0), L.LiteralFloat(+1.0))
-        code = [L.VariableDecl("const ufc_scalar_t", access, expr)]
-        return code
-
     def _expect_table(self, e, mt, tabledata, num_points, access):
         """These quantities refer to constant tables defined in ufc_geometry.h."""
         # TODO: Inject const static table here instead?
@@ -207,4 +189,8 @@ class FFCXBackendDefinitions(object):
         """These quantities refer to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
+        return []
+
+    def _pass(self, *args, **kwargs):
+        """Return nothing."""
         return []

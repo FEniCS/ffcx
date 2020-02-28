@@ -5,11 +5,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
-from ffcx.codegeneration.utils import generate_return_new
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
-index_type = "int64_t"
+index_type = "int"
 
 # Code generation utilities:
 
@@ -137,28 +136,6 @@ def generate_assign_inverse(L, K, J, detJ, gdim, tdim):
             return L.StatementList(code)
 
 
-def create_coordinate_finite_element(L, ir):
-    classname = ir.create_coordinate_finite_element
-    return generate_return_new(L, classname)
-
-
-def coordinate_finite_element_declaration(L, ir):
-    classname = ir.create_coordinate_finite_element
-    code = "ufc_finite_element* create_{name}(void);\n".format(name=classname)
-    return code
-
-
-def create_coordinate_dofmap(L, ir):
-    classname = ir.create_coordinate_dofmap
-    return generate_return_new(L, classname)
-
-
-def coordinate_dofmap_declaration(L, ir):
-    classname = ir.create_coordinate_dofmap
-    code = "ufc_dofmap* create_{name}(void);\n".format(name=classname)
-    return code
-
-
 def evaluate_reference_basis_declaration(L, ir):
     scalar_coordinate_element_classname = ir.scalar_coordinate_finite_element_classname
     code = """
@@ -250,7 +227,7 @@ def compute_reference_coordinates(L, ir):
 
 def _compute_reference_coordinates_affine(L, ir, output_all=False):
     # Class name
-    classname = ir.classname
+    classname = ir.name
 
     # Dimensions
     gdim = ir.geometric_dimension
@@ -279,7 +256,6 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
 
     # Input cell data
     coordinate_dofs = L.FlattenedArray(L.Symbol("coordinate_dofs"), dims=(num_dofs, gdim))
-    cell_orientation = L.Symbol("cell_orientation")
 
     init_input = [
         L.ForRange(
@@ -355,7 +331,7 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     # Compute K = inv(J) (and intermediate value det(J))
     compute_K0 = [
         L.Call("compute_jacobian_determinants_{}".format(classname),
-               (detJsym, 1, Jsym, cell_orientation)),
+               (detJsym, 1, Jsym)),
         L.Call("compute_jacobian_inverses_{}".format(classname), (Ksym, 1, Jsym, detJsym)),
     ]
 
@@ -427,7 +403,6 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
 
     # Input cell data
     coordinate_dofs = L.Symbol("coordinate_dofs")
-    cell_orientation = L.Symbol("cell_orientation")
 
     # Output geometry
     X = L.FlattenedArray(L.Symbol("X"), dims=(num_points, tdim))
@@ -504,11 +479,11 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.Comment("Compute K = J^-1 and x at midpoint of cell"),
         L.ArrayDecl("double", xm, (gdim, ), 0.0),
         L.ArrayDecl("double", Km, (tdim * gdim, )),
-        L.Call("compute_midpoint_geometry_{}".format(ir.classname),
+        L.Call("compute_midpoint_geometry_{}".format(ir.name),
                (xm, J, coordinate_dofs)),
-        L.Call("compute_jacobian_determinants_{}".format(ir.classname),
-               (detJ, one_point, J, cell_orientation)),
-        L.Call("compute_jacobian_inverses_{}".format(ir.classname),
+        L.Call("compute_jacobian_determinants_{}".format(ir.name),
+               (detJ, one_point, J)),
+        L.Call("compute_jacobian_inverses_{}".format(ir.name),
                (Km, one_point, J, detJ)),
     ]
 
@@ -528,8 +503,8 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     part1 = [
         L.Comment("Compute K = J^-1 for one point, (J and detJ are only used as"),
         L.Comment("intermediate storage inside compute_geometry, not used out here"),
-        L.Call("compute_geometry_{}".format(ir.classname),
-               (xk, J, detJ, K, one_point, Xk, coordinate_dofs, cell_orientation)),
+        L.Call("compute_geometry_{}".format(ir.name),
+               (xk, J, detJ, K, one_point, Xk, coordinate_dofs)),
     ]
 
     # Newton body with stopping criteria |dX|^2 < epsilon
@@ -662,21 +637,17 @@ def compute_jacobian_determinants(L, ir):
 
     # Input geometry
     J = L.FlattenedArray(L.Symbol("J"), dims=(num_points, gdim, tdim))
-    cell_orientation = L.Symbol("cell_orientation")
-    orientation_scaling = L.Conditional(L.EQ(cell_orientation, 1), -1.0, +1.0)
 
     # Assign det expression to detJ
     if gdim == tdim:
         body = L.Assign(detJ, det_nn(J[ip], gdim))
     elif tdim == 1:
-        body = L.Assign(detJ, orientation_scaling * pdet_m1(L, J[ip], gdim))
-    # elif tdim == 2 and gdim == 3:
-    #    body = L.Assign(detJ, orientation_scaling*pdet_32(L, J[ip])) # Possible optimization not implemented here
+        body = L.Assign(detJ, pdet_m1(L, J[ip], gdim))
     else:
         JTJ = L.Symbol("JTJ")
         body = [
             generate_compute_ATA(L, JTJ, J[ip], gdim, tdim),
-            L.Assign(detJ, orientation_scaling * L.Sqrt(det_nn(JTJ, tdim))),
+            L.Assign(detJ, L.Sqrt(det_nn(JTJ, tdim))),
         ]
 
     # Carry out for all points
@@ -709,7 +680,7 @@ def compute_jacobian_inverses(L, ir):
 
 def compute_geometry(L, ir):
     # Class name
-    classname = ir.classname
+    classname = ir.name
 
     # Output geometry
     x = L.Symbol("x")
@@ -725,7 +696,6 @@ def compute_geometry(L, ir):
 
     # Input cell data
     coordinate_dofs = L.Symbol("coordinate_dofs")
-    cell_orientation = L.Symbol("cell_orientation")
 
     # Just chain calls to other functions here
     code = [
@@ -733,7 +703,7 @@ def compute_geometry(L, ir):
                (x, num_points, X, coordinate_dofs)),
         L.Call("compute_jacobians_{}".format(classname), (J, num_points, X, coordinate_dofs)),
         L.Call("compute_jacobian_determinants_{}".format(classname),
-               (detJ, num_points, J, cell_orientation)),
+               (detJ, num_points, J)),
         L.Call("compute_jacobian_inverses_{}".format(classname), (K, num_points, J, detJ)),
     ]
 
@@ -829,19 +799,13 @@ def generator(ir, parameters):
     d = {}
 
     # Attributes
-    d["factory_name"] = ir.classname
+    d["factory_name"] = ir.name
     d["signature"] = "\"{}\"".format(ir.signature)
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
 
     import ffcx.codegeneration.C.cnodes as L
-
-    # Functions
-    d["create_coordinate_finite_element"] = create_coordinate_finite_element(L, ir)
-    d["coordinate_finite_element_declaration"] = coordinate_finite_element_declaration(L, ir)
-    d["create_coordinate_dofmap"] = create_coordinate_dofmap(L, ir)
-    d["coordinate_dofmap_declaration"] = coordinate_dofmap_declaration(L, ir)
 
     statements = compute_physical_coordinates(L, ir)
     d["compute_physical_coordinates"] = L.StatementList(statements)
@@ -878,6 +842,6 @@ def generator(ir, parameters):
     implementation = ufc_coordinate_mapping.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.classname)
+    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.name)
 
     return declaration, implementation

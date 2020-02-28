@@ -19,7 +19,7 @@ from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch)
 
-index_type = "int64_t"
+index_type = "int"
 
 
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
@@ -130,7 +130,19 @@ def evaluate_reference_basis_derivatives(L, ir, parameters):
         msg = "evaluate_reference_basis_derivatives: {}".format(data)
         return [L.Comment(msg), L.Return(-1)]
 
-    return generate_evaluate_reference_basis_derivatives(L, data, ir.classname, parameters)
+    return generate_evaluate_reference_basis_derivatives(L, data, ir.name, parameters)
+
+
+def entity_reflection(L, i):
+    """Returns the bool that says whether or not an entity has been reflected."""
+    if i[0] == 1:
+        edge_reflections = L.Symbol("edge_reflections")
+        return edge_reflections[i[1]]
+    elif i[0] == 2:
+        face_reflections = L.Symbol("face_reflections")
+        return face_reflections[i[1]]
+    else:
+        return L.LiteralBool(False)
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):
@@ -258,8 +270,38 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         L.ArrayDecl(
             "const " + index_type,
             physical_offsets, (num_dofs, ),
-            values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]]),
+            values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]])
     ]
+
+    # Make array of which vector dofs to reflect the direction of
+    contains_reflections = False
+    reflect_dofs = []
+    c_false = L.LiteralBool(False)
+
+    for dre in ir.dof_reflection_entities:
+        if dre is None:
+            # Dof does not need reflecting, so put false in array
+            reflect_dofs.append(c_false)
+        else:
+            # Loop through entities that the direction of the dof depends on to
+            # make a conditional
+            ref = c_false
+            for j in dre:
+                if ref == c_false:
+                    # No condition has been added yet, so overwrite false
+                    ref = entity_reflection(L, j)
+                else:
+                    # This is not the first condition, so XOR
+                    ref = L.Conditional(entity_reflection(L, j), L.Not(ref), ref)
+            reflect_dofs.append(ref)
+            if ref != c_false:
+                # Mark this space as needing reflections
+                contains_reflections = True
+
+    # If one or more dofs need reflecting, write the array
+    if contains_reflections:
+        dof_attributes_code.append(L.ArrayDecl(
+            "const bool", L.Symbol("reflected_dofs"), (len(reflect_dofs), ), values=reflect_dofs))
 
     # Build dof lists for each mapping type
     mapping_dofs = defaultdict(list)
@@ -308,6 +350,11 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "piola", "Piola")
 
         mapped_value = L.Symbol("mapped_value")
+        if contains_reflections:
+            vec_scale = L.Conditional(L.Symbol("reflected_dofs")[idof], 1, -1)
+        else:
+            vec_scale = 1
+
         transform_apply_code += [
             L.ForRanges(
                 dofrange,
@@ -321,7 +368,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                     L.Comment(msg),
                     L.VariableDecl(
                         "const double", mapped_value,
-                        M_scale * sum(
+                        M_scale * vec_scale * sum(
                             M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
                             for jj in range(num_reference_components))),
                     # Apply derivative transformation, for order=0 this reduces to
@@ -334,7 +381,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                                                 transform[r, s] * mapped_value)])
                 ])
         ]
-
     # Transform for each point
     point_loop_code = [
         L.ForRange(
@@ -348,13 +394,15 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     # Join code
     code = (combinations_code + values_init_code + dof_attributes_code + point_loop_code
             + [L.Comment(msg), L.Return(0)])
+
     return code
 
 
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
+
     d = {}
-    d["factory_name"] = ir.classname
+    d["factory_name"] = ir.name
     d["signature"] = "\"{}\"".format(ir.signature)
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
@@ -404,6 +452,6 @@ def generator(ir, parameters):
     implementation = ufc_finite_element.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_finite_element.declaration.format(factory_name=ir.classname)
+    declaration = ufc_finite_element.declaration.format(factory_name=ir.name)
 
     return declaration, implementation

@@ -1,10 +1,25 @@
 # Code generation format strings for UFC (Unified Form-assembly Code)
 # This code is released into the public domain.
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2018.
+# The FEniCS Project (http://www.fenicsproject.org/) 2020.
 
 declaration = """
 ufc_form* create_{factory_name}(void);
+
+// Helper used to create form using name which was given to the
+// form in the UFL file.
+// This helper is called in user c++ code.
+//
+ufc_form* create_{name_from_uflfile}(void);
+
+// Helper used to create function space using its name, as given in
+// the UFL file.
+// Note: There are in general more function spaces associated to the form,
+//       which is the reason why the helpers takes name as argument.
+// This helper is called in user c++ code.
+//
+ufc_function_space* create_functionspace_{name_from_uflfile}(const char* fs_name);
+
 """
 
 factory = """
@@ -25,18 +40,6 @@ const char** coefficient_name_{factory_name}(void)
 const char** constant_name_{factory_name}(void)
 {{
 {constant_name_map}
-}}
-
-{coordinate_finite_element_declaration}
-ufc_finite_element* create_coordinate_finite_element_{factory_name}(void)
-{{
-{create_coordinate_finite_element}
-}}
-
-{coordinate_dofmap_declaration}
-ufc_dofmap* create_coordinate_dofmap_{factory_name}(void)
-{{
-{create_coordinate_dofmap}
 }}
 
 {coordinate_mapping_declaration}
@@ -120,8 +123,6 @@ ufc_form* create_{factory_name}(void)
   form->coefficient_name_map = coefficient_name_{factory_name};
   form->constant_name_map = constant_name_{factory_name};
 
-  form->create_coordinate_finite_element = create_coordinate_finite_element_{factory_name};
-  form->create_coordinate_dofmap = create_coordinate_dofmap_{factory_name};
   form->create_coordinate_mapping = create_coordinate_mapping_{factory_name};
   form->create_finite_element = create_finite_element_{factory_name};
   form->create_dofmap = create_dofmap_{factory_name};
@@ -145,7 +146,17 @@ ufc_form* create_{factory_name}(void)
   form->create_custom_integral = create_custom_integral_{factory_name};
 
   return form;
-}};
+}}
+
+ufc_form* create_{name_from_uflfile}(void)
+{{
+  return create_{factory_name}();
+}}
+
+ufc_function_space* create_functionspace_{name_from_uflfile}(const char* function_name)
+{{
+  {create_functionspace}
+}}
 
 // End of code for form {factory_name}
 """

@@ -24,9 +24,9 @@ from ffcx.codegeneration.expressions import generator as expression_generator
 
 logger = logging.getLogger(__name__)
 
-code_blocks = namedtuple('code_blocks', ['elements', 'dofmaps',
-                                         'coordinate_mappings', 'integrals',
-                                         'forms', 'expressions'])
+code_blocks = namedtuple("code_blocks", ["elements", "dofmaps",
+                                         "coordinate_mappings", "integrals",
+                                         "forms", "expressions"])
 
 
 def generate_code(ir, parameters):

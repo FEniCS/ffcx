@@ -27,13 +27,13 @@ v = TestFunction(element)
 # Three terms on the same subdomain passing representation differently
 # but consistently, should end up with quadrature for all three integrals
 # (mixing 'quadrature' and 'tensor' on same subdomain is not allowed)
-a_0 = u*v*dx(0, {"representation":"quadrature"})\
+a_0 = u*v*dx(0, {"representation": "uflacs"})\
     + inner(grad(u), grad(v))*dx(0, {"representation": "auto"})\
     + inner(grad(u), grad(v))*dx(0)
 
 # Three terms on the same subdomain using different representations and order
 a_1 = inner(grad(u), grad(v))*dx(0, {"representation":"auto"}, degree=8)\
-    + inner(grad(u), grad(v))*dx(1, {"representation":"quadrature"}, degree=4)\
-    + inner(grad(u), grad(v))*dx(1, {"representation":"auto"}, degree="auto")
+    + inner(grad(u), grad(v))*dx(1, {"representation":"uflacs"}, degree=4)\
+    + inner(grad(u), grad(v))*dx(1, {"representation":"auto"}, degree=-1)
 
 a = a_0 + a_1
