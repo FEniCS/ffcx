@@ -10,9 +10,7 @@ import ufl
 import ffcx
 
 
-@pytest.fixture(scope="module")
-def elements():
-    return [("Lagrange", ufl.interval, 1),
+elements = [("Lagrange", ufl.interval, 1),
             ("Lagrange", ufl.triangle, 1),
             ("Lagrange", ufl.tetrahedron, 1),
             ("Lagrange", ufl.quadrilateral, 1),
@@ -58,8 +56,8 @@ def compile_args():
     return ["-O0", "-Wall", "-Werror"]
 
 
-@pytest.fixture(scope="module")
-def compiled_elements(compile_args, elements):
+@pytest.fixture(scope="module", params=elements, ids=["{!s}".format(el) for el in elements])
+def compiled_element(compile_args, request):
     """Precompiled finite elements.
 
     Returns
@@ -67,11 +65,9 @@ def compiled_elements(compile_args, elements):
     {(family, cell, degree): (ufl_element, compiled_element, compiled_module)}
 
     """
-    comp_elements = {}
-    for element in elements:
-        ufl_element = ufl.FiniteElement(*element)
-        jit_compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
-            [ufl_element], cffi_extra_compile_args=compile_args)
-        comp_elements[element] = (ufl_element, jit_compiled_elements[0], module)
+    element = request.param
 
-    return comp_elements
+    ufl_element = ufl.FiniteElement(*element)
+    jit_compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
+        [ufl_element], cffi_extra_compile_args=compile_args)
+    return (ufl_element, jit_compiled_elements[0], module)

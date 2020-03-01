@@ -32,58 +32,57 @@ def reference_points():
     return points
 
 
-def test_dim_degree(compiled_elements):
-    for ((family, cell, degree), (ufl_element, compiled_element, module)) in compiled_elements.items():
-        assert compiled_element[0].geometric_dimension == cell.geometric_dimension()
-        assert compiled_element[0].topological_dimension == cell.topological_dimension()
-        assert ufl_element.degree() == compiled_element[0].degree
+def test_dim_degree(compiled_element):
+    ufl_element, compiled_element, module = compiled_element
+    cell = ufl_element.cell()
+
+    assert compiled_element[0].geometric_dimension == cell.geometric_dimension()
+    assert compiled_element[0].topological_dimension == cell.topological_dimension()
+    assert ufl_element.degree() == compiled_element[0].degree
 
 
-def test_tabulate_reference_dof_coordinates(compiled_elements):
-    for ((family, cell, degree), (ufl_element, compiled_element, module)) in compiled_elements.items():
+def test_tabulate_reference_dof_coordinates(compiled_element):
+    ufl_element, compiled_element, module = compiled_element
 
-        if family != "Lagrange":
-            continue
+    if ufl_element.family() != "Lagrange":
+        pytest.skip("Cannot tabulate dofs for non-lagrange FE.")
 
-        fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
+    fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
 
-        print(family, cell, degree)
+    tdim = compiled_element[0].topological_dimension
+    space_dim = compiled_element[0].space_dimension
+    X = np.zeros([space_dim, tdim])
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+    compiled_element[0].tabulate_reference_dof_coordinates(X_ptr)
 
-        tdim = compiled_element[0].topological_dimension
-        space_dim = compiled_element[0].space_dimension
-        X = np.zeros([space_dim, tdim])
-        X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-        compiled_element[0].tabulate_reference_dof_coordinates(X_ptr)
-
-        fiat_coordinates = np.asarray(list(sorted(L.pt_dict.keys())[0] for L in fiat_element.dual_basis()))
-        assert (np.isclose(X, fiat_coordinates)).all()
+    fiat_coordinates = np.asarray(list(sorted(L.pt_dict.keys())[0] for L in fiat_element.dual_basis()))
+    assert (np.isclose(X, fiat_coordinates)).all()
 
 
-def test_evaluate_reference_basis(compiled_elements, reference_points):
-    for ((family, cell, degree), (ufl_element, compiled_element, module)) in compiled_elements.items():
-        fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
+def test_evaluate_reference_basis(compiled_element, reference_points):
+    ufl_element, compiled_element, module = compiled_element
 
-        print(family, cell, degree)
+    fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
 
-        space_dim = compiled_element[0].space_dimension
-        tdim = compiled_element[0].topological_dimension
+    space_dim = compiled_element[0].space_dimension
+    tdim = compiled_element[0].topological_dimension
 
-        # For vector/tensor valued basis this is not 1
-        value_size = np.product(fiat_element.value_shape(), dtype=np.int)
+    # For vector/tensor valued basis this is not 1
+    value_size = np.product(fiat_element.value_shape(), dtype=np.int)
 
-        X = reference_points[cell]
-        npoint = X.shape[0]
-        X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
-        vals = np.zeros([npoint, space_dim, value_size])
-        vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+    X = reference_points[ufl_element.cell()]
+    npoint = X.shape[0]
+    X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
+    vals = np.zeros([npoint, space_dim, value_size])
+    vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
 
-        compiled_element[0].evaluate_reference_basis(vals_ptr, npoint, X_ptr)
+    compiled_element[0].evaluate_reference_basis(vals_ptr, npoint, X_ptr)
 
-        fiat_vals = fiat_element.tabulate(0, X)
+    fiat_vals = fiat_element.tabulate(0, X)
 
-        # FFC does some reordering and slicing wrt. FIAT
-        vals = np.transpose(vals, axes=[1, 2, 0])
-        if value_size == 1:
-            vals = vals[:, 0, :]
+    # FFC does some reordering and slicing wrt. FIAT
+    vals = np.transpose(vals, axes=[1, 2, 0])
+    if value_size == 1:
+        vals = vals[:, 0, :]
 
-        assert (np.isclose(vals, fiat_vals[(0,) * tdim])).all()
+    assert (np.isclose(vals, fiat_vals[(0,) * tdim])).all()
