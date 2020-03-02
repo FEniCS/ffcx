@@ -4,11 +4,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import cffi
 import numpy as np
-import pytest
 
+import cffi
 import ffcx.codegeneration.jit
+import pytest
 import ufl
 
 
@@ -348,8 +348,6 @@ def test_interior_facet_integral(mode, compile_args):
         ffi.cast('{}  *'.format(c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
         ffi.cast('uint8_t *', perms.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL)
-
-    print(A)
 
 
 @pytest.mark.parametrize("mode", ["double", "double complex"])
