@@ -222,6 +222,9 @@ extern "C"
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
 
+    /// Create dofmap for the underlying scalar element
+    ufc_dofmap* (*create_scalar_dofmap)(void);
+
     /// Compute physical coordinates x from reference coordinates X,
     /// the inverse of compute_reference_coordinates
     ///

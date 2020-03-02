@@ -804,6 +804,7 @@ def generator(ir, parameters):
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
+    d["scalar_dofmap_name"] = ir.scalar_dofmap_name
 
     import ffcx.codegeneration.C.cnodes as L
 

@@ -67,7 +67,8 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'name', 'signature', 
                                                      'compute_jacobian_inverses', 'compute_geometry', 'tables',
                                                      'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
                                                      'coordinate_finite_element_classname',
-                                                     'scalar_coordinate_finite_element_classname'])
+                                                     'scalar_coordinate_finite_element_classname',
+                                                     'scalar_dofmap_name'])
 ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'subdomain_id',
                                          'rank', 'geometric_dimension', 'topological_dimension',
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
@@ -318,10 +319,13 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
 
-    # Get classnames for coordinate element and its scalar subelement:
+    # Get classnames for coordinate element
     ir["coordinate_finite_element_classname"] = finite_element_names[ufl_coordinate_element]
-    ir["scalar_coordinate_finite_element_classname"] = finite_element_names[
-        ufl_coordinate_element.sub_elements()[0]]
+
+    # Get classnames for finite element and dofmap of scalar subelement
+    scalar_element = ufl_coordinate_element.sub_elements()[0]
+    ir["scalar_coordinate_finite_element_classname"] = finite_element_names[scalar_element]
+    ir["scalar_dofmap_name"] = dofmap_names[scalar_element]
 
     return ir_coordinate_map(**ir)
 
