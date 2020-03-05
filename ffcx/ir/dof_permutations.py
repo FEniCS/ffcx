@@ -102,11 +102,9 @@ def base_permutations_from_subdofmap(ufl_element):
                     for dofs in zip(type_dofs[::2], type_dofs[1::2]):
                         # (entity_dim, entity_number), dofs, {order: matrix}
                         rotations.append(((dim, n), dofs, {
-                            1: [[0, -1], [1, -1]],  # Apply rotation once
-                            2: [[-1, 1], [-1, 0]],  # Apply twice
+                            1: [[-1, -1], [1, 0]],  # Apply rotation once
+                            2: [[0, 1], [-1, -1]],  # Apply twice
                         }))
-                        reflections[dofs[0]] = [(dim - 1, fiat_element.ref_el.connectivity[dim, dim - 1][n][2])]
-                        reflections[dofs[1]] = [(dim - 1, fiat_element.ref_el.connectivity[dim, dim - 1][n][1])]
                 elif t == "FrobeniusIntegralMoment":
                     if dim == 2:
                         if len(type_dofs) != 3:
@@ -126,7 +124,7 @@ def base_permutations_from_subdofmap(ufl_element):
                     permuted = entity_functions[dim](type_dofs, dim)
                 elif t == "PointFaceTangent":
                     # Dof blocksize is 2
-                    permuted = entity_functions[dim](type_dofs, 2, True)
+                    permuted = entity_functions[dim](type_dofs, 2)
                 elif t in ["FrobeniusIntegralMoment"] and dim == 2 and len(type_dofs) == 3:
                     permuted = permute_frobenius_face(type_dofs, 1)
                 elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
