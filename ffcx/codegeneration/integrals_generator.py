@@ -8,6 +8,7 @@
 import collections
 import itertools
 import logging
+import numpy
 
 import ufl
 from ffcx.codegeneration.backend import FFCXBackend
@@ -244,7 +245,7 @@ class IntegralGenerator(object):
                             ref = self.backend.symbols.entity_reflection(L, j)
                         else:
                             # This is not the first condition, so XOR
-                            ref = L.Conditional(self.backend.symbols.entity_reflection(L, j), L.Not(ref), ref)
+                            ref = L.NE(self.backend.symbols.entity_reflection(L, j), ref)
                     reflect_dofs.append(ref)
                     if ref != c_false:
                         # Mark this space as needing reflections
@@ -327,7 +328,7 @@ class IntegralGenerator(object):
 
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-        inline_tables = self.ir.integral_type == "cell" and False
+        inline_tables = self.ir.integral_type == "cell" and not self.ir.needs_rotations and False
 
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
@@ -367,7 +368,7 @@ class IntegralGenerator(object):
         """Declare a table.
         If the dof dimensions of the table have dof rotations, apply these rotations."""
         L = self.backend.language
-        # c_false = L.LiteralBool(False)
+        c_false = L.LiteralBool(False)
         if name in self.ir.table_dof_rotations:
             names = [name]
         else:
@@ -376,20 +377,54 @@ class IntegralGenerator(object):
         index_names = ["ind_" + str(i) if j > 1 else 0 for i, j in enumerate(table.shape)]
 
         rots = [self.ir.table_dof_rotations[n] for n in names]
-        # refs = [self.ir.table_dof_reflections[n] for n in names]
+        refs = [self.ir.table_dof_reflections[n] for n in names]
+        dofmaps = [self.ir.table_dofmaps[n] for n in names]
+
+        has_reflections = sum(len([j for j in i if j is not None]) for i in refs) > 0
+        has_rotations = sum(len(i) for i in rots) > 0
+
+        if not has_reflections and not has_rotations:
+            return [L.ArrayDecl(
+                "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
+
+        if has_reflections or has_rotations:
+            table = numpy.array(table, dtype=L.CExpr)
+
+        if has_reflections:
+            conditions = numpy.full(table.shape, c_false, dtype=L.CExpr)
+            for ref, dofmap, dof_index in zip(refs, dofmaps, range(len(table.shape)-len(refs),len(table.shape))):
+                for dof, entities in enumerate(ref):
+                    if entities is None or dof not in dofmap:
+                        continue
+                    for indices in itertools.product(*[range(n) for n in table.shape[:dof_index]], [dofmap.index(dof)],
+                                                     *[range(n) for n in table.shape[dof_index + 1:]]):
+                        condition = c_false
+                        for entity in entities:
+                            entity_ref = self.backend.symbols.entity_reflection(L, entity)
+                            if conditions[indices] == c_false:
+                                # No condition has been added yet, so overwrite false
+                                conditions[indices] = entity_ref
+                            elif conditions[indices] == entity_ref:
+                                # A != A is always false
+                                conditions[indices] = c_false
+                            else:
+                                # This is not the first condition, so XOR
+                                conditions[indices] = L.NE(entity_ref, conditions[indices])
+
+            for indices in itertools.product(*[range(n) for n in table.shape]):
+                if conditions[indices] != c_false:
+                    table[indices] = L.Conditional(conditions[indices], -table[indices], table[indices])
+        parts = []
+        parts.append(L.ArrayDecl(
+            "double", name, table.shape, table, alignas=alignas, padlen=padlen))
+        t = L.Symbol(name)
 
         # TODO: tidy all this up
         # TODO: move all reflections here
-        if sum(len(i) for i in rots) > 0:
-            parts = []
-            parts.append(L.ArrayDecl(
-                "double", name, table.shape, table, alignas=alignas, padlen=padlen))
-            t = L.Symbol(name)
+        if has_rotations:
 
             # Apply reflections (for FaceTangent dofs)
-            for i, rot in enumerate(rots):
-                dof_index = len(table.shape) - 1 - i
-                dofmap = self.ir.table_dofmaps[names[i]]
+            for rot, dofmap, dof_index in zip(rots, dofmaps, range(len(table.shape)-len(refs),len(table.shape))):
                 for entity, dofs, matrices in rot:
                     temps = []
                     sets = []
@@ -419,9 +454,7 @@ class IntegralGenerator(object):
                         warnings.warn("Rotations of dofs on an entity of dim != 2 not supported.")
 
             # Apply rotations (for FaceTangent dofs)
-            for i, rot in enumerate(rots):
-                dof_index = len(table.shape) - 1 - i
-                dofmap = self.ir.table_dofmaps[names[i]]
+            for rot, dofmap, dof_index in zip(rots, dofmaps, range(len(table.shape)-len(refs),len(table.shape))):
                 for entity, dofs, matrices in rot:
                     first = True
                     for a, m in matrices.items():
@@ -454,10 +487,66 @@ class IntegralGenerator(object):
                         else:
                             warnings.warn("Rotations of dofs on an entity of dim != 2 not supported.")
 
-            return parts
+            if has_reflections and False:
+                conditions = numpy.full(table.shape, c_false, dtype=L.CExpr)
+                for ref, dofmap, dof_index in zip(refs, dofmaps, range(len(table.shape)-len(refs),len(table.shape))):
+                    for dof, entities in enumerate(ref):
+                        if entities is None or dof not in dofmap:
+                            continue
 
-        return [L.ArrayDecl(
-            "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
+                        for indices in itertools.product(*[range(n) for n in table.shape[:dof_index]], [dofmap.index(dof)],
+                                                         *[range(n) for n in table.shape[dof_index + 1:]]):
+                            for entity in entities:
+                                if conditions[indices] == c_false:
+                                    # No condition has been added yet, so overwrite false
+                                    conditions[indices] = self.backend.symbols.entity_reflection(L, entity)
+                                else:
+                                    # This is not the first condition, so XOR
+                                    conditions[indices] = L.NE(self.backend.symbols.entity_reflection(L, entity),
+                                                               conditions[indices])
+
+                for indices in itertools.product(*[range(n) for n in table.shape]):
+#                    parts.append(L.AssignMul(t[indices], self.get_vector_reflection(name, indices)))
+                    parts.append(L.AssignMul(t[indices], L.Conditional(conditions[indices], -1, 1)))
+
+                    body = [L.VerbatimStatement("printf(\"AAAAAAAaaaaAAAaaAAAaaAAAaaAAAaaAAAaaAAAAaaAAAAaaAAAaaAAAaaaa!!!!!!!!\\n\");"),
+                            L.VerbatimStatement("printf(\""+str(indices)+"\\n\");"),
+                            L.VerbatimStatement("printf(\"%d \","+self.get_vector_reflection(name, indices).ce_format()+");"),
+                            L.VerbatimStatement("printf(\"%d\\n\","+L.Conditional(conditions[indices], -1, 1).ce_format()+");"),
+                            L.VerbatimStatement("printf(\""+self.get_vector_reflection(name, indices).ce_format()+"\\n\");"),
+                            L.VerbatimStatement("printf(\""+L.Conditional(conditions[indices], -1, 1).ce_format()+"\\n\");")]
+                    parts.append(L.If(L.NE(
+                        L.Conditional(conditions[indices], -1, 1),
+                        self.get_vector_reflection(name, indices)
+                        ), body))
+
+                #from IPython import embed; embed()
+
+                #conditions = numpy.full(table.shape, c_false, dtype=L.CExpr)
+                #for ref, dofmap, dof_index in zip(refs, dofmaps, range(len(table.shape)-len(refs),len(table.shape))):
+                #    for dof, entities in enumerate(ref):
+                #        if entities is None or dof not in dofmap:
+                #            continue
+                """
+                        indices = [dofmap.index(dof) if k == dof_index else index
+                                   for k, index in enumerate(index_names)]
+                        body = L.AssignMul(t[indices], -1)
+                        for k, index in enumerate(index_names):
+                            if isinstance(index, str) and k != dof_index:
+                                body = L.ForRange(index, 0, table.shape[k], body)
+                        condition = c_false
+                        for entity in entities:
+                            if condition == c_false:
+                                # No condition has been added yet, so overwrite false
+                                condition = self.backend.symbols.entity_reflection(L, entity)
+                            else:
+                                # This is not the first condition, so XOR
+                                condition = L.NE(self.backend.symbols.entity_reflection(L, entity), condition)
+                        if name[:2] == "PI":
+                            parts.append(L.If(condition, body))"""
+
+
+        return parts
 
     def generate_quadrature_loop(self, num_points):
         """Generate quadrature loop with for this num_points."""
@@ -802,13 +891,15 @@ class IntegralGenerator(object):
             assert td.ttype != "zeros"
 
             if td.ttype == "ones":
-                arg_factor = self.get_vector_reflection(td.name, indices)
+                arg_factor = 1  ##* self.get_vector_reflection(td.name, indices)  ###
             elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                assert self.get_vector_reflection(td.name, iq) == 1
+                ## assert self.get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = self.get_vector_reflection(td.name, indices) * table[indices[i]]
+                arg_factor = table[indices[i]]
+                ## arg_factor = self.get_vector_reflection(td.name, indices) * table[indices[i]]
+                ## arg_factor = self.get_vector_reflection(td.name, indices) * table[indices[i]]
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -1064,7 +1155,9 @@ class IntegralGenerator(object):
                     quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
                 # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_ii] * self.get_vector_reflection(blockdata.name, P_ii)
+                ################ TODO
+                PM = L.Symbol(blockdata.name)[P_ii]  ##* self.get_vector_reflection(blockdata.name, P_ii)
+                ##PM = L.Symbol(blockdata.name)[P_ii] * self.get_vector_reflection(blockdata.name, P_ii)
                 B_rhs = L.float_product([FI, PM])
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -1103,13 +1196,15 @@ class IntegralGenerator(object):
 
         A_values = [0.0] * A_size
 
+        mults = []
+
         for blockmap, blockdata in blocks:
             # Accumulate A[blockmap[...]] += f*PI[...]
 
             # Get table for inlining
             tables = self.ir.unique_tables
             table = tables[blockdata.name]
-            inline_table = self.ir.integral_type == "cell" and False
+            inline_table = self.ir.integral_type == "cell" and not self.ir.needs_rotations and False
 
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
@@ -1152,14 +1247,22 @@ class IntegralGenerator(object):
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
-                A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
+                #if self.get_vector_reflection(blockdata.name, P_ii) != 1:
+                #    mults.append((Pval, self.get_vector_reflection(blockdata.name, P_ii)))
+
+                #A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
+                A_values[A_ii] += Pval * f
 
         z = L.LiteralFloat(0.0)
         code = []
+        #code += [L.AssignMul(i,j) for i, j in mults]
         A = self.backend.symbols.element_tensor()
         for i in range(len(A_values)):
             if not (A_values[i] == 0.0 or A_values[i] == z):
                 code += [L.AssignAdd(A[i], A_values[i])]
+        #for i in range(400):
+        #    code += [L.VerbatimStatement("printf(\"%d \", "+str(i)+");")]
+        #    code += [L.VerbatimStatement("printf(\"%f\\n\", A["+str(i)+"]);")]
         return L.commented_code_list(code, "UFLACS block mode: preintegrated")
 
     def generate_copyout_statements(self):
