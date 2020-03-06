@@ -276,6 +276,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     ir["table_dof_rotations"] = {}
     ir["table_dof_reflections"] = {}
     ir["needs_rotations"] = False
+    ir["needs_reflections"] = False
 
     for num_points, expressions in cases:
 
@@ -320,6 +321,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             ir["table_dof_reflections"][k] = base_permutations_and_reflection_entities(v[0])[1]
             if len(ir["table_dof_rotations"][k]) > 0:
                 ir["needs_rotations"] = True
+            if len([i for i in ir["table_dof_reflections"][k] if i is not None]) > 0:
+                ir["needs_reflections"] = True
 
         for td in mt_unique_table_reference.values():
             ir["table_dofmaps"][td.name] = td.dofmap
