@@ -36,12 +36,7 @@ jobs:
       - name: Install ffcx
         run: |
           pip install .
-      - name: Install test dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install graphviz
       - name: Test with pytest
         run: |
-          pip install pygraphviz
           pip install pytest
           pytest
