@@ -48,8 +48,8 @@ jobs:
       - name: Test with pytest
         run: |
           pip install coveralls coverage pytest pytest-cov pytest-xdist
-          pytest -n 4 --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.python-version }}.xml test/
-          coveralls
+          pytest -n 4 --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }} - ${{ matrix.python-version }}.xml test/
+          # coveralls
       # - name: Upload pytest test results
       #   uses: actions/upload-artifact@master
       #   with:

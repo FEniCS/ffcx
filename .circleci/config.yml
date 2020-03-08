@@ -30,7 +30,7 @@ jobs:
           command: |
             export PATH=$PATH:$HOME/.local/bin
             python -m pytest --cov=ffcx/ -n 4 -v test/
-            # coveralls
+            coveralls
       - run:
           name: Run demos
           command: |
