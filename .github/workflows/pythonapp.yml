@@ -12,13 +12,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.8
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -43,7 +46,14 @@ jobs:
       - name: Test with pytest
         run: |
           pip install pytest pytest-xdist
-          pytest -n 4
+          pytest -n 4 --junitxml=junit/test-results-${{ matrix.python-version }}.xml
+      - name: Upload pytest test results
+        uses: actions/upload-artifact@master
+        with:
+          name: pytest-results-${{ matrix.python-version }}
+          path: junit/test-results-${{ matrix.python-version }}.xml
+        # Use always() to always run this step to publish test results when there are test failures
+        if: always()
       - name: Runs demos
         run: |
           ffcx demo/*.ufl
