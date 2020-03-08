@@ -38,5 +38,6 @@ jobs:
           pip install .
       - name: Test with pytest
         run: |
+          pip install pygraphviz
           pip install pytest
           pytest
