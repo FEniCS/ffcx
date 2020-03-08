@@ -26,7 +26,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          echo $OSTYPE
           python -m pip install --upgrade pip
           pip install git+https://github.com/FEniCS/fiat.git --user
           pip install git+https://github.com/FEniCS/ufl.git --user
@@ -50,14 +49,14 @@ jobs:
           pip install coveralls coverage pytest pytest-cov pytest-xdist
           pytest --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
           # coveralls
-      # - name: Upload pytest test results
-      #   uses: actions/upload-artifact@master
-      #   with:
-      #     name: pytest-results-${{ matrix.python-version }}
-      #     path: junit/test-results-${{ matrix.python-version }}.xml
-      #   # Use always() to always run this step to publish test results
-      #   # when there are test failures
-      #   if: always()
+      - name: Upload pytest test results
+        uses: actions/upload-artifact@master
+        with:
+          name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
+        # Use always() to always run this step to publish test results
+        # when there are test failures
+        if: always()
       - name: Runs demos
         run: |
           ffcx demo/*.ufl
