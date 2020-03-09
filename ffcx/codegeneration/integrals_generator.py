@@ -202,21 +202,10 @@ class IntegralGenerator(object):
         all_quadparts += quadparts
         all_postparts += postparts
 
-        # Generate code to fill in A
-        all_finalizeparts = []
-
-        # Generate code to compute piecewise constant scalar factors
-        # and set A at corresponding nonzero components
-        all_finalizeparts += self.generate_preintegrated_dofblock_partition()
-
-        # Generate code to add reusable blocks B* to element tensor A
-        all_finalizeparts += self.generate_copyout_statements()
-
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
         parts += all_postparts
-        parts += all_finalizeparts
 
         return L.StatementList(parts)
 
@@ -624,7 +613,7 @@ class IntegralGenerator(object):
 
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions if blockdata.block_mode != "preintegrated"]
+                  for blockdata in contributions]
 
         for blockmap, blockdata in blocks:
 
@@ -732,34 +721,8 @@ class IntegralGenerator(object):
         quadparts = []
         postparts = []
 
-        # TODO: Define names in backend symbols?
-        # tempnames = self.backend.symbols.block_temp_names
-        # blocknames = self.backend.symbols.block_names
-        tempnames = {
-            # "preintegrated": "TI",
-            "premultiplied": "TM",
-            "partial": "TP",
-            "full": "TF",
-            "safe": "TS",
-            "quadrature": "TQ",
-        }
-        blocknames = {
-            # "preintegrated": "BI",
-            # "premultiplied": "BM",
-            # "partial": "BP",
-            "full": "BF",
-            "safe": "BS",
-            "quadrature": "BQ",
-        }
-
-        tempname = tempnames.get(blockdata.block_mode)
-
-        alignas = self.ir.params["alignas"]
-        padlen = self.ir.params["padlen"]
-
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
-        padded_blockdims = pad_innermost_dim(blockdims, padlen)
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
@@ -781,16 +744,7 @@ class IntegralGenerator(object):
                 B_indices.append(iq)
             else:
                 B_indices.append(arg_indices[i])
-        B_indices = tuple(B_indices)
-
-        # Define unique block symbol
-        blockname = blocknames.get(blockdata.block_mode)
-        if blockname:
-            B = self.new_temp_symbol(blockname)
-            # Add initialization of this block to parts
-            # For all modes, block definition occurs before quadloop
-            preparts.append(
-                L.ArrayDecl("ufc_scalar_t", B, blockdims, 0, alignas=alignas, padlen=padlen))
+        B_indices = list(B_indices)
 
         # Get factor expression
         if blockdata.factor_is_piecewise:
@@ -818,314 +772,45 @@ class IntegralGenerator(object):
             weight = weights[iq]
 
         # Define fw = f * weight
-        if blockdata.block_mode in ("safe", "full", "partial"):
-            assert not blockdata.transposed, "Not handled yet"
+        assert not blockdata.transposed, "Not handled yet"
 
-            # Fetch code to access modified arguments
-            arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
+        # Fetch code to access modified arguments
+        arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
 
-            fw_rhs = L.float_product([f, weight])
-            if not isinstance(fw_rhs, L.Product):
-                fw = fw_rhs
-            else:
-                # Define and cache scalar temp variable
-                key = (num_points, factor_index, blockdata.factor_is_piecewise)
-                fw, defined = self.get_temp_symbol("fw", key)
-                if not defined:
-                    quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
-
-                # Plan for vectorization of fw computations over iq:
-                # 1) Define fw as arrays e.g. "double fw0[nq];" outside quadloop
-                # 2) Access as fw0[iq] of course
-                # 3) Split quadrature loops, one for fw computation and one for blocks
-                # 4) Pad quadrature rule with 0 weights and last point
-
-                # Plan for vectorization of coefficient evaluation over iq:
-                # 1) Define w0_c1 etc as arrays e.g. "double w0_c1[nq] = {};" outside quadloop
-                # 2) Access as w0_c1[iq] of course
-                # 3) Splitquadrature loops, coefficients before fw computation
-                # 4) Possibly swap loops over iq and ic:
-                #    for(ic) for(iq) w0_c1[iq] = w[0][ic] * FE[iq][ic];
-
-        if blockdata.block_mode == "safe":
-            # Naively accumulate integrand for this block in the innermost loop
-            assert not blockdata.transposed
-            B_rhs = L.float_product([fw] + arg_factors)
-            body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
-            for i in reversed(range(block_rank)):
-                body = L.ForRange(B_indices[i], 0, padded_blockdims[i], body=body)
-            quadparts += [body]
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B[arg_indices]
-
-        elif blockdata.block_mode == "full":
-            assert not blockdata.transposed, "Not handled yet"
-
-            if block_rank < 2:
-                # Multiply collected factors
-                B_rhs = L.float_product([fw] + arg_factors)
-            else:
-                # TODO: Pick arg with smallest dimension, or pick
-                # based on global optimization to reuse more blocks
-                i = 0  # Index selected for precomputation
-                j = 1 - i
-
-                P_index = B_indices[i]
-
-                key = (num_points, factor_index, blockdata.factor_is_piecewise,
-                       arg_factors[i].ce_format(self.ir.precision))
-                P, defined = self.get_temp_symbol(tempname, key)
-                if not defined:
-                    # TODO: If FE table is varying and only used in contexts
-                    # where it's multiplied by weight, we can premultiply it!
-                    # Then this would become P = f * preweighted_FE_table[:].
-
-                    # Define and compute intermediate value
-                    # P[:] = (weight * f) * args[i][:]
-                    # inside quadrature loop
-                    P_dim = blockdims[i]
-                    quadparts.append(
-                        L.ArrayDecl("ufc_scalar_t", P, P_dim, None, alignas=alignas, padlen=padlen))
-                    P_rhs = L.float_product([fw, arg_factors[i]])
-                    body = L.Assign(P[P_index], P_rhs)
-                    # if ttypes[i] != "quadrature":  # FIXME: What does this mean here?
-                    vectorize = self.ir.params["vectorize"]
-                    body = L.ForRange(P_index, 0, P_dim, body=body, vectorize=vectorize)
-                    quadparts.append(body)
-
-                B_rhs = P[P_index] * arg_factors[j]
-
-            # Add result to block inside quadloop
-            body = L.AssignAdd(B[B_indices], B_rhs)  # NB! += not =
-            for i in reversed(range(block_rank)):
-                # Vectorize only the innermost loop
-                vectorize = self.ir.params["vectorize"] and (i == block_rank - 1)
-                if ttypes[i] != "quadrature":
-                    body = L.ForRange(
-                        B_indices[i], 0, padded_blockdims[i], body=body, vectorize=vectorize)
-            quadparts += [body]
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B[arg_indices]
-
-        elif blockdata.block_mode == "partial":
-            # TODO: To handle transpose here, must add back intermediate block B
-            assert not blockdata.transposed, "Not handled yet"
-
-            # Get indices and dimensions right here...
-            assert block_rank == 2
-            i = blockdata.piecewise_ma_index
-            not_piecewise_index = 1 - i
-
-            P_index = arg_indices[not_piecewise_index]
-
-            key = (num_points, factor_index, blockdata.factor_is_piecewise,
-                   arg_factors[not_piecewise_index].ce_format(self.ir.precision))
-            P, defined = self.get_temp_symbol(tempname, key)
+        fw_rhs = L.float_product([f, weight])
+        if not isinstance(fw_rhs, L.Product):
+            fw = fw_rhs
+        else:
+            # Define and cache scalar temp variable
+            key = (num_points, factor_index, blockdata.factor_is_piecewise)
+            fw, defined = self.get_temp_symbol("fw", key)
             if not defined:
-                # Declare P table in preparts
-                P_dim = blockdims[not_piecewise_index]
-                preparts.append(
-                    L.ArrayDecl("ufc_scalar_t", P, P_dim, 0, alignas=alignas, padlen=padlen))
+                quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
-                # Multiply collected factors
-                P_rhs = L.float_product([fw, arg_factors[not_piecewise_index]])
-
-                # Accumulate P += weight * f * args in quadrature loop
-                body = L.AssignAdd(P[P_index], P_rhs)
-                body = L.ForRange(P_index, 0, pad_dim(P_dim, padlen), body=body)
-                quadparts.append(body)
-
-            # Define B = B_rhs = piecewise_argument[:] * P[:],
-            # where P[:] = sum_q weight * f * other_argument[:]
-            B_rhs = arg_factors[i] * P[P_index]
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B_rhs
-
-        elif blockdata.block_mode in ("premultiplied", "preintegrated"):
-            P_ii = self.get_entities(blockdata)
-            if blockdata.transposed:
-                P_ii += arg_indices[::-1]
-            else:
-                P_ii += arg_indices
-            if blockdata.block_mode == "preintegrated":
-                # Preintegrated should never get into quadloops
-                assert num_points is None
-
-                # Define B = B_rhs = f * PI where PI = sum_q weight * u * v
-                PI = L.Symbol(blockdata.name)[P_ii]
-                B_rhs = L.float_product([f, PI])
-
-            elif blockdata.block_mode == "premultiplied":
-                key = (num_points, factor_index, blockdata.factor_is_piecewise)
-                FI, defined = self.get_temp_symbol(tempname, key)
-                if not defined:
-                    # Declare FI = 0 before quadloop
-                    preparts += [L.VariableDecl("ufc_scalar_t", FI, 0)]
-                    # Accumulate FI += weight * f in quadparts
-                    quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
-
-                # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_ii] * self.get_vector_reflection(blockdata.name, P_ii)
-                B_rhs = L.float_product([FI, PM])
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            A_rhs = B_rhs
-
-        # Equip code with comments
-        comments = ["UFLACS block mode: {}".format(blockdata.block_mode)]
-        preparts = L.commented_code_list(preparts, comments)
-        quadparts = L.commented_code_list(quadparts, comments)
-        postparts = L.commented_code_list(postparts, comments)
-
-        return A_rhs, preparts, quadparts, postparts
-
-    def generate_preintegrated_dofblock_partition(self):
-        # FIXME: Generalize this to unrolling all A[] += ... loops,
-        # or all loops with noncontiguous DM??
-        L = self.backend.language
-
-        block_contributions = self.ir.piecewise_ir["block_contributions"]
-
-        blocks = [(blockmap, blockdata)
-                  for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions if blockdata.block_mode == "preintegrated"]
-
-        # Get symbol, dimensions, and loop index symbols for A
+        # Naively accumulate integrand for this block in the innermost loop
+        assert not blockdata.transposed
         A_shape = self.ir.tensor_shape
-        A_size = ufl.product(A_shape)
-        A_rank = len(A_shape)
-
-        # TODO: there's something like shape2strides(A_shape) somewhere
-        # A_strides = ufl.utils.indexflattening.shape_to_strides(A_shape)
-
-        A_strides = [1] * A_rank
-        for i in reversed(range(0, A_rank - 1)):
-            A_strides[i] = A_strides[i + 1] * A_shape[i + 1]
-
-        A_values = [0.0] * A_size
-
-        for blockmap, blockdata in blocks:
-            # Accumulate A[blockmap[...]] += f*PI[...]
-
-            # Get table for inlining
-            tables = self.ir.unique_tables
-            table = tables[blockdata.name]
-            inline_table = self.ir.integral_type == "cell"
-
-            if len(blockdata.factor_indices_comp_indices) > 1:
-                raise RuntimeError("Code generation for non-scalar integrals unsupported")
-            factor_index = blockdata.factor_indices_comp_indices[0][0]
-
-            # Get factor expression
-            v = self.ir.piecewise_ir["factorization"].nodes[factor_index]['expression']
-            f = self.get_var(None, v)
-
-            # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-            # A_rhs = f * PI where PI = sum_q weight * u * v
-            PI = L.Symbol(blockdata.name)
-
-            # Define indices into preintegrated block
-            P_entity_indices = self.get_entities(blockdata)
-            P_permutation_indices = self.get_permutations(blockdata)
-            if inline_table:
-                assert P_entity_indices == (L.LiteralInt(0), )
-                assert table.shape[0] == 1
-
-            # Unroll loop
-            blockshape = [len(DM) for DM in blockmap]
-            blockrange = [range(d) for d in blockshape]
-
-            for ii in itertools.product(*blockrange):
-                A_ii = sum(A_strides[i] * blockmap[i][ii[i]] for i in range(len(ii)))
-                if blockdata.transposed:
-                    P_arg_indices = (ii[1], ii[0])
-                else:
-                    P_arg_indices = ii
-
-                if inline_table:
-                    # Extract float value of PI[P_ii]
-                    P_ii = P_permutation_indices + (0, ) + P_arg_indices
-                    Pval = table[P_ii]
-                else:
-                    # Index the static preintegrated table:
-                    P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
-                    Pval = PI[P_ii]
-
-                A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
-
-        # Code generation
-        # A[i] += A_values[i]
-
-        z = L.LiteralFloat(0.0)
-        code = []
-        A = self.backend.symbols.element_tensor()
-        for i in range(len(A_values)):
-            if not (A_values[i] == 0.0 or A_values[i] == z):
-                code += [L.AssignAdd(A[i], A_values[i])]
-        return L.commented_code_list(code, "UFLACS block mode: preintegrated")
-
-    def generate_copyout_statements(self):
-        L = self.backend.language
-        parts = []
-
-        # Get symbol, dimensions, and loop index symbols for A
-        A_shape = self.ir.tensor_shape
-        A_rank = len(A_shape)
 
         Asym = self.backend.symbols.element_tensor()
         A = L.FlattenedArray(Asym, dims=A_shape)
 
-        indices = [self.backend.symbols.argument_loop_index(i) for i in range(A_rank)]
+        B_rhs = L.float_product([fw] + arg_factors)
+        A_indices = []
 
-        dofmap_parts = []
-        dofmaps = {}
-        for blockmap, contributions in sorted(self.finalization_blocks.items()):
+        for i, bm in enumerate(blockmap):
+            offset = blockmap[i][0]
+            A_indices.append(arg_indices[i] + offset)
 
-            # Define mapping from B indices to A indices
-            A_indices = []
-            for i in range(A_rank):
-                dofmap = blockmap[i]
-                begin = dofmap[0]
-                end = dofmap[-1] + 1
-                if len(dofmap) == end - begin:
-                    # Dense insertion, offset B index to index A
-                    j = indices[i] + begin
-                else:
-                    # Sparse insertion, map B index through dofmap
-                    DM = dofmaps.get(dofmap)
-                    if DM is None:
-                        DM = L.Symbol("DM%d" % len(dofmaps))
-                        dofmaps[dofmap] = DM
-                        dofmap_parts.append(
-                            L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
-                    j = DM[indices[i]]
-                A_indices.append(j)
-            A_indices = tuple(A_indices)
+        body = L.AssignAdd(A[A_indices], B_rhs)  # NB! += not =
 
-            # Sum up all blocks contributing to this blockmap
-            term = L.Sum([B_rhs for B_rhs in contributions])
+        for i in reversed(range(block_rank)):
+            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+        quadparts += [body]
 
-            # TODO: need ttypes associated with this block to deal
-            # with loop dropping for quadrature elements:
-            ttypes = ()
-            if ttypes == ("quadrature", "quadrature"):
-                logger.debug("quadrature element block insertion not optimized")
+        # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
+        A_rhs = None
 
-            # Add components of all B's to A component in loop nest
-            body = L.AssignAdd(A[A_indices], term)
-            for i in reversed(range(A_rank)):
-                body = L.ForRange(indices[i], 0, len(blockmap[i]), body=body)
-
-            # Add this block to parts
-            parts.append(body)
-
-        # Place static dofmap tables first
-        parts = dofmap_parts + parts
-
-        return parts
+        return A_rhs, preparts, quadparts, postparts
 
     def get_vector_reflection(self, pname, indices):
         """Get the vector reflection for entry the table pname accessed using indices."""

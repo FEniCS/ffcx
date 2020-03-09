@@ -32,7 +32,7 @@ ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
 block_data_t = collections.namedtuple("block_data_t",
                                       ["block_mode",
-                                       # "safe" | "full" | "preintegrated" | "premultiplied"
+                                       # "safe"
                                        "ttypes",  # list of table types for each block rank
                                        "factor_indices_comp_indices",  # list of tuples (factor index, component index)
                                        "factor_is_piecewise",
@@ -178,11 +178,11 @@ def uflacs_default_parameters(optimize):
         p.update({
             # Optimization parameters used in representation building
             # TODO: The names of these parameters can be a bit misleading
-            "enable_preintegration": True,
+            "enable_preintegration": False,
             "enable_premultiplication": False,
-            "enable_sum_factorization": True,
+            "enable_sum_factorization": False,
             "enable_block_transpose_reuse": True,
-            "enable_table_zero_compression": True,
+            "enable_table_zero_compression": False,
 
             # Code generation parameters
             "vectorize": False,
@@ -215,16 +215,6 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
                 value = float(value)
             p[key] = value
 
-    # Conditionally disable some optimizations based on integral type,
-    # i.e. these options are not valid for certain integral types
-    skip_preintegrated = point_integral_types + ufl.custom_integral_types
-    if integral_type in skip_preintegrated or integral_type == "expression":
-        p["enable_preintegration"] = False
-
-    skip_premultiplied = point_integral_types + ufl.custom_integral_types
-    if integral_type in skip_premultiplied or integral_type == "expression":
-        p["enable_premultiplication"] = False
-
     return p
 
 
@@ -248,9 +238,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     # Shared piecewise expr_ir for all quadrature loops
     ir["piecewise_ir"] = {"factorization": None,
                           "modified_arguments": [],
-                          "preintegrated_blocks": {},
-                          "premultiplied_blocks": {},
-                          "preintegrated_contributions": collections.defaultdict(list),
                           "block_contributions": collections.defaultdict(list)}
 
     # { num_points: expr_ir for one integrand }
@@ -409,8 +396,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
             blockmap = tuple(tr.dofmap for tr in trs)
 
-            block_is_uniform = all(tr.is_uniform for tr in trs)
-
             # Collect relevant restrictions to identify blocks correctly
             # in interior facet integrals
             block_restrictions = []
@@ -450,181 +435,27 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                 A[iq+offset, j+offset] = BQ[iq,j]
             """
 
-            # Decide how to handle code generation for this block
-            if p["enable_preintegration"] and (factor_is_piecewise and rank > 0
-                                               and "quadrature" not in ttypes):
-                # - Piecewise factor is an absolute prerequisite
-                # - Could work for rank 0 as well but currently doesn't
-                # - Haven't considered how quadrature elements work out
-                block_mode = "preintegrated"
-            elif p["enable_premultiplication"] and (rank > 0 and all(tt in piecewise_ttypes
-                                                                     for tt in ttypes)):
-                # Integrate functional in quadloop, scale block after
-                # quadloop
-                block_mode = "premultiplied"
-            elif p["enable_sum_factorization"]:
-                if (rank == 2 and any(tt in piecewise_ttypes for tt in ttypes)):
-                    # Partial computation in quadloop of f*u[i], compute
-                    # (f*u[i])*v[i] outside quadloop, (or with u,v
-                    # swapped)
-                    block_mode = "partial"
-                else:
-                    # Full runtime integration of f*u[i]*v[j], can still
-                    # do partial computation in quadloop of f*u[i] but
-                    # must compute (f*u[i])*v[i] as well inside
-                    # quadloop.  (or with u,v swapped)
-                    block_mode = "full"
-            else:
-                # Use full runtime integration with nothing fancy going
-                # on
-                block_mode = "safe"
+            block_mode = "safe"
 
-            # Carry out decision
-            if block_mode == "preintegrated":
-                # Add to contributions:
-                # P = sum_q weight*u*v;      preintegrated here
-                # B[...] = f * P[...];       generated after quadloop
-                # A[blockmap] += B[...];     generated after quadloop
+            block_is_piecewise = factor_is_piecewise and not expect_weight
+            block_is_permuted = False
+            ma_data = []
+            for i, ma in enumerate(ma_indices):
+                if not trs[i].is_piecewise:
+                    block_is_piecewise = False
+                ma_data.append(ma_data_t(ma, trs[i]))
 
-                cache = ir["piecewise_ir"]["preintegrated_blocks"]
+            block_is_transposed = False  # FIXME: Handle transposes for these block types
 
-                block_is_transposed = False
-                block_is_permuted = False
-                pname = cache.get(unames)
+            # Add to contributions:
+            # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
+            # A[blockmap] += B[i];                    generated after quadloop
 
-                # Reuse transpose to save memory
-                if p["enable_block_transpose_reuse"] and pname is None and len(unames) == 2:
-                    pname = cache.get((unames[1], unames[0]))
-                    if pname is not None:
-                        # Cache hit on transpose
-                        block_is_transposed = True
-
-                if pname is None:
-                    # Cache miss, precompute block
-                    weights = quadrature_rules[num_points][1]
-                    if integral_type == "interior_facet":
-                        ptable = integrate_block_interior_facets(
-                            weights, unames, ttypes, unique_tables, unique_table_num_dofs)
-                        block_is_permuted = False
-                        for n in unames:
-                            if unique_tables[n].shape[0] > 1:
-                                block_is_permuted = True
-                    else:
-                        ptable = integrate_block(weights, unames, ttypes, unique_tables,
-                                                 unique_table_num_dofs)
-                    ptable = clamp_table_small_numbers(
-                        ptable, rtol=p["table_rtol"], atol=p["table_atol"])
-
-                    pname = "PI%d" % (len(cache, ))
-                    cache[unames] = pname
-                    unique_tables[pname] = ptable
-                    unique_table_types[pname] = "preintegrated"
-                    ir["table_origins"][pname] = unames
-
-                assert factor_is_piecewise
-                block_unames = (pname, )
-                blockdata = block_data_t(
-                    block_mode, ttypes, fi_ci, factor_is_piecewise, block_unames,
-                    block_restrictions, block_is_transposed, block_is_uniform, pname,
-                    None, None, block_is_permuted)
-                block_is_piecewise = True
-
-            elif block_mode == "premultiplied":
-                # Add to contributions:
-                # P = u*v;                        computed here
-                # FI = sum_q weight * f;          generated inside quadloop
-                # B[...] = FI * P[...];           generated after quadloop
-                # A[blockmap] += B[...];          generated after quadloop
-
-                cache = ir["piecewise_ir"]["premultiplied_blocks"]
-
-                block_is_transposed = False
-                block_is_permuted = False
-                pname = cache.get(unames)
-
-                # Reuse transpose to save memory
-                if p["enable_block_transpose_reuse"] and pname is None and len(unames) == 2:
-                    pname = cache.get((unames[1], unames[0]))
-                    if pname is not None:
-                        # Cache hit on transpose
-                        block_is_transposed = True
-
-                if pname is None:
-                    # Cache miss, precompute block
-                    if integral_type == "interior_facet":
-                        ptable = multiply_block_interior_facets(0, unames, ttypes, unique_tables,
-                                                                unique_table_num_dofs)
-                        block_is_permuted = False
-                        for n in unames:
-                            if unique_tables[n].shape[0] > 1:
-                                block_is_permuted = True
-                    else:
-                        ptable = multiply_block(0, unames, ttypes, unique_tables,
-                                                unique_table_num_dofs)
-                    pname = "PM%d" % (len(cache, ))
-                    cache[unames] = pname
-                    unique_tables[pname] = ptable
-                    unique_table_types[pname] = "premultiplied"
-
-                block_unames = (pname, )
-                blockdata = block_data_t(
-                    block_mode, ttypes, fi_ci, factor_is_piecewise, block_unames,
-                    block_restrictions, block_is_transposed, block_is_uniform, pname, None, None,
-                    block_is_permuted)
-                block_is_piecewise = False
-
-#           elif block_mode == "scaled":
-#           # TODO: Add mode, block is piecewise but choose not to be premultiplied
-#               # Add to contributions:
-#               # FI = sum_q weight * f;          generated inside quadloop
-#               # B[...] = FI * u * v;            generated after quadloop
-#               # A[blockmap] += B[...];          generated after quadloop
-#               raise NotImplementedError("scaled block mode not implemented.")
-#               # (probably need mostly the same data as
-#               # premultiplied, except no P table name or values)
-#               block_is_piecewise = False
-
-            elif block_mode in ("partial", "full", "safe"):
-                block_is_piecewise = factor_is_piecewise and not expect_weight
-                block_is_permuted = False
-                ma_data = []
-                for i, ma in enumerate(ma_indices):
-                    if not trs[i].is_piecewise:
-                        block_is_piecewise = False
-                    ma_data.append(ma_data_t(ma, trs[i]))
-
-                block_is_transposed = False  # FIXME: Handle transposes for these block types
-
-                if block_mode == "partial":
-                    # Add to contributions:
-                    # P[i] = sum_q weight * f * u[i];  generated inside quadloop
-                    # B[i,j] = P[i] * v[j];            generated after quadloop (where v is the piecewise ma)
-                    # A[blockmap] += B[...];           generated after quadloop
-
-                    # Find first piecewise index TODO: Is last better? just reverse range here
-                    for i in range(rank):
-                        if trs[i].is_piecewise:
-                            piecewise_ma_index = i
-                            break
-                    assert rank == 2
-                    not_piecewise_ma_index = 1 - piecewise_ma_index
-                    block_unames = (unames[not_piecewise_ma_index], )
-                    blockdata = block_data_t(block_mode, ttypes, fi_ci,
-                                             factor_is_piecewise, block_unames,
-                                             block_restrictions, block_is_transposed,
-                                             None, None, tuple(ma_data), piecewise_ma_index, block_is_permuted)
-                elif block_mode in ("full", "safe"):
-                    # Add to contributions:
-                    # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
-                    # A[blockmap] += B[i];                    generated after quadloop
-
-                    block_unames = unames
-                    blockdata = block_data_t(block_mode, ttypes, fi_ci,
-                                             factor_is_piecewise, block_unames,
-                                             block_restrictions, block_is_transposed,
-                                             None, None, tuple(ma_data), None, block_is_permuted)
-            else:
-                raise RuntimeError("Invalid block_mode %s" % (block_mode, ))
+            block_unames = unames
+            blockdata = block_data_t(block_mode, ttypes, fi_ci,
+                                        factor_is_piecewise, block_unames,
+                                        block_restrictions, block_is_transposed,
+                                        None, None, tuple(ma_data), None, block_is_permuted)
 
             if block_is_piecewise:
                 # Insert in piecewise expr_ir
@@ -645,11 +476,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
         for blockmap, contributions in itertools.chain(
                 block_contributions.items(), ir["piecewise_ir"]["block_contributions"].items()):
             for blockdata in contributions:
-                if blockdata.block_mode in ("preintegrated", "premultiplied"):
-                    active_table_names.add(blockdata.name)
-                elif blockdata.block_mode in ("partial", "full", "safe"):
-                    for mad in blockdata.ma_data:
-                        active_table_names.add(mad.tabledata.name)
+                for mad in blockdata.ma_data:
+                    active_table_names.add(mad.tabledata.name)
 
         # Record all table types before dropping tables
         ir["unique_table_types"].update(unique_table_types)
@@ -709,8 +537,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             "  {}\t{}".format(count, mode) for mode, count in sorted(block_modes.items()))
         logger.debug("Blocks of each mode: {}".format(summary))
 
-        # If there are any blocks other than preintegrated we need weights
-        if expect_weight and any(mode != "preintegrated" for mode in block_modes):
+        if expect_weight:
             need_weights = True
         elif integral_type in ufl.custom_integral_types:
             need_weights = True  # TODO: Always?
