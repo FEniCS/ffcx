@@ -13,6 +13,7 @@ from ffcx.fiatinterface import create_element
 # TODO: currently these dof types are not correctly handled:
 #       FrobeniusIntegralMoment
 # TODO: currently these dof types are not handled at all:
+#       PointwiseInnerProductEval
 #       IntegralMomentOfNormalDerivative
 
 
@@ -81,7 +82,7 @@ def base_permutations_from_subdofmap(ufl_element):
     perm_n = 0
     # Iterate through the entities of the reference element
     for dim in range(1, 4):
-        for dofs in entity_dofs[dim]:
+        for dofs in entity_dofs[dim].values():
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -101,11 +102,8 @@ def base_permutations_from_subdofmap(ufl_element):
                 elif t == "PointFaceTangent":
                     # Dof blocksize is 2
                     permuted = entity_functions[dim](type_dofs, 2)
-                elif t in ["FrobeniusIntegralMoment"] and dim == 2 and len(type_dofs) == 3:
+                elif t in ["FrobeniusIntegralMoment"] and dim == 2:
                     permuted = permute_frobenius_face(type_dofs, 1)
-                elif t in ["FrobeniusIntegralMoment", "PointwiseInnerProductEval"]:
-                    # FIXME: temporarily does no permutation; needs replacing
-                    permuted = [type_dofs for i in range(2 ** (dim - 1))]
                 else:
                     # TODO: What to do with other dof types
                     warnings.warn("Permutations of " + t + " dofs not yet "
@@ -129,13 +127,15 @@ def reflection_entities_from_subdofmap(ufl_element):
     fiat_element = create_element(ufl_element)
     num_dofs = len(fiat_element.dual_basis())
 
+    cname = ufl_element.cell().cellname()
+
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
 
     reflections = [None for i in range(num_dofs)]
     # Iterate through the entities of the reference element
     for dim in range(1, 4):
-        for n, dofs in enumerate(entity_dofs[dim]):
+        for n, dofs in entity_dofs[dim].items():
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -146,20 +146,16 @@ def reflection_entities_from_subdofmap(ufl_element):
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
-                         "PointScaledNormalEval", "PointNormalEval",
-                         "IntegralMoment"]:
+                         "PointScaledNormalEval", "PointNormalEval", "IntegralMoment"]:
                     for i in type_dofs:
                         reflections[i] = [(dim, n)]
-                elif t == "FrobeniusIntegralMoment":
+                elif t == "FrobeniusIntegralMoment" and cname in ["triangle", "tetrahedron"]:
                     if dim == 2:
-                        if len(type_dofs) != 3:
-                            # FIXME: Implement dof permuting for FrobeniusIntegralMoment dofs
-                            #        Integral moments in higher order spaces will be the products with
-                            #        PointFaceTangents, so these need implementing first
-                            warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
-                                          "implemented. Results on unordered meshes may be incorrect")
-                        for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
-                            reflections[a] = [(dim, n), (dim - 1, b)]
+                        s = get_frobenius_side_length(len(type_dofs))
+                        # for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
+                        for i, b in enumerate(fiat_element.ref_el.connectivity[dim, dim - 1][n]):
+                            for a in type_dofs[i * s:(i + 1) * s]:
+                                reflections[a] = [(dim, n), (dim - 1, b)]
     return reflections
 
 
@@ -175,23 +171,28 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
     entity_dofs = fiat_element.entity_dofs()
 
     rotations = []
-    # Iterate through the entities of the reference element
-    for dim in range(1, 4):
-        for n, dofs in enumerate(entity_dofs[dim]):
+    if cname in ["triangle", "tetrahedron"]:
+        # Iterate through faces
+        for n, dofs in entity_dofs[2].items():
             types = [dof_types[i] for i in dofs]
-            # Find the unique dof types
-            unique_types = []
-            for t in types:
-                if t not in unique_types:
-                    unique_types.append(t)
-            # Permute the dofs of each entity type separately
-            for t in unique_types:
-                type_dofs = [i for i, j in zip(dofs, types) if j == t]
-                if t == "PointFaceTangent" and cname in ["triangle", "tetrahedron"]:
-                    assert dim == 2
-                    for dofs in zip(type_dofs[::2], type_dofs[1::2]):
-                        # (entity_dim, entity_number), dofs, {order: matrix}
-                        rotations.append(((dim, n), dofs, {
+
+            # PointFaceTangent dofs
+            if "PointFaceTangent" in types:
+                type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
+                for dof_pair in zip(type_dofs[::2], type_dofs[1::2]):
+                    # (entity_dim, entity_number), dofs, {order: matrix}
+                    rotations.append(((2, n), dof_pair, {
+                        1: [[-1, -1], [1, 0]],  # Apply rotation once
+                        2: [[0, 1], [-1, -1]],  # Apply twice
+                    }))
+            # FrobeniusIntegralMoment dofs
+            if "FrobeniusIntegralMoment" in types:
+                type_dofs = [i for i in dofs if dof_types[i] == "FrobeniusIntegralMoment"]
+                s = get_frobenius_side_length(len(type_dofs))
+                for i, b in enumerate(fiat_element.ref_el.connectivity[2, 1][n]):
+                    for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
+                        # TODO:  Work out what these should be using definition of RT spaces and properties of integrals
+                        rotations.append(((2, n), dof_pair, {
                             1: [[-1, -1], [1, 0]],  # Apply rotation once
                             2: [[0, 1], [-1, -1]],  # Apply twice
                         }))
@@ -233,13 +234,19 @@ def get_entity_functions(cname):
         raise ValueError("Unrecognised cell type")
 
 
+def get_frobenius_side_length(n):
+    """Get the side length the arrangement of FrobeniusIntegralMoment dofs of a face of a N2curl space."""
+    s = 0
+    while 3 * s + s * (s - 1) < n:
+        s += 1
+    assert 3 * s + s * (s - 1) == n
+    return s
+
+
 def permute_frobenius_face(dofs, blocksize):
     """Permute the FrobeniusIntegralMoment dofs of a face of a N2curl space."""
     n = len(dofs) // blocksize
-    s = 0
-    while 6 * s + s * (s - 1) < 2 * n:
-        s += 1
-    assert 6 * s + s * (s - 1) == 2 * n
+    s = get_frobenius_side_length(n)
 
     # Make the rotation
     rot = []
@@ -249,7 +256,7 @@ def permute_frobenius_face(dofs, blocksize):
         rot += [dof * blocksize + k for k in range(blocksize)]
     for dof in range(2 * s - 1, s - 1, -1):
         rot += [dof * blocksize + k for k in range(blocksize)]
-    rot += triangle_rotation(list(range(3 * s * blocksize, n)), blocksize)
+    rot += triangle_rotation(list(range(3 * s * blocksize, n)), 2 * blocksize)
     assert len(rot) == len(dofs)
 
     # Make the reflection
@@ -260,7 +267,7 @@ def permute_frobenius_face(dofs, blocksize):
         ref += [dof * blocksize + k for k in range(blocksize)]
     for dof in range(s, 2 * s):
         ref += [dof * blocksize + k for k in range(blocksize)]
-    ref += triangle_reflection(list(range(3 * s * blocksize, n)), blocksize)
+    ref += triangle_reflection(list(range(3 * s * blocksize, n)), 2 * blocksize)
     assert len(ref) == len(dofs)
 
     return [[dofs[i] for i in rot],
