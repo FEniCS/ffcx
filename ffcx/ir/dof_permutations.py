@@ -10,33 +10,55 @@ from ffcx.fiatinterface import create_element
 
 # TODO: This information should be moved to FIAT instead of being reverse engineered here
 
+# TODO: Currently none of the vector-valued stuff has been tested on quads and hexes
 
 # TODO: currently these dof types are not correctly handled:
 #       FrobeniusIntegralMoment
 # TODO: currently these dof types are not handled at all:
-#       PointFaceTangent
 #       IntegralMomentOfNormalDerivative
 
 
-def base_permutations_and_reflection_entities(ufl_element):
-    """Returns the base permutations and the entities that the direction of vector-valued functions depend on."""
+def base_permutations(ufl_element):
+    """Returns the base permutations."""
     if ufl_element.num_sub_elements() == 0:
         # If the element has no sub elements, return its permutations
         return base_permutations_from_subdofmap(ufl_element)
 
     # If the element has sub elements, combine their permutations
     perms = None
-    reflections = []
-    rotations = []
     for e in ufl_element.sub_elements():
-        bp, re, ro = base_permutations_and_reflection_entities(e)
+        bp = base_permutations(e)
         if perms is None:
             perms = [[] for i in bp]
         for i, b in enumerate(bp):
             perms[i] += [a + len(perms[i]) for a in b]
-        reflections += re
-        rotations += ro
-    return perms, reflections, rotations
+    return perms
+
+
+def reflection_entities(ufl_element):
+    """Returns the entities that the direction of vector-valued functions depend on."""
+    if ufl_element.num_sub_elements() == 0:
+        # If the element has no sub elements, return its reflection entities
+        return reflection_entities_from_subdofmap(ufl_element)
+
+    # If the element has sub elements, combine their permutations
+    reflections = []
+    for e in ufl_element.sub_elements():
+        reflections += reflection_entities(e)
+    return reflections
+
+
+def face_tangent_rotations(ufl_element):
+    """Returns the rotations that rotate the direction of vector-valued face tangent dofs."""
+    if ufl_element.num_sub_elements() == 0:
+        # If the element has no sub elements, return its permutations
+        return face_tangent_rotations_from_subdofmap(ufl_element)
+
+    # If the element has sub elements, combine their permutations
+    rotations = []
+    for e in ufl_element.sub_elements():
+        rotations += face_tangent_rotations(e)
+    return rotations
 
 
 def base_permutations_from_subdofmap(ufl_element):
@@ -48,27 +70,12 @@ def base_permutations_from_subdofmap(ufl_element):
 
     cname = ufl_element.cell().cellname()
     if cname == 'point':
-        # There are no permutations or reflections for points
-        return [], [None for i in range(num_dofs)]
+        # There are no permutations for points
+        return []
 
     # Get the entity counts and shape of each entity for the cell type
-    if cname == 'interval':
-        entity_counts = [2, 1, 0, 0]
-        entity_functions = [None, permute_edge, None, None]
-    elif cname == 'triangle':
-        entity_counts = [3, 3, 1, 0]
-        entity_functions = [None, permute_edge, permute_triangle, None]
-    elif cname == 'tetrahedron':
-        entity_counts = [4, 6, 4, 1]
-        entity_functions = [None, permute_edge, permute_triangle, permute_tetrahedron]
-    elif cname == 'quadrilateral':
-        entity_counts = [4, 4, 1, 0]
-        entity_functions = [None, permute_edge, permute_quadrilateral, None]
-    elif cname == 'hexahedron':
-        entity_counts = [8, 12, 6, 1]
-        entity_functions = [None, permute_edge, permute_quadrilateral, permute_hexahedron]
-    else:
-        raise ValueError("Unrecognised cell type")
+    entity_counts = get_entity_counts(cname)
+    entity_functions = get_entity_functions(cname)
 
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
@@ -76,8 +83,6 @@ def base_permutations_from_subdofmap(ufl_element):
     num_perms = entity_counts[1] + 2 * entity_counts[2] + 4 * entity_counts[3]
 
     perms = identity_permutations(num_perms, num_dofs)
-    reflections = [None for i in range(num_dofs)]
-    rotations = []
     perm_n = 0
     # Iterate through the entities of the reference element
     for dim in range(1, 4):
@@ -92,29 +97,6 @@ def base_permutations_from_subdofmap(ufl_element):
             # Permute the dofs of each entity type separately
             for t in unique_types:
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
-                if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
-                         "PointScaledNormalEval", "PointNormalEval",
-                         "IntegralMoment"]:
-                    for i in type_dofs:
-                        reflections[i] = [(dim, n)]
-                elif t == "PointFaceTangent" and cname in ["triangle", "tetrahedron"]:
-                    assert dim == 2
-                    for dofs in zip(type_dofs[::2], type_dofs[1::2]):
-                        # (entity_dim, entity_number), dofs, {order: matrix}
-                        rotations.append(((dim, n), dofs, {
-                            1: [[-1, -1], [1, 0]],  # Apply rotation once
-                            2: [[0, 1], [-1, -1]],  # Apply twice
-                        }))
-                elif t == "FrobeniusIntegralMoment":
-                    if dim == 2:
-                        if len(type_dofs) != 3:
-                            # FIXME: Implement dof permuting for FrobeniusIntegralMoment dofs
-                            #        Integral moments in higher order spaces will be the products with
-                            #        PointFaceTangents, so these need implementing first
-                            warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
-                                          "implemented. Results on unordered meshes may be incorrect")
-                        for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
-                            reflections[a] = [(dim, n), (dim - 1, b)]
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                          "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
                     # Dof is a point evaluation, use blocksize 1
@@ -143,7 +125,132 @@ def base_permutations_from_subdofmap(ufl_element):
                         perms[perm_n + p][i] = j
             perm_n += 2 ** (dim - 1)
 
-    return perms, reflections, rotations
+    return perms
+
+
+def reflection_entities_from_subdofmap(ufl_element):
+    """Calculate permutations and reflection entites for a root element.
+    Calculates the base permutations and the entities that the direction of vector-valued
+    functions depend on for an element with no sub elements."""
+    fiat_element = create_element(ufl_element)
+    num_dofs = len(fiat_element.dual_basis())
+
+    cname = ufl_element.cell().cellname()
+    if cname == 'point':
+        # There are no permutations or reflections for points
+        return [None for i in range(num_dofs)]
+
+    entity_counts = get_entity_counts(cname)
+
+    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    entity_dofs = fiat_element.entity_dofs()
+
+    reflections = [None for i in range(num_dofs)]
+    # Iterate through the entities of the reference element
+    for dim in range(1, 4):
+        for n in range(entity_counts[dim]):
+            dofs = entity_dofs[dim][n]
+            types = [dof_types[i] for i in dofs]
+            # Find the unique dof types
+            unique_types = []
+            for t in types:
+                if t not in unique_types:
+                    unique_types.append(t)
+            # Permute the dofs of each entity type separately
+            for t in unique_types:
+                type_dofs = [i for i, j in zip(dofs, types) if j == t]
+                if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
+                         "PointScaledNormalEval", "PointNormalEval",
+                         "IntegralMoment"]:
+                    for i in type_dofs:
+                        reflections[i] = [(dim, n)]
+                elif t == "FrobeniusIntegralMoment":
+                    if dim == 2:
+                        if len(type_dofs) != 3:
+                            # FIXME: Implement dof permuting for FrobeniusIntegralMoment dofs
+                            #        Integral moments in higher order spaces will be the products with
+                            #        PointFaceTangents, so these need implementing first
+                            warnings.warn("Permutations of more than 3 FrobeniusIntegralMoment dofs not yet "
+                                          "implemented. Results on unordered meshes may be incorrect")
+                        for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
+                            reflections[a] = [(dim, n), (dim - 1, b)]
+    return reflections
+
+
+def face_tangent_rotations_from_subdofmap(ufl_element):
+    """Calculate permutations and reflection entites for a root element.
+    Calculates the base permutations and the entities that the direction of vector-valued
+    functions depend on for an element with no sub elements."""
+    fiat_element = create_element(ufl_element)
+
+    cname = ufl_element.cell().cellname()
+    if cname == 'point':
+        # There are no rotations for points
+        return []
+
+    entity_counts = get_entity_counts(cname)
+
+    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    entity_dofs = fiat_element.entity_dofs()
+
+    rotations = []
+    # Iterate through the entities of the reference element
+    for dim in range(1, 4):
+        for n in range(entity_counts[dim]):
+            dofs = entity_dofs[dim][n]
+            types = [dof_types[i] for i in dofs]
+            # Find the unique dof types
+            unique_types = []
+            for t in types:
+                if t not in unique_types:
+                    unique_types.append(t)
+            # Permute the dofs of each entity type separately
+            for t in unique_types:
+                type_dofs = [i for i, j in zip(dofs, types) if j == t]
+                if t == "PointFaceTangent" and cname in ["triangle", "tetrahedron"]:
+                    assert dim == 2
+                    for dofs in zip(type_dofs[::2], type_dofs[1::2]):
+                        # (entity_dim, entity_number), dofs, {order: matrix}
+                        rotations.append(((dim, n), dofs, {
+                            1: [[-1, -1], [1, 0]],  # Apply rotation once
+                            2: [[0, 1], [-1, -1]],  # Apply twice
+                        }))
+
+    return rotations
+
+
+def get_entity_counts(cname):
+    if cname == 'point':
+        return [2, 1, 0, 0]
+    elif cname == 'interval':
+        return [2, 1, 0, 0]
+    elif cname == 'triangle':
+        return [3, 3, 1, 0]
+    elif cname == 'tetrahedron':
+        return [4, 6, 4, 1]
+    elif cname == 'quadrilateral':
+        return [4, 4, 1, 0]
+    elif cname == 'hexahedron':
+        return [8, 12, 6, 1]
+    else:
+        raise ValueError("Unrecognised cell type")
+
+
+def get_entity_functions(cname):
+    if cname == 'point':
+        return [None, None, None, None]
+    elif cname == 'interval':
+        return [None, permute_edge, None, None]
+    elif cname == 'triangle':
+        return [None, permute_edge, permute_triangle, None]
+    elif cname == 'tetrahedron':
+        return [None, permute_edge, permute_triangle, permute_tetrahedron]
+    elif cname == 'quadrilateral':
+        return [None, permute_edge, permute_quadrilateral, None]
+    elif cname == 'hexahedron':
+        return [None, permute_edge, permute_quadrilateral, permute_hexahedron]
+    else:
+        raise ValueError("Unrecognised cell type")
 
 
 def permute_frobenius_face(dofs, blocksize):

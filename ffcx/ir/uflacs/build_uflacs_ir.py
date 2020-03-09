@@ -25,7 +25,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
 from ufl.measure import facet_integral_types, point_integral_types
-from ffcx.ir.dof_permutations import base_permutations_and_reflection_entities
+from ffcx.ir import dof_permutations
 
 logger = logging.getLogger(__name__)
 
@@ -317,8 +317,8 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         for k, v in table_origins.items():
             ir["table_origins"][k] = v
-            ir["table_dof_rotations"][k] = base_permutations_and_reflection_entities(v[0])[2]
-            ir["table_dof_reflections"][k] = base_permutations_and_reflection_entities(v[0])[1]
+            ir["table_dof_rotations"][k] = dof_permutations.face_tangent_rotations(v[0])
+            ir["table_dof_reflections"][k] = dof_permutations.reflection_entities(v[0])
             if len(ir["table_dof_rotations"][k]) > 0:
                 ir["needs_rotations"] = True
             if len([i for i in ir["table_dof_reflections"][k] if i is not None]) > 0:
