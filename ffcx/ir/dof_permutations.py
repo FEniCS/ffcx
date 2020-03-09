@@ -9,9 +9,7 @@ import math
 from ffcx.fiatinterface import create_element
 
 # TODO: This information should be moved to FIAT instead of being reverse engineered here
-
 # TODO: Currently none of the vector-valued stuff has been tested on quads and hexes
-
 # TODO: currently these dof types are not correctly handled:
 #       FrobeniusIntegralMoment
 # TODO: currently these dof types are not handled at all:
@@ -41,7 +39,7 @@ def reflection_entities(ufl_element):
         # If the element has no sub elements, return its reflection entities
         return reflection_entities_from_subdofmap(ufl_element)
 
-    # If the element has sub elements, combine their permutations
+    # If the element has sub elements, combine their reflections
     reflections = []
     for e in ufl_element.sub_elements():
         reflections += reflection_entities(e)
@@ -51,10 +49,10 @@ def reflection_entities(ufl_element):
 def face_tangent_rotations(ufl_element):
     """Returns the rotations that rotate the direction of vector-valued face tangent dofs."""
     if ufl_element.num_sub_elements() == 0:
-        # If the element has no sub elements, return its permutations
+        # If the element has no sub elements, return its rotations
         return face_tangent_rotations_from_subdofmap(ufl_element)
 
-    # If the element has sub elements, combine their permutations
+    # If the element has sub elements, combine their rotations
     rotations = []
     for e in ufl_element.sub_elements():
         rotations += face_tangent_rotations(e)
@@ -69,9 +67,6 @@ def base_permutations_from_subdofmap(ufl_element):
     num_dofs = len(fiat_element.dual_basis())
 
     cname = ufl_element.cell().cellname()
-    if cname == 'point':
-        # There are no permutations for points
-        return []
 
     # Get the entity counts and shape of each entity for the cell type
     entity_counts = get_entity_counts(cname)
@@ -86,8 +81,7 @@ def base_permutations_from_subdofmap(ufl_element):
     perm_n = 0
     # Iterate through the entities of the reference element
     for dim in range(1, 4):
-        for n in range(entity_counts[dim]):
-            dofs = entity_dofs[dim][n]
+        for dofs in entity_dofs[dim]:
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -120,10 +114,10 @@ def base_permutations_from_subdofmap(ufl_element):
                     permuted = [type_dofs for i in range(2 ** (dim - 1))]
 
                 # Apply these permutations
-                for p in range(2 ** (dim - 1)):
-                    for i, j in zip(type_dofs, permuted[p]):
-                        perms[perm_n + p][i] = j
-            perm_n += 2 ** (dim - 1)
+                for p in permuted:
+                    for i, j in zip(type_dofs, p):
+                        perms[perm_n][i] = j
+                    perm_n += 1
 
     return perms
 
@@ -135,21 +129,13 @@ def reflection_entities_from_subdofmap(ufl_element):
     fiat_element = create_element(ufl_element)
     num_dofs = len(fiat_element.dual_basis())
 
-    cname = ufl_element.cell().cellname()
-    if cname == 'point':
-        # There are no permutations or reflections for points
-        return [None for i in range(num_dofs)]
-
-    entity_counts = get_entity_counts(cname)
-
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
 
     reflections = [None for i in range(num_dofs)]
     # Iterate through the entities of the reference element
     for dim in range(1, 4):
-        for n in range(entity_counts[dim]):
-            dofs = entity_dofs[dim][n]
+        for n, dofs in enumerate(entity_dofs[dim]):
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -184,11 +170,6 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
     fiat_element = create_element(ufl_element)
 
     cname = ufl_element.cell().cellname()
-    if cname == 'point':
-        # There are no rotations for points
-        return []
-
-    entity_counts = get_entity_counts(cname)
 
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
@@ -196,8 +177,7 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
     rotations = []
     # Iterate through the entities of the reference element
     for dim in range(1, 4):
-        for n in range(entity_counts[dim]):
-            dofs = entity_dofs[dim][n]
+        for n, dofs in enumerate(entity_dofs[dim]):
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -221,7 +201,7 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
 
 def get_entity_counts(cname):
     if cname == 'point':
-        return [2, 1, 0, 0]
+        return [1, 0, 0, 0]
     elif cname == 'interval':
         return [2, 1, 0, 0]
     elif cname == 'triangle':
