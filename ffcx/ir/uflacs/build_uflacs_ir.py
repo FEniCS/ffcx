@@ -167,9 +167,9 @@ def uflacs_default_parameters(optimize):
         "enable_table_zero_compression": False,
 
         # Code generation parameters
-        "vectorize": False,
-        "alignas": 0,
-        "assume_aligned": None,
+        "vectorize": True,
+        "alignas": 32,
+        "assume_aligned": 32,
         "padlen": 1,
         "use_symbol_array": True
     }
@@ -188,8 +188,7 @@ def uflacs_default_parameters(optimize):
             "vectorize": False,
             "alignas": 32,
             "padlen": 1,
-            "use_symbol_array": True,
-            "tensor_init_mode": "interleaved",  # interleaved | direct | upfront
+            "use_symbol_array": True
         })
     return p
 

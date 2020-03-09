@@ -315,7 +315,6 @@ class IntegralGenerator(object):
 
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-        inline_tables = self.ir.integral_type == "cell"
 
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
@@ -330,26 +329,14 @@ class IntegralGenerator(object):
         for name in table_names:
             table = tables[name]
 
-            # Don't pad preintegrated tables
-            if name[0] == "P":
-                p = 1
-            else:
-                p = padlen
-
-            # Skip tables that are inlined in code generation
-            if inline_tables and name[:2] == "PI":
-                continue
-
             decl = L.ArrayDecl(
-                "static const double", name, table.shape, table, alignas=alignas, padlen=p)
+                "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)
             parts += [decl]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
             "FE* dimensions: [permutation][entities][points][dofs]",
-            "PI* dimensions: [permutations][permutations][entities][dofs][dofs] or [permutations][entities][dofs]",
-            "PM* dimensions: [permutations][entities][dofs][dofs]",
         ])
         return parts
 
@@ -801,7 +788,7 @@ class IntegralGenerator(object):
             offset = blockmap[i][0]
             A_indices.append(arg_indices[i] + offset)
 
-        body = L.AssignAdd(A[A_indices], B_rhs)  # NB! += not =
+        body = L.AssignAdd(A[A_indices], B_rhs)
 
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
