@@ -81,8 +81,11 @@ def base_permutations_from_subdofmap(ufl_element):
     perms = identity_permutations(num_perms, num_dofs)
     perm_n = 0
     # Iterate through the entities of the reference element
-    for dim in range(1, 4):
-        for dofs in entity_dofs[dim].values():
+    for dim, e_dofs in entity_dofs.items():
+        if dim == 0:
+            # No permuting needed for points
+            continue
+        for dofs in e_dofs.values():
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -134,8 +137,11 @@ def reflection_entities_from_subdofmap(ufl_element):
 
     reflections = [None for i in range(num_dofs)]
     # Iterate through the entities of the reference element
-    for dim in range(1, 4):
-        for n, dofs in entity_dofs[dim].items():
+    for dim, e_dofs in entity_dofs.items():
+        if dim == 0:
+            # No reflecting needed for points
+            continue
+        for n, dofs in e_dofs.items():
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
