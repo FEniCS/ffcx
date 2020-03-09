@@ -18,9 +18,7 @@ from ffcx.ir.uflacs.analysis.graph import build_scalar_graph
 from ffcx.ir.uflacs.analysis.modified_terminals import (
     analyse_modified_terminal, is_modified_terminal)
 from ffcx.ir.uflacs.analysis.visualise import visualise_graph
-from ffcx.ir.uflacs.elementtables import (build_optimized_tables,
-                                          clamp_table_small_numbers,
-                                          piecewise_ttypes)
+from ffcx.ir.uflacs.elementtables import build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
@@ -31,9 +29,7 @@ logger = logging.getLogger(__name__)
 ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
 block_data_t = collections.namedtuple("block_data_t",
-                                      ["block_mode",
-                                       # "safe"
-                                       "ttypes",  # list of table types for each block rank
+                                      ["ttypes",  # list of table types for each block rank
                                        "factor_indices_comp_indices",  # list of tuples (factor index, component index)
                                        "factor_is_piecewise",
                                        # bool: factor is found in piecewise vertex array
@@ -41,7 +37,6 @@ block_data_t = collections.namedtuple("block_data_t",
                                        "unames",  # list of unique FE table names for each block rank
                                        "restrictions",  # restriction "+" | "-" | None for each block rank
                                        "transposed",  # block is the transpose of another
-                                       "is_uniform",  # used in "preintegrated" and "premultiplied"
                                        "name",  # used in "preintegrated" and "premultiplied"
                                        "ma_data",  # used in "full", "safe" and "partial"
                                        "piecewise_ma_index",  # used in "partial"
@@ -158,38 +153,13 @@ def uflacs_default_parameters(optimize):
         # Point chunk size for custom integrals
         "chunk_size": 8,
 
-        # Optimization parameters used in representation building
-        # TODO: The names of these parameters can be a bit misleading
-        "enable_preintegration": False,
-        "enable_premultiplication": False,
-        "enable_sum_factorization": False,
-        "enable_block_transpose_reuse": False,
-        "enable_table_zero_compression": False,
-
         # Code generation parameters
-        "vectorize": True,
+        "vectorize": False,
         "alignas": 32,
         "assume_aligned": 32,
         "padlen": 1,
         "use_symbol_array": True
     }
-    if optimize:
-        # Override defaults if optimization is turned on
-        p.update({
-            # Optimization parameters used in representation building
-            # TODO: The names of these parameters can be a bit misleading
-            "enable_preintegration": False,
-            "enable_premultiplication": False,
-            "enable_sum_factorization": False,
-            "enable_block_transpose_reuse": True,
-            "enable_table_zero_compression": False,
-
-            # Code generation parameters
-            "vectorize": False,
-            "alignas": 32,
-            "padlen": 1,
-            "use_symbol_array": True
-        })
     return p
 
 
@@ -290,7 +260,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             entitytype,
             initial_terminals.values(),
             ir["unique_tables"],
-            p["enable_table_zero_compression"],
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
@@ -399,10 +368,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             # in interior facet integrals
             block_restrictions = []
             for i, ai in enumerate(ma_indices):
-                if trs[i].is_uniform:
-                    r = None
-                else:
-                    r = F.nodes[ai]['mt'].restriction
+                r = F.nodes[ai]['mt'].restriction
                 block_restrictions.append(r)
             block_restrictions = tuple(block_restrictions)
 
@@ -434,8 +400,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
                 A[iq+offset, j+offset] = BQ[iq,j]
             """
 
-            block_mode = "safe"
-
             block_is_piecewise = factor_is_piecewise and not expect_weight
             block_is_permuted = False
             ma_data = []
@@ -451,10 +415,10 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             # A[blockmap] += B[i];                    generated after quadloop
 
             block_unames = unames
-            blockdata = block_data_t(block_mode, ttypes, fi_ci,
-                                        factor_is_piecewise, block_unames,
-                                        block_restrictions, block_is_transposed,
-                                        None, None, tuple(ma_data), None, block_is_permuted)
+            blockdata = block_data_t(ttypes, fi_ci,
+                                     factor_is_piecewise, block_unames,
+                                     block_restrictions, block_is_transposed,
+                                     None, tuple(ma_data), None, block_is_permuted)
 
             if block_is_piecewise:
                 # Insert in piecewise expr_ir
@@ -525,17 +489,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
         # any(isinstance(mt.terminal, QuadratureWeight) for mt in
         # active_mts)
 
-        # Count blocks of each mode
-        block_modes = collections.defaultdict(int)
-        for blockmap, contributions in block_contributions.items():
-            for blockdata in contributions:
-                block_modes[blockdata.block_mode] += 1
-
-        # Debug output
-        summary = "\n".join(
-            "  {}\t{}".format(count, mode) for mode, count in sorted(block_modes.items()))
-        logger.debug("Blocks of each mode: {}".format(summary))
-
         if expect_weight:
             need_weights = True
         elif integral_type in ufl.custom_integral_types:
@@ -575,7 +528,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
                 targets.append(j)
 
     # Build piecewise/varying markers for factorized_vertices
-    varying_ttypes = ("varying", "uniform", "quadrature")
+    varying_ttypes = ("varying", "quadrature")
     varying_indices = []
     for i, v in F.nodes.items():
         if v.get('mt') is None:
@@ -584,7 +537,6 @@ def analyse_dependencies(F, mt_unique_table_reference):
         if tr is not None:
             ttype = tr.ttype
             # Check if table computations have revealed values varying over points
-            # Note: uniform means entity-wise uniform, varying over points
             if ttype in varying_ttypes:
                 varying_indices.append(i)
             else:

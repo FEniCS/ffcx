@@ -189,10 +189,7 @@ class FFCXBackendSymbols(object):
         return c[offset + index]
 
     def element_table(self, tabledata, entitytype, restriction):
-        if tabledata.is_uniform:
-            entity = 0
-        else:
-            entity = self.entity(entitytype, restriction)
+        entity = self.entity(entitytype, restriction)
 
         if tabledata.is_piecewise:
             iq = 0

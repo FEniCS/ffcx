@@ -6,12 +6,10 @@
 """Controlling algorithm for building the tabulate_tensor source structure from factorized representation."""
 
 import collections
-import itertools
 import logging
 
 import ufl
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
@@ -64,9 +62,6 @@ class IntegralGenerator(object):
 
         # Cache
         self.shared_symbols = {}
-
-        # Block contributions collected during generation to be added to A at the end
-        self.finalization_blocks = collections.defaultdict(list)
 
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
@@ -178,34 +173,29 @@ class IntegralGenerator(object):
         # to define the quadloops, and to go after the quadloops
         all_preparts = []
         all_quadparts = []
-        all_postparts = []
 
         # Go through each relevant quadrature loop
         if self.ir.integral_type in ufl.custom_integral_types:
-            preparts, quadparts, postparts = \
+            preparts, quadparts = \
                 self.generate_runtime_quadrature_loop()
             all_preparts += preparts
             all_quadparts += quadparts
-            all_postparts += postparts
         else:
             for num_points in self.ir.all_num_points:
                 # Generate code to integrate reusable blocks of final element tensor
-                preparts, quadparts, postparts = self.generate_quadrature_loop(num_points)
+                preparts, quadparts = self.generate_quadrature_loop(num_points)
                 all_preparts += preparts
                 all_quadparts += quadparts
-                all_postparts += postparts
 
         # Generate code to finish computing reusable blocks outside quadloop
-        preparts, quadparts, postparts = \
+        preparts, quadparts = \
             self.generate_dofblock_partition(None)
         all_preparts += preparts
         all_quadparts += quadparts
-        all_postparts += postparts
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
-        parts += all_postparts
 
         return L.StatementList(parts)
 
@@ -276,6 +266,7 @@ class IntegralGenerator(object):
             return parts
 
         alignas = self.ir.params["alignas"]
+        padlen = self.ir.params["padlen"]
 
         # Loop over quadrature rules
         for num_points in self.ir.all_num_points:
@@ -290,7 +281,7 @@ class IntegralGenerator(object):
                 wsym = self.backend.symbols.weights_table(num_points)
                 parts += [
                     L.ArrayDecl(
-                        "static const double", wsym, num_points, weights, alignas=alignas)
+                        "static const double", wsym, num_points, weights, alignas=alignas, padlen=padlen)
                 ]
 
             # Generate quadrature points array
@@ -351,7 +342,7 @@ class IntegralGenerator(object):
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
-        preparts, quadparts, postparts = \
+        preparts, quadparts = \
             self.generate_dofblock_partition(num_points)
         body += quadparts
 
@@ -370,7 +361,7 @@ class IntegralGenerator(object):
                 iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
-        return preparts, quadparts, postparts
+        return preparts, quadparts
 
     def generate_runtime_quadrature_loop(self):
         """Generate quadrature loop for custom integrals, with physical points given runtime."""
@@ -397,7 +388,7 @@ class IntegralGenerator(object):
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
-        preparts, quadparts, postparts = \
+        preparts, quadparts = \
             self.generate_dofblock_partition(num_points)
         body += quadparts
 
@@ -480,7 +471,7 @@ class IntegralGenerator(object):
             chunk_body = rule_parts + table_parts + [iq_body]
             quadparts = [L.ForRange(iq_chunk, 0, num_point_blocks, body=chunk_body)]
 
-        return preparts, quadparts, postparts
+        return preparts, quadparts
 
     def generate_unstructured_piecewise_partition(self):
         L = self.backend.language
@@ -584,7 +575,8 @@ class IntegralGenerator(object):
         if intermediates:
             if self.ir.params["use_symbol_array"]:
                 alignas = self.ir.params["alignas"]
-                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas)]
+                padlen = self.ir.params["padlen"]
+                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas, padlen=padlen)]
             parts += intermediates
         return parts
 
@@ -596,7 +588,6 @@ class IntegralGenerator(object):
 
         preparts = []
         quadparts = []
-        postparts = []
 
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
@@ -605,7 +596,7 @@ class IntegralGenerator(object):
         for blockmap, blockdata in blocks:
 
             # Define code for block depending on mode
-            B, block_preparts, block_quadparts, block_postparts = \
+            block_preparts, block_quadparts = \
                 self.generate_block_parts(num_points, blockmap, blockdata)
 
             # Add definitions
@@ -614,17 +605,9 @@ class IntegralGenerator(object):
             # Add computations
             quadparts.extend(block_quadparts)
 
-            # Add finalization
-            postparts.extend(block_postparts)
-
-            # Add A[blockmap] += B[...] to finalization
-            self.finalization_blocks[blockmap].append(B)
-
-        return preparts, quadparts, postparts
+        return preparts, quadparts
 
     def get_entities(self, blockdata):
-        L = self.backend.language
-
         if self.ir.integral_type == "interior_facet":
             # Get the facet entities
             entities = []
@@ -638,12 +621,7 @@ class IntegralGenerator(object):
             else:
                 return tuple(entities)
         else:
-            # Get the current cell or facet entity
-            if blockdata.is_uniform:
-                # uniform, i.e. constant across facets
-                entity = L.LiteralInt(0)
-            else:
-                entity = self.backend.symbols.entity(self.ir.entitytype, None)
+            entity = self.backend.symbols.entity(self.ir.entitytype, None)
             return (entity, )
 
     def get_permutations(self, blockdata):
@@ -706,7 +684,6 @@ class IntegralGenerator(object):
         # The parts to return
         preparts = []
         quadparts = []
-        postparts = []
 
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
@@ -794,10 +771,7 @@ class IntegralGenerator(object):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
         quadparts += [body]
 
-        # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
-        A_rhs = None
-
-        return A_rhs, preparts, quadparts, postparts
+        return preparts, quadparts
 
     def get_vector_reflection(self, pname, indices):
         """Get the vector reflection for entry the table pname accessed using indices."""

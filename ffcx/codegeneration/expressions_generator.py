@@ -173,7 +173,7 @@ class ExpressionGenerator:
 
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions if blockdata.block_mode != "preintegrated"]
+                  for blockdata in contributions]
 
         for blockmap, blockdata in blocks:
 
