@@ -37,6 +37,7 @@ block_data_t = collections.namedtuple("block_data_t",
                                        "unames",  # list of unique FE table names for each block rank
                                        "restrictions",  # restriction "+" | "-" | None for each block rank
                                        "transposed",  # block is the transpose of another
+                                       "is_uniform",
                                        "name",  # used in "preintegrated" and "premultiplied"
                                        "ma_data",  # used in "full", "safe" and "partial"
                                        "piecewise_ma_index",  # used in "partial"
@@ -363,45 +364,28 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             assert not any(tt == "zeros" for tt in ttypes)
 
             blockmap = tuple(tr.dofmap for tr in trs)
+            block_is_uniform = all(tr.is_uniform for tr in trs)
 
             # Collect relevant restrictions to identify blocks correctly
             # in interior facet integrals
             block_restrictions = []
             for i, ai in enumerate(ma_indices):
-                r = F.nodes[ai]['mt'].restriction
+                if trs[i].is_uniform:
+                    r = None
+                else:
+                    r = F.nodes[ai]['mt'].restriction
+
                 block_restrictions.append(r)
             block_restrictions = tuple(block_restrictions)
 
             # Check if each *each* factor corresponding to this argument is piecewise
             factor_is_piecewise = all(F.nodes[ifi[0]]["status"] == 'piecewise' for ifi in fi_ci)
 
-            # TODO: Add separate block modes for quadrature
-            # Both arguments in quadrature elements
-            """
-            for iq
-                fw = f*w
-                #for i
-                #    for j
-                #        B[i,j] = fw*U[i]*V[j] = 0 if i != iq or j != iq
-                BQ[iq] = B[iq,iq] = fw
-            for (iq)
-                A[iq+offset0, iq+offset1] = BQ[iq]
-            """
-            # One argument in quadrature element
-            """
-            for iq
-                fw[iq] = f*w
-                #for i
-                #    for j
-                #        B[i,j] = fw*UQ[i]*V[j] = 0 if i != iq
-                for j
-                    BQ[iq,j] = fw[iq]*V[iq,j]
-            for (iq) for (j)
-                A[iq+offset, j+offset] = BQ[iq,j]
-            """
-
             block_is_piecewise = factor_is_piecewise and not expect_weight
             block_is_permuted = False
+            # for n in unames:
+            #     if unique_tables[n].shape[0] > 1:
+            #         block_is_permuted = True
             ma_data = []
             for i, ma in enumerate(ma_indices):
                 if not trs[i].is_piecewise:
@@ -418,7 +402,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             blockdata = block_data_t(ttypes, fi_ci,
                                      factor_is_piecewise, block_unames,
                                      block_restrictions, block_is_transposed,
-                                     None, tuple(ma_data), None, block_is_permuted)
+                                     block_is_uniform, None, tuple(ma_data), None, block_is_permuted)
 
             if block_is_piecewise:
                 # Insert in piecewise expr_ir
@@ -528,7 +512,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
                 targets.append(j)
 
     # Build piecewise/varying markers for factorized_vertices
-    varying_ttypes = ("varying", "quadrature")
+    varying_ttypes = ("varying", "quadrature", "uniform")
     varying_indices = []
     for i, v in F.nodes.items():
         if v.get('mt') is None:

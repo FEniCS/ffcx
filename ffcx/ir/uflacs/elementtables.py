@@ -27,14 +27,13 @@ table_origin_t = collections.namedtuple(
     "table_origin", ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
 
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
-
-uniform_ttypes = ("fixed", "ones", "zeros")
+uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 valid_ttypes = set(("quadrature", )) | set(piecewise_ttypes) | set(uniform_ttypes)
 
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
-    ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise",
+    ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise", "is_uniform",
      "is_permuted"])
 
 
@@ -612,17 +611,27 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
     else:
         # Equal for all points on a given entity
         piecewise = is_piecewise_table(table, rtol=rtol, atol=atol)
+        uniform = is_uniform_table(table, rtol=rtol, atol=atol)
 
-        if piecewise:
+        if piecewise and uniform:
             # Constant for all points and all entities
             ttype = "fixed"
         elif piecewise:
             # Constant for all points on each entity separately
             ttype = "piecewise"
+        elif uniform:
+            # Equal on all entities
+            ttype = "uniform"
         else:
             # Varying over points and entities
             ttype = "varying"
     return ttype
+
+
+def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
+    return all(
+        numpy.allclose(table[0, 0, :, :], table[0, i, :, :], rtol=rtol, atol=atol)
+        for i in range(1, table.shape[1]))
 
 
 def analyse_table_types(unique_tables, rtol=default_rtol, atol=default_atol):
@@ -737,6 +746,6 @@ def build_optimized_tables(num_points,
         # Store reference to unique table for this mt
         mt_unique_table_reference[mt] = unique_table_reference_t(
             ename, unique_tables[ename], dofrange, dofmap, original_dim, ttype,
-            ttype in piecewise_ttypes, is_permuted)
+            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted)
 
     return unique_tables, unique_table_ttypes, unique_table_num_dofs, mt_unique_table_reference, table_origins

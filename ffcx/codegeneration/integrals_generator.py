@@ -608,6 +608,8 @@ class IntegralGenerator(object):
         return preparts, quadparts
 
     def get_entities(self, blockdata):
+        L = self.backend.language
+
         if self.ir.integral_type == "interior_facet":
             # Get the facet entities
             entities = []
@@ -621,7 +623,12 @@ class IntegralGenerator(object):
             else:
                 return tuple(entities)
         else:
-            entity = self.backend.symbols.entity(self.ir.entitytype, None)
+            # Get the current cell or facet entity
+            if blockdata.is_uniform:
+                # uniform, i.e. constant across facets
+                entity = L.LiteralInt(0)
+            else:
+                entity = self.backend.symbols.entity(self.ir.entitytype, None)
             return (entity, )
 
     def get_permutations(self, blockdata):
