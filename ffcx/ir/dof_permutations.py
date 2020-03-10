@@ -111,7 +111,6 @@ def base_permutations_from_subdofmap(ufl_element):
                         # TODO: What to do with other dof types
                         warnings.warn("Permutations of " + t + " dofs not yet "
                                       "implemented. Results on unordered meshes may be incorrect")
-                    # FIXME: temporarily does no permutation; needs replacing
                     continue
 
                 # Apply these permutations

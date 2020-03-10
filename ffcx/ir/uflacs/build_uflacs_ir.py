@@ -226,8 +226,6 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
     if integral_type in skip_premultiplied or integral_type == "expression":
         p["enable_premultiplication"] = False
 
-#    p["enable_preintegration"] = False
-
     return p
 
 
