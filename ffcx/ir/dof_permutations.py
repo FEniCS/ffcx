@@ -45,16 +45,16 @@ def reflection_entities(ufl_element):
     return reflections
 
 
-def face_tangent_rotations(ufl_element):
+def face_tangents(ufl_element):
     """Returns the rotations that rotate the direction of vector-valued face tangent dofs."""
     if ufl_element.num_sub_elements() == 0:
         # If the element has no sub elements, return its rotations
-        return face_tangent_rotations_from_subdofmap(ufl_element)
+        return face_tangents_from_subdofmap(ufl_element)
 
     # If the element has sub elements, combine their rotations
     rotations = []
     for e in ufl_element.sub_elements():
-        rotations += face_tangent_rotations(e)
+        rotations += face_tangents(e)
     return rotations
 
 
@@ -165,7 +165,7 @@ def reflection_entities_from_subdofmap(ufl_element):
     return reflections
 
 
-def face_tangent_rotations_from_subdofmap(ufl_element):
+def face_tangents_from_subdofmap(ufl_element):
     """Calculate permutations and reflection entites for a root element.
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
@@ -187,20 +187,15 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
             if "PointFaceTangent" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
                 for dof_pair in zip(type_dofs[::2], type_dofs[1::2]):
-                    # (entity_dim, entity_number), dofs, {order: matrix}
-                    rotations.append(((2, entity_n), dof_pair, {
-                        1: [[-1, -1], [1, 0]],  # Apply rotation once
-                        2: [[0, 1], [-1, -1]],  # Apply twice
-                    }))
+                    # (entity_dim, entity_number), dofs
+                    rotations.append(((2, entity_n), dof_pair))
             # FrobeniusIntegralMoment dofs
             if "FrobeniusIntegralMoment" in types:
-                type_dofs = [i for i in dofs if dof_types[i] == "FrobeniusIntegralMoment"]
+                type_dofs = [i for i, t in zip(dofs, types) if t == "FrobeniusIntegralMoment"]
                 s = get_frobenius_side_length(len(type_dofs))
                 for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
-                    rotations.append(((2, entity_n), dof_pair, {
-                        1: [[-1, -1], [1, 0]],  # Apply rotation once
-                        2: [[0, 1], [-1, -1]],  # Apply twice
-                    }))
+                    # (entity_dim, entity_number), dofs
+                    rotations.append(((2, entity_n), dof_pair))
 
     return rotations
 

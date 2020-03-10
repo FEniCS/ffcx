@@ -300,7 +300,7 @@ class IntegralGenerator(object):
         c_false = L.LiteralBool(False)
         conditions = numpy.full(table.shape, c_false, dtype=L.CExpr)
 
-        refs = [self.ir.table_dof_reflections[n] for n in names]
+        refs = [self.ir.table_dof_reflection_entities[n] for n in names]
         dofmaps = [self.ir.table_dofmaps[n] for n in names]
         dof_indices = range(len(table.shape) - len(refs), len(table.shape))
 
@@ -329,13 +329,13 @@ class IntegralGenerator(object):
         If the dof dimensions of the table have dof rotations, apply these rotations."""
         L = self.backend.language
         c_false = L.LiteralBool(False)
-        if name in self.ir.table_dof_rotations:
+        if name in self.ir.table_dof_face_tangents:
             names = [name]
         else:
             names = self.ir.table_origins[name]
 
-        rots = [self.ir.table_dof_rotations[n] for n in names]
-        refs = [self.ir.table_dof_reflections[n] for n in names]
+        rots = [self.ir.table_dof_face_tangents[n] for n in names]
+        refs = [self.ir.table_dof_reflection_entities[n] for n in names]
         has_reflections = sum(len([j for j in i if j is not None]) for i in refs) > 0
         has_rotations = sum(len(i) for i in rots) > 0
 
@@ -370,39 +370,50 @@ class IntegralGenerator(object):
             "double", name, table.shape, table, alignas=alignas, padlen=padlen))
         t = L.Symbol(name)
 
+        temp_names = [L.Symbol("temp0"), L.Symbol("temp1")]
         # Apply reflections (for FaceTangent dofs)
         for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
-            for entity, dofs, matrices in rot:
-                temps = []
-                sets = []
-                for j, dof in enumerate(dofs):
-                    if dof in dofmap:
-                        indices = [dofmap.index(dof) if k == dof_index else index
-                                   for k, index in enumerate(index_names)]
-                        temps.append(L.VariableDecl("const double", "temp" + str(j), t[indices]))
+            for entity, dofs in rot:
+                if entity[0] != 2:
+                    warnings.warn("Face tangents an entity of dim != 2 not implemented.")
+                    continue
+                # Check that either all in the dofmap, or not in the dofmap.
+                # If they are not, skip this pair
+                included = [dof in dofmap for dof in dofs]
+                if False in included:
+                    if True in included:
                         # FIXME: if one of these dofs has been removed, then it may no longer be always 0
-                        if j == 0:
-                            sets.append(L.Assign(t[indices], L.Symbol("temp1")))
-                        else:
-                            assert j == 1
-                            sets.append(L.Assign(t[indices], L.Symbol("temp0")))
-                    else:
-                        temps.append(L.VariableDecl("const double", "temp" + str(j), 0))
                         warnings.warn("Non-zero dof may have been stripped from table.")
-                body = temps + sets
+                    continue
 
+                # Generate statement that swaps the values of two dofs if their face is reflected
+                indices0 = [dofmap.index(dofs[0]) if k == dof_index else index
+                            for k, index in enumerate(index_names)]
+                indices1 = [dofmap.index(dofs[1]) if k == dof_index else index
+                            for k, index in enumerate(index_names)]
+                body = [
+                    L.VariableDecl("const double", temp_names[0], t[indices0]),
+                    L.VariableDecl("const double", temp_names[1], t[indices1]),
+                    L.Assign(t[indices0], temp_names[1]),
+                    L.Assign(t[indices1], temp_names[0])
+                ]
+
+                # Add for loops over all dimensions of the table with size >1
                 for k, index in enumerate(index_names):
                     if isinstance(index, str) and k != dof_index:
                         body = L.ForRange(index, 0, table.shape[k], body)
-                if entity[0] == 2:
-                    entity_rot = L.Symbol("face_reflections")
-                    parts.append(L.If(entity_rot[entity[1]], body))
-                else:
-                    warnings.warn("Rotations of dofs on an entity of dim != 2 not supported.")
+                # Do this swap if the face is reflected
+                ## TODO: replace this with conditionals in the array
+                parts.append(L.If(L.Symbol("face_reflections")[entity[1]], body))
 
+        # TODO: FROM HERE
+        matrices = {
+                        1: [[-1, -1], [1, 0]],  # Apply rotation once
+                        2: [[0, 1], [-1, -1]],  # Apply twice
+                    }
         # Apply rotations (for FaceTangent dofs)
         for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
-            for entity, dofs, matrices in rot:
+            for entity, dofs in rot:
                 first = True
                 for a, m in matrices.items():
                     temps = []
