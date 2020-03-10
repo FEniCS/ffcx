@@ -157,7 +157,7 @@ def uflacs_default_parameters(optimize):
         # Code generation parameters
         "vectorize": False,
         "alignas": 32,
-        "assume_aligned": 32,
+        "assume_aligned": None,
         "padlen": 1,
         "use_symbol_array": True
     }
