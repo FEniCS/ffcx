@@ -10,8 +10,6 @@ from ffcx.fiatinterface import create_element
 
 # TODO: This information should be moved to FIAT instead of being reverse engineered here
 # TODO: Currently none of the vector-valued stuff has been tested on quads and hexes
-# TODO: currently these dof types are not correctly handled:
-#       FrobeniusIntegralMoment
 # TODO: currently these dof types are not handled at all:
 #       PointwiseInnerProductEval
 #       IntegralMomentOfNormalDerivative
@@ -81,11 +79,9 @@ def base_permutations_from_subdofmap(ufl_element):
     perms = identity_permutations(num_perms, num_dofs)
     perm_n = 0
     # Iterate through the entities of the reference element
-    for dim, e_dofs in entity_dofs.items():
-        if dim == 0:
-            # No permuting needed for points
-            continue
-        for dofs in e_dofs.values():
+    for dim in range(1, 4):
+        for entity_n in range(entity_counts[dim]):
+            dofs = entity_dofs[dim][entity_n]
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -115,11 +111,10 @@ def base_permutations_from_subdofmap(ufl_element):
                     permuted = [type_dofs for i in range(2 ** (dim - 1))]
 
                 # Apply these permutations
-                for p in permuted:
+                for n, p in enumerate(permuted):
                     for i, j in zip(type_dofs, p):
-                        perms[perm_n][i] = j
-                    perm_n += 1
-
+                        perms[perm_n + n][i] = j
+            perm_n += 2 ** (dim - 1)
     return perms
 
 
@@ -132,16 +127,17 @@ def reflection_entities_from_subdofmap(ufl_element):
 
     cname = ufl_element.cell().cellname()
 
+    # Get the entity counts for the cell type
+    entity_counts = get_entity_counts(cname)
+
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
 
     reflections = [None for i in range(num_dofs)]
     # Iterate through the entities of the reference element
-    for dim, e_dofs in entity_dofs.items():
-        if dim == 0:
-            # No reflecting needed for points
-            continue
-        for n, dofs in e_dofs.items():
+    for dim in range(1, 4):
+        for entity_n in range(entity_counts[dim]):
+            dofs = entity_dofs[dim][entity_n]
             types = [dof_types[i] for i in dofs]
             # Find the unique dof types
             unique_types = []
@@ -154,14 +150,13 @@ def reflection_entities_from_subdofmap(ufl_element):
                 if t in ["PointScaledNormalEval", "ComponentPointEval", "PointEdgeTangent",
                          "PointScaledNormalEval", "PointNormalEval", "IntegralMoment"]:
                     for i in type_dofs:
-                        reflections[i] = [(dim, n)]
+                        reflections[i] = [(dim, entity_n)]
                 elif t == "FrobeniusIntegralMoment" and cname in ["triangle", "tetrahedron"]:
                     if dim == 2:
                         s = get_frobenius_side_length(len(type_dofs))
-                        # for a, b in zip(type_dofs, fiat_element.ref_el.connectivity[dim, dim - 1][n]):
-                        for i, b in enumerate(fiat_element.ref_el.connectivity[dim, dim - 1][n]):
+                        for i, b in enumerate(fiat_element.ref_el.connectivity[dim, dim - 1][entity_n]):
                             for a in type_dofs[i * s:(i + 1) * s]:
-                                reflections[a] = [(dim, n), (dim - 1, b)]
+                                reflections[a] = [(dim, entity_n), (dim - 1, b)]
     return reflections
 
 
@@ -179,7 +174,8 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
     rotations = []
     if cname in ["triangle", "tetrahedron"]:
         # Iterate through faces
-        for n, dofs in entity_dofs[2].items():
+        for entity_n in range(len(entity_dofs[2])):
+            dofs = entity_dofs[2][entity_n]
             types = [dof_types[i] for i in dofs]
 
             # PointFaceTangent dofs
@@ -187,7 +183,7 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
                 for dof_pair in zip(type_dofs[::2], type_dofs[1::2]):
                     # (entity_dim, entity_number), dofs, {order: matrix}
-                    rotations.append(((2, n), dof_pair, {
+                    rotations.append(((2, entity_n), dof_pair, {
                         1: [[-1, -1], [1, 0]],  # Apply rotation once
                         2: [[0, 1], [-1, -1]],  # Apply twice
                     }))
@@ -195,13 +191,11 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
             if "FrobeniusIntegralMoment" in types:
                 type_dofs = [i for i in dofs if dof_types[i] == "FrobeniusIntegralMoment"]
                 s = get_frobenius_side_length(len(type_dofs))
-                for i, b in enumerate(fiat_element.ref_el.connectivity[2, 1][n]):
-                    for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
-                        # TODO:  Work out what these should be using definition of RT spaces and properties of integrals
-                        rotations.append(((2, n), dof_pair, {
-                            1: [[-1, -1], [1, 0]],  # Apply rotation once
-                            2: [[0, 1], [-1, -1]],  # Apply twice
-                        }))
+                for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
+                    rotations.append(((2, entity_n), dof_pair, {
+                        1: [[-1, -1], [1, 0]],  # Apply rotation once
+                        2: [[0, 1], [-1, -1]],  # Apply twice
+                    }))
 
     return rotations
 
