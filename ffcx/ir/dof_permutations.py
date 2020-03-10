@@ -66,20 +66,22 @@ def base_permutations_from_subdofmap(ufl_element):
     num_dofs = len(fiat_element.dual_basis())
 
     cname = ufl_element.cell().cellname()
+    tdim = ufl_element.cell().topological_dimension()
 
     # Get the entity counts and shape of each entity for the cell type
     entity_counts = get_entity_counts(cname)
     entity_functions = get_entity_functions(cname)
 
+    # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
+    num_perms = sum([0, 1, 2, 4][i] * j for i, j in enumerate(entity_counts))
+
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
-    # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
-    num_perms = entity_counts[1] + 2 * entity_counts[2] + 4 * entity_counts[3]
 
     perms = identity_permutations(num_perms, num_dofs)
     perm_n = 0
     # Iterate through the entities of the reference element
-    for dim in range(1, 4):
+    for dim in range(1, tdim + 1):
         for entity_n in range(entity_counts[dim]):
             dofs = entity_dofs[dim][entity_n]
             types = [dof_types[i] for i in dofs]
@@ -90,6 +92,7 @@ def base_permutations_from_subdofmap(ufl_element):
                     unique_types.append(t)
             # Permute the dofs of each entity type separately
             for t in unique_types:
+                permuted = None
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                          "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
@@ -104,11 +107,12 @@ def base_permutations_from_subdofmap(ufl_element):
                 elif t in ["FrobeniusIntegralMoment"] and dim == 2:
                     permuted = permute_frobenius_face(type_dofs, 1)
                 else:
-                    # TODO: What to do with other dof types
-                    warnings.warn("Permutations of " + t + " dofs not yet "
-                                  "implemented. Results on unordered meshes may be incorrect")
+                    if dim < tdim:
+                        # TODO: What to do with other dof types
+                        warnings.warn("Permutations of " + t + " dofs not yet "
+                                      "implemented. Results on unordered meshes may be incorrect")
                     # FIXME: temporarily does no permutation; needs replacing
-                    permuted = [type_dofs for i in range(2 ** (dim - 1))]
+                    continue
 
                 # Apply these permutations
                 for n, p in enumerate(permuted):
@@ -126,6 +130,7 @@ def reflection_entities_from_subdofmap(ufl_element):
     num_dofs = len(fiat_element.dual_basis())
 
     cname = ufl_element.cell().cellname()
+    tdim = ufl_element.cell().topological_dimension()
 
     # Get the entity counts for the cell type
     entity_counts = get_entity_counts(cname)
@@ -135,7 +140,7 @@ def reflection_entities_from_subdofmap(ufl_element):
 
     reflections = [None for i in range(num_dofs)]
     # Iterate through the entities of the reference element
-    for dim in range(1, 4):
+    for dim in range(1, tdim + 1):
         for entity_n in range(entity_counts[dim]):
             dofs = entity_dofs[dim][entity_n]
             types = [dof_types[i] for i in dofs]
@@ -202,15 +207,15 @@ def face_tangent_rotations_from_subdofmap(ufl_element):
 
 def get_entity_counts(cname):
     if cname == 'point':
-        return [1, 0, 0, 0]
+        return [1]
     elif cname == 'interval':
-        return [2, 1, 0, 0]
+        return [2, 1]
     elif cname == 'triangle':
-        return [3, 3, 1, 0]
+        return [3, 3, 1]
     elif cname == 'tetrahedron':
         return [4, 6, 4, 1]
     elif cname == 'quadrilateral':
-        return [4, 4, 1, 0]
+        return [4, 4, 1]
     elif cname == 'hexahedron':
         return [8, 12, 6, 1]
     else:
@@ -219,15 +224,15 @@ def get_entity_counts(cname):
 
 def get_entity_functions(cname):
     if cname == 'point':
-        return [None, None, None, None]
+        return [None]
     elif cname == 'interval':
-        return [None, permute_edge, None, None]
+        return [None, permute_edge]
     elif cname == 'triangle':
-        return [None, permute_edge, permute_triangle, None]
+        return [None, permute_edge, permute_triangle]
     elif cname == 'tetrahedron':
         return [None, permute_edge, permute_triangle, permute_tetrahedron]
     elif cname == 'quadrilateral':
-        return [None, permute_edge, permute_quadrilateral, None]
+        return [None, permute_edge, permute_quadrilateral]
     elif cname == 'hexahedron':
         return [None, permute_edge, permute_quadrilateral, permute_hexahedron]
     else:
