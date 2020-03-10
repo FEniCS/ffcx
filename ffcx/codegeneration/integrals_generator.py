@@ -309,6 +309,7 @@ class IntegralGenerator(object):
         has_reflections = sum(len([j for j in i if j is not None]) for i in refs) > 0
         has_rotations = sum(len(i) for i in rots) > 0
 
+        # If the space has no vector-valued dofs, return the static table
         if not has_reflections and not has_rotations:
             return [L.ArrayDecl(
                 "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
@@ -317,6 +318,7 @@ class IntegralGenerator(object):
         index_names = ["ind_" + str(i) if j > 1 else 0 for i, j in enumerate(table.shape)]
         dof_indices = range(len(table.shape) - len(refs), len(table.shape))
 
+        # Make the table have CExpr type so that conditionals can be put in it
         if has_reflections or has_rotations:
             table = numpy.array(table, dtype=L.CExpr)
 
