@@ -364,13 +364,7 @@ class IntegralGenerator(object):
             return [L.ArrayDecl(
                 "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
-        # Define the table; do not make it const, as it may be changed by rotations
         parts = []
-        parts.append(L.ArrayDecl(
-            "double", name, table.shape, table, alignas=alignas, padlen=padlen))
-        t = L.Symbol(name)
-
-        temp_names = [L.Symbol("temp0"), L.Symbol("temp1")]
         # Apply reflections (for FaceTangent dofs)
         for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
             for entity, dofs in rot:
@@ -385,27 +379,26 @@ class IntegralGenerator(object):
                         warnings.warn("Non-zero dof may have been stripped from table.")
                     continue
 
-                # Generate statement that swaps the values of two dofs if their face is reflected
-                indices0 = [dofmap.index(dofs[0]) if k == dof_index else index
-                            for k, index in enumerate(index_names)]
-                indices1 = [dofmap.index(dofs[1]) if k == dof_index else index
-                            for k, index in enumerate(index_names)]
-                body = [
-                    L.VariableDecl("const double", temp_names[0], t[indices0]),
-                    L.VariableDecl("const double", temp_names[1], t[indices1]),
-                    L.Assign(t[indices0], temp_names[1]),
-                    L.Assign(t[indices1], temp_names[0])
-                ]
+                # Swap the values of two dofs if their face is reflected
+                reflected = self.backend.symbols.entity_reflection(L, entity)
+                di0 = dofmap.index(dofs[0])
+                di1 = dofmap.index(dofs[1])
+                for indices in itertools.product(itertools.product(*[range(n) for n in table.shape[:dof_index]]),
+                                                 itertools.product(*[range(n) for n in table.shape[dof_index + 1:]])):
+                    indices0 = indices[0] + (di0, ) + indices[1]
+                    indices1 = indices[0] + (di1, ) + indices[1]
+                    temp0 = table[indices0]
+                    temp1 = table[indices1]
+                    table[indices0] = L.Conditional(reflected, temp1, temp0)
+                    table[indices1] = L.Conditional(reflected, temp0, temp1)
 
-                # Add for loops over all dimensions of the table with size >1
-                for k, index in enumerate(index_names):
-                    if isinstance(index, str) and k != dof_index:
-                        body = L.ForRange(index, 0, table.shape[k], body)
-                # Do this swap if the face is reflected
-                ## TODO: replace this with conditionals in the array
-                parts.append(L.If(L.Symbol("face_reflections")[entity[1]], body))
+        # Define the table; do not make it const, as it may be changed by rotations
+        parts.append(L.ArrayDecl(
+            "double", name, table.shape, table, alignas=alignas, padlen=padlen))
 
         # Apply rotations (for FaceTangent dofs)
+        t = L.Symbol(name)
+        temp_names = [L.Symbol("temp0"), L.Symbol("temp1")]
         for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
             for entity, dofs in rot:
                 if entity[0] != 2:
@@ -443,10 +436,9 @@ class IntegralGenerator(object):
                         body0 = L.ForRange(index, 0, table.shape[k], body0)
                         body1 = L.ForRange(index, 0, table.shape[k], body1)
                 # Do rotation if the face is rotated
-                parts += [
-                    L.If(L.EQ(L.Symbol("face_rotations")[entity[1]], 1), body0),
-                    L.ElseIf(L.EQ(L.Symbol("face_rotations")[entity[1]], 2), body1)
-                ]
+                rotations = self.backend.symbols.entity_rotations(L, entity)
+                parts += [L.If(L.EQ(rotations, 1), body0),
+                          L.ElseIf(L.EQ(rotations, 2), body1)]
 
         return parts
 
