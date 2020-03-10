@@ -30,4 +30,6 @@ def generator(ir, parameters):
         points=code["points"],
         value_shape=code["value_shape"])
 
+    print(implementation)
+
     return declaration, implementation
