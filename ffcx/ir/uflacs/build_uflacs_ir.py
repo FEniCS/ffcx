@@ -383,9 +383,9 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
             block_is_piecewise = factor_is_piecewise and not expect_weight
             block_is_permuted = False
-            # for n in unames:
-            #     if unique_tables[n].shape[0] > 1:
-            #         block_is_permuted = True
+            for n in unames:
+                if unique_tables[n].shape[0] > 1:
+                    block_is_permuted = True
             ma_data = []
             for i, ma in enumerate(ma_indices):
                 if not trs[i].is_piecewise:
