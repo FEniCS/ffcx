@@ -397,7 +397,7 @@ class IntegralGenerator(object):
             "double", name, table.shape, table, alignas=alignas, padlen=padlen))
 
         # Apply rotations (for FaceTangent dofs)
-        t = L.symbols.named_table(name)
+        t = self.backend.symbols.named_table(name)
         temp0 = L.Symbol("t0")
         temp1 = L.Symbol("t1")
         for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
