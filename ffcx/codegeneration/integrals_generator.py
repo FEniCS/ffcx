@@ -363,8 +363,9 @@ class IntegralGenerator(object):
             "double", name, table.shape, table, alignas=alignas, padlen=padlen))
 
         # Apply rotations (for FaceTangent dofs)
-        t = L.Symbol(name)
-        temp_names = [L.Symbol("temp0"), L.Symbol("temp1")]
+        t = self.backend.symbols.named_table(name)
+        temp0 = L.Symbol("t0")
+        temp1 = L.Symbol("t1")
         for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
             for entity, dofs in rot:
                 if entity[0] != 2:
@@ -384,16 +385,16 @@ class IntegralGenerator(object):
                 indices1 = [dofmap.index(dofs[1]) if k == dof_index else index
                             for k, index in enumerate(index_names)]
                 body0 = [
-                    L.VariableDecl("const double", temp_names[0], t[indices0]),
-                    L.VariableDecl("const double", temp_names[1], t[indices1]),
-                    L.Assign(t[indices0], -temp_names[0] - temp_names[1]),
-                    L.Assign(t[indices1], temp_names[0])
+                    L.VariableDecl("const double", temp0, t[indices0]),
+                    L.VariableDecl("const double", temp1, t[indices1]),
+                    L.Assign(t[indices0], -temp0 - temp1),
+                    L.Assign(t[indices1], temp0)
                 ]
                 body1 = [
-                    L.VariableDecl("const double", temp_names[0], t[indices0]),
-                    L.VariableDecl("const double", temp_names[1], t[indices1]),
-                    L.Assign(t[indices0], temp_names[1]),
-                    L.Assign(t[indices1], -temp_names[0] - temp_names[1])
+                    L.VariableDecl("const double", temp0, t[indices0]),
+                    L.VariableDecl("const double", temp1, t[indices1]),
+                    L.Assign(t[indices0], temp1),
+                    L.Assign(t[indices1], -temp0 - temp1)
                 ]
 
                 # Add for loops over all dimensions of the table with size >1
