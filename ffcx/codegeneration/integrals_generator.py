@@ -363,7 +363,7 @@ class IntegralGenerator(object):
             return [L.ArrayDecl(
                 "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
-        # Apply reflections (for FaceTangent dofs)
+        # Apply rotations and reflections (for FaceTangent dofs)
         for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
             for entity, dofs in rot:
                 if entity[0] != 2:
@@ -377,34 +377,7 @@ class IntegralGenerator(object):
                         warnings.warn("Non-zero dof may have been stripped from table.")
                     continue
 
-                # Swap the values of two dofs if their face is reflected
                 reflected = self.backend.symbols.entity_reflection(L, entity)
-                di0 = dofmap.index(dofs[0])
-                di1 = dofmap.index(dofs[1])
-                for indices in itertools.product(itertools.product(*[range(n) for n in table.shape[:dof_index]]),
-                                                 itertools.product(*[range(n) for n in table.shape[dof_index + 1:]])):
-                    indices0 = indices[0] + (di0, ) + indices[1]
-                    indices1 = indices[0] + (di1, ) + indices[1]
-                    temp0 = table[indices0]
-                    temp1 = table[indices1]
-                    table[indices0] = L.Conditional(reflected, temp1, temp0)
-                    table[indices1] = L.Conditional(reflected, temp0, temp1)
-
-        # Apply rotations (for FaceTangent dofs)
-        for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
-            for entity, dofs in rot:
-                if entity[0] != 2:
-                    warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-                    continue
-                # Check that either all in the dofmap, or not in the dofmap.
-                # If they are not, skip this pair
-                included = [dof in dofmap for dof in dofs]
-                if False in included:
-                    if True in included:
-                        warnings.warn("Non-zero dof may have been stripped from table.")
-                    continue
-
-                # Generate statements that rotate the dofs if their face is rotated
                 rotations = self.backend.symbols.entity_rotations(L, entity)
                 di0 = dofmap.index(dofs[0])
                 di1 = dofmap.index(dofs[1])
@@ -414,10 +387,19 @@ class IntegralGenerator(object):
                     indices1 = indices[0] + (di1, ) + indices[1]
                     temp0 = table[indices0]
                     temp1 = table[indices1]
-                    table[indices0] = L.Conditional(L.EQ(rotations, 1), -temp1 - temp0,
-                                                    L.Conditional(L.EQ(rotations, 2), temp1, temp0))
-                    table[indices1] = L.Conditional(L.EQ(rotations, 2), -temp1 - temp0,
-                                                    L.Conditional(L.EQ(rotations, 1), temp0, temp1))
+                    # Apply rotations and reflections
+                    # These should be:
+                    # rotations reflected   table[indices0] table[indices1]
+                    # 0         0           temp0           temp1
+                    # 1         0           -temp0 - temp1  -temp0 - temp1
+                    # 2         0           temp1           temp0
+                    # 0         1           temp1           temp0
+                    # 1         1           temp0           temp1
+                    # 2         1           -temp0 - temp1  -temp0 - temp1
+                    table[indices0] = L.Conditional(L.EQ(rotations, 1), -temp0 - temp1,
+                                                    L.Conditional(L.EQ(L.Brackets(L.EQ(rotations, 0)), reflected), temp1, temp0))
+                    table[indices1] = L.Conditional(L.EQ(rotations, 2), -temp0 - temp1,
+                                                    L.Conditional(L.EQ(L.Brackets(L.EQ(rotations, 0)), reflected), temp0, temp1))
 
         return [L.ArrayDecl(
             "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]

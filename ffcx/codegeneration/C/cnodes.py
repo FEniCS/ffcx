@@ -833,6 +833,21 @@ class Conditional(CExprOperator):
                 and self.true == other.true and self.false == other.false)
 
 
+class Brackets(CExprOperator):
+    __slots__ = ("item", )
+    precedence = PRECEDENCE.HIGHEST
+
+    def __init__(self, item):
+        self.item = as_cexpr(item)
+
+    def ce_format(self, precision=None):
+        # Format children
+        return '(' + self.item.ce_format(precision) + ')'
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.item == other.item
+
+
 class Call(CExprOperator):
     __slots__ = ("function", "arguments")
     precedence = PRECEDENCE.CALL
