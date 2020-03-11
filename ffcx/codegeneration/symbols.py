@@ -196,6 +196,9 @@ class FFCXBackendSymbols(object):
 
         return c[offset + index]
 
+    def named_table(self, name):
+        return self.S(name)
+
     def element_table(self, tabledata, entitytype, restriction):
         if tabledata.is_uniform:
             entity = 0
@@ -215,7 +218,7 @@ class FFCXBackendSymbols(object):
             qp = 0
 
         # Return direct access to element table
-        return self.S(tabledata.name)[qp][entity][iq]
+        return self.named_table(tabledata.name)[qp][entity][iq]
 
     def expr_component_index(self):
         """Symbol for indexing the expression's ufl shape."""
