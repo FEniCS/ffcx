@@ -65,12 +65,11 @@ def base_permutations_from_subdofmap(ufl_element):
     fiat_element = create_element(ufl_element)
     num_dofs = len(fiat_element.dual_basis())
 
-    cname = ufl_element.cell().cellname()
     tdim = ufl_element.cell().topological_dimension()
 
     # Get the entity counts and shape of each entity for the cell type
-    entity_counts = get_entity_counts(cname)
-    entity_functions = get_entity_functions(cname)
+    entity_counts = get_entity_counts(fiat_element)
+    entity_functions = get_entity_functions(ufl_element)
 
     # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
     num_perms = sum([0, 1, 2, 4][i] * j for i, j in enumerate(entity_counts))
@@ -132,7 +131,7 @@ def reflection_entities_from_subdofmap(ufl_element):
     tdim = ufl_element.cell().topological_dimension()
 
     # Get the entity counts for the cell type
-    entity_counts = get_entity_counts(cname)
+    entity_counts = get_entity_counts(fiat_element)
 
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
@@ -199,24 +198,13 @@ def face_tangents_from_subdofmap(ufl_element):
     return rotations
 
 
-def get_entity_counts(cname):
-    if cname == 'point':
-        return [1]
-    elif cname == 'interval':
-        return [2, 1]
-    elif cname == 'triangle':
-        return [3, 3, 1]
-    elif cname == 'tetrahedron':
-        return [4, 6, 4, 1]
-    elif cname == 'quadrilateral':
-        return [4, 4, 1]
-    elif cname == 'hexahedron':
-        return [8, 12, 6, 1]
-    else:
-        raise ValueError("Unrecognised cell type")
+def get_entity_counts(fiat_element):
+    topology = fiat_element.ref_el.topology
+    return [len(topology[i]) for i in range(len(topology))]
 
 
-def get_entity_functions(cname):
+def get_entity_functions(ufl_element):
+    cname = ufl_element.cell().cellname()
     if cname == 'point':
         return [None]
     elif cname == 'interval':
