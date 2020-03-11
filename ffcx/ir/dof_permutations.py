@@ -72,7 +72,7 @@ def base_permutations_from_subdofmap(ufl_element):
     entity_functions = get_entity_functions(ufl_element)
 
     # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
-    num_perms = sum([0, 1, 2, 4][i] * j for i, j in enumerate(entity_counts))
+    num_perms = sum([0, 1, 2, 4][i] * j for i, j in enumerate(entity_counts[:tdim]))
 
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
@@ -80,7 +80,7 @@ def base_permutations_from_subdofmap(ufl_element):
     perms = identity_permutations(num_perms, num_dofs)
     perm_n = 0
     # Iterate through the entities of the reference element
-    for dim in range(1, tdim + 1):
+    for dim in range(1, tdim):
         for entity_n in range(entity_counts[dim]):
             dofs = entity_dofs[dim][entity_n]
             types = [dof_types[i] for i in dofs]
@@ -138,7 +138,7 @@ def reflection_entities_from_subdofmap(ufl_element):
 
     reflections = [None for i in range(num_dofs)]
     # Iterate through the entities of the reference element
-    for dim in range(1, tdim + 1):
+    for dim in range(1, tdim):
         for entity_n in range(entity_counts[dim]):
             dofs = entity_dofs[dim][entity_n]
             types = [dof_types[i] for i in dofs]
@@ -175,7 +175,7 @@ def face_tangents_from_subdofmap(ufl_element):
     entity_dofs = fiat_element.entity_dofs()
 
     rotations = []
-    if cname in ["triangle", "tetrahedron"]:
+    if cname == "tetrahedron":
         # Iterate through faces
         for entity_n in range(len(entity_dofs[2])):
             dofs = entity_dofs[2][entity_n]
@@ -208,15 +208,15 @@ def get_entity_functions(ufl_element):
     if cname == 'point':
         return [None]
     elif cname == 'interval':
-        return [None, permute_edge]
+        return [None, None]
     elif cname == 'triangle':
-        return [None, permute_edge, permute_triangle]
+        return [None, permute_edge, None]
     elif cname == 'tetrahedron':
-        return [None, permute_edge, permute_triangle, permute_tetrahedron]
+        return [None, permute_edge, permute_triangle, None]
     elif cname == 'quadrilateral':
-        return [None, permute_edge, permute_quadrilateral]
+        return [None, permute_edge, None]
     elif cname == 'hexahedron':
-        return [None, permute_edge, permute_quadrilateral, permute_hexahedron]
+        return [None, permute_edge, permute_quadrilateral, None]
     else:
         raise ValueError("Unrecognised cell type")
 
@@ -274,16 +274,6 @@ def permute_triangle(dofs, blocksize, reverse_blocks=False):
 def permute_quadrilateral(dofs, blocksize, reverse_blocks=False):
     """Permute the dofs on a quadrilateral."""
     return [quadrilateral_rotation(dofs, blocksize), quadrilateral_reflection(dofs, blocksize, reverse_blocks)]
-
-
-def permute_tetrahedron(dofs, blocksize, reverse_blocks=False):
-    """Permute the dofs on a tetrahedron."""
-    return tetrahedron_rotations(dofs, blocksize) + [tetrahedron_reflection(dofs, blocksize, reverse_blocks)]
-
-
-def permute_hexahedron(dofs, blocksize, reverse_blocks=False):
-    """Permute the dofs on a hexahedron."""
-    return hexahedron_rotations(dofs, blocksize) + [hexahedron_reflection(dofs, blocksize, reverse_blocks)]
 
 
 def identity_permutations(num_perms, num_dofs):
@@ -383,135 +373,6 @@ def quadrilateral_reflection(dofs, blocksize=1, reverse_blocks=False):
                 perm += [dof * blocksize + k for k in range(blocksize)][::-1]
             else:
                 perm += [dof * blocksize + k for k in range(blocksize)]
-    assert len(perm) == len(dofs)
-
-    return [dofs[i] for i in perm]
-
-
-def tetrahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
-    """Rotate the dofs in a tetrahedron.
-    This will return three rotations corresponding to rotation each of the origin's three
-    neighbours to be the new origin."""
-    n = len(dofs) // blocksize
-    s = 0
-    while s * (s + 1) * (s + 2) < 6 * n:
-        s += 1
-    assert s * (s + 1) * (s + 2) == 6 * n
-
-    rot1 = []
-    for side in range(s, 0, -1):
-        face_dofs = list(range(len(rot1), len(rot1) + blocksize * side * (side + 1) // 2))
-        rot1 += triangle_rotation(face_dofs, blocksize, reverse_blocks)
-    assert len(rot1) == len(dofs)
-
-    rot2 = []
-    for side in range(s, -1, -1):
-        face_dofs = []
-        start = side * s - 1 - side * (side - 1) // 2
-        for row in range(side):
-            dof = start
-            for k in range(blocksize):
-                face_dofs.append(dof * blocksize + k)
-            for sub in range(2 + (s - side), s - row + 1):
-                dof -= sub
-                for k in range(blocksize):
-                    face_dofs.append(dof * blocksize + k)
-            start += (s - row - 1) * (s - row) // 2
-
-        rot2 += triangle_rotation(face_dofs, blocksize, reverse_blocks)
-    assert len(rot2) == len(dofs)
-
-    rot3 = [rot2[rot2[j]] for j in rot1]
-    assert len(rot3) == len(dofs)
-
-    return [[dofs[i] for i in rot1], [dofs[i] for i in rot2], [dofs[i] for i in rot3]]
-
-
-def tetrahedron_reflection(dofs, blocksize=1, reverse_blocks=False):
-    """Reflect the dofs in a tetrahedron."""
-    n = len(dofs) // blocksize
-    s = 0
-    while s * (s + 1) * (s + 2) < 6 * n:
-        s += 1
-    assert s * (s + 1) * (s + 2) == 6 * n
-
-    perm = []
-    layerst = 0
-    for layer in range(s):
-        st = layerst
-        for i in range(s, layer - 1, -1):
-            for dof in range(st, st + i - layer):
-                if reverse_blocks:
-                    perm += [dof * blocksize + k for k in range(blocksize)][::-1]
-                else:
-                    perm += [dof * blocksize + k for k in range(blocksize)]
-            st += i * (i + 1) // 2 - layer
-        layerst += s - layer
-    assert len(perm) == len(dofs)
-
-    return [dofs[i] for i in perm]
-
-
-def hexahedron_rotations(dofs, blocksize=1, reverse_blocks=False):
-    """Rotate the dofs in a hexahedron.
-    This will return three rotations corresponding to rotation each of the origin's
-    three neighbours to be the new origin."""
-    n = len(dofs) // blocksize
-    s = 0
-    while s ** 3 < n:
-        s += 1
-    area = s ** 2
-    assert s ** 3 == n
-
-    rot1 = []
-    for lst in range(area - s, n, area):
-        for st in range(lst, lst + s):
-            for dof in range(st, lst - area + s - 1, -s):
-                if reverse_blocks:
-                    rot1 += [dof * blocksize + k for k in range(blocksize)][::-1]
-                else:
-                    rot1 += [dof * blocksize + k for k in range(blocksize)]
-    assert len(rot1) == len(dofs)
-
-    rot2 = []
-    for lst in range(s - 1, -1, -1):
-        for st in range(lst, area, s):
-            for dof in range(st, n, area):
-                if reverse_blocks:
-                    rot2 += [dof * blocksize + k for k in range(blocksize)][::-1]
-                else:
-                    rot2 += [dof * blocksize + k for k in range(blocksize)]
-    assert len(rot2) == len(dofs)
-
-    rot3 = []
-    for st in range(0, area):
-        for dof in range(st, n, area):
-            if reverse_blocks:
-                rot3 += [dof * blocksize + k for k in range(blocksize)][::-1]
-            else:
-                rot3 += [dof * blocksize + k for k in range(blocksize)]
-    assert len(rot3) == len(dofs)
-
-    return [[dofs[i] for i in rot1], [dofs[i] for i in rot2], [dofs[i] for i in rot3]]
-
-
-def hexahedron_reflection(dofs, blocksize=1, reverse_blocks=False):
-    """Reflect the dofs in a hexahedron."""
-    n = len(dofs) // blocksize
-    s = 0
-    while s ** 3 < n:
-        s += 1
-    area = s ** 2
-    assert s ** 3 == n
-
-    perm = []
-    for lst in range(0, area, s):
-        for st in range(lst, n, area):
-            for dof in range(st, st + s):
-                if reverse_blocks:
-                    perm += [dof * blocksize + k for k in range(blocksize)][::-1]
-                else:
-                    perm += [dof * blocksize + k for k in range(blocksize)]
     assert len(perm) == len(dofs)
 
     return [dofs[i] for i in perm]
