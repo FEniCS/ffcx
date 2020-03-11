@@ -103,6 +103,14 @@ class FFCXBackendSymbols(object):
         else:
             return L.LiteralBool(False)
 
+    def entity_rotations(self, L, i):
+        """Returns the integer that says how many times an entity has been rotated."""
+        if i[0] == 2:
+            face_rotations = L.Symbol("face_rotations")
+            return face_rotations[i[1]]
+        else:
+            return L.LiteralBool(False)
+
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
         return self.S("ic")
