@@ -351,7 +351,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
         mapped_value = L.Symbol("mapped_value")
         if contains_reflections:
-            vec_scale = L.Conditional(L.Symbol("reflected_dofs")[idof], 1, -1)
+            vec_scale = L.Conditional(L.Symbol("reflected_dofs")[idof], -1, 1)
         else:
             vec_scale = 1
 

@@ -12,7 +12,6 @@ import ufl
 from ffcx.fiatinterface import create_element
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ffcx.ir.uflacs.tools import accumulate_integrals, compute_quadrature_rules
-from ffcx.ir.dof_permutations import base_permutations_and_reflection_entities
 
 logger = logging.getLogger(__name__)
 
@@ -128,12 +127,6 @@ def compute_integral_ir(ir: dict,
         ufl_element: create_element(ufl_element).space_dimension()
         for ufl_element in unique_elements
     }
-
-    ir["element_base_permutations"] = {}
-    ir["element_dof_reflection_entities"] = {}
-    for ufl_element in unique_elements:
-        (ir["element_base_permutations"][ufl_element],
-         ir["element_dof_reflection_entities"][ufl_element]) = base_permutations_and_reflection_entities(ufl_element)
 
     ir["element_ids"] = {
         ufl_element: i

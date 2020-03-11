@@ -8,6 +8,7 @@
 import collections
 import itertools
 import logging
+import numpy
 
 import ufl
 from ffcx.codegeneration.backend import FFCXBackend
@@ -15,6 +16,7 @@ from ffcx.codegeneration.C.cnodes import pad_dim, pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_integral_code
 from ffcx.ir.uflacs.elementtables import piecewise_ttypes
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -70,16 +72,6 @@ class IntegralGenerator(object):
 
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
-
-        # Contains the variable names to say whether or not each dof in a space needs its direction
-        # to be reversed (for vector dofs)
-        # If a space's id is not in this, then no reversals are needed
-        self.dof_reflections = {}
-
-        # Contains the variable names of the dofmaps for the spaces whose dofs need to be
-        # reversed
-        # If a space's id is not in this, then no reversals are needed or the dofmap is trivial
-        self.table_dofmaps = {}
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -158,13 +150,6 @@ class IntegralGenerator(object):
                           "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
                           .format(alignment))]
 
-        # Generate array of bools to say whether or not each dof needs to be reversed
-        # (for vector valued basis functions)
-        parts += self.generate_dof_reflections()
-
-        # Generate dofmaps for spaces whose dofs need to be reversed
-        parts += self.generate_table_dofmaps()
-
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
 
@@ -220,60 +205,6 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
-    def generate_dof_reflections(self):
-        """Generate arrays of bool saying whether each dof needs to be reflected."""
-        L = self.backend.language
-        c_false = L.LiteralBool(False)
-
-        parts = []
-        for element, id in self.ir.element_ids.items():
-            reflect_dofs = []
-            contains_reflections = False
-            for dre in self.ir.element_dof_reflection_entities[element]:
-                if dre is None:
-                    # Dof does not need reflecting, so put false in array
-                    reflect_dofs.append(c_false)
-                else:
-                    # Loop through entities that the direction of the dof depends on to
-                    # make a conditional
-                    ref = c_false
-                    for j in dre:
-                        if ref == c_false:
-                            # No condition has been added yet, so overwrite false
-                            ref = self.backend.symbols.entity_reflection(L, j)
-                        else:
-                            # This is not the first condition, so XOR
-                            ref = L.Conditional(self.backend.symbols.entity_reflection(L, j), L.Not(ref), ref)
-                    reflect_dofs.append(ref)
-                    if ref != c_false:
-                        # Mark this space as needing reflections
-                        contains_reflections = True
-
-            # If no dofs need reflecting, don't write any array
-            if contains_reflections:
-                self.dof_reflections[id] = L.Symbol("ref_dof" + str(id))
-                parts.append(L.ArrayDecl(
-                    "const bool", self.dof_reflections[id], (len(reflect_dofs), ), values=reflect_dofs))
-        return parts
-
-    def generate_table_dofmaps(self):
-        """Generate dofmaps for spaces whose dofs need to be reflected."""
-        L = self.backend.language
-
-        parts = []
-        for tname, dofmap in self.ir.table_dofmaps.items():
-            id = self.ir.element_ids[self.ir.table_origins[tname][0]]
-            if id in self.dof_reflections:
-                # Write the dofmap as it will be needed
-                for i, j in enumerate(dofmap):
-                    if i != j:
-                        # If a dof has been removed, write the data
-                        self.table_dofmaps[tname] = L.Symbol(tname + "_dofmap")
-                        parts.append(L.ArrayDecl(
-                            "const int", self.table_dofmaps[tname], (len(dofmap), ), values=dofmap))
-                        break
-        return parts
-
     def generate_quadrature_tables(self):
         """Generate static tables of quadrature points and weights."""
         L = self.backend.language
@@ -326,7 +257,8 @@ class IntegralGenerator(object):
 
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-        inline_tables = self.ir.integral_type == "cell"
+        inline_tables = self.ir.integral_type == "cell" and not (self.ir.needs_rotations or self.ir.needs_reflections)
+        # FIXME: if a table needs only reflections, it could be still done inline with conditionals
 
         alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
@@ -351,9 +283,7 @@ class IntegralGenerator(object):
             if inline_tables and name[:2] == "PI":
                 continue
 
-            decl = L.ArrayDecl(
-                "static const double", name, table.shape, table, alignas=alignas, padlen=p)
-            parts += [decl]
+            parts += self.declare_table(name, table, alignas, p)
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
@@ -362,6 +292,155 @@ class IntegralGenerator(object):
             "PI* dimensions: [permutations][permutations][entities][dofs][dofs] or [permutations][entities][dofs]",
             "PM* dimensions: [permutations][entities][dofs][dofs]",
         ])
+        return parts
+
+    def get_entity_reflection_conditions(self, table, names):
+        """Gets an array of conditions stating when each dof is reflected."""
+        L = self.backend.language
+        c_false = L.LiteralBool(False)
+        conditions = numpy.full(table.shape, c_false, dtype=L.CExpr)
+
+        refs = [self.ir.table_dof_reflection_entities[n] for n in names]
+        dofmaps = [self.ir.table_dofmaps[n] for n in names]
+        dof_indices = range(len(table.shape) - len(refs), len(table.shape))
+
+        for ref, dofmap, dof_index in zip(refs, dofmaps, dof_indices):
+            for dof, entities in enumerate(ref):
+                if entities is None or dof not in dofmap:
+                    continue
+                for indices in itertools.product(*[range(n) for n in table.shape[:dof_index]],
+                                                 [dofmap.index(dof)],
+                                                 *[range(n) for n in table.shape[dof_index + 1:]]):
+                    for entity in entities:
+                        entity_ref = self.backend.symbols.entity_reflection(L, entity)
+                        if conditions[indices] == c_false:
+                            # No condition has been added yet, so overwrite false
+                            conditions[indices] = entity_ref
+                        elif conditions[indices] == entity_ref:
+                            # A != A is always false
+                            conditions[indices] = c_false
+                        else:
+                            # This is not the first condition, so XOR
+                            conditions[indices] = L.NE(entity_ref, conditions[indices])
+        return conditions
+
+    def declare_table(self, name, table, alignas, padlen):
+        """Declare a table.
+        If the dof dimensions of the table have dof rotations, apply these rotations."""
+        L = self.backend.language
+        c_false = L.LiteralBool(False)
+        if name in self.ir.table_dof_face_tangents:
+            names = [name]
+        else:
+            names = self.ir.table_origins[name]
+
+        rots = [self.ir.table_dof_face_tangents[n] for n in names]
+        refs = [self.ir.table_dof_reflection_entities[n] for n in names]
+        has_reflections = sum(len([j for j in i if j is not None]) for i in refs) > 0
+        has_rotations = sum(len(i) for i in rots) > 0
+
+        # If the space has no vector-valued dofs, return the static table
+        if not has_reflections and not has_rotations:
+            return [L.ArrayDecl(
+                "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
+
+        dofmaps = [self.ir.table_dofmaps[n] for n in names]
+        index_names = ["ind_" + str(i) if j > 1 else 0 for i, j in enumerate(table.shape)]
+        dof_indices = range(len(table.shape) - len(refs), len(table.shape))
+
+        # Make the table have CExpr type so that conditionals can be put in it
+        if has_reflections or has_rotations:
+            table = numpy.array(table, dtype=L.CExpr)
+
+        # Multiply dofs that whose reversed by reflecting an entity by 1 or -1
+        if has_reflections:
+            conditions = self.get_entity_reflection_conditions(table, names)
+            for indices in itertools.product(*[range(n) for n in table.shape]):
+                if conditions[indices] != c_false:
+                    table[indices] = L.Conditional(conditions[indices], -table[indices], table[indices])
+
+        # If the table has no rotations, then we are done
+        if not has_rotations:
+            return [L.ArrayDecl(
+                "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
+
+        parts = []
+        # Apply reflections (for FaceTangent dofs)
+        for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
+            for entity, dofs in rot:
+                if entity[0] != 2:
+                    warnings.warn("Face tangents an entity of dim != 2 not implemented.")
+                    continue
+                # Check that either all in the dofmap, or not in the dofmap.
+                # If they are not, skip this pair
+                included = [dof in dofmap for dof in dofs]
+                if False in included:
+                    if True in included:
+                        warnings.warn("Non-zero dof may have been stripped from table.")
+                    continue
+
+                # Swap the values of two dofs if their face is reflected
+                reflected = self.backend.symbols.entity_reflection(L, entity)
+                di0 = dofmap.index(dofs[0])
+                di1 = dofmap.index(dofs[1])
+                for indices in itertools.product(itertools.product(*[range(n) for n in table.shape[:dof_index]]),
+                                                 itertools.product(*[range(n) for n in table.shape[dof_index + 1:]])):
+                    indices0 = indices[0] + (di0, ) + indices[1]
+                    indices1 = indices[0] + (di1, ) + indices[1]
+                    temp0 = table[indices0]
+                    temp1 = table[indices1]
+                    table[indices0] = L.Conditional(reflected, temp1, temp0)
+                    table[indices1] = L.Conditional(reflected, temp0, temp1)
+
+        # Define the table; do not make it const, as it may be changed by rotations
+        parts.append(L.ArrayDecl(
+            "double", name, table.shape, table, alignas=alignas, padlen=padlen))
+
+        # Apply rotations (for FaceTangent dofs)
+        t = self.backend.symbols.named_table(name)
+        temp0 = L.Symbol("t0")
+        temp1 = L.Symbol("t1")
+        for rot, dofmap, dof_index in zip(rots, dofmaps, dof_indices):
+            for entity, dofs in rot:
+                if entity[0] != 2:
+                    warnings.warn("Face tangents an entity of dim != 2 not implemented.")
+                    continue
+                # Check that either all in the dofmap, or not in the dofmap.
+                # If they are not, skip this pair
+                included = [dof in dofmap for dof in dofs]
+                if False in included:
+                    if True in included:
+                        warnings.warn("Non-zero dof may have been stripped from table.")
+                    continue
+
+                # Generate statements that rotate the dofs if their face is rotated
+                indices0 = [dofmap.index(dofs[0]) if k == dof_index else index
+                            for k, index in enumerate(index_names)]
+                indices1 = [dofmap.index(dofs[1]) if k == dof_index else index
+                            for k, index in enumerate(index_names)]
+                body0 = [
+                    L.VariableDecl("const double", temp0, t[indices0]),
+                    L.VariableDecl("const double", temp1, t[indices1]),
+                    L.Assign(t[indices0], -temp0 - temp1),
+                    L.Assign(t[indices1], temp0)
+                ]
+                body1 = [
+                    L.VariableDecl("const double", temp0, t[indices0]),
+                    L.VariableDecl("const double", temp1, t[indices1]),
+                    L.Assign(t[indices0], temp1),
+                    L.Assign(t[indices1], -temp0 - temp1)
+                ]
+
+                # Add for loops over all dimensions of the table with size >1
+                for k, index in enumerate(index_names):
+                    if isinstance(index, str) and k != dof_index:
+                        body0 = L.ForRange(index, 0, table.shape[k], body0)
+                        body1 = L.ForRange(index, 0, table.shape[k], body1)
+                # Do rotation if the face is rotated
+                rotations = self.backend.symbols.entity_rotations(L, entity)
+                parts += [L.If(L.EQ(rotations, 1), body0),
+                          L.ElseIf(L.EQ(rotations, 2), body1)]
+
         return parts
 
     def generate_quadrature_loop(self, num_points):
@@ -707,13 +786,12 @@ class IntegralGenerator(object):
             assert td.ttype != "zeros"
 
             if td.ttype == "ones":
-                arg_factor = self.get_vector_reflection(td.name, indices)
+                arg_factor = 1
             elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                assert self.get_vector_reflection(td.name, iq) == 1
                 arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = self.get_vector_reflection(td.name, indices) * table[indices[i]]
+                arg_factor = table[indices[i]]
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -781,6 +859,7 @@ class IntegralGenerator(object):
                 B_indices.append(iq)
             else:
                 B_indices.append(arg_indices[i])
+
         B_indices = tuple(B_indices)
 
         # Define unique block symbol
@@ -968,7 +1047,7 @@ class IntegralGenerator(object):
                     quadparts += [L.AssignAdd(FI, L.float_product([weight, f]))]
 
                 # Define B_rhs = FI * PM where FI = sum_q weight*f, and PM = u * v
-                PM = L.Symbol(blockdata.name)[P_ii] * self.get_vector_reflection(blockdata.name, P_ii)
+                PM = L.Symbol(blockdata.name)[P_ii]
                 B_rhs = L.float_product([FI, PM])
 
             # Define rhs expression for A[blockmap[arg_indices]] += A_rhs
@@ -1013,7 +1092,9 @@ class IntegralGenerator(object):
             # Get table for inlining
             tables = self.ir.unique_tables
             table = tables[blockdata.name]
-            inline_table = self.ir.integral_type == "cell"
+            inline_table = self.ir.integral_type == "cell" and not (self.ir.needs_rotations
+                                                                    or self.ir.needs_reflections)
+            # FIXME: if a table needs only reflections, it could be still done inline with conditionals
 
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
@@ -1054,10 +1135,7 @@ class IntegralGenerator(object):
                     P_ii = P_permutation_indices + P_entity_indices + P_arg_indices
                     Pval = PI[P_ii]
 
-                A_values[A_ii] += self.get_vector_reflection(blockdata.name, P_ii) * Pval * f
-
-        # Code generation
-        # A[i] += A_values[i]
+                A_values[A_ii] += Pval * f
 
         z = L.LiteralFloat(0.0)
         code = []
@@ -1126,28 +1204,3 @@ class IntegralGenerator(object):
         parts = dofmap_parts + parts
 
         return parts
-
-    def get_vector_reflection(self, pname, indices):
-        """Get the vector reflection for entry the table pname accessed using indices."""
-        L = self.backend.language
-        origin = self.ir.table_origins[pname]
-        if isinstance(origin[0], str):
-            # If the table is preintegrated, then origin will be a tuple of strings
-            # to identify which tables were used for each dof dimension
-            tablenames = origin
-        else:
-            # Otherwise, there is only one tablename; put it in a list so we can iterate
-            tablenames = [pname]
-        used_indices = indices[-len(tablenames):]
-
-        output = 1
-        for tablename, index in zip(tablenames, used_indices):
-            element = self.ir.table_origins[tablename][0]
-            id = self.ir.element_ids[element]
-            if id in self.dof_reflections:
-                # If at least one vector dof needs reflecting, return a conditional that gives -1
-                # if the dof needs negating
-                if tablename in self.table_dofmaps:
-                    index = self.table_dofmaps[tablename][index]
-                output *= L.Conditional(self.dof_reflections[id][index], 1, -1)
-        return output

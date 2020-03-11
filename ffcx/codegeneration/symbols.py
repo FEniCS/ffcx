@@ -103,6 +103,14 @@ class FFCXBackendSymbols(object):
         else:
             return L.LiteralBool(False)
 
+    def entity_rotations(self, L, i):
+        """Returns the integer that says how many times an entity has been rotated."""
+        if i[0] == 2:
+            face_rotations = L.Symbol("face_rotations")
+            return face_rotations[i[1]]
+        else:
+            return L.LiteralBool(False)
+
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
         return self.S("ic")
@@ -188,6 +196,9 @@ class FFCXBackendSymbols(object):
 
         return c[offset + index]
 
+    def named_table(self, name):
+        return self.S(name)
+
     def element_table(self, tabledata, entitytype, restriction):
         if tabledata.is_uniform:
             entity = 0
@@ -207,7 +218,7 @@ class FFCXBackendSymbols(object):
             qp = 0
 
         # Return direct access to element table
-        return self.S(tabledata.name)[qp][entity][iq]
+        return self.named_table(tabledata.name)[qp][entity][iq]
 
     def expr_component_index(self):
         """Symbol for indexing the expression's ufl shape."""
