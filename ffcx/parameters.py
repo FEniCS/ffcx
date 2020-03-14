@@ -19,6 +19,7 @@ FFCX_PARAMETERS = {
     # C double precision floating-point types)
     "scalar_type": "double",
     "external_includes": "",  # ':' separated list of include filenames to add to generated code
+    "tabulate_tensor_void": False,  # generate empty tabulation kernels, for benchmarking
 }
 
 
