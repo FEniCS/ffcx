@@ -200,6 +200,8 @@ class FFCXBackendSymbols(object):
         return self.S(name)
 
     def element_table(self, tabledata, entitytype, restriction):
+        entity = self.entity(entitytype, restriction)
+
         if tabledata.is_uniform:
             entity = 0
         else:
