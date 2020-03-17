@@ -106,9 +106,9 @@ class FFCXBackendSymbols(object):
             num_faces = 4
             face_bitsize = 3
         if i[0] == 1:
-            return L.NE(L.BitwiseAnd(cell_info, L.BitShiftL(1, face_bitsize * num_faces + i[1])), 0)
+            return L.BitwiseAnd(L.BitshiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
         elif i[0] == 2:
-            return L.NE(L.BitwiseAnd(cell_info, L.BitShiftL(1, face_bitsize * i[1])), 0)
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 1)
         return L.LiteralBool(False)
 
     def entity_rotations(self, L, i, cell_shape):
