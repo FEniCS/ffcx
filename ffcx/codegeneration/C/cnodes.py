@@ -619,6 +619,24 @@ class GE(BinOp):
     op = ">="
 
 
+class BitwiseAnd(BinOp):
+    __slots__ = ()
+    precedence = PRECEDENCE.AND
+    op = "&"
+
+
+class BitShiftR(BinOp):
+    __slots__ = ()
+    precedence = PRECEDENCE.OR
+    op = ">>"
+
+
+class BitShiftL(BinOp):
+    __slots__ = ()
+    precedence = PRECEDENCE.OR
+    op = "<<"
+
+
 class And(BinOp):
     __slots__ = ()
     precedence = PRECEDENCE.AND
