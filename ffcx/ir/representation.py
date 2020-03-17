@@ -86,7 +86,7 @@ ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'para
                                              'unique_table_types', 'piecewise_ir', 'varying_irs', 'table_origins',
                                              'table_dofmaps',
                                              'table_dof_face_tangents', 'table_dof_reflection_entities',
-                                             'needs_rotations', 'needs_reflections', 'cell_shape',
+                                             'needs_rotations', 'needs_reflections',
                                              'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points'])

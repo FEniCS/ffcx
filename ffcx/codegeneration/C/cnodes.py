@@ -444,11 +444,16 @@ class BinOp(CExprOperator):
         # Apply parentheses
         if self.lhs.precedence > self.precedence:
             lhs = '(' + lhs + ')'
+        elif self.lhs.precedence == self.precedence and self.is_equality():
+            lhs = '(' + lhs + ')'
         if self.rhs.precedence >= self.precedence:
             rhs = '(' + rhs + ')'
 
         # Return combined string
         return lhs + (" " + self.op + " ") + rhs
+
+    def is_equality(self):
+        return self.precedence in [PRECEDENCE.EQ, PRECEDENCE.NE]
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.lhs == other.lhs and self.rhs == other.rhs)
