@@ -119,7 +119,7 @@ class FFCXBackendSymbols(object):
         if cell_shape == "hexahedron":
             face_bitsize = 3
         if i[0] == 2:
-            return L.BitwiseAnd(cell_info, L.BitShiftL(3, face_bitsize * i[1] + 1))
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1] + 1), 3)
         return L.LiteralBool(False)
 
     def coefficient_dof_sum_index(self):
