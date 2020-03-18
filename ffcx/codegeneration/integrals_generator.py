@@ -273,7 +273,7 @@ class IntegralGenerator(object):
             if entities is None or dof not in dofmap:
                 continue
             for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
-                indices += [dofmap.index(dof)]
+                indices += (dofmap.index(dof), )
                 for entity in entities:
                     entity_ref = self.backend.symbols.entity_reflection(L, entity)
                     if conditions[indices] == c_false:
@@ -529,7 +529,6 @@ class IntegralGenerator(object):
                 table_parts += [decl]
 
             table_parts += [L.Comment("FIXME: Fill element tables here")]
-            # table_origins
 
             # Gather all in chunk loop
             chunk_body = rule_parts + table_parts + [iq_body]

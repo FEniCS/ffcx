@@ -226,7 +226,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     cases = [(num_points, [integrands[num_points]]) for num_points in all_num_points]
     ir["all_num_points"] = all_num_points
 
-    ir["table_origins"] = {}
     ir["table_dofmaps"] = {}
     ir["table_dof_face_tangents"] = {}
     ir["table_dof_reflection_entities"] = {}
@@ -268,7 +267,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             atol=p["table_atol"])
 
         for k, v in table_origins.items():
-            ir["table_origins"][k] = v
             ir["table_dof_face_tangents"][k] = dof_permutations.face_tangents(v[0])
             ir["table_dof_reflection_entities"][k] = dof_permutations.reflection_entities(v[0])
 
