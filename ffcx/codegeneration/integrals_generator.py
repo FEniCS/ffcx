@@ -275,7 +275,7 @@ class IntegralGenerator(object):
             for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
                 indices += (dofmap.index(dof), )
                 for entity in entities:
-                    entity_ref = self.backend.symbols.entity_reflection(L, entity)
+                    entity_ref = self.backend.symbols.entity_reflection(L, entity, self.ir.cell_shape)
                     if conditions[indices] == c_false:
                         # No condition has been added yet, so overwrite false
                         conditions[indices] = entity_ref
@@ -336,7 +336,7 @@ class IntegralGenerator(object):
                 continue
 
             # Swap the values of two dofs if their face is reflected
-            reflected = self.backend.symbols.entity_reflection(L, entity)
+            reflected = self.backend.symbols.entity_reflection(L, entity, self.ir.cell_shape)
             di0 = dofmap.index(dofs[0])
             di1 = dofmap.index(dofs[1])
             for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
@@ -389,7 +389,7 @@ class IntegralGenerator(object):
                 body0 = L.ForRange(index, 0, table.shape[k], body0)
                 body1 = L.ForRange(index, 0, table.shape[k], body1)
             # Do rotation if the face is rotated
-            rotations = self.backend.symbols.entity_rotations(L, entity)
+            rotations = self.backend.symbols.entity_rotations(L, entity, self.ir.cell_shape)
             parts += [L.If(L.EQ(rotations, 1), body0),
                       L.ElseIf(L.EQ(rotations, 2), body1)]
 

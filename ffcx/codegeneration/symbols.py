@@ -92,24 +92,35 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
-    def entity_reflection(self, L, i):
+    def entity_reflection(self, L, i, cell_shape):
         """Returns the bool that says whether or not an entity has been reflected."""
+        cell_info = self.S("cell_permutation")
+        if cell_shape in ["triangle", "quadrilateral"]:
+            num_faces = 0
+            face_bitsize = 1
+            assert i[0] == 1
+        if cell_shape == "tetrahedron":
+            num_faces = 4
+            face_bitsize = 3
+        if cell_shape == "hexahedron":
+            num_faces = 4
+            face_bitsize = 3
         if i[0] == 1:
-            edge_reflections = L.Symbol("edge_reflections")
-            return edge_reflections[i[1]]
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
         elif i[0] == 2:
-            face_reflections = L.Symbol("face_reflections")
-            return face_reflections[i[1]]
-        else:
-            return L.LiteralBool(False)
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 1)
+        return L.LiteralBool(False)
 
-    def entity_rotations(self, L, i):
-        """Returns the integer that says how many times an entity has been rotated."""
+    def entity_rotations(self, L, i, cell_shape):
+        """Returns the bool that says whether or not an entity has been reflected."""
+        cell_info = self.S("cell_permutation")
+        if cell_shape == "tetrahedron":
+            face_bitsize = 3
+        if cell_shape == "hexahedron":
+            face_bitsize = 3
         if i[0] == 2:
-            face_rotations = L.Symbol("face_rotations")
-            return face_rotations[i[1]]
-        else:
-            return L.LiteralBool(False)
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1] + 1), 3)
+        return L.LiteralBool(False)
 
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
