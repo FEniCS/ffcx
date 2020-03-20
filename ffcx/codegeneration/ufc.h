@@ -124,23 +124,15 @@ extern "C"
         const double* restrict X);
 
     /// Map the reference values on to the cell
-    /// @param[in] edge_reflections An array of bools to say whether or not each
-    /// each edge has been reflected. This is used to ensure that vector dofs
-    /// are correctly oriented.
-    /// @param[in] face_reflections An array of bools to say whether or not each
-    /// each face has been reflected. This is used to ensure that vector dofs
-    /// are correctly oriented.
-    /// @param[in] face_rotations An array of integers to say how many times
-    /// each face needs to be rotated to match the low-to-high ordering. This
-    /// is used to ensure that FaceTangent vector dofs are correctly oriented.
+    /// @param[in] cell_permutations An integer that says how each entity of the
+    ///         cell of dimension < tdim has been permuted relative to a
+    ///         low-to-high ordering of the cell.
 
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
-        const double* restrict K, const bool* restrict edge_reflections,
-        const bool* restrict face_reflections,
-        const uint8_t* restrict face_rotations);
+        const double* restrict K, const uint32_t cell_permutation);
 
     /// Map values of field from physical to reference space which has
     /// been evaluated at points given by
@@ -425,26 +417,21 @@ extern "C"
   ///         interior facets the array will have size 2 (one permutation
   ///         for each cell adjacent to the facet). For exterior facets,
   ///         this will have size 1.
-  /// @param[in] edge_reflections An array of bools to say whether or not each
-  ///         each edge has been reflected. This is used to ensure that vector
-  ///         dofs are correctly oriented. This array will have one entry for
-  ///         each edge of the cell.
-  /// @param[in] face_reflections An array of bools to say whether or not each
-  ///         each face has been reflected. This is used to ensure that vector
-  ///         dofs are correctly oriented. This array will have one entry for
-  ///         each face of the cell.
-  /// @param[in] face_rotations An array of integers to say how many times
-  ///         each face needs to be rotated to match the low-to-high ordering.
-  ///         This is used to ensure that FaceTangent vector dofs are correctly
-  ///         oriented.
+  /// @param[in] cell_permutations An integer that says how each entity of the
+  ///         cell of dimension < tdim has been permuted relative to a
+  ///         low-to-high ordering of the cell. This bits of this integer
+  ///         represent (from least to most significant bits):
+  ///
+  ///          - Faces (3 bits each). Reflections are least significant bit,
+  ///          then next two bits give number of rotations.
+  ///          - Edges (1 bit each). The bit is 1 if the edge is reflected.
+  ///
   typedef void(ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
       const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      const bool* restrict edge_reflections,
-      const bool* restrict face_reflections,
-      const uint8_t* restrict face_rotations);
+      const uint32_t cell_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///

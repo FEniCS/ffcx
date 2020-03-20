@@ -73,7 +73,7 @@ ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'sub
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
                                          'enabled_coefficients', 'element_dimensions', 'element_ids',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
-                                         'coefficient_offsets', 'original_constant_offsets', 'params',
+                                         'coefficient_offsets', 'original_constant_offsets', 'params', 'cell_shape',
                                          'unique_tables', 'unique_table_types', 'table_origins', 'table_dofmaps',
                                          'table_dof_face_tangents', 'table_dof_reflection_entities',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'name',
@@ -365,6 +365,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         # Compute representation
         entitytype = _entity_types[itg_data.integral_type]
         cell = itg_data.domain.ufl_cell()
+        cellname = cell.cellname()
         tdim = cell.topological_dimension()
         assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
@@ -379,7 +380,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
             "num_facets": cell.num_facets(),
             "num_vertices": cell.num_vertices(),
             "needs_oriented": form_needs_oriented_jacobian(form_data),
-            "enabled_coefficients": itg_data.enabled_coefficients
+            "enabled_coefficients": itg_data.enabled_coefficients,
+            "cell_shape": cellname
         }
 
         ir = compute_integral_ir(ir, itg_data, form_data, element_numbers,
