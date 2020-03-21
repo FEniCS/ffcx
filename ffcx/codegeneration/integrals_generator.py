@@ -386,8 +386,9 @@ class IntegralGenerator(object):
 
             # Add for loops over all dimensions of the table with size >1
             for k, index in enumerate(index_names):
-                body0 = L.ForRange(index, 0, table.shape[k], body0)
-                body1 = L.ForRange(index, 0, table.shape[k], body1)
+                if isinstance(index, str):
+                    body0 = L.ForRange(index, 0, table.shape[k], body0)
+                    body1 = L.ForRange(index, 0, table.shape[k], body1)
             # Do rotation if the face is rotated
             rotations = self.backend.symbols.entity_rotations(L, entity, self.ir.cell_shape)
             parts += [L.If(L.EQ(rotations, 1), body0),
