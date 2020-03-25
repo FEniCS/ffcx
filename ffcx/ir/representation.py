@@ -27,7 +27,7 @@ from ffcx import naming
 from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                 MixedElement, QuadratureElement, SpaceOfReals,
                                 create_element)
-from ffcx.ir.dof_permutations import base_permutations_and_reflection_entities
+from ffcx.ir import dof_permutations
 from FIAT.hdiv_trace import HDivTrace
 
 logger = logging.getLogger(__name__)
@@ -71,12 +71,11 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'name', 'signature', 
 ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'subdomain_id',
                                          'rank', 'geometric_dimension', 'topological_dimension',
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
-                                         'enabled_coefficients', 'element_dimensions',
-                                         'element_base_permutations', 'element_dof_reflection_entities',
-                                         'element_ids',
+                                         'enabled_coefficients', 'element_dimensions', 'element_ids',
                                          'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
-                                         'coefficient_offsets', 'original_constant_offsets', 'params',
-                                         'unique_tables', 'unique_table_types', 'table_origins', 'table_dofmaps',
+                                         'coefficient_offsets', 'original_constant_offsets', 'params', 'cell_shape',
+                                         'unique_tables', 'unique_table_types', 'table_dofmaps',
+                                         'table_dof_face_tangents', 'table_dof_reflection_entities',
                                          'piecewise_ir', 'varying_irs', 'all_num_points', 'name',
                                          'precision'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
@@ -84,8 +83,9 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
                                                  'physical_offsets', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'params', 'unique_tables',
-                                             'unique_table_types', 'piecewise_ir', 'varying_irs', 'table_origins',
+                                             'unique_table_types', 'piecewise_ir', 'varying_irs',
                                              'table_dofmaps',
+                                             'table_dof_face_tangents', 'table_dof_reflection_entities',
                                              'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points'])
@@ -189,8 +189,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    (ir["base_permutations"],
-     ir["dof_reflection_entities"]) = base_permutations_and_reflection_entities(ufl_element)
+    ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
+    ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
 
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["entity_dofs"] = fiat_element.entity_dofs()
@@ -220,8 +220,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
-    (ir["base_permutations"],
-     ir["dof_reflection_entities"]) = base_permutations_and_reflection_entities(ufl_element)
+    ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
+    ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
 
     return ir_dofmap(**ir)
 
@@ -364,6 +364,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         # Compute representation
         entitytype = _entity_types[itg_data.integral_type]
         cell = itg_data.domain.ufl_cell()
+        cellname = cell.cellname()
         tdim = cell.topological_dimension()
         assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
@@ -378,7 +379,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
             "num_facets": cell.num_facets(),
             "num_vertices": cell.num_vertices(),
             "needs_oriented": form_needs_oriented_jacobian(form_data),
-            "enabled_coefficients": itg_data.enabled_coefficients
+            "enabled_coefficients": itg_data.enabled_coefficients,
+            "cell_shape": cellname
         }
 
         ir = compute_integral_ir(ir, itg_data, form_data, element_numbers,

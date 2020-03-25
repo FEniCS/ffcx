@@ -72,7 +72,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     assert np.allclose(A, np.trace(kappa_value) * expected_result)
 
@@ -131,14 +131,14 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     b = np.zeros(3, dtype=np_type)
     form1.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), b.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     assert np.allclose(A, expected_result)
     assert np.allclose(b, 1.0 / 6.0)
@@ -183,7 +183,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     assert np.allclose(A, expected_result)
 
@@ -229,7 +229,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     assert np.allclose(A, expected_result)
 
@@ -259,7 +259,7 @@ def test_form_coefficient(compile_args):
         ffi.cast('double  *', w.ctypes.data),
         ffi.cast('double  *', c.ctypes.data),
         ffi.cast('double  *', coords.ctypes.data), ffi.NULL,
-        ffi.cast('uint8_t *', perm.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('uint8_t *', perm.ctypes.data), 0)
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
     A_diff = (A - A_analytic)
@@ -347,7 +347,7 @@ def test_interior_facet_integral(mode, compile_args):
         ffi.cast('{}  *'.format(c_type), w.ctypes.data),
         ffi.cast('{}  *'.format(c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
-        ffi.cast('uint8_t *', perms.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('uint8_t *', perms.ctypes.data), 0)
 
 
 @pytest.mark.parametrize("mode", ["double", "double complex"])
@@ -386,7 +386,7 @@ def test_conditional(mode, compile_args):
         ffi.cast('{type} *'.format(type=c_type), A1.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w1.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=np_type)
     assert np.allclose(A1, expected_result)
@@ -399,7 +399,7 @@ def test_conditional(mode, compile_args):
         ffi.cast('{type} *'.format(type=c_type), A2.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w2.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     expected_result = np.ones(3, dtype=np_type)
     assert np.allclose(A2, expected_result)

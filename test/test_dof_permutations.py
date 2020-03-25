@@ -29,11 +29,7 @@ from ffcx.ir import dof_permutations
     (dof_permutations.triangle_rotation, lambda s: s * (s + 1) // 2),
     (dof_permutations.triangle_reflection, lambda s: s * (s + 1) // 2),
     (dof_permutations.quadrilateral_rotation, lambda s: s ** 2),
-    (dof_permutations.quadrilateral_reflection, lambda s: s ** 2),
-    (dof_permutations.tetrahedron_rotations, lambda s: s * (s + 1) * (s + 2) // 6),
-    (dof_permutations.tetrahedron_reflection, lambda s: s * (s + 1) * (s + 2) // 6),
-    (dof_permutations.hexahedron_rotations, lambda s: s ** 3),
-    (dof_permutations.hexahedron_reflection, lambda s: s ** 3)])
+    (dof_permutations.quadrilateral_reflection, lambda s: s ** 2)])
 def test_permutations(s, perm_f, dof_f, blocksize):
     """Test that permutations are valid."""
     dofs = dof_f(s) * blocksize

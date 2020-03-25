@@ -442,7 +442,7 @@ class BinOp(CExprOperator):
         rhs = self.rhs.ce_format(precision)
 
         # Apply parentheses
-        if self.lhs.precedence > self.precedence:
+        if self.lhs.precedence >= self.precedence:
             lhs = '(' + lhs + ')'
         if self.rhs.precedence >= self.precedence:
             rhs = '(' + rhs + ')'
@@ -617,6 +617,24 @@ class GE(BinOp):
     __slots__ = ()
     precedence = PRECEDENCE.GE
     op = ">="
+
+
+class BitwiseAnd(BinOp):
+    __slots__ = ()
+    precedence = PRECEDENCE.BITAND
+    op = "&"
+
+
+class BitShiftR(BinOp):
+    __slots__ = ()
+    precedence = PRECEDENCE.BITSHIFT
+    op = ">>"
+
+
+class BitShiftL(BinOp):
+    __slots__ = ()
+    precedence = PRECEDENCE.BITSHIFT
+    op = "<<"
 
 
 class And(BinOp):

@@ -9,7 +9,6 @@ import logging
 
 import ufl
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.cnodes import pad_innermost_dim
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representationutils import initialize_expression_code
 
@@ -60,32 +59,18 @@ class ExpressionGenerator:
 
         all_preparts = []
         all_quadparts = []
-        all_postparts = []
 
-        preparts, quadparts, postparts = self.generate_quadrature_loop()
+        preparts, quadparts = self.generate_quadrature_loop()
         all_preparts += preparts
         all_quadparts += quadparts
-        all_postparts += postparts
 
-        preparts, quadparts, postparts = self.generate_dofblock_partition(quadrature_independent=True)
+        preparts, quadparts = self.generate_dofblock_partition(quadrature_independent=True)
         all_preparts += preparts
         all_quadparts += quadparts
-        all_postparts += postparts
-
-        all_finalizeparts = []
-
-        # Initialize a tensor to zeros
-        A_values = [0.0] * ufl.product(self.ir.expression_shape + [self.num_points] + self.ir.tensor_shape)
-        all_finalizeparts = self.generate_tensor_value_initialization(A_values)
-
-        # Generate code to add reusable blocks B* to element tensor A
-        all_finalizeparts += self.generate_copyout_statements()
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
-        parts += all_postparts
-        parts += all_finalizeparts
 
         return L.StatementList(parts)
 
@@ -119,11 +104,11 @@ class ExpressionGenerator:
         # Generate unstructured varying partition
         body = self.generate_unstructured_varying_partition()
         body = L.commented_code_list(
-            body, "Quadrature loop body setup (num_points={0})".format(self.num_points))
+            body, "Points loop body setup (num_points={0})".format(self.num_points))
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
-        preparts, quadparts, postparts = \
+        preparts, quadparts = \
             self.generate_dofblock_partition()
         body += quadparts
 
@@ -135,7 +120,7 @@ class ExpressionGenerator:
             iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, self.num_points, body=body)]
 
-        return preparts, quadparts, postparts
+        return preparts, quadparts
 
     def generate_unstructured_varying_partition(self):
         L = self.backend.language
@@ -169,16 +154,15 @@ class ExpressionGenerator:
 
         preparts = []
         quadparts = []
-        postparts = []
 
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions if blockdata.block_mode != "preintegrated"]
+                  for blockdata in contributions]
 
         for blockmap, blockdata in blocks:
 
             # Define code for block depending on mode
-            B, block_preparts, block_quadparts, block_postparts = \
+            block_preparts, block_quadparts = \
                 self.generate_block_parts(self.num_points, blockmap, blockdata, quadrature_independent)
 
             # Add definitions
@@ -187,13 +171,7 @@ class ExpressionGenerator:
             # Add computations
             quadparts.extend(block_quadparts)
 
-            # Add finalization
-            postparts.extend(block_postparts)
-
-            # Add A[blockmap] += B[...] to finalization
-            self.finalization_blocks[blockmap].append(B)
-
-        return preparts, quadparts, postparts
+        return preparts, quadparts
 
     def generate_block_parts(self, num_points, blockmap, blockdata, quadrature_independent=False):
         """Generate and return code parts for a given block.
@@ -207,14 +185,9 @@ class ExpressionGenerator:
         # The parts to return
         preparts = []
         quadparts = []
-        postparts = []
-
-        alignas = self.ir.params["alignas"]
-        padlen = self.ir.params["padlen"]
 
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
-        padded_blockdims = pad_innermost_dim(blockdims, padlen)
 
         ttypes = blockdata.ttypes
         if "zeros" in ttypes:
@@ -230,136 +203,43 @@ class ExpressionGenerator:
         else:
             F = self.ir.varying_irs[num_points]["factorization"]
 
-        assert blockdata.block_mode == "full"
         assert not blockdata.transposed, "Not handled yet"
-
         components = ufl.product(self.ir.expression_shape)
+
+        A_shape = self.ir.tensor_shape
+        Asym = self.backend.symbols.element_tensor()
+        A = L.FlattenedArray(Asym, dims=[components] + [self.num_points] + A_shape)
 
         # Prepend dimensions of dofmap block with free index
         # for quadrature points and expression components
-        blockdims = (components, ) + (num_points, ) + blockdims
-
-        B = self.new_temp_symbol("B")
-        # Add initialization of this block to parts
-        # For all modes, block definition occurs before quadloop
-        preparts.append(L.Comment("B[components for block][points][dofs][dofs]"))
-        preparts.append(L.ArrayDecl("ufc_scalar_t", B, blockdims, 0, alignas=alignas, padlen=padlen))
-
         B_indices = tuple([iq] + list(arg_indices))
 
         # Fetch code to access modified arguments
         # An access to FE table data
         arg_factors = self.get_arg_factors(blockdata, block_rank, num_points, iq, B_indices)
 
+        A_indices = []
+        for i in range(len(blockmap)):
+            offset = blockmap[i][0]
+            A_indices.append(arg_indices[i] + offset)
+        A_indices = tuple([iq] + A_indices)
+
         # Multiply collected factors
-        # A list of computations of Bs, for each component of the factor expression
-        # Add result to block inside quadloop
+        # For each component of the factor expression
+        # add result inside quadloop
         body = []
 
         for fi_ci in blockdata.factor_indices_comp_indices:
             f = self.get_var(num_points, F.nodes[fi_ci[0]]["expression"])
             Brhs = L.float_product([f] + arg_factors)
-            body.append(L.AssignAdd(B[(fi_ci[1],) + B_indices], Brhs))
+            body.append(L.AssignAdd(A[(fi_ci[1],) + A_indices], Brhs))
 
         for i in reversed(range(block_rank)):
             body = L.ForRange(
-                B_indices[i + 1], 0, padded_blockdims[i], body=body)
+                B_indices[i + 1], 0, blockdims[i], body=body)
         quadparts += [body]
 
-        # Define rhs expression for A[it][iq][blockmap[arg_indices]] += A_rhs
-        # This is used outside quadloop, in finalization copyout statements
-        iec = self.backend.symbols.expr_component_index()
-        A_rhs = B[(iec,) + B_indices]
-
-        return A_rhs, preparts, quadparts, postparts
-
-    def generate_tensor_value_initialization(self, A_values):
-        parts = []
-
-        L = self.backend.language
-        A = self.backend.symbols.element_tensor()
-        A_size = len(A_values)
-
-        z = L.LiteralFloat(0.0)
-
-        k = L.Symbol("k")
-
-        # Zero everything first
-        parts += [L.ForRange(k, 0, A_size, index_type="int", body=L.Assign(A[k], 0.0))]
-
-        # Generate A[i] = A_values[i] skipping zeros
-        for i in range(A_size):
-            if not (A_values[i] == 0.0 or A_values[i] == z):
-                parts += [L.Assign(A[i], A_values[i])]
-
-        return parts
-
-    def generate_copyout_statements(self):
-        L = self.backend.language
-        parts = []
-
-        # Get symbol, dimensions, and loop index symbols for A
-        A_shape = self.ir.tensor_shape
-        A_rank = len(A_shape)
-
-        Asym = self.backend.symbols.element_tensor()
-
-        num_expr_components = ufl.product(self.ir.expression_shape)
-        A = L.FlattenedArray(Asym, dims=[num_expr_components] + [self.num_points] + A_shape)
-
-        indices = [self.backend.symbols.argument_loop_index(i) for i in range(A_rank)]
-
-        dofmap_parts = []
-        dofmaps = {}
-        for blockmap, contributions in sorted(self.finalization_blocks.items()):
-
-            # Define mapping from B indices to A indices
-            A_indices = []
-            for i in range(A_rank):
-                dofmap = blockmap[i]
-                begin = dofmap[0]
-                end = dofmap[-1] + 1
-                if len(dofmap) == end - begin:
-                    # Dense insertion, offset B index to index A
-                    j = indices[i] + begin
-                else:
-                    # Sparse insertion, map B index through dofmap
-                    DM = dofmaps.get(dofmap)
-                    if DM is None:
-                        DM = L.Symbol("DM%d" % len(dofmaps))
-                        dofmaps[dofmap] = DM
-                        dofmap_parts.append(
-                            L.ArrayDecl("static const int", DM, len(dofmap), dofmap))
-                    j = DM[indices[i]]
-                A_indices.append(j)
-
-            # Sum up all blocks contributing to this blockmap
-            term = L.Sum([B_rhs for B_rhs in contributions])
-
-            # Add components of all B's to A component in loop nest
-            iq = self.backend.symbols.quadrature_loop_index()
-            iec = self.backend.symbols.expr_component_index()
-            body = L.AssignAdd(A[tuple([iec] + [iq] + A_indices)], term)
-
-            for i in reversed(range(A_rank)):
-                index_range = len(blockmap[i])
-                body = L.ForRange(indices[i], 0, index_range, body=body)
-
-            body = L.ForRange(iq, 0, self.num_points, body=body)
-
-            # TODO: Here we assume that block contributes to each
-            #       component of the expression. In some cases produces
-            #       suboptimal copyout statements (adding zeros to tensor A)
-            body = L.ForRange(iec, 0, num_expr_components, body=body)
-
-            # Add this block to parts
-            parts.append(body)
-
-        # Place static dofmap tables first
-        parts = dofmap_parts + parts
-
-        parts = L.commented_code_list(parts, "Copyout blocks B into A, respecting dofmaps")
-        return parts
+        return preparts, quadparts
 
     def get_arg_factors(self, blockdata, block_rank, num_points, iq, indices):
         L = self.backend.language
