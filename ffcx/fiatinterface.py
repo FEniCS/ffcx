@@ -13,6 +13,7 @@ import FIAT
 import ufl
 from FIAT.enriched import EnrichedElement
 from FIAT.mixed import MixedElement
+from FIAT.hdivcurl import Hcurl, Hdiv
 from FIAT.nodal_enriched import NodalEnrichedElement
 from FIAT.quadrature_element import QuadratureElement
 from FIAT.restricted import RestrictedElement
@@ -25,7 +26,8 @@ supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "
                       "Discontinuous Lagrange", "Discontinuous Raviart-Thomas", "HDiv Trace",
                       "Lagrange", "Lobatto", "Nedelec 1st kind H(curl)", "Nedelec 2nd kind H(curl)",
                       "Radau", "Raviart-Thomas", "Real", "Bubble", "Quadrature", "Regge",
-                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement")
+                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement",
+                      "RTCE", "EnrichedElement")
 
 # Cache for computed elements
 _cache = {}
@@ -62,7 +64,7 @@ def create_element(ufl_element):
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
     elif isinstance(ufl_element, ufl.EnrichedElement):
-        elements = [create_element(e) for e in ufl_element._elements]
+        elements = [FlattenedDimensions(create_element(e)) for e in ufl_element._elements]
         element = EnrichedElement(*elements)
     elif isinstance(ufl_element, ufl.NodalEnrichedElement):
         elements = [create_element(e) for e in ufl_element._elements]
@@ -70,6 +72,13 @@ def create_element(ufl_element):
     elif isinstance(ufl_element, ufl.RestrictedElement):
         element = _create_restricted_element(ufl_element)
         raise RuntimeError("Cannot handle this element type: {}".format(ufl_element))
+    elif isinstance(ufl_element, ufl.HCurlElement):
+        element = Hcurl(_create_fiat_element(ufl_element._element))
+    elif isinstance(ufl_element, ufl.HDivElement):
+        element = Hdiv(_create_fiat_element(ufl_element._element))
+    else:
+        print("ERRRRRRRRrrRRRrrrRRRrRRRRrRRRRR")
+        from IPython import embed; embed()
 
     # Store in cache
     _cache[element_signature] = element
@@ -103,8 +112,10 @@ def _create_fiat_element(ufl_element):
         # Handle quadrilateral case by reconstructing the element with
         # cell TensorProductCell (interval x interval)
         quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
-        return FlattenedDimensions(
-            _create_fiat_element(ufl_element.reconstruct(cell=quadrilateral_tpc)))
+        if family == "Q" or family == "DQ":
+            return FlattenedDimensions(
+                _create_fiat_element(ufl_element.reconstruct(cell=quadrilateral_tpc)))
+        return create_element(ufl_element.reconstruct(cell=quadrilateral_tpc))
     elif cellname == "hexahedron":
         # Handle hexahedron case by reconstructing the element with cell
         # TensorProductCell (quadrilateral x interval). This creates
@@ -112,8 +123,10 @@ def _create_fiat_element(ufl_element):
         # interval) Therefore dof entities consists of nested tuples,
         # example: ((0, 1), 1)
         hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
-        return FlattenedDimensions(
-            _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc)))
+        if family == "Q" or family == "DQ":
+            return FlattenedDimensions(
+                _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc)))
+        return _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc))
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
@@ -143,6 +156,17 @@ def _create_fiat_element(ufl_element):
             A = create_element(ufl_element.sub_elements()[0])
             B = create_element(ufl_element.sub_elements()[1])
             element = ElementClass(A, B)
+        elif isinstance(ufl_element, ufl.HCurlElement):
+            A = create_element(ufl_element._element.sub_elements()[0])
+            B = create_element(ufl_element._element.sub_elements()[1])
+            element = Hcurl(ElementClass(A, B))
+        elif isinstance(ufl_element, ufl.HDivElement):
+            A = create_element(ufl_element._element.sub_elements()[0])
+            B = create_element(ufl_element._element.sub_elements()[1])
+            element = Hdiv(ElementClass(A, B))
+        elif isinstance(ufl_element, ufl.EnrichedElement):
+            elements = [create_element(e) for e in ufl_element._elements]
+            element = EnrichedElement(*elements)
 
         # Create normal FIAT finite element
         else:

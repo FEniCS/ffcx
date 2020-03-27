@@ -27,6 +27,7 @@ from ffcx import naming
 from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                 MixedElement, QuadratureElement, SpaceOfReals,
                                 create_element)
+from FIAT.tensor_product import TensorProductElement
 from ffcx.ir import dof_permutations
 from FIAT.hdiv_trace import HDivTrace
 
@@ -589,10 +590,12 @@ def _extract_elements(fiat_element):
 
 def _evaluate_basis(ufl_element, fiat_element, epsilon):
     """Compute intermediate representation for evaluate_basis."""
+    print(fiat_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
+    #aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa#
     elements = _extract_elements(fiat_element)
     physical_offsets = _generate_physical_offsets(ufl_element)
     reference_offsets = _generate_reference_offsets(fiat_element)
@@ -671,7 +674,10 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
             dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
 
         else:
-            coeffs = e.get_coeffs()
+            try:
+                coeffs = e.get_coeffs()
+            except:
+                from IPython import embed; embed()()
             dmats = e.dmats()
             num_expansion_members = e.get_num_members(e.degree())
 
@@ -742,6 +748,9 @@ def _tabulate_dof_coordinates(ufl_element, element):
     # nodal), this is strictly not necessary but simpler
     if any(L is None for L in element.dual_basis()):
         return {}
+
+    if any(L.pt_dict is None for L in element.dual_basis()):
+        from IPython import embed; embed()
 
     cell = ufl_element.cell()
     return ir_tabulate_dof_coordinates(
