@@ -26,8 +26,8 @@ supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "
                       "Discontinuous Lagrange", "Discontinuous Raviart-Thomas", "HDiv Trace",
                       "Lagrange", "Lobatto", "Nedelec 1st kind H(curl)", "Nedelec 2nd kind H(curl)",
                       "Radau", "Raviart-Thomas", "Real", "Bubble", "Quadrature", "Regge",
-                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement",
-                      "RTCE", "EnrichedElement")
+                      "Hellan-Herrmann-Johnson", "Q", "DQ", "DPC", "TensorProductElement",
+                      "EnrichedElement", "RTCE", "RTCF", "AAE", "AAF", "BDMCE", "BDMCF", "NCE", "NCF")
 
 # Cache for computed elements
 _cache = {}
