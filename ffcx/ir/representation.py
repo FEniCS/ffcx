@@ -494,39 +494,33 @@ def _generate_reference_offsets(fiat_element, offset=0):
         return [offset] * fiat_element.space_dimension()
 
 
-def _generate_physical_offsets(ufl_element, offset=0):
+def _generate_physical_offsets(fiat_element, offset=0):
     """Generate offsets.
 
     I.e., value offset for each basis function relative to a physical
     element representation.
 
     """
-    cell = ufl_element.cell()
-    gdim = cell.geometric_dimension()
-    tdim = cell.topological_dimension()
+    tdim = fiat_element.ref_el.get_dimension()
+    gdim = fiat_element.ref_el.get_spatial_dimension()
 
     # Refer to reference if gdim == tdim. This is a hack to support more
     # stuff (in particular restricted elements)
     if gdim == tdim:
-        return _generate_reference_offsets(create_element(ufl_element))
+        return _generate_reference_offsets(fiat_element)
 
-    if isinstance(ufl_element, ufl.MixedElement):
+    if isinstance(fiat_element, MixedElement):
         offsets = []
-        for e in ufl_element.sub_elements():
+        for e in fiat_element.elements():
             offsets += _generate_physical_offsets(e, offset)
-            # e is a ufl element, so value_size means the physical value size
-            offset += e.value_size()
+            offset += ufl.utils.sequences.product(fiat_element.value_shape())
         return offsets
-    elif isinstance(ufl_element, ufl.EnrichedElement):
+    elif isinstance(fiat_element, EnrichedElement):
         offsets = []
-        for e in ufl_element._elements:  # TODO: Avoid private member access
+        for e in fiat_element.elements():
             offsets += _generate_physical_offsets(e, offset)
         return offsets
-    elif isinstance(ufl_element, ufl.FiniteElement):
-        fiat_element = create_element(ufl_element)
-        return [offset] * fiat_element.space_dimension()
-    else:
-        raise NotImplementedError("This element combination is not implemented")
+    return [offset] * fiat_element.space_dimension()
 
 
 def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
@@ -574,7 +568,7 @@ def _evaluate_dof(ufl_element, fiat_element):
                            geometric_dimension=cell.geometric_dimension(),
                            topological_dimension=cell.topological_dimension(),
                            dofs=dofs,
-                           physical_offsets=_generate_physical_offsets(ufl_element),
+                           physical_offsets=_generate_physical_offsets(fiat_element),
                            cell_shape=cell.cellname())
 
 
@@ -590,30 +584,8 @@ def _extract_elements(fiat_element):
 
 def _evaluate_basis(ufl_element, fiat_element, epsilon):
     """Compute intermediate representation for evaluate_basis."""
-    print(fiat_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
-
-    # Handle Mixed and EnrichedElements by extracting 'sub' elements.
-    #aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa#
-    elements = _extract_elements(fiat_element)
-    physical_offsets = _generate_physical_offsets(ufl_element)
-    reference_offsets = _generate_reference_offsets(fiat_element)
-    mappings = fiat_element.mapping()
-
-    # This function is evidently not implemented for TensorElements
-    for e in elements:
-        if (len(e.value_shape()) > 1) and (e.num_sub_elements() != 1):
-            return "Function not supported/implemented for TensorElements."
-
-    # Handle QuadratureElement, not supported because the basis is only
-    # defined at the dof coordinates where the value is 1, so not very
-    # interesting.
-    for e in elements:
-        if isinstance(e, QuadratureElement):
-            return "Function not supported/implemented for QuadratureElement."
-        if isinstance(e, HDivTrace):
-            return "Function not supported for Trace elements"
 
     # Initialise data with 'global' values.
     data = {
@@ -624,119 +596,177 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         "geometric_dimension": cell.geometric_dimension(),
         "space_dimension": fiat_element.space_dimension(),
         "needs_oriented": element_needs_oriented_jacobian(fiat_element),
-        "max_degree": max([e.degree() for e in elements])
+        "max_degree": _get_max_degree(fiat_element)
     }
 
-    # Loop element and space dimensions to generate dof data.
-    dof = 0
-    dofs_data = []
-    for e in elements:
-        num_components = ufl.utils.sequences.product(e.value_shape())
-        if isinstance(e, FlattenedDimensions):
-            # Tensor product element
-            A = e.element.A
-            B = e.element.B
-            # Attach suitable coefficients to element
-            if isinstance(A, FlattenedDimensions):
-                # This is for hexahedral element
-                ac = A.element.A.get_coeffs()
-                bc = A.element.B.get_coeffs()
-                ac = numpy.block([[w * ac for w in v] for v in bc])
-                ad = A.element.A.dmats()
-                bd = A.element.B.dmats()
-                ai = numpy.eye(ad[0].shape[0])
-                bi = numpy.eye(bd[0].shape[0])
+    data["dofs_data"] = _infer_dof_data(fiat_element, epsilon)
 
-                if len(bd) != 1:
-                    raise NotImplementedError("Cannot create dmats")
-
-                dmats = []
-                for mat in ad:
-                    dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-                dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
-                ad = dmats
-            else:
-                ac = A.get_coeffs()
-                ad = A.dmats()
-            bc = B.get_coeffs()
-            bd = B.dmats()
-            coeffs = numpy.block([[w * ac for w in v] for v in bc])
-            num_expansion_members = coeffs.shape[0]
-            ai = numpy.eye(ad[0].shape[0])
-            bi = numpy.eye(bd[0].shape[0])
-
-            if len(bd) != 1:
-                raise NotImplementedError("Cannot create dmats")
-
-            dmats = []
-            for mat in ad:
-                dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-            dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
-
-        else:
-            try:
-                coeffs = e.get_coeffs()
-            except:
-                from IPython import embed; embed()()
-            dmats = e.dmats()
-            num_expansion_members = e.get_num_members(e.degree())
-
-        # Clamp dmats zeros
-        dmats = numpy.asarray(dmats)
-        dmats[numpy.where(numpy.isclose(dmats, 0.0, rtol=epsilon, atol=epsilon))] = 0.0
-
-        # Extracted parts of dd below that are common for the element
-        # here.  These dict entries are added to each dof_data dict for
-        # each dof, because that's what the code generation
-        # implementation expects.  If the code generation needs this
-        # structure to be optimized in the future, we can store this
-        # data for each subelement instead of for each dof.
-        subelement_data = {
-            "embedded_degree": e.degree(),
-            "num_components": num_components,
-            "dmats": dmats,
-            "num_expansion_members": num_expansion_members,
-        }
-        value_rank = len(e.value_shape())
-
-        for i in range(e.space_dimension()):
-            if num_components == 1:
-                coefficients = [coeffs[i]]
-            elif value_rank == 1:
-                # Handle coefficients for vector valued basis elements
-                # [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
-                coefficients = [coeffs[i][c] for c in range(num_components)]
-            elif value_rank == 2:
-                # Handle coefficients for tensor valued basis elements.
-                # [Regge]
-                coefficients = [
-                    coeffs[i][p][q] for p in range(e.value_shape()[0])
-                    for q in range(e.value_shape()[1])
-                ]
-            else:
-                raise RuntimeError("Unknown situation with num_components > 1")
-
-            # Clamp coefficient zeros
-            coefficients = numpy.asarray(coefficients)
-            coefficients[numpy.where(numpy.isclose(coefficients, 0.0, rtol=epsilon,
-                                                   atol=epsilon))] = 0.0
-
-            dof_data = {
-                "coeffs": coefficients,
-                "mapping": mappings[dof],
-                "physical_offset": physical_offsets[dof],
-                "reference_offset": reference_offsets[dof],
-            }
-            # Still storing element data in dd to avoid rewriting dependent code
-            dof_data.update(subelement_data)
-
-            # This list will hold one dd dict for each dof
-            dofs_data.append(dof_data)
-            dof += 1
-
-    data["dofs_data"] = dofs_data
+    # from IPython import embed; embed()
 
     return data
+
+
+def _get_max_degree(e):
+    if isinstance(e, (MixedElement, EnrichedElement)):
+        return max(_get_max_degree(sub_e) for sub_e in e.elements())
+    else:
+        return e.degree()
+
+
+def _infer_dof_data(fiat_element, epsilon):
+    # Handle Mixed and EnrichedElements by extracting 'sub' elements.
+    if isinstance(fiat_element, MixedElement):
+        dofs_data = []
+        for e in fiat_element.elements():
+            dofs_data += _infer_dof_data(e, epsilon)
+        return dofs_data
+
+    if isinstance(fiat_element, EnrichedElement):
+        dofs_data = []
+        for i, e in enumerate(fiat_element.elements()):
+            dofs_data += _infer_dof_data(e, epsilon)
+        return dofs_data
+
+    if len(fiat_element.value_shape()) > 1 and fiat_element.num_sub_elements() != 1:
+        return "Function not supported/implemented for TensorElements."
+
+    # Handle QuadratureElement, not supported because the basis is only
+    # defined at the dof coordinates where the value is 1, so not very
+    # interesting.
+    if isinstance(fiat_element, QuadratureElement):
+        return "Function not supported/implemented for QuadratureElement."
+    if isinstance(fiat_element, HDivTrace):
+        return "Function not supported for Trace elements"
+
+    # TODO: handle these offsets properly
+    physical_offsets = _generate_physical_offsets(fiat_element)
+    reference_offsets = _generate_reference_offsets(fiat_element)
+    mappings = fiat_element.mapping()
+
+    dofs_data = []
+    coeffs = _get_coeffs_from_fiat(fiat_element)
+    dmats = _get_dmats_from_fiat(fiat_element)
+    num_expansion_members = _get_num_members_from_fiat(fiat_element)
+    num_components = ufl.utils.sequences.product(fiat_element.value_shape())
+
+    # Clamp dmats zeros
+    dmats = numpy.asarray(dmats)
+    dmats[numpy.where(numpy.isclose(dmats, 0.0, rtol=epsilon, atol=epsilon))] = 0.0
+
+    # Extracted parts of dd below that are common for the element
+    # here.  These dict entries are added to each dof_data dict for
+    # each dof, because that's what the code generation
+    # implementation expects.  If the code generation needs this
+    # structure to be optimized in the future, we can store this
+    # data for each subelement instead of for each dof.
+    subelement_data = {
+        "embedded_degree": fiat_element.degree(),
+        "num_components": num_components,
+        "dmats": dmats,
+        "num_expansion_members": num_expansion_members,
+    }
+    value_rank = len(fiat_element.value_shape())
+
+    for dof in range(fiat_element.space_dimension()):
+        if num_components == 1:
+            coefficients = [coeffs[dof]]
+        elif value_rank == 1:
+            # Handle coefficients for vector valued basis elements
+            # [Raviart-Thomas, Brezzi-Douglas-Marini (BDM)].
+            coefficients = [coeffs[dof][c] for c in range(num_components)]
+        elif value_rank == 2:
+            # Handle coefficients for tensor valued basis elements.
+            # [Regge]
+            coefficients = [
+                coeffs[dof][p][q] for p in range(fiat_element.value_shape()[0])
+                for q in range(fiat_element.value_shape()[1])
+            ]
+        else:
+            raise RuntimeError("Unknown situation with num_components > 1")
+
+        # Clamp coefficient zeros
+        coefficients = numpy.asarray(coefficients)
+        coefficients[numpy.where(numpy.isclose(coefficients, 0.0, rtol=epsilon,
+                                               atol=epsilon))] = 0.0
+
+        dof_data = {
+            "coeffs": coefficients,
+            "mapping": mappings[dof],
+            "physical_offset": physical_offsets[dof],
+            "reference_offset": reference_offsets[dof],
+        }
+        # Still storing element data in dd to avoid rewriting dependent code
+        dof_data.update(subelement_data)
+
+        # This list will hold one dd dict for each dof
+        dofs_data.append(dof_data)
+    return dofs_data
+
+
+def _get_coeffs_from_fiat(e):
+    if isinstance(e, FlattenedDimensions):
+        return _get_coeffs_from_fiat(e.element)
+    if isinstance(e, TensorProductElement):
+        value_rank = len(e.value_shape())
+        if value_rank == 0:
+            # Tensor product element
+            # Attach suitable coefficients to element
+            ac = _get_coeffs_from_fiat(e.A)
+            bc = _get_coeffs_from_fiat(e.B)
+            return numpy.block([[w * ac for w in v] for v in bc])
+        if value_rank == 1:
+            if len(e.A.value_shape()) == 0 and len(e.B.value_shape()) == 0:
+                # Must be 0-form in interval crossed with something discontinuous
+                # see fiat:FIAT/hdivcurl.py:56
+                if e.A.get_formdegree() + e.B.get_formdegree() == 1:
+                    ac = _get_coeffs_from_fiat(e.A)
+                    bc = _get_coeffs_from_fiat(e.B)
+                    block = numpy.block([[w * ac for w in v] for v in bc])
+                    out = numpy.zeros((block.shape[0],
+                                       e.value_shape()[0],
+                                       block.shape[1]))
+                    for i, b in enumerate(block):
+                        for j, value in enumerate(b):
+                            if e.B.get_formdegree() == 1:
+                                out[i][-1][j] = value
+                            else:  # e.A.get_formdegree() == 1
+                                out[i][0][j] = value
+                    return out
+
+    return e.get_coeffs()
+
+
+def _get_dmats_from_fiat(e):
+    if isinstance(e, FlattenedDimensions):
+        return _get_dmats_from_fiat(e.element)
+    if isinstance(e, TensorProductElement):
+        # Tensor product element
+        # Attach suitable coefficients to element
+        ad = _get_dmats_from_fiat(e.A)
+        bd = _get_dmats_from_fiat(e.B)
+        ai = numpy.eye(ad[0].shape[0])
+        bi = numpy.eye(bd[0].shape[0])
+
+        if len(bd) != 1:
+            raise NotImplementedError("Cannot create dmats")
+
+        dmats = []
+        for mat in ad:
+            dmats += [numpy.block([[w * mat for w in v] for v in bi])]
+        dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
+        return dmats
+
+    return e.dmats()
+
+
+def _get_num_members_from_fiat(e):
+    if isinstance(e, FlattenedDimensions):
+        return _get_num_members_from_fiat(e.element)
+    if isinstance(e, EnrichedElement):
+        return sum(_get_num_members_from_fiat(sub_e) for sub_e in e.elements())
+    if isinstance(e, TensorProductElement):
+        return _get_coeffs_from_fiat(e).shape[0]
+    return e.get_num_members(e.degree())
 
 
 def _tabulate_dof_coordinates(ufl_element, element):
@@ -746,11 +776,8 @@ def _tabulate_dof_coordinates(ufl_element, element):
 
     # Bail out if any dual basis member is missing (element is not
     # nodal), this is strictly not necessary but simpler
-    if any(L is None for L in element.dual_basis()):
+    if any(L is None or L.pt_dict is None for L in element.dual_basis()):
         return {}
-
-    if any(L.pt_dict is None for L in element.dual_basis()):
-        from IPython import embed; embed()
 
     cell = ufl_element.cell()
     return ir_tabulate_dof_coordinates(

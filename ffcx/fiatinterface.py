@@ -49,7 +49,6 @@ def reference_cell_vertices(cellname):
 
 
 def create_element(ufl_element):
-
     # Create element signature for caching (just use UFL element)
     element_signature = ufl_element
 
@@ -64,7 +63,7 @@ def create_element(ufl_element):
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
     elif isinstance(ufl_element, ufl.EnrichedElement):
-        elements = [FlattenedDimensions(create_element(e)) for e in ufl_element._elements]
+        elements = [create_element(e) for e in ufl_element._elements]
         element = EnrichedElement(*elements)
     elif isinstance(ufl_element, ufl.NodalEnrichedElement):
         elements = [create_element(e) for e in ufl_element._elements]
@@ -73,12 +72,16 @@ def create_element(ufl_element):
         element = _create_restricted_element(ufl_element)
         raise RuntimeError("Cannot handle this element type: {}".format(ufl_element))
     elif isinstance(ufl_element, ufl.HCurlElement):
-        element = Hcurl(_create_fiat_element(ufl_element._element))
+        e = _create_fiat_element(ufl_element._element)
+        element = FlattenedDimensions(Hcurl(e))
     elif isinstance(ufl_element, ufl.HDivElement):
-        element = Hdiv(_create_fiat_element(ufl_element._element))
+        e = _create_fiat_element(ufl_element._element)
+        element = FlattenedDimensions(Hdiv(e))
+    elif isinstance(ufl_element, ufl.TensorProductElement):
+        e = _create_fiat_element(ufl_element)
+        element = FlattenedDimensions(e)
     else:
-        print("ERRRRRRRRrrRRRrrrRRRrRRRRrRRRRR")
-        from IPython import embed; embed()
+        raise ValueError("Unrecognised element type")
 
     # Store in cache
     _cache[element_signature] = element
@@ -112,9 +115,6 @@ def _create_fiat_element(ufl_element):
         # Handle quadrilateral case by reconstructing the element with
         # cell TensorProductCell (interval x interval)
         quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
-        if family == "Q" or family == "DQ":
-            return FlattenedDimensions(
-                _create_fiat_element(ufl_element.reconstruct(cell=quadrilateral_tpc)))
         return create_element(ufl_element.reconstruct(cell=quadrilateral_tpc))
     elif cellname == "hexahedron":
         # Handle hexahedron case by reconstructing the element with cell
@@ -123,10 +123,7 @@ def _create_fiat_element(ufl_element):
         # interval) Therefore dof entities consists of nested tuples,
         # example: ((0, 1), 1)
         hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
-        if family == "Q" or family == "DQ":
-            return FlattenedDimensions(
-                _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc)))
-        return _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc))
+        return create_element(ufl_element.reconstruct(cell=hexahedron_tpc))
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
