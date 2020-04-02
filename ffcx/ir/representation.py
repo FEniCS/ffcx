@@ -582,6 +582,11 @@ def _extract_elements(fiat_element):
     return new_elements
 
 
+class DofDataError(BaseException):
+    def __init__(self, msg):
+        self.msg = msg
+
+
 def _evaluate_basis(ufl_element, fiat_element, epsilon):
     """Compute intermediate representation for evaluate_basis."""
     cell = ufl_element.cell()
@@ -599,10 +604,10 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         "max_degree": _get_max_degree(fiat_element)
     }
 
-    data["dofs_data"] = _infer_dof_data(fiat_element, epsilon)
-
-    # from IPython import embed; embed()
-
+    try:
+        data["dofs_data"] = _infer_dof_data(fiat_element, epsilon)
+    except DofDataError as e:
+        return e.msg
     return data
 
 
@@ -628,15 +633,15 @@ def _infer_dof_data(fiat_element, epsilon):
         return dofs_data
 
     if len(fiat_element.value_shape()) > 1 and fiat_element.num_sub_elements() != 1:
-        return "Function not supported/implemented for TensorElements."
+        raise DofDataError("Function not supported/implemented for TensorElements.")
 
     # Handle QuadratureElement, not supported because the basis is only
     # defined at the dof coordinates where the value is 1, so not very
     # interesting.
     if isinstance(fiat_element, QuadratureElement):
-        return "Function not supported/implemented for QuadratureElement."
+        raise DofDataError("Function not supported/implemented for QuadratureElement.")
     if isinstance(fiat_element, HDivTrace):
-        return "Function not supported for Trace elements"
+        raise DofDataError("Function not supported for Trace elements")
 
     # TODO: handle these offsets properly
     physical_offsets = _generate_physical_offsets(fiat_element)
