@@ -614,6 +614,8 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
 def _get_max_degree(e):
     if isinstance(e, (MixedElement, EnrichedElement)):
         return max(_get_max_degree(sub_e) for sub_e in e.elements())
+    elif isinstance(e, QuadratureElement):
+        return 0  # TODO: what should be returned here
     else:
         return e.degree()
 
