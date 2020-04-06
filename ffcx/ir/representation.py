@@ -620,6 +620,16 @@ def _get_max_degree(e):
         return e.degree()
 
 
+def _embedded_degrees(fiat_element):
+    if isinstance(fiat_element, FlattenedDimensions):
+        return _embedded_degrees(fiat_element.element)
+    if isinstance(fiat_element, TensorProductElement):
+        ad = _embedded_degrees(fiat_element.A)
+        bd = _embedded_degrees(fiat_element.B)
+        return ad + bd
+    return tuple([fiat_element.degree()] * fiat_element.ref_el.get_dimension())
+
+
 def _infer_dof_data(fiat_element, epsilon):
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
     if isinstance(fiat_element, MixedElement):
@@ -667,7 +677,7 @@ def _infer_dof_data(fiat_element, epsilon):
     # structure to be optimized in the future, we can store this
     # data for each subelement instead of for each dof.
     subelement_data = {
-        "embedded_degree": fiat_element.degree(),
+        "embedded_degree": _embedded_degrees(fiat_element),
         "num_components": num_components,
         "dmats": dmats,
         "num_expansion_members": num_expansion_members,
@@ -733,11 +743,10 @@ def _get_coeffs_from_fiat(e):
                                        e.value_shape()[0],
                                        block.shape[1]))
                     for i, b in enumerate(block):
-                        for j, value in enumerate(b):
-                            if e.B.get_formdegree() == 1:
-                                out[i][-1][j] = value
-                            else:  # e.A.get_formdegree() == 1
-                                out[i][0][j] = value
+                        if e.A.get_formdegree() == 1:
+                            out[i][-1] = b
+                        else:  # e.B.get_formdegree() == 1
+                            out[i][0] = -b
                     return out
 
     return e.get_coeffs()
