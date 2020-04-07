@@ -140,8 +140,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
     dof_cases = []
     for i_dof, dof_data in enumerate(data["dofs_data"]):
 
-        embedded_degree = dof_data["embedded_degree"]
-        basisvalues = basisvalues_for_degree[embedded_degree]
+        embedded_degrees = dof_data["embedded_degrees"]
+        basisvalues = basisvalues_for_degree[embedded_degrees]
 
         shape_dmats = numpy.shape(dof_data["dmats"][0])
         if shape_dmats[0] != shape_dmats[1]:
@@ -240,8 +240,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
                 ])
         ]
 
-        embedded_degree = dof_data["embedded_degree"]
-        basisvalues = basisvalues_for_degree[embedded_degree]
+        embedded_degrees = dof_data["embedded_degrees"]
+        basisvalues = basisvalues_for_degree[embedded_degrees]
 
         # Compute the derivatives of the basisfunctions on the reference (FIAT) element,
         # as the dot product of the new coefficients and basisvalues.

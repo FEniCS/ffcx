@@ -84,7 +84,7 @@ def generate_evaluate_reference_basis(L, data, parameters):
         L.Comment("Accumulate products of coefficients and basisvalues"),
     ]
     for idof, dof_data in enumerate(data["dofs_data"]):
-        embedded_degree = dof_data["embedded_degree"]
+        embedded_degrees = dof_data["embedded_degrees"]
         num_components = dof_data["num_components"]
         num_members = dof_data["num_expansion_members"]
 
@@ -93,7 +93,7 @@ def generate_evaluate_reference_basis(L, data, parameters):
         reference_offset = dof_data["reference_offset"]
 
         # Select the right basisvalues for this dof
-        basisvalues = basisvalues_for_degree[embedded_degree]
+        basisvalues = basisvalues_for_degree[embedded_degrees]
 
         # Select the right coefficients for this dof
         coefficients = coefficients_for_dof[idof]
@@ -200,7 +200,7 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
     need_fiat_coordinates = False
     Y = L.Symbol("Y")
     for idof, dof_data in enumerate(dofs_data):
-        embedded_degrees = dof_data["embedded_degree"]
+        embedded_degrees = dof_data["embedded_degrees"]
 
         if embedded_degrees:
             need_fiat_coordinates = True

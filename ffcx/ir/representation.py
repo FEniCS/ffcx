@@ -470,30 +470,6 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     return ir_expression(**ir)
 
 
-def _generate_reference_offsets(fiat_element, offset=0):
-    """Generate offsets.
-
-    I.e., value offset for each basis function relative to a reference
-    element representation.
-
-    """
-    if isinstance(fiat_element, MixedElement):
-        offsets = []
-        for e in fiat_element.elements():
-            offsets += _generate_reference_offsets(e, offset)
-            # NB! This is the fiat element and therefore value_shape
-            # means reference_value_shape
-            offset += ufl.utils.sequences.product(e.value_shape())
-        return offsets
-    elif isinstance(fiat_element, EnrichedElement):
-        offsets = []
-        for e in fiat_element.elements():
-            offsets += _generate_reference_offsets(e, offset)
-        return offsets
-    else:
-        return [offset] * fiat_element.space_dimension()
-
-
 def _generate_physical_offsets(fiat_element, offset=0):
     """Generate offsets.
 
@@ -504,16 +480,14 @@ def _generate_physical_offsets(fiat_element, offset=0):
     tdim = fiat_element.ref_el.get_dimension()
     gdim = fiat_element.ref_el.get_spatial_dimension()
 
-    # Refer to reference if gdim == tdim. This is a hack to support more
-    # stuff (in particular restricted elements)
-    if gdim == tdim:
-        return _generate_reference_offsets(fiat_element)
-
     if isinstance(fiat_element, MixedElement):
         offsets = []
         for e in fiat_element.elements():
             offsets += _generate_physical_offsets(e, offset)
-            offset += ufl.utils.sequences.product(fiat_element.value_shape())
+            if gdim == tdim:
+                offset += ufl.utils.sequences.product(e.value_shape())
+            else:
+                offset += ufl.utils.sequences.product(fiat_element.value_shape())
         return offsets
     elif isinstance(fiat_element, EnrichedElement):
         offsets = []
@@ -521,37 +495,6 @@ def _generate_physical_offsets(fiat_element, offset=0):
             offsets += _generate_physical_offsets(e, offset)
         return offsets
     return [offset] * fiat_element.space_dimension()
-
-
-def _generate_offsets(ufl_element, reference_offset=0, physical_offset=0):
-    """Generate offsets.
-
-    I.e., value offset for each basis function relative to a physical
-    element representation.
-
-    """
-    if isinstance(ufl_element, ufl.MixedElement):
-        offsets = []
-        for e in ufl_element.sub_elements():
-            offsets += _generate_offsets(e, reference_offset, physical_offset)
-            # e is a ufl element, so value_size means the physical value size
-            reference_offset += e.reference_value_size()
-            physical_offset += e.value_size()
-        return offsets
-    elif isinstance(ufl_element, ufl.EnrichedElement):
-        offsets = []
-        for e in ufl_element._elements:  # TODO: Avoid private member access
-            offsets += _generate_offsets(e, reference_offset, physical_offset)
-        return offsets
-    elif isinstance(ufl_element, ufl.FiniteElement):
-        fiat_element = create_element(ufl_element)
-        return [(reference_offset, physical_offset)] * fiat_element.space_dimension()
-    else:
-        # TODO: Support RestrictedElement, QuadratureElement,
-        #       TensorProductElement, etc.!  and replace
-        #       _generate_{physical|reference}_offsets with this
-        #       function.
-        raise NotImplementedError("This element combination is not implemented")
 
 
 def _evaluate_dof(ufl_element, fiat_element):
@@ -665,7 +608,6 @@ def _infer_dof_data(fiat_element, epsilon, reference_offset=0, physical_offset=0
     if isinstance(fiat_element, HDivTrace):
         raise DofDataError("Function not supported for Trace elements")
 
-    # TODO: handle these offsets properly
     mappings = fiat_element.mapping()
 
     dofs_data = []
@@ -685,7 +627,7 @@ def _infer_dof_data(fiat_element, epsilon, reference_offset=0, physical_offset=0
     # structure to be optimized in the future, we can store this
     # data for each subelement instead of for each dof.
     subelement_data = {
-        "embedded_degree": _embedded_degrees(fiat_element),
+        "embedded_degrees": _embedded_degrees(fiat_element),
         "num_components": num_components,
         "dmats": dmats,
         "num_expansion_members": num_expansion_members,
