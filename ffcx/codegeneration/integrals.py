@@ -31,6 +31,9 @@ def generator(ir, parameters):
     # Generate code
     code = generate_integral_code(ir, parameters)
 
+    if parameters["tabulate_tensor_void"]:
+        code["tabulate_tensor"] = ""
+
     # Format tabulate tensor body
     tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[
         integral_type]

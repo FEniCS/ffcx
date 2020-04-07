@@ -133,16 +133,24 @@ def evaluate_reference_basis_derivatives(L, ir, parameters):
     return generate_evaluate_reference_basis_derivatives(L, data, ir.name, parameters)
 
 
-def entity_reflection(L, i):
+def entity_reflection(L, i, cell_shape):
     """Returns the bool that says whether or not an entity has been reflected."""
+    cell_info = L.Symbol("cell_permutation")
+    if cell_shape in ["triangle", "quadrilateral"]:
+        num_faces = 0
+        face_bitsize = 1
+        assert i[0] == 1
+    if cell_shape == "tetrahedron":
+        num_faces = 4
+        face_bitsize = 3
+    if cell_shape == "hexahedron":
+        num_faces = 4
+        face_bitsize = 3
     if i[0] == 1:
-        edge_reflections = L.Symbol("edge_reflections")
-        return edge_reflections[i[1]]
+        return L.NE(L.BitwiseAnd(cell_info, L.BitShiftL(1, face_bitsize * num_faces + i[1])), 0)
     elif i[0] == 2:
-        face_reflections = L.Symbol("face_reflections")
-        return face_reflections[i[1]]
-    else:
-        return L.LiteralBool(False)
+        return L.NE(L.BitwiseAnd(cell_info, L.BitShiftL(1, face_bitsize * i[1])), 0)
+    return L.LiteralBool(False)
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):
@@ -287,12 +295,16 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             # make a conditional
             ref = c_false
             for j in dre:
+                new_ref = entity_reflection(L, j, ir.cell_shape)
                 if ref == c_false:
                     # No condition has been added yet, so overwrite false
-                    ref = entity_reflection(L, j)
+                    ref = new_ref
+                elif ref == new_ref:
+                    # A != A is false
+                    ref = c_false
                 else:
                     # This is not the first condition, so XOR
-                    ref = L.Conditional(entity_reflection(L, j), L.Not(ref), ref)
+                    ref = L.NE(ref, new_ref)
             reflect_dofs.append(ref)
             if ref != c_false:
                 # Mark this space as needing reflections
@@ -351,7 +363,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
         mapped_value = L.Symbol("mapped_value")
         if contains_reflections:
-            vec_scale = L.Conditional(L.Symbol("reflected_dofs")[idof], 1, -1)
+            vec_scale = L.Conditional(L.Symbol("reflected_dofs")[idof], -1, 1)
         else:
             vec_scale = 1
 

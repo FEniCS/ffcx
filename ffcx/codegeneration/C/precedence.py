@@ -38,13 +38,17 @@ class PRECEDENCE:
     ADD = 5
     SUB = 5
 
-    LT = 6
-    LE = 6
-    GT = 6
-    GE = 6
+    BITSHIFT = 6
 
-    EQ = 7
-    NE = 7
+    LT = 7
+    LE = 7
+    GT = 7
+    GE = 7
+
+    EQ = 8
+    NE = 8
+
+    BITAND = 9
 
     AND = 11
     OR = 12

@@ -65,8 +65,8 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
             domains = ufl.algorithms.analysis.unique_tuple(domains)
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
-            siganture = ufl.algorithms.signature.compute_expression_signature(expr, rn)
-            object_signature += siganture
+            signature = ufl.algorithms.signature.compute_expression_signature(expr, rn)
+            object_signature += signature
             kind = "expression"
         else:
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))

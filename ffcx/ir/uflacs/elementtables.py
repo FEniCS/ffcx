@@ -27,8 +27,7 @@ table_origin_t = collections.namedtuple(
     "table_origin", ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
 
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
-
-uniform_ttypes = ("uniform", "fixed", "ones", "zeros")
+uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 valid_ttypes = set(("quadrature", )) | set(piecewise_ttypes) | set(uniform_ttypes)
 
@@ -67,7 +66,7 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def strip_table_zeros(table, compress_zeros, rtol=default_rtol, atol=default_atol):
+def strip_table_zeros(table, rtol=default_rtol, atol=default_atol):
     """Strip zero columns from table. Returns column range (begin, end) and the new compact table."""
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
@@ -86,9 +85,7 @@ def strip_table_zeros(table, compress_zeros, rtol=default_rtol, atol=default_ato
         begin = 0
         end = 0
 
-    # If compression is not wanted, pretend whole range is nonzero
-    if not compress_zeros:
-        dofmap = tuple(range(begin, end))
+    dofmap = tuple(range(begin, end))
 
     # Make subtable by dropping zero columns
     stripped_table = table[..., dofmap]
@@ -498,7 +495,6 @@ def build_element_tables(num_points,
 
 def optimize_element_tables(tables,
                             table_origins,
-                            compress_zeros,
                             rtol=default_rtol,
                             atol=default_atol):
     """Optimize tables and make unique set.
@@ -506,8 +502,6 @@ def optimize_element_tables(tables,
     Steps taken:
 
       - clamp values that are very close to -1, 0, +1 to those values
-      - remove dofs from beginning and end of tables where values are all zero
-      - for each modified terminal, provide the dof range that a given table corresponds to
 
     Terminology:
       name - str, name used in input arguments here
@@ -541,8 +535,7 @@ def optimize_element_tables(tables,
         # Store original dof dimension before compressing
         num_dofs = tbl.shape[3]
 
-        # Strip contiguous zero blocks at the ends of all tables
-        dofrange, dofmap, tbl = strip_table_zeros(tbl, compress_zeros, rtol=rtol, atol=atol)
+        dofrange, dofmap, tbl = strip_table_zeros(tbl, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
@@ -571,19 +564,6 @@ def optimize_element_tables(tables,
         unique_tables[uname] = tbl
 
     unique_table_origins = {}
-    # for ui in range(len(unique_tables_list)):
-    for ui in []:  # FIXME
-        uname = unique_names[ui]
-
-        # Track table origins for runtime recomputation in custom integrals:
-        name = "name of 'smallest' element we can use to compute this table"
-        dofrange = "FIXME"  # table_ranges[name]
-        dofmap = "FIXME"  # table_dofmaps[name]
-
-        # FIXME: Make sure the "smallest" element is chosen
-        (element, avg, derivative_counts, fc) = table_origins[name]
-        unique_table_origins[uname] = table_origin_t(element, avg, derivative_counts, fc, dofrange,
-                                                     dofmap)
 
     return unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
         table_original_num_dofs
@@ -617,12 +597,6 @@ def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
         for i in range(1, table.shape[2]))
 
 
-def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
-    return all(
-        numpy.allclose(table[0, 0, :, :], table[0, i, :, :], rtol=rtol, atol=atol)
-        for i in range(1, table.shape[1]))
-
-
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
     num_perms, num_entities, num_points, num_dofs = table.shape
     if is_zeros_table(table, rtol=rtol, atol=atol):
@@ -637,8 +611,6 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
     else:
         # Equal for all points on a given entity
         piecewise = is_piecewise_table(table, rtol=rtol, atol=atol)
-
-        # Equal for all entities
         uniform = is_uniform_table(table, rtol=rtol, atol=atol)
 
         if piecewise and uniform:
@@ -656,6 +628,12 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
     return ttype
 
 
+def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
+    return all(
+        numpy.allclose(table[0, 0, :, :], table[0, i, :, :], rtol=rtol, atol=atol)
+        for i in range(1, table.shape[1]))
+
+
 def analyse_table_types(unique_tables, rtol=default_rtol, atol=default_atol):
     return {
         uname: analyse_table_type(table, rtol=rtol, atol=atol)
@@ -670,7 +648,6 @@ def build_optimized_tables(num_points,
                            entitytype,
                            modified_terminals,
                            existing_tables,
-                           compress_zeros,
                            rtol=default_rtol,
                            atol=default_atol):
 
@@ -687,7 +664,7 @@ def build_optimized_tables(num_points,
 
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
-        table_original_num_dofs = optimize_element_tables(tables, table_origins, compress_zeros, rtol=rtol, atol=atol)
+        table_original_num_dofs = optimize_element_tables(tables, table_origins, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
     unique_table_num_dofs = {uname: tbl.shape[-1] for uname, tbl in unique_tables.items()}

@@ -56,6 +56,7 @@ def test_additive_facet_integral(mode, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
     facets = np.array([0], dtype=np.int32)
+    perm = np.array([0], dtype=np.uint8)
 
     coords = np.array([0.0, 2.0, np.sqrt(3.0), -1.0, -np.sqrt(3.0), -1.0], dtype=np.float64)
 
@@ -66,7 +67,8 @@ def test_additive_facet_integral(mode, compile_args):
             ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
             ffi.cast('double *', coords.ctypes.data),
-            ffi.cast('int *', facets.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+            ffi.cast('int *', facets.ctypes.data),
+            ffi.cast('uint8_t *', perm.ctypes.data), 0)
 
         assert np.isclose(A.sum(), np.sqrt(12) * (i + 1))
 
@@ -105,7 +107,7 @@ def test_additive_cell_integral(mode, compile_args):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
     A0 = np.array(A)
 
@@ -115,6 +117,6 @@ def test_additive_cell_integral(mode, compile_args):
             ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL, ffi.NULL)
+            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
 
         assert np.all(np.isclose(A, (i + 2) * A0))
