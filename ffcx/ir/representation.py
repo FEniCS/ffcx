@@ -630,18 +630,28 @@ def _embedded_degrees(fiat_element):
     return tuple([fiat_element.degree()] * fiat_element.ref_el.get_dimension())
 
 
-def _infer_dof_data(fiat_element, epsilon):
+def _infer_dof_data(fiat_element, epsilon, reference_offset=0, physical_offset=0):
+    tdim = fiat_element.ref_el.get_dimension()
+    gdim = fiat_element.ref_el.get_spatial_dimension()
+
     # Handle Mixed and EnrichedElements by extracting 'sub' elements.
     if isinstance(fiat_element, MixedElement):
         dofs_data = []
-        for e in fiat_element.elements():
-            dofs_data += _infer_dof_data(e, epsilon)
+        for i, e in enumerate(fiat_element.elements()):
+            dofs_data += _infer_dof_data(e, epsilon, reference_offset=reference_offset,
+                                         physical_offset=physical_offset)
+            reference_offset += ufl.utils.sequences.product(e.value_shape())
+            if gdim == tdim:
+                physical_offset = reference_offset
+            else:
+                physical_offset += ufl.utils.sequences.product(fiat_element.value_shape())
         return dofs_data
 
     if isinstance(fiat_element, EnrichedElement):
         dofs_data = []
         for i, e in enumerate(fiat_element.elements()):
-            dofs_data += _infer_dof_data(e, epsilon)
+            dofs_data += _infer_dof_data(e, epsilon, reference_offset=reference_offset,
+                                         physical_offset=physical_offset)
         return dofs_data
 
     if len(fiat_element.value_shape()) > 1 and fiat_element.num_sub_elements() != 1:
@@ -656,8 +666,6 @@ def _infer_dof_data(fiat_element, epsilon):
         raise DofDataError("Function not supported for Trace elements")
 
     # TODO: handle these offsets properly
-    physical_offsets = _generate_physical_offsets(fiat_element)
-    reference_offsets = _generate_reference_offsets(fiat_element)
     mappings = fiat_element.mapping()
 
     dofs_data = []
@@ -681,6 +689,8 @@ def _infer_dof_data(fiat_element, epsilon):
         "num_components": num_components,
         "dmats": dmats,
         "num_expansion_members": num_expansion_members,
+        "reference_offset": reference_offset,
+        "physical_offset": physical_offset,
     }
     value_rank = len(fiat_element.value_shape())
 
@@ -708,9 +718,7 @@ def _infer_dof_data(fiat_element, epsilon):
 
         dof_data = {
             "coeffs": coefficients,
-            "mapping": mappings[dof],
-            "physical_offset": physical_offsets[dof],
-            "reference_offset": reference_offsets[dof],
+            "mapping": mappings[dof]
         }
         # Still storing element data in dd to avoid rewriting dependent code
         dof_data.update(subelement_data)
