@@ -105,4 +105,3 @@ ufc_coordinate_mapping* create_coordinate_map_{prefix}(void)
 
 // End of code for coordinate mapping {factory_name}
 """
-
