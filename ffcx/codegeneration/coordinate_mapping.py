@@ -800,6 +800,7 @@ def generator(ir, parameters):
 
     # Attributes
     d["factory_name"] = ir.name
+    d["prefix"] = ir.prefix
     d["signature"] = "\"{}\"".format(ir.signature)
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
@@ -843,6 +844,6 @@ def generator(ir, parameters):
     implementation = ufc_coordinate_mapping.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.name)
+    declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.name, prefix=ir.prefix)
 
     return declaration, implementation

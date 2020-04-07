@@ -5,7 +5,17 @@
 
 declaration = """
 ufc_coordinate_mapping* create_{factory_name}(void);
+
+// Helper used to create coordinate map using name given to the
+// UFL file.
+// This helper is called in user c++ code.
+//
+ufc_coordinate_mapping* create_coordinate_map_{prefix}(void);
 """
+
+# declaration = """
+# ufc_coordinate_mapping* create_{factory_name}(void);
+# """
 
 factory = """
 // Code for coordinate mapping {factory_name}
@@ -67,9 +77,6 @@ void compute_reference_geometry_{factory_name}(double* restrict X, double* restr
 {compute_reference_geometry}
 }}
 
-
-
-
 ufc_coordinate_mapping* create_{factory_name}(void)
 {{
   ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
@@ -90,5 +97,12 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   return cmap;
 }}
 
+ufc_coordinate_mapping* create_coordinate_map_{prefix}(void)
+{{
+  return create_{factory_name}();
+}}
+
+
 // End of code for coordinate mapping {factory_name}
 """
+

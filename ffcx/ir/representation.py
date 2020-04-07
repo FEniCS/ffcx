@@ -58,7 +58,7 @@ ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_supp
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
                                      'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
-ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'name', 'signature', 'cell_shape',
+ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'signature', 'cell_shape',
                                                      'topological_dimension',
                                                      'geometric_dimension',
                                                      'compute_physical_coordinates',
@@ -130,7 +130,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     logger.info("Computing representation of {} coordinate mappings".format(
         len(analysis.unique_coordinate_elements)))
     ir_coordinate_mappings = [
-        _compute_coordinate_mapping_ir(e, analysis.element_numbers,
+        _compute_coordinate_mapping_ir(e, prefix, analysis.element_numbers,
                                        coordinate_mapping_names, dofmap_names, finite_element_names)
         for e in analysis.unique_coordinate_elements
     ]
@@ -281,6 +281,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
 
 
 def _compute_coordinate_mapping_ir(ufl_coordinate_element,
+                                   prefix,
                                    element_numbers,
                                    coordinate_mapping_names,
                                    dofmap_names,
@@ -296,6 +297,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
 
     # Store id
     ir = {"id": element_numbers[ufl_coordinate_element]}
+    ir["prefix"] = prefix
     ir["name"] = coordinate_mapping_names[ufl_coordinate_element]
 
     # Compute data for each function
