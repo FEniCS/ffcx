@@ -136,6 +136,13 @@ def reflection_entities_from_subdofmap(ufl_element):
     dof_types = [e.functional_type for e in fiat_element.dual_basis()]
     entity_dofs = fiat_element.entity_dofs()
 
+    # TODO: correct the types of these DOFs in FIAT instead of overwriting here
+    if ufl_element.family() == "RTCF":
+        if ufl_element.degree() == 1:
+            dof_types = ["PointNormalEval" for d in dof_types]
+        else:
+            warnings.warn("Order >1 RTCF spaces currently not supported")
+
     reflections = [None for i in range(num_dofs)]
     # Iterate through the entities of the reference element
     for dim in range(1, tdim):
