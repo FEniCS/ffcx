@@ -26,7 +26,8 @@ import ufl
 from ffcx import naming
 from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                 MixedElement, QuadratureElement, SpaceOfReals,
-                                create_element)
+                                create_element, _get_coeffs_from_fiat,
+                                _get_dmats_from_fiat, _get_num_members_from_fiat)
 from FIAT.tensor_product import TensorProductElement
 from ffcx.ir import dof_permutations
 from FIAT.hdiv_trace import HDivTrace
@@ -668,71 +669,6 @@ def _infer_dof_data(fiat_element, epsilon, reference_offset=0, physical_offset=0
         # This list will hold one dd dict for each dof
         dofs_data.append(dof_data)
     return dofs_data
-
-
-def _get_coeffs_from_fiat(e):
-    if isinstance(e, FlattenedDimensions):
-        return _get_coeffs_from_fiat(e.element)
-    if isinstance(e, TensorProductElement):
-        value_rank = len(e.value_shape())
-        if value_rank == 0:
-            # Tensor product element
-            # Attach suitable coefficients to element
-            ac = _get_coeffs_from_fiat(e.A)
-            bc = _get_coeffs_from_fiat(e.B)
-            return numpy.block([[w * ac for w in v] for v in bc])
-        if value_rank == 1:
-            if len(e.A.value_shape()) == 0 and len(e.B.value_shape()) == 0:
-                # Must be 0-form in interval crossed with something discontinuous
-                # see fiat:FIAT/hdivcurl.py:56
-                if e.A.get_formdegree() + e.B.get_formdegree() == 1:
-                    ac = _get_coeffs_from_fiat(e.A)
-                    bc = _get_coeffs_from_fiat(e.B)
-                    block = numpy.block([[w * ac for w in v] for v in bc])
-                    out = numpy.zeros((block.shape[0],
-                                       e.value_shape()[0],
-                                       block.shape[1]))
-                    for i, b in enumerate(block):
-                        if e.A.get_formdegree() == 1:
-                            out[i][-1] = b
-                        else:  # e.B.get_formdegree() == 1
-                            out[i][0] = -b
-                    return out
-
-    return e.get_coeffs()
-
-
-def _get_dmats_from_fiat(e):
-    if isinstance(e, FlattenedDimensions):
-        return _get_dmats_from_fiat(e.element)
-    if isinstance(e, TensorProductElement):
-        # Tensor product element
-        # Attach suitable coefficients to element
-        ad = _get_dmats_from_fiat(e.A)
-        bd = _get_dmats_from_fiat(e.B)
-        ai = numpy.eye(ad[0].shape[0])
-        bi = numpy.eye(bd[0].shape[0])
-
-        if len(bd) != 1:
-            raise NotImplementedError("Cannot create dmats")
-
-        dmats = []
-        for mat in ad:
-            dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-        dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
-        return dmats
-
-    return e.dmats()
-
-
-def _get_num_members_from_fiat(e):
-    if isinstance(e, FlattenedDimensions):
-        return _get_num_members_from_fiat(e.element)
-    if isinstance(e, EnrichedElement):
-        return sum(_get_num_members_from_fiat(sub_e) for sub_e in e.elements())
-    if isinstance(e, TensorProductElement):
-        return _get_coeffs_from_fiat(e).shape[0]
-    return e.get_num_members(e.degree())
 
 
 def _tabulate_dof_coordinates(ufl_element, element):

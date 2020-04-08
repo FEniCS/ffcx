@@ -18,6 +18,7 @@ from FIAT.nodal_enriched import NodalEnrichedElement
 from FIAT.quadrature_element import QuadratureElement
 from FIAT.restricted import RestrictedElement
 from FIAT.tensor_product import FlattenedDimensions
+from FIAT.tensor_product import TensorProductElement
 
 logger = logging.getLogger(__name__)
 
@@ -314,3 +315,74 @@ def _create_restricted_element(ufl_element):
         return MixedElement(elements)
 
     raise RuntimeError("Cannot create restricted element from: {}".format(ufl_element))
+
+
+def _get_coeffs_from_fiat(e):
+    """Gets the coeffs of the expansions of the basis functions in terms of the FIAT expansion polynomials."""
+    # TODO: move this functionality into FIAT
+    if isinstance(e, FlattenedDimensions):
+        return _get_coeffs_from_fiat(e.element)
+    if isinstance(e, TensorProductElement):
+        value_rank = len(e.value_shape())
+        if value_rank == 0:
+            # Tensor product element
+            # Attach suitable coefficients to element
+            ac = _get_coeffs_from_fiat(e.A)
+            bc = _get_coeffs_from_fiat(e.B)
+            return numpy.block([[w * ac for w in v] for v in bc])
+        if value_rank == 1:
+            if len(e.A.value_shape()) == 0 and len(e.B.value_shape()) == 0:
+                # Must be 0-form in interval crossed with something discontinuous
+                # see fiat:FIAT/hdivcurl.py:56
+                if e.A.get_formdegree() + e.B.get_formdegree() == 1:
+                    ac = _get_coeffs_from_fiat(e.A)
+                    bc = _get_coeffs_from_fiat(e.B)
+                    block = numpy.block([[w * ac for w in v] for v in bc])
+                    out = numpy.zeros((block.shape[0],
+                                       e.value_shape()[0],
+                                       block.shape[1]))
+                    for i, b in enumerate(block):
+                        if e.A.get_formdegree() == 1:
+                            out[i][-1] = b
+                        else:  # e.B.get_formdegree() == 1
+                            out[i][0] = -b
+                    return out
+
+    return e.get_coeffs()
+
+
+def _get_dmats_from_fiat(e):
+    """Gets the matrices representing the derivatives of the FIAT expansion polynomials."""
+    # TODO: move this functionality into FIAT
+    if isinstance(e, FlattenedDimensions):
+        return _get_dmats_from_fiat(e.element)
+    if isinstance(e, TensorProductElement):
+        # Tensor product element
+        # Attach suitable coefficients to element
+        ad = _get_dmats_from_fiat(e.A)
+        bd = _get_dmats_from_fiat(e.B)
+        ai = numpy.eye(ad[0].shape[0])
+        bi = numpy.eye(bd[0].shape[0])
+
+        if len(bd) != 1:
+            raise NotImplementedError("Cannot create dmats")
+
+        dmats = []
+        for mat in ad:
+            dmats += [numpy.block([[w * mat for w in v] for v in bi])]
+        dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
+        return dmats
+
+    return e.dmats()
+
+
+def _get_num_members_from_fiat(e):
+    """Gets the number of members of the FIAT expansion set."""
+    # TODO: move this functionality into FIAT
+    if isinstance(e, FlattenedDimensions):
+        return _get_num_members_from_fiat(e.element)
+    if isinstance(e, EnrichedElement):
+        return sum(_get_num_members_from_fiat(sub_e) for sub_e in e.elements())
+    if isinstance(e, TensorProductElement):
+        return _get_coeffs_from_fiat(e).shape[0]
+    return e.get_num_members(e.degree())
