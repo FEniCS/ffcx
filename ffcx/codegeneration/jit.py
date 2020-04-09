@@ -263,7 +263,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
-        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
+        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL + UFC_DOFMAP_DECL
         cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
 
         for name in cmap_names:
