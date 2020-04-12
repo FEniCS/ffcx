@@ -321,9 +321,12 @@ def _load_objects(cache_dir, module_name, object_names):
     compiled_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(compiled_module)
 
-    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+    compiled_objects = []
+    for name in object_names:
+        # Call UFC factory to create object data struct (calls malloc)
+        obj = getattr(compiled_module.lib, "create_" + name)()
 
-    # Set garbage collector to use C free()
-    [compiled_module.ffi.gc(obj, compiled_module.lib.free) for obj in compiled_objects]
+        # Set garbage collector to use C free()
+        compiled_objects.append(compiled_module.ffi.gc(obj, compiled_module.lib.free))
 
     return compiled_objects, compiled_module
