@@ -27,7 +27,7 @@ UFC_HEADER_DECL = "typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
 header = ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
 UFC_HEADER_DECL += header + "\n"
-
+UFC_HEADER_DECL += "void free(void *); \n"
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
 UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
@@ -322,5 +322,8 @@ def _load_objects(cache_dir, module_name, object_names):
     spec.loader.exec_module(compiled_module)
 
     compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+
+    # Set garbage collector to use C free()
+    [compiled_module.ffi.gc(obj, compiled_module.lib.free) for obj in compiled_objects]
 
     return compiled_objects, compiled_module
