@@ -149,6 +149,9 @@ def compute_physical_coordinates(L, ir):
     num_dofs = ir.num_scalar_coordinate_element_dofs
     scalar_coordinate_element_classname = ir.scalar_coordinate_finite_element_classname
 
+    # Tolerance for coordinates
+    epsilon = L.LiteralFloat(1e-16)
+
     # Dimensions
     gdim = ir.geometric_dimension
     tdim = ir.topological_dimension
@@ -197,6 +200,8 @@ def compute_physical_coordinates(L, ir):
                     index_type=index_type,
                     body=L.AssignAdd(x[ip, i], coordinate_dofs[d, i] * phi[d]))
             ]),
+        L.ForRanges((ip, 0, num_points), (i, 0, gdim), index_type=index_type,
+                    body=L.If(L.LT(L.Abs(x[ip, i]), epsilon), L.Assign(x[ip, i], 0.0)))
     ]
 
     return code
