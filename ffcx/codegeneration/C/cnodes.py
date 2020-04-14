@@ -878,6 +878,7 @@ class Call(CExprOperator):
 def Sqrt(x):
     return Call("sqrt", x)
 
+
 def Abs(x):
     return Call("fabs", x)
 
