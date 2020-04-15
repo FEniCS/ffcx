@@ -13,8 +13,8 @@ import time
 from pathlib import Path
 
 import cffi
-
 import ffcx
+import ffcx.naming
 
 logger = logging.getLogger(__name__)
 
@@ -283,6 +283,8 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
                      cffi_extra_compile_args, cffi_verbose, cffi_debug):
+
+    import ffcx.compiler
 
     _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
