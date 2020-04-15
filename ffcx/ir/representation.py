@@ -616,7 +616,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         if isinstance(e, QuadratureElement):
             return "Function not supported/implemented for QuadratureElement."
         if isinstance(e, FlattenedDimensions) and isinstance(e.element, QuadratureElement):
-            # Case for quad/hex element
+            # Case for quad/hex cell
             return "Function not supported/implemented for QuadratureElement."
         if isinstance(e, HDivTrace):
             return "Function not supported for Trace elements"
