@@ -13,8 +13,8 @@ import time
 from pathlib import Path
 
 import cffi
-
 import ffcx
+import ffcx.naming
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ UFC_HEADER_DECL = "typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
 header = ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
 UFC_HEADER_DECL += header + "\n"
-
+UFC_HEADER_DECL += "void free(void *); \n"
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
 UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
@@ -263,7 +263,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
-        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL
+        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL + UFC_DOFMAP_DECL
         cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
 
         for name in cmap_names:
@@ -283,6 +283,8 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
                      cffi_extra_compile_args, cffi_verbose, cffi_debug):
+
+    import ffcx.compiler
 
     _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
 
@@ -321,6 +323,12 @@ def _load_objects(cache_dir, module_name, object_names):
     compiled_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(compiled_module)
 
-    compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+    compiled_objects = []
+    for name in object_names:
+        # Call UFC factory to create object data struct (calls malloc)
+        obj = getattr(compiled_module.lib, "create_" + name)()
+
+        # Set garbage collector to use C free()
+        compiled_objects.append(compiled_module.ffi.gc(obj, compiled_module.lib.free))
 
     return compiled_objects, compiled_module

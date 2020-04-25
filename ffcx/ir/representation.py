@@ -58,7 +58,7 @@ ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_supp
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
                                      'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
-ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'name', 'signature', 'cell_shape',
+ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'signature', 'cell_shape',
                                                      'topological_dimension',
                                                      'geometric_dimension',
                                                      'compute_physical_coordinates',
@@ -67,7 +67,8 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'name', 'signature', 
                                                      'compute_jacobian_inverses', 'compute_geometry', 'tables',
                                                      'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
                                                      'coordinate_finite_element_classname',
-                                                     'scalar_coordinate_finite_element_classname'])
+                                                     'scalar_coordinate_finite_element_classname',
+                                                     'scalar_dofmap_name'])
 ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'subdomain_id',
                                          'rank', 'geometric_dimension', 'topological_dimension',
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
@@ -129,7 +130,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     logger.info("Computing representation of {} coordinate mappings".format(
         len(analysis.unique_coordinate_elements)))
     ir_coordinate_mappings = [
-        _compute_coordinate_mapping_ir(e, analysis.element_numbers,
+        _compute_coordinate_mapping_ir(e, prefix, analysis.element_numbers,
                                        coordinate_mapping_names, dofmap_names, finite_element_names)
         for e in analysis.unique_coordinate_elements
     ]
@@ -280,6 +281,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
 
 
 def _compute_coordinate_mapping_ir(ufl_coordinate_element,
+                                   prefix,
                                    element_numbers,
                                    coordinate_mapping_names,
                                    dofmap_names,
@@ -295,6 +297,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
 
     # Store id
     ir = {"id": element_numbers[ufl_coordinate_element]}
+    ir["prefix"] = prefix
     ir["name"] = coordinate_mapping_names[ufl_coordinate_element]
 
     # Compute data for each function
@@ -318,10 +321,13 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
 
-    # Get classnames for coordinate element and its scalar subelement:
+    # Get classnames for coordinate element
     ir["coordinate_finite_element_classname"] = finite_element_names[ufl_coordinate_element]
-    ir["scalar_coordinate_finite_element_classname"] = finite_element_names[
-        ufl_coordinate_element.sub_elements()[0]]
+
+    # Get classnames for finite element and dofmap of scalar subelement
+    scalar_element = ufl_coordinate_element.sub_elements()[0]
+    ir["scalar_coordinate_finite_element_classname"] = finite_element_names[scalar_element]
+    ir["scalar_dofmap_name"] = dofmap_names[scalar_element]
 
     return ir_coordinate_map(**ir)
 
@@ -608,6 +614,9 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     # interesting.
     for e in elements:
         if isinstance(e, QuadratureElement):
+            return "Function not supported/implemented for QuadratureElement."
+        if isinstance(e, FlattenedDimensions) and isinstance(e.element, QuadratureElement):
+            # Case for quad/hex cell
             return "Function not supported/implemented for QuadratureElement."
         if isinstance(e, HDivTrace):
             return "Function not supported for Trace elements"

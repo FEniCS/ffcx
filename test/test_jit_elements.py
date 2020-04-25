@@ -44,8 +44,8 @@ def test_dim_degree(compiled_element):
 def test_tabulate_reference_dof_coordinates(compiled_element):
     ufl_element, compiled_element, module = compiled_element
 
-    if ufl_element.family() != "Lagrange":
-        pytest.skip("Cannot tabulate dofs for non-lagrange FE.")
+    if ufl_element.family() not in ["Lagrange", "Quadrature"]:
+        pytest.skip("Cannot tabulate dofs for this FE.")
 
     fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
 
@@ -61,6 +61,9 @@ def test_tabulate_reference_dof_coordinates(compiled_element):
 
 def test_evaluate_reference_basis(compiled_element, reference_points):
     ufl_element, compiled_element, module = compiled_element
+
+    if ufl_element.family() in ["Quadrature"]:
+        pytest.skip("Cannot evaluate basis for this FE.")
 
     fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
 

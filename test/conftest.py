@@ -48,7 +48,12 @@ elements = [("Lagrange", ufl.interval, 1),
             ("N2curl", ufl.triangle, 2),
             ("N2curl", ufl.tetrahedron, 2),
             ("N2curl", ufl.triangle, 3),
-            ("N2curl", ufl.tetrahedron, 3)]
+            ("N2curl", ufl.tetrahedron, 3),
+            ("Quadrature", ufl.interval, 2, None, "default"),
+            ("Quadrature", ufl.triangle, 2, None, "default"),
+            ("Quadrature", ufl.tetrahedron, 2, None, "default"),
+            ("Quadrature", ufl.quadrilateral, 2, None, "default"),
+            ("Quadrature", ufl.hexahedron, 2, None, "default")]
 
 
 @pytest.fixture(scope="module")

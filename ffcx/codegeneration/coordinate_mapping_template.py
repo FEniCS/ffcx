@@ -5,7 +5,17 @@
 
 declaration = """
 ufc_coordinate_mapping* create_{factory_name}(void);
+
+// Helper used to create coordinate map using name given to the
+// UFL file.
+// This helper is called in user c++ code.
+//
+ufc_coordinate_mapping* create_coordinate_map_{prefix}(void);
 """
+
+# declaration = """
+# ufc_coordinate_mapping* create_{factory_name}(void);
+# """
 
 factory = """
 // Code for coordinate mapping {factory_name}
@@ -67,9 +77,6 @@ void compute_reference_geometry_{factory_name}(double* restrict X, double* restr
 {compute_reference_geometry}
 }}
 
-
-
-
 ufc_coordinate_mapping* create_{factory_name}(void)
 {{
   ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
@@ -78,6 +85,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
   cmap->cell_shape = {cell_shape};
+  cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
   cmap->compute_physical_coordinates = compute_physical_coordinates_{factory_name};
   cmap->compute_reference_coordinates = compute_reference_coordinates_{factory_name};
   cmap->compute_reference_geometry = compute_reference_geometry_{factory_name};
@@ -88,6 +96,12 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->compute_midpoint_geometry = compute_midpoint_geometry_{factory_name};
   return cmap;
 }}
+
+ufc_coordinate_mapping* create_coordinate_map_{prefix}(void)
+{{
+  return create_{factory_name}();
+}}
+
 
 // End of code for coordinate mapping {factory_name}
 """
