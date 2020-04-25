@@ -1,0 +1,65 @@
+# This workflow will install Python dependencies, run tests and lint
+# with a single version of Python For more information see:
+# https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: FFCX
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # os: [ubuntu-latest]
+        # os: [macos-latest]
+        python-version: [3.7, 3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies (non-Python, Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev pkg-config
+      - name: Install dependencies (non-Python, macOS)
+        if: runner.os == 'macOS'
+        run: brew install graphviz pkg-config
+      - name: Install dependencies (Python)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pygraphviz
+          pip install git+https://github.com/FEniCS/fiat.git --user
+          pip install git+https://github.com/FEniCS/ufl.git --user
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 --statistics ffcx/ test/
+      - name: Check documentation style
+        run: |
+          pip install pydocstyle
+          python -m pydocstyle .
+      - name: Install ffcx
+        run: |
+          pip install .
+      - name: Test with pytest
+        run: |
+          pip install coveralls coverage pytest pytest-cov pytest-xdist
+          pytest -n=4 --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+          # coveralls
+      - name: Upload pytest test results
+        uses: actions/upload-artifact@master
+        with:
+          name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
+        # Use always() to always run this step to publish test results
+        # when there are test failures
+        if: always()
+      - name: Runs demos
+        run: |
+          ffcx demo/*.ufl

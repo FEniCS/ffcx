@@ -5,8 +5,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utility to draw graphs."""
 
+
 from ffcx.ir.uflacs.analysis.modified_terminals import strip_modified_terminal
-from ufl.classes import Sum, Product, Division, IntValue, FloatValue, Indexed, ReferenceValue, Argument
+from ufl.classes import (Argument, Division, FloatValue, Indexed, IntValue,
+                         Product, ReferenceValue, Sum)
 
 
 def visualise_graph(Gx, filename):
