@@ -145,7 +145,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
 
         shape_dmats = numpy.shape(dof_data["dmats"][0])
         if shape_dmats[0] != shape_dmats[1]:
-            logging.exception("Something is wrong with the dmats:\n{}}".format(dof_data["dmats"]))
+            logging.exception("Something is wrong with the dmats: {}".format(dof_data["dmats"]))
 
         aux = L.Symbol("aux")
         dmats = L.Symbol("dmats")
