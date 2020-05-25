@@ -148,25 +148,15 @@ def compute_integral_ir(ir: dict,
     integral_type = itg_data.integral_type
     cell = itg_data.domain.ufl_cell()
 
-    # Get the quadrature schemes that appear in the integral
-    if integral_type in ufl.custom_integral_types:
-        # Set quadrature degree to twice the highest element degree, to
-        # get enough points to identify basis functions via table
-        # computations
-        max_element_degree = max([1] + [ufl_element.degree() for ufl_element in unique_elements])
-        rules = [("default", 2 * max_element_degree)]
-        quadrature_integral_type = "cell"
-    else:
-        # Collect the quadrature rules occur in integrals
-        default_scheme = itg_data.metadata["quadrature_rule"]
-        default_degree = itg_data.metadata["quadrature_degree"]
-        rules = set()
-        for integral in itg_data.integrals:
-            md = integral.metadata() or {}
-            scheme = md.get("quadrature_rule", default_scheme)
-            degree = md.get("quadrature_degree", default_degree)
-            rules.add((scheme, degree))
-        quadrature_integral_type = integral_type
+    # Collect the quadrature rules occur in integrals
+    rules = set()
+    for integral in itg_data.integrals:
+        md = integral.metadata() or {}
+        print(md)
+        scheme = md["quadrature_rule"]
+        degree = md["quadrature_degree"]
+        rules.add((scheme, degree))
+    quadrature_integral_type = integral_type
 
     # Compute actual points and weights
     quadrature_rules, quadrature_rule_sizes = compute_quadrature_rules(
@@ -176,10 +166,6 @@ def compute_integral_ir(ir: dict,
     # There is an assumption that schemes with the same number of points
     # are identical.
     ir["quadrature_rules"] = quadrature_rules
-
-    # Store the fake num_points for analysis in custom integrals
-    if integral_type in ufl.custom_integral_types:
-        ir["fake_num_points"], = quadrature_rules.keys()
 
     # Group and accumulate integrals on the format {num_points: integral
     # data}

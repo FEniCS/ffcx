@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 FFCX_PARAMETERS = {
     "representation": "auto",  # form representation / code generation strategy
-    "quadrature_rule": "auto",  # quadrature rule used for integration of element tensors
+    "quadrature_rule": "default",  # quadrature rule used for integration of element tensors
     "quadrature_degree": -1,  # quadrature degree used for computing integrals (-1 means auto)
     "precision": -1,  # precision used when writing numbers (-1 for max precision)
     "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables

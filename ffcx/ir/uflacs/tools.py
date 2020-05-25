@@ -59,12 +59,10 @@ def accumulate_integrals(itg_data, quadrature_rule_sizes):
         for integral in itg_data.integrals:
             sorted_integrands[num_points].append(integral.integrand())
     else:
-        default_scheme = itg_data.metadata["quadrature_degree"]
-        default_degree = itg_data.metadata["quadrature_rule"]
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
-            scheme = md.get("quadrature_rule", default_scheme)
-            degree = md.get("quadrature_degree", default_degree)
+            scheme = md["quadrature_rule"]
+            degree = md["quadrature_degree"]
             rule = (scheme, degree)
             num_points = quadrature_rule_sizes[rule]
             sorted_integrands[num_points].append(integral.integrand())

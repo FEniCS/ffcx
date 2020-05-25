@@ -55,16 +55,12 @@ class ExpressionGenerator:
         parts = []
 
         parts += self.generate_element_tables()
-        parts += self.generate_unstructured_piecewise_partition()
+        parts += self.generate_piecewise_partition(self.num_points)
 
         all_preparts = []
         all_quadparts = []
 
         preparts, quadparts = self.generate_quadrature_loop()
-        all_preparts += preparts
-        all_quadparts += quadparts
-
-        preparts, quadparts = self.generate_dofblock_partition(quadrature_independent=True)
         all_preparts += preparts
         all_quadparts += quadparts
 
@@ -101,8 +97,8 @@ class ExpressionGenerator:
         """Generate quadrature loop for this num_points."""
         L = self.backend.language
 
-        # Generate unstructured varying partition
-        body = self.generate_unstructured_varying_partition()
+        # Generate varying partition
+        body = self.generate_varying_partition()
         body = L.commented_code_list(
             body, "Points loop body setup (num_points={0})".format(self.num_points))
 
@@ -122,11 +118,11 @@ class ExpressionGenerator:
 
         return preparts, quadparts
 
-    def generate_unstructured_varying_partition(self):
+    def generate_varying_partition(self):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir.varying_irs[self.num_points]["factorization"]
+        F = self.ir.integrand[self.num_points]["factorization"]
 
         arraysymbol = L.Symbol("sv%d" % self.num_points)
         parts = self.generate_partition(arraysymbol, F, "varying", self.num_points)
@@ -134,23 +130,19 @@ class ExpressionGenerator:
                                       (self.num_points, ))
         return parts
 
-    def generate_unstructured_piecewise_partition(self):
+    def generate_piecewise_partition(self, num_points):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir.piecewise_ir["factorization"]
+        F = self.ir.integrand[num_points]["factorization"]
 
         arraysymbol = L.Symbol("sp")
-        num_points = None
-        parts = self.generate_partition(arraysymbol, F, "piecewise", num_points)
+        parts = self.generate_partition(arraysymbol, F, "piecewise", None)
         parts = L.commented_code_list(parts, "Unstructured piecewise computations")
         return parts
 
-    def generate_dofblock_partition(self, quadrature_independent=False):
-        if quadrature_independent is True:  # NB! None meaning piecewise partition, not custom integral
-            block_contributions = self.ir.piecewise_ir["block_contributions"]
-        else:
-            block_contributions = self.ir.varying_irs[self.num_points]["block_contributions"]
+    def generate_dofblock_partition(self):
+        block_contributions = self.ir.integrand[self.num_points]["block_contributions"]
 
         preparts = []
         quadparts = []
@@ -163,7 +155,7 @@ class ExpressionGenerator:
 
             # Define code for block depending on mode
             block_preparts, block_quadparts = \
-                self.generate_block_parts(self.num_points, blockmap, blockdata, quadrature_independent)
+                self.generate_block_parts(self.num_points, blockmap, blockdata)
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -173,7 +165,7 @@ class ExpressionGenerator:
 
         return preparts, quadparts
 
-    def generate_block_parts(self, num_points, blockmap, blockdata, quadrature_independent=False):
+    def generate_block_parts(self, num_points, blockmap, blockdata):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after
@@ -197,11 +189,7 @@ class ExpressionGenerator:
 
         arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
-        # Get factor expression
-        if blockdata.factor_is_piecewise:
-            F = self.ir.piecewise_ir["factorization"]
-        else:
-            F = self.ir.varying_irs[num_points]["factorization"]
+        F = self.ir.integrand[num_points]["factorization"]
 
         assert not blockdata.transposed, "Not handled yet"
         components = ufl.product(self.ir.expression_shape)

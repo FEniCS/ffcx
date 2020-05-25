@@ -32,9 +32,7 @@ ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 block_data_t = collections.namedtuple("block_data_t",
                                       ["ttypes",  # list of table types for each block rank
                                        "factor_indices_comp_indices",  # list of tuples (factor index, component index)
-                                       "factor_is_piecewise",
-                                       # bool: factor is found in piecewise vertex array
-                                       # instead of quadloop specific vertex array
+                                       "all_factors_piecewise",  # True if all factors for this block are piecewise
                                        "unames",  # list of unique FE table names for each block rank
                                        "restrictions",  # restriction "+" | "-" | None for each block rank
                                        "transposed",  # block is the transpose of another
@@ -152,9 +150,6 @@ def uflacs_default_parameters(optimize):
         # values for table reuse and dropping of table zeros
         "table_atol": 1e-9,
 
-        # Point chunk size for custom integrals
-        "chunk_size": 8,
-
         # Code generation parameters
         "vectorize": False,
         "alignas": 32,
@@ -206,13 +201,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     ir["unique_tables"] = {}
     ir["unique_table_types"] = {}
 
-    # Shared piecewise expr_ir for all quadrature loops
-    ir["piecewise_ir"] = {"factorization": None,
-                          "modified_arguments": [],
-                          "block_contributions": collections.defaultdict(list)}
-
-    # { num_points: expr_ir for one integrand }
-    ir["varying_irs"] = {"factorization": None}
+    ir["integrand"] = {}
 
     # Whether we expect the quadrature weight to be applied or not (in
     # some cases it's just set to 1 in ufl integral scaling)
@@ -350,11 +339,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
         # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
         analyse_dependencies(F, mt_unique_table_reference)
 
-        # Save the factorisation graph to the piecewise IR
-        ir["piecewise_ir"]["factorization"] = F
-        ir["piecewise_ir"]["modified_arguments"] = [F.nodes[i]['mt']
-                                                    for i in argkeys]
-
         # Loop over factorization terms
         block_contributions = collections.defaultdict(list)
         for ma_indices, fi_ci in sorted(argument_factorization.items()):
@@ -382,40 +366,27 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             block_restrictions = tuple(block_restrictions)
 
             # Check if each *each* factor corresponding to this argument is piecewise
-            factor_is_piecewise = all(F.nodes[ifi[0]]["status"] == 'piecewise' for ifi in fi_ci)
-
-            block_is_piecewise = factor_is_piecewise and not expect_weight
+            all_factors_piecewise = all(F.nodes[ifi[0]]["status"] == 'piecewise' for ifi in fi_ci)
             block_is_permuted = False
             for n in unames:
                 if unique_tables[n].shape[0] > 1:
                     block_is_permuted = True
             ma_data = []
             for i, ma in enumerate(ma_indices):
-                if not trs[i].is_piecewise:
-                    block_is_piecewise = False
                 ma_data.append(ma_data_t(ma, trs[i]))
 
             block_is_transposed = False  # FIXME: Handle transposes for these block types
 
-            # Add to contributions:
-            # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
-            # A[blockmap] += B[i];                    generated after quadloop
-
             block_unames = unames
             blockdata = block_data_t(ttypes, fi_ci,
-                                     factor_is_piecewise, block_unames,
+                                     all_factors_piecewise, block_unames,
                                      block_restrictions, block_is_transposed,
                                      block_is_uniform, None, tuple(ma_data), None, block_is_permuted)
 
-            if block_is_piecewise:
-                # Insert in piecewise expr_ir
-                ir["piecewise_ir"]["block_contributions"][blockmap].append(blockdata)
-            else:
-                # Insert in varying expr_ir for this quadrature loop
-                block_contributions[blockmap].append(blockdata)
+            # Insert in expr_ir for this quadrature loop
+            block_contributions[blockmap].append(blockdata)
 
-        # Figure out which table names are referenced in unstructured
-        # partition
+        # Figure out which table names are referenced
         active_table_names = set()
         for i, v in F.nodes.items():
             tr = v.get('tr')
@@ -424,7 +395,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         # Figure out which table names are referenced in blocks
         for blockmap, contributions in itertools.chain(
-                block_contributions.items(), ir["piecewise_ir"]["block_contributions"].items()):
+                block_contributions.items()):
             for blockdata in contributions:
                 for mad in blockdata.ma_data:
                     active_table_names.add(mad.tabledata.name)
@@ -487,11 +458,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
-        ir["varying_irs"][num_points] = {"factorization": F,
-                                         "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
-                                         "block_contributions": block_contributions,
-                                         "need_points": need_points,
-                                         "need_weights": need_weights}
+        ir["integrand"][num_points] = {"factorization": F,
+                                       "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
+                                       "block_contributions": block_contributions,
+                                       "need_points": need_points,
+                                       "need_weights": need_weights}
     return ir
 
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2017 Martin Sandve Alnæs
+# Copyright (C) 2013-2020 Martin Sandve Alnæs and Michal Habera
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
@@ -102,7 +102,7 @@ class IntegralGenerator(object):
             return self.backend.ufl_to_language.get(v)
         f = self.scopes[num_points].get(v)
         if f is None:
-            f = self.scopes[None][v]
+            f = self.scopes[None].get(v)
         return f
 
     def new_temp_symbol(self, basename):
@@ -152,32 +152,19 @@ class IntegralGenerator(object):
         # Generate the tables of basis function values and preintegrated blocks
         parts += self.generate_element_tables()
 
-        # Generate code to compute piecewise constant scalar factors
-        parts += self.generate_unstructured_piecewise_partition()
-
         # Loop generation code will produce parts to go before quadloops,
         # to define the quadloops, and to go after the quadloops
         all_preparts = []
         all_quadparts = []
 
-        # Go through each relevant quadrature loop
-        if self.ir.integral_type in ufl.custom_integral_types:
-            preparts, quadparts = \
-                self.generate_runtime_quadrature_loop()
+        for num_points in self.ir.all_num_points:
+            # Generate code to compute piecewise constant scalar factors
+            all_preparts += self.generate_piecewise_partition(num_points)
+
+            # Generate code to integrate reusable blocks of final element tensor
+            preparts, quadparts = self.generate_quadrature_loop(num_points)
             all_preparts += preparts
             all_quadparts += quadparts
-        else:
-            for num_points in self.ir.all_num_points:
-                # Generate code to integrate reusable blocks of final element tensor
-                preparts, quadparts = self.generate_quadrature_loop(num_points)
-                all_preparts += preparts
-                all_quadparts += quadparts
-
-        # Generate code to finish computing reusable blocks outside quadloop
-        preparts, quadparts = \
-            self.generate_dofblock_partition(None)
-        all_preparts += preparts
-        all_quadparts += quadparts
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
@@ -202,14 +189,14 @@ class IntegralGenerator(object):
 
         # Loop over quadrature rules
         for num_points in self.ir.all_num_points:
-            varying_ir = self.ir.varying_irs[num_points]
+            integrand = self.ir.integrand[num_points]
 
             points, weights = self.ir.quadrature_rules[num_points]
             assert num_points == len(weights)
             assert num_points == points.shape[0]
 
             # Generate quadrature weights array
-            if varying_ir["need_weights"]:
+            if integrand["need_weights"]:
                 wsym = self.backend.symbols.weights_table(num_points)
                 parts += [
                     L.ArrayDecl(
@@ -218,7 +205,7 @@ class IntegralGenerator(object):
 
             # Generate quadrature points array
             N = ufl.product(points.shape)
-            if varying_ir["need_points"] and N:
+            if integrand["need_points"] and N:
                 # Flatten array: (TODO: avoid flattening here, it makes padding harder)
                 flattened_points = points.reshape(N)
                 psym = self.backend.symbols.points_table(num_points)
@@ -400,8 +387,8 @@ class IntegralGenerator(object):
         """Generate quadrature loop with for this num_points."""
         L = self.backend.language
 
-        # Generate unstructured varying partition
-        body = self.generate_unstructured_varying_partition(num_points)
+        # Generate varying partition
+        body = self.generate_varying_partition(num_points)
         body = L.commented_code_list(
             body, "Quadrature loop body setup (num_points={0})".format(num_points))
 
@@ -419,11 +406,7 @@ class IntegralGenerator(object):
             # For now wrapping body in Scope to avoid thinking about scoping issues
             quadparts = L.commented_code_list(L.Scope(body), "Only 1 quadrature point, no loop")
         else:
-            # Regular case: define quadrature loop
-            if num_points == 1:
-                iq = 0
-            else:
-                iq = self.backend.symbols.quadrature_loop_index()
+            iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
         return preparts, quadparts
@@ -435,20 +418,17 @@ class IntegralGenerator(object):
         assert self.ir.integral_type in ufl.custom_integral_types
 
         num_points = self.ir.fake_num_points
-        chunk_size = self.ir.params["chunk_size"]
-
         gdim = self.ir.geometric_dimension
-
         alignas = self.ir.params["alignas"]
 
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
 
-        # Generate unstructured varying partition
-        body = self.generate_unstructured_varying_partition(num_points)
+        # Generate varying partition
+        body = self.generate_varying_partition(num_points)
         body = L.commented_code_list(body, [
             "Run-time quadrature loop body setup",
-            "(chunk_size={0}, analysis_num_points={1})".format(chunk_size, num_points)
+            "(num points={})".format(num_points)
         ])
 
         # Generate dofblock parts, some of this
@@ -460,105 +440,95 @@ class IntegralGenerator(object):
         # Wrap body in loop
         if not body:
             # Could happen for integral with everything zero and optimized away
-            quadparts = []
-        else:
-            rule_parts = []
+            return preparts, []
 
-            # Define two-level quadrature loop; over chunks then over points in chunk
-            iq_chunk = L.Symbol("iq_chunk")
-            np = self.backend.symbols.num_custom_quadrature_points()
-            num_point_blocks = (np + chunk_size - 1) / chunk_size
-            iq = self.backend.symbols.quadrature_loop_index()
+        rule_parts = []
 
-            # Not assuming runtime size to be multiple by chunk size
-            num_points_in_block = L.Symbol("num_points_in_chunk")
-            decl = L.VariableDecl("const int", num_points_in_block,
-                                  L.Call("min", (chunk_size, np - iq_chunk * chunk_size)))
-            rule_parts.append(decl)
+        # Define two-level quadrature loop; over chunks then over points in chunk
+        num_quad_points = self.backend.symbols.num_custom_quadrature_points()
+        iq = self.backend.symbols.quadrature_loop_index()
 
-            iq_body = L.ForRange(iq, 0, num_points_in_block, body=body)
+        iq_body = L.ForRange(iq, 0, num_quad_points, body=body)
 
-            # Preparations for quadrature rules
-            #
-            varying_ir = self.ir.varying_irs[num_points]
+        # Preparations for quadrature rules
+        #
+        integrand = self.ir.integrand[num_points]
 
-            # Copy quadrature weights for this chunk
-            if varying_ir["need_weights"]:
-                cwsym = self.backend.symbols.custom_quadrature_weights()
-                wsym = self.backend.symbols.custom_weights_table()
-                rule_parts += [
-                    L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0, alignas=alignas),
-                    L.ForRange(
-                        iq,
-                        0,
-                        num_points_in_block,
-                        body=L.Assign(wsym[iq], cwsym[chunk_size * iq_chunk + iq])),
-                ]
-
-            # Copy quadrature points for this chunk
-            if varying_ir["need_points"]:
-                cpsym = self.backend.symbols.custom_quadrature_points()
-                psym = self.backend.symbols.custom_points_table()
-                rule_parts += [
-                    L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0, alignas=alignas),
-                    L.ForRange(
-                        iq,
-                        0,
-                        num_points_in_block,
-                        body=[
-                            L.Assign(psym[iq * gdim + i],
-                                     cpsym[chunk_size * iq_chunk * gdim + iq * gdim + i])
-                            for i in range(gdim)
-                        ])
-                ]
-
-            # Add leading comment if there are any tables
-            rule_parts = L.commented_code_list(rule_parts, "Quadrature weights and points")
-
-            # Preparations for element tables
-            table_parts = []
-
-            # Only declare non-piecewise tables, computed inside chunk loop
-            non_piecewise_tables = [
-                name for name in sorted(tables) if table_types[name] not in piecewise_ttypes
+        # Copy quadrature weights for this chunk
+        if integrand["need_weights"]:
+            cwsym = self.backend.symbols.custom_quadrature_weights()
+            wsym = self.backend.symbols.custom_weights_table()
+            rule_parts += [
+                L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0, alignas=alignas),
+                L.ForRange(
+                    iq,
+                    0,
+                    num_points_in_block,
+                    body=L.Assign(wsym[iq], cwsym[chunk_size * iq_chunk + iq])),
             ]
-            for name in non_piecewise_tables:
-                table = tables[name]
-                decl = L.ArrayDecl(
-                    "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0,
-                    alignas=alignas)  # padlen=padlen)
-                table_parts += [decl]
 
-            table_parts += [L.Comment("FIXME: Fill element tables here")]
+        # Copy quadrature points for this chunk
+        if integrand["need_points"]:
+            cpsym = self.backend.symbols.custom_quadrature_points()
+            psym = self.backend.symbols.custom_points_table()
+            rule_parts += [
+                L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0, alignas=alignas),
+                L.ForRange(
+                    iq,
+                    0,
+                    num_points_in_block,
+                    body=[
+                        L.Assign(psym[iq * gdim + i],
+                                 cpsym[chunk_size * iq_chunk * gdim + iq * gdim + i])
+                        for i in range(gdim)
+                    ])
+            ]
 
-            # Gather all in chunk loop
-            chunk_body = rule_parts + table_parts + [iq_body]
-            quadparts = [L.ForRange(iq_chunk, 0, num_point_blocks, body=chunk_body)]
+        # Add leading comment if there are any tables
+        rule_parts = L.commented_code_list(rule_parts, "Quadrature weights and points")
+
+        # Preparations for element tables
+        table_parts = []
+
+        # Only declare non-piecewise tables, computed inside chunk loop
+        non_piecewise_tables = [
+            name for name in sorted(tables) if table_types[name] not in piecewise_ttypes
+        ]
+        for name in non_piecewise_tables:
+            table = tables[name]
+            decl = L.ArrayDecl(
+                "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0,
+                alignas=alignas)  # padlen=padlen)
+            table_parts += [decl]
+
+        table_parts += [L.Comment("FIXME: Fill element tables here")]
+
+        # Gather all in chunk loop
+        chunk_body = rule_parts + table_parts + [iq_body]
+        quadparts = [L.ForRange(iq_chunk, 0, num_point_blocks, body=chunk_body)]
 
         return preparts, quadparts
 
-    def generate_unstructured_piecewise_partition(self):
+    def generate_piecewise_partition(self, num_points):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir.piecewise_ir["factorization"]
+        F = self.ir.integrand[num_points]["factorization"]
 
         arraysymbol = L.Symbol("sp")
-        num_points = None
-        parts = self.generate_partition(arraysymbol, F, "piecewise", num_points)
-        parts = L.commented_code_list(parts, "Unstructured piecewise computations")
+        parts = self.generate_partition(arraysymbol, F, "piecewise", None)
+        parts = L.commented_code_list(parts, "Piecewise computations (independent on quadrature loops)")
         return parts
 
-    def generate_unstructured_varying_partition(self, num_points):
+    def generate_varying_partition(self, num_points):
         L = self.backend.language
 
         # Get annotated graph of factorisation
-        F = self.ir.varying_irs[num_points]["factorization"]
+        F = self.ir.integrand[num_points]["factorization"]
 
-        arraysymbol = L.Symbol("sv%d" % num_points)
+        arraysymbol = L.Symbol("sv{}".format(num_points))
         parts = self.generate_partition(arraysymbol, F, "varying", num_points)
-        parts = L.commented_code_list(parts, "Unstructured varying computations for num_points=%d" %
-                                      (num_points, ))
+        parts = L.commented_code_list(parts, "Varying computations for num_points={}".format(num_points))
         return parts
 
     def generate_partition(self, symbol, F, mode, num_points):
@@ -573,63 +543,65 @@ class IntegralGenerator(object):
             v = attr['expression']
             mt = attr.get('mt')
 
-            if v._ufl_is_literal_:
-                vaccess = self.backend.ufl_to_language.get(v)
-            elif mt is not None:
-                # All finite element based terminals have table data, as well
-                # as some, but not all, of the symbolic geometric terminals
-                tabledata = attr.get('tr')
+            # Generate code only if the expression is not already in cache
+            if not self.get_var(num_points, v):
+                if v._ufl_is_literal_:
+                    vaccess = self.backend.ufl_to_language.get(v)
+                elif mt is not None:
+                    # All finite element based terminals have table data, as well
+                    # as some, but not all, of the symbolic geometric terminals
+                    tabledata = attr.get('tr')
 
-                # Backend specific modified terminal translation
-                vaccess = self.backend.access.get(mt.terminal, mt, tabledata, num_points)
-                vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, num_points, vaccess)
+                    # Backend specific modified terminal translation
+                    vaccess = self.backend.access.get(mt.terminal, mt, tabledata, num_points)
+                    vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, num_points, vaccess)
 
-                # Store definitions of terminals in list
-                assert isinstance(vdef, list)
-                definitions.extend(vdef)
-            else:
-                # Get previously visited operands
-                vops = [self.get_var(num_points, op) for op in v.ufl_operands]
-
-                # get parent operand
-                pid = F.in_edges[i][0] if F.in_edges[i] else -1
-                if pid and pid > i:
-                    parent_exp = F.nodes.get(pid)['expression']
+                    # Store definitions of terminals in list
+                    assert isinstance(vdef, list)
+                    definitions.extend(vdef)
                 else:
-                    parent_exp = None
+                    # Get previously visited operands
+                    vops = [self.get_var(num_points, op) for op in v.ufl_operands]
 
-                # Mapping UFL operator to target language
-                self._ufl_names.add(v._ufl_handler_name_)
-                vexpr = self.backend.ufl_to_language.get(v, *vops)
-
-                # Create a new intermediate for each subexpression
-                # except boolean conditions and its childs
-                if isinstance(parent_exp, ufl.classes.Condition):
-                    # Skip intermediates for 'x' and 'y' in x<y
-                    # Avoid the creation of complex valued intermediates
-                    vaccess = vexpr
-                elif isinstance(v, ufl.classes.Condition):
-                    # Inline the conditions x < y, condition values
-                    # This removes the need to handle boolean intermediate variables.
-                    # With tensor-valued conditionals it may not be optimal but we
-                    # let the compiler take responsibility for optimizing those cases.
-                    vaccess = vexpr
-                elif any(op._ufl_is_literal_ for op in v.ufl_operands):
-                    # Skip intermediates for e.g. -2.0*x,
-                    # resulting in lines like z = y + -2.0*x
-                    vaccess = vexpr
-                else:
-                    # Record assignment of vexpr to intermediate variable
-                    j = len(intermediates)
-                    if self.ir.params["use_symbol_array"]:
-                        vaccess = symbol[j]
-                        intermediates.append(L.Assign(vaccess, vexpr))
+                    # get parent operand
+                    pid = F.in_edges[i][0] if F.in_edges[i] else -1
+                    if pid and pid > i:
+                        parent_exp = F.nodes.get(pid)['expression']
                     else:
-                        vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                        intermediates.append(L.VariableDecl("const ufc_scalar_t", vaccess, vexpr))
+                        parent_exp = None
 
-            # Store access node for future reference
-            self.set_var(num_points, v, vaccess)
+                    # Mapping UFL operator to target language
+                    self._ufl_names.add(v._ufl_handler_name_)
+                    vexpr = self.backend.ufl_to_language.get(v, *vops)
+
+                    # Create a new intermediate for each subexpression
+                    # except boolean conditions and its childs
+                    if isinstance(parent_exp, ufl.classes.Condition):
+                        # Skip intermediates for 'x' and 'y' in x<y
+                        # Avoid the creation of complex valued intermediates
+                        vaccess = vexpr
+                    elif isinstance(v, ufl.classes.Condition):
+                        # Inline the conditions x < y, condition values
+                        # This removes the need to handle boolean intermediate variables.
+                        # With tensor-valued conditionals it may not be optimal but we
+                        # let the compiler take responsibility for optimizing those cases.
+                        vaccess = vexpr
+                    elif any(op._ufl_is_literal_ for op in v.ufl_operands):
+                        # Skip intermediates for e.g. -2.0*x,
+                        # resulting in lines like z = y + -2.0*x
+                        vaccess = vexpr
+                    else:
+                        # Record assignment of vexpr to intermediate variable
+                        j = len(intermediates)
+                        if self.ir.params["use_symbol_array"]:
+                            vaccess = symbol[j]
+                            intermediates.append(L.Assign(vaccess, vexpr))
+                        else:
+                            vaccess = L.Symbol("%s_%d" % (symbol.name, j))
+                            intermediates.append(L.VariableDecl("const ufc_scalar_t", vaccess, vexpr))
+
+                # Store access node for future reference
+                self.set_var(num_points, v, vaccess)
 
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
@@ -645,14 +617,10 @@ class IntegralGenerator(object):
         return parts
 
     def generate_dofblock_partition(self, num_points):
-        if num_points is None:  # NB! None meaning piecewise partition, not custom integral
-            block_contributions = self.ir.piecewise_ir["block_contributions"]
-        else:
-            block_contributions = self.ir.varying_irs[num_points]["block_contributions"]
+        block_contributions = self.ir.integrand[num_points]["block_contributions"]
 
         preparts = []
         quadparts = []
-
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
                   for blockdata in contributions]
@@ -716,10 +684,7 @@ class IntegralGenerator(object):
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
-            if td.is_piecewise:
-                scope = self.ir.piecewise_ir["modified_arguments"]
-            else:
-                scope = self.ir.varying_irs[num_points]["modified_arguments"]
+            scope = self.ir.integrand[num_points]["modified_arguments"]
             mt = scope[mad.ma_index]
 
             # Translate modified terminal to code
@@ -781,10 +746,7 @@ class IntegralGenerator(object):
         B_indices = list(B_indices)
 
         # Get factor expression
-        if blockdata.factor_is_piecewise:
-            F = self.ir.piecewise_ir["factorization"]
-        else:
-            F = self.ir.varying_irs[num_points]["factorization"]
+        F = self.ir.integrand[num_points]["factorization"]
 
         if len(blockdata.factor_indices_comp_indices) > 1:
             raise RuntimeError("Code generation for non-scalar integrals unsupported")
@@ -816,7 +778,7 @@ class IntegralGenerator(object):
             fw = fw_rhs
         else:
             # Define and cache scalar temp variable
-            key = (num_points, factor_index, blockdata.factor_is_piecewise)
+            key = (num_points, factor_index, blockdata.all_factors_piecewise)
             fw, defined = self.get_temp_symbol("fw", key)
             if not defined:
                 quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
