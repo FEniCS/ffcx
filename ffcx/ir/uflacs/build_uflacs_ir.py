@@ -96,7 +96,7 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
 
 
 def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
-                    quadrature_rules, parameters, visualise):
+                    parameters, visualise):
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -120,20 +120,13 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     expect_weight = (integral_type not in point_integral_types and (entitytype == "cell" or (
         entitytype == "facet" and tdim > 1) or (integral_type in ufl.custom_integral_types)))
 
-    # Analyse each num_points/integrand separately
-    assert isinstance(integrands, dict)
-    all_num_points = sorted(integrands.keys())
-    cases = [(num_points, [integrands[num_points]]) for num_points in all_num_points]
-    ir["all_num_points"] = all_num_points
-
     ir["table_dofmaps"] = {}
     ir["table_dof_face_tangents"] = {}
     ir["table_dof_reflection_entities"] = {}
 
-    for num_points, expressions in cases:
+    for quadrature_rule, integrand in integrands.items():
 
-        assert len(expressions) == 1
-        expression = expressions[0]
+        expression = integrand
 
         # Rebalance order of nested terminal modifiers
         expression = balance_modifiers(expression)
@@ -156,8 +149,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         (unique_tables, unique_table_types, unique_table_num_dofs,
          mt_unique_table_reference, table_origins) = build_optimized_tables(
-            num_points,
-            quadrature_rules,
+            quadrature_rule,
             cell,
             integral_type,
             entitytype,
@@ -369,11 +361,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
-        ir["integrand"][num_points] = {"factorization": F,
-                                       "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
-                                       "block_contributions": block_contributions,
-                                       "need_points": need_points,
-                                       "need_weights": need_weights}
+        ir["integrand"][quadrature_rule] = {"factorization": F,
+                                            "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
+                                            "block_contributions": block_contributions,
+                                            "need_points": need_points,
+                                            "need_weights": need_weights}
     return ir
 
 

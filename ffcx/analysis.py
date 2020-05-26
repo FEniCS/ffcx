@@ -147,6 +147,8 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
     if form.empty():
         raise RuntimeError("Form ({}) seems to be zero: cannot compile it.".format(str(form)))
+    if _has_custom_integrals(form):
+        raise RuntimeError("Form ({}) contains unsupported custom integrals.".format(str(form)))
 
     # ---- Extract representation across all integrals in this form
     #
@@ -214,9 +216,6 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
 
-        qd_default = FFCX_PARAMETERS["quadrature_degree"]
-        qr_default = FFCX_PARAMETERS["quadrature_rule"]
-
         # ----- Extract precision
         #
         # The priority of precision determination is following
@@ -241,8 +240,11 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
         integral_data.metadata["precision"] = p
 
+        qd_default = FFCX_PARAMETERS["quadrature_degree"]
+        qr_default = FFCX_PARAMETERS["quadrature_rule"]
+
         for i, integral in enumerate(integral_data.integrals):
-            # ----- Extract common quadrature degree
+            # ----- Extract quadrature degree
             #
             # The priority of quadrature degree determination is following
             #
@@ -269,7 +271,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                         "Number of integration points per cell is: {}. Consider using 'quadrature_degree' "
                         "to reduce number.".format(num_points))
 
-            # ----- Extract common quadrature rule
+            # ----- Extract quadrature rule
             #
             # The priority of quadrature rule determination is following
             #

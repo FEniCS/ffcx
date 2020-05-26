@@ -154,13 +154,13 @@ class FFCXBackendSymbols(object):
         """Table for chunk of custom quadrature points (physical coordinates)."""
         return self.S("points_chunk")
 
-    def weights_table(self, num_points):
+    def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
-        return self.S("weights%d" % (num_points, ))
+        return self.S("weights%d" % (quadrature_rule.id(), ))
 
-    def points_table(self, num_points):
+    def points_table(self, quadrature_rule):
         """Table of quadrature points (points on the reference integration entity)."""
-        return self.S("points%d" % (num_points, ))
+        return self.S("points%d" % (quadrature_rule.id(), ))
 
     def x_component(self, mt):
         """Physical coordinate component."""
