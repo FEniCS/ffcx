@@ -192,24 +192,12 @@ class IntegralGenerator(object):
 
             num_points = quadrature_rule.weights.shape[0]
             # Generate quadrature weights array
-            if integrand["need_weights"]:
-                wsym = self.backend.symbols.weights_table(quadrature_rule)
-                parts += [
-                    L.ArrayDecl(
-                        "static const double", wsym, num_points,
-                        quadrature_rule.weights, alignas=alignas, padlen=padlen)
-                ]
-
-            # Generate quadrature points array
-            N = ufl.product(quadrature_rule.points.shape)
-            if integrand["need_points"] and N:
-                # Flatten array: (TODO: avoid flattening here, it makes padding harder)
-                flattened_points = quadrature_rule.points.reshape(N)
-                psym = self.backend.symbols.points_table(num_points)
-                parts += [
-                    L.ArrayDecl(
-                        "static const double", psym, N, flattened_points, alignas=alignas)
-                ]
+            wsym = self.backend.symbols.weights_table(quadrature_rule)
+            parts += [
+                L.ArrayDecl(
+                    "static const double", wsym, num_points,
+                    quadrature_rule.weights, alignas=alignas, padlen=padlen)
+            ]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")

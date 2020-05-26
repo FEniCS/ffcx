@@ -421,7 +421,7 @@ def build_element_tables(quadrature_rule,
             if entitytype == "facet":
                 if tdim == 1:
                     tables[name] = numpy.array([
-                        get_ffcx_table_values(quadrature_rule, cell,
+                        get_ffcx_table_values(quadrature_rule.points, cell,
                                               integral_type, element, avg, entitytype,
                                               local_derivatives, flat_component)])
                 elif tdim == 2:

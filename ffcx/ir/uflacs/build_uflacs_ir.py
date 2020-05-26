@@ -21,8 +21,7 @@ from ffcx.ir.uflacs.analysis.visualise import visualise_graph
 from ffcx.ir.uflacs.elementtables import build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
-from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
-from ufl.measure import facet_integral_types, point_integral_types
+from ufl.classes import QuadratureWeight
 from ffcx.ir import dof_permutations
 
 logger = logging.getLogger(__name__)
@@ -113,12 +112,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     ir["unique_table_types"] = {}
 
     ir["integrand"] = {}
-
-    # Whether we expect the quadrature weight to be applied or not (in
-    # some cases it's just set to 1 in ufl integral scaling)
-    tdim = cell.topological_dimension()
-    expect_weight = (integral_type not in point_integral_types and (entitytype == "cell" or (
-        entitytype == "facet" and tdim > 1) or (integral_type in ufl.custom_integral_types)))
 
     ir["table_dofmaps"] = {}
     ir["table_dof_face_tangents"] = {}
@@ -332,40 +325,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             if mt and F.nodes[i]['status'] != 'inactive':
                 active_mts.append(mt)
 
-        # Figure out if we need to access CellCoordinate to avoid
-        # generating quadrature point table otherwise
-        if integral_type == "cell":
-            need_points = any(isinstance(mt.terminal, CellCoordinate) for mt in active_mts)
-        elif integral_type in facet_integral_types:
-            need_points = any(isinstance(mt.terminal, FacetCoordinate) for mt in active_mts)
-        elif integral_type in ufl.custom_integral_types:
-            need_points = True  # TODO: Always?
-        elif integral_type == "expression":
-            need_points = True
-        else:
-            need_points = False
-
-        # Figure out if we need to access QuadratureWeight to avoid
-        # generating quadrature point table otherwise need_weights =
-        # any(isinstance(mt.terminal, QuadratureWeight) for mt in
-        # active_mts)
-
-        if expect_weight:
-            need_weights = True
-        elif integral_type in ufl.custom_integral_types:
-            need_weights = True  # TODO: Always?
-        elif integral_type == "expression":
-            need_weights = True
-        else:
-            need_weights = False
-
         # Build IR dict for the given expressions
         # Store final ir for this num_points
         ir["integrand"][quadrature_rule] = {"factorization": F,
                                             "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
-                                            "block_contributions": block_contributions,
-                                            "need_points": need_points,
-                                            "need_weights": need_weights}
+                                            "block_contributions": block_contributions}
     return ir
 
 
