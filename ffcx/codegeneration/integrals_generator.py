@@ -196,7 +196,8 @@ class IntegralGenerator(object):
                 wsym = self.backend.symbols.weights_table(quadrature_rule)
                 parts += [
                     L.ArrayDecl(
-                        "static const double", wsym, num_points, quadrature_rule.weights, alignas=alignas, padlen=padlen)
+                        "static const double", wsym, num_points,
+                        quadrature_rule.weights, alignas=alignas, padlen=padlen)
                 ]
 
             # Generate quadrature points array

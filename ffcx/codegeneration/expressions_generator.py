@@ -100,7 +100,7 @@ class ExpressionGenerator:
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
-            body, "Points loop body setup quadrature loop ".format(self.quadrature_rule.id()))
+            body, "Points loop body setup quadrature loop {}".format(self.quadrature_rule.id()))
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
