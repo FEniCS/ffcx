@@ -187,7 +187,6 @@ def compute_integral_ir(ir: dict,
 
         grouped_integrands[rule].append(integral.integrand())
 
-
     sorted_integrals = {}
     for rule, integrands in grouped_integrands.items():
         integrands_summed = sorted_expr_sum(integrands)
