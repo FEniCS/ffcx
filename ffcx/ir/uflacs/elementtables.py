@@ -269,7 +269,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged, entityty
 
     V   - marks that the first array dimension enumerates vertices on the cell
 
-    Q   - number of quadrature points, to distinguish between tables in a mixed quadrature rule setting
+    Q   - unique ID of quadrature rule, to distinguish between tables in a mixed quadrature rule setting
 
     """
     name = "FE%d" % element_counter

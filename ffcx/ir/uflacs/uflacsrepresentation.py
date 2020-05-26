@@ -30,6 +30,9 @@ class QuadratureRule:
             self._hash = hash(str(self.points))
         return self._hash
 
+    def __eq__(self, other):
+        return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
+
     def id(self):
         hash_str = str(hash(self))
         return abs(int(hash_str[-5:]))
@@ -183,6 +186,7 @@ def compute_integral_ir(ir: dict,
             grouped_integrands[rule] = []
 
         grouped_integrands[rule].append(integral.integrand())
+
 
     sorted_integrals = {}
     for rule, integrands in grouped_integrands.items():

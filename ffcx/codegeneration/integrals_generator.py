@@ -521,7 +521,7 @@ class IntegralGenerator(object):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol("sp")
+        arraysymbol = L.Symbol("sp_{}".format(quadrature_rule.id()))
         parts = self.generate_partition(arraysymbol, F, "piecewise", None)
         parts = L.commented_code_list(parts, "Piecewise computations (independent on quadrature loops)")
         return parts
