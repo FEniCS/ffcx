@@ -236,7 +236,7 @@ class ExpressionGenerator:
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
-            mt = self.ir.piecewise_ir["modified_arguments"][mad.ma_index]
+            mt = self.ir.integrand[num_points]["modified_arguments"][mad.ma_index]
 
             table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
 

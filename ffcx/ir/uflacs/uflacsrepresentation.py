@@ -152,7 +152,6 @@ def compute_integral_ir(ir: dict,
     rules = set()
     for integral in itg_data.integrals:
         md = integral.metadata() or {}
-        print(md)
         scheme = md["quadrature_rule"]
         degree = md["quadrature_degree"]
         rules.add((scheme, degree))
