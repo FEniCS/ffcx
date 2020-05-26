@@ -523,7 +523,7 @@ class IntegralGenerator(object):
         arraysymbol = L.Symbol("sv_{}".format(quadrature_rule.id()))
         parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
         parts = L.commented_code_list(
-            parts, "Varying computations for quadrature rule={}".format(quadrature_rule.id()))
+            parts, "Varying computations for quadrature rule {}".format(quadrature_rule.id()))
         return parts
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):

@@ -168,7 +168,7 @@ def compute_integral_ir(ir: dict,
     integral_type = itg_data.integral_type
     cell = itg_data.domain.ufl_cell()
 
-    # Collect the quadrature rules occur in integrals
+    # Group integrands with the same quadrature rule
     grouped_integrands = {}
     for integral in itg_data.integrals:
         md = integral.metadata() or {}
