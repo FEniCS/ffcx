@@ -418,17 +418,20 @@ class IntegralGenerator(object):
         assert self.ir.integral_type in ufl.custom_integral_types
 
         num_points = self.ir.fake_num_points
+        chunk_size = self.ir.params["chunk_size"]
+
         gdim = self.ir.geometric_dimension
+
         alignas = self.ir.params["alignas"]
 
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
 
-        # Generate varying partition
-        body = self.generate_varying_partition(num_points)
+        # Generate unstructured varying partition
+        body = self.generate_unstructured_varying_partition(num_points)
         body = L.commented_code_list(body, [
             "Run-time quadrature loop body setup",
-            "(num points={})".format(num_points)
+            "(chunk_size={0}, analysis_num_points={1})".format(chunk_size, num_points)
         ])
 
         # Generate dofblock parts, some of this
@@ -440,72 +443,80 @@ class IntegralGenerator(object):
         # Wrap body in loop
         if not body:
             # Could happen for integral with everything zero and optimized away
-            return preparts, []
+            quadparts = []
+        else:
+            rule_parts = []
 
-        rule_parts = []
+            # Define two-level quadrature loop; over chunks then over points in chunk
+            iq_chunk = L.Symbol("iq_chunk")
+            np = self.backend.symbols.num_custom_quadrature_points()
+            num_point_blocks = (np + chunk_size - 1) / chunk_size
+            iq = self.backend.symbols.quadrature_loop_index()
 
-        # Define two-level quadrature loop; over chunks then over points in chunk
-        num_quad_points = self.backend.symbols.num_custom_quadrature_points()
-        iq = self.backend.symbols.quadrature_loop_index()
+            # Not assuming runtime size to be multiple by chunk size
+            num_points_in_block = L.Symbol("num_points_in_chunk")
+            decl = L.VariableDecl("const int", num_points_in_block,
+                                  L.Call("min", (chunk_size, np - iq_chunk * chunk_size)))
+            rule_parts.append(decl)
 
-        iq_body = L.ForRange(iq, 0, num_quad_points, body=body)
+            iq_body = L.ForRange(iq, 0, num_points_in_block, body=body)
 
-        # Preparations for quadrature rules
-        #
-        integrand = self.ir.integrand[num_points]
+            # Preparations for quadrature rules
+            #
+            varying_ir = self.ir.varying_irs[num_points]
 
-        # Copy quadrature weights for this chunk
-        if integrand["need_weights"]:
-            cwsym = self.backend.symbols.custom_quadrature_weights()
-            wsym = self.backend.symbols.custom_weights_table()
-            rule_parts += [
-                L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0, alignas=alignas),
-                L.ForRange(
-                    iq,
-                    0,
-                    num_points_in_block,
-                    body=L.Assign(wsym[iq], cwsym[chunk_size * iq_chunk + iq])),
+            # Copy quadrature weights for this chunk
+            if varying_ir["need_weights"]:
+                cwsym = self.backend.symbols.custom_quadrature_weights()
+                wsym = self.backend.symbols.custom_weights_table()
+                rule_parts += [
+                    L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0, alignas=alignas),
+                    L.ForRange(
+                        iq,
+                        0,
+                        num_points_in_block,
+                        body=L.Assign(wsym[iq], cwsym[chunk_size * iq_chunk + iq])),
+                ]
+
+            # Copy quadrature points for this chunk
+            if varying_ir["need_points"]:
+                cpsym = self.backend.symbols.custom_quadrature_points()
+                psym = self.backend.symbols.custom_points_table()
+                rule_parts += [
+                    L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0, alignas=alignas),
+                    L.ForRange(
+                        iq,
+                        0,
+                        num_points_in_block,
+                        body=[
+                            L.Assign(psym[iq * gdim + i],
+                                     cpsym[chunk_size * iq_chunk * gdim + iq * gdim + i])
+                            for i in range(gdim)
+                        ])
+                ]
+
+            # Add leading comment if there are any tables
+            rule_parts = L.commented_code_list(rule_parts, "Quadrature weights and points")
+
+            # Preparations for element tables
+            table_parts = []
+
+            # Only declare non-piecewise tables, computed inside chunk loop
+            non_piecewise_tables = [
+                name for name in sorted(tables) if table_types[name] not in piecewise_ttypes
             ]
+            for name in non_piecewise_tables:
+                table = tables[name]
+                decl = L.ArrayDecl(
+                    "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0,
+                    alignas=alignas)  # padlen=padlen)
+                table_parts += [decl]
 
-        # Copy quadrature points for this chunk
-        if integrand["need_points"]:
-            cpsym = self.backend.symbols.custom_quadrature_points()
-            psym = self.backend.symbols.custom_points_table()
-            rule_parts += [
-                L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0, alignas=alignas),
-                L.ForRange(
-                    iq,
-                    0,
-                    num_points_in_block,
-                    body=[
-                        L.Assign(psym[iq * gdim + i],
-                                 cpsym[chunk_size * iq_chunk * gdim + iq * gdim + i])
-                        for i in range(gdim)
-                    ])
-            ]
+            table_parts += [L.Comment("FIXME: Fill element tables here")]
 
-        # Add leading comment if there are any tables
-        rule_parts = L.commented_code_list(rule_parts, "Quadrature weights and points")
-
-        # Preparations for element tables
-        table_parts = []
-
-        # Only declare non-piecewise tables, computed inside chunk loop
-        non_piecewise_tables = [
-            name for name in sorted(tables) if table_types[name] not in piecewise_ttypes
-        ]
-        for name in non_piecewise_tables:
-            table = tables[name]
-            decl = L.ArrayDecl(
-                "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0,
-                alignas=alignas)  # padlen=padlen)
-            table_parts += [decl]
-
-        table_parts += [L.Comment("FIXME: Fill element tables here")]
-
-        # Gather all in chunk loop
-        chunk_body = rule_parts + table_parts + [iq_body]
-        quadparts = [L.ForRange(iq_chunk, 0, num_point_blocks, body=chunk_body)]
+            # Gather all in chunk loop
+            chunk_body = rule_parts + table_parts + [iq_body]
+            quadparts = [L.ForRange(iq_chunk, 0, num_point_blocks, body=chunk_body)]
 
         return preparts, quadparts
 

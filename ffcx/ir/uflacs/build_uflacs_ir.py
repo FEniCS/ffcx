@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2017 Martin Sandve Alnæs
+# Copyright (C) 2013-2020 Martin Sandve Alnæs and Michal Habera
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
@@ -44,97 +44,6 @@ block_data_t = collections.namedtuple("block_data_t",
                                        ])
 
 
-def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
-                                   unique_table_num_dofs):
-    rank = len(unames)
-    tables = [unique_tables.get(name) for name in unames]
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-    num_perms = tuple(t.shape[0] for t in tables)
-
-    num_entities = max([1] + [tbl.shape[1] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) * rank + num_dofs)
-    for perms in itertools.product(*[range(i) for i in num_perms]):
-        for facets in itertools.product(*[range(num_entities)] * rank):
-            vectors = []
-            for i, tbl in enumerate(tables):
-                if tbl is None:
-                    assert ttypes[i] == "ones"
-                    vectors.append(numpy.ones((num_dofs[i], )))
-                else:
-                    # Some tables are compacted along entities or points
-                    e = 0 if tbl.shape[1] == 1 else facets[i]
-                    q = 0 if tbl.shape[2] == 1 else point_index
-                    vectors.append(tbl[perms[i], e, q, :])
-            if rank > 1:
-                assert rank == 2
-                ptable[perms[0], perms[1], facets[0], facets[1], ...] = numpy.outer(*vectors)
-            elif rank == 1:
-                ptable[perms[0], facets[0], :] = vectors[0]
-            else:
-                raise RuntimeError("Nothing to multiply!")
-
-    return ptable
-
-
-def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_dofs):
-    rank = len(unames)
-    tables = [unique_tables.get(name) for name in unames]
-    num_perms = tuple(t.shape[0] for t in tables)
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-
-    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) + num_dofs)
-    for perms in itertools.product(*[range(i) for i in num_perms]):
-        for entity in range(num_entities):
-            vectors = []
-            for i, tbl in enumerate(tables):
-                if tbl is None:
-                    assert ttypes[i] == "ones"
-                    vectors.append(numpy.ones((num_dofs[i], )))
-                else:
-                    # Some tables are compacted along entities or points
-                    e = 0 if tbl.shape[1] == 1 else entity
-                    q = 0 if tbl.shape[2] == 1 else point_index
-                    vectors.append(tbl[perms[i], e, q, :])
-            if rank > 1:
-                ptable[perms[0], perms[1], entity, ...] = numpy.outer(*vectors)
-            elif rank == 1:
-                ptable[perms[0], entity, :] = vectors[0]
-            else:
-                raise RuntimeError("Nothing to multiply!")
-
-    return ptable
-
-
-def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
-    tables = [unique_tables.get(name) for name in unames]
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-    num_perms = tuple(t.shape[0] for t in tables)
-
-    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) + num_dofs)
-    for iq, w in enumerate(weights):
-        ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
-
-    return ptable
-
-
-def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
-    rank = len(unames)
-    tables = [unique_tables.get(name) for name in unames]
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-    num_perms = tuple(t.shape[0] for t in tables)
-
-    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) * rank + num_dofs)
-    for iq, w in enumerate(weights):
-        mtable = multiply_block_interior_facets(iq, unames, ttypes, unique_tables,
-                                                unique_table_num_dofs)
-        ptable[...] += w * mtable
-
-    return ptable
-
-
 def uflacs_default_parameters(optimize):
     """Default parameters for tuning of uflacs code generation.
 
@@ -149,6 +58,8 @@ def uflacs_default_parameters(optimize):
         # Absolute precision to use when comparing finite element table
         # values for table reuse and dropping of table zeros
         "table_atol": 1e-9,
+
+        "chunk_size": 8,
 
         # Code generation parameters
         "vectorize": False,
