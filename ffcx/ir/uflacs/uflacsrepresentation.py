@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+import hashlib
 
 import numpy
 
@@ -27,15 +28,15 @@ class QuadratureRule:
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash(str(self.points))
+            self.hash_obj = hashlib.sha1(self.points)
+            self._hash = int(self.hash_obj.hexdigest(), 32)
         return self._hash
 
     def __eq__(self, other):
         return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
 
     def id(self):
-        hash_str = str(hash(self))
-        return abs(int(hash_str[-5:]))
+        return self.hash_obj.hexdigest()[-3:]
 
 
 def compute_expression_ir(expression, analysis, parameters, visualise):

@@ -156,11 +156,11 @@ class FFCXBackendSymbols(object):
 
     def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
-        return self.S("weights%d" % (quadrature_rule.id(), ))
+        return self.S("weights_{}".format(quadrature_rule.id()))
 
     def points_table(self, quadrature_rule):
         """Table of quadrature points (points on the reference integration entity)."""
-        return self.S("points%d" % (quadrature_rule.id(), ))
+        return self.S("points_{}".format(quadrature_rule.id()))
 
     def x_component(self, mt):
         """Physical coordinate component."""

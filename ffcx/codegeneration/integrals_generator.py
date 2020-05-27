@@ -511,7 +511,8 @@ class IntegralGenerator(object):
 
         arraysymbol = L.Symbol("sp_{}".format(quadrature_rule.id()))
         parts = self.generate_partition(arraysymbol, F, "piecewise", None)
-        parts = L.commented_code_list(parts, "Piecewise computations (independent on quadrature loops)")
+        parts = L.commented_code_list(
+            parts, "Quadrature loop independent computations for quadrature rule {}".format(quadrature_rule.id()))
         return parts
 
     def generate_varying_partition(self, quadrature_rule):
