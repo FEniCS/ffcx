@@ -25,7 +25,7 @@ class QuadratureRule:
 
     def __hash__(self):
         if self._hash is None:
-            self.hash_obj = hashlib.sha1([self.points, self.weights])
+            self.hash_obj = hashlib.sha1(self.points)
             self._hash = int(self.hash_obj.hexdigest(), 32)
         return self._hash
 
