@@ -449,8 +449,8 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     # Variables for stopping criteria
     # TODO: Check if these are good convergence criteria,
     #       e.g. is epsilon=1e-6 and iterations=degree sufficient?
-    max_iter = L.LiteralInt(degree)
-    epsilon = L.LiteralFloat(1e-6)
+    max_iter = L.LiteralInt(degree + 2)
+    epsilon = L.LiteralFloat(1e-12)
     # TODO: Could also easily make criteria input if desired
     # max_iter = L.Symbol("iterations")
     # epsilon = L.Symbol("epsilon")
@@ -616,7 +616,7 @@ def compute_jacobians(L, ir):
                 L.ForRanges(
                     (i, 0, gdim), (j, 0, tdim), (d, 0, num_dofs),
                     index_type=index_type,
-                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i] * dphi[d, j]))
+                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i] * dphi[d, tdim - 1 - j]))
             ]),
     ]
 
