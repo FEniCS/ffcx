@@ -5,38 +5,18 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
-import hashlib
 
 import numpy
 
 import ufl
 from ffcx.fiatinterface import create_element
-from ffcx.ir.representationutils import create_quadrature_points_and_weights
+from ffcx.ir.representationutils import create_quadrature_points_and_weights, QuadratureRule
 from ffcx.ir.uflacs.build_uflacs_ir import build_uflacs_ir
 from ufl.sorting import sorted_expr_sum
 from ufl.classes import Integral
 
 
 logger = logging.getLogger(__name__)
-
-
-class QuadratureRule:
-    def __init__(self, points, weights):
-        self.points = points
-        self.weights = weights
-        self._hash = None
-
-    def __hash__(self):
-        if self._hash is None:
-            self.hash_obj = hashlib.sha1(self.points)
-            self._hash = int(self.hash_obj.hexdigest(), 32)
-        return self._hash
-
-    def __eq__(self, other):
-        return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
-
-    def id(self):
-        return self.hash_obj.hexdigest()[-3:]
 
 
 def compute_expression_ir(expression, analysis, parameters, visualise):
