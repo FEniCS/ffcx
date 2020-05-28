@@ -33,7 +33,7 @@ class QuadratureRule:
         return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
 
     def id(self):
-        """Returns unique deterministic identifier
+        """Returns unique deterministic identifier.
 
         Note
         ----
