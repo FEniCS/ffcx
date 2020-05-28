@@ -39,6 +39,7 @@ class QuadratureRule:
         ----
         This identifier is used to provide unique names to tables and symbols
         in generated code.
+
         """
         return self.hash_obj.hexdigest()[-3:]
 
