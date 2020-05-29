@@ -4,12 +4,16 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
+int init_{factory_name}(ufc_coordinate_mapping* cmap);
+void destroy_{factory_name}(ufc_coordinate_mapping* cmap);
 ufc_coordinate_mapping* create_{factory_name}(void);
 
-// Helper used to create coordinate map using name given to the
-// UFL file.
-// This helper is called in user c++ code.
+// Helper functions used to create coordinate maps
+// based on the name of the UFL file.
+// These helpers are called in user c++ code.
 //
+int init_coordinate_map_{prefix}(ufc_coordinate_mapping* cmap);
+void destroy_coordinate_map_{prefix}(ufc_coordinate_mapping* cmap);
 ufc_coordinate_mapping* create_coordinate_map_{prefix}(void);
 """
 
@@ -77,14 +81,19 @@ void compute_reference_geometry_{factory_name}(double* restrict X, double* restr
 {compute_reference_geometry}
 }}
 
-ufc_coordinate_mapping* create_{factory_name}(void)
+void destroy_{factory_name}(ufc_coordinate_mapping* cmap);
+ufc_coordinate_mapping* create_{factory_name}(void);
+
+int init_{factory_name}(ufc_coordinate_mapping* cmap)
 {{
-  ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
   cmap->signature = {signature};
+  cmap->init = init_{factory_name};
+  cmap->destroy = destroy_{factory_name};
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
   cmap->cell_shape = {cell_shape};
+  cmap->init_scalar_dofmap = init_{scalar_dofmap_name};
   cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
   cmap->compute_physical_coordinates = compute_physical_coordinates_{factory_name};
   cmap->compute_reference_coordinates = compute_reference_coordinates_{factory_name};
@@ -94,7 +103,28 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->compute_jacobian_inverses = compute_jacobian_inverses_{factory_name};
   cmap->compute_geometry = compute_geometry_{factory_name};
   cmap->compute_midpoint_geometry = compute_midpoint_geometry_{factory_name};
+  return 0;
+}}
+
+void destroy_{factory_name}(ufc_coordinate_mapping* cmap)
+{{
+}}
+
+ufc_coordinate_mapping* create_{factory_name}(void)
+{{
+  ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
+  init_{factory_name}(cmap);
   return cmap;
+}}
+
+int init_coordinate_map_{prefix}(ufc_coordinate_mapping* cmap)
+{{
+  return init_{factory_name}(cmap);
+}}
+
+void destroy_coordinate_map_{prefix}(ufc_coordinate_mapping* cmap)
+{{
+  destroy_{factory_name}(cmap);
 }}
 
 ufc_coordinate_mapping* create_coordinate_map_{prefix}(void)

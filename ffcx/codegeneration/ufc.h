@@ -226,6 +226,12 @@ extern "C"
     /// Return coordinate_mapping signature string
     const char* signature;
 
+    /// Create a coordinate mapping
+    int (*init)(ufc_coordinate_mapping* cmap);
+
+    /// Destroy a coordinate mapping
+    void (*destroy)(ufc_coordinate_mapping* cmap);
+
     /// Create object of the same type. Memory for the new object is
     /// obtained with malloc, and can be freed with free.
     ufc_coordinate_mapping* (*create)(void);
@@ -238,6 +244,9 @@ extern "C"
 
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
+
+    /// Create dofmap for the underlying scalar element
+    int (*init_scalar_dofmap)(ufc_dofmap* dofmap);
 
     /// Create dofmap for the underlying scalar element. Memory for
     /// the new object is obtained with malloc, and can be freed with
