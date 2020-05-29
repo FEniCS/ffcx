@@ -71,6 +71,8 @@ extern "C"
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
+  typedef struct ufc_integral ufc_integral;
+  typedef struct ufc_custom_integral ufc_custom_integral;
 
 // </HEADER_DECL>
 
@@ -487,12 +489,32 @@ extern "C"
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor* tabulate_tensor;
+
+    /// Create a new integral
+    int (*init)(ufc_integral* integral);
+
+    /// Destroy an integral
+    void (*destroy)(ufc_integral* integral);
+
+    /// Create a new integral. Memory for the new object is obtained
+    /// with malloc, and can be freed with free.
+    ufc_integral* (*create)(void);
   } ufc_integral;
 
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor_custom* tabulate_tensor;
+
+    /// Create a new custom integral
+    int (*init)(ufc_custom_integral* integral);
+
+    /// Destroy a custom integral
+    void (*destroy)(ufc_custom_integral* integral);
+
+    /// Create a new custom integral. Memory for the new object is
+    /// obtained with malloc, and can be freed with free.
+    ufc_custom_integral* (*create)(void);
   } ufc_custom_integral;
 
   typedef struct ufc_expression

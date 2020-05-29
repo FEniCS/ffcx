@@ -4,10 +4,14 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
+int init_{factory_name}(ufc_integral* integral);
+void destroy_{factory_name}(ufc_integral* integral);
 ufc_integral* create_{factory_name}(void);
 """
 
 custom_declaration = """
+int init_{factory_name}(ufc_custom_integral* integral);
+void destroy_{factory_name}(ufc_custom_integral* integral);
 ufc_custom_integral* create_{factory_name}(void);
 """
 
@@ -85,12 +89,28 @@ factory = """
 
 {tabulate_tensor}
 
-ufc_integral* create_{factory_name}(void)
+void destroy_{factory_name}(ufc_integral* integral);
+ufc_integral* create_{factory_name}(void);
+
+int init_{factory_name}(ufc_integral* integral)
 {{
   static const bool enabled{enabled_coefficients}
-  ufc_integral* integral = malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
+  integral->init = init_{factory_name};
+  integral->destroy = destroy_{factory_name};
+  integral->create = create_{factory_name};
+  return 0;
+}}
+
+void destroy_{factory_name}(ufc_integral* integral)
+{{
+}}
+
+ufc_integral* create_{factory_name}(void)
+{{
+  ufc_integral* integral = malloc(sizeof(*integral));
+  init_{factory_name}(integral);
   return integral;
 }}
 
@@ -102,12 +122,28 @@ custom_factory = """
 
 {tabulate_tensor}
 
-ufc_custom_integral* create_{factory_name}(void)
+void destroy_{factory_name}(ufc_custom_integral* integral);
+ufc_custom_integral* create_{factory_name}(void);
+
+int init_{factory_name}(ufc_custom_integral* integral)
 {{
   static const bool enabled{enabled_coefficients}
-  ufc_custom_integral* integral = malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
+  integral->init = init_{factory_name};
+  integral->destroy = destroy_{factory_name};
+  integral->create = create_{factory_name};
+  return 0;
+}}
+
+void destroy_{factory_name}(ufc_custom_integral* integral)
+{{
+}}
+
+ufc_custom_integral* create_{factory_name}(void)
+{{
+  ufc_custom_integral* integral = malloc(sizeof(*integral));
+  init_{factory_name}(integral);
   return integral;
 }}
 
