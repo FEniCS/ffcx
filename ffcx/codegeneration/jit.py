@@ -4,7 +4,9 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+from contextlib import redirect_stdout
 import importlib
+import io
 import logging
 import os
 import re
@@ -298,11 +300,19 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     # Compile (ensuring that compile dir exists)
     cache_dir.mkdir(exist_ok=True, parents=True)
-    ffibuilder.compile(tmpdir=cache_dir, verbose=cffi_verbose, debug=cffi_debug)
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        ffibuilder.compile(tmpdir=cache_dir, verbose=True, debug=cffi_debug)
+    s = f.getvalue()
+    if (cffi_verbose):
+        print(s)
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
+    # Copy the stdout verbose output of the build into the ready file
     fd = open(ready_name, "x")
+    fd.write(s)
     fd.close()
 
 
