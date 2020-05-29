@@ -389,8 +389,6 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     cellname = ir.cell_shape
     num_points = L.Symbol("num_points")
 
-    degree = ir.coordinate_element_degree
-
     # Computing table one point at a time instead of vectorized over
     # num_points will allow skipping dynamic allocation
     one_point = 1
