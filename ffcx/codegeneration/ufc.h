@@ -151,10 +151,12 @@ extern "C"
     int num_sub_elements;
 
     /// Create a new finite element for sub element i (for a mixed
-    /// element)
+    /// element). Memory for the new object is obtained with malloc,
+    /// and can be freed with free.
     ufc_finite_element* (*create_sub_element)(int i);
 
-    /// Create a new class instance
+    /// Create a new class instance. Memory for the new object is
+    /// obtained with malloc, and can be freed with free.
     ufc_finite_element* (*create)(void);
   } ufc_finite_element;
 
@@ -187,10 +189,13 @@ extern "C"
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
 
-    /// Create a new dofmap for sub dofmap i (for a mixed element)
+    /// Create a new dofmap for sub dofmap i (for a mixed
+    /// element). Memory for the new object is obtained with malloc,
+    /// and can be freed with free.
     ufc_dofmap* (*create_sub_dofmap)(int i);
 
-    /// Create a new class instance
+    /// Create a new class instance. Memory for the new object is
+    /// obtained with malloc, and can be freed with free.
     ufc_dofmap* (*create)(void);
   } ufc_dofmap;
 
@@ -202,7 +207,8 @@ extern "C"
     /// Return coordinate_mapping signature string
     const char* signature;
 
-    /// Create object of the same type
+    /// Create object of the same type. Memory for the new object is
+    /// obtained with malloc, and can be freed with free.
     ufc_coordinate_mapping* (*create)(void);
 
     /// Return geometric dimension of the coordinate_mapping
@@ -214,7 +220,9 @@ extern "C"
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
 
-    /// Create dofmap for the underlying scalar element
+    /// Create dofmap for the underlying scalar element. Memory for
+    /// the new object is obtained with malloc, and can be freed with
+    /// free.
     ufc_dofmap* (*create_scalar_dofmap)(void);
 
     /// Compute physical coordinates x from reference coordinates X,
@@ -547,10 +555,13 @@ extern "C"
     /// Return list of names of constants
     const char** (*constant_name_map)(void);
 
-    /// Create a new coordinate mapping
+    /// Create a new coordinate mapping. Memory for the new object is
+    /// obtained with malloc, and can be freed with free.
     ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
 
-    /// Create a new finite element for argument function 0 <= i < r+n
+    /// Create a new finite element for the i-th argument function,
+    /// where 0 <= i < r+n. Memory for the new object is obtained with
+    /// malloc, and can be freed with free.
     ///
     /// @param i
     ///        Argument number if 0 <= i < r
@@ -558,7 +569,9 @@ extern "C"
     ///
     ufc_finite_element* (*create_finite_element)(int i);
 
-    /// Create a new dofmap for argument function 0 <= i < r+n
+    /// Create a new dofmap for the i-th argument function, where
+    /// 0 <= i < r+n.  Memory for the new object is obtained with
+    /// malloc, and can be freed with free.
     ///
     /// @param i
     ///        Argument number if 0 <= i < r
@@ -596,19 +609,29 @@ extern "C"
     /// Number of custom integrals
     int num_custom_integrals;
 
-    /// Create a new cell integral on sub domain subdomain_id
+    /// Create a new cell integral on sub domain subdomain_id. Memory
+    /// for the new object is obtained with malloc, and can be freed
+    /// with free.
     ufc_integral* (*create_cell_integral)(int subdomain_id);
 
-    /// Create a new exterior facet integral on sub domain subdomain_id
+    /// Create a new exterior facet integral on sub domain
+    /// subdomain_id. Memory for the new object is obtained with
+    /// malloc, and can be freed with free.
     ufc_integral* (*create_exterior_facet_integral)(int subdomain_id);
 
-    /// Create a new interior facet integral on sub domain subdomain_id
+    /// Create a new interior facet integral on sub domain
+    /// subdomain_id. Memory for the new object is obtained with
+    /// malloc, and can be freed with free.
     ufc_integral* (*create_interior_facet_integral)(int subdomain_id);
 
-    /// Create a new vertex integral on sub domain subdomain_id
+    /// Create a new vertex integral on sub domain
+    /// subdomain_id. Memory for the new object is obtained with
+    /// malloc, and can be freed with free.
     ufc_integral* (*create_vertex_integral)(int subdomain_id);
 
-    /// Create a new custom integral on sub domain subdomain_id
+    /// Create a new custom integral on sub domain
+    /// subdomain_id. Memory for the new object is obtained with
+    /// malloc, and can be freed with free.
     ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
 
   } ufc_form;
@@ -616,13 +639,19 @@ extern "C"
   // FIXME: Formalise a UFC 'function space'.
   typedef struct ufc_function_space
   {
-    // Pointer to factory function that creates a new ufc_finite_element
+    // Pointer to factory function that creates a new
+    // ufc_finite_element. Memory for the new object is obtained with
+    // malloc, and can be freed with free.
     ufc_finite_element* (*create_element)(void);
 
-    // Pointer to factory function that creates a new ufc_dofmap
+    // Pointer to factory function that creates a new
+    // ufc_dofmap. Memory for the new object is obtained with malloc,
+    // and can be freed with free.
     ufc_dofmap* (*create_dofmap)(void);
 
-    // Pointer to factory function that creates a new ufc_coordinate_mapping
+    // Pointer to factory function that creates a new
+    // ufc_coordinate_mapping. Memory for the new object is obtained
+    // with malloc, and can be freed with free.
     ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
   } ufc_function_space;
 
