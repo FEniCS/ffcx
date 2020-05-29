@@ -11,6 +11,27 @@ def generate_return_new(L, classname):
     return L.Return(L.Call("create_" + classname))
 
 
+def generate_return_init_switch(L, argname, i, classnames, args=None):
+
+    if isinstance(i, str):
+        i = L.Symbol(i)
+
+    def init(classname):
+        return L.Call("init_" + classname, (L.Symbol(argname)))
+
+    default = L.Return(L.LiteralInt(0))
+    if classnames:
+        cases = []
+        if args is None:
+            args = list(range(len(classnames)))
+        for j, classname in zip(args, classnames):
+            if classname:
+                cases.append((j, L.Return(init(classname))))
+        return L.Switch(i, cases, default=default)
+    else:
+        return default
+
+
 def generate_return_new_switch(L, i, classnames, args=None):
 
     if isinstance(i, str):

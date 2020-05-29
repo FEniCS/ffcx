@@ -151,9 +151,19 @@ extern "C"
     int num_sub_elements;
 
     /// Create a new finite element for sub element i (for a mixed
+    /// element)
+    int (*init_sub_element)(ufc_finite_element* element, int i);
+
+    /// Create a new finite element for sub element i (for a mixed
     /// element). Memory for the new object is obtained with malloc,
     /// and can be freed with free.
     ufc_finite_element* (*create_sub_element)(int i);
+
+    /// Create a new finite element
+    int (*init)(ufc_finite_element* element);
+
+    /// Destroy a finite element
+    void (*destroy)(ufc_finite_element* element);
 
     /// Create a new class instance. Memory for the new object is
     /// obtained with malloc, and can be freed with free.

@@ -17,7 +17,8 @@ from ffcx.codegeneration.evalderivs import (_generate_combinations,
 from ffcx.codegeneration.evaluatebasis import generate_evaluate_reference_basis
 from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
-                                       generate_return_new_switch)
+                                       generate_return_new_switch,
+                                       generate_return_init_switch)
 
 index_type = "int"
 
@@ -73,8 +74,14 @@ def sub_element_declaration(L, ir):
     classnames = set(ir.create_sub_element)
     code = ""
     for name in classnames:
+        code += "int init_{name}(ufc_finite_element* element);\n".format(name=name)
         code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
     return code
+
+
+def init_sub_element(L, ir):
+    classnames = ir.init_sub_element
+    return generate_return_init_switch(L, "element", "i", classnames)
 
 
 def create_sub_element(L, ir):
@@ -448,9 +455,9 @@ def generator(ir, parameters):
     statements = tabulate_reference_dof_coordinates(L, ir, parameters)
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
 
-    statements = create_sub_element(L, ir)
     d["sub_element_declaration"] = sub_element_declaration(L, ir)
-    d["create_sub_element"] = statements
+    d["init_sub_element"] = init_sub_element(L, ir)
+    d["create_sub_element"] = create_sub_element(L, ir)
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

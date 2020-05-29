@@ -4,6 +4,8 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
+int init_{factory_name}(ufc_finite_element* element);
+void destroy_{factory_name}(ufc_finite_element* element);
 ufc_finite_element* create_{factory_name}(void);
 """
 
@@ -59,15 +61,21 @@ int tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference
 }}
 
 {sub_element_declaration}
+int init_sub_element_{factory_name}(ufc_finite_element* element, int i)
+{{
+  {init_sub_element}
+}}
+
 ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
   {create_sub_element}
 }}
 
-ufc_finite_element* create_{factory_name}(void)
-{{
-  ufc_finite_element* element = malloc(sizeof(*element));
+void destroy_{factory_name}(ufc_finite_element* element);
+ufc_finite_element* create_{factory_name}(void);
 
+int init_{factory_name}(ufc_finite_element* element)
+{{
   element->signature = {signature};
   element->cell_shape = {cell_shape};
   element->topological_dimension = {topological_dimension};
@@ -87,9 +95,22 @@ ufc_finite_element* create_{factory_name}(void)
   element->transform_values = transform_values_{factory_name};
   element->tabulate_reference_dof_coordinates = tabulate_reference_dof_coordinates_{factory_name};
   element->num_sub_elements = {num_sub_elements};
+  element->init_sub_element = init_sub_element_{factory_name};
   element->create_sub_element = create_sub_element_{factory_name};
+  element->init = init_{factory_name};
+  element->destroy = destroy_{factory_name};
   element->create = create_{factory_name};
+  return 0;
+}}
 
+void destroy_{factory_name}(ufc_finite_element* element)
+{{
+}}
+
+ufc_finite_element* create_{factory_name}(void)
+{{
+  ufc_finite_element* element = malloc(sizeof(*element));
+  init_{factory_name}(element);
   return element;
 }}
 
