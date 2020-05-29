@@ -4,6 +4,8 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
+int init_{factory_name}(ufc_dofmap* dofmap);
+void destroy_{factory_name}(ufc_dofmap* dofmap);
 ufc_dofmap* create_{factory_name}(void);
 """
 
@@ -16,14 +18,21 @@ void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 }}
 
 {sub_dofmap_declaration}
+int init_sub_dofmap_{factory_name}(ufc_dofmap* dofmap, int i)
+{{
+{init_sub_dofmap}
+}}
+
 ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
 {{
 {create_sub_dofmap}
 }}
 
-ufc_dofmap* create_{factory_name}(void)
+void destroy_{factory_name}(ufc_dofmap* dofmap);
+ufc_dofmap* create_{factory_name}(void);
+
+int init_{factory_name}(ufc_dofmap* dofmap)
 {{
-  ufc_dofmap* dofmap = malloc(sizeof(*dofmap));
   dofmap->signature = {signature};
   dofmap->num_global_support_dofs = {num_global_support_dofs};
   dofmap->num_element_support_dofs = {num_element_support_dofs};
@@ -34,11 +43,24 @@ ufc_dofmap* create_{factory_name}(void)
   dofmap->tabulate_entity_dofs = tabulate_entity_dofs_{factory_name};
   dofmap->num_sub_dofmaps = {num_sub_dofmaps};
   dofmap->create_sub_dofmap = create_sub_dofmap_{factory_name};
+  dofmap->init = init_{factory_name};
+  dofmap->destroy = destroy_{factory_name};
   dofmap->create = create_{factory_name};
 
   dofmap->size_base_permutations = {size_base_permutations};
   {base_permutations}
 
+  return 0;
+}}
+
+void destroy_{factory_name}(ufc_dofmap* dofmap)
+{{
+}}
+
+ufc_dofmap* create_{factory_name}(void)
+{{
+  ufc_dofmap* dofmap = malloc(sizeof(*dofmap));
+  init_{factory_name}(dofmap);
   return dofmap;
 }}
 

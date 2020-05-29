@@ -199,10 +199,19 @@ extern "C"
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
 
+    /// Create a new dofmap for sub element i (for a mixed element)
+    int (*init_sub_dofmap)(ufc_dofmap* dofmap, int i);
+
     /// Create a new dofmap for sub dofmap i (for a mixed
     /// element). Memory for the new object is obtained with malloc,
     /// and can be freed with free.
     ufc_dofmap* (*create_sub_dofmap)(int i);
+
+    /// Create a new dofmap
+    int (*init)(ufc_dofmap* dofmap);
+
+    /// Destroy a dofmap
+    void (*destroy)(ufc_dofmap* element);
 
     /// Create a new class instance. Memory for the new object is
     /// obtained with malloc, and can be freed with free.

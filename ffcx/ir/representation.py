@@ -58,7 +58,7 @@ ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
-                                     'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
+                                     'num_sub_dofmaps', 'init_sub_dofmap', 'create_sub_dofmap', 'dof_types'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'signature', 'cell_shape',
                                                      'topological_dimension',
                                                      'geometric_dimension',
@@ -221,6 +221,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
+    ir["init_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)

@@ -8,7 +8,8 @@
 # old implementation in FFC
 
 import ffcx.codegeneration.dofmap_template as ufc_dofmap
-from ffcx.codegeneration.utils import generate_return_new_switch
+from ffcx.codegeneration.utils import (
+    generate_return_new_switch, generate_return_init_switch)
 
 
 def tabulate_entity_dofs(L, ir):
@@ -51,6 +52,11 @@ def tabulate_entity_dofs(L, ir):
         return L.NoOp()
 
 
+def init_sub_dofmap(L, ir):
+    classnames = ir.init_sub_dofmap
+    return generate_return_init_switch(L, "dofmap", "i", classnames)
+
+
 def create_sub_dofmap(L, ir):
     classnames = ir.create_sub_dofmap
     return generate_return_new_switch(L, "i", classnames)
@@ -60,6 +66,7 @@ def sub_dofmap_declaration(L, ir):
     classnames = set(ir.create_sub_dofmap)
     code = ""
     for name in classnames:
+        code += "int init_{name}(ufc_dofmap* dofmap);\n".format(name=name)
         code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
     return code
 
@@ -96,6 +103,7 @@ def generator(ir, parameters):
     # Functions
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
     d["sub_dofmap_declaration"] = sub_dofmap_declaration(L, ir)
+    d["init_sub_dofmap"] = init_sub_dofmap(L, ir)
     d["create_sub_dofmap"] = create_sub_dofmap(L, ir)
 
     # Check that no keys are redundant or have been missed
