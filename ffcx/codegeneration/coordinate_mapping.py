@@ -447,13 +447,10 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     Xm = L.Symbol("%s_midpoint" % cellname)
 
     # Variables for stopping criteria
-    # TODO: Check if these are good convergence criteria,
-    #       e.g. is epsilon=1e-6 and iterations=degree sufficient?
-    max_iter = L.LiteralInt(degree + 100)
-    epsilon = L.LiteralFloat(1e-12)
-    # TODO: Could also easily make criteria input if desired
-    # max_iter = L.Symbol("iterations")
-    # epsilon = L.Symbol("epsilon")
+    # FIXME: return an error code (e.g. -1) on non-convergence
+    # Max ten iterations seems plenty, epsilon^2=1e-12
+    max_iter = L.LiteralInt(10)
+    epsilon2 = L.LiteralFloat(1e-12)
     dX2 = L.Symbol("dX2")
 
     # Wrap K as flattened array for convenient indexing Kf[j,i]
@@ -507,7 +504,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
                (xk, J, detJ, K, one_point, Xk, coordinate_dofs)),
     ]
 
-    # Newton body with stopping criteria |dX|^2 < epsilon
+    # Newton body with stopping criteria |dX|^2 < epsilon^2
     newton_body = part1 + [
         L.Comment("Declare dX increment to be computed, initialized to zero"),
         L.ArrayDecl("double", dX, (tdim, ), values=0.0),
@@ -520,7 +517,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.VariableDecl("double", dX2, value=0.0),
         L.ForRange(j, 0, tdim, index_type=index_type, body=L.AssignAdd(dX2, dX[j] * dX[j])),
         L.Comment("Break if converged (before X += dX such that X,J,detJ,K are consistent)"),
-        L.If(L.LT(dX2, epsilon), L.Break()),
+        L.If(L.LT(dX2, epsilon2), L.Break()),
         L.Comment("Update Xk += dX"),
         L.ForRange(j, 0, tdim, index_type=index_type, body=L.AssignAdd(Xk[j], dX[j])),
     ]
