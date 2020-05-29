@@ -73,6 +73,7 @@ extern "C"
   typedef struct ufc_dofmap ufc_dofmap;
   typedef struct ufc_integral ufc_integral;
   typedef struct ufc_custom_integral ufc_custom_integral;
+  typedef struct ufc_form ufc_form;
 
 // </HEADER_DECL>
 
@@ -592,6 +593,16 @@ extern "C"
     /// Number of constants
     int num_constants;
 
+    /// Create a new form
+    int (*init)(ufc_form* form);
+
+    /// Destroy a form
+    void (*destroy)(ufc_form* form);
+
+    /// Create a new form. Memory for the new object is obtained with
+    /// malloc, and can be freed with free.
+    ufc_form* (*create)(void);
+
     /// Return original coefficient position for each coefficient
     ///
     /// @param i
@@ -605,9 +616,21 @@ extern "C"
     /// Return list of names of constants
     const char** (*constant_name_map)(void);
 
+    /// Create a new coordinate mapping
+    int (*init_coordinate_mapping)(ufc_coordinate_mapping* cmap);
+
     /// Create a new coordinate mapping. Memory for the new object is
     /// obtained with malloc, and can be freed with free.
     ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
+
+    /// Create a new finite element for the i-th argument function,
+    /// where 0 <= i < r+n.
+    ///
+    /// @param i
+    ///        Argument number if 0 <= i < r
+    ///        Coefficient number j=i-r if r+j <= i < r+n
+    ///
+    int (*init_finite_element)(ufc_finite_element* element, int i);
 
     /// Create a new finite element for the i-th argument function,
     /// where 0 <= i < r+n. Memory for the new object is obtained with
@@ -618,6 +641,15 @@ extern "C"
     ///        Coefficient number j=i-r if r+j <= i < r+n
     ///
     ufc_finite_element* (*create_finite_element)(int i);
+
+    /// Create a new dofmap for the i-th argument function, where
+    /// 0 <= i < r+n.
+    ///
+    /// @param i
+    ///        Argument number if 0 <= i < r
+    ///        Coefficient number j=i-r if r+j <= i < r+n
+    ///
+    int (*init_dofmap)(ufc_dofmap* dofmap, int i);
 
     /// Create a new dofmap for the i-th argument function, where
     /// 0 <= i < r+n.  Memory for the new object is obtained with
@@ -659,10 +691,17 @@ extern "C"
     /// Number of custom integrals
     int num_custom_integrals;
 
+    /// Create a new cell integral on sub domain subdomain_id
+    int (*init_cell_integral)(ufc_integral* integral, int subdomain_id);
+
     /// Create a new cell integral on sub domain subdomain_id. Memory
     /// for the new object is obtained with malloc, and can be freed
     /// with free.
     ufc_integral* (*create_cell_integral)(int subdomain_id);
+
+    /// Create a new exterior facet integral on sub domain
+    /// subdomain_id
+    int (*init_exterior_facet_integral)(ufc_integral* integral, int subdomain_id);
 
     /// Create a new exterior facet integral on sub domain
     /// subdomain_id. Memory for the new object is obtained with
@@ -670,14 +709,24 @@ extern "C"
     ufc_integral* (*create_exterior_facet_integral)(int subdomain_id);
 
     /// Create a new interior facet integral on sub domain
+    /// subdomain_id
+    int (*init_interior_facet_integral)(ufc_integral* integral, int subdomain_id);
+
+    /// Create a new interior facet integral on sub domain
     /// subdomain_id. Memory for the new object is obtained with
     /// malloc, and can be freed with free.
     ufc_integral* (*create_interior_facet_integral)(int subdomain_id);
+
+    /// Create a new vertex integral on sub domain subdomain_id
+    int (*init_vertex_integral)(ufc_integral* integral, int subdomain_id);
 
     /// Create a new vertex integral on sub domain
     /// subdomain_id. Memory for the new object is obtained with
     /// malloc, and can be freed with free.
     ufc_integral* (*create_vertex_integral)(int subdomain_id);
+
+    /// Create a new custom integral on sub domain subdomain_id
+    int (*init_custom_integral)(ufc_custom_integral* custom_integral, int subdomain_id);
 
     /// Create a new custom integral on sub domain
     /// subdomain_id. Memory for the new object is obtained with

@@ -8,13 +8,15 @@
 # old implementation in FFC
 
 from ffcx.codegeneration import form_template as ufc_form
-from ffcx.codegeneration.utils import (generate_return_new,
+from ffcx.codegeneration.utils import (generate_return_init,
+                                       generate_return_new,
+                                       generate_return_init_switch,
                                        generate_return_new_switch)
 from ffcx.ir.representation import ufc_integral_types
 
 # These are the method names in ufc_form that are specialized for each
 # integral type
-integral_name_templates = ("get_{}_integral_ids", "create_{}_integral")
+integral_name_templates = ("get_{}_integral_ids", "init_{}_integral", "create_{}_integral")
 
 
 def create_delegate(integral_type, declname, impl):
@@ -103,6 +105,12 @@ class UFCForm:
             code += [L.Return(names)]
         return L.StatementList(code)
 
+    def init_coordinate_mapping(self, L, ir):
+        classnames = ir.create_coordinate_mapping
+        # list of length 1 until we support multiple domains
+        assert len(classnames) == 1
+        return generate_return_init(L, "cmap", classnames[0])
+
     def create_coordinate_mapping(self, L, ir):
         classnames = ir.create_coordinate_mapping
         # list of length 1 until we support multiple domains
@@ -111,8 +119,14 @@ class UFCForm:
 
     def coordinate_mapping_declaration(self, L, ir):
         classname = ir.create_coordinate_mapping
-        code = "ufc_coordinate_mapping* create_{name}(void);\n".format(name=classname[0])
+        code = "int init_{name}(ufc_coordinate_mapping* cmap);\n".format(name=classname[0])
+        code += "ufc_coordinate_mapping* create_{name}(void);\n".format(name=classname[0])
         return code
+
+    def init_finite_element(self, L, ir):
+        i = L.Symbol("i")
+        classnames = ir.create_finite_element
+        return generate_return_init_switch(L, "element", i, classnames)
 
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
@@ -123,8 +137,14 @@ class UFCForm:
         classnames = set(ir.create_finite_element)
         code = ""
         for name in classnames:
+            code += "int init_{name}(ufc_finite_element* element);\n".format(name=name)
             code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
         return code
+
+    def init_dofmap(self, L, ir):
+        i = L.Symbol("i")
+        classnames = ir.create_dofmap
+        return generate_return_init_switch(L, "dofmap", i, classnames)
 
     def create_dofmap(self, L, ir):
         i = L.Symbol("i")
@@ -135,6 +155,7 @@ class UFCForm:
         classnames = set(ir.create_dofmap)
         code = ""
         for name in classnames:
+            code += "int init_{name}(ufc_dofmap* dofmap);\n".format(name=name)
             code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
         return code
 
@@ -176,6 +197,13 @@ class UFCForm:
         code += [L.Return()]
         return L.StatementList(code)
 
+    def _init_foo_integral(self, L, ir, parameters, integral_type, declname):
+        """Return implementation of ufc::form::%(declname)s()."""
+        # e.g. subdomain_ids, classnames = ir.create_cell_integral
+        subdomain_ids, classnames = getattr(ir, declname)
+        subdomain_id = L.Symbol("subdomain_id")
+        return generate_return_init_switch(L, "integral", subdomain_id, classnames, subdomain_ids)
+
     def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
         """Return implementation of ufc::form::%(declname)s()."""
         # e.g. subdomain_ids, classnames = ir.create_cell_integral
@@ -210,10 +238,13 @@ def generator(ir, parameters):
     d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir)
     d["constant_name_map"] = generator.generate_constant_original_position_to_name_map(L, ir)
 
+    d["init_coordinate_mapping"] = generator.init_coordinate_mapping(L, ir)
     d["create_coordinate_mapping"] = generator.create_coordinate_mapping(L, ir)
     d["coordinate_mapping_declaration"] = generator.coordinate_mapping_declaration(L, ir)
+    d["init_finite_element"] = generator.init_finite_element(L, ir)
     d["create_finite_element"] = generator.create_finite_element(L, ir)
     d["finite_element_declaration"] = generator.finite_element_declaration(L, ir)
+    d["init_dofmap"] = generator.init_dofmap(L, ir)
     d["create_dofmap"] = generator.create_dofmap(L, ir)
     d["dofmap_declaration"] = generator.dofmap_declaration(L, ir)
 
@@ -225,12 +256,19 @@ def generator(ir, parameters):
     d["get_vertex_integral_ids"] = generator.get_vertex_integral_ids(L, ir, parameters)
     d["get_custom_integral_ids"] = generator.get_custom_integral_ids(L, ir, parameters)
 
+    d["init_cell_integral"] = generator.init_cell_integral(L, ir, parameters)
     d["create_cell_integral"] = generator.create_cell_integral(L, ir, parameters)
+    d["init_interior_facet_integral"] = generator.init_interior_facet_integral(
+        L, ir, parameters)
     d["create_interior_facet_integral"] = generator.create_interior_facet_integral(
+        L, ir, parameters)
+    d["init_exterior_facet_integral"] = generator.init_exterior_facet_integral(
         L, ir, parameters)
     d["create_exterior_facet_integral"] = generator.create_exterior_facet_integral(
         L, ir, parameters)
+    d["init_vertex_integral"] = generator.init_vertex_integral(L, ir, parameters)
     d["create_vertex_integral"] = generator.create_vertex_integral(L, ir, parameters)
+    d["init_custom_integral"] = generator.init_custom_integral(L, ir, parameters)
     d["create_custom_integral"] = generator.create_custom_integral(L, ir, parameters)
 
     # Check that no keys are redundant or have been missed

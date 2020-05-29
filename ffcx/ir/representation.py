@@ -41,11 +41,14 @@ ir_form = namedtuple('ir_form', ['id', 'prefix', 'name', 'signature', 'rank',
                                  'original_coefficient_position',
                                  'coefficient_names', 'constant_names',
                                  'create_coordinate_mapping', 'create_finite_element',
-                                 'create_dofmap', 'create_cell_integral',
-                                 'get_cell_integral_ids', 'create_exterior_facet_integral',
-                                 'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
-                                 'get_interior_facet_integral_ids', 'create_vertex_integral',
-                                 'get_vertex_integral_ids', 'create_custom_integral',
+                                 'create_dofmap', 'init_cell_integral', 'create_cell_integral',
+                                 'get_cell_integral_ids', 'init_exterior_facet_integral',
+                                 'create_exterior_facet_integral',
+                                 'get_exterior_facet_integral_ids', 'init_interior_facet_integral',
+                                 'create_interior_facet_integral',
+                                 'get_interior_facet_integral_ids', 'init_vertex_integral',
+                                 'create_vertex_integral', 'get_vertex_integral_ids',
+                                 'init_custom_integral', 'create_custom_integral',
                                  'get_custom_integral_ids'])
 ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
                                        'topological_dimension',
@@ -457,6 +460,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     # Create integral ids and names using form prefix (integrals are
     # always generated as part of form so don't get their own prefix)
     for integral_type in ufc_integral_types:
+        irdata = _init_foo_integral(prefix, form_id, integral_type, form_data)
+        ir["init_{}_integral".format(integral_type)] = irdata
         irdata = _create_foo_integral(prefix, form_id, integral_type, form_data)
         ir["create_{}_integral".format(integral_type)] = irdata
         ir["get_{}_integral_ids".format(integral_type)] = irdata
@@ -761,6 +766,32 @@ def _tabulate_dof_coordinates(ufl_element, element):
         gdim=cell.geometric_dimension(),
         points=[sorted(L.pt_dict.keys())[0] for L in element.dual_basis()],
         cell_shape=cell.cellname())
+
+
+def _init_foo_integral(prefix, form_id, integral_type, form_data):
+    """Compute intermediate representation of init_foo_integral."""
+    subdomain_ids = []
+    classnames = []
+    itg_data = [itg_data for itg_data in form_data.integral_data
+                if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")]
+
+    if len(itg_data) > 1:
+        raise RuntimeError("Expecting at most one default integral of each type.")
+    elif len(itg_data) == 1:
+        subdomain_ids += [-1]
+        classnames += [naming.integral_name(integral_type, form_data.original_form,
+                                            form_id, "otherwise")]
+
+    for itg_data in form_data.integral_data:
+        if isinstance(itg_data.subdomain_id, int):
+            if itg_data.subdomain_id < 0:
+                raise ValueError("Integral subdomain ID must be non-negative, not {}".format(itg_data.subdomain_id))
+            if (itg_data.integral_type == integral_type):
+                subdomain_ids += [itg_data.subdomain_id]
+                classnames += [naming.integral_name(integral_type, form_data.original_form,
+                                                    form_id, itg_data.subdomain_id)]
+
+    return subdomain_ids, classnames
 
 
 def _create_foo_integral(prefix, form_id, integral_type, form_data):

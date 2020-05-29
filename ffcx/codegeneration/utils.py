@@ -7,6 +7,10 @@
 # TODO: Move these to ffcx.language utils?
 
 
+def generate_return_init(L, argname, classname):
+    return L.Return(L.Call("init_" + classname, (L.Symbol(argname))))
+
+
 def generate_return_new(L, classname):
     return L.Return(L.Call("create_" + classname))
 
