@@ -449,7 +449,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     # Variables for stopping criteria
     # TODO: Check if these are good convergence criteria,
     #       e.g. is epsilon=1e-6 and iterations=degree sufficient?
-    max_iter = L.LiteralInt(degree + 2)
+    max_iter = L.LiteralInt(degree + 100)
     epsilon = L.LiteralFloat(1e-12)
     # TODO: Could also easily make criteria input if desired
     # max_iter = L.Symbol("iterations")
