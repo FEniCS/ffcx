@@ -159,19 +159,23 @@ class UFCForm:
             code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
         return code
 
-    def create_functionspace(self, L, ir):
+    def init_functionspace(self, L, ir):
         code = []
         function_name = L.Symbol("function_name")
 
         i = 0
         for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
-            body = "ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));\n"
-            body += "space->create_element = create_{finite_element_classname};\n".format(
+            body = "space->init_element = init_{finite_element_classname};\n".format(
                 finite_element_classname=element)
+            body = "space->create_element = create_{finite_element_classname};\n".format(
+                finite_element_classname=element)
+            body += "space->init_dofmap = init_{dofmap_classname};\n".format(dofmap_classname=dofmap)
             body += "space->create_dofmap = create_{dofmap_classname};\n".format(dofmap_classname=dofmap)
+            body += "space->init_coordinate_mapping = init_{coordinate_map_classname};\n".format(
+                coordinate_map_classname=cmap)
             body += "space->create_coordinate_mapping = create_{coordinate_map_classname};\n".format(
                 coordinate_map_classname=cmap)
-            body += "return space;"
+            body += "return 0;"
 
             condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
             if i == 0:
@@ -181,7 +185,7 @@ class UFCForm:
 
             i += 1
 
-        code += ["return NULL;\n"]
+        code += ["return -1;\n"]
 
         return L.StatementList(code)
 
@@ -248,7 +252,7 @@ def generator(ir, parameters):
     d["create_dofmap"] = generator.create_dofmap(L, ir)
     d["dofmap_declaration"] = generator.dofmap_declaration(L, ir)
 
-    d["create_functionspace"] = generator.create_functionspace(L, ir)
+    d["init_functionspace"] = generator.init_functionspace(L, ir)
 
     d["get_cell_integral_ids"] = generator.get_cell_integral_ids(L, ir, parameters)
     d["get_exterior_facet_integral_ids"] = generator.get_exterior_facet_integral_ids(L, ir, parameters)

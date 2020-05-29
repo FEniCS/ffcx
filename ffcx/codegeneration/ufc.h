@@ -738,15 +738,24 @@ extern "C"
   // FIXME: Formalise a UFC 'function space'.
   typedef struct ufc_function_space
   {
+    // Create a new element.
+    int (*init_element)(ufc_finite_element* element);
+
     // Pointer to factory function that creates a new
     // ufc_finite_element. Memory for the new object is obtained with
     // malloc, and can be freed with free.
     ufc_finite_element* (*create_element)(void);
 
+    // Create a new dofmap.
+    int (*init_dofmap)(ufc_dofmap* dofmap);
+
     // Pointer to factory function that creates a new
     // ufc_dofmap. Memory for the new object is obtained with malloc,
     // and can be freed with free.
     ufc_dofmap* (*create_dofmap)(void);
+
+    // Create a new coordinate mapping.
+    int (*init_coordinate_mapping)(ufc_coordinate_mapping* cmap);
 
     // Pointer to factory function that creates a new
     // ufc_coordinate_mapping. Memory for the new object is obtained

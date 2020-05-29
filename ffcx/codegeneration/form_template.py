@@ -16,12 +16,14 @@ int init_{name_from_uflfile}(ufc_form* form);
 void destroy_{name_from_uflfile}(ufc_form* form);
 ufc_form* create_{name_from_uflfile}(void);
 
-// Helper used to create function space using its name, as given in
-// the UFL file.
+// Helper functions used to create function spaces based on the name
+// which was given in the UFL file.
 // Note: There are in general more function spaces associated to the form,
 //       which is the reason why the helpers takes name as argument.
-// This helper is called in user c++ code.
+// These helpers is called in user c++ code.
 //
+int init_functionspace_{name_from_uflfile}(ufc_function_space* space, const char* fs_name);
+void destroy_functionspace_{name_from_uflfile}(ufc_function_space* space);
 ufc_function_space* create_functionspace_{name_from_uflfile}(const char* fs_name);
 
 """
@@ -231,9 +233,24 @@ ufc_form* create_{name_from_uflfile}(void)
   return create_{factory_name}();
 }}
 
+int init_functionspace_{name_from_uflfile}(ufc_function_space* space, const char* function_name)
+{{
+  {init_functionspace}
+}}
+
+void destroy_functionspace_{name_from_uflfile}(ufc_function_space* space)
+{{
+}}
+
 ufc_function_space* create_functionspace_{name_from_uflfile}(const char* function_name)
 {{
-  {create_functionspace}
+  ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));
+  int err = init_functionspace_{name_from_uflfile}(space, function_name);
+  if (err) {{
+    free(space);
+    return NULL;
+  }}
+  return space;
 }}
 
 // End of code for form {factory_name}
