@@ -216,7 +216,7 @@ def compute_reference_geometry(L, ir):
 # TODO: Maybe we don't need this version, see what we need in dolfinx first
 def compute_reference_coordinates(L, ir):
     degree = ir.coordinate_element_degree
-    if degree == 1:
+    if degree == 1 and ir.cell_shape in ("interval", "triangle", "tetrahedron"):
         # Special case optimized for affine mesh (possibly room for
         # further optimization)
         return _compute_reference_coordinates_affine(L, ir)
@@ -344,7 +344,7 @@ def _compute_reference_coordinates_affine(L, ir, output_all=False):
     ]
 
     # Stitch it together
-    code = init_input + table_decls + decls + compute_x0 + compute_J0 + compute_K0 + compute_X
+    code = init_input + table_decls + decls + compute_x0 + compute_J0 + compute_K0 + compute_X + [L.Return(0)]
     return code
 
 
@@ -440,6 +440,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
 
     xm = L.Symbol("xm")
     Km = L.Symbol("Km")
+    converge_count = L.Symbol("converged")
 
     # Symbol for ufc_geometry cell midpoint definition
     Xm = L.Symbol("%s_midpoint" % cellname)
@@ -458,6 +459,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
     decls = [
         L.Comment("Declare intermediate arrays to hold results of compute_geometry call"),
         L.ArrayDecl("double", xk, (gdim, ), 0.0),
+        L.VariableDecl("int", converge_count, 0),
     ]
     if not output_all:
         decls += [
@@ -515,7 +517,7 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
         L.VariableDecl("double", dX2, value=0.0),
         L.ForRange(j, 0, tdim, index_type=index_type, body=L.AssignAdd(dX2, dX[j] * dX[j])),
         L.Comment("Break if converged (before X += dX such that X,J,detJ,K are consistent)"),
-        L.If(L.LT(dX2, epsilon2), L.Break()),
+        L.If(L.LT(dX2, epsilon2), [L.AssignAdd(converge_count, 1), L.Break()]),
         L.Comment("Update Xk += dX"),
         L.ForRange(j, 0, tdim, index_type=index_type, body=L.AssignAdd(Xk[j], dX[j])),
     ]
@@ -545,7 +547,10 @@ def _compute_reference_coordinates_newton(L, ir, output_all=False):
             ])
     ]
 
-    code = decls + midpoint_geometry + point_loop
+    check = [L.Assign(converge_count, L.Conditional(L.EQ(converge_count, num_points), 0, -1)),
+             L.Return(converge_count)]
+
+    code = decls + midpoint_geometry + point_loop + check
     return code
 
 

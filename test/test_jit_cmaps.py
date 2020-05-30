@@ -21,13 +21,13 @@ def test_cmap_triangle(compile_args):
         [mesh], cffi_extra_compile_args=compile_args)
 
     # Reference coordinates X
-    X = np.array([[0.5, 0.5]], dtype=np.float64)
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    x = np.zeros_like(X)
+    x = np.array([[0.5, 0.5]], dtype=np.float64)
     x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
+    X = np.zeros_like(x)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
     coords = np.array([0.0, 0.0, 2.0, 0.0, 0.0, 4.0], dtype=np.float64)
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
-    compiled_cmap[0].compute_reference_coordinates(x_ptr, x.shape[0], X_ptr, coords_ptr)
+    compiled_cmap[0].compute_reference_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
@@ -36,8 +36,8 @@ def test_cmap_triangle(compile_args):
     assert num_entity_dofs[2] == 0
     assert num_entity_dofs[3] == 0
 
-    assert np.isclose(x[0, 0], 0.25)
-    assert np.isclose(x[0, 1], 0.125)
+    assert np.isclose(X[0, 0], 0.25)
+    assert np.isclose(X[0, 1], 0.125)
 
 
 @pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [0, 2], [3, 0], [3, 2]], dtype=np.float64)),
@@ -78,8 +78,9 @@ def test_cmap_quads(degree, coords, compile_args):
     # Convert back to reference coordinates
     Y = np.zeros_like(X)
     Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    assert(np.isclose(X, Y).all())
+    retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
+    assert np.isclose(X, Y).all()
+    assert retcode == 0
 
 
 @pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [0, 0, 3],
@@ -129,5 +130,6 @@ def test_cmap_hex(degree, coords, compile_args):
     # Convert back to reference coordinates
     Y = np.zeros_like(X)
     Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    assert(np.isclose(X, Y).all())
+    retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
+    assert np.isclose(X, Y).all()
+    assert retcode == 0
