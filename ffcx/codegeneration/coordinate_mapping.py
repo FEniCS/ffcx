@@ -203,7 +203,7 @@ def compute_physical_coordinates(L, ir):
 
 
 def compute_reference_geometry(L, ir):
-    if ir.affine:
+    if ir.is_affine:
         # Special case optimized for affine mesh (possibly room for
         # further optimization)
         return _compute_reference_coordinates_affine(L, ir, output_all=True)
@@ -214,7 +214,7 @@ def compute_reference_geometry(L, ir):
 
 # TODO: Maybe we don't need this version, see what we need in dolfinx first
 def compute_reference_coordinates(L, ir):
-    if ir.affine:
+    if ir.is_affine:
         # Special case optimized for affine mesh (possibly room for
         # further optimization)
         return _compute_reference_coordinates_affine(L, ir)
