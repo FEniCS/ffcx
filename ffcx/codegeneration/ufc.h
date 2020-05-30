@@ -39,7 +39,7 @@ extern "C"
 #endif // restrict
 #endif // __cplusplus
 
-// <HEADER_DECL>
+  // <HEADER_DECL>
 
   typedef enum
   {
@@ -72,7 +72,7 @@ extern "C"
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
 
-// </HEADER_DECL>
+  // </HEADER_DECL>
 
   typedef struct ufc_finite_element
   {
@@ -251,7 +251,8 @@ extern "C"
     ///         Dofs of the coordinate field on the cell.
     ///         Dimensions: coordinate_dofs[num_dofs][gdim].
     ///
-    void (*compute_reference_coordinates)(
+    /// @return Error code, 0 on success, -1 on failure
+    int (*compute_reference_coordinates)(
         double* restrict X, int num_points, const double* restrict x,
         const double* restrict coordinate_dofs);
 
@@ -278,11 +279,11 @@ extern "C"
     ///         Dofs of the coordinate field on the cell.
     ///         Dimensions: coordinate_dofs[num_dofs][gdim].
     ///
-    void (*compute_reference_geometry)(double* restrict X, double* restrict J,
-                                       double* restrict detJ,
-                                       double* restrict K, int num_points,
-                                       const double* restrict x,
-                                       const double* restrict coordinate_dofs);
+    /// @return Error code, 0 on success, -1 on failure
+    int (*compute_reference_geometry)(double* restrict X, double* restrict J,
+                                      double* restrict detJ, double* restrict K,
+                                      int num_points, const double* restrict x,
+                                      const double* restrict coordinate_dofs);
 
     /// Compute Jacobian of coordinate mapping J = dx/dX at reference
     /// coordinates

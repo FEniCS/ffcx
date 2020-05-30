@@ -62,14 +62,14 @@ void compute_midpoint_geometry_{factory_name}(double* restrict x, double* restri
 {compute_midpoint_geometry}
 }}
 
-void compute_reference_coordinates_{factory_name}(double* restrict X, int num_points,
+int compute_reference_coordinates_{factory_name}(double* restrict X, int num_points,
                                                   const double* restrict x,
                                                   const double* restrict coordinate_dofs)
 {{
 {compute_reference_coordinates}
 }}
 
-void compute_reference_geometry_{factory_name}(double* restrict X, double* restrict J,
+int compute_reference_geometry_{factory_name}(double* restrict X, double* restrict J,
                                                double* restrict detJ, double* restrict K,
                                                int num_points, const double* restrict x,
                                                const double* restrict coordinate_dofs)
