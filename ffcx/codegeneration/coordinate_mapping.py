@@ -203,8 +203,7 @@ def compute_physical_coordinates(L, ir):
 
 
 def compute_reference_geometry(L, ir):
-    degree = ir.coordinate_element_degree
-    if degree == 1 and ir.cell_shape in ("interval", "triangle", "tetrahedron"):
+    if ir.is_affine:
         # Special case optimized for affine mesh (possibly room for
         # further optimization)
         return _compute_reference_coordinates_affine(L, ir, output_all=True)
@@ -215,8 +214,7 @@ def compute_reference_geometry(L, ir):
 
 # TODO: Maybe we don't need this version, see what we need in dolfinx first
 def compute_reference_coordinates(L, ir):
-    degree = ir.coordinate_element_degree
-    if degree == 1 and ir.cell_shape in ("interval", "triangle", "tetrahedron"):
+    if ir.is_affine:
         # Special case optimized for affine mesh (possibly room for
         # further optimization)
         return _compute_reference_coordinates_affine(L, ir)
