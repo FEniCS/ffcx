@@ -245,7 +245,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     return res
 
 
-def generate_psi_table_name(num_points, element_counter, averaged, entitytype, derivative_counts,
+def generate_psi_table_name(quadrature_rule, element_counter, averaged, entitytype, derivative_counts,
                             flat_component):
     """Generate a name for the psi table.
 
@@ -269,7 +269,7 @@ def generate_psi_table_name(num_points, element_counter, averaged, entitytype, d
 
     V   - marks that the first array dimension enumerates vertices on the cell
 
-    Q   - number of quadrature points, to distinguish between tables in a mixed quadrature degree setting
+    Q   - unique ID of quadrature rule, to distinguish between tables in a mixed quadrature rule setting
 
     """
     name = "FE%d" % element_counter
@@ -279,8 +279,7 @@ def generate_psi_table_name(num_points, element_counter, averaged, entitytype, d
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
     name += {"cell": "", "facet": "_F", "vertex": "_V"}[entitytype]
-    if num_points is not None:
-        name += "_Q%d" % num_points
+    name += "_Q{}".format(quadrature_rule.id())
     return name
 
 
@@ -372,8 +371,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_element_tables(num_points,
-                         quadrature_rules,
+def build_element_tables(quadrature_rule,
                          cell,
                          integral_type,
                          entitytype,
@@ -416,14 +414,14 @@ def build_element_tables(num_points,
 
         # Build name for this particular table
         element_number = element_numbers[element]
-        name = generate_psi_table_name(num_points, element_number, avg, entitytype,
+        name = generate_psi_table_name(quadrature_rule, element_number, avg, entitytype,
                                        local_derivatives, flat_component)
         if name not in tables:
             tdim = cell.topological_dimension()
             if entitytype == "facet":
                 if tdim == 1:
                     tables[name] = numpy.array([
-                        get_ffcx_table_values(quadrature_rules[num_points][0], cell,
+                        get_ffcx_table_values(quadrature_rule.points, cell,
                                               integral_type, element, avg, entitytype,
                                               local_derivatives, flat_component)])
                 elif tdim == 2:
@@ -431,7 +429,7 @@ def build_element_tables(num_points,
                     new_table = []
                     for ref in range(2):
                         new_table.append(get_ffcx_table_values(
-                            permute_quadrature_interval(quadrature_rules[num_points][0], ref),
+                            permute_quadrature_interval(quadrature_rule.points, ref),
                             cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                     tables[name] = numpy.array(new_table)
@@ -443,7 +441,7 @@ def build_element_tables(num_points,
                         for rot in range(3):
                             for ref in range(2):
                                 new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_triangle(quadrature_rules[num_points][0], ref, rot),
+                                    permute_quadrature_triangle(quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                         tables[name] = numpy.array(new_table)
@@ -453,13 +451,13 @@ def build_element_tables(num_points,
                         for rot in range(4):
                             for ref in range(2):
                                 new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_quadrilateral(quadrature_rules[num_points][0], ref, rot),
+                                    permute_quadrature_quadrilateral(quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                         tables[name] = numpy.array(new_table)
             else:
                 # Extract the values of the table from ffc table format
-                tables[name] = numpy.array([get_ffcx_table_values(quadrature_rules[num_points][0], cell,
+                tables[name] = numpy.array([get_ffcx_table_values(quadrature_rule.points, cell,
                                                                   integral_type, element, avg, entitytype,
                                                                   local_derivatives, flat_component)])
 
@@ -641,8 +639,7 @@ def analyse_table_types(unique_tables, rtol=default_rtol, atol=default_atol):
     }
 
 
-def build_optimized_tables(num_points,
-                           quadrature_rules,
+def build_optimized_tables(quadrature_rule,
                            cell,
                            integral_type,
                            entitytype,
@@ -653,8 +650,7 @@ def build_optimized_tables(num_points,
 
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = build_element_tables(
-        num_points,
-        quadrature_rules,
+        quadrature_rule,
         cell,
         integral_type,
         entitytype,

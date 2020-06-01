@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utility functions for some code shared between representations."""
 
+import hashlib
 import logging
 
 import numpy
@@ -14,6 +15,33 @@ from ffcx.fiatinterface import (create_quadrature, map_facet_points,
                                 reference_cell_vertices)
 
 logger = logging.getLogger(__name__)
+
+
+class QuadratureRule:
+    def __init__(self, points, weights):
+        self.points = points
+        self.weights = weights
+        self._hash = None
+
+    def __hash__(self):
+        if self._hash is None:
+            self.hash_obj = hashlib.sha1(self.points)
+            self._hash = int(self.hash_obj.hexdigest(), 32)
+        return self._hash
+
+    def __eq__(self, other):
+        return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
+
+    def id(self):
+        """Returns unique deterministic identifier.
+
+        Note
+        ----
+        This identifier is used to provide unique names to tables and symbols
+        in generated code.
+
+        """
+        return self.hash_obj.hexdigest()[-3:]
 
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
