@@ -4,11 +4,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import numpy as np
-
 import ffcx
 import ffcx.codegeneration.jit
+import numpy as np
 import pytest
+
 import ufl
 
 
@@ -23,7 +23,7 @@ def test_cmap_triangle(degree, coords, compile_args):
         [mesh], cffi_extra_compile_args=compile_args)
 
     # Reference coordinates X
-    x = np.array([[1/3, 2/3]], dtype=np.float64)
+    x = np.array([[1 / 3, 2 / 3]], dtype=np.float64)
     x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
     X = np.zeros_like(x)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
@@ -36,11 +36,11 @@ def test_cmap_triangle(degree, coords, compile_args):
     assert num_entity_dofs[2] == 0
     assert num_entity_dofs[3] == 0
 
-    if degree==1:
+    if degree == 1:
         assert num_entity_dofs[1] == 0
-        assert np.isclose(X[0, 0], 1/6)
-        assert np.isclose(X[0, 1], 1/6)
-    elif degree==2:
+        assert np.isclose(X[0, 0], 1 / 6)
+        assert np.isclose(X[0, 1], 1 / 6)
+    elif degree == 2:
         assert num_entity_dofs[1] == 1
 
     # Convert back to reference coordinates
@@ -49,6 +49,7 @@ def test_cmap_triangle(degree, coords, compile_args):
     retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
     assert np.isclose(X, Y).all()
     assert retcode == 0
+
 
 @pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [0, 2], [3, 0], [3, 2]], dtype=np.float64)),
                                            (2, np.array([[0, 0], [0, 2], [0, 1], [3, 0],
