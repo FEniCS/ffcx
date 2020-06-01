@@ -110,7 +110,7 @@ def _write_file(output, prefix, postfix, output_dir):
     filename = os.path.join(output_dir, prefix + postfix)
     with open(filename, "w") as hfile:
         hfile.write(output)
-    logger.info("Output written to " + filename + ".")
+    logger.debug("Output written to " + filename + ".")
 
 
 def _generate_comment(parameters):

@@ -91,6 +91,6 @@ def main(args=None):
             pr.disable()
             pfn = "ffcx_{0}.profile".format(prefix)
             pr.dump_stats(pfn)
-            logger.info("Wrote profiling info to file {0}".format(pfn))
+            logger.debug("Wrote profiling info to file {0}".format(pfn))
 
     return 0

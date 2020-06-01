@@ -63,7 +63,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         open(c_filename, "x")
         return None, None
     except FileExistsError:
-        logger.info("Cached C file already exists: " + str(c_filename))
+        logger.debug("Cached C file already exists: " + str(c_filename))
         finder = importlib.machinery.FileFinder(
             str(cache_dir), (importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES))
         finder.invalidate_caches()
@@ -80,7 +80,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
                 compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
                 return compiled_objects, compiled_module
 
-            logger.info("Waiting for {} to appear.".format(str(ready_name)))
+            logger.debug("Waiting for {} to appear.".format(str(ready_name)))
             time.sleep(1)
         raise TimeoutError("""JIT compilation timed out, probably due to a failed previous compile.
         Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
@@ -93,7 +93,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     if parameters is not None:
         p.update(parameters)
 
-    logger.info('Compiling elements: ' + str(elements))
+    logger.debug('Compiling elements: ' + str(elements))
 
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
@@ -147,7 +147,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
     if parameters is not None:
         p.update(parameters)
 
-    logger.info('Compiling forms: ' + str(forms))
+    logger.debug('Compiling forms: ' + str(forms))
 
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
@@ -199,7 +199,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     if parameters is not None:
         p.update(parameters)
 
-    logger.info('Compiling expressions: ' + str(expressions))
+    logger.debug('Compiling expressions: ' + str(expressions))
 
     # Get a signature for these forms
     module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, '', p)
@@ -243,7 +243,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
     if parameters is not None:
         p.update(parameters)
 
-    logger.info('Compiling cmaps: ' + str(meshes))
+    logger.debug('Compiling cmaps: ' + str(meshes))
 
     # Get a signature for these cmaps
     module_name = 'libffcx_cmaps_' + \

@@ -1444,7 +1444,7 @@ class Else(CStatement):
 
 
 def is_simple_inner_loop(code):
-    if isinstance(code, ForRange) and code.pragma is None and is_simple_inner_loop(code.body):
+    if isinstance(code, ForRange) and is_simple_inner_loop(code.body):
         return True
     if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
         return True
@@ -1504,21 +1504,14 @@ class Switch(CStatement):
 class ForRange(CStatement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
-    __slots__ = ("index", "begin", "end", "body", "pragma", "index_type")
+    __slots__ = ("index", "begin", "end", "body", "index_type")
     is_scoped = True
 
-    def __init__(self, index, begin, end, body, index_type="int", vectorize=None):
+    def __init__(self, index, begin, end, body, index_type="int"):
         self.index = as_cexpr_or_string_symbol(index)
         self.begin = as_cexpr(begin)
         self.end = as_cexpr(end)
         self.body = as_cstatement(body)
-
-        if vectorize:
-            pragma = Pragma("omp simd")
-        else:
-            pragma = None
-        self.pragma = pragma
-
         self.index_type = index_type
 
     def cs_format(self, precision=None):
@@ -1540,14 +1533,10 @@ class ForRange(CStatement):
         else:
             code = (prelude, "{", body, "}")
 
-        # Add vectorization hint if requested
-        if self.pragma is not None:
-            code = (self.pragma.cs_format(), ) + code
-
         return code
 
     def __eq__(self, other):
-        attributes = ("index", "begin", "end", "body", "pragma", "index_type")
+        attributes = ("index", "begin", "end", "body", "index_type")
         return (isinstance(other, type(self))
                 and all(getattr(self, name) == getattr(self, name) for name in attributes))
 

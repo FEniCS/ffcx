@@ -23,9 +23,6 @@ def generate_evaluate_reference_basis(L, data, parameters):
     The function should work for all elements supported by FIAT, but
     it remains untested for tensor valued elements.
 
-    This code is adapted from code in FFC which computed the basis
-    from physical coordinates, and also to use UFLACS utilities.
-
     The FFC code has a comment "From FIAT_NEW.polynomial_set.tabulate()".
 
     """

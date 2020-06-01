@@ -77,7 +77,7 @@ logger = logging.getLogger(__name__)
 
 
 def _print_timing(stage, timing):
-    logger.info("Compiler stage {stage} finished in {time} seconds.".format(
+    logger.debug("Compiler stage {stage} finished in {time} seconds.".format(
         stage=stage, time=timing))
 
 
@@ -94,12 +94,8 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
 
     """
-    logger.info("Compiling {}\n".format(prefix))
     if prefix != os.path.basename(prefix):
         raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
-
-    # Reset timing
-    cpu_time_0 = time()
 
     # Stage 1: analysis
     cpu_time = time()
@@ -120,7 +116,5 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     cpu_time = time()
     code_h, code_c = format_code(code, parameters)
     _print_timing(5, time() - cpu_time)
-
-    logger.info("FFCX finished in {} seconds.".format(time() - cpu_time_0))
 
     return code_h, code_c
