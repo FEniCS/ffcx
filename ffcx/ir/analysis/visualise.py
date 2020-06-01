@@ -1,0 +1,59 @@
+# Copyright (C) 2018 Chris Richardson
+#
+# This file is part of FFCX.(https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Utility to draw graphs."""
+
+
+from ffcx.ir.analysis.modified_terminals import strip_modified_terminal
+from ufl.classes import (Argument, Division, FloatValue, Indexed, IntValue,
+                         Product, ReferenceValue, Sum)
+
+
+def visualise_graph(Gx, filename):
+
+    try:
+        import pygraphviz as pgv
+    except ImportError:
+        raise RuntimeError("Install pygraphviz")
+
+    if Gx.number_of_nodes() > 400:
+        print("Skipping visualisation")
+        return
+
+    G = pgv.AGraph(strict=False, directed=True)
+    for nd, v in Gx.nodes.items():
+        ex = v['expression']
+        label = ex.__class__.__name__
+        if isinstance(ex, Sum):
+            label = '+'
+        elif isinstance(ex, Product):
+            label = '*'
+        elif isinstance(ex, Division):
+            label = '/'
+        elif isinstance(ex, (IntValue, FloatValue)):
+            label = ex.value()
+        elif isinstance(ex, (Indexed, ReferenceValue)):
+            label = str(ex)
+        G.add_node(nd, label='[%d] %s' % (nd, label))
+
+        arg = strip_modified_terminal(ex)
+        if isinstance(arg, Argument):
+            G.get_node(nd).attr['shape'] = 'box'
+
+        t = v.get('target')
+        if t:
+            G.get_node(nd).attr['label'] += ':' + str(t)
+            G.get_node(nd).attr['shape'] = 'hexagon'
+
+        c = v.get('component')
+        if c:
+            G.get_node(nd).attr['label'] += ', comp={}'.format(c)
+
+    for nd, eds in Gx.out_edges.items():
+        for ed in eds:
+            G.add_edge(nd, ed)
+
+    G.layout(prog='dot')
+    G.draw(filename)
