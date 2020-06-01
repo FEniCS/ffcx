@@ -4,7 +4,9 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+from contextlib import redirect_stdout
 import importlib
+import io
 import logging
 import os
 import re
@@ -87,7 +89,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
 
 
 def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                     cffi_verbose=False, cffi_debug=None):
+                     cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL elements and dofmaps into Python objects."""
     p = ffcx.parameters.default_parameters()
     if parameters is not None:
@@ -127,7 +129,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
             decl += dofmap_template.format(name=names[i * 2 + 1])
 
         _compile_objects(decl, elements, names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
@@ -141,7 +143,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
 
 
 def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                  cffi_verbose=False, cffi_debug=None):
+                  cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL forms into UFC Python objects."""
     p = ffcx.parameters.default_parameters()
     if parameters is not None:
@@ -174,7 +176,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
             decl += form_template.format(name=name)
 
         _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
@@ -186,7 +188,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
 
 
 def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                        cffi_verbose=False, cffi_debug=None):
+                        cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL expressions into UFC Python objects.
 
     Parameters
@@ -225,7 +227,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
             decl += expression_template.format(name=name)
 
         _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
@@ -237,7 +239,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
 
 
 def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                            cffi_verbose=False, cffi_debug=None):
+                            cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects."""
     p = ffcx.parameters.default_parameters()
     if parameters is not None:
@@ -270,7 +272,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
             decl += cmap_template.format(name=name)
 
         _compile_objects(decl, meshes, cmap_names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug)
+                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
@@ -282,7 +284,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
-                     cffi_extra_compile_args, cffi_verbose, cffi_debug):
+                     cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries):
 
     import ffcx.compiler
 
@@ -290,7 +292,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffcx.codegeneration.get_include_path()],
-                          extra_compile_args=cffi_extra_compile_args)
+                          extra_compile_args=cffi_extra_compile_args, libraries=cffi_libraries)
     ffibuilder.cdef(decl)
 
     c_filename = cache_dir.joinpath(module_name + ".c")
@@ -298,11 +300,19 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     # Compile (ensuring that compile dir exists)
     cache_dir.mkdir(exist_ok=True, parents=True)
-    ffibuilder.compile(tmpdir=cache_dir, verbose=cffi_verbose, debug=cffi_debug)
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        ffibuilder.compile(tmpdir=cache_dir, verbose=True, debug=cffi_debug)
+    s = f.getvalue()
+    if (cffi_verbose):
+        print(s)
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.
+    # Copy the stdout verbose output of the build into the ready file
     fd = open(ready_name, "x")
+    fd.write(s)
     fd.close()
 
 
