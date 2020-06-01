@@ -20,7 +20,7 @@ def test_cmap_triangle(degree, coords, compile_args):
     element = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(element)
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
-        [mesh], cffi_extra_compile_args=compile_args)
+        [mesh], cffi_extra_compile_args=compile_args, cache_dir=".")
 
     # Reference coordinates X
     x = np.array([[1 / 3, 2 / 3]], dtype=np.float64)
