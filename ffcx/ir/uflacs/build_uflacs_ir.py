@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2017 Martin Sandve Alnæs
+# Copyright (C) 2013-2020 Martin Sandve Alnæs and Michal Habera
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
@@ -21,8 +21,7 @@ from ffcx.ir.uflacs.analysis.visualise import visualise_graph
 from ffcx.ir.uflacs.elementtables import build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
-from ufl.classes import CellCoordinate, FacetCoordinate, QuadratureWeight
-from ufl.measure import facet_integral_types, point_integral_types
+from ufl.classes import QuadratureWeight
 from ffcx.ir import dof_permutations
 
 logger = logging.getLogger(__name__)
@@ -32,9 +31,7 @@ ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 block_data_t = collections.namedtuple("block_data_t",
                                       ["ttypes",  # list of table types for each block rank
                                        "factor_indices_comp_indices",  # list of tuples (factor index, component index)
-                                       "factor_is_piecewise",
-                                       # bool: factor is found in piecewise vertex array
-                                       # instead of quadloop specific vertex array
+                                       "all_factors_piecewise",  # True if all factors for this block are piecewise
                                        "unames",  # list of unique FE table names for each block rank
                                        "restrictions",  # restriction "+" | "-" | None for each block rank
                                        "transposed",  # block is the transpose of another
@@ -44,97 +41,6 @@ block_data_t = collections.namedtuple("block_data_t",
                                        "piecewise_ma_index",  # used in "partial"
                                        "is_permuted"  # Do quad points on facets need to be permuted?
                                        ])
-
-
-def multiply_block_interior_facets(point_index, unames, ttypes, unique_tables,
-                                   unique_table_num_dofs):
-    rank = len(unames)
-    tables = [unique_tables.get(name) for name in unames]
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-    num_perms = tuple(t.shape[0] for t in tables)
-
-    num_entities = max([1] + [tbl.shape[1] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) * rank + num_dofs)
-    for perms in itertools.product(*[range(i) for i in num_perms]):
-        for facets in itertools.product(*[range(num_entities)] * rank):
-            vectors = []
-            for i, tbl in enumerate(tables):
-                if tbl is None:
-                    assert ttypes[i] == "ones"
-                    vectors.append(numpy.ones((num_dofs[i], )))
-                else:
-                    # Some tables are compacted along entities or points
-                    e = 0 if tbl.shape[1] == 1 else facets[i]
-                    q = 0 if tbl.shape[2] == 1 else point_index
-                    vectors.append(tbl[perms[i], e, q, :])
-            if rank > 1:
-                assert rank == 2
-                ptable[perms[0], perms[1], facets[0], facets[1], ...] = numpy.outer(*vectors)
-            elif rank == 1:
-                ptable[perms[0], facets[0], :] = vectors[0]
-            else:
-                raise RuntimeError("Nothing to multiply!")
-
-    return ptable
-
-
-def multiply_block(point_index, unames, ttypes, unique_tables, unique_table_num_dofs):
-    rank = len(unames)
-    tables = [unique_tables.get(name) for name in unames]
-    num_perms = tuple(t.shape[0] for t in tables)
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-
-    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) + num_dofs)
-    for perms in itertools.product(*[range(i) for i in num_perms]):
-        for entity in range(num_entities):
-            vectors = []
-            for i, tbl in enumerate(tables):
-                if tbl is None:
-                    assert ttypes[i] == "ones"
-                    vectors.append(numpy.ones((num_dofs[i], )))
-                else:
-                    # Some tables are compacted along entities or points
-                    e = 0 if tbl.shape[1] == 1 else entity
-                    q = 0 if tbl.shape[2] == 1 else point_index
-                    vectors.append(tbl[perms[i], e, q, :])
-            if rank > 1:
-                ptable[perms[0], perms[1], entity, ...] = numpy.outer(*vectors)
-            elif rank == 1:
-                ptable[perms[0], entity, :] = vectors[0]
-            else:
-                raise RuntimeError("Nothing to multiply!")
-
-    return ptable
-
-
-def integrate_block(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
-    tables = [unique_tables.get(name) for name in unames]
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-    num_perms = tuple(t.shape[0] for t in tables)
-
-    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) + num_dofs)
-    for iq, w in enumerate(weights):
-        ptable[...] += w * multiply_block(iq, unames, ttypes, unique_tables, unique_table_num_dofs)
-
-    return ptable
-
-
-def integrate_block_interior_facets(weights, unames, ttypes, unique_tables, unique_table_num_dofs):
-    rank = len(unames)
-    tables = [unique_tables.get(name) for name in unames]
-    num_dofs = tuple(unique_table_num_dofs[name] for name in unames)
-    num_perms = tuple(t.shape[0] for t in tables)
-
-    num_entities = max([1] + [tbl.shape[-3] for tbl in tables if tbl is not None])
-    ptable = numpy.zeros(num_perms + (num_entities, ) * rank + num_dofs)
-    for iq, w in enumerate(weights):
-        mtable = multiply_block_interior_facets(iq, unames, ttypes, unique_tables,
-                                                unique_table_num_dofs)
-        ptable[...] += w * mtable
-
-    return ptable
 
 
 def uflacs_default_parameters(optimize):
@@ -152,7 +58,6 @@ def uflacs_default_parameters(optimize):
         # values for table reuse and dropping of table zeros
         "table_atol": 1e-9,
 
-        # Point chunk size for custom integrals
         "chunk_size": 8,
 
         # Code generation parameters
@@ -190,7 +95,7 @@ def parse_uflacs_optimization_parameters(parameters, integral_type):
 
 
 def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
-                    quadrature_rules, parameters, visualise):
+                    parameters, visualise):
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -206,34 +111,15 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
     ir["unique_tables"] = {}
     ir["unique_table_types"] = {}
 
-    # Shared piecewise expr_ir for all quadrature loops
-    ir["piecewise_ir"] = {"factorization": None,
-                          "modified_arguments": [],
-                          "block_contributions": collections.defaultdict(list)}
-
-    # { num_points: expr_ir for one integrand }
-    ir["varying_irs"] = {"factorization": None}
-
-    # Whether we expect the quadrature weight to be applied or not (in
-    # some cases it's just set to 1 in ufl integral scaling)
-    tdim = cell.topological_dimension()
-    expect_weight = (integral_type not in point_integral_types and (entitytype == "cell" or (
-        entitytype == "facet" and tdim > 1) or (integral_type in ufl.custom_integral_types)))
-
-    # Analyse each num_points/integrand separately
-    assert isinstance(integrands, dict)
-    all_num_points = sorted(integrands.keys())
-    cases = [(num_points, [integrands[num_points]]) for num_points in all_num_points]
-    ir["all_num_points"] = all_num_points
+    ir["integrand"] = {}
 
     ir["table_dofmaps"] = {}
     ir["table_dof_face_tangents"] = {}
     ir["table_dof_reflection_entities"] = {}
 
-    for num_points, expressions in cases:
+    for quadrature_rule, integrand in integrands.items():
 
-        assert len(expressions) == 1
-        expression = expressions[0]
+        expression = integrand
 
         # Rebalance order of nested terminal modifiers
         expression = balance_modifiers(expression)
@@ -256,8 +142,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         (unique_tables, unique_table_types, unique_table_num_dofs,
          mt_unique_table_reference, table_origins) = build_optimized_tables(
-            num_points,
-            quadrature_rules,
+            quadrature_rule,
             cell,
             integral_type,
             entitytype,
@@ -350,11 +235,6 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
         # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
         analyse_dependencies(F, mt_unique_table_reference)
 
-        # Save the factorisation graph to the piecewise IR
-        ir["piecewise_ir"]["factorization"] = F
-        ir["piecewise_ir"]["modified_arguments"] = [F.nodes[i]['mt']
-                                                    for i in argkeys]
-
         # Loop over factorization terms
         block_contributions = collections.defaultdict(list)
         for ma_indices, fi_ci in sorted(argument_factorization.items()):
@@ -382,40 +262,27 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             block_restrictions = tuple(block_restrictions)
 
             # Check if each *each* factor corresponding to this argument is piecewise
-            factor_is_piecewise = all(F.nodes[ifi[0]]["status"] == 'piecewise' for ifi in fi_ci)
-
-            block_is_piecewise = factor_is_piecewise and not expect_weight
+            all_factors_piecewise = all(F.nodes[ifi[0]]["status"] == 'piecewise' for ifi in fi_ci)
             block_is_permuted = False
             for n in unames:
                 if unique_tables[n].shape[0] > 1:
                     block_is_permuted = True
             ma_data = []
             for i, ma in enumerate(ma_indices):
-                if not trs[i].is_piecewise:
-                    block_is_piecewise = False
                 ma_data.append(ma_data_t(ma, trs[i]))
 
             block_is_transposed = False  # FIXME: Handle transposes for these block types
 
-            # Add to contributions:
-            # B[i] = sum_q weight * f * u[i] * v[j];  generated inside quadloop
-            # A[blockmap] += B[i];                    generated after quadloop
-
             block_unames = unames
             blockdata = block_data_t(ttypes, fi_ci,
-                                     factor_is_piecewise, block_unames,
+                                     all_factors_piecewise, block_unames,
                                      block_restrictions, block_is_transposed,
                                      block_is_uniform, None, tuple(ma_data), None, block_is_permuted)
 
-            if block_is_piecewise:
-                # Insert in piecewise expr_ir
-                ir["piecewise_ir"]["block_contributions"][blockmap].append(blockdata)
-            else:
-                # Insert in varying expr_ir for this quadrature loop
-                block_contributions[blockmap].append(blockdata)
+            # Insert in expr_ir for this quadrature loop
+            block_contributions[blockmap].append(blockdata)
 
-        # Figure out which table names are referenced in unstructured
-        # partition
+        # Figure out which table names are referenced
         active_table_names = set()
         for i, v in F.nodes.items():
             tr = v.get('tr')
@@ -424,7 +291,7 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
 
         # Figure out which table names are referenced in blocks
         for blockmap, contributions in itertools.chain(
-                block_contributions.items(), ir["piecewise_ir"]["block_contributions"].items()):
+                block_contributions.items()):
             for blockdata in contributions:
                 for mad in blockdata.ma_data:
                     active_table_names.add(mad.tabledata.name)
@@ -458,40 +325,11 @@ def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
             if mt and F.nodes[i]['status'] != 'inactive':
                 active_mts.append(mt)
 
-        # Figure out if we need to access CellCoordinate to avoid
-        # generating quadrature point table otherwise
-        if integral_type == "cell":
-            need_points = any(isinstance(mt.terminal, CellCoordinate) for mt in active_mts)
-        elif integral_type in facet_integral_types:
-            need_points = any(isinstance(mt.terminal, FacetCoordinate) for mt in active_mts)
-        elif integral_type in ufl.custom_integral_types:
-            need_points = True  # TODO: Always?
-        elif integral_type == "expression":
-            need_points = True
-        else:
-            need_points = False
-
-        # Figure out if we need to access QuadratureWeight to avoid
-        # generating quadrature point table otherwise need_weights =
-        # any(isinstance(mt.terminal, QuadratureWeight) for mt in
-        # active_mts)
-
-        if expect_weight:
-            need_weights = True
-        elif integral_type in ufl.custom_integral_types:
-            need_weights = True  # TODO: Always?
-        elif integral_type == "expression":
-            need_weights = True
-        else:
-            need_weights = False
-
         # Build IR dict for the given expressions
         # Store final ir for this num_points
-        ir["varying_irs"][num_points] = {"factorization": F,
-                                         "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
-                                         "block_contributions": block_contributions,
-                                         "need_points": need_points,
-                                         "need_weights": need_weights}
+        ir["integrand"][quadrature_rule] = {"factorization": F,
+                                            "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
+                                            "block_contributions": block_contributions}
     return ir
 
 

@@ -68,26 +68,24 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'si
                                                      'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
                                                      'coordinate_finite_element_classname',
                                                      'scalar_coordinate_finite_element_classname',
-                                                     'scalar_dofmap_name'])
+                                                     'scalar_dofmap_name', 'is_affine'])
 ir_integral = namedtuple('ir_integral', ['representation', 'integral_type', 'subdomain_id',
                                          'rank', 'geometric_dimension', 'topological_dimension',
                                          'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
                                          'enabled_coefficients', 'element_dimensions', 'element_ids',
-                                         'tensor_shape', 'quadrature_rules', 'coefficient_numbering',
+                                         'tensor_shape', 'coefficient_numbering',
                                          'coefficient_offsets', 'original_constant_offsets', 'params', 'cell_shape',
                                          'unique_tables', 'unique_table_types', 'table_dofmaps',
                                          'table_dof_face_tangents', 'table_dof_reflection_entities',
-                                         'piecewise_ir', 'varying_irs', 'all_num_points', 'name',
-                                         'precision'])
+                                         'integrand', 'name', 'precision'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
                                                  'physical_offsets', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'params', 'unique_tables',
-                                             'unique_table_types', 'piecewise_ir', 'varying_irs',
-                                             'table_dofmaps',
+                                             'unique_table_types', 'integrand', 'table_dofmaps',
                                              'table_dof_face_tangents', 'table_dof_reflection_entities',
-                                             'all_num_points', 'coefficient_numbering', 'coefficient_offsets',
+                                             'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points'])
 
@@ -320,6 +318,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     ir["tables"] = tables
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
+    ir["is_affine"] = ir["coordinate_element_degree"] == 1 and cellname in ("interval", "triangle", "tetrahedron")
 
     # Get classnames for coordinate element
     ir["coordinate_finite_element_classname"] = finite_element_names[ufl_coordinate_element]
