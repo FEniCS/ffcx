@@ -13,7 +13,8 @@ import ufl
 
 
 @pytest.mark.parametrize("degree,coords", [(1, np.array([[0.0, 0.0], [2.0, 0.0], [0.0, 4.0]], dtype=np.float64)),
-                                           (2, np.array([[0, 0], [1, 0], [0, 1], [0.65, 0.65], [-0.1, 0.5], [0.5, -0.2]], dtype=np.float64))])
+                                           (2, np.array([[0, 0], [1, 0], [0, 1], [0.65, 0.65],
+                                                         [-0.1, 0.5], [0.5, -0.2]], dtype=np.float64))])
 def test_cmap_triangle(degree, coords, compile_args):
     """Test computation of reference coordinates for triangle cell."""
     cell = ufl.triangle

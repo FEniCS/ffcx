@@ -597,7 +597,7 @@ def compute_jacobians(L, ir):
 
     w = tdim - 1 - j
     if ir.cell_shape in ('interval', 'triangle',
-                        'tetrahedron'):
+                         'tetrahedron'):
         w = j
 
     # For each point, compute basis derivatives and accumulate into the right J
