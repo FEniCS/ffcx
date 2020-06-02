@@ -830,6 +830,8 @@ def generator(ir, parameters):
     statements = compute_midpoint_geometry(L, ir)
     d["compute_midpoint_geometry"] = L.StatementList(statements)
 
+    d["coord_element_factory_name"] = ir.scalar_coordinate_finite_element_classname
+
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [

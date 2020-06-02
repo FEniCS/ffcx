@@ -382,6 +382,14 @@ extern "C"
     void (*compute_midpoint_geometry)(double* restrict x, double* restrict J,
                                       const double* restrict coordinate_dofs);
 
+
+    int (*evaluate_reference_basis)(double* restrict reference_values,
+                                    int num_points, const double* restrict X);
+
+    int (*evaluate_reference_basis_derivatives)(
+        double* restrict reference_values, int order, int num_points,
+        const double* restrict X);
+
   } ufc_coordinate_mapping;
 
   /// Tabulate integral into tensor A with compiled quadrature rule
