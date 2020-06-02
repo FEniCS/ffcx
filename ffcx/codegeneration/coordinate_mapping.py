@@ -614,7 +614,7 @@ def compute_jacobians(L, ir):
                 L.ForRanges(
                     (i, 0, gdim), (j, 0, tdim), (d, 0, num_dofs),
                     index_type=index_type,
-                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i] * dphi[d, tdim - 1 - j]))
+                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i] * dphi[d, j]))
             ]),
     ]
 
