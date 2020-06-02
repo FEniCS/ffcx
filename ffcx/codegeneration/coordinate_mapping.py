@@ -595,11 +595,6 @@ def compute_jacobians(L, ir):
     dphi_sym = L.Symbol("dphi")
     dphi = L.FlattenedArray(dphi_sym, dims=(num_dofs, tdim))
 
-    w = tdim - 1 - j
-    if ir.cell_shape in ('interval', 'triangle',
-                         'tetrahedron'):
-        w = j
-
     # For each point, compute basis derivatives and accumulate into the right J
     code = [
         L.ArrayDecl("double", dphi_sym, (one_point * num_dofs * tdim, )),
@@ -619,7 +614,7 @@ def compute_jacobians(L, ir):
                 L.ForRanges(
                     (i, 0, gdim), (j, 0, tdim), (d, 0, num_dofs),
                     index_type=index_type,
-                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i] * dphi[d, w]))
+                    body=L.AssignAdd(J[ip, i, j], coordinate_dofs[d, i] * dphi[d, j]))
             ]),
     ]
 

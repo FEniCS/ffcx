@@ -327,7 +327,7 @@ def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
         by[r] *= numpy.sqrt(r + 0.5)
 
     for r in range(p * p):
-        code += [L.Assign(basisvalues[r], bx[r // p] * by[r % p])]
+        code += [L.Assign(basisvalues[r], bx[r % p] * by[r // p])]
 
     return code
 
@@ -364,7 +364,7 @@ def _generate_compute_hex_basisvalues(L, basisvalues, Y, embedded_degree,
         bz[r] *= numpy.sqrt(r + 0.5)
 
     for r in range(p * p * p):
-        code += [L.Assign(basisvalues[r], bx[r // (p * p)] * by[(r // p) % p] * bz[r % p])]
+        code += [L.Assign(basisvalues[r], bx[r % p] * by[(r // p) % p] * bz[r // (p*p)])]
 
     return code
 
