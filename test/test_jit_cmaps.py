@@ -285,9 +285,10 @@ def test_cmap_tet(degree, coords, compile_args):
 @pytest.mark.parametrize("degree,coords", [(1, np.array([[0.1, -0.2, 0], [1.1, 0, 0],
                                                          [0, 1.7, 0.1], [0.1, 0.2, 2]],
                                                         dtype=np.float64)),
-                                           (2, np.array([[0.0, 0.0, 0.0], [1, 0, 0], [0, 1, 0], [0, 0, 1],
-                                                         [0, 0.55, 0.55], [0.65, -0.1, 0.53], [0.51,
-                                                                                               0.54, -0.2], [-0.1, -0.05, 0.52],
+                                           (2, np.array([[0.0, 0.0, 0.0], [1, 0, 0],
+                                                         [0, 1, 0], [0, 0, 1],
+                                                         [0, 0.55, 0.55], [0.65, -0.1, 0.53],
+                                                         [0.51, 0.54, -0.2], [-0.1, -0.05, 0.52],
                                                          [0, 0.5, 0], [0.5, -0.5, -0.1]]))])
 def test_cmap_tet_distorted(degree, coords, compile_args):
     """Test computation of physical and reference coordinates for tetrahedron cell"""
