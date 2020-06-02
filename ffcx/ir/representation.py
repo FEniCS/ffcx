@@ -665,7 +665,6 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
                 ad = A.dmats()
             bc = B.get_coeffs()
             bd = B.dmats()
-            print(ac, bc)
             coeffs = numpy.block([[w * ac for w in v] for v in bc])
             num_expansion_members = coeffs.shape[0]
             ai = numpy.eye(ad[0].shape[0])
