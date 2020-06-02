@@ -383,6 +383,8 @@ extern "C"
                                       const double* restrict coordinate_dofs);
 
 
+    double reference_midpoint[3];
+
     int (*evaluate_reference_basis)(double* restrict reference_values,
                                     int num_points, const double* restrict X);
 
