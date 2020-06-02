@@ -94,7 +94,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->compute_jacobian_inverses = compute_jacobian_inverses_{factory_name};
   cmap->compute_geometry = compute_geometry_{factory_name};
   cmap->compute_midpoint_geometry = compute_midpoint_geometry_{factory_name};
-  cmap->evaluate_reference_basis = evaluate_reference_basis_{coord_element_factory_name}; 
+  cmap->evaluate_reference_basis = evaluate_reference_basis_{coord_element_factory_name};
   cmap->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{coord_element_factory_name};
   return cmap;
 }}
