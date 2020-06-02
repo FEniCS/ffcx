@@ -95,9 +95,9 @@ def test_cmap_quads(degree, coords, compile_args):
     assert retcode == 0
 
 
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [3, 0.3], [0.2, 2.2], [3.3, 2.2]], dtype=np.float64)),
-                                           (2, np.array([[0, 0], [3, 0.3], [1.65, 0.15], [0.2, 2],
-                                                         [3.3, 2.2], [1.65, 2.2], [0, 1.1], [3.3, 1.1], [1.5, 1.1]],
+@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [3, 0], [0, 2], [3.1, 2.1]], dtype=np.float64)),
+                                           (2, np.array([[0, 0], [3, 0], [1.5, 0], [0, 2],
+                                                         [3.1, 2.1], [1.5, 2], [0, 1], [3, 1], [1.5, 1]],
                                                         dtype=np.float64))])
 def test_cmap_quad_distorted(degree, coords, compile_args):
     """Test computation of physical and reference coordinates for quadrilateral cell"""
@@ -107,7 +107,7 @@ def test_cmap_quad_distorted(degree, coords, compile_args):
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
-        [mesh], cffi_extra_compile_args=compile_args)
+        [mesh], cffi_extra_compile_args=compile_args, cache_dir=".")
 
     coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
 
@@ -135,19 +135,19 @@ def test_cmap_quad_distorted(degree, coords, compile_args):
     assert retcode == 0
 
 
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [1, 0, 0],
-                                                         [0, 2, 0], [1, 2, 0],
-                                                         [0, 0, 3], [1, 0, 3],
-                                                         [0, 2, 3], [1, 2, 3]], dtype=np.float64)),
-                                           (2, np.array([[0, 0, 0], [1, 0, 0], [0.5, 0, 0],
-                                                         [0, 2, 0], [1, 2, 0], [0.5, 2, 0],
-                                                         [0, 1, 0], [1, 1, 0], [0.5, 1, 0],
-                                                         [0, 0, 3], [1, 0, 3], [0.5, 0, 3],
-                                                         [0, 2, 3], [1, 2, 3], [0.5, 2, 3],
-                                                         [0, 1, 3], [1, 1, 3], [0.5, 1, 3],
-                                                         [0.5, 0, 1.5], [1, 0, 1.5], [0.5, 0, 1.5],
-                                                         [0.5, 2, 1.5], [1, 2, 1.5], [0.5, 2, 1.5],
-                                                         [0.5, 1, 1.5], [1, 1, 1.5], [0.5, 1, 1.5]], dtype=np.float64))])
+@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [0, 0, 3],
+                                                         [0, 2, 0], [0, 2, 3],
+                                                         [1, 0, 0], [1, 0, 3],
+                                                         [1, 2, 0], [1, 2, 3]], dtype=np.float64)),
+                                           (2, np.array([[0, 0, 0], [0, 0, 3], [0, 0, 1.5],
+                                                         [0, 2, 0], [0, 2, 3], [0, 2, 1.5],
+                                                         [0, 1, 0], [0, 1, 3], [0, 1, 1.5],
+                                                         [1, 0, 0], [1, 0, 3], [1, 0, 1.5],
+                                                         [1, 2, 0], [1, 2, 3], [1, 2, 1.5],
+                                                         [1, 1, 0], [1, 1, 3], [1, 1, 1.5],
+                                                         [0.5, 0, 0], [0.5, 0, 3], [0.5, 0, 1.5],
+                                                         [0.5, 2, 0], [0.5, 2, 3], [0.5, 2, 1.5],
+                                                         [0.5, 1, 0], [0.5, 1, 3], [0.5, 1, 1.5]], dtype=np.float64))])
 def test_cmap_hex(degree, coords, compile_args):
     """Test computation of physical and reference coordinates for hexahedron cell"""
     # Assuming FIAT Tensor Product layout of cell.
