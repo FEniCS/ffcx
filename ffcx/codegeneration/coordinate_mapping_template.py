@@ -96,9 +96,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->compute_midpoint_geometry = compute_midpoint_geometry_{factory_name};
   cmap->evaluate_reference_basis = evaluate_reference_basis_{coord_element_factory_name};
   cmap->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{coord_element_factory_name};
-  cmap->reference_midpoint[0] = {reference_midpoint[0]};
-  cmap->reference_midpoint[1] = {reference_midpoint[1]};
-  cmap->reference_midpoint[2] = {reference_midpoint[2]};
+  cmap->create_element = create_{coord_element_factory_name};
   return cmap;
 }}
 

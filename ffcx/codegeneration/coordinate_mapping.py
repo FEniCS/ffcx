@@ -830,9 +830,6 @@ def generator(ir, parameters):
     statements = compute_midpoint_geometry(L, ir)
     d["compute_midpoint_geometry"] = L.StatementList(statements)
 
-    d["reference_midpoint"] = [ir.cell_shape + "_midpoint["
-                               + str(i) + "]" for i in range(ir.topological_dimension)] + [0, 0, ]
-
     d["coord_element_factory_name"] = ir.scalar_coordinate_finite_element_classname
 
     # Check that no keys are redundant or have been missed
@@ -840,8 +837,6 @@ def generator(ir, parameters):
     fields = [
         fname for _, fname, _, _ in Formatter().parse(ufc_coordinate_mapping.factory) if fname
     ]
-    # Remove square brackets from any field names
-    fields = [f.split("[")[0] for f in fields]
     assert set(fields) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict."
 

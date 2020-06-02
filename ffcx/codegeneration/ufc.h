@@ -383,14 +383,16 @@ extern "C"
                                       const double* restrict coordinate_dofs);
 
 
-    double reference_midpoint[3];
-
     int (*evaluate_reference_basis)(double* restrict reference_values,
                                     int num_points, const double* restrict X);
 
     int (*evaluate_reference_basis_derivatives)(
         double* restrict reference_values, int order, int num_points,
         const double* restrict X);
+
+
+    /// Create the finite element object for the coordinate map
+    ufc_finite_element* (*create_element)(void);
 
   } ufc_coordinate_mapping;
 
