@@ -802,6 +802,7 @@ def generator(ir, parameters):
     d["signature"] = "\"{}\"".format(ir.signature)
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
+    d["is_affine"] = 1 if ir.is_affine else 0
     d["cell_shape"] = ir.cell_shape
     d["scalar_dofmap_name"] = ir.scalar_dofmap_name
 

@@ -84,6 +84,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
+  cmap->is_affine = {is_affine};
   cmap->cell_shape = {cell_shape};
   cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
   cmap->compute_physical_coordinates = compute_physical_coordinates_{factory_name};
