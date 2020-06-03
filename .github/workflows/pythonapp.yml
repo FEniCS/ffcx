@@ -30,7 +30,7 @@ jobs:
         run: brew install graphviz pkg-config
       - name: Install dependencies (Python)
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install pygraphviz
           pip install git+https://github.com/FEniCS/fiat.git --user
           pip install git+https://github.com/FEniCS/ufl.git --user
@@ -41,15 +41,19 @@ jobs:
       - name: Check documentation style
         run: |
           pip install pydocstyle
-          python -m pydocstyle .
+          pydocstyle .
       - name: Install ffcx
         run: |
           pip install .
-      - name: Test with pytest
+      - name: Run units tests
         run: |
           pip install coveralls coverage pytest pytest-cov pytest-xdist
           pytest -n=4 --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
-          coveralls
+      - name: Upload to Coveralls
+        if: ${{ github.repository == 'FEniCS/fiat' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        run: coveralls
       - name: Upload pytest test results
         uses: actions/upload-artifact@master
         with:
