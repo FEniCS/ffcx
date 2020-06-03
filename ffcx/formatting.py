@@ -143,7 +143,6 @@ def _generate_includes(parameters):
         "#include <stdlib.h>",  # This should really be set by the backend
         "#include <string.h>",  # This should really be set by the backend
         "#include <ufc.h>",
-        "#include <cblas.h>"
     ]
 
     s_h = set(default_h_includes)

@@ -3,9 +3,6 @@
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFLACS. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
 import itertools
