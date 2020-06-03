@@ -11,9 +11,6 @@ import ffcx.codegeneration.jit
 import pytest
 import ufl
 
-import logging
-logging.getLogger().setLevel(logging.INFO)
-
 
 def float_to_type(name):
     """Map a string name to C and NumPy types"""
