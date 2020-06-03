@@ -284,7 +284,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffcx.codegeneration.get_include_path()],
-                          extra_compile_args=cffi_extra_compile_args, libraries=["blas"])
+                          extra_compile_args=cffi_extra_compile_args, libraries=cffi_libraries)
     ffibuilder.cdef(decl)
 
     c_filename = cache_dir.joinpath(module_name + ".c")
