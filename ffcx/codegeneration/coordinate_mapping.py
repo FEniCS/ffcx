@@ -4,7 +4,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import logging
+
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
+
+logger = logging.getLogger("ffcx")
 
 # TODO: Test everything here! Cover all combinations of gdim,tdim=1,2,3!
 
@@ -793,6 +797,13 @@ def compute_midpoint_geometry(L, ir):
 
 def generator(ir, parameters):
     """Generate UFC code for a coordinate mapping."""
+
+    logger.info("Generating code for coordinate mapping:")
+    logger.info("--- cell shape: {}".format(ir.cell_shape))
+    logger.info("--- gdim: {}".format(ir.geometric_dimension))
+    logger.info("--- tdim: {}".format(ir.topological_dimension))
+    logger.info("--- name: {}".format(ir.name))
+    logger.info("--- scalar dofmap name: {}".format(ir.scalar_dofmap_name))
 
     d = {}
 

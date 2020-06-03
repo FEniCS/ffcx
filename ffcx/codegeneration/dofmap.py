@@ -7,8 +7,11 @@
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
+import logging
 import ffcx.codegeneration.dofmap_template as ufc_dofmap
 from ffcx.codegeneration.utils import generate_return_new_switch
+
+logger = logging.getLogger("ffcx")
 
 
 def tabulate_entity_dofs(L, ir):
@@ -66,6 +69,10 @@ def sub_dofmap_declaration(L, ir):
 
 def generator(ir, parameters):
     """Generate UFC code for a dofmap."""
+
+    logger.info("Generating code for dofmap:")
+    logger.info("--- num element support dofs: {}".format(ir.num_element_support_dofs))
+    logger.info("--- name: {}".format(ir.name))
 
     d = {}
 

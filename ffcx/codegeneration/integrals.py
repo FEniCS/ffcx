@@ -9,6 +9,7 @@
 
 import collections
 import itertools
+import logging
 import warnings
 
 import numpy
@@ -19,8 +20,15 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.elementtables import piecewise_ttypes
 
+logger = logging.getLogger("ffcx")
+
 
 def generator(ir, parameters):
+
+    logger.info("Generating code for integral:")
+    logger.info("--- type: {}".format(ir.integral_type))
+    logger.info("--- name: {}".format(ir.name))
+
     """Generate code for an integral."""
     factory_name = ir.name
     integral_type = ir.integral_type

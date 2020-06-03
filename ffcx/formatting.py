@@ -22,7 +22,7 @@ from collections import namedtuple
 from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 FORMAT_TEMPLATE = {
     "ufc comment":
@@ -62,7 +62,9 @@ c_extern_post = """
 def format_code(code: namedtuple, parameters):
     """Format given code in UFC format. Returns two strings with header and source file contents."""
 
-    logger.debug("Compiler stage 5: Formatting code")
+    logger.info(79 * "*")
+    logger.info("Compiler stage 5: Formatting code")
+    logger.info(79 * "*")
 
     # Generate code for comment at top of file
     code_h_pre = _generate_comment(parameters) + "\n"
@@ -110,7 +112,6 @@ def _write_file(output, prefix, postfix, output_dir):
     filename = os.path.join(output_dir, prefix + postfix)
     with open(filename, "w") as hfile:
         hfile.write(output)
-    logger.debug("Output written to " + filename + ".")
 
 
 def _generate_comment(parameters):
@@ -142,6 +143,7 @@ def _generate_includes(parameters):
         "#include <stdlib.h>",  # This should really be set by the backend
         "#include <string.h>",  # This should really be set by the backend
         "#include <ufc.h>",
+        "#include <cblas.h>"
     ]
 
     s_h = set(default_h_includes)

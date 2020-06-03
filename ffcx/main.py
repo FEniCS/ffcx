@@ -20,7 +20,7 @@ from ffcx import __version__ as FFCX_VERSION
 from ffcx import compiler, formatting
 from ffcx.parameters import default_parameters
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFCX, https://fenicsproject.org)")
@@ -91,6 +91,5 @@ def main(args=None):
             pr.disable()
             pfn = "ffcx_{0}.profile".format(prefix)
             pr.dump_stats(pfn)
-            logger.debug("Wrote profiling info to file {0}".format(pfn))
 
     return 0

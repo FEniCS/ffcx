@@ -9,7 +9,7 @@ import logging
 
 import ufl
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 # Table of handled math functions for different scalar types
 

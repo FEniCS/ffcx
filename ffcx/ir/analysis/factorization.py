@@ -15,7 +15,7 @@ from ufl import as_ufl, conditional
 from ufl.classes import (Argument, Conditional, Conj, Division, Product, Sum,
                          Zero)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 def build_argument_indices(S):

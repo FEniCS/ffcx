@@ -28,14 +28,14 @@ from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
                                 MixedElement, QuadratureElement, SpaceOfReals,
                                 create_element)
 from ffcx.ir import dof_permutations
+from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
-from ffcx.ir.integral import compute_integral_ir
-from ufl.sorting import sorted_expr_sum
-from ufl.classes import Integral
 from FIAT.hdiv_trace import HDivTrace
+from ufl.classes import Integral
+from ufl.sorting import sorted_expr_sum
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 # List of supported integral types
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
@@ -101,6 +101,11 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     """Compute intermediate representation.
 
     """
+
+    logger.info(79 * "*")
+    logger.info("Compiler stage 2: Computing intermediate representation of objects")
+    logger.info(79 * "*")
+
     # Compute object names
     # NOTE: This is done here for performance reasons, because repeated calls
     # within each IR computation would be expensive due to UFL signature computations
@@ -348,8 +353,6 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
                          parameters, visualise):
     """Compute intermediate represention for form integrals."""
 
-    logger.info("Computing IR for integrals {}".format(form_data))
-
     _entity_types = {
         "cell": "cell",
         "exterior_facet": "facet",
@@ -361,6 +364,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
     # Iterate over groups of integrals
     irs = []
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
+
+        logger.info("Computing IR for integral in integral group {}".format(itg_data_index))
 
         # Compute representation
         entitytype = _entity_types[itg_data.integral_type]
@@ -491,7 +496,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
                      dofmap_names, coordinate_mapping_names, object_names):
     """Compute intermediate representation of form."""
 
-    logger.info("Computing IR for form {}".format(form_data))
+    logger.info("Computing IR for form {}".format(form_id))
 
     # Store id
     ir = {"id": form_id}

@@ -11,6 +11,9 @@ import ffcx.codegeneration.jit
 import pytest
 import ufl
 
+import logging
+logging.getLogger().setLevel(logging.INFO)
+
 
 def float_to_type(name):
     """Map a string name to C and NumPy types"""
@@ -73,6 +76,8 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
+
+    print(A)
 
     assert np.allclose(A, np.trace(kappa_value) * expected_result)
 

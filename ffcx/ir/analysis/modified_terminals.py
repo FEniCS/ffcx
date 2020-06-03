@@ -11,7 +11,7 @@ from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
                          ReferenceValue, Restricted, SpatialCoordinate)
 from ufl.permutation import build_component_numbering
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 class ModifiedTerminal(object):

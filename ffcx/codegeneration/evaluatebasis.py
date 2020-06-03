@@ -2,7 +2,7 @@ import logging
 
 import numpy
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 # Used for various indices and arrays in this file

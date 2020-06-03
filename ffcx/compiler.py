@@ -73,11 +73,11 @@ from ffcx.codegeneration.codegeneration import generate_code
 from ffcx.formatting import format_code
 from ffcx.ir.representation import compute_ir
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 def _print_timing(stage, timing):
-    logger.debug("Compiler stage {stage} finished in {time} seconds.".format(
+    logger.info("Compiler stage {stage} finished in {time:.4f} seconds.".format(
         stage=stage, time=timing))
 
 

@@ -3,17 +3,24 @@
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+import collections
+import logging
 
+import ufl
 from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 
-import ufl
-import collections
+logger = logging.getLogger("ffcx")
 
 
 def generator(ir, parameters):
     """Generate UFC code for an expression."""
+
+    logger.info("Generating code for expression:")
+    logger.info("--- points: {}".format(ir.points))
+    logger.info("--- name: {}".format(ir.name))
+
     factory_name = ir.name
 
     # Format declaration

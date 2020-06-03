@@ -24,7 +24,7 @@ from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 from ffcx.ir import dof_permutations
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 

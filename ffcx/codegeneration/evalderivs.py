@@ -7,7 +7,7 @@ import numpy
 from ffcx.codegeneration.evaluatebasis import (generate_compute_basisvalues,
                                                generate_expansion_coefficients)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 # Used for various indices and arrays in this file

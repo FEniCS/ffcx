@@ -20,7 +20,8 @@ import numpy
 
 import ufl
 from ffcx.parameters import FFCX_PARAMETERS
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger("ffcx")
 
 
 ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numbers',
@@ -48,7 +49,9 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     unique_coordinate_elements
 
     """
+    logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")
+    logger.info(79 * "*")
 
     form_data = ()
     unique_elements = set()
@@ -165,7 +168,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data
-    for integral_data in form_data.integral_data:
+    for id, integral_data in enumerate(form_data.integral_data):
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
         # (but possibly different metadata).
@@ -242,6 +245,11 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 qr = qr_metadata
             else:
                 qr = qr_default
+
+            logger.info("Integral {}, integral group {}:".format(i, id))
+            logger.info("--- quadrature rule: {}".format(qr))
+            logger.info("--- quadrature degree: {}".format(qd))
+            logger.info("--- precision: {}".format(p))
 
             integral_data.integrals[i] = integral.reconstruct(
                 metadata={"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})

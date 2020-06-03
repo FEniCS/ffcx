@@ -14,15 +14,16 @@ UFC function from an intermediate representation (IR).
 import logging
 from collections import namedtuple
 
-from ffcx.codegeneration.finite_element import generator as finite_element_generator
 from ffcx.codegeneration.coordinate_mapping import \
     generator as coordinate_mapping_generator
 from ffcx.codegeneration.dofmap import generator as dofmap_generator
+from ffcx.codegeneration.expressions import generator as expression_generator
+from ffcx.codegeneration.finite_element import \
+    generator as finite_element_generator
 from ffcx.codegeneration.form import generator as form_generator
 from ffcx.codegeneration.integrals import generator as integral_generator
-from ffcx.codegeneration.expressions import generator as expression_generator
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 code_blocks = namedtuple("code_blocks", ["elements", "dofmaps",
                                          "coordinate_mappings", "integrals",
@@ -31,6 +32,10 @@ code_blocks = namedtuple("code_blocks", ["elements", "dofmaps",
 
 def generate_code(ir, parameters):
     """Generate code blocks from intermediate representation."""
+
+    logger.info(79 * "*")
+    logger.info("Compiler stage 3: Generating code")
+    logger.info(79 * "*")
 
     # Generate code for finite_elements
     code_finite_elements = [finite_element_generator(element_ir, parameters) for element_ir in ir.elements]

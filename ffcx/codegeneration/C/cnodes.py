@@ -14,7 +14,7 @@ from ffcx.codegeneration.C.format_value import (format_float, format_int,
                                                 format_value)
 from ffcx.codegeneration.C.precedence import PRECEDENCE
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 """CNode TODO:
 - Array copy statement
 - Extend ArrayDecl and ArrayAccess with support for

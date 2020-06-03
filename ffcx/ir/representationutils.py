@@ -14,7 +14,7 @@ import ufl
 from ffcx.fiatinterface import (create_quadrature, map_facet_points,
                                 reference_cell_vertices)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 class QuadratureRule:

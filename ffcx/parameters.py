@@ -7,7 +7,7 @@
 import copy
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 FFCX_PARAMETERS = {
     "quadrature_rule": "default",  # quadrature rule used for integration of element tensors

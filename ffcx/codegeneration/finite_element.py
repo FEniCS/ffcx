@@ -9,6 +9,7 @@
 # have been made to the generated code.
 
 from collections import defaultdict
+import logging
 
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
@@ -18,6 +19,8 @@ from ffcx.codegeneration.evaluatebasis import generate_evaluate_reference_basis
 from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch)
+
+logger = logging.getLogger("ffcx")
 
 index_type = "int"
 
@@ -412,6 +415,12 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
+
+    logger.info("Generating code for finite element:")
+    logger.info("--- family: {}".format(ir.family))
+    logger.info("--- degree: {}".format(ir.degree))
+    logger.info("--- value shape: {}".format(ir.value_shape))
+    logger.info("--- name: {}".format(ir.name))
 
     d = {}
     d["factory_name"] = ir.name
