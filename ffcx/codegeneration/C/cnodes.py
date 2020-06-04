@@ -888,7 +888,7 @@ def _is_zero_valued(values):
     elif isinstance(values, (numbers.Number, LiteralFloat)):
         return float(values) == 0.0
     else:
-        return numpy.count_nonzero(values) == 0
+        return numpy.size(values) > 0 and numpy.count_nonzero(values) == 0
 
 
 def as_cexpr(node):
