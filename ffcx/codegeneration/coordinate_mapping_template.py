@@ -30,7 +30,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->is_affine = {is_affine};
   cmap->cell_shape = {cell_shape};
   cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
-  cmap->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{coord_element_factory_name};
+  cmap->evaluate_basis_derivatives = evaluate_reference_basis_derivatives_{coord_element_factory_name};
   return cmap;
 }}
 

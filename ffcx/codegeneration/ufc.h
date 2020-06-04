@@ -220,7 +220,8 @@ extern "C"
     /// Create dofmap for the underlying scalar element
     ufc_dofmap* (*create_scalar_dofmap)(void);
 
-    int (*evaluate_reference_basis_derivatives)(
+    /// Evaluate basis (and derivatives) of the associated element
+    int (*evaluate_basis_derivatives)(
         double* restrict reference_values, int order, int num_points,
         const double* restrict X);
 
