@@ -133,7 +133,7 @@ def test_cmap_tet(degree, compile_args):
     assert compiled_cmap[0].topological_dimension == 3
 
     # Reference coordinates X to basis
-    phi = np.zeros(6 * degree - 2, dtype=np.float64)
+    phi = np.zeros((degree + 3) * (degree + 2) * (degree + 1) // 6, dtype=np.float64)
     phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
     X = np.array([[0.25, 0.25, 0.25]], dtype=np.float64)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
