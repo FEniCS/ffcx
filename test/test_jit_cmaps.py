@@ -26,7 +26,7 @@ def test_cmap_triangle(degree, compile_args):
     assert compiled_cmap[0].topological_dimension == 2
 
     # Reference coordinates X to basis
-    phi = np.zeros(((degree + 2) * (degree + 1))//2, dtype=np.float64)
+    phi = np.zeros(((degree + 2) * (degree + 1)) // 2, dtype=np.float64)
     phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
     X = np.array([[1 / 3, 1 / 3]], dtype=np.float64)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
@@ -81,7 +81,6 @@ def test_cmap_quads(degree, compile_args):
         assert num_entity_dofs[2] == 1
 
 
-
 @pytest.mark.parametrize("degree", [1, 2, 3])
 def test_cmap_hex(degree, compile_args):
     """Test computation of physical and reference coordinates for hexahedron cell"""
@@ -122,7 +121,7 @@ def test_cmap_hex(degree, compile_args):
 @pytest.mark.parametrize("degree", [1, 2])
 def test_cmap_tet(degree, compile_args):
     """Coordinate map test for tetrahedron cell"""
- 
+
     cell = ufl.tetrahedron
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
