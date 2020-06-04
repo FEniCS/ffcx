@@ -135,46 +135,6 @@ def test_cmap_quad_distorted(degree, coords, compile_args):
     # assert retcode == 0
 
 
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [3, 0], [0, 2], [3.1, 2.1]], dtype=np.float64)),
-                                           (2, np.array([[0, 0], [3, 0], [1.5, 0], [0, 2],
-                                                         [3.1, 2.1], [1.5, 2], [0, 1], [3, 1], [1.5, 1]],
-                                                        dtype=np.float64))])
-def test_cmap_quad_distorted(degree, coords, compile_args):
-    """Test computation of physical and reference coordinates for quadrilateral cell"""
-    # Assuming FIAT Tensor Product layout of cell.
-
-    cell = ufl.quadrilateral
-    e = ufl.VectorElement("Lagrange", cell, degree)
-    mesh = ufl.Mesh(e)
-    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
-        [mesh], cffi_extra_compile_args=compile_args)
-
-    coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
-
-    # Reference coordinates X
-    X = np.array([[1 / 3, 1 / 3]], dtype=np.float64)
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    # Physical coordinates x
-    x = np.zeros_like(X)
-    x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
-
-    compiled_cmap[0].compute_physical_coordinates(x_ptr, x.shape[0], X_ptr, coords_ptr)
-
-    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
-
-    assert num_entity_dofs[0] == 1
-    assert num_entity_dofs[1] == degree - 1
-    assert num_entity_dofs[2] == (degree - 1) ** 2
-    assert num_entity_dofs[3] == 0
-
-    # Convert back to reference coordinates
-    Y = np.zeros_like(X)
-    Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    assert np.isclose(X, Y).all()
-    assert retcode == 0
-
-
 @pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [0, 0, 3],
                                                          [0, 2, 0], [0, 2, 3],
                                                          [1, 0, 0], [1, 0, 3],
