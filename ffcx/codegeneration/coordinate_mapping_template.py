@@ -20,63 +20,6 @@ ufc_coordinate_mapping* create_coordinate_map_{prefix}(void);
 factory = """
 // Code for coordinate mapping {factory_name}
 
-{evaluate_reference_basis_derivatives_declaration}
-void compute_jacobians_{factory_name}(double* restrict J, int num_points,
-                                      const double* restrict X,
-                                      const double* restrict coordinate_dofs)
-{{
-{compute_jacobians}
-}}
-
-void compute_jacobian_determinants_{factory_name}(double* restrict detJ, int num_points,
-                                                  const double* restrict J)
-{{
-{compute_jacobian_determinants}
-}}
-
-void compute_jacobian_inverses_{factory_name}(double* restrict K, int num_points,
-    const double* restrict J, const double* restrict detJ)
-{{
-{compute_jacobian_inverses}
-}}
-
-{evaluate_reference_basis_declaration}
-void compute_physical_coordinates_{factory_name}(double* restrict x, int num_points,
-                                                 const double* restrict X,
-                                                 const double* restrict coordinate_dofs)
-{{
-{compute_physical_coordinates}
-}}
-
-void compute_geometry_{factory_name}(double* restrict x, double* restrict J,
-                                     double* restrict detJ, double* restrict K,
-                                     int num_points, const double* restrict X,
-                                     const double* restrict coordinate_dofs)
-{{
-{compute_geometry}
-}}
-
-void compute_midpoint_geometry_{factory_name}(double* restrict x, double* restrict J,
-                                              const double* restrict coordinate_dofs)
-{{
-{compute_midpoint_geometry}
-}}
-
-int compute_reference_coordinates_{factory_name}(double* restrict X, int num_points,
-                                                  const double* restrict x,
-                                                  const double* restrict coordinate_dofs)
-{{
-{compute_reference_coordinates}
-}}
-
-int compute_reference_geometry_{factory_name}(double* restrict X, double* restrict J,
-                                               double* restrict detJ, double* restrict K,
-                                               int num_points, const double* restrict x,
-                                               const double* restrict coordinate_dofs)
-{{
-{compute_reference_geometry}
-}}
-
 ufc_coordinate_mapping* create_{factory_name}(void)
 {{
   ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
@@ -87,17 +30,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->is_affine = {is_affine};
   cmap->cell_shape = {cell_shape};
   cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
-  cmap->compute_physical_coordinates = compute_physical_coordinates_{factory_name};
-  cmap->compute_reference_coordinates = compute_reference_coordinates_{factory_name};
-  cmap->compute_reference_geometry = compute_reference_geometry_{factory_name};
-  cmap->compute_jacobians = compute_jacobians_{factory_name};
-  cmap->compute_jacobian_determinants = compute_jacobian_determinants_{factory_name};
-  cmap->compute_jacobian_inverses = compute_jacobian_inverses_{factory_name};
-  cmap->compute_geometry = compute_geometry_{factory_name};
-  cmap->compute_midpoint_geometry = compute_midpoint_geometry_{factory_name};
-  cmap->evaluate_reference_basis = evaluate_reference_basis_{coord_element_factory_name};
   cmap->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{coord_element_factory_name};
-  cmap->create_element = create_{coord_element_factory_name};
   return cmap;
 }}
 
