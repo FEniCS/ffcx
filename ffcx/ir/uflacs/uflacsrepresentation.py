@@ -38,7 +38,11 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     points = expression[1]
     expression = expression[0]
 
-    cell = expression.ufl_domain().ufl_cell()
+    try:
+        cell = expression.ufl_domain().ufl_cell()
+    except AttributeError:
+        # This case corresponds to a spatially constant expression without any dependencies
+        cell = None
 
     ir = {}
 
@@ -104,6 +108,9 @@ def compute_expression_ir(expression, analysis, parameters, visualise):
     weights = numpy.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
     integrands = {rule: expression}
+
+    if cell is None:
+        assert len(ir["original_coefficient_positions"]) == 0 and len(ir["original_constant_offsets"]) == 0
 
     uflacs_ir = build_uflacs_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
                                 parameters, visualise)

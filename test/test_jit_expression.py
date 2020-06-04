@@ -135,3 +135,44 @@ def test_rank1(compile_args):
     u_correct = np.array([f[1], f[0]]) + gradf0
 
     assert np.allclose(u_ffcx, u_correct)
+
+
+def test_constant(compile_args):
+    """Test evaluation of an expression that degenerated to a compile-time constant.
+
+    Evaluates expression outer(e_i, e_j) where "e_i" are basis vectors. Such an expression could be obtained as
+    diff(diff(1/2 * dot(f, f), f), f) where if is some vector-valued coefficient.
+
+    """
+    e = ufl.VectorElement("P", "triangle", 1)
+    mesh = ufl.Mesh(e)
+    V = ufl.FunctionSpace(mesh, e)
+    f = ufl.Coefficient(V)
+    expr = ufl.diff(ufl.diff(1/2 * ufl.dot(f, f), f), f)
+    points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
+    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
+
+    ffi = cffi.FFI()
+    kernel = obj[0][0]
+
+    c_type, np_type = float_to_type("double")
+
+    A = np.zeros((3, 2, 2), dtype=np_type, order="F")
+
+    # empty coefficient and constant array
+    w = np.empty(0, dtype=np_type)
+    c = np.empty(0, dtype=np_type)
+
+    # Coords storage XYXYXY
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    kernel.tabulate_expression(
+        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data))
+
+    # Check the computation against correct NumPy value
+    assert np.allclose(A, np.stack([np.eye(2, dtype=A.dtype)]*3))
+
+    # Check that there are indeed not coefficients left
+    assert obj[0].num_coefficients == 0
