@@ -12,10 +12,8 @@ import pytest
 import ufl
 
 
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0.0, 0.0], [2.0, 0.0], [0.0, 4.0]], dtype=np.float64)),
-                                           (2, np.array([[0, 0], [1, 0], [0, 1], [0.65, 0.65],
-                                                         [-0.1, 0.5], [0.5, -0.2]], dtype=np.float64))])
-def test_cmap_triangle(degree, coords, compile_args):
+@pytest.mark.parametrize("degree", [1, 2])
+def test_cmap_triangle(degree, compile_args):
     """Test computation of reference coordinates for triangle cell."""
     cell = ufl.triangle
     element = ufl.VectorElement("Lagrange", cell, degree)
@@ -23,40 +21,31 @@ def test_cmap_triangle(degree, coords, compile_args):
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args, cache_dir=".")
 
-    # # Reference coordinates X
-    # x = np.array([[1 / 3, 2 / 3]], dtype=np.float64)
-    # x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
-    # X = np.zeros_like(x)
-    # X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    # coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
-    # compiled_cmap[0].compute_reference_coordinates(X_ptr, X.shape[0], x_ptr, coords_ptr)
+    assert compiled_cmap[0].is_affine == (1 if (degree == 1) else 0)
+    assert compiled_cmap[0].geometric_dimension == 2
+    assert compiled_cmap[0].topological_dimension == 2
 
-    # num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    # Reference coordinates X to basis
+    phi = np.zeros(3 * degree, dtype=np.float64)
+    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
+    X = np.array([[1 / 3, 1 / 3]], dtype=np.float64)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
 
-    # assert num_entity_dofs[0] == 1
-    # assert num_entity_dofs[2] == 0
-    # assert num_entity_dofs[3] == 0
+    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
-    # if degree == 1:
-    #     assert num_entity_dofs[1] == 0
-    #     assert np.isclose(X[0, 0], 1 / 6)
-    #     assert np.isclose(X[0, 1], 1 / 6)
-    # elif degree == 2:
-    #     assert num_entity_dofs[1] == 1
+    assert num_entity_dofs[0] == 1
+    assert num_entity_dofs[2] == 0
+    assert num_entity_dofs[3] == 0
 
-    # # Convert back to reference coordinates
-    # Y = np.zeros_like(X)
-    # Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    # retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    # assert np.isclose(X, Y).all()
-    # assert retcode == 0
+    if degree == 1:
+        assert num_entity_dofs[1] == 0
+    elif degree == 2:
+        assert num_entity_dofs[1] == 1
 
 
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [3, 0], [0, 2], [3, 2]], dtype=np.float64)),
-                                           (2, np.array([[0, 0], [3, 0], [1.5, 0], [0, 2],
-                                                         [3, 2], [1.5, 2], [0, 1], [3, 1], [1.5, 1]],
-                                                        dtype=np.float64))])
-def test_cmap_quads(degree, coords, compile_args):
+@pytest.mark.parametrize("degree", [1, 2])
+def test_cmap_quads(degree, compile_args):
     """Test computation of physical and reference coordinates for quadrilateral cell"""
     # Assuming FIAT Tensor Product layout of cell.
 
@@ -66,89 +55,33 @@ def test_cmap_quads(degree, coords, compile_args):
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args)
 
-    # coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
+    assert compiled_cmap[0].is_affine == 0
+    assert compiled_cmap[0].geometric_dimension == 2
+    assert compiled_cmap[0].topological_dimension == 2
 
-    # # Reference coordinates X
-    # X = np.array([[1 / 3, 1 / 3]], dtype=np.float64)
-    # X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    # # Physical coordinates x
-    # x = np.zeros_like(X)
-    # x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
+    # Reference coordinates X to basis
+    phi = np.zeros(4 * degree, dtype=np.float64)
+    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
+    X = np.array([[0.5, 0.5]], dtype=np.float64)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
 
-    # compiled_cmap[0].compute_physical_coordinates(x_ptr, x.shape[0], X_ptr, coords_ptr)
+    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
-    # num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    assert num_entity_dofs[0] == 1
+    assert num_entity_dofs[3] == 0
 
-    # assert num_entity_dofs[0] == 1
-    # assert num_entity_dofs[1] == degree - 1
-    # assert num_entity_dofs[2] == (degree - 1) ** 2
-    # assert num_entity_dofs[3] == 0
-
-    # assert(np.isclose(x[0, 0], 3 * X[0, 0]))
-    # assert(np.isclose(x[0, 1], 2 * X[0, 1]))
-
-    # # Convert back to reference coordinates
-    # Y = np.zeros_like(X)
-    # Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    # retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    # assert np.isclose(X, Y).all()
-    # assert retcode == 0
+    if degree == 1:
+        assert num_entity_dofs[1] == 0
+        assert num_entity_dofs[2] == 0
+    elif degree == 2:
+        assert num_entity_dofs[1] == 1
+        assert num_entity_dofs[2] == 1
 
 
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0], [3, 0], [0, 2], [3.1, 2.1]], dtype=np.float64)),
-                                           (2, np.array([[0, 0], [3, 0], [1.5, 0], [0, 2],
-                                                         [3.1, 2.1], [1.5, 2], [0, 1], [3, 1], [1.5, 1]],
-                                                        dtype=np.float64))])
-def test_cmap_quad_distorted(degree, coords, compile_args):
-    """Test computation of physical and reference coordinates for quadrilateral cell"""
-    # Assuming FIAT Tensor Product layout of cell.
 
-    cell = ufl.quadrilateral
-    e = ufl.VectorElement("Lagrange", cell, degree)
-    mesh = ufl.Mesh(e)
-    compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
-        [mesh], cffi_extra_compile_args=compile_args)
-
-    # coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
-
-    # # Reference coordinates X
-    # X = np.array([[1 / 3, 1 / 3]], dtype=np.float64)
-    # X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    # # Physical coordinates x
-    # x = np.zeros_like(X)
-    # x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
-
-    # compiled_cmap[0].compute_physical_coordinates(x_ptr, x.shape[0], X_ptr, coords_ptr)
-
-    # num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
-
-    # assert num_entity_dofs[0] == 1
-    # assert num_entity_dofs[1] == degree - 1
-    # assert num_entity_dofs[2] == (degree - 1) ** 2
-    # assert num_entity_dofs[3] == 0
-
-    # # Convert back to reference coordinates
-    # Y = np.zeros_like(X)
-    # Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    # retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    # assert np.isclose(X, Y).all()
-    # assert retcode == 0
-
-
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [0, 0, 3],
-                                                         [0, 2, 0], [0, 2, 3],
-                                                         [1, 0, 0], [1, 0, 3],
-                                                         [1, 2, 0], [1, 2, 3]], dtype=np.float64)),
-                                           (2, np.array([[0, 0, 0], [0, 0, 3], [0, 0, 1.5],
-                                                         [0, 2, 0], [0, 2, 3], [0, 2, 1.5],
-                                                         [0, 1, 0], [0, 1, 3], [0, 1, 1.5],
-                                                         [1, 0, 0], [1, 0, 3], [1, 0, 1.5],
-                                                         [1, 2, 0], [1, 2, 3], [1, 2, 1.5],
-                                                         [1, 1, 0], [1, 1, 3], [1, 1, 1.5],
-                                                         [0.5, 0, 0], [0.5, 0, 3], [0.5, 0, 1.5],
-                                                         [0.5, 2, 0], [0.5, 2, 3], [0.5, 2, 1.5],
-                                                         [0.5, 1, 0], [0.5, 1, 3], [0.5, 1, 1.5]], dtype=np.float64))])
-def test_cmap_hex(degree, coords, compile_args):
+@pytest.mark.parametrize("degree", [1, 2])
+def test_cmap_hex(degree, compile_args):
     """Test computation of physical and reference coordinates for hexahedron cell"""
     # Assuming FIAT Tensor Product layout of cell.
 
@@ -158,69 +91,63 @@ def test_cmap_hex(degree, coords, compile_args):
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args)
 
-    # coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
+    assert compiled_cmap[0].is_affine == 0
+    assert compiled_cmap[0].geometric_dimension == 3
+    assert compiled_cmap[0].topological_dimension == 3
 
-    # # Reference coordinates X
-    # X = np.array([[1 / 3, 3 / 2, 1]], dtype=np.float64)
-    # X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    # # Physical coordinates x
-    # x = np.zeros_like(X)
-    # x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
-    # compiled_cmap[0].compute_physical_coordinates(x_ptr, x.shape[0], X_ptr, coords_ptr)
+    # Reference coordinates X to basis
+    phi = np.zeros((degree + 1) ** 3, dtype=np.float64)
+    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
+    X = np.array([[0.5, 0.5, 0.5]], dtype=np.float64)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
+    print(phi)
 
-    # num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
-    # assert num_entity_dofs[0] == 1
-    # assert num_entity_dofs[1] == degree - 1
-    # assert num_entity_dofs[2] == (degree - 1) ** 2
-    # assert num_entity_dofs[3] == (degree - 1) ** 3
+    assert num_entity_dofs[0] == 1
 
-    # assert(np.isclose(x[0, 0], X[0, 0]))
-    # assert(np.isclose(x[0, 1], 2 * X[0, 1]))
-    # assert(np.isclose(x[0, 2], 3 * X[0, 2]))
-
-    # # Convert back to reference coordinates
-    # Y = np.zeros_like(X)
-    # Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    # retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    # assert np.isclose(X, Y).all()
-    # assert retcode == 0
+    if degree == 1:
+        assert num_entity_dofs[1] == 0
+        assert num_entity_dofs[2] == 0
+        assert num_entity_dofs[3] == 0
+    elif degree == 2:
+        assert num_entity_dofs[1] == 1
+        assert num_entity_dofs[2] == 1
+        assert num_entity_dofs[3] == 1
 
 
-@pytest.mark.parametrize("degree,coords", [(1, np.array([[0, 0, 0], [1, 0, 0],
-                                                         [0, 2, 0], [1, 2, 0],
-                                                         [0, 0, 3], [1, 0, 3],
-                                                         [0, 2, 3], [1.1, 2.2, 3.3]], dtype=np.float64))])
-def test_cmap_hex_distorted(degree, coords, compile_args):
-    """Test computation of physical and reference coordinates for hexahedron cell"""
-    # Assuming FIAT Tensor Product layout of cell.
-
-    cell = ufl.hexahedron
+@pytest.mark.parametrize("degree", [1, 2])
+def test_cmap_tet(degree, compile_args):
+    """Coordinate map test for tetrahedron cell"""
+ 
+    cell = ufl.tetrahedron
     e = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(e)
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args)
 
-    # coords_ptr = module.ffi.cast("double *", module.ffi.from_buffer(coords))
+    assert compiled_cmap[0].is_affine == (1 if (degree == 1) else 0)
+    assert compiled_cmap[0].geometric_dimension == 3
+    assert compiled_cmap[0].topological_dimension == 3
 
-    # # Reference coordinates X
-    # X = np.array([[1 / 3, 3 / 2, 1]], dtype=np.float64)
-    # X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    # # Physical coordinates x
-    # x = np.zeros_like(X)
-    # x_ptr = module.ffi.cast("double *", module.ffi.from_buffer(x))
-    # compiled_cmap[0].compute_physical_coordinates(x_ptr, x.shape[0], X_ptr, coords_ptr)
+    # Reference coordinates X to basis
+    phi = np.zeros(6 * degree - 2, dtype=np.float64)
+    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
+    X = np.array([[0.25, 0.25, 0.25]], dtype=np.float64)
+    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
+    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
+    print(phi)
 
-    # num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
-    # assert num_entity_dofs[0] == 1
-    # assert num_entity_dofs[1] == degree - 1
-    # assert num_entity_dofs[2] == (degree - 1) ** 2
-    # assert num_entity_dofs[3] == (degree - 1) ** 3
+    assert num_entity_dofs[0] == 1
 
-    # # Convert back to reference coordinates
-    # Y = np.zeros_like(X)
-    # Y_ptr = module.ffi.cast("double *", module.ffi.from_buffer(Y))
-    # retcode = compiled_cmap[0].compute_reference_coordinates(Y_ptr, Y.shape[0], x_ptr, coords_ptr)
-    # assert np.isclose(X, Y).all()
-    # assert retcode == 0
+    if degree == 1:
+        assert num_entity_dofs[1] == 0
+        assert num_entity_dofs[2] == 0
+        assert num_entity_dofs[3] == 0
+    elif degree == 2:
+        assert num_entity_dofs[1] == 1
+        assert num_entity_dofs[2] == 0
+        assert num_entity_dofs[3] == 0
