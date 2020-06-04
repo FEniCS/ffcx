@@ -14,7 +14,7 @@ import ufl
 
 @pytest.mark.parametrize("degree", [1, 2])
 def test_cmap_triangle(degree, compile_args):
-    """Test computation of reference coordinates for triangle cell."""
+    """Test triangle cell."""
     cell = ufl.triangle
     element = ufl.VectorElement("Lagrange", cell, degree)
     mesh = ufl.Mesh(element)
@@ -47,7 +47,7 @@ def test_cmap_triangle(degree, compile_args):
 
 @pytest.mark.parametrize("degree", [1, 2])
 def test_cmap_quads(degree, compile_args):
-    """Test computation of physical and reference coordinates for quadrilateral cell"""
+    """Test quadrilateral cell"""
     # Assuming FIAT Tensor Product layout of cell.
 
     cell = ufl.quadrilateral
@@ -83,7 +83,7 @@ def test_cmap_quads(degree, compile_args):
 
 @pytest.mark.parametrize("degree", [1, 2, 3])
 def test_cmap_hex(degree, compile_args):
-    """Test computation of physical and reference coordinates for hexahedron cell"""
+    """Test hexahedron cell"""
     # Assuming FIAT Tensor Product layout of cell.
 
     cell = ufl.hexahedron
