@@ -655,10 +655,9 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
                 if len(bd) != 1:
                     raise NotImplementedError("Cannot create dmats")
 
-                dmats = []
+                dmats = [numpy.block([[w * ai for w in v] for v in bd[0]])]
                 for mat in ad:
                     dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-                dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
                 ad = dmats
             else:
                 ac = A.get_coeffs()
@@ -673,10 +672,9 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
             if len(bd) != 1:
                 raise NotImplementedError("Cannot create dmats")
 
-            dmats = []
+            dmats = [numpy.block([[w * ai for w in v] for v in bd[0]])]
             for mat in ad:
                 dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-            dmats += [numpy.block([[w * ai for w in v] for v in bd[0]])]
 
         else:
             coeffs = e.get_coeffs()
