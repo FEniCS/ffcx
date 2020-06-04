@@ -6,7 +6,6 @@
 
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
 
-index_type = "int"
 
 def generator(ir, parameters):
     """Generate UFC code for a coordinate mapping."""
@@ -22,9 +21,6 @@ def generator(ir, parameters):
     d["is_affine"] = 1 if ir.is_affine else 0
     d["cell_shape"] = ir.cell_shape
     d["scalar_dofmap_name"] = ir.scalar_dofmap_name
-
-    import ffcx.codegeneration.C.cnodes as L
-
     d["coord_element_factory_name"] = ir.scalar_coordinate_finite_element_classname
 
     # Check that no keys are redundant or have been missed
