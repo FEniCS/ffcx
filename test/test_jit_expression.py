@@ -148,7 +148,7 @@ def test_constant(compile_args):
     mesh = ufl.Mesh(e)
     V = ufl.FunctionSpace(mesh, e)
     f = ufl.Coefficient(V)
-    expr = ufl.diff(ufl.diff(1/2 * ufl.dot(f, f), f), f)
+    expr = ufl.diff(ufl.diff(1 / 2 * ufl.dot(f, f), f), f)
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
     obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
 
@@ -172,7 +172,7 @@ def test_constant(compile_args):
         ffi.cast('double *', coords.ctypes.data))
 
     # Check the computation against correct NumPy value
-    assert np.allclose(A, np.stack([np.eye(2, dtype=A.dtype)]*3))
+    assert np.allclose(A, np.stack([np.eye(2, dtype=A.dtype)] * 3))
 
     # Check that there are indeed not coefficients left
     assert obj[0].num_coefficients == 0
