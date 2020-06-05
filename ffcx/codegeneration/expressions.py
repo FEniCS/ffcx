@@ -58,7 +58,7 @@ def generator(ir, parameters):
 
 
 class ExpressionGenerator:
-    def __init__(self, ir, backend):
+    def __init__(self, ir: dict, backend: FFCXBackend):
 
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
@@ -173,6 +173,7 @@ class ExpressionGenerator:
         return parts
 
     def generate_dofblock_partition(self):
+        """Generate assignments of blocks multiplied with their factors into final tensor A."""
         block_contributions = self.ir.integrand[self.quadrature_rule]["block_contributions"]
 
         preparts = []
@@ -197,12 +198,7 @@ class ExpressionGenerator:
         return preparts, quadparts
 
     def generate_block_parts(self, blockmap, blockdata):
-        """Generate and return code parts for a given block.
-
-        Returns parts occuring before and inside
-        the quadrature loop.
-
-        """
+        """Generate and return code parts for a given block."""
         L = self.backend.language
 
         # The parts to return
@@ -216,8 +212,6 @@ class ExpressionGenerator:
         if "zeros" in ttypes:
             raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
-        iq = self.backend.symbols.quadrature_loop_index()
-
         arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
@@ -230,13 +224,15 @@ class ExpressionGenerator:
         Asym = self.backend.symbols.element_tensor()
         A = L.FlattenedArray(Asym, dims=[components] + [num_points] + A_shape)
 
+        iq = self.backend.symbols.quadrature_loop_index()
+
         # Prepend dimensions of dofmap block with free index
         # for quadrature points and expression components
         B_indices = tuple([iq] + list(arg_indices))
 
         # Fetch code to access modified arguments
         # An access to FE table data
-        arg_factors = self.get_arg_factors(blockdata, block_rank, iq, B_indices)
+        arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
 
         A_indices = []
         for i in range(len(blockmap)):
@@ -261,7 +257,17 @@ class ExpressionGenerator:
 
         return preparts, quadparts
 
-    def get_arg_factors(self, blockdata, block_rank, iq, indices):
+    def get_arg_factors(self, blockdata, block_rank, indices):
+        """Get argument factors (i.e. blocks).
+
+        Parameters
+        ----------
+        blockdata
+        block_rank
+        indices
+            Indices used to index element tables
+
+        """
         L = self.backend.language
 
         arg_factors = []
@@ -295,6 +301,7 @@ class ExpressionGenerator:
         return f
 
     def generate_partition(self, symbol, F, mode):
+        """Generate computations of factors of blocks."""
         L = self.backend.language
 
         definitions = []
