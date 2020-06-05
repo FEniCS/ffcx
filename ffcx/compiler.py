@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2017 Anders Logg
+# Copyright (C) 2007-2020 Anders Logg and Michal Habera
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
@@ -110,11 +110,11 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     # Stage 3: code generation
     cpu_time = time()
     code = generate_code(ir, parameters)
-    _print_timing(4, time() - cpu_time)
+    _print_timing(3, time() - cpu_time)
 
     # Stage 4: format code
     cpu_time = time()
     code_h, code_c = format_code(code, parameters)
-    _print_timing(5, time() - cpu_time)
+    _print_timing(4, time() - cpu_time)
 
     return code_h, code_c
