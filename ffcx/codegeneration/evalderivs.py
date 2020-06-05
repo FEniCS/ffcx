@@ -1,4 +1,4 @@
-"""Work in progress translation of FFC evaluatebasis code to uflacs CNodes format."""
+"""Work in progress translation of FFC evaluatebasis code to CNodes format."""
 
 import logging
 
@@ -7,7 +7,7 @@ import numpy
 from ffcx.codegeneration.evaluatebasis import (generate_compute_basisvalues,
                                                generate_expansion_coefficients)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 # Used for various indices and arrays in this file
@@ -334,7 +334,7 @@ def generate_tabulate_dmats(L, dofs_data):
             matrix[i, ...] = numpy.transpose(dmat)
 
         # TODO: Use precision from parameters here
-        from ffcx.ir.uflacs.elementtables import clamp_table_small_numbers
+        from ffcx.ir.elementtables import clamp_table_small_numbers
         matrix = clamp_table_small_numbers(matrix)
 
         # O(n^2) matrix matching...

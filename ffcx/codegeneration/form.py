@@ -6,6 +6,7 @@
 
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
+import logging
 
 from ffcx.codegeneration import form_template as ufc_form
 from ffcx.codegeneration.utils import (generate_return_new,
@@ -15,6 +16,8 @@ from ffcx.ir.representation import ufc_integral_types
 # These are the method names in ufc_form that are specialized for each
 # integral type
 integral_name_templates = ("get_{}_integral_ids", "create_{}_integral")
+
+logger = logging.getLogger("ffcx")
 
 
 def create_delegate(integral_type, declname, impl):
@@ -186,6 +189,10 @@ class UFCForm:
 
 def generator(ir, parameters):
     """Generate UFC code for a form."""
+
+    logger.info("Generating code for form:")
+    logger.info("--- rank: {}".format(ir.rank))
+    logger.info("--- name: {}".format(ir.name))
 
     d = {}
     d["factory_name"] = ir.name

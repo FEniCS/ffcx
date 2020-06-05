@@ -3,7 +3,7 @@
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Main algorithm for building the uflacs intermediate representation."""
+"""Main algorithm for building the integral intermediate representation."""
 
 import collections
 import itertools
@@ -12,19 +12,19 @@ import logging
 import numpy
 
 import ufl
-from ffcx.ir.uflacs.analysis.factorization import \
+from ffcx.ir.analysis.factorization import \
     compute_argument_factorization
-from ffcx.ir.uflacs.analysis.graph import build_scalar_graph
-from ffcx.ir.uflacs.analysis.modified_terminals import (
+from ffcx.ir.analysis.graph import build_scalar_graph
+from ffcx.ir.analysis.modified_terminals import (
     analyse_modified_terminal, is_modified_terminal)
-from ffcx.ir.uflacs.analysis.visualise import visualise_graph
-from ffcx.ir.uflacs.elementtables import build_optimized_tables
+from ffcx.ir.analysis.visualise import visualise_graph
+from ffcx.ir.elementtables import build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 from ffcx.ir import dof_permutations
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
@@ -43,66 +43,11 @@ block_data_t = collections.namedtuple("block_data_t",
                                        ])
 
 
-def uflacs_default_parameters(optimize):
-    """Default parameters for tuning of uflacs code generation.
-
-    These are considered experimental and may change without deprecation
-    mechanism at any time.
-    """
-    p = {
-        # Relative precision to use when comparing finite element table
-        # values for table reuse
-        "table_rtol": 1e-6,
-
-        # Absolute precision to use when comparing finite element table
-        # values for table reuse and dropping of table zeros
-        "table_atol": 1e-9,
-
-        "chunk_size": 8,
-
-        # Code generation parameters
-        "vectorize": False,
-        "alignas": 32,
-        "assume_aligned": None,
-        "padlen": 1,
-        "use_symbol_array": True
-    }
-    return p
-
-
-def parse_uflacs_optimization_parameters(parameters, integral_type):
-    """Extract parameters.
-    Following model from quadrature representation, extracting
-    uflacs specific parameters from the global parameters dict."""
-
-    # Get default parameters
-    p = uflacs_default_parameters(optimize=True)
-
-    # Override with uflacs specific parameters if present in given
-    # global parameters dict
-    for key in p:
-        if key in parameters:
-            value = parameters[key]
-            # Casting done here because main doesn't know about these
-            # parameters
-            if isinstance(p[key], int):
-                value = int(value)
-            elif isinstance(p[key], float):
-                value = float(value)
-            p[key] = value
-
-    return p
-
-
-def build_uflacs_ir(cell, integral_type, entitytype, integrands, argument_shape,
-                    parameters, visualise):
+def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_shape,
+                        p, visualise):
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
-
-    # Extract uflacs specific optimization and code generation
-    # parameters
-    p = parse_uflacs_optimization_parameters(parameters, integral_type)
 
     # Pass on parameters for consumption in code generation
     ir["params"] = p

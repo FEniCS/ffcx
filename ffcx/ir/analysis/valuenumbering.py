@@ -8,11 +8,11 @@
 import logging
 
 import ufl
-from ffcx.ir.uflacs.analysis.indexing import (map_component_tensor_arg_components,
-                                              map_indexed_arg_components)
-from ffcx.ir.uflacs.analysis.modified_terminals import analyse_modified_terminal
+from ffcx.ir.analysis.indexing import (map_component_tensor_arg_components,
+                                       map_indexed_arg_components)
+from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 class ValueNumberer(object):

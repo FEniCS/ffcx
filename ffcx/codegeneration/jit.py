@@ -18,7 +18,7 @@ import cffi
 import ffcx
 import ffcx.naming
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 # Get declarations directly from ufc.h
 file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -95,8 +95,6 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     if parameters is not None:
         p.update(parameters)
 
-    logger.info('Compiling elements: ' + str(elements))
-
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
         ffcx.naming.compute_signature(elements, _compute_parameter_signature(p)
@@ -149,8 +147,6 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
     if parameters is not None:
         p.update(parameters)
 
-    logger.info('Compiling forms: ' + str(forms))
-
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
         ffcx.naming.compute_signature(forms, _compute_parameter_signature(p)
@@ -201,8 +197,6 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     if parameters is not None:
         p.update(parameters)
 
-    logger.info('Compiling expressions: ' + str(expressions))
-
     # Get a signature for these forms
     module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, '', p)
 
@@ -244,8 +238,6 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
     p = ffcx.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
-
-    logger.info('Compiling cmaps: ' + str(meshes))
 
     # Get a signature for these cmaps
     module_name = 'libffcx_cmaps_' + \
@@ -301,12 +293,19 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
     # Compile (ensuring that compile dir exists)
     cache_dir.mkdir(exist_ok=True, parents=True)
 
+    logger.info(79 * "#")
+    logger.info("Calling JIT C compiler")
+    logger.info(79 * "#")
+
+    t0 = time.time()
     f = io.StringIO()
     with redirect_stdout(f):
         ffibuilder.compile(tmpdir=cache_dir, verbose=True, debug=cffi_debug)
     s = f.getvalue()
     if (cffi_verbose):
         print(s)
+
+    logger.info("JIT C compiler finished in {:.4f}".format(time.time() - t0))
 
     # Create a "status ready" file. If this fails, it is an error,
     # because it should not exist yet.

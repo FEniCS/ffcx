@@ -12,7 +12,6 @@ representation type.
 """
 
 import logging
-import os
 import typing
 import warnings
 from collections import namedtuple
@@ -21,7 +20,8 @@ import numpy
 
 import ufl
 from ffcx.parameters import FFCX_PARAMETERS
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger("ffcx")
 
 
 ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numbers',
@@ -49,7 +49,9 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     unique_coordinate_elements
 
     """
+    logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")
+    logger.info(79 * "*")
 
     form_data = ()
     unique_elements = set()
@@ -150,64 +152,23 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     if _has_custom_integrals(form):
         raise RuntimeError("Form ({}) contains unsupported custom integrals.".format(str(form)))
 
-    # ---- Extract representation across all integrals in this form
-    #
-    # The priority of representation determination is following
-    #
-    # 1. Environment variable FFCX_FORCE_REPRESENTATION
-    # 2. parameters["representation"]
-    # 3. specified in metadata of integral
-    representations = set(
-        integral.metadata().get("representation", "auto") for integral in form.integrals())
-
-    # Remove "auto" to see representations set by user
-    if parameters["representation"] in ("uflacs", "tsfc"):
-        representation = parameters["representation"]
-    elif len(representations - {"auto"}) == 1:
-        # User has set just one
-        representation = (representations - {"auto"}).pop()
-    elif representations == {"auto"}:
-        # If user didn't set any default to uflacs
-        representation = "uflacs"
-    else:
-        raise RuntimeError("Cannot mix uflacs and tsfc representations in a single form.")
-
-    # Override representation with environment variable
-    forced_r = os.environ.get("FFCX_FORCE_REPRESENTATION")
-    if forced_r:
-        warnings.warn("Representation: forced by $FFCX_FORCE_REPRESENTATION to '{}'".format(forced_r))
-        representation = forced_r
-
-    logger.info("Determined representation '{}' for form {}.".format(representation, str(form)))
-
     # Check for complex mode
     complex_mode = "complex" in parameters.get("scalar_type", "double")
 
     # Compute form metadata
-    if representation == "uflacs":
-        form_data = ufl.algorithms.compute_form_data(
-            form,
-            do_apply_function_pullbacks=True,
-            do_apply_integral_scaling=True,
-            do_apply_geometry_lowering=True,
-            preserve_geometry_types=(ufl.classes.Jacobian, ),
-            do_apply_restrictions=True,
-            do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
-            complex_mode=complex_mode)
-    elif representation == "tsfc":
-        # TSFC provides compute_form_data wrapper using correct kwargs
-        from tsfc.ufl_utils import compute_form_data as tsfc_compute_form_data
-        form_data = tsfc_compute_form_data(form, complex_mode=complex_mode)
-    else:
-        raise RuntimeError("Unexpected representation \"{}\" for form preprocessing.".format(representation))
-
-    # Attach common representation to FormData. Common to all integrals
-    # in form
-    form_data.representation = representation
+    form_data = ufl.algorithms.compute_form_data(
+        form,
+        do_apply_function_pullbacks=True,
+        do_apply_integral_scaling=True,
+        do_apply_geometry_lowering=True,
+        preserve_geometry_types=(ufl.classes.Jacobian, ),
+        do_apply_restrictions=True,
+        do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
+        complex_mode=complex_mode)
 
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data
-    for integral_data in form_data.integral_data:
+    for id, integral_data in enumerate(form_data.integral_data):
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
         # (but possibly different metadata).
@@ -284,6 +245,11 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 qr = qr_metadata
             else:
                 qr = qr_default
+
+            logger.info("Integral {}, integral group {}:".format(i, id))
+            logger.info("--- quadrature rule: {}".format(qr))
+            logger.info("--- quadrature degree: {}".format(qd))
+            logger.info("--- precision: {}".format(p))
 
             integral_data.integrals[i] = integral.reconstruct(
                 metadata={"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})
