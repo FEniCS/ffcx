@@ -13,7 +13,7 @@ import logging
 from ffcx.codegeneration.jacobian import inverse_jacobian, jacobian
 from ufl.permutation import build_component_numbering
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 index_type = "int"
 
 

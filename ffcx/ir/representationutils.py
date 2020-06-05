@@ -14,7 +14,7 @@ import ufl
 from ffcx.fiatinterface import (create_quadrature, map_facet_points,
                                 reference_cell_vertices)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 class QuadratureRule:
@@ -96,42 +96,3 @@ def map_integral_points(points, integral_type, cell, entity):
         return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
         raise RuntimeError("Can't map points from entity_dim=%s" % (entity_dim, ))
-
-
-def generate_enabled_coefficients(enabled_coefficients):
-    # TODO: I don't know how to implement this using the format dict,
-    # this will do for now:
-    initializer_list = ", ".join("true" if enabled else "false" for enabled in enabled_coefficients)
-    if enabled_coefficients:
-        code = '\n'.join(["[{}] = {{ {} }};".format(len(enabled_coefficients), initializer_list)])
-    else:
-        code = "[1] = {false};  /* No coefficients, but C does not permit zero-sized arrays */"
-    return code
-
-
-def initialize_integral_code(ir, parameters):
-    """Default integral IR.
-
-    Representation independent default initialization of code dict for
-    integral from intermediate representation.
-
-    """
-    code = {}
-    code["class_type"] = ir.integral_type + "_integral"
-    code["name"] = ir.name
-    code["members"] = ""
-    code["constructor"] = ""
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = ""
-    code["enabled_coefficients"] = generate_enabled_coefficients(ir.enabled_coefficients)
-    code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
-
-    return code
-
-
-def initialize_expression_code(ir):
-    code = {}
-    code["name"] = "{}_expression".format(ir.name)
-
-    return code
