@@ -94,7 +94,7 @@ class ExpressionGenerator:
         return L.StatementList(parts)
 
     def generate_element_tables(self):
-        """Generate tables of FE basis evaluated at specified points"""
+        """Generate tables of FE basis evaluated at specified points."""
         L = self.backend.language
         parts = []
 
@@ -161,7 +161,7 @@ class ExpressionGenerator:
         return parts
 
     def generate_piecewise_partition(self):
-        """Generate factors of blocks which are constant (i.e. do not depent on quadrature points)"""
+        """Generate factors of blocks which are constant (i.e. do not depent on quadrature points)."""
         L = self.backend.language
 
         # Get annotated graph of factorisation
@@ -377,8 +377,12 @@ class ExpressionGenerator:
         return parts
 
     def generate_original_coefficient_positions(self):
-        """Generate map from coefficient position index in processed expression
-        to coefficient position index in original, non-processed expression."""
+        """Generate original coefficient positions.
+
+        Maps coefficient position index in processed expression
+        to coefficient position index in original, non-processed expression.
+
+        """
         L = self.backend.language
         num_coeffs = len(self.ir.original_coefficient_positions)
         orig_pos = L.Symbol("original_coefficient_positions")
@@ -392,8 +396,7 @@ class ExpressionGenerator:
         return L.StatementList(parts)
 
     def generate_points(self):
-        """Generate and store compile-time known reference points at which the expression
-        was evaluated."""
+        """Generate and store compile-time known reference points at which the expression was evaluated."""
         L = self.backend.language
         parts = L.ArrayDecl("static const double", "points", values=self.ir.points,
                             sizes=self.ir.points.shape)
