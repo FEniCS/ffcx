@@ -40,13 +40,13 @@ def generator(ir, parameters):
         eg.generate_original_coefficient_positions().cs_format(), 1)
 
     code["points"] = format_indented_lines(eg.generate_points().cs_format(), 1)
-    
+
     if len(eg.ir.expression_shape) > 0:
         value_shape_decl = eg.generate_value_shape().cs_format()
     else:
         value_shape_decl = "static const int value_shape[1] = {0};"
     code["value_shape"] = format_indented_lines(value_shape_decl, 1)
-    
+
     # Format implementation code
     implementation = expressions_template.factory.format(
         factory_name=factory_name,
