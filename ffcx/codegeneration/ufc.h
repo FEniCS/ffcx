@@ -211,176 +211,19 @@ extern "C"
     /// Return topological dimension of the coordinate_mapping
     int topological_dimension;
 
+    /// Boolean flag for affine 
+    int is_affine;
+
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
 
     /// Create dofmap for the underlying scalar element
     ufc_dofmap* (*create_scalar_dofmap)(void);
 
-    /// Compute physical coordinates x from reference coordinates X,
-    /// the inverse of compute_reference_coordinates
-    ///
-    /// @param[out] x
-    ///         Physical coordinates.
-    ///         Dimensions: x[num_points][gdim]
-    /// @param[in] num_points
-    ///         Number of points.
-    /// @param[in] X
-    ///         Reference cell coordinates.
-    ///         Dimensions: X[num_points][tdim]
-    /// @param[in] coordinate_dofs
-    ///         Dofs of the coordinate field on the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    ///
-    void (*compute_physical_coordinates)(
-        double* restrict x, int num_points, const double* restrict X,
-        const double* restrict coordinate_dofs);
-
-    /// Compute reference coordinates X from physical coordinates x,
-    /// the inverse of compute_physical_coordinates
-    ///
-    /// @param[out] X
-    ///         Reference cell coordinates.
-    ///         Dimensions: X[num_points][tdim]
-    /// @param[in] num_points
-    ///         Number of points.
-    /// @param[in] x
-    ///         Physical coordinates.
-    ///         Dimensions: x[num_points][gdim]
-    /// @param[in] coordinate_dofs
-    ///         Dofs of the coordinate field on the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    ///
-    /// @return Error code, 0 on success, -1 on failure
-    int (*compute_reference_coordinates)(
-        double* restrict X, int num_points, const double* restrict x,
-        const double* restrict coordinate_dofs);
-
-    /// Compute X, J, detJ, K from physical coordinates x on a cell
-    ///
-    /// @param[out] X
-    ///         Reference cell coordinates.
-    ///         Dimensions: X[num_points][tdim]
-    /// @param[out] J
-    ///         Jacobian of coordinate field, J = dx/dX.
-    ///         Dimensions: J[num_points][gdim][tdim]
-    /// @param[out] detJ
-    ///         (Pseudo-)Determinant of Jacobian.
-    ///         Dimensions: detJ[num_points]
-    /// @param[out] K
-    ///         (Pseudo-)Inverse of Jacobian of coordinate field.
-    ///         Dimensions: K[num_points][tdim][gdim]
-    /// @param[in] num_points
-    ///         Number of points.
-    /// @param[in] x
-    ///         Physical coordinates.
-    ///         Dimensions: x[num_points][gdim]
-    /// @param[in] coordinate_dofs
-    ///         Dofs of the coordinate field on the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    ///
-    /// @return Error code, 0 on success, -1 on failure
-    int (*compute_reference_geometry)(double* restrict X, double* restrict J,
-                                      double* restrict detJ, double* restrict K,
-                                      int num_points, const double* restrict x,
-                                      const double* restrict coordinate_dofs);
-
-    /// Compute Jacobian of coordinate mapping J = dx/dX at reference
-    /// coordinates
-    /// X
-    ///
-    /// @param[out] J
-    ///         Jacobian of coordinate field, J = dx/dX.
-    ///         Dimensions: J[num_points][gdim][tdim]
-    /// @param[in] num_points
-    ///         Number of points.
-    /// @param[in] X
-    ///         Reference cell coordinates.
-    ///         Dimensions: X[num_points][tdim]
-    /// @param[in] coordinate_dofs
-    ///         Dofs of the coordinate field on the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    ///
-    void (*compute_jacobians)(double* restrict J, int num_points,
-                              const double* restrict X,
-                              const double* restrict coordinate_dofs);
-
-    /// Compute determinants of (pseudo-)Jacobians J
-    ///
-    /// @param[out] detJ
-    ///         (Pseudo-)Determinant of Jacobian.
-    ///         Dimensions: detJ[num_points]
-    /// @param[in] num_points
-    ///         Number of points.
-    /// @param[in] J
-    ///         Jacobian of coordinate field, J = dx/dX.
-    ///         Dimensions: J[num_points][gdim][tdim]
-    ///
-    void (*compute_jacobian_determinants)(double* restrict detJ, int num_points,
-                                          const double* restrict J);
-
-    /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
-    ///
-    /// @param[out] K
-    ///         (Pseudo-)Inverse of Jacobian of coordinate field.
-    ///         Dimensions: K[num_points][tdim][gdim]
-    /// @param[in] num_points
-    ///         Number of points.
-    /// @param[in] J
-    ///         Jacobian of coordinate field, J = dx/dX.
-    ///         Dimensions: J[num_points][gdim][tdim]
-    /// @param[in] detJ
-    ///         (Pseudo-)Determinant of Jacobian.
-    ///         Dimensions: detJ[num_points]
-    ///
-    void (*compute_jacobian_inverses)(double* restrict K, int num_points,
-                                      const double* restrict J,
-                                      const double* restrict detJ);
-
-    // FIXME: Remove? FFCX implementation just calls other generated functions
-    /// Combined (for convenience) computation of x, J, detJ, K from X and
-    /// coordinate_dofs on a cell
-    ///
-    /// @param[out] x
-    ///         Physical coordinates.
-    ///         Dimensions: x[num_points][gdim]
-    /// @param[out] J
-    ///         Jacobian of coordinate field, J = dx/dX.
-    ///         Dimensions: J[num_points][gdim][tdim]
-    /// @param[out] detJ
-    ///         (Pseudo-)Determinant of Jacobian.
-    ///         Dimensions: detJ[num_points]
-    /// @param[out] K
-    ///         (Pseudo-)Inverse of Jacobian of coordinate field.
-    ///         Dimensions: K[num_points][tdim][gdim]
-    /// @param[in] num_points
-    ///         Number of points.
-    /// @param[in] X
-    ///         Reference cell coordinates.
-    ///         Dimensions: X[num_points][tdim]
-    /// @param[in] coordinate_dofs
-    ///         Dofs of the coordinate field on the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    ///
-    void (*compute_geometry)(double* restrict x, double* restrict J,
-                             double* restrict detJ, double* restrict K,
-                             int num_points, const double* restrict X,
-                             const double* restrict coordinate_dofs);
-
-    /// Compute x and J at midpoint of cell
-    ///
-    /// @param[out] x
-    ///         Physical coordinates.
-    ///         Dimensions: x[gdim]
-    /// @param[out] J
-    ///         Jacobian of coordinate field, J = dx/dX.
-    ///         Dimensions: J[gdim][tdim]
-    /// @param[in] coordinate_dofs
-    ///         Dofs of the coordinate field on the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    ///
-    void (*compute_midpoint_geometry)(double* restrict x, double* restrict J,
-                                      const double* restrict coordinate_dofs);
+    /// Evaluate basis (and derivatives) of the associated element
+    int (*evaluate_basis_derivatives)(
+        double* restrict reference_values, int order, int num_points,
+        const double* restrict X);
 
   } ufc_coordinate_mapping;
 
