@@ -94,6 +94,7 @@ class ExpressionGenerator:
         return L.StatementList(parts)
 
     def generate_element_tables(self):
+        """Generate tables of FE basis evaluated at specified points"""
         L = self.backend.language
         parts = []
 
@@ -117,7 +118,11 @@ class ExpressionGenerator:
         return parts
 
     def generate_quadrature_loop(self):
-        """Generate quadrature loop for this quadrature rule."""
+        """Generate quadrature loop for this quadrature rule.
+
+        In the context of expressions quadrature loop is not accumulated.
+
+        """
         L = self.backend.language
 
         # Generate varying partition
@@ -143,6 +148,7 @@ class ExpressionGenerator:
         return preparts, quadparts
 
     def generate_varying_partition(self):
+        """Generate factors of blocks which are not cellwise constant."""
         L = self.backend.language
 
         # Get annotated graph of factorisation
@@ -155,6 +161,7 @@ class ExpressionGenerator:
         return parts
 
     def generate_piecewise_partition(self):
+        """Generate factors of blocks which are constant (i.e. do not depent on quadrature points)"""
         L = self.backend.language
 
         # Get annotated graph of factorisation
@@ -192,8 +199,8 @@ class ExpressionGenerator:
     def generate_block_parts(self, blockmap, blockdata):
         """Generate and return code parts for a given block.
 
-        Returns parts occuring before, inside, and after
-        the quadrature loop identified by num_points.
+        Returns parts occuring before and inside
+        the quadrature loop.
 
         """
         L = self.backend.language
@@ -270,7 +277,6 @@ class ExpressionGenerator:
             if td.ttype == "ones":
                 arg_factor = L.LiteralFloat(1.0)
             else:
-                # Assuming B sparsity follows element table sparsity
                 arg_factor = table[indices[i + 1]]
             arg_factors.append(arg_factor)
         return arg_factors
@@ -371,6 +377,8 @@ class ExpressionGenerator:
         return parts
 
     def generate_original_coefficient_positions(self):
+        """Generate map from coefficient position index in processed expression
+        to coefficient position index in original, non-processed expression."""
         L = self.backend.language
         num_coeffs = len(self.ir.original_coefficient_positions)
         orig_pos = L.Symbol("original_coefficient_positions")
@@ -384,6 +392,8 @@ class ExpressionGenerator:
         return L.StatementList(parts)
 
     def generate_points(self):
+        """Generate and store compile-time known reference points at which the expression
+        was evaluated."""
         L = self.backend.language
         parts = L.ArrayDecl("static const double", "points", values=self.ir.points,
                             sizes=self.ir.points.shape)
