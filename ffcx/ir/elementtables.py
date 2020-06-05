@@ -17,7 +17,7 @@ from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 # Using same defaults as numpy.allclose
 default_rtol = 1e-5

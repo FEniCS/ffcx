@@ -10,11 +10,11 @@ import logging
 import numpy
 
 import ufl
-from ffcx.ir.uflacs.analysis.modified_terminals import is_modified_terminal
-from ffcx.ir.uflacs.analysis.reconstruct import reconstruct
-from ffcx.ir.uflacs.analysis.valuenumbering import ValueNumberer
+from ffcx.ir.analysis.modified_terminals import is_modified_terminal
+from ffcx.ir.analysis.reconstruct import reconstruct
+from ffcx.ir.analysis.valuenumbering import ValueNumberer
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 class ExpressionGraph(object):

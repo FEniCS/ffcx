@@ -12,7 +12,7 @@ import ufl
 from ffcx.fiatinterface import create_element
 from ufl.finiteelement import MixedElement
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 class FFCXBackendAccess(object):

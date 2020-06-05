@@ -7,7 +7,7 @@
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 # TODO: Get restriction postfix from somewhere central

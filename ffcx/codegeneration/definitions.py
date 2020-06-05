@@ -11,7 +11,7 @@ import ufl
 
 from ffcx.fiatinterface import create_element
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 def num_coordinate_component_dofs(coordinate_element):
