@@ -888,7 +888,7 @@ def _is_zero_valued(values):
     elif isinstance(values, (numbers.Number, LiteralFloat)):
         return float(values) == 0.0
     else:
-        return numpy.size(values) > 0 and numpy.count_nonzero(values) == 0
+        return numpy.count_nonzero(values) == 0
 
 
 def as_cexpr(node):
@@ -1316,7 +1316,7 @@ class ArrayDecl(CStatement):
         sizes = pad_innermost_dim(self.sizes, self.padlen)
 
         # Add brackets
-        brackets = ''.join("[%d]" % n for n in sizes)
+        brackets = ''.join("[%d]" % max(n, 1) for n in sizes)
 
         # Join declaration
         decl = self.typename + " " + self.symbol.name + brackets
