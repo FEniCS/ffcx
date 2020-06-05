@@ -1316,7 +1316,7 @@ class ArrayDecl(CStatement):
         sizes = pad_innermost_dim(self.sizes, self.padlen)
 
         # Add brackets
-        brackets = ''.join("[%d]" % max(n, 1) for n in sizes)
+        brackets = ''.join("[%d]" % n for n in sizes)
 
         # Join declaration
         decl = self.typename + " " + self.symbol.name + brackets
