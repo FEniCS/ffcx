@@ -385,8 +385,8 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, X, ip, embedded_degre
     # Create zero-initialized array for with basisvalues
     code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
 
-    Y0 = X[2 * ip] - 1
-    Y1 = X[2 * ip + 1] - 1
+    Y0 = 2 * X[2 * ip] - 1
+    Y1 = 2 * X[2 * ip + 1] - 1
 
     # Compute helper factors
     # FIAT_NEW code
@@ -517,9 +517,9 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, X, ip,
     if embedded_degree == 0:
         return code
 
-    Y0 = X[3 * ip] - 1
-    Y1 = X[3 * ip + 1] - 1
-    Y2 = X[3 * ip + 2] - 1
+    Y0 = 2 * X[3 * ip] - 1
+    Y1 = 2 * X[3 * ip + 1] - 1
+    Y2 = 2 * X[3 * ip + 2] - 1
 
     # The initial value of basisfunction 1 is equal to f1.
     # FIAT_NEW code
