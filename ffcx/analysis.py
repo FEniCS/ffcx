@@ -216,7 +216,6 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
             # qd_estimated = integral.metadata()["estimated_polynomial_degree"]
             qd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
 
-
             if parameters["quadrature_degree"] != qd_default:
                 qd = parameters["quadrature_degree"]
             elif qd_metadata != qd_default:
@@ -234,7 +233,6 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                     warnings.warn(
                         "Number of integration points per cell is: {}. Consider using 'quadrature_degree' "
                         "to reduce number.".format(num_points))
-
 
             print("**qd:", qd)
             # ----- Extract quadrature rule

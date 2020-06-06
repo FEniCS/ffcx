@@ -105,8 +105,7 @@ def _create_fiat_element(ufl_element):
     print("C***", cellname)
     print("F***", family)
     print("D***", degree)
-        # ufl_element = FlattenedDimensions(ufl_element)
-
+    # ufl_element = FlattenedDimensions(ufl_element)
 
     # Check that FFCX supports this element
     if family not in supported_families:
