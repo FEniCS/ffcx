@@ -6,7 +6,7 @@
 """Utility to draw graphs."""
 
 
-from ffcx.ir.uflacs.analysis.modified_terminals import strip_modified_terminal
+from ffcx.ir.analysis.modified_terminals import strip_modified_terminal
 from ufl.classes import (Argument, Division, FloatValue, Indexed, IntValue,
                          Product, ReferenceValue, Sum)
 

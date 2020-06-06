@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2017 Anders Logg
+# Copyright (C) 2007-2020 Anders Logg and Michal Habera
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
@@ -73,11 +73,11 @@ from ffcx.codegeneration.codegeneration import generate_code
 from ffcx.formatting import format_code
 from ffcx.ir.representation import compute_ir
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 def _print_timing(stage, timing):
-    logger.info("Compiler stage {stage} finished in {time} seconds.".format(
+    logger.info("Compiler stage {stage} finished in {time:.4f} seconds.".format(
         stage=stage, time=timing))
 
 
@@ -94,12 +94,8 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
 
     """
-    logger.info("Compiling {}\n".format(prefix))
     if prefix != os.path.basename(prefix):
         raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
-
-    # Reset timing
-    cpu_time_0 = time()
 
     # Stage 1: analysis
     cpu_time = time()
@@ -114,13 +110,11 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
     # Stage 3: code generation
     cpu_time = time()
     code = generate_code(ir, parameters)
-    _print_timing(4, time() - cpu_time)
+    _print_timing(3, time() - cpu_time)
 
     # Stage 4: format code
     cpu_time = time()
     code_h, code_c = format_code(code, parameters)
-    _print_timing(5, time() - cpu_time)
-
-    logger.info("FFCX finished in {} seconds.".format(time() - cpu_time_0))
+    _print_timing(4, time() - cpu_time)
 
     return code_h, code_c

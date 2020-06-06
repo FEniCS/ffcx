@@ -18,7 +18,7 @@ from FIAT.quadrature_element import QuadratureElement
 from FIAT.restricted import RestrictedElement
 from FIAT.tensor_product import FlattenedDimensions
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 # Element families supported by FFCX
 supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "Crouzeix-Raviart",
@@ -53,7 +53,6 @@ def create_element(ufl_element):
 
     # Check cache
     if element_signature in _cache:
-        logger.debug("Reusing element from cache")
         return _cache[element_signature]
 
     if isinstance(ufl_element, ufl.FiniteElement):

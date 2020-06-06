@@ -8,14 +8,14 @@
 import logging
 from functools import singledispatch
 
-from ffcx.ir.uflacs.analysis.graph import ExpressionGraph
-from ffcx.ir.uflacs.analysis.modified_terminals import (analyse_modified_terminal,
-                                                        strip_modified_terminal)
+from ffcx.ir.analysis.graph import ExpressionGraph
+from ffcx.ir.analysis.modified_terminals import (analyse_modified_terminal,
+                                                 strip_modified_terminal)
 from ufl import as_ufl, conditional
 from ufl.classes import (Argument, Conditional, Conj, Division, Product, Sum,
                          Zero)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 def build_argument_indices(S):

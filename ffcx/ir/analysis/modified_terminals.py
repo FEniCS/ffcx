@@ -3,7 +3,6 @@
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Definitions of 'modified terminals', a core concept in uflacs."""
 
 import logging
 
@@ -12,7 +11,7 @@ from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
                          ReferenceValue, Restricted, SpatialCoordinate)
 from ufl.permutation import build_component_numbering
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ffcx")
 
 
 class ModifiedTerminal(object):
