@@ -25,7 +25,7 @@ supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "
                       "Discontinuous Lagrange", "Discontinuous Raviart-Thomas", "HDiv Trace",
                       "Lagrange", "Lobatto", "Nedelec 1st kind H(curl)", "Nedelec 2nd kind H(curl)",
                       "Radau", "Raviart-Thomas", "Real", "Bubble", "Quadrature", "Regge",
-                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement")
+                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement", "Gauss-Lobatto-Legendre")
 
 # Cache for computed elements
 _cache = {}
@@ -74,6 +74,9 @@ def create_element(ufl_element):
     # Store in cache
     _cache[element_signature] = element
 
+    # if hasattr(element, "degree"):
+    #     print("FIAT***", element, element.degree())
+
     return element
 
 
@@ -85,6 +88,14 @@ def _create_fiat_element(ufl_element):
     cell = ufl_element.cell()
     cellname = cell.cellname()
     degree = ufl_element.degree()
+
+    if degree == 2:
+        print("E***", ufl_element)
+        print("C***", cellname)
+        print("F***", family)
+        print("D***", degree)
+        ufl_element = FlattenedDimensions(ufl_element)
+
 
     # Check that FFCX supports this element
     if family not in supported_families:
@@ -102,18 +113,25 @@ def _create_fiat_element(ufl_element):
     if cellname == "quadrilateral":
         # Handle quadrilateral case by reconstructing the element with
         # cell TensorProductCell (interval x interval)
+
+        # GLL = ufl.FiniteElement("GLL", ufl.interval, 2)
+        # Q = ufl.TensorProductElement(GLL, GLL, cell=ufl.quadrilateral)
+
         quadrilateral_tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
-        return FlattenedDimensions(
-            _create_fiat_element(ufl_element.reconstruct(cell=quadrilateral_tpc)))
+        if degree == 2:
+            print("Q0:", quadrilateral_tpc)
+            print("Q1:", ufl_element.reconstruct(cell=quadrilateral_tpc))
+        # return FlattenedDimensions(
+        #     _create_fiat_element(ufl_element.reconstruct(family="GLL", cell=quadrilateral_tpc)))
+        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell=quadrilateral_tpc)))
     elif cellname == "hexahedron":
         # Handle hexahedron case by reconstructing the element with cell
         # TensorProductCell (quadrilateral x interval). This creates
         # TensorProductElement(TensorProductElement(interval, interval),
-        # interval) Therefore dof entities consists of nested tuples,
+        # interval). Therefore dof entities consists of nested tuples,
         # example: ((0, 1), 1)
         hexahedron_tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
-        return FlattenedDimensions(
-            _create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc)))
+        return FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell=hexahedron_tpc)))
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
@@ -143,9 +161,8 @@ def _create_fiat_element(ufl_element):
             A = create_element(ufl_element.sub_elements()[0])
             B = create_element(ufl_element.sub_elements()[1])
             element = ElementClass(A, B)
-
-        # Create normal FIAT finite element
         else:
+            # Create normal FIAT finite element
             if degree is None:
                 element = ElementClass(fiat_cell)
             else:
