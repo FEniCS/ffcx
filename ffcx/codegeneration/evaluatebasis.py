@@ -34,7 +34,6 @@ def generate_evaluate_reference_basis(L, data, parameters):
 
     # Get some known dimensions
     element_cellname = data["cellname"]
-    tdim = data["topological_dimension"]
     reference_value_size = data["reference_value_size"]
     num_dofs = len(data["dofs_data"])
 
@@ -72,9 +71,9 @@ def generate_evaluate_reference_basis(L, data, parameters):
     setup_code = tables_code + reset_values_code
 
     # Generate code to compute tables of basisvalues
-    basisvalues_code, basisvalues_for_degree, need_fiat_coordinates = \
+    basisvalues_code, basisvalues_for_degree = \
         generate_compute_basisvalues(
-            L, data["dofs_data"], element_cellname, tdim, X, ip)
+            L, data["dofs_data"], element_cellname, X, ip)
 
     # Accumulate products of basisvalues and coefficients into values
     accumulation_code = [
@@ -189,18 +188,13 @@ def generate_expansion_coefficients(L, dofs_data):
     return tables_code, coefficients_for_dof
 
 
-def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
+def generate_compute_basisvalues(L, dofs_data, element_cellname, X, ip):
     basisvalues_code = [
         L.Comment("Compute basisvalues for each relevant embedded degree"),
     ]
     basisvalues_for_degree = {}
-    need_fiat_coordinates = False
-    #  Y = L.Symbol("Y")
     for idof, dof_data in enumerate(dofs_data):
         embedded_degree = dof_data["embedded_degree"]
-
-        if embedded_degree:
-            need_fiat_coordinates = True
 
         if embedded_degree not in basisvalues_for_degree:
             num_members = dof_data["num_expansion_members"]
@@ -214,20 +208,7 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
             # Store symbol reference for this degree
             basisvalues_for_degree[embedded_degree] = basisvalues
 
-    # if need_fiat_coordinates:
-    #     # Mapping from UFC reference cell coordinate X to FIAT reference cell coordinate Y
-    #     fiat_coordinate_mapping = [
-    #         L.Comment(
-    #             "Map from UFC reference coordinate X to FIAT reference coordinate Y"
-    #         ),
-    #         L.ArrayDecl(
-    #             "const double",
-    #             Y, (tdim, ),
-    #             values=[2.0 * X[ip * tdim + jj] - 1.0 for jj in range(tdim)]),
-    #     ]
-    #     basisvalues_code = fiat_coordinate_mapping + basisvalues_code
-
-    return basisvalues_code, basisvalues_for_degree, need_fiat_coordinates
+    return basisvalues_code, basisvalues_for_degree
 
 
 def _generate_compute_basisvalues(L, basisvalues, X, ip, element_cellname,
@@ -437,8 +418,6 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, X, ip, embedded_degre
         v2 = B * f3 * basisvalues[tt]
         value = v1 - v2
         code += [L.Assign(basisvalues[rr], value)]
-
-
 
     # FIAT_NEW code (loop 2 in FIAT).
     # for p in range(n):
