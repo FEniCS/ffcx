@@ -93,6 +93,7 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
+        print('dofmap, end-begin=', len(tabledata.dofmap), end-begin)
         unroll = len(tabledata.dofmap) != end - begin
         # unroll = True
         if unroll:

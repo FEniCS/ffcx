@@ -195,7 +195,7 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
     ]
     basisvalues_for_degree = {}
     need_fiat_coordinates = False
-    Y = L.Symbol("Y")
+    #  Y = L.Symbol("Y")
     for idof, dof_data in enumerate(dofs_data):
         embedded_degree = dof_data["embedded_degree"]
 
@@ -207,49 +207,49 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, tdim, X, ip):
 
             basisvalues = L.Symbol("basisvalues%d" % embedded_degree)
             bfcode = _generate_compute_basisvalues(
-                L, basisvalues, Y, element_cellname, embedded_degree,
+                L, basisvalues, X, ip, element_cellname, embedded_degree,
                 num_members)
             basisvalues_code += [L.StatementList(bfcode)]
 
             # Store symbol reference for this degree
             basisvalues_for_degree[embedded_degree] = basisvalues
 
-    if need_fiat_coordinates:
-        # Mapping from UFC reference cell coordinate X to FIAT reference cell coordinate Y
-        fiat_coordinate_mapping = [
-            L.Comment(
-                "Map from UFC reference coordinate X to FIAT reference coordinate Y"
-            ),
-            L.ArrayDecl(
-                "const double",
-                Y, (tdim, ),
-                values=[2.0 * X[ip * tdim + jj] - 1.0 for jj in range(tdim)]),
-        ]
-        basisvalues_code = fiat_coordinate_mapping + basisvalues_code
+    # if need_fiat_coordinates:
+    #     # Mapping from UFC reference cell coordinate X to FIAT reference cell coordinate Y
+    #     fiat_coordinate_mapping = [
+    #         L.Comment(
+    #             "Map from UFC reference coordinate X to FIAT reference coordinate Y"
+    #         ),
+    #         L.ArrayDecl(
+    #             "const double",
+    #             Y, (tdim, ),
+    #             values=[2.0 * X[ip * tdim + jj] - 1.0 for jj in range(tdim)]),
+    #     ]
+    #     basisvalues_code = fiat_coordinate_mapping + basisvalues_code
 
     return basisvalues_code, basisvalues_for_degree, need_fiat_coordinates
 
 
-def _generate_compute_basisvalues(L, basisvalues, Y, element_cellname,
+def _generate_compute_basisvalues(L, basisvalues, X, ip, element_cellname,
                                   embedded_degree, num_members):
     """From FIAT_NEW.expansions."""
 
     # Branch off to cell specific implementations
     if element_cellname == "interval":
         code = _generate_compute_interval_basisvalues(
-            L, basisvalues, Y, embedded_degree, num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "triangle":
         code = _generate_compute_triangle_basisvalues(
-            L, basisvalues, Y, embedded_degree, num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "tetrahedron":
         code = _generate_compute_tetrahedron_basisvalues(
-            L, basisvalues, Y, embedded_degree, num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "quadrilateral":
         code = _generate_compute_quad_basisvalues(
-            L, basisvalues, Y, embedded_degree, num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "hexahedron":
         code = _generate_compute_hex_basisvalues(
-            L, basisvalues, Y, embedded_degree, num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     else:
         raise RuntimeError("Not supported:" + element_cellname)
 
@@ -263,7 +263,7 @@ def _jrc(a, b, n):
     return (an, bn, cn)
 
 
-def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree,
+def _generate_compute_interval_basisvalues(L, basisvalues, X, ip, embedded_degree,
                                            num_members):
     # FIAT_NEW.expansions.LineExpansionSet.
 
@@ -272,15 +272,17 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree,
 
     code += [L.Assign(basisvalues[0], 1.0)]
 
+    Y0 = 2 * X[ip] - 1
+
     if embedded_degree > 0:
-        code += [L.Assign(basisvalues[1], Y[0])]
+        code += [L.Assign(basisvalues[1], Y0)]
 
     # Only active if embedded_degree > 1.
     for r in range(2, embedded_degree + 1):
         a1 = float(2 * r * r * (2 * r - 2))
         a3 = ((2 * r - 2) * (2 * r - 1) * (2 * r)) / a1
         a4 = (2 * (r - 1) * (r - 1) * (2 * r)) / a1
-        value = (Y[0] * (a3 * basisvalues[r - 1])) - a4 * basisvalues[r - 2]
+        value = Y0 * a3 * basisvalues[r - 1] - a4 * basisvalues[r - 2]
         code += [L.Assign(basisvalues[r], value)]
 
     # Scale values
@@ -296,7 +298,7 @@ def _generate_compute_interval_basisvalues(L, basisvalues, Y, embedded_degree,
     return code
 
 
-def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
+def _generate_compute_quad_basisvalues(L, basisvalues, X, ip, embedded_degree,
                                        num_members):
 
     # Create zero-initialized array for with basisvalues
@@ -308,16 +310,19 @@ def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
     bx = [1.0]
     by = [1.0]
 
+    Y0 = 2 * X[ip * 2] - 1
+    Y1 = 2 * X[ip * 2 + 1] - 1
+
     if embedded_degree > 0:
-        bx += [Y[0]]
-        by += [Y[1]]
+        bx += [Y0]
+        by += [Y1]
 
     # Only active if embedded_degree > 1.
     for r in range(2, p):
         a3 = (2 * r - 1) / r
         a4 = (r - 1) / r
-        bx += [a3 * Y[0] * bx[r - 1] - a4 * bx[r - 2]]
-        by += [a3 * Y[1] * by[r - 1] - a4 * by[r - 2]]
+        bx += [a3 * Y0 * bx[r - 1] - a4 * bx[r - 2]]
+        by += [a3 * Y1 * by[r - 1] - a4 * by[r - 2]]
 
     for r in range(p):
         bx[r] *= numpy.sqrt(r + 0.5)
@@ -329,7 +334,7 @@ def _generate_compute_quad_basisvalues(L, basisvalues, Y, embedded_degree,
     return code
 
 
-def _generate_compute_hex_basisvalues(L, basisvalues, Y, embedded_degree,
+def _generate_compute_hex_basisvalues(L, basisvalues, X, ip, embedded_degree,
                                       num_members):
 
     # Create zero-initialized array for with basisvalues
@@ -342,18 +347,22 @@ def _generate_compute_hex_basisvalues(L, basisvalues, Y, embedded_degree,
     by = [1.0]
     bz = [1.0]
 
+    Y0 = 2 * X[ip * 3] - 1
+    Y1 = 2 * X[ip * 3 + 1] - 1
+    Y2 = 2 * X[ip * 3 + 2] - 1
+
     if embedded_degree > 0:
-        bx += [Y[0]]
-        by += [Y[1]]
-        bz += [Y[2]]
+        bx += [Y0]
+        by += [Y1]
+        bz += [Y2]
 
     # Only active if embedded_degree > 1.
     for r in range(2, p):
         a3 = (2 * r - 1) / r
         a4 = (r - 1) / r
-        bx += [a3 * Y[0] * bx[r - 1] - a4 * bx[r - 2]]
-        by += [a3 * Y[1] * by[r - 1] - a4 * by[r - 2]]
-        bz += [a3 * Y[2] * bz[r - 1] - a4 * bz[r - 2]]
+        bx += [a3 * Y0 * bx[r - 1] - a4 * bx[r - 2]]
+        by += [a3 * Y1 * by[r - 1] - a4 * by[r - 2]]
+        bz += [a3 * Y2 * bz[r - 1] - a4 * bz[r - 2]]
 
     for r in range(p):
         bx[r] *= numpy.sqrt(r + 0.5)
@@ -366,7 +375,7 @@ def _generate_compute_hex_basisvalues(L, basisvalues, Y, embedded_degree,
     return code
 
 
-def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
+def _generate_compute_triangle_basisvalues(L, basisvalues, X, ip, embedded_degree,
                                            num_members):
     # FIAT_NEW.expansions.TriangleExpansionSet.
 
@@ -375,6 +384,9 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
 
     # Create zero-initialized array for with basisvalues
     code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
+
+    Y0 = X[2 * ip] - 1
+    Y1 = X[2 * ip + 1] - 1
 
     # Compute helper factors
     # FIAT_NEW code
@@ -397,7 +409,7 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
     # results[idx(1,0),:] = f1
     f1 = L.Symbol("tmp1_%d" % embedded_degree)
     code += [
-        L.VariableDecl("const double", f1, (1.0 + 2.0 * Y[0] + Y[1]) / 2.0)
+        L.VariableDecl("const double", f1, (1.0 + 2.0 * Y0 + Y1) / 2.0)
     ]
     code += [L.Assign(basisvalues[1], f1)]
 
@@ -413,18 +425,20 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
     if embedded_degree > 1:
         f2 = L.Symbol("tmp2_%d" % embedded_degree)
         f3 = L.Symbol("tmp3_%d" % embedded_degree)
-        code += [L.VariableDecl("const double", f2, (1.0 - Y[1]) / 2.0)]
+        code += [L.VariableDecl("const double", f2, (1.0 - Y1) / 2.0)]
         code += [L.VariableDecl("const double", f3, f2 * f2)]
     for r in range(1, embedded_degree):
         rr = _idx2d((r + 1), 0)
         ss = _idx2d(r, 0)
         tt = _idx2d((r - 1), 0)
-        A = (2 * r + 1.0) / (r + 1)
-        B = r / (1.0 + r)
+        A = 1 + r / (r + 1)
+        B = r / (r + 1)
         v1 = A * f1 * basisvalues[ss]
         v2 = B * f3 * basisvalues[tt]
         value = v1 - v2
         code += [L.Assign(basisvalues[rr], value)]
+
+
 
     # FIAT_NEW code (loop 2 in FIAT).
     # for p in range(n):
@@ -434,9 +448,9 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
         # (p+q)*(p+q+1)//2 + q
         rr = _idx2d(r, 1)
         ss = _idx2d(r, 0)
-        A = 0.5 * (1 + 2 * r)
-        B = 0.5 * (3 + 2 * r)
-        C = A + (B * Y[1])
+        A = r + 0.5
+        B = r + 1.5
+        C = A + (B * Y1)
         value = C * basisvalues[ss]
         code += [L.Assign(basisvalues[rr], value)]
 
@@ -455,7 +469,7 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
             ss = _idx2d(r, s)
             tt = _idx2d(r, s - 1)
             A, B, C = _jrc(2 * r + 1, 0, s)
-            value = (B + A * Y[1]) * basisvalues[ss] - C * basisvalues[tt]
+            value = (B + A * Y1) * basisvalues[ss] - C * basisvalues[tt]
             code += [L.Assign(basisvalues[rr], value)]
 
     # FIAT_NEW code (loop 4 in FIAT).
@@ -471,7 +485,7 @@ def _generate_compute_triangle_basisvalues(L, basisvalues, Y, embedded_degree,
     return code
 
 
-def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
+def _generate_compute_tetrahedron_basisvalues(L, basisvalues, X, ip,
                                               embedded_degree, num_members):
     # FIAT_NEW.expansions.TetrahedronExpansionSet.
 
@@ -503,13 +517,17 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
     if embedded_degree == 0:
         return code
 
+    Y0 = X[3 * ip] - 1
+    Y1 = X[3 * ip + 1] - 1
+    Y2 = X[3 * ip + 2] - 1
+
     # The initial value of basisfunction 1 is equal to f1.
     # FIAT_NEW code
     # results[idx(1,0),:] = f1
     f1 = L.Symbol("tmp1_%d" % embedded_degree)
     code += [
         L.VariableDecl("const double", f1,
-                       0.5 * (2.0 + 2.0 * Y[0] + Y[1] + Y[2]))
+                       0.5 * (2.0 + 2.0 * Y0 + Y1 + Y2))
     ]
     code += [L.Assign(basisvalues[1], f1)]
 
@@ -526,7 +544,7 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
         f2 = L.Symbol("tmp2_%d" % embedded_degree)
         code += [
             L.VariableDecl("const double", f2,
-                           0.25 * (Y[1] + Y[2]) * (Y[1] + Y[2]))
+                           0.25 * (Y1 + Y2) * (Y1 + Y2))
         ]
     for r in range(1, embedded_degree):
         rr = _idx3d((r + 1), 0, 0)
@@ -545,8 +563,8 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
     for r in range(0, embedded_degree):
         rr = _idx3d(r, 1, 0)
         ss = _idx3d(r, 0, 0)
-        term0 = 0.5 * (2.0 + 3.0 * Y[1] + Y[2])
-        term1 = float(r) * (1.0 + Y[1])
+        term0 = 0.5 * (2.0 + 3.0 * Y1 + Y2)
+        term1 = float(r) * (1.0 + Y1)
         value = (term0 + term1) * basisvalues[ss]
         code += [L.Assign(basisvalues[rr], value)]
 
@@ -564,9 +582,9 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
         f4 = L.Symbol("tmp4_%d" % embedded_degree)
         f5 = L.Symbol("tmp5_%d" % embedded_degree)
         code += [
-            L.VariableDecl("const double", f3, 0.5 * (1.0 + 2.0 * Y[1] + Y[2]))
+            L.VariableDecl("const double", f3, 0.5 * (1.0 + 2.0 * Y1 + Y2))
         ]
-        code += [L.VariableDecl("const double", f4, 0.5 * (1.0 - Y[2]))]
+        code += [L.VariableDecl("const double", f4, 0.5 * (1.0 - Y2))]
         code += [L.VariableDecl("const double", f5, f4 * f4)]
     for r in range(0, embedded_degree - 1):
         for s in range(1, embedded_degree - r):
@@ -589,7 +607,7 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
         for s in range(0, embedded_degree - r):
             rr = _idx3d(r, s, 1)
             ss = _idx3d(r, s, 0)
-            A = (float(2 + r + s) * Y[2]) + float(1 + r + s)
+            A = (float(2 + r + s) * Y2) + float(1 + r + s)
             value = A * basisvalues[ss]
             code += [L.Assign(basisvalues[rr], value)]
 
@@ -610,7 +628,7 @@ def _generate_compute_tetrahedron_basisvalues(L, basisvalues, Y,
                 ss = _idx3d(r, s, t)
                 tt = _idx3d(r, s, t - 1)
                 (A, B, C) = _jrc(2 * r + 2 * s + 2, 0, t)
-                az_b = B + A * Y[2]
+                az_b = B + A * Y2
                 value = (az_b * basisvalues[ss]) - (C * basisvalues[tt])
                 code += [L.Assign(basisvalues[rr], value)]
 

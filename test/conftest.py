@@ -74,5 +74,5 @@ def compiled_element(compile_args, request):
 
     ufl_element = ufl.FiniteElement(*element)
     jit_compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
-        [ufl_element], cffi_extra_compile_args=compile_args)
+        [ufl_element], cffi_extra_compile_args=compile_args, cache_dir=".")
     return (ufl_element, jit_compiled_elements[0], module)

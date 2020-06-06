@@ -15,8 +15,8 @@ index_type = "int"
 
 
 def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters):
-    # Cutoff for feature to disable generation of this code (consider
-    # removing after benchmarking final result)
+    # Cutoff for feature to disable generation of this code
+    # (consider removing after benchmarking final result)
     if isinstance(data, str):
         # Return an error code
         return [L.Return(-1)]
