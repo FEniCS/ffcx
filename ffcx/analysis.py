@@ -256,8 +256,11 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
             logger.info("--- quadrature degree: {}".format(qd))
             logger.info("--- precision: {}".format(p))
 
-            integral_data.integrals[i] = integral.reconstruct(
-                metadata={"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})
+            # Update the old metadata
+            metadata = integral.metadata()
+            metadata.update({"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})
+
+            integral_data.integrals[i] = integral.reconstruct(metadata=metadata)
 
     return form_data
 
