@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
-import warnings
 
 import numpy
 
@@ -171,29 +170,6 @@ def create_quadrature(shape, degree, scheme="default"):
 
     if shape in ufl.cell.cellname2dim and ufl.cell.cellname2dim[shape] == 0:
         return (numpy.zeros((1, 0)), numpy.ones((1, )))
-
-    if scheme == "vertex":
-        # The vertex scheme, i.e., averaging the function value in the
-        # vertices and multiplying with the simplex volume, is only of
-        # order 1 and inferior to other generic schemes in terms of
-        # error reduction. Equation systems generated with the vertex
-        # scheme have some properties that other schemes lack, e.g., the
-        # mass matrix is a simple diagonal matrix. This may be
-        # prescribed in certain cases.
-        if degree > 1:
-            warnings.warn(
-                "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
-                format(degree))
-        if shape == "tetrahedron":
-            return (numpy.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0,
-                                                                                     1.0]]),
-                    numpy.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]))
-        elif shape == "triangle":
-            return (numpy.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
-                    numpy.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]))
-        elif shape == "interval":
-            # Trapezoidal rule.
-            return (numpy.array([[0.0], [1.0]]), numpy.array([1.0 / 2.0, 1.0 / 2.0]))
 
     quad_rule = FIAT.create_quadrature(reference_cell(shape), degree, scheme)
     points = numpy.asarray(quad_rule.get_points())
