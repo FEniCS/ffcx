@@ -4,42 +4,45 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import copy
 import logging
 
 logger = logging.getLogger("ffcx")
 
 FFCX_PARAMETERS = {
-    "quadrature_rule": "default",  # quadrature rule used for integration of element tensors
-    "quadrature_degree": -1,  # quadrature degree used for computing integrals (-1 means auto)
-    "precision": -1,  # precision used when writing numbers (-1 for max precision)
-    "epsilon": 1e-14,  # machine precision, used for dropping zero terms in tables
-    # Scalar type to be used in generated code (real or complex
-    # C double precision floating-point types)
-    "scalar_type": "double",
-    "external_includes": "",  # ':' separated list of include filenames to add to generated code
-    "tabulate_tensor_void": False,  # generate empty tabulation kernels, for benchmarking
-
-    # Relative precision to use when comparing finite element table
-    # values for table reuse
-    "table_rtol": 1e-6,
-
-    # Absolute precision to use when comparing finite element table
-    # values for table reuse and dropping of table zeros
-    "table_atol": 1e-9,
-
-    # Number of points to evaluate
-    "chunk_size": 8,
-
-    "alignas": 32,
-    "assume_aligned": None,
-    "padlen": 1,
-    "use_symbol_array": True
+    "quadrature_rule":
+        ("default", "Quadrature rule used for integration of element tensors."),
+    "quadrature_degree":
+        (-1, """Quadrature degree used for approximating integrals.
+                (-1 means automatically determined from integrand polynomial degree)"""),
+    "precision":
+        (-1, """Precision used when writing numbers (-1 for max precision).
+                Represents maximum number of digits after decimal point."""),
+    "epsilon":
+        (1e-14, "Machine precision, used for dropping zero terms in tables"),
+    "scalar_type":
+        ("double", "Scalar type used in generated code. Any of real or complex C floating-point types."),
+    "tabulate_tensor_void":
+        (False, "True to generate empty tabulation kernels."),
+    "table_rtol":
+        (1e-6, "Relative precision to use when comparing finite element table values for table reuse."),
+    "table_atol":
+        (1e-9, "Absolute precision to use when comparing finite element table values for reuse."),
+    "alignas":
+        (32, """Memory alignment (in bytes) of some temporary objects in tabulation kernel
+                (finite element tables, intermediate variables array)"""),
+    "assume_aligned":
+        (4, """Assumes alignment (in bytes) of pointers to tabulated tensor, coefficients and constants array.
+               This value must be compatible with alignment of data structures allocated outside FFC."""),
+    "padlen":
+        (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value.")
 }
 
 
 def default_parameters():
     """Return (a copy of) the default parameter values for FFCX."""
-    parameters = copy.deepcopy(FFCX_PARAMETERS)
+    parameters = {}
+
+    for param, (value, desc) in FFCX_PARAMETERS.items():
+        parameters[param] = value
 
     return parameters

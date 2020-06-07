@@ -19,7 +19,7 @@ from collections import namedtuple
 import numpy
 
 import ufl
-from ffcx.parameters import FFCX_PARAMETERS
+from ffcx.parameters import default_parameters
 
 logger = logging.getLogger("ffcx")
 
@@ -166,6 +166,8 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
 
+    parameters = default_parameters()
+
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data
     for id, integral_data in enumerate(form_data.integral_data):
@@ -183,7 +185,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # 1. parameters["precision"]
         # 2. specified in metadata of integral
-        p_default = FFCX_PARAMETERS["precision"]
+        p_default = parameters["precision"]
         precisions = set([integral.metadata().get("precision", p_default)
                           for integral in integral_data.integrals])
         precisions.discard(p_default)
@@ -201,8 +203,8 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
         integral_data.metadata["precision"] = p
 
-        qd_default = FFCX_PARAMETERS["quadrature_degree"]
-        qr_default = FFCX_PARAMETERS["quadrature_rule"]
+        qd_default = parameters["quadrature_degree"]
+        qr_default = parameters["quadrature_rule"]
 
         for i, integral in enumerate(integral_data.integrals):
             # ----- Extract quadrature degree
