@@ -19,6 +19,7 @@ representation under the key "foo".
 import itertools
 import logging
 from collections import namedtuple
+import warnings
 
 import numpy
 
@@ -422,8 +423,37 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
             scheme = md["quadrature_rule"]
             degree = md["quadrature_degree"]
 
-            (points, weights) = create_quadrature_points_and_weights(integral_type, cell, degree,
-                                                                     scheme)
+            if scheme == "custom":
+                points = md["quadrature_points"]
+                weights = md["quadrature_weights"]
+            elif scheme == "vertex":
+                # FIXME: Could this come from FIAT?
+                #
+                # The vertex scheme, i.e., averaging the function value in the
+                # vertices and multiplying with the simplex volume, is only of
+                # order 1 and inferior to other generic schemes in terms of
+                # error reduction. Equation systems generated with the vertex
+                # scheme have some properties that other schemes lack, e.g., the
+                # mass matrix is a simple diagonal matrix. This may be
+                # prescribed in certain cases.
+                if degree > 1:
+                    warnings.warn(
+                        "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
+                        format(degree))
+                if cellname == "tetrahedron":
+                    points, weights = (numpy.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
+                                                    [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
+                                       numpy.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]))
+                elif cellname == "triangle":
+                    points, weights = (numpy.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
+                                       numpy.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]))
+                elif cellname == "interval":
+                    # Trapezoidal rule
+                    return (numpy.array([[0.0], [1.0]]), numpy.array([1.0 / 2.0, 1.0 / 2.0]))
+            else:
+                (points, weights) = create_quadrature_points_and_weights(integral_type, cell, degree,
+                                                                         scheme)
+
             points = numpy.asarray(points)
             weights = numpy.asarray(weights)
 
