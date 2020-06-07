@@ -745,8 +745,6 @@ class IntegralGenerator(object):
 
             if td.ttype == "ones":
                 arg_factor = 1
-            elif td.ttype == "quadrature":  # TODO: Revisit all quadrature ttype checks
-                arg_factor = table[iq]
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor = table[indices[i]]
@@ -781,10 +779,7 @@ class IntegralGenerator(object):
         arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
         B_indices = []
         for i in range(block_rank):
-            if ttypes[i] == "quadrature":
-                B_indices.append(iq)
-            else:
-                B_indices.append(arg_indices[i])
+            B_indices.append(arg_indices[i])
         B_indices = list(B_indices)
 
         # Get factor expression

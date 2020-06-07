@@ -403,3 +403,38 @@ def test_conditional(mode, compile_args):
 
     expected_result = np.ones(3, dtype=np_type)
     assert np.allclose(A2, expected_result)
+
+
+def test_custom_quadrature(compile_args):
+    ve = ufl.VectorElement("P", "triangle", 1)
+    mesh = ufl.Mesh(ve)
+
+    e = ufl.FiniteElement("P", mesh.ufl_cell(), 2)
+    V = ufl.FunctionSpace(mesh, e)
+    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+
+    points = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [0.5, 0.5], [0.0, 0.5], [0.5, 0.0]]
+    weights = [1 / 12] * 6
+    a = u * v * ufl.dx(metadata={"quadrature_rule": "custom",
+                                 "quadrature_points": points, "quadrature_weights": weights})
+
+    forms = [a]
+    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+
+    ffi = cffi.FFI()
+    form = compiled_forms[0][0]
+    default_integral = form.create_cell_integral(-1)
+
+    A = np.zeros((6, 6), dtype=np.float64)
+    w = np.array([], dtype=np.float64)
+    c = np.array([], dtype=np.float64)
+
+    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    default_integral.tabulate_tensor(
+        ffi.cast("double *", A.ctypes.data),
+        ffi.cast("double *", w.ctypes.data),
+        ffi.cast("double *", c.ctypes.data),
+        ffi.cast("double *", coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
+
+    # Check that A is diagonal
+    assert np.count_nonzero(A - np.diag(np.diagonal(A))) == 0
