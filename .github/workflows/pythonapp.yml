@@ -53,7 +53,9 @@ jobs:
         if: ${{ github.repository == 'FEniCS/ffcx' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: coveralls
+        run: |
+          echo $GITHUB_REPOSITORY $GITHUB_REF
+          coveralls
       - name: Upload pytest test results
         uses: actions/upload-artifact@master
         with:
