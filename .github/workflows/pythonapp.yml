@@ -54,7 +54,7 @@ jobs:
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: |
-          echo $GITHUB_REPOSITORY $GITHUB_REF
+          echo $GITHUB_REPOSITORY $GITHUB_REF $GITHUB_HEAD_REF $GITHUB_BASE_REF
           coveralls
       - name: Upload pytest test results
         uses: actions/upload-artifact@master
