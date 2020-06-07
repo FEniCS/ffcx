@@ -18,7 +18,7 @@ import string
 import ufl
 from ffcx import __version__ as FFCX_VERSION
 from ffcx import compiler, formatting
-from ffcx.parameters import FFCX_PARAMETERS
+from ffcx.parameters import FFCX_PARAMETERS, default_parameters
 
 logger = logging.getLogger("ffcx")
 
