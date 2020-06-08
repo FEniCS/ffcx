@@ -307,6 +307,8 @@ class ExpressionGenerator:
         definitions = []
         intermediates = []
 
+        use_symbol_array = True
+
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
@@ -361,7 +363,7 @@ class ExpressionGenerator:
                 else:
                     # Record assignment of vexpr to intermediate variable
                     j = len(intermediates)
-                    if self.ir.params["use_symbol_array"]:
+                    if use_symbol_array:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
@@ -377,7 +379,7 @@ class ExpressionGenerator:
         if definitions:
             parts += definitions
         if intermediates:
-            if self.ir.params["use_symbol_array"]:
+            if use_symbol_array:
                 alignas = self.ir.params["alignas"]
                 parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas)]
             parts += intermediates
