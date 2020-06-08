@@ -54,8 +54,6 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
                                               rule)
     elif integral_type in ufl.measure.point_integral_types:
         (points, weights) = create_quadrature("vertex", degree, rule)
-    elif integral_type in ufl.custom_integral_types:
-        (points, weights) = (None, None)
     elif integral_type == "expression":
         (points, weights) = (None, None)
     else:
