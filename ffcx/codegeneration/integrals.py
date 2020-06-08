@@ -186,7 +186,7 @@ class IntegralGenerator(object):
         parts = []
 
         alignment = self.ir.params['assume_aligned']
-        if alignment is not None:
+        if alignment != -1:
             parts += [L.VerbatimStatement("A = (ufc_scalar_t*)__builtin_assume_aligned(A, {});"
                                           .format(alignment)),
                       L.VerbatimStatement("w = (const ufc_scalar_t*)__builtin_assume_aligned(w, {});"
@@ -452,7 +452,9 @@ class IntegralGenerator(object):
         assert self.ir.integral_type in ufl.custom_integral_types
 
         num_points = self.ir.fake_num_points
-        chunk_size = self.ir.params["chunk_size"]
+
+        # FIXME: Review this parameters and add a better name
+        chunk_size = 1
 
         gdim = self.ir.geometric_dimension
 
@@ -584,6 +586,8 @@ class IntegralGenerator(object):
         definitions = []
         intermediates = []
 
+        use_symbol_array = True
+
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
@@ -640,7 +644,7 @@ class IntegralGenerator(object):
                     else:
                         # Record assignment of vexpr to intermediate variable
                         j = len(intermediates)
-                        if self.ir.params["use_symbol_array"]:
+                        if use_symbol_array:
                             vaccess = symbol[j]
                             intermediates.append(L.Assign(vaccess, vexpr))
                         else:
@@ -656,7 +660,7 @@ class IntegralGenerator(object):
         if definitions:
             parts += definitions
         if intermediates:
-            if self.ir.params["use_symbol_array"]:
+            if use_symbol_array:
                 alignas = self.ir.params["alignas"]
                 padlen = self.ir.params["padlen"]
                 parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas, padlen=padlen)]
