@@ -31,8 +31,9 @@ FFCX_PARAMETERS = {
         (32, """Memory alignment (in bytes) of some temporary objects in tabulation kernel
                 (finite element tables, intermediate variables array)"""),
     "assume_aligned":
-        (4, """Assumes alignment (in bytes) of pointers to tabulated tensor, coefficients and constants array.
-               This value must be compatible with alignment of data structures allocated outside FFC."""),
+        (-1, """Assumes alignment (in bytes) of pointers to tabulated tensor, coefficients and constants array.
+               This value must be compatible with alignment of data structures allocated outside FFC.
+               (-1 means no alignment assumed, safe option)"""),
     "padlen":
         (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value.")
 }
