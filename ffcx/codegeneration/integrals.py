@@ -186,7 +186,7 @@ class IntegralGenerator(object):
         parts = []
 
         alignment = self.ir.params['assume_aligned']
-        if alignment is not -1:
+        if alignment != -1:
             parts += [L.VerbatimStatement("A = (ufc_scalar_t*)__builtin_assume_aligned(A, {});"
                                           .format(alignment)),
                       L.VerbatimStatement("w = (const ufc_scalar_t*)__builtin_assume_aligned(w, {});"
