@@ -5,7 +5,7 @@ FFC-X: The FEniCS Form Compiler
 .. image:: https://github.com/FEniCS/ffcx/workflows/FFCX%20CI/badge.svg
    :target: https://github.com/FEniCS/ffcx/workflows/FFCX%20CI
 .. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
-   :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
+   :target: https://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 .. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg?branch=master
    :target: https://coveralls.io/github/FEniCS/ffcx?branch=master
@@ -22,13 +22,13 @@ vector.  FFCX may be used either from the command line (by invoking the
 ``ffcx`` command) or as a Python module (``import ffcx``).
 
 FFC-X is part of the FEniCS Project. For more information, visit
-http://www.fenicsproject.org
+https://www.fenicsproject.org
 
 
 Documentation
 =============
 
-Documentation can be viewed at http://fenics-ffcx.readthedocs.org/.
+Documentation can be viewed at https://fenics-ffcx.readthedocs.org/.
 
 
 License
@@ -45,4 +45,4 @@ License
   GNU Lesser General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with this program. If not, see <http://www.gnu.org/licenses/>.
+  along with this program. If not, see <https://www.gnu.org/licenses/>.
