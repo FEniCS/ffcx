@@ -2,9 +2,6 @@
 FFC-X: The FEniCS Form Compiler
 ===============================
 
-![FFCX](https://github.com/FEniCS/ffcx/workflows/FFCX/badge.svg)
-
-
 .. image:: https://github.com/FEniCS/ffcx/workflows/FFCX%20CI/badge.svg
     :target: https://github.com/FEniCS/ffcx/workflows/FFCX%20CI
 .. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
