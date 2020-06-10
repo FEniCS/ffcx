@@ -413,6 +413,11 @@ class ExpressionGenerator:
         return parts
 
     def generate_value_shape(self):
+        """Generate the array holding the expression's shape, which is to be exposed to the user.
+
+        This is only concerned with the array itself. Its length has to be exposed separately.
+
+        """
         L = self.backend.language
         # C doesn't allow for empty array declaration -> create a dummy zero array in this case
         shape = self.ir.expression_shape if len(self.ir.expression_shape) > 0 else [0]
