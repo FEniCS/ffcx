@@ -15,8 +15,8 @@ index_type = "int"
 
 
 def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters):
-    # Cutoff for feature to disable generation of this code (consider
-    # removing after benchmarking final result)
+    # Cutoff for feature to disable generation of this code
+    # (consider removing after benchmarking final result)
     if isinstance(data, str):
         # Return an error code
         return [L.Return(-1)]
@@ -103,9 +103,8 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
     tables_code, coefficients_for_dof = generate_expansion_coefficients(L, data["dofs_data"])
 
     # Generate code to compute tables of basisvalues
-    basisvalues_code, basisvalues_for_degree, need_fiat_coordinates = \
-        generate_compute_basisvalues(
-            L, data["dofs_data"], element_cellname, tdim, X, ip)
+    basisvalues_code, basisvalues_for_degree = \
+        generate_compute_basisvalues(L, data["dofs_data"], element_cellname, X, ip)
 
     # Generate all possible combinations of derivatives.
     combinations_code, combinations = _generate_combinations(L, tdim, max_degree, order,

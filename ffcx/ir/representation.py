@@ -600,7 +600,11 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     points = expression[1]
     expression = expression[0]
 
-    cell = expression.ufl_domain().ufl_cell()
+    try:
+        cell = expression.ufl_domain().ufl_cell()
+    except AttributeError:
+        # This case corresponds to a spatially constant expression without any dependencies
+        cell = None
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
@@ -664,6 +668,9 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     weights = numpy.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
     integrands = {rule: expression}
+
+    if cell is None:
+        assert len(ir["original_coefficient_positions"]) == 0 and len(ir["original_constant_offsets"]) == 0
 
     expression_ir = compute_integral_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
                                         parameters, visualise)
