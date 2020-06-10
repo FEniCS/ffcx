@@ -1,38 +1,37 @@
-==============================================
-FFC-X: The FEniCS Form Compiler (experimental)
-==============================================
+===============================
+FFC-X: The FEniCS Form Compiler
+===============================
 
-.. image:: https://circleci.com/gh/FEniCS/ffcx.svg?style=shield
-    :target: https://circleci.com/gh/FEniCS/ffcx
+![FFCX](https://github.com/FEniCS/ffcx/workflows/FFCX/badge.svg)
+
+
+.. image:: https://github.com/FEniCS/ffcx/workflows/FFCX%20CI/badge.svg
+    :target: https://github.com/FEniCS/ffcx/workflows/FFCX%20CI
 .. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
    :target: http://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 .. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg?branch=master
    :target: https://coveralls.io/github/FEniCS/ffcx?branch=master
 
-FFC-X is an experimental version of FEniCS FFC which is being actively
-developed, but is **not ready for production use**. Many new
-experimental features may come and go as development proceeds.
-
+FFC-X is a new version of the FEniCS Form Compiler. It is being actively
+developed and is compatible with DOLFIN-X.
 
 FFC-X is a compiler for finite element variational forms. From a
-high-level description of the form, it generates efficient low-level C
-code that can be used to assemble the corresponding discrete operator
-(tensor). In particular, a bilinear form may be assembled into a
-matrix and a linear form may be assembled into a vector.  FFCX may be
-used either from the command line (by invoking the ``ffcx`` command) or
-as a Python module (``import ffcx``).
+high-level description of the form in the Unified Form Language (UFL),
+it generates efficient low-level C code that can be used to assemble the
+corresponding discrete operator (tensor). In particular, a bilinear form
+may be assembled into a matrix and a linear form may be assembled into a
+vector.  FFCX may be used either from the command line (by invoking the
+``ffcx`` command) or as a Python module (``import ffcx``).
 
-FFC-X is part of the FEniCS Project.
-
-For more information, visit http://www.fenicsproject.org
+FFC-X is part of the FEniCS Project. For more information, visit
+http://www.fenicsproject.org
 
 
 Documentation
 =============
 
 Documentation can be viewed at http://fenics-ffcx.readthedocs.org/.
-
 
 
 License
