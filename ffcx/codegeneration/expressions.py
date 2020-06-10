@@ -10,6 +10,7 @@ import ufl
 from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.ir.representation import ir_expression
 
 logger = logging.getLogger("ffcx")
 
@@ -40,12 +41,7 @@ def generator(ir, parameters):
         eg.generate_original_coefficient_positions().cs_format(), 1)
 
     code["points"] = format_indented_lines(eg.generate_points().cs_format(), 1)
-
-    if len(eg.ir.expression_shape) > 0:
-        value_shape_decl = eg.generate_value_shape().cs_format()
-    else:
-        value_shape_decl = "static const int value_shape[1] = {0};"
-    code["value_shape"] = format_indented_lines(value_shape_decl, 1)
+    code["value_shape"] = format_indented_lines(eg.generate_value_shape().cs_format(), 1)
 
     # Format implementation code
     implementation = expressions_template.factory.format(
@@ -63,7 +59,7 @@ def generator(ir, parameters):
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: dict, backend: FFCXBackend):
+    def __init__(self, ir: ir_expression, backend: FFCXBackend):
 
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
@@ -418,6 +414,7 @@ class ExpressionGenerator:
 
     def generate_value_shape(self):
         L = self.backend.language
-        parts = L.ArrayDecl("static const int", "value_shape", values=self.ir.expression_shape,
-                            sizes=len(self.ir.expression_shape))
+        # C doesn't allow for empty array declaration -> create a dummy zero array in this case
+        shape = self.ir.expression_shape if len(self.ir.expression_shape) > 0 else [0]
+        parts = L.ArrayDecl("static const int", "value_shape", values=shape, sizes=len(shape))
         return parts
