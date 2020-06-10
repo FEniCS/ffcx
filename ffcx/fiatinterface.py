@@ -69,6 +69,7 @@ def create_element(ufl_element):
         element = _create_restricted_element(ufl_element)
         raise RuntimeError("Cannot handle this element type: {}".format(ufl_element))
     elif isinstance(ufl_element, ufl.TensorProductElement):
+        element = FlattenedDimensions(_create_fiat_element(ufl_element))
         cellname = ufl_element.cell().cellname()
         if cellname == "quadrilateral":
             # Just reconstruct the quad cell and pass run again
@@ -76,6 +77,18 @@ def create_element(ufl_element):
             B = ufl_element.sub_elements()[1]
             tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
             el = ufl.TensorProductElement(A, B, cell=tpc)
+            element = FlattenedDimensions(_create_fiat_element(el))
+        elif cellname == "hexahedron":
+            # Just reconstruct the quad cell and pass run again
+            A = ufl_element.sub_elements()[0]
+            B = ufl_element.sub_elements()[1]
+            C = ufl_element.sub_elements()[2]
+            # tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"), ufl.Cell("interval"))
+            # tpc0 = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+            # tpc = ufl.TensorProductCell(tpc0, ufl.Cell("interval"))
+            tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
+            el = ufl.TensorProductElement(ufl.TensorProductElement(A, B, cell=ufl.quadrilateral), C, cell=tpc)
+            # el = ufl.TensorProductElement(A, B, C, cell=tpc)
             element = FlattenedDimensions(_create_fiat_element(el))
         else:
             raise RuntimeError("TensorProductElement on this cell not implemented.")
