@@ -88,7 +88,7 @@ factory = """
 ufc_integral* create_{factory_name}(void)
 {{
   static const bool enabled{enabled_coefficients}
-  ufc_integral* integral = malloc(sizeof(*integral));
+  ufc_integral* integral = (ufc_integral*)malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;
@@ -105,7 +105,7 @@ custom_factory = """
 ufc_custom_integral* create_{factory_name}(void)
 {{
   static const bool enabled{enabled_coefficients}
-  ufc_custom_integral* integral = malloc(sizeof(*integral));
+  ufc_custom_integral* integral = (ufc_custom_integral*)malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
   return integral;

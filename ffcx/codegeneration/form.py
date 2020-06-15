@@ -147,7 +147,7 @@ class UFCForm:
 
         i = 0
         for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
-            body = "ufc_function_space* space = (ufc_function_space*) malloc(sizeof(*space));\n"
+            body = "ufc_function_space* space = (ufc_function_space*)malloc(sizeof(*space));\n"
             body += "space->create_element = create_{finite_element_classname};\n".format(
                 finite_element_classname=element)
             body += "space->create_dofmap = create_{dofmap_classname};\n".format(dofmap_classname=dofmap)

@@ -22,7 +22,7 @@ void tabulate_expression_{factory_name}(ufc_scalar_t* restrict A,
 ufc_expression* create_{factory_name}(void)
 {{
 
-  ufc_expression* expression = malloc(sizeof(*expression));
+  ufc_expression* expression = (ufc_expression*)malloc(sizeof(*expression));
 
   {original_coefficient_positions}
   {points}
