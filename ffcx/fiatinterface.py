@@ -32,20 +32,14 @@ class SpaceOfReals(object):
     """Constant over the entire domain, rather than just cellwise."""
 
 
-def reference_cell(cellname):
-    """Return FIAT reference cell."""
-    return FIAT.ufc_cell(cellname)
-
-
 def reference_cell_vertices(cellname):
     """Return dict of coordinates of reference cell vertices for this 'cellname'."""
-    cell = reference_cell(cellname)
-    return cell.get_vertices()
+    return FIAT.ufc_cell(cellname).get_vertices()
 
 
 @functools.singledispatch
 def _create_element(element):
-    raise ValueError("Unsupported element")
+    raise ValueError("Element type is not supported.")
 
 
 @_create_element.register(ufl.FiniteElement)
@@ -57,8 +51,6 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
         return e
 
     if element.family() == "Quadrature":
-        # Compute number of points per axis from the degree of the element
-        # scheme = element.quadrature_scheme()
         assert element.degree() is not None
         assert element.quadrature_scheme() is not None
 
@@ -87,8 +79,17 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
 
 @_create_element.register(ufl.MixedElement)
 def _create_mixed_finiteelement(element: ufl.MixedElement) -> FIAT.MixedElement:
-    elements = _extract_elements(element)
-    return FIAT.MixedElement(elements)
+    elements = []
+
+    def rextract(els):
+        for e in els:
+            if isinstance(e, ufl.MixedElement):
+                rextract(e.sub_elements())
+            else:
+                elements.append(e)
+
+    rextract(element.sub_elements())
+    return FIAT.MixedElement(map(_create_element, elements))
 
 
 @_create_element.register(ufl.EnrichedElement)
@@ -98,7 +99,7 @@ def _create_enriched_finiteelement(element: ufl.EnrichedElement) -> FIAT.Enriche
 
 
 @_create_element.register(ufl.NodalEnrichedElement)
-def _create_nodelenriched_finiteelement(element: ufl.NodalEnrichedElement) -> FIAT.NodalEnrichedElement:
+def _create_nodalenriched_finiteelement(element: ufl.NodalEnrichedElement) -> FIAT.NodalEnrichedElement:
     elements = [create_element(e) for e in element._elements]
     return FIAT.NodalEnrichedElement(*elements)
 
@@ -143,7 +144,7 @@ def create_quadrature(shape, degree, scheme="default"):
     if shape in ufl.cell.cellname2dim and ufl.cell.cellname2dim[shape] == 0:
         return (numpy.zeros((1, 0)), numpy.ones((1, )))
 
-    quad_rule = FIAT.create_quadrature(reference_cell(shape), degree, scheme)
+    quad_rule = FIAT.create_quadrature(FIAT.ufc_cell(shape), degree, scheme)
     points = numpy.asarray(quad_rule.get_points())
     weights = numpy.asarray(quad_rule.get_weights())
     return points, weights
@@ -168,7 +169,7 @@ def map_facet_points(points, facet, cellname):
         return [[(0.0, ), (1.0, )][facet]]
 
     # Get the FIAT reference cell
-    fiat_cell = reference_cell(cellname)
+    fiat_cell = FIAT.ufc_cell(cellname)
 
     # Extract vertex coordinates from cell and map of facet index to
     # indicent vertex indices
@@ -194,48 +195,3 @@ def map_facet_points(points, facet, cellname):
         new_points += [x]
 
     return new_points
-
-
-def _extract_elements(ufl_element, restriction_domain=None):
-    """Recursively extract un-nested list of (component) elements."""
-
-    elements = []
-    if isinstance(ufl_element, ufl.MixedElement):
-        for sub_element in ufl_element.sub_elements():
-            elements += _extract_elements(sub_element, restriction_domain)
-        return elements
-
-    # Handle restricted elements since they might be mixed elements too.
-    if isinstance(ufl_element, ufl.RestrictedElement):
-        base_element = ufl_element.sub_element()
-        restriction_domain = ufl_element.restriction_domain()
-        return _extract_elements(base_element, restriction_domain)
-
-    if restriction_domain:
-        ufl_element = ufl.RestrictedElement(ufl_element, restriction_domain)
-
-    elements += [create_element(ufl_element)]
-
-    return elements
-
-
-def _create_restricted_element(ufl_element):
-    """Create an FFCX representation for an UFL RestrictedElement."""
-
-    if not isinstance(ufl_element, ufl.RestrictedElement):
-        raise RuntimeError("create_restricted_element expects an ufl.RestrictedElement")
-
-    base_element = ufl_element.sub_element()
-    restriction_domain = ufl_element.restriction_domain()
-
-    # If simple element -> create RestrictedElement from fiat_element
-    if isinstance(base_element, ufl.FiniteElement):
-        element = _create_element(base_element)
-        return FIAT.RestrictedElement(element, restriction_domain=restriction_domain)
-
-    # If restricted mixed element -> convert to mixed restricted element
-    if isinstance(base_element, ufl.MixedElement):
-        elements = _extract_elements(base_element, restriction_domain)
-        return FIAT.MixedElement(elements)
-
-    raise RuntimeError("Cannot create restricted element from: {}".format(ufl_element))
