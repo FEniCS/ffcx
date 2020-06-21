@@ -78,32 +78,29 @@ def _create_restricted_finiteelement(element):
 
 
 @_create_element.register(ufl.TensorProductElement)
-def _create_tp_finiteelement(ufl_element):
-    element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(ufl_element))
-    cellname = ufl_element.cell().cellname()
+def _create_tp_finiteelement(element):
+    cellname = element.cell().cellname()
     if cellname == "quadrilateral":
         # Just reconstruct the quad cell and pass run again
-        A = ufl_element.sub_elements()[0]
-        B = ufl_element.sub_elements()[1]
+        A = element.sub_elements()[0]
+        B = element.sub_elements()[1]
         tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
         el = ufl.TensorProductElement(A, B, cell=tpc)
-        element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
+        return FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
     elif cellname == "hexahedron":
         # Just reconstruct the quad cell and pass run again
-        A = ufl_element.sub_elements()[0]
-        B = ufl_element.sub_elements()[1]
-        C = ufl_element.sub_elements()[2]
+        A = element.sub_elements()[0]
+        B = element.sub_elements()[1]
+        C = element.sub_elements()[2]
         # tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"), ufl.Cell("interval"))
         # tpc0 = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
         # tpc = ufl.TensorProductCell(tpc0, ufl.Cell("interval"))
         tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
         el = ufl.TensorProductElement(ufl.TensorProductElement(A, B, cell=ufl.quadrilateral), C, cell=tpc)
         # el = ufl.TensorProductElement(A, B, C, cell=tpc)
-        element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
+        return FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
     else:
         raise RuntimeError("TensorProductElement on this cell not implemented.")
-
-    return element
 
 
 def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
@@ -115,52 +112,54 @@ def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
     if element_signature in _cache:
         return _cache[element_signature]
 
-    if isinstance(ufl_element, ufl.FiniteElement):
-        #
-        element = _create_fiat_element(ufl_element)
-    elif isinstance(ufl_element, ufl.MixedElement):
-        #
-        elements = _extract_elements(ufl_element)
-        element = FIAT.MixedElement(elements)
-    elif isinstance(ufl_element, ufl.EnrichedElement):
-        #
-        elements = [create_element(e) for e in ufl_element._elements]
-        element = FIAT.EnrichedElement(*elements)
-    elif isinstance(ufl_element, ufl.NodalEnrichedElement):
-        #
-        elements = [create_element(e) for e in ufl_element._elements]
-        element = FIAT.NodalEnrichedElement(*elements)
-    elif isinstance(ufl_element, ufl.RestrictedElement):
-        #
-        element = _create_restricted_element(ufl_element)
-        raise RuntimeError("Cannot handle this element type: {}".format(ufl_element))
-    elif isinstance(ufl_element, ufl.TensorProductElement):
-        #
-        element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(ufl_element))
-        cellname = ufl_element.cell().cellname()
-        if cellname == "quadrilateral":
-            # Just reconstruct the quad cell and pass run again
-            A = ufl_element.sub_elements()[0]
-            B = ufl_element.sub_elements()[1]
-            tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
-            el = ufl.TensorProductElement(A, B, cell=tpc)
-            element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
-        elif cellname == "hexahedron":
-            # Just reconstruct the quad cell and pass run again
-            A = ufl_element.sub_elements()[0]
-            B = ufl_element.sub_elements()[1]
-            C = ufl_element.sub_elements()[2]
-            # tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"), ufl.Cell("interval"))
-            # tpc0 = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
-            # tpc = ufl.TensorProductCell(tpc0, ufl.Cell("interval"))
-            tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
-            el = ufl.TensorProductElement(ufl.TensorProductElement(A, B, cell=ufl.quadrilateral), C, cell=tpc)
-            # el = ufl.TensorProductElement(A, B, C, cell=tpc)
-            element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
-        else:
-            raise RuntimeError("TensorProductElement on this cell not implemented.")
-    else:
-        raise RuntimeError("Unknown FIAT element for UFL element {}".format(ufl_element))
+    # if isinstance(ufl_element, ufl.FiniteElement):
+    #     #
+    #     element = _create_fiat_element(ufl_element)
+    # elif isinstance(ufl_element, ufl.MixedElement):
+    #     #
+    #     elements = _extract_elements(ufl_element)
+    #     element = FIAT.MixedElement(elements)
+    # elif isinstance(ufl_element, ufl.EnrichedElement):
+    #     #
+    #     elements = [create_element(e) for e in ufl_element._elements]
+    #     element = FIAT.EnrichedElement(*elements)
+    # elif isinstance(ufl_element, ufl.NodalEnrichedElement):
+    #     #
+    #     elements = [create_element(e) for e in ufl_element._elements]
+    #     element = FIAT.NodalEnrichedElement(*elements)
+    # elif isinstance(ufl_element, ufl.RestrictedElement):
+    #     #
+    #     element = _create_restricted_element(ufl_element)
+    #     raise RuntimeError("Cannot handle this element type: {}".format(ufl_element))
+    # elif isinstance(ufl_element, ufl.TensorProductElement):
+    #     #
+    #     element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(ufl_element))
+    #     cellname = ufl_element.cell().cellname()
+    #     if cellname == "quadrilateral":
+    #         # Just reconstruct the quad cell and pass run again
+    #         A = ufl_element.sub_elements()[0]
+    #         B = ufl_element.sub_elements()[1]
+    #         tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+    #         el = ufl.TensorProductElement(A, B, cell=tpc)
+    #         element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
+    #     elif cellname == "hexahedron":
+    #         # Just reconstruct the quad cell and pass run again
+    #         A = ufl_element.sub_elements()[0]
+    #         B = ufl_element.sub_elements()[1]
+    #         C = ufl_element.sub_elements()[2]
+    #         # tpc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"), ufl.Cell("interval"))
+    #         # tpc0 = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+    #         # tpc = ufl.TensorProductCell(tpc0, ufl.Cell("interval"))
+    #         tpc = ufl.TensorProductCell(ufl.Cell("quadrilateral"), ufl.Cell("interval"))
+    #         el = ufl.TensorProductElement(ufl.TensorProductElement(A, B, cell=ufl.quadrilateral), C, cell=tpc)
+    #         # el = ufl.TensorProductElement(A, B, C, cell=tpc)
+    #         element = FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(el))
+    #     else:
+    #         raise RuntimeError("TensorProductElement on this cell not implemented.")
+    # else:
+    #     raise RuntimeError("Unknown FIAT element for UFL element {}".format(ufl_element))
+
+    element = _create_element(ufl_element)
 
     # Store in cache
     _cache[element_signature] = element
