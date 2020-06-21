@@ -107,7 +107,7 @@ def _create_tp_finiteelement(ufl_element):
 
 
 def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
-    """Create a FIAT finite element for a given UFL element"""
+    """Create a FIAT finite element for a given UFL element."""
 
     # Create element signature for caching (just use UFL element) and
     # check cache
