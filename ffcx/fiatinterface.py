@@ -72,7 +72,13 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
     if element.family() not in FIAT.supported_elements:
         raise ValueError("Finite element of type \"{}\" is not supported by FIAT.".format(element.family()))
 
-    element_class = FIAT.supported_elements[element.family()]
+    # Handle Lagrange variants
+    if element.family() == "Lagrange" and element.variant() == "spectral":
+        assert element.cell().cellname() == "interval"
+        element_class = FIAT.GaussLobattoLegendre
+    else:
+        element_class = FIAT.supported_elements[element.family()]
+
     assert element.degree() is not None
     return element_class(FIAT.ufc_cell(element.cell().cellname()), element.degree())
 
@@ -112,8 +118,23 @@ def _create_restricted_finiteelement(element: ufl.RestrictedElement):
 
 @_create_element.register(ufl.TensorProductElement)
 def _create_tp_finiteelement(element) -> FIAT.TensorProductElement:
-    e0, e1 = element.sub_elements()
-    return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
+    print("TTTTTT")
+    if len(element.sub_elements()) == 3:
+        e0, e1, e2 = element.sub_elements()
+        # e = ufl.TensorProductElement(ufl.TensorProductElement(e0, e1, cell=_tpc_quadrilateral),
+        #                              e2, cell=_tpc_hexahedron)
+        e = ufl.TensorProductElement(e0, e1, cell=ufl.quadrilateral)
+        e = _create_element(e)
+        return FIAT.TensorProductElement(e, _create_element(e2))
+        # print("Num: ", len(e.sub_elements()))
+        # return _create_element(e)
+    else:
+        # print("TTTTT", element.sub_elements())
+        e0, e1 = element.sub_elements()
+        return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
+
+    # e0, e1 = element.sub_elements()
+    # return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
 
 
 def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
@@ -125,6 +146,7 @@ def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
         return _cache[element_signature]
 
     # Create element and add to cache
+    print(ufl_element, type(ufl_element))
     element = _create_element(ufl_element)
     _cache[element_signature] = element
 
