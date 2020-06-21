@@ -73,7 +73,10 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
         raise ValueError("Finite element of type \"{}\" is not supported by FIAT.".format(element.family()))
 
     # Handle Lagrange variants
-    if element.family() == "Lagrange" and element.variant() == "spectral":
+    # if element.family() == "Lagrange" and element.variant() == "spectral":
+    #     assert element.cell().cellname() == "interval"
+    #     element_class = FIAT.GaussLobattoLegendre
+    if element.family() == "Lagrange" and element.cell().cellname() == "interval":
         assert element.cell().cellname() == "interval"
         element_class = FIAT.GaussLobattoLegendre
     else:
