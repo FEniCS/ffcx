@@ -22,7 +22,7 @@ factory = """
 
 ufc_coordinate_mapping* create_{factory_name}(void)
 {{
-  ufc_coordinate_mapping* cmap = malloc(sizeof(*cmap));
+  ufc_coordinate_mapping* cmap = (ufc_coordinate_mapping*)malloc(sizeof(*cmap));
   cmap->signature = {signature};
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};

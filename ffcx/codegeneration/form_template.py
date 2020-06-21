@@ -112,7 +112,7 @@ void get_custom_integral_ids_{factory_name}(int *ids)
 
 ufc_form* create_{factory_name}(void)
 {{
-  ufc_form* form = malloc(sizeof(*form));
+  ufc_form* form = (ufc_form*)malloc(sizeof(*form));
 
   form->signature = {signature};
   form->rank = {rank};

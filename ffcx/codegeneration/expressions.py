@@ -10,6 +10,7 @@ import ufl
 from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.ir.representation import ir_expression
 
 logger = logging.getLogger("ffcx")
 
@@ -58,7 +59,7 @@ def generator(ir, parameters):
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: dict, backend: FFCXBackend):
+    def __init__(self, ir: ir_expression, backend: FFCXBackend):
 
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
@@ -412,7 +413,13 @@ class ExpressionGenerator:
         return parts
 
     def generate_value_shape(self):
+        """Generate the array holding the expression's shape, which is to be exposed to the user.
+
+        This is only concerned with the array itself. Its length has to be exposed separately.
+
+        """
         L = self.backend.language
-        parts = L.ArrayDecl("static const int", "value_shape", values=self.ir.expression_shape,
-                            sizes=len(self.ir.expression_shape))
+        # C doesn't allow for empty array declaration -> create a dummy zero array in this case
+        shape = self.ir.expression_shape if len(self.ir.expression_shape) > 0 else [0]
+        parts = L.ArrayDecl("static const int", "value_shape", values=shape, sizes=len(shape))
         return parts

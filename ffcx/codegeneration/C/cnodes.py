@@ -1312,6 +1312,9 @@ class ArrayDecl(CStatement):
         self.padlen = padlen
 
     def cs_format(self, precision=None):
+        if not all(self.sizes):
+            raise RuntimeError("Detected an array dimension of zero. This is not valid in C.")
+
         # Pad innermost array dimension
         sizes = pad_innermost_dim(self.sizes, self.padlen)
 
