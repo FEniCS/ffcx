@@ -44,7 +44,7 @@ def _create_element(element):
 
 @_create_element.register(ufl.FiniteElement)
 def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
-    """Base FiniteElement"""
+    """Create FIAT element for UFL base type ufl.FiniteElement."""
     if element.family() == "Real":
         e = create_element(ufl.FiniteElement("DG", element.cell(), 0))
         e.__class__ = type('SpaceOfReals', (type(e), SpaceOfReals), {})
