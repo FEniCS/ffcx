@@ -203,7 +203,8 @@ def _create_fiat_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
     if cellname == "quadrilateral":
         # Handle quadrilateral case by reconstructing the element with
         # cell TensorProductCell (interval x interval)
-        return FIAT.tensor_product.FlattenedDimensions(_create_fiat_element(ufl_element.reconstruct(cell=_tpc_quadrilateral)))
+        e = _create_fiat_element(ufl_element.reconstruct(cell=_tpc_quadrilateral))
+        return FIAT.tensor_product.FlattenedDimensions(e)
     elif cellname == "hexahedron":
         # Handle hexahedron case by reconstructing the element with cell
         # TensorProductCell (quadrilateral x interval). This creates
