@@ -73,10 +73,7 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
         raise ValueError("Finite element of type \"{}\" is not supported by FIAT.".format(element.family()))
 
     # Handle Lagrange variants
-    # if element.family() == "Lagrange" and element.variant() == "spectral":
-    #     assert element.cell().cellname() == "interval"
-    #     element_class = FIAT.GaussLobattoLegendre
-    if element.family() == "Lagrange" and element.cell().cellname() == "interval":
+    if element.family() == "Lagrange" and element.variant() == "spectral":
         assert element.cell().cellname() == "interval"
         element_class = FIAT.GaussLobattoLegendre
     else:
@@ -121,23 +118,8 @@ def _create_restricted_finiteelement(element: ufl.RestrictedElement):
 
 @_create_element.register(ufl.TensorProductElement)
 def _create_tp_finiteelement(element) -> FIAT.TensorProductElement:
-    print("TTTTTT")
-    if len(element.sub_elements()) == 3:
-        e0, e1, e2 = element.sub_elements()
-        # e = ufl.TensorProductElement(ufl.TensorProductElement(e0, e1, cell=_tpc_quadrilateral),
-        #                              e2, cell=_tpc_hexahedron)
-        e = ufl.TensorProductElement(e0, e1, cell=ufl.quadrilateral)
-        e = _create_element(e)
-        return FIAT.TensorProductElement(e, _create_element(e2))
-        # print("Num: ", len(e.sub_elements()))
-        # return _create_element(e)
-    else:
-        # print("TTTTT", element.sub_elements())
-        e0, e1 = element.sub_elements()
-        return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
-
-    # e0, e1 = element.sub_elements()
-    # return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
+    e0, e1 = element.sub_elements()
+    return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
 
 
 def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
