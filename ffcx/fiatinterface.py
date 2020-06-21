@@ -70,7 +70,7 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
         return FIAT.tensor_product.FlattenedDimensions(e)
 
     if element.family() not in FIAT.supported_elements:
-        raise ValueError("Finite element of type \"{}\" is not supported by FIAT.".format(family))
+        raise ValueError("Finite element of type \"{}\" is not supported by FIAT.".format(element.family()))
 
     element_class = FIAT.supported_elements[element.family()]
     assert element.degree() is not None
