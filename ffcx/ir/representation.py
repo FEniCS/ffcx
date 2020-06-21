@@ -846,7 +846,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
             A = e.element.A
             B = e.element.B
             # Attach suitable coefficients to element
-            if isinstance(A, FIAT.FlattenedDimensions):
+            if isinstance(A, FIAT.tensor_product.FlattenedDimensions):
                 # This is for hexahedral element
                 ac = A.element.A.get_coeffs()
                 bc = A.element.B.get_coeffs()
