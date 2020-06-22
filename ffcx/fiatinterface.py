@@ -131,7 +131,6 @@ def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
         return _cache[element_signature]
 
     # Create element and add to cache
-    print(ufl_element, type(ufl_element))
     element = _create_element(ufl_element)
     _cache[element_signature] = element
 

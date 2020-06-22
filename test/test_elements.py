@@ -61,6 +61,13 @@ def test_continuous_lagrange_quadrilateral(degree, expected_dim):
     assert P.space_dimension() == expected_dim
 
 
+@pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
+def test_continuous_lagrange_quadrilateral_spectral(degree, expected_dim):
+    "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
+    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
+    assert P.space_dimension() == expected_dim
+
+
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."

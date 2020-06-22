@@ -35,7 +35,6 @@ def reference_points():
 def test_dim_degree(compiled_element):
     ufl_element, compiled_element, module = compiled_element
     cell = ufl_element.cell()
-
     assert compiled_element[0].geometric_dimension == cell.geometric_dimension()
     assert compiled_element[0].topological_dimension == cell.topological_dimension()
     assert ufl_element.degree() == compiled_element[0].degree
