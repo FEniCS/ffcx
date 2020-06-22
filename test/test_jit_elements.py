@@ -35,7 +35,6 @@ def reference_points():
 def test_dim_degree(compiled_element):
     ufl_element, compiled_element, module = compiled_element
     cell = ufl_element.cell()
-
     assert compiled_element[0].geometric_dimension == cell.geometric_dimension()
     assert compiled_element[0].topological_dimension == cell.topological_dimension()
     assert ufl_element.degree() == compiled_element[0].degree
@@ -47,7 +46,7 @@ def test_tabulate_reference_dof_coordinates(compiled_element):
     if ufl_element.family() not in ["Lagrange", "Quadrature"]:
         pytest.skip("Cannot tabulate dofs for this FE.")
 
-    fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
+    fiat_element = ffcx.fiatinterface.create_element(ufl_element)
 
     tdim = compiled_element[0].topological_dimension
     space_dim = compiled_element[0].space_dimension
@@ -65,7 +64,7 @@ def test_evaluate_reference_basis(compiled_element, reference_points):
     if ufl_element.family() in ["Quadrature"]:
         pytest.skip("Cannot evaluate basis for this FE.")
 
-    fiat_element = ffcx.fiatinterface._create_fiat_element(ufl_element)
+    fiat_element = ffcx.fiatinterface.create_element(ufl_element)
 
     space_dim = compiled_element[0].space_dimension
     tdim = compiled_element[0].topological_dimension

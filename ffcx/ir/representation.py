@@ -18,21 +18,19 @@ representation under the key "foo".
 
 import itertools
 import logging
-from collections import namedtuple
 import warnings
+from collections import namedtuple
 
 import numpy
 
+import FIAT
 import ufl
 from ffcx import naming
-from ffcx.fiatinterface import (EnrichedElement, FlattenedDimensions,
-                                MixedElement, QuadratureElement, SpaceOfReals,
-                                create_element)
+from ffcx.fiatinterface import SpaceOfReals, create_element
 from ffcx.ir import dof_permutations
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
-from FIAT.hdiv_trace import HDivTrace
 from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum
 
@@ -339,7 +337,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
 
 def _num_global_support_dofs(fiat_element):
     """Compute number of global support dofs."""
-    if not isinstance(fiat_element, MixedElement):
+    if not isinstance(fiat_element, FIAT.MixedElement):
         if isinstance(fiat_element, SpaceOfReals):
             return 1
         return 0
@@ -687,7 +685,7 @@ def _generate_reference_offsets(fiat_element, offset=0):
     element representation.
 
     """
-    if isinstance(fiat_element, MixedElement):
+    if isinstance(fiat_element, FIAT.MixedElement):
         offsets = []
         for e in fiat_element.elements():
             offsets += _generate_reference_offsets(e, offset)
@@ -695,7 +693,7 @@ def _generate_reference_offsets(fiat_element, offset=0):
             # means reference_value_shape
             offset += ufl.utils.sequences.product(e.value_shape())
         return offsets
-    elif isinstance(fiat_element, EnrichedElement):
+    elif isinstance(fiat_element, FIAT.EnrichedElement):
         offsets = []
         for e in fiat_element.elements():
             offsets += _generate_reference_offsets(e, offset)
@@ -790,7 +788,7 @@ def _evaluate_dof(ufl_element, fiat_element):
 
 def _extract_elements(fiat_element):
     new_elements = []
-    if isinstance(fiat_element, (MixedElement, EnrichedElement)):
+    if isinstance(fiat_element, (FIAT.MixedElement, FIAT.EnrichedElement)):
         for e in fiat_element.elements():
             new_elements += _extract_elements(e)
     else:
@@ -818,12 +816,12 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     # defined at the dof coordinates where the value is 1, so not very
     # interesting.
     for e in elements:
-        if isinstance(e, QuadratureElement):
+        if isinstance(e, FIAT.QuadratureElement):
             return "Function not supported/implemented for QuadratureElement."
-        if isinstance(e, FlattenedDimensions) and isinstance(e.element, QuadratureElement):
+        if isinstance(e, FIAT.tensor_product.FlattenedDimensions) and isinstance(e.element, FIAT.QuadratureElement):
             # Case for quad/hex cell
             return "Function not supported/implemented for QuadratureElement."
-        if isinstance(e, HDivTrace):
+        if isinstance(e, FIAT.HDivTrace):
             return "Function not supported for Trace elements"
 
     # Initialise data with 'global' values.
@@ -843,12 +841,12 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     dofs_data = []
     for e in elements:
         num_components = ufl.utils.sequences.product(e.value_shape())
-        if isinstance(e, FlattenedDimensions):
+        if isinstance(e, FIAT.tensor_product.FlattenedDimensions):
             # Tensor product element
             A = e.element.A
             B = e.element.B
             # Attach suitable coefficients to element
-            if isinstance(A, FlattenedDimensions):
+            if isinstance(A, FIAT.tensor_product.FlattenedDimensions):
                 # This is for hexahedral element
                 ac = A.element.A.get_coeffs()
                 bc = A.element.B.get_coeffs()
@@ -990,7 +988,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
 
 
 def all_elements(fiat_element):
-    if isinstance(fiat_element, MixedElement):
+    if isinstance(fiat_element, FIAT.MixedElement):
         return fiat_element.elements()
     return [fiat_element]
 
