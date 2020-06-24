@@ -833,6 +833,7 @@ class IntegralGenerator(object):
         A_indices = []
 
         for i, bm in enumerate(blockmap):
+            # TODO: switch order here? (optionally)
             offset = blockmap[i][0]
             A_indices.append(arg_indices[i] + offset)
 

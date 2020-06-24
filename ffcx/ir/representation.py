@@ -184,7 +184,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    
+
     block_size = 1
     if ufl_element.num_sub_elements() > 0:
         block_size = ufl_element.num_sub_elements()
