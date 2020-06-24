@@ -436,6 +436,7 @@ def generator(ir, parameters):
     d["degree"] = ir.degree
     d["family"] = "\"{}\"".format(ir.family)
     d["num_sub_elements"] = ir.num_sub_elements
+    d["block_size"] = ir.block_size
 
     import ffcx.codegeneration.C.cnodes as L
 

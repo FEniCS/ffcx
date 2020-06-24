@@ -56,7 +56,7 @@ ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
                                        'geometric_dimension', 'space_dimension', 'value_shape',
                                        'reference_value_shape', 'degree', 'family', 'evaluate_basis',
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                       'base_permutations', 'dof_reflection_entities',
+                                       'base_permutations', 'dof_reflection_entities', 'block_size',
                                        'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
@@ -184,6 +184,12 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
+    
+    block_size = 1
+    if ufl_element.num_sub_elements() > 0:
+        block_size = ufl_element.num_sub_elements()
+    ir["block_size"] = block_size
+
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
@@ -801,11 +807,15 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
-    # Handle Mixed and EnrichedElements by extracting 'sub' elements.
-    elements = _extract_elements(fiat_element)
-    physical_offsets = _generate_physical_offsets(ufl_element)
-    reference_offsets = _generate_reference_offsets(fiat_element)
-    mappings = fiat_element.mapping()
+    if isinstance(ufl_element, ufl.VectorElement):
+        # If VectorElement, each element in the MixedElement is the same
+        return _evaluate_basis(ufl_element.sub_elements()[0], fiat_element.elements()[0], epsilon)
+    else:
+        # Handle Mixed and EnrichedElements by extracting 'sub' elements.
+        elements = _extract_elements(fiat_element)
+        physical_offsets = _generate_physical_offsets(ufl_element)
+        reference_offsets = _generate_reference_offsets(fiat_element)
+        mappings = fiat_element.mapping()
 
     # This function is evidently not implemented for TensorElements
     for e in elements:

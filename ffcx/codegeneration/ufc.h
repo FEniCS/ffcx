@@ -113,6 +113,9 @@ extern "C"
     /// function space
     int degree;
 
+    /// Return the block size for a VectorElement
+    int block_size;
+
     /// Return the family of the finite element function space
     const char* family;
 
