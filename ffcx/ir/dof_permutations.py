@@ -24,7 +24,6 @@ def base_permutations(ufl_element):
     # If the element has sub elements, combine their permutations
     perms = None
 
-    ### TODO: fix VectorElements here
     for e in ufl_element.sub_elements():
         bp = base_permutations(e)
         if perms is None:

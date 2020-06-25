@@ -669,7 +669,6 @@ class IntegralGenerator(object):
 
     def generate_dofblock_partition(self, quadrature_rule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
-        ###### TODO: come back here
         preparts = []
         quadparts = []
         blocks = [(blockmap, blockdata)
@@ -832,14 +831,10 @@ class IntegralGenerator(object):
         B_rhs = L.float_product([fw] + arg_factors)
         A_indices = []
 
-        ######
-
         for i, bm in enumerate(blockmap):
             # TODO: switch order here? (optionally)
             offset = blockmap[i][0]
             A_indices.append(arg_indices[i] + offset)
-            # A_indices.append(len(blockmap) * arg_indices[i] + offset//len(blockmap[i]))
-            # from IPython import embed; embed()
 
         body = L.AssignAdd(A[A_indices], B_rhs)
 
