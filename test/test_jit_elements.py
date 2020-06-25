@@ -5,10 +5,10 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 import ffcx
 import ffcx.codegeneration.jit
-import pytest
 import ufl
 
 families = ["Lagrange", "Brezzi-Douglas-Marini", "Raviart-Thomas", "N1curl", "N2curl"]
@@ -43,7 +43,7 @@ def test_dim_degree(compiled_element):
 def test_tabulate_reference_dof_coordinates(compiled_element):
     ufl_element, compiled_element, module = compiled_element
 
-    if ufl_element.family() not in ["Lagrange", "Quadrature"]:
+    if ufl_element.family() not in ["Lagrange", "Quadrature", "Q"]:
         pytest.skip("Cannot tabulate dofs for this FE.")
 
     fiat_element = ffcx.fiatinterface.create_element(ufl_element)
