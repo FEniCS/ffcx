@@ -186,7 +186,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
 
     block_size = 1
-    if ufl_element.num_sub_elements() > 0:
+    if isinstance(ufl_element, ufl.VectorElement):
         block_size = ufl_element.num_sub_elements()
     ir["block_size"] = block_size
 
@@ -566,8 +566,6 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     ir["create_dofmap"] = [
         dofmap_names[e] for e in form_data.argument_elements + form_data.coefficient_elements
     ]
-
-    # from IPython import embed; embed()
 
     fs = {}
     for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
