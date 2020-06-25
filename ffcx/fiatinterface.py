@@ -159,9 +159,9 @@ def create_quadrature(shape, degree: int, scheme: str = "default"):
 def map_facet_points(points, facet, cellname):
     """Map points from a facet to a cell.
 
-    Map points from the e (UFC) reference simplex of dimension d - 1 to
-    a given facet on the (UFC) reference simplex of dimension d. This
-    may be used to transform points tabulated for example on the 2D
+    Map points from the (UFC) reference simplex of dimension d - 1 to a
+    given facet on the (UFC) reference simplex of dimension d. This may
+    be used to transform points tabulated for example on the 2D
     reference triangle to points on a given facet of the reference
     tetrahedron.
 
