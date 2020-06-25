@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2017 Kristian B. Oelgaard and Anders Logg
+# Copyright (C) 2009-2020 Kristian B. Oelgaard, Anders Logg and Garth N. Wells
 #
 # This file is part of FFCX.(https://www.fenicsproject.org)
 #
@@ -137,11 +137,11 @@ def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
     return element
 
 
-def create_quadrature(shape, degree, scheme="default"):
+def create_quadrature(shape, degree: int, scheme: str = "default"):
     """Generate quadrature rule.
 
-    Quadrature rule(points, weights) for given shape
-    that will integrate an polynomial of order 'degree' exactly.
+    Quadrature rule(points, weights) for given shape that will integrate
+    an polynomial of order 'degree' exactly.
 
     """
     if isinstance(shape, int) and shape == 0:
@@ -159,8 +159,8 @@ def create_quadrature(shape, degree, scheme="default"):
 def map_facet_points(points, facet, cellname):
     """Map points from a facet to a cell.
 
-    Map points from the e (UFC) reference simplex of dimension d - 1
-    to a given facet on the (UFC) reference simplex of dimension d. This
+    Map points from the e (UFC) reference simplex of dimension d - 1 to
+    a given facet on the (UFC) reference simplex of dimension d. This
     may be used to transform points tabulated for example on the 2D
     reference triangle to points on a given facet of the reference
     tetrahedron.
