@@ -26,7 +26,7 @@ import numpy
 import FIAT
 import ufl
 from ffcx import naming
-from ffcx.fiatinterface import SpaceOfReals, create_element, _compute_entity_dofs
+from ffcx.fiatinterface import SpaceOfReals, create_element
 from ffcx.ir import dof_permutations
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
@@ -211,7 +211,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
-    entity_dofs = _compute_entity_dofs(fiat_element, ufl_element)
+    entity_dofs = fiat_element.entity_dofs()
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}

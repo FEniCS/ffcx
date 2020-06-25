@@ -201,23 +201,3 @@ def map_facet_points(points, facet, cellname):
         new_points += [x]
 
     return new_points
-
-
-def _compute_entity_dofs(fiat_element, ufl_element):
-    if isinstance(ufl_element, ufl.VectorElement):
-        _ed = _compute_entity_dofs(fiat_element.elements()[0],
-                                   ufl_element.sub_elements()[0])
-        block_size = len(fiat_element.elements())
-        entity_dofs = {}
-        for i, j in _ed.items():
-            entity_dofs[i] = {}
-            for n, e_dofs in j.items():
-                entity_dofs[i][n] = []
-                for e in e_dofs:
-                    for dim in range(block_size):
-                        entity_dofs[i][n].append(e * block_size + dim)
-
-        return entity_dofs
-
-    else:
-        return fiat_element.entity_dofs()
