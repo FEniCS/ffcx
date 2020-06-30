@@ -130,7 +130,7 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
                 out[dim][entity] = []
                 for i in e_dofs:
                     out[dim][entity] += [block_size * i + j for j in range(block_size)]
-    return out
+        return out
 
     # Reorder from XXYYZZ to XYZXYZ
     block_size = element.num_sub_elements()
