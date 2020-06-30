@@ -114,6 +114,24 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
     rextract(element.sub_elements())
     element = FIAT.MixedElement(map(_create_element, elements))
 
+    def reorder_for_vector_element(item, block_size):
+        """Reorder the elements in item from XXYYZZ ordering to XYZXYZ."""
+        out = []
+        for block in range(block_size):
+            out += item[block::block_size]
+        return out
+
+    def calculate_entity_dofs_of_vector_element(entity_dofs, block_size):
+        """Get the entity DOFs of a VectorElement with XYZXYZ ordering."""
+        out = {}
+        for dim, dofs in entity_dofs.items():
+            out[dim] = {}
+            for entity, e_dofs in dofs.items():
+                out[dim][entity] = []
+                for i in e_dofs:
+                    out[dim][entity] += [block_size * i + j for j in range(block_size)]
+    return out
+
     # Reorder from XXYYZZ to XYZXYZ
     block_size = element.num_sub_elements()
     element.mapping = types.MethodType(
@@ -126,26 +144,6 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
         element.elements()[0].dual.entity_closure_ids, block_size)
 
     return element
-
-
-def reorder_for_vector_element(item, block_size):
-    """Reorder the elements in item from XXYYZZ ordering to XYZXYZ"""
-    out = []
-    for block in range(block_size):
-        out += item[block::block_size]
-    return out
-
-
-def calculate_entity_dofs_of_vector_element(entity_dofs, block_size):
-    """Get the entity DOFs of a VectorElement with XYZXYZ ordering"""
-    out = {}
-    for dim, dofs in entity_dofs.items():
-        out[dim] = {}
-        for entity, e_dofs in dofs.items():
-            out[dim][entity] = []
-            for i in e_dofs:
-                out[dim][entity] += [block_size * i + j for j in range(block_size)]
-    return out
 
 
 @_create_element.register(ufl.EnrichedElement)
