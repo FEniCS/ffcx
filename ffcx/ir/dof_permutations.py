@@ -64,7 +64,8 @@ def base_permutations_from_subdofmap(ufl_element):
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
     fiat_element = create_element(ufl_element)
-    num_dofs = len(fiat_element.dual_basis())
+    dual = fiat_element.dual_basis()
+    num_dofs = len(dual)
 
     tdim = ufl_element.cell().topological_dimension()
 
@@ -75,7 +76,7 @@ def base_permutations_from_subdofmap(ufl_element):
     # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
     num_perms = sum([0, 1, 2, 4][i] * j for i, j in enumerate(entity_counts[:tdim]))
 
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
     perms = identity_permutations(num_perms, num_dofs)
@@ -126,7 +127,8 @@ def reflection_entities_from_subdofmap(ufl_element):
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
     fiat_element = create_element(ufl_element)
-    num_dofs = len(fiat_element.dual_basis())
+    dual = fiat_element.dual_basis()
+    num_dofs = len(dual)
 
     cname = ufl_element.cell().cellname()
     tdim = ufl_element.cell().topological_dimension()
@@ -134,7 +136,7 @@ def reflection_entities_from_subdofmap(ufl_element):
     # Get the entity counts for the cell type
     entity_counts = get_entity_counts(fiat_element)
 
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
     reflections = [None for i in range(num_dofs)]
@@ -169,10 +171,10 @@ def face_tangents_from_subdofmap(ufl_element):
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
     fiat_element = create_element(ufl_element)
-
+    dual = fiat_element.dual_basis()
     cname = ufl_element.cell().cellname()
 
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
     rotations = []
