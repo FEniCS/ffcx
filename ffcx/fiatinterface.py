@@ -143,8 +143,8 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
     def tabulate(self, order, points, entity=None):
         block_size = self.num_sub_elements()
         return {
-            i: array([item[j] for block in range(block_size)
-                for j in range(block, len(item), block_size)])
+            i: numpy.array([item[j] for block in range(block_size)
+                            for j in range(block, len(item), block_size)])
             for i, item in self.old_tabulate(order, points, entity=entity).items()
         }
 
