@@ -116,8 +116,9 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
 
     def reorder_for_vector_element(item, block_size):
         """Reorder the elements in item from XXYYZZ ordering to XYZXYZ."""
-        return [item[i] for block in range(block_size)
-                for i in range(block, len(item), block_size)]
+        space_dim = len(item) // block_size
+        return [item[i] for block in range(space_dim)
+                for i in range(block, len(item), space_dim)]
 
     def calculate_entity_dofs_of_vector_element(entity_dofs, block_size):
         """Get the entity DOFs of a VectorElement with XYZXYZ ordering."""

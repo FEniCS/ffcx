@@ -963,6 +963,9 @@ def _tabulate_dof_coordinates(ufl_element, element):
     if any(L is None for L in element.dual_basis()):
         return {}
 
+    if isinstance(ufl_element, ufl.VectorElement):
+        element = element.elements()[0]
+
     cell = ufl_element.cell()
     return ir_tabulate_dof_coordinates(
         tdim=cell.topological_dimension(),
