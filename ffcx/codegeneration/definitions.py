@@ -79,13 +79,14 @@ class FFCXBackendDefinitions(object):
 
         ttype = tabledata.ttype
         begin, end = tabledata.dofrange
+        dofrange_size = end - begin
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
             return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
-        if ttype == "ones" and (end - begin) == 1:
+        if ttype == "ones" and dofrange_size == 1:
             return []
 
         assert begin < end
@@ -133,11 +134,10 @@ class FFCXBackendDefinitions(object):
         # Reference coordinates are known, no coordinate field, so we compute
         # this component as linear combination of coordinate_dofs "dofs" and table
 
-        # Find table name and dof range it corresponds to
+        # Find table name
         ttype = tabledata.ttype
-        begin, end = tabledata.dofrange
 
-        assert end - begin <= num_scalar_dofs
+        assert len(tabledata.dofmap) <= num_scalar_dofs
         assert ttype != "zeros"
         assert ttype != "ones"
 
