@@ -54,7 +54,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     form0 = compiled_forms[0][0]
 
     assert form0.num_cell_integrals == 1
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.int32)
+    ids = np.zeros(form0.num_cell_integrals, dtype=np.intc)
     form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == -1
 
@@ -250,7 +250,7 @@ def test_form_coefficient(compile_args):
     A = np.zeros((3, 3), dtype=np.float64)
     w = np.array([1.0, 1.0, 1.0], dtype=np.float64)
     c = np.array([], dtype=np.float64)
-    perm = np.array([0], dtype=np.int)
+    perm = np.array([0], dtype=np.uint8)
 
     ffi = cffi.FFI()
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
@@ -285,25 +285,25 @@ def test_subdomains(compile_args):
     ffi = cffi.FFI()
 
     form0 = compiled_forms[0][0]
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.int32)
+    ids = np.zeros(form0.num_cell_integrals, dtype=np.intc)
     form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == -1 and ids[1] == 2
 
     form1 = compiled_forms[1][0]
-    ids = np.zeros(form1.num_cell_integrals, dtype=np.int32)
+    ids = np.zeros(form1.num_cell_integrals, dtype=np.intc)
     form1.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == -1 and ids[1] == 2
 
     form2 = compiled_forms[2][0]
-    ids = np.zeros(form2.num_cell_integrals, dtype=np.int32)
+    ids = np.zeros(form2.num_cell_integrals, dtype=np.intc)
     form2.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == 1 and ids[1] == 2
 
     form3 = compiled_forms[3][0]
-    ids = np.zeros(form3.num_cell_integrals, dtype=np.int32)
+    ids = np.zeros(form3.num_cell_integrals, dtype=np.intc)
     form3.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert len(ids) == 0
-    ids = np.zeros(form3.num_exterior_facet_integrals, dtype=np.int32)
+    ids = np.zeros(form3.num_exterior_facet_integrals, dtype=np.intc)
     form3.get_exterior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == 0 and ids[1] == 210
 
@@ -324,7 +324,7 @@ def test_interior_facet_integral(mode, compile_args):
     ffi = cffi.FFI()
 
     form0 = compiled_forms[0][0]
-    ids = np.zeros(form0.num_interior_facet_integrals, dtype=np.int32)
+    ids = np.zeros(form0.num_interior_facet_integrals, dtype=np.intc)
     form0.get_interior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
     assert ids[0] == -1
 
@@ -336,8 +336,8 @@ def test_interior_facet_integral(mode, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np.float64)
 
-    facets = np.array([0, 2], dtype=np.int32)
-    perms = np.array([0, 1], dtype=np.int32)
+    facets = np.array([0, 2], dtype=np.intc)
+    perms = np.array([0, 1], dtype=np.uint8)
 
     coords = np.array([[0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
                        [1.0, 0.0, 0.0, 1.0, 1.0, 1.0]], dtype=np.float64)
