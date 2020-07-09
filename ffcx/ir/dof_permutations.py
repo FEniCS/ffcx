@@ -6,6 +6,7 @@
 
 import warnings
 import math
+import ufl
 from ffcx.fiatinterface import create_element
 
 # TODO: This information should be moved to FIAT instead of being reverse engineered here
@@ -24,6 +25,13 @@ def base_permutations(ufl_element):
     # If the element has sub elements, combine their permutations
     perms = None
 
+    if isinstance(ufl_element, ufl.VectorElement):
+        block_size = len(ufl_element.sub_elements())
+        return [
+            [block_size * j + i for j in perm for i in range(block_size)]
+            for perm in base_permutations(ufl_element.sub_elements()[0])
+        ]
+
     for e in ufl_element.sub_elements():
         bp = base_permutations(e)
         if perms is None:
@@ -39,6 +47,13 @@ def reflection_entities(ufl_element):
         # If the element has no sub elements, return its reflection entities
         return reflection_entities_from_subdofmap(ufl_element)
 
+    if isinstance(ufl_element, ufl.VectorElement):
+        block_size = len(ufl_element.sub_elements())
+        return [
+            ref
+            for ref in reflection_entities(ufl_element.sub_elements()[0])
+            for i in range(block_size)
+        ]
     # If the element has sub elements, combine their reflections
     reflections = []
     for e in ufl_element.sub_elements():
@@ -51,6 +66,15 @@ def face_tangents(ufl_element):
     if ufl_element.num_sub_elements() == 0:
         # If the element has no sub elements, return its rotations
         return face_tangents_from_subdofmap(ufl_element)
+
+    if isinstance(ufl_element, ufl.VectorElement):
+        block_size = len(ufl_element.sub_elements())
+        return [
+            tan
+            for tan in face_tangents(ufl_element.sub_elements()[0])
+            for i in range(block_size)
+        ]
+
 
     # If the element has sub elements, combine their rotations
     rotations = []
