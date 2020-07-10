@@ -25,7 +25,7 @@ def base_permutations(ufl_element):
     # If the element has sub elements, combine their permutations
     perms = None
 
-    if isinstance(ufl_element, ufl.VectorElement):
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         block_size = len(ufl_element.sub_elements())
         return [
             [block_size * j + i for j in perm for i in range(block_size)]
@@ -47,7 +47,7 @@ def reflection_entities(ufl_element):
         # If the element has no sub elements, return its reflection entities
         return reflection_entities_from_subdofmap(ufl_element)
 
-    if isinstance(ufl_element, ufl.VectorElement):
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         block_size = len(ufl_element.sub_elements())
         return [
             ref
@@ -67,7 +67,7 @@ def face_tangents(ufl_element):
         # If the element has no sub elements, return its rotations
         return face_tangents_from_subdofmap(ufl_element)
 
-    if isinstance(ufl_element, ufl.VectorElement):
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         block_size = len(ufl_element.sub_elements())
         return [
             tan

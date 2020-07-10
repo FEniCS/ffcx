@@ -808,9 +808,6 @@ class IntegralGenerator(object):
         # Define fw = f * weight
         assert not blockdata.transposed, "Not handled yet"
 
-        # Fetch code to access modified arguments
-        arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
-
         fw_rhs = L.float_product([f, weight])
         if not isinstance(fw_rhs, L.Product):
             fw = fw_rhs
@@ -828,18 +825,53 @@ class IntegralGenerator(object):
         Asym = self.backend.symbols.element_tensor()
         A = L.FlattenedArray(Asym, dims=A_shape)
 
-        B_rhs = L.float_product([fw] + arg_factors)
-        A_indices = []
-
+        unzip = False
         for i, bm in enumerate(blockmap):
-            # TODO: switch order here? (optionally)
-            offset = blockmap[i][0]
-            A_indices.append(arg_indices[i] + offset)
+            for a, b in zip(bm[1:-1], bm[2:]):
+                if b - a != bm[1] - bm[0]:
+                    unzip = True
+                    break
+            else:
+                continue
+            break
 
-        body = L.AssignAdd(A[A_indices], B_rhs)
 
-        for i in reversed(range(block_rank)):
-            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-        quadparts += [body]
+        if unzip:
+            from itertools import product
+            for A_indices, B_indices in zip(product(*blockmap),
+                                            product(*[range(len(b)) for b in blockmap])):
+                quadparts += [
+                    L.AssignAdd(
+                        A[A_indices],
+                        L.float_product([fw] + \
+                            self.get_arg_factors(
+                                blockdata, block_rank,
+                                quadrature_rule, iq, B_indices)
+                        )
+                    )
+                ]
+        else:
+            # Fetch code to access modified arguments
+            arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+
+            B_rhs = L.float_product([fw] + arg_factors)
+            A_indices = []
+
+
+            for bm, index in zip(blockmap, arg_indices):
+                # TODO: switch order here? (optionally)
+                # TODO: save block size in ir rather than reverse engineering here
+                offset = bm[0]
+                if len(bm) == 1:
+                    ebs = 1
+                else:
+                    ebs = bm[1] - bm[0]
+                A_indices.append(ebs * index + offset)
+
+            body = L.AssignAdd(A[A_indices], B_rhs)
+
+            for i in reversed(range(block_rank)):
+                body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+            quadparts += [body]
 
         return preparts, quadparts

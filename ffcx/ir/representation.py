@@ -186,7 +186,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
 
     block_size = 1
-    if isinstance(ufl_element, ufl.VectorElement):
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         block_size = ufl_element.num_sub_elements()
     ir["block_size"] = block_size
 
@@ -807,7 +807,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
-    if isinstance(ufl_element, ufl.VectorElement):
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         # If VectorElement, each element in the MixedElement is the same
         return _evaluate_basis(ufl_element.sub_elements()[0], fiat_element.elements()[0], epsilon)
     else:
@@ -963,7 +963,7 @@ def _tabulate_dof_coordinates(ufl_element, element):
     if any(L is None for L in element.dual_basis()):
         return {}
 
-    if isinstance(ufl_element, ufl.VectorElement):
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         element = element.elements()[0]
 
     cell = ufl_element.cell()

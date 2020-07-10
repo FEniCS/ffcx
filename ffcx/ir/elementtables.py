@@ -206,7 +206,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         component_element = fiat_element.elements()[component_element_index]
 
         # Get the block size to switch XXYYZZ ordering to XYZXYZ
-        if isinstance(ufl_element, ufl.VectorElement):
+        if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = len(fiat_element.elements())
             ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
 
