@@ -75,7 +75,6 @@ def face_tangents(ufl_element):
             for i in range(block_size)
         ]
 
-
     # If the element has sub elements, combine their rotations
     rotations = []
     for e in ufl_element.sub_elements():

@@ -101,7 +101,7 @@ def _create_mixed_finiteelement(element: ufl.MixedElement) -> FIAT.MixedElement:
 
 
 @_create_element.register(ufl.TensorElement)
-def _create_vector_finiteelement(element: ufl.TensorElement) -> FIAT.MixedElement:
+def _create_tensor_finiteelement(element: ufl.TensorElement) -> FIAT.MixedElement:
     elements = []
 
     def rextract(els):
@@ -143,7 +143,7 @@ def _create_vector_finiteelement(element: ufl.TensorElement) -> FIAT.MixedElemen
 
     def tabulate(self, order, points, entity=None):
         block_size = self.num_sub_elements()
-        scalar_dofs = len(item) // block_size
+        scalar_dofs = len(self.dual.nodes) // block_size
         return {
             i: numpy.array([item[j] for dim in range(scalar_dofs)
                             for j in range(dim, len(item), scalar_dofs)])
@@ -198,7 +198,7 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
 
     def tabulate(self, order, points, entity=None):
         block_size = self.num_sub_elements()
-        scalar_dofs = len(item) // block_size
+        scalar_dofs = len(self.dual.nodes) // block_size
         return {
             i: numpy.array([item[j] for dim in range(scalar_dofs)
                             for j in range(dim, len(item), scalar_dofs)])

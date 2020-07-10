@@ -835,7 +835,6 @@ class IntegralGenerator(object):
                 continue
             break
 
-
         if unzip:
             from itertools import product
             for A_indices, B_indices in zip(product(*blockmap),
@@ -843,10 +842,9 @@ class IntegralGenerator(object):
                 quadparts += [
                     L.AssignAdd(
                         A[A_indices],
-                        L.float_product([fw] + \
-                            self.get_arg_factors(
-                                blockdata, block_rank,
-                                quadrature_rule, iq, B_indices)
+                        L.float_product([fw] + self.get_arg_factors(
+                            blockdata, block_rank,
+                            quadrature_rule, iq, B_indices)
                         )
                     )
                 ]
@@ -856,7 +854,6 @@ class IntegralGenerator(object):
 
             B_rhs = L.float_product([fw] + arg_factors)
             A_indices = []
-
 
             for bm, index in zip(blockmap, arg_indices):
                 # TODO: switch order here? (optionally)

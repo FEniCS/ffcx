@@ -220,7 +220,6 @@ class ExpressionGenerator:
         assert not blockdata.transposed, "Not handled yet"
         components = ufl.product(self.ir.expression_shape)
 
-
         num_points = self.quadrature_rule.points.shape[0]
         A_shape = self.ir.tensor_shape
         Asym = self.backend.symbols.element_tensor()
