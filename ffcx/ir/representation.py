@@ -61,7 +61,8 @@ ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
-                                     'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
+                                     'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types',
+                                     'submap_block_size'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'signature', 'cell_shape',
                                                      'topological_dimension',
                                                      'geometric_dimension',
@@ -228,6 +229,10 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
     ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
+
+    ir["submap_block_size"] = 1
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        ir["submap_block_size"] = ufl_element.num_sub_elements()
 
     return ir_dofmap(**ir)
 

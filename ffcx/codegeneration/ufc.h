@@ -183,6 +183,9 @@ extern "C"
     /// for a cell (not including global support dofs)
     int num_element_support_dofs;
 
+    /// Return the block size for a VectorElement
+    int submap_block_size;
+
     /// Number of dofs associated with each cell entity of
     /// dimension d
     int num_entity_dofs[4];
