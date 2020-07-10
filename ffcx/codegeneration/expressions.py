@@ -227,34 +227,67 @@ class ExpressionGenerator:
 
         iq = self.backend.symbols.quadrature_loop_index()
 
-        # Prepend dimensions of dofmap block with free index
-        # for quadrature points and expression components
-        B_indices = tuple([iq] + list(arg_indices))
+        # Check if DOFs in dofrange are equally spaced
+        unzip = False
+        for i, bm in enumerate(blockmap):
+            for a, b in zip(bm[1:-1], bm[2:]):
+                if b - a != bm[1] - bm[0]:
+                    unzip = True
+                    break
+            else:
+                continue
+            break
 
-        # Fetch code to access modified arguments
-        # An access to FE table data
-        arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
+        if unzip:
+            # If DOFs in dofrange are not equally spaced
+            from itertools import product
+            for A_indices, B_indices in zip(product(*blockmap),
+                                            product(*[range(len(b)) for b in blockmap])):
+                B_indices = tuple([iq] + list(B_indices))
+                A_indices = tuple([iq] + A_indices)
+                for fi_ci in blockdata.factor_indices_comp_indices:
+                    f = self.get_var(F.nodes[fi_ci[0]]["expression"])
+                    arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
+                    Brhs = L.float_product([f] + arg_factors)
+                    quadparts.append(L.AssignAdd(A[(fi_ci[1],) + A_indices], Brhs))
+        else:
 
-        A_indices = []
-        for i in range(len(blockmap)):
-            offset = blockmap[i][0]
-            A_indices.append(arg_indices[i] + offset)
-        A_indices = tuple([iq] + A_indices)
+            # Prepend dimensions of dofmap block with free index
+            # for quadrature points and expression components
+            B_indices = tuple([iq] + list(arg_indices))
 
-        # Multiply collected factors
-        # For each component of the factor expression
-        # add result inside quadloop
-        body = []
+            # Fetch code to access modified arguments
+            # An access to FE table data
+            arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
 
-        for fi_ci in blockdata.factor_indices_comp_indices:
-            f = self.get_var(F.nodes[fi_ci[0]]["expression"])
-            Brhs = L.float_product([f] + arg_factors)
-            body.append(L.AssignAdd(A[(fi_ci[1],) + A_indices], Brhs))
+            # TODO: handle non-contiguous dof ranges
 
-        for i in reversed(range(block_rank)):
-            body = L.ForRange(
-                B_indices[i + 1], 0, blockdims[i], body=body)
-        quadparts += [body]
+            A_indices = []
+            for bm, index in zip(blockmap, arg_indices):
+                # TODO: switch order here? (optionally)
+                # TODO: save block size in ir rather than reverse engineering here
+                offset = bm[0]
+                if len(bm) == 1:
+                    ebs = 1
+                else:
+                    ebs = bm[1] - bm[0]
+                A_indices.append(ebs * index + offset)
+            A_indices = tuple([iq] + A_indices)
+
+            # Multiply collected factors
+            # For each component of the factor expression
+            # add result inside quadloop
+            body = []
+
+            for fi_ci in blockdata.factor_indices_comp_indices:
+                f = self.get_var(F.nodes[fi_ci[0]]["expression"])
+                Brhs = L.float_product([f] + arg_factors)
+                body.append(L.AssignAdd(A[(fi_ci[1],) + A_indices], Brhs))
+
+            for i in reversed(range(block_rank)):
+                body = L.ForRange(
+                    B_indices[i + 1], 0, blockdims[i], body=body)
+            quadparts += [body]
 
         return preparts, quadparts
 

@@ -825,6 +825,7 @@ class IntegralGenerator(object):
         Asym = self.backend.symbols.element_tensor()
         A = L.FlattenedArray(Asym, dims=A_shape)
 
+        # Check if DOFs in dofrange are equally spaced
         unzip = False
         for i, bm in enumerate(blockmap):
             for a, b in zip(bm[1:-1], bm[2:]):
@@ -836,6 +837,7 @@ class IntegralGenerator(object):
             break
 
         if unzip:
+            # If DOFs in dofrange are not equally spaced
             from itertools import product
             for A_indices, B_indices in zip(product(*blockmap),
                                             product(*[range(len(b)) for b in blockmap])):
