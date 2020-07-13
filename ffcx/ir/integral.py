@@ -336,19 +336,10 @@ def analyse_dependencies(F, mt_unique_table_reference):
 def replace_quadratureweight(expression):
     """Remove any QuadratureWeight terminals and replace with 1.0."""
 
-    r = _find_terminals_in_ufl_expression(expression, QuadratureWeight)
-    replace_map = {q: 1.0 for q in r}
-
-    return ufl.algorithms.replace(expression, replace_map)
-
-
-def _find_terminals_in_ufl_expression(e, etype):
-    """Recursively search expression for terminals of type etype."""
     r = []
-    for op in e.ufl_operands:
-        if is_modified_terminal(op) and isinstance(op, etype):
-            r.append(op)
-        else:
-            r += _find_terminals_in_ufl_expression(op, etype)
+    for node in ufl.corealg.traversal.unique_pre_traversal(expression):
+        if is_modified_terminal(node) and isinstance(node, QuadratureWeight):
+            r.append(node)
 
-    return r
+    replace_map = {q: 1.0 for q in r}
+    return ufl.algorithms.replace(expression, replace_map)
