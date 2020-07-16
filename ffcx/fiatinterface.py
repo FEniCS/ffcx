@@ -87,7 +87,6 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
 @_create_element.register(ufl.MixedElement)
 def _create_mixed_finiteelement(element: ufl.MixedElement) -> FIAT.MixedElement:
     elements = []
-    print("MixedElement")
 
     def rextract(els):
         for e in els:
