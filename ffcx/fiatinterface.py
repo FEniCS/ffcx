@@ -90,7 +90,9 @@ def _create_mixed_finiteelement(element: ufl.MixedElement) -> FIAT.MixedElement:
 
     def rextract(els):
         for e in els:
-            if isinstance(e, ufl.MixedElement) and not isinstance(e, ufl.VectorElement) and not isinstance(e, ufl.TensorElement):
+            if isinstance(e, ufl.MixedElement) \
+                    and not isinstance(e, ufl.VectorElement) \
+                    and not isinstance(e, ufl.TensorElement):
                 rextract(e.sub_elements())
             else:
                 elements.append(e)
