@@ -585,7 +585,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
 
 def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
 
-    logger.info("Computing IR for expression {}".format(str(expression)))
+    logger.info("Computing IR for expression {}".format(index))
 
     # Compute representation
     ir = {}
