@@ -113,7 +113,8 @@ extern "C"
     /// function space
     int degree;
 
-    /// Return the block size for a VectorElement
+    /// Return the block size for a VectorElement.
+    /// For a TensorElement, this is the product of the tensor's dimensions
     int block_size;
 
     /// Return the family of the finite element function space

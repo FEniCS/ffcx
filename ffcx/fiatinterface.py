@@ -99,7 +99,6 @@ def _create_mixed_finiteelement(element: ufl.MixedElement) -> FIAT.MixedElement:
 
     rextract(element.sub_elements())
     return FIAT.MixedElement(map(_create_element, elements))
-    # return FIAT.MixedElement(map(_create_element, element.sub_elements()))
 
 
 @_create_element.register(ufl.VectorElement)
