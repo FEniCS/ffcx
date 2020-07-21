@@ -83,7 +83,7 @@ def generator(ir, parameters):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
-    d["submap_block_size"] = ir.submap_block_size
+    d["block_size"] = ir.block_size
 
     num_perms = len(ir.base_permutations)
     if num_perms == 0:

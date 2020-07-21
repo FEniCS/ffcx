@@ -25,7 +25,7 @@ ufc_dofmap* create_{factory_name}(void)
 {{
   ufc_dofmap* dofmap = (ufc_dofmap*)malloc(sizeof(*dofmap));
   dofmap->signature = {signature};
-  dofmap->submap_block_size = {submap_block_size};
+  dofmap->block_size = {block_size};
   dofmap->num_global_support_dofs = {num_global_support_dofs};
   dofmap->num_element_support_dofs = {num_element_support_dofs};
   dofmap->num_entity_dofs[0] = {num_entity_dofs[0]};
