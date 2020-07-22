@@ -858,13 +858,12 @@ class IntegralGenerator(object):
 
             for bm, index in zip(blockmap, arg_indices):
                 # TODO: switch order here? (optionally)
-                # TODO: save block size in ir rather than reverse engineering here
                 offset = bm[0]
                 if len(bm) == 1:
-                    ebs = 1
+                    A_indices.append(index + offset)
                 else:
-                    ebs = bm[1] - bm[0]
-                A_indices.append(ebs * index + offset)
+                    block_size = bm[1] - bm[0]
+                    A_indices.append(block_size * index + offset)
 
             body = L.AssignAdd(A[A_indices], B_rhs)
 

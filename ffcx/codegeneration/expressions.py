@@ -265,13 +265,12 @@ class ExpressionGenerator:
             A_indices = []
             for bm, index in zip(blockmap, arg_indices):
                 # TODO: switch order here? (optionally)
-                # TODO: save block size in ir rather than reverse engineering here
                 offset = bm[0]
                 if len(bm) == 1:
-                    block_size = 1
+                    A_indices.append(index + offset)
                 else:
                     block_size = bm[1] - bm[0]
-                A_indices.append(block_size * index + offset)
+                    A_indices.append(block_size * index + offset)
             A_indices = tuple([iq] + A_indices)
 
             # Multiply collected factors
