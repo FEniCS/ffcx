@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 import collections
+from itertools import product
 import logging
 
 import ufl
@@ -227,20 +228,19 @@ class ExpressionGenerator:
 
         iq = self.backend.symbols.quadrature_loop_index()
 
-        # Check if DOFs in dofrange are equally spaced
-        unzip = False
+        # Check if DOFs in dofrange are equally spaced.
+        expand_loop = False
         for i, bm in enumerate(blockmap):
             for a, b in zip(bm[1:-1], bm[2:]):
                 if b - a != bm[1] - bm[0]:
-                    unzip = True
+                    expand_loop = True
                     break
             else:
                 continue
             break
 
-        if unzip:
-            # If DOFs in dofrange are not equally spaced
-            from itertools import product
+        if expand_loop:
+            # If DOFs in dofrange are not equally spaced, then expand out the for loop
             for A_indices, B_indices in zip(product(*blockmap),
                                             product(*[range(len(b)) for b in blockmap])):
                 B_indices = tuple([iq] + list(B_indices))
@@ -268,10 +268,10 @@ class ExpressionGenerator:
                 # TODO: save block size in ir rather than reverse engineering here
                 offset = bm[0]
                 if len(bm) == 1:
-                    ebs = 1
+                    block_size = 1
                 else:
-                    ebs = bm[1] - bm[0]
-                A_indices.append(ebs * index + offset)
+                    block_size = bm[1] - bm[0]
+                A_indices.append(block_size * index + offset)
             A_indices = tuple([iq] + A_indices)
 
             # Multiply collected factors

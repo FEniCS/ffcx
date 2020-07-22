@@ -826,21 +826,20 @@ class IntegralGenerator(object):
         A = L.FlattenedArray(Asym, dims=A_shape)
 
         # Check if DOFs in dofrange are equally spaced
-        unzip = False
+        expand_loop = False
         for i, bm in enumerate(blockmap):
             for a, b in zip(bm[1:-1], bm[2:]):
                 if b - a != bm[1] - bm[0]:
-                    unzip = True
+                    expand_loop = True
                     break
             else:
                 continue
             break
 
-        if unzip:
-            # If DOFs in dofrange are not equally spaced
-            from itertools import product
-            for A_indices, B_indices in zip(product(*blockmap),
-                                            product(*[range(len(b)) for b in blockmap])):
+        if expand_loop:
+            # If DOFs in dofrange are not equally spaced, then expand out the for loop
+            for A_indices, B_indices in zip(itertools.product(*blockmap),
+                                            itertools.product(*[range(len(b)) for b in blockmap])):
                 quadparts += [
                     L.AssignAdd(
                         A[A_indices],
