@@ -186,7 +186,7 @@ class FFCXBackendSymbols(object):
         # FIXME: Add domain number or offset!
         return [
             self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
-            for component in range(gdim) for dof in range(num_scalar_dofs)
+            for dof in range(num_scalar_dofs) for component in range(gdim)
         ]
 
     def coefficient_dof_access(self, coefficient, dof_number):

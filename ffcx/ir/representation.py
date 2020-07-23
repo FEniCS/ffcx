@@ -56,12 +56,13 @@ ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
                                        'geometric_dimension', 'space_dimension', 'value_shape',
                                        'reference_value_shape', 'degree', 'family', 'evaluate_basis',
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                       'base_permutations', 'dof_reflection_entities',
+                                       'base_permutations', 'dof_reflection_entities', 'block_size',
                                        'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
-                                     'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types'])
+                                     'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types',
+                                     'block_size'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'signature', 'cell_shape',
                                                      'topological_dimension',
                                                      'geometric_dimension',
@@ -184,6 +185,12 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
+
+    block_size = 1
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        block_size = ufl_element.num_sub_elements()
+    ir["block_size"] = block_size
+
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
@@ -222,6 +229,10 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
     ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
+
+    ir["block_size"] = 1
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        ir["block_size"] = ufl_element.num_sub_elements()
 
     return ir_dofmap(**ir)
 
@@ -801,11 +812,15 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
-    # Handle Mixed and EnrichedElements by extracting 'sub' elements.
-    elements = _extract_elements(fiat_element)
-    physical_offsets = _generate_physical_offsets(ufl_element)
-    reference_offsets = _generate_reference_offsets(fiat_element)
-    mappings = fiat_element.mapping()
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        # If VectorElement, each element in the MixedElement is the same
+        return _evaluate_basis(ufl_element.sub_elements()[0], fiat_element.elements()[0], epsilon)
+    else:
+        # Handle Mixed and EnrichedElements by extracting 'sub' elements.
+        elements = _extract_elements(fiat_element)
+        physical_offsets = _generate_physical_offsets(ufl_element)
+        reference_offsets = _generate_reference_offsets(fiat_element)
+        mappings = fiat_element.mapping()
 
     # This function is evidently not implemented for TensorElements
     for e in elements:
@@ -952,6 +967,9 @@ def _tabulate_dof_coordinates(ufl_element, element):
     # nodal), this is strictly not necessary but simpler
     if any(L is None for L in element.dual_basis()):
         return {}
+
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        element = element.elements()[0]
 
     cell = ufl_element.cell()
     return ir_tabulate_dof_coordinates(

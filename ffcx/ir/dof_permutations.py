@@ -6,6 +6,7 @@
 
 import warnings
 import math
+import ufl
 from ffcx.fiatinterface import create_element
 
 # TODO: This information should be moved to FIAT instead of being reverse engineered here
@@ -23,6 +24,14 @@ def base_permutations(ufl_element):
 
     # If the element has sub elements, combine their permutations
     perms = None
+
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        block_size = ufl_element.num_sub_elements()
+        return [
+            [block_size * j + i for j in perm for i in range(block_size)]
+            for perm in base_permutations(ufl_element.sub_elements()[0])
+        ]
+
     for e in ufl_element.sub_elements():
         bp = base_permutations(e)
         if perms is None:
@@ -38,6 +47,13 @@ def reflection_entities(ufl_element):
         # If the element has no sub elements, return its reflection entities
         return reflection_entities_from_subdofmap(ufl_element)
 
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        block_size = ufl_element.num_sub_elements()
+        return [
+            ref
+            for ref in reflection_entities(ufl_element.sub_elements()[0])
+            for i in range(block_size)
+        ]
     # If the element has sub elements, combine their reflections
     reflections = []
     for e in ufl_element.sub_elements():
@@ -51,6 +67,14 @@ def face_tangents(ufl_element):
         # If the element has no sub elements, return its rotations
         return face_tangents_from_subdofmap(ufl_element)
 
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        block_size = ufl_element.num_sub_elements()
+        return [
+            tan
+            for tan in face_tangents(ufl_element.sub_elements()[0])
+            for i in range(block_size)
+        ]
+
     # If the element has sub elements, combine their rotations
     rotations = []
     for e in ufl_element.sub_elements():
@@ -63,7 +87,8 @@ def base_permutations_from_subdofmap(ufl_element):
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
     fiat_element = create_element(ufl_element)
-    num_dofs = len(fiat_element.dual_basis())
+    dual = fiat_element.dual_basis()
+    num_dofs = len(dual)
 
     tdim = ufl_element.cell().topological_dimension()
 
@@ -74,7 +99,7 @@ def base_permutations_from_subdofmap(ufl_element):
     # There is 1 permutation for a 1D entity, 2 for a 2D entity and 4 for a 3D entity
     num_perms = sum([0, 1, 2, 4][i] * j for i, j in enumerate(entity_counts[:tdim]))
 
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
     perms = identity_permutations(num_perms, num_dofs)
@@ -95,13 +120,13 @@ def base_permutations_from_subdofmap(ufl_element):
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                          "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
-                    # Dof is a point evaluation, use blocksize 1
+                    # Dof is a point evaluation, use sub_block_size 1
                     permuted = entity_functions[dim](type_dofs, 1)
                 elif t in ["ComponentPointEval", "IntegralMoment"]:
-                    # Dof blocksize is equal to entity dimension
+                    # Dof sub_block_size is equal to entity dimension
                     permuted = entity_functions[dim](type_dofs, dim)
                 elif t == "PointFaceTangent":
-                    # Dof blocksize is 2
+                    # Dof sub_block_size is 2
                     permuted = entity_functions[dim](type_dofs, 2)
                 elif t in ["FrobeniusIntegralMoment"] and dim == 2:
                     permuted = permute_frobenius_face(type_dofs, 1)
@@ -125,7 +150,8 @@ def reflection_entities_from_subdofmap(ufl_element):
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
     fiat_element = create_element(ufl_element)
-    num_dofs = len(fiat_element.dual_basis())
+    dual = fiat_element.dual_basis()
+    num_dofs = len(dual)
 
     cname = ufl_element.cell().cellname()
     tdim = ufl_element.cell().topological_dimension()
@@ -133,7 +159,7 @@ def reflection_entities_from_subdofmap(ufl_element):
     # Get the entity counts for the cell type
     entity_counts = get_entity_counts(fiat_element)
 
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
     reflections = [None for i in range(num_dofs)]
@@ -168,10 +194,10 @@ def face_tangents_from_subdofmap(ufl_element):
     Calculates the base permutations and the entities that the direction of vector-valued
     functions depend on for an element with no sub elements."""
     fiat_element = create_element(ufl_element)
-
+    dual = fiat_element.dual_basis()
     cname = ufl_element.cell().cellname()
 
-    dof_types = [e.functional_type for e in fiat_element.dual_basis()]
+    dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
     rotations = []
@@ -230,50 +256,51 @@ def get_frobenius_side_length(n):
     return s
 
 
-def permute_frobenius_face(dofs, blocksize):
+def permute_frobenius_face(dofs, sub_block_size):
     """Permute the FrobeniusIntegralMoment dofs of a face of a N2curl space."""
-    n = len(dofs) // blocksize
+    n = len(dofs) // sub_block_size
     s = get_frobenius_side_length(n)
 
     # Make the rotation
     rot = []
     for dof in range(2 * s, 3 * s):
-        rot += [dof * blocksize + k for k in range(blocksize)]
+        rot += [dof * sub_block_size + k for k in range(sub_block_size)]
     for dof in range(s - 1, -1, -1):
-        rot += [dof * blocksize + k for k in range(blocksize)]
+        rot += [dof * sub_block_size + k for k in range(sub_block_size)]
     for dof in range(2 * s - 1, s - 1, -1):
-        rot += [dof * blocksize + k for k in range(blocksize)]
-    rot += triangle_rotation(list(range(3 * s * blocksize, n)), 2 * blocksize)
+        rot += [dof * sub_block_size + k for k in range(sub_block_size)]
+    rot += triangle_rotation(list(range(3 * s * sub_block_size, n)), 2 * sub_block_size)
     assert len(rot) == len(dofs)
 
     # Make the reflection
     ref = []
     for dof in range(s - 1, -1, -1):
-        ref += [dof * blocksize + k for k in range(blocksize)]
+        ref += [dof * sub_block_size + k for k in range(sub_block_size)]
     for dof in range(2 * s, 3 * s):
-        ref += [dof * blocksize + k for k in range(blocksize)]
+        ref += [dof * sub_block_size + k for k in range(sub_block_size)]
     for dof in range(s, 2 * s):
-        ref += [dof * blocksize + k for k in range(blocksize)]
-    ref += triangle_reflection(list(range(3 * s * blocksize, n)), 2 * blocksize)
+        ref += [dof * sub_block_size + k for k in range(sub_block_size)]
+    ref += triangle_reflection(list(range(3 * s * sub_block_size, n)), 2 * sub_block_size)
     assert len(ref) == len(dofs)
 
     return [[dofs[i] for i in rot],
             [dofs[i] for i in ref]]
 
 
-def permute_edge(dofs, blocksize, reverse_blocks=False):
+def permute_edge(dofs, sub_block_size, reverse_blocks=False):
     """Permute the dofs on an edge."""
-    return [edge_flip(dofs, blocksize, reverse_blocks)]
+    return [edge_flip(dofs, sub_block_size, reverse_blocks)]
 
 
-def permute_triangle(dofs, blocksize, reverse_blocks=False):
+def permute_triangle(dofs, sub_block_size, reverse_blocks=False):
     """Permute the dofs on a triangle."""
-    return [triangle_rotation(dofs, blocksize), triangle_reflection(dofs, blocksize, reverse_blocks)]
+    return [triangle_rotation(dofs, sub_block_size), triangle_reflection(dofs, sub_block_size, reverse_blocks)]
 
 
-def permute_quadrilateral(dofs, blocksize, reverse_blocks=False):
+def permute_quadrilateral(dofs, sub_block_size, reverse_blocks=False):
     """Permute the dofs on a quadrilateral."""
-    return [quadrilateral_rotation(dofs, blocksize), quadrilateral_reflection(dofs, blocksize, reverse_blocks)]
+    return [quadrilateral_rotation(dofs, sub_block_size),
+            quadrilateral_reflection(dofs, sub_block_size, reverse_blocks)]
 
 
 def identity_permutations(num_perms, num_dofs):
@@ -281,26 +308,26 @@ def identity_permutations(num_perms, num_dofs):
     return [list(range(num_dofs)) for i in range(num_perms)]
 
 
-def edge_flip(dofs, blocksize=1, reverse_blocks=False):
+def edge_flip(dofs, sub_block_size=1, reverse_blocks=False):
     """Flip the dofs on an edge."""
-    n = len(dofs) // blocksize
+    n = len(dofs) // sub_block_size
 
     perm = []
     for dof in range(n - 1, -1, -1):
         if reverse_blocks:
             # Reverse the dofs within a block
-            perm += [dof * blocksize + k for k in range(blocksize)][::-1]
+            perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
         else:
-            perm += [dof * blocksize + k for k in range(blocksize)]
+            perm += [dof * sub_block_size + k for k in range(sub_block_size)]
 
     assert len(perm) == len(dofs)
 
     return [dofs[i] for i in perm]
 
 
-def triangle_rotation(dofs, blocksize=1, reverse_blocks=False):
+def triangle_rotation(dofs, sub_block_size=1, reverse_blocks=False):
     """Rotate the dofs in a triangle."""
-    n = len(dofs) // blocksize
+    n = len(dofs) // sub_block_size
     s = (math.floor(math.sqrt(1 + 8 * n)) - 1) // 2
     assert s * (s + 1) == 2 * n
 
@@ -310,9 +337,9 @@ def triangle_rotation(dofs, blocksize=1, reverse_blocks=False):
         dof = st
         for sub in range(i, s + 1):
             if reverse_blocks:
-                perm += [dof * blocksize + k for k in range(blocksize)][::-1]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
             else:
-                perm += [dof * blocksize + k for k in range(blocksize)]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)]
             dof -= sub + 1
         st -= i
     assert len(perm) == len(dofs)
@@ -320,9 +347,9 @@ def triangle_rotation(dofs, blocksize=1, reverse_blocks=False):
     return [dofs[i] for i in perm]
 
 
-def triangle_reflection(dofs, blocksize=1, reverse_blocks=False):
+def triangle_reflection(dofs, sub_block_size=1, reverse_blocks=False):
     """Reflect the dofs in a triangle."""
-    n = len(dofs) // blocksize
+    n = len(dofs) // sub_block_size
     s = (math.floor(math.sqrt(1 + 8 * n)) - 1) // 2
     assert s * (s + 1) == 2 * n
 
@@ -331,18 +358,18 @@ def triangle_reflection(dofs, blocksize=1, reverse_blocks=False):
         dof = st
         for add in range(s, st, -1):
             if reverse_blocks:
-                perm += [dof * blocksize + k for k in range(blocksize)][::-1]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
             else:
-                perm += [dof * blocksize + k for k in range(blocksize)]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)]
             dof += add
     assert len(perm) == len(dofs)
 
     return [dofs[i] for i in perm]
 
 
-def quadrilateral_rotation(dofs, blocksize=1, reverse_blocks=False):
+def quadrilateral_rotation(dofs, sub_block_size=1, reverse_blocks=False):
     """Rotate the dofs in a quadrilateral."""
-    n = len(dofs) // blocksize
+    n = len(dofs) // sub_block_size
     s = math.floor(math.sqrt(n))
     assert s ** 2 == n
 
@@ -350,17 +377,17 @@ def quadrilateral_rotation(dofs, blocksize=1, reverse_blocks=False):
     for st in range(n - s, n):
         for dof in range(st, -1, -s):
             if reverse_blocks:
-                perm += [dof * blocksize + k for k in range(blocksize)][::-1]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
             else:
-                perm += [dof * blocksize + k for k in range(blocksize)]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)]
     assert len(perm) == len(dofs)
 
     return [dofs[i] for i in perm]
 
 
-def quadrilateral_reflection(dofs, blocksize=1, reverse_blocks=False):
+def quadrilateral_reflection(dofs, sub_block_size=1, reverse_blocks=False):
     """Reflect the dofs in a quadrilateral."""
-    n = len(dofs) // blocksize
+    n = len(dofs) // sub_block_size
     s = math.floor(math.sqrt(n))
     assert s ** 2 == n
     if s == 0:
@@ -370,9 +397,9 @@ def quadrilateral_reflection(dofs, blocksize=1, reverse_blocks=False):
     for st in range(s):
         for dof in range(st, n, s):
             if reverse_blocks:
-                perm += [dof * blocksize + k for k in range(blocksize)][::-1]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
             else:
-                perm += [dof * blocksize + k for k in range(blocksize)]
+                perm += [dof * sub_block_size + k for k in range(sub_block_size)]
     assert len(perm) == len(dofs)
 
     return [dofs[i] for i in perm]

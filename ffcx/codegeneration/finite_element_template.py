@@ -81,6 +81,7 @@ ufc_finite_element* create_{factory_name}(void)
   element->reference_value_size = {reference_value_size};
   element->degree = {degree};
   element->family = {family};
+  element->block_size = {block_size};
   element->evaluate_reference_basis = evaluate_reference_basis_{factory_name};
   element->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{factory_name};
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};

@@ -113,6 +113,10 @@ extern "C"
     /// function space
     int degree;
 
+    /// Return the block size for a VectorElement.
+    /// For a TensorElement, this is the product of the tensor's dimensions
+    int block_size;
+
     /// Return the family of the finite element function space
     const char* family;
 
@@ -179,6 +183,9 @@ extern "C"
     /// Dimension of the local finite element function space
     /// for a cell (not including global support dofs)
     int num_element_support_dofs;
+
+    /// Return the block size for a VectorElement or TensorElement
+    int block_size;
 
     /// Number of dofs associated with each cell entity of
     /// dimension d
