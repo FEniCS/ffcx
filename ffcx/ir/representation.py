@@ -186,10 +186,10 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
 
-    block_size = 1
     if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-        block_size = ufl_element.num_sub_elements()
-    ir["block_size"] = block_size
+        ir["block_size"] = ufl_element.num_sub_elements()
+    else:
+        ir["block_size"] = 1
 
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
@@ -210,10 +210,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     # Create FIAT element
     fiat_element = create_element(ufl_element)
 
-    # Precompute repeatedly used items
-    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
-    entity_dofs = fiat_element.entity_dofs()
-
     # Store id
     ir = {"id": element_numbers[ufl_element]}
     ir["name"] = dofmap_names[ufl_element]
@@ -222,17 +218,27 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["signature"] = "FFCX dofmap for " + repr(ufl_element)
     ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
+    ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
+
+    # TODO: Decide should these be for subelement or full VectorElement?
+    # Precompute repeatedly used items
+    num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
+    entity_dofs = fiat_element.entity_dofs()
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
+
+    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+        ir["block_size"] = ufl_element.num_sub_elements()
+        ufl_element = ufl_element.sub_elements()[0]
+        fiat_element = create_element(ufl_element)
+    else:
+        ir["block_size"] = 1
+
+
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
-    ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
     ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
-
-    ir["block_size"] = 1
-    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-        ir["block_size"] = ufl_element.num_sub_elements()
 
     return ir_dofmap(**ir)
 
