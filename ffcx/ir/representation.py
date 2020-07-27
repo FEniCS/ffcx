@@ -185,13 +185,14 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
+    ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
     if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         ir["block_size"] = ufl_element.num_sub_elements()
+        ufl_element = ufl_element.sub_elements()[0]
+        fiat_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
-
-    ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
     ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
@@ -217,6 +218,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     # Compute data for each function
     ir["signature"] = "FFCX dofmap for " + repr(ufl_element)
     ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
+    ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
     if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
         ir["block_size"] = ufl_element.num_sub_elements()
@@ -224,6 +226,9 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
         fiat_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
+
+    ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
+    ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
@@ -236,10 +241,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["num_global_support_dofs"] = _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = fiat_element.space_dimension() - ir["num_global_support_dofs"]
 
-    ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
-    ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
-    ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
 
     return ir_dofmap(**ir)
 
