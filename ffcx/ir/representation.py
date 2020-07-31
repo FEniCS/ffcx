@@ -234,7 +234,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
     entity_dofs = fiat_element.entity_dofs()
 
-    # TODO: Decide should these be for subelement or full VectorElement?
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
 
