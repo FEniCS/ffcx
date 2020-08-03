@@ -92,7 +92,8 @@ ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'para
                                              'table_dof_face_tangents', 'table_dof_reflection_entities',
                                              'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
-                                             'original_constant_offsets', 'original_coefficient_positions', 'points'])
+                                             'original_constant_offsets', 'original_coefficient_positions', 'points',
+                                             'needs_permutation_data'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
 
