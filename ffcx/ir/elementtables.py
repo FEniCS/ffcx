@@ -720,6 +720,7 @@ def build_optimized_tables(quadrature_rule,
         unique_table_ttypes[ename] = unique_table_ttypes[uname]
         del unique_table_ttypes[uname]
 
+    needs_permutation_data = False
     # Build mapping from modified terminal to unique table with metadata
     # { mt: (unique name,
     #        (table dof range begin, table dof range end),
@@ -732,6 +733,8 @@ def build_optimized_tables(quadrature_rule,
         dofmap = table_dofmaps[name]
         original_dim = table_original_num_dofs[name]
         is_permuted = table_permuted[name]
+        if is_permuted:
+            needs_permutation_data = True
 
         # Map name -> uname
         uname = table_unames[name]
@@ -755,4 +758,5 @@ def build_optimized_tables(quadrature_rule,
             ename, unique_tables[ename], dofrange, dofmap, original_dim, ttype,
             ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted)
 
-    return unique_tables, unique_table_ttypes, unique_table_num_dofs, mt_unique_table_reference, table_origins
+    return (unique_tables, unique_table_ttypes, unique_table_num_dofs,
+            mt_unique_table_reference, table_origins, needs_permutation_data)

@@ -85,12 +85,14 @@ def generator(ir, parameters):
         implementation = ufc_integrals.custom_factory.format(
             factory_name=factory_name,
             enabled_coefficients=code["enabled_coefficients"],
-            tabulate_tensor=tabulate_tensor_fn)
+            tabulate_tensor=tabulate_tensor_fn,
+            needs_permutation_data=ir.needs_permutation_data)
     else:
         implementation = ufc_integrals.factory.format(
             factory_name=factory_name,
             enabled_coefficients=code["enabled_coefficients"],
-            tabulate_tensor=tabulate_tensor_fn)
+            tabulate_tensor=tabulate_tensor_fn,
+            needs_permutation_data=ir.needs_permutation_data)
 
     return declaration, implementation
 
