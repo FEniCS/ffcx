@@ -20,7 +20,8 @@ supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "
                       "Discontinuous Lagrange", "Discontinuous Raviart-Thomas", "HDiv Trace",
                       "Lagrange", "Lobatto", "Nedelec 1st kind H(curl)", "Nedelec 2nd kind H(curl)",
                       "Radau", "Raviart-Thomas", "Real", "Bubble", "Quadrature", "Regge",
-                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement", "Gauss-Lobatto-Legendre")
+                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement", "Gauss-Lobatto-Legendre",
+                      "RTCF")
 
 # Cache for computed elements
 _cache = {}
@@ -40,7 +41,8 @@ def reference_cell_vertices(cellname):
 
 @functools.singledispatch
 def _create_element(element):
-    raise ValueError("Element type is not supported.")
+    typename = type(element).__module__ + "." + type(element).__name__
+    raise ValueError("Element type " + typename + " is not supported.")
 
 
 @_create_element.register(ufl.FiniteElement)
@@ -142,6 +144,19 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
         }
 
     fiat_element.tabulate = types.MethodType(tabulate, fiat_element)
+
+    return fiat_element
+
+
+@_create_element.register(ufl.HDivElement)
+def _create_hdiv_finiteelement(element: ufl.HDivElement) -> FIAT.TensorProductElement:
+    tp = _create_element(element._element)
+    fiat_element = FIAT.Hdiv(tp)
+    for a, b in zip(fiat_element.dual.nodes, tp.dual.nodes):
+        # TODO: expand these to do more than order 1
+        a.pt_dict = b.pt_dict
+        a.deriv_dict = b.deriv_dict
+        a.functional_type = 'PointNormalEval'
 
     return fiat_element
 
