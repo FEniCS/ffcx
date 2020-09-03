@@ -1,3 +1,4 @@
 cffi
+scipy
 -e git+https://github.com/FEniCS/fiat.git#egg=fiat
 -e git+https://github.com/FEniCS/ufl.git#egg=ufl
