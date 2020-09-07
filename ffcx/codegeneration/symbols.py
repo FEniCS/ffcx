@@ -34,8 +34,13 @@ def format_mt_name(basename, mt):
     res = ufc_restriction_postfix(mt.restriction).replace("_", "_r")
     access += res
 
+    # Format global derivatives
+    if mt.global_derivatives:
+        assert basename == "J"
+        der = "_deriv_{0}".format(''.join(map(str, mt.global_derivatives)))
+        access += der
+
     # Format local derivatives
-    assert not mt.global_derivatives
     if mt.local_derivatives:
         der = "_d{0}".format(''.join(map(str, mt.local_derivatives)))
         access += der
