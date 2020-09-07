@@ -80,7 +80,7 @@ def generate_evaluate_reference_basis(L, data, parameters):
         L.Comment("Accumulate products of coefficients and basisvalues"),
     ]
     for idof, dof_data in enumerate(data["dofs_data"]):
-        embedded_degrees = dof_data["embedded_degrees"]
+        embedded_degree = dof_data["embedded_degree"]
         num_components = dof_data["num_components"]
         num_members = dof_data["num_expansion_members"]
 
@@ -89,7 +89,7 @@ def generate_evaluate_reference_basis(L, data, parameters):
         reference_offset = dof_data["reference_offset"]
 
         # Select the right basisvalues for this dof
-        basisvalues = basisvalues_for_degree[embedded_degrees]
+        basisvalues = basisvalues_for_degree[embedded_degree]
 
         # Select the right coefficients for this dof
         coefficients = coefficients_for_dof[idof]
@@ -194,44 +194,43 @@ def generate_compute_basisvalues(L, dofs_data, element_cellname, X, ip):
     ]
     basisvalues_for_degree = {}
     for idof, dof_data in enumerate(dofs_data):
-        embedded_degrees = dof_data["embedded_degrees"]
+        embedded_degree = dof_data["embedded_degree"]
 
-        if embedded_degrees not in basisvalues_for_degree:
+        if embedded_degree not in basisvalues_for_degree:
             num_members = dof_data["num_expansion_members"]
 
-            degrees_string = "_".join(str(i) for i in embedded_degrees)
-            basisvalues = L.Symbol("basisvalues" + degrees_string)
+            basisvalues = L.Symbol("basisvalues%d" % embedded_degree)
             bfcode = _generate_compute_basisvalues(
-                L, basisvalues, X, ip, element_cellname, embedded_degrees,
+                L, basisvalues, X, ip, element_cellname, embedded_degree,
                 num_members)
             basisvalues_code += [L.StatementList(bfcode)]
 
             # Store symbol reference for this degree
-            basisvalues_for_degree[embedded_degrees] = basisvalues
+            basisvalues_for_degree[embedded_degree] = basisvalues
 
     return basisvalues_code, basisvalues_for_degree
 
 
 def _generate_compute_basisvalues(L, basisvalues, X, ip, element_cellname,
-                                  embedded_degrees, num_members):
+                                  embedded_degree, num_members):
     """From FIAT_NEW.expansions."""
 
     # Branch off to cell specific implementations
     if element_cellname == "interval":
         code = _generate_compute_interval_basisvalues(
-            L, basisvalues, X, ip, embedded_degrees[0], num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "triangle":
         code = _generate_compute_triangle_basisvalues(
-            L, basisvalues, X, ip, embedded_degrees[0], num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "tetrahedron":
         code = _generate_compute_tetrahedron_basisvalues(
-            L, basisvalues, X, ip, embedded_degrees[0], num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "quadrilateral":
         code = _generate_compute_quad_basisvalues(
-            L, basisvalues, X, ip, embedded_degrees, num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     elif element_cellname == "hexahedron":
         code = _generate_compute_hex_basisvalues(
-            L, basisvalues, X, ip, embedded_degrees, num_members)
+            L, basisvalues, X, ip, embedded_degree, num_members)
     else:
         raise RuntimeError("Not supported:" + element_cellname)
 
@@ -281,15 +280,14 @@ def _generate_compute_interval_basisvalues(L, basisvalues, X, ip, embedded_degre
     return code
 
 
-def _generate_compute_quad_basisvalues(L, basisvalues, X, ip, embedded_degrees,
+def _generate_compute_quad_basisvalues(L, basisvalues, X, ip, embedded_degree,
                                        num_members):
 
     # Create zero-initialized array for with basisvalues
     code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
 
-    p = embedded_degrees[0] + 1
-    q = embedded_degrees[1] + 1
-    assert p * q == num_members
+    p = embedded_degree + 1
+    assert p * p == num_members
 
     bx = [1.0]
     by = [1.0]
@@ -298,39 +296,34 @@ def _generate_compute_quad_basisvalues(L, basisvalues, X, ip, embedded_degrees,
     Y0 = 2 * X[ip * 2] - 1
     Y1 = 2 * X[ip * 2 + 1] - 1
 
-    if embedded_degrees[0] > 0:
+    if embedded_degree > 0:
         bx += [Y0]
-    if embedded_degrees[1] > 0:
         by += [Y1]
 
-    # Only active if embedded_degrees > 1.
+    # Only active if embedded_degree > 1.
     for r in range(2, p):
         a3 = (2 * r - 1) / r
         a4 = (r - 1) / r
         bx += [a3 * Y0 * bx[r - 1] - a4 * bx[r - 2]]
-    for r in range(2, q):
-        a3 = (2 * r - 1) / r
-        a4 = (r - 1) / r
         by += [a3 * Y1 * by[r - 1] - a4 * by[r - 2]]
 
     for r in range(p):
         bx[r] *= numpy.sqrt(r + 0.5)
-    for r in range(q):
         by[r] *= numpy.sqrt(r + 0.5)
 
-    for r in range(p * q):
-        code += [L.Assign(basisvalues[r], bx[r // q] * by[r % q])]
+    for r in range(p * p):
+        code += [L.Assign(basisvalues[r], bx[r // p] * by[r % p])]
 
     return code
 
 
-def _generate_compute_hex_basisvalues(L, basisvalues, X, ip, embedded_degrees,
+def _generate_compute_hex_basisvalues(L, basisvalues, X, ip, embedded_degree,
                                       num_members):
 
     # Create zero-initialized array for with basisvalues
     code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
 
-    p = embedded_degrees + 1
+    p = embedded_degree + 1
     assert p * p * p == num_members
 
     bx = [1.0]
@@ -342,12 +335,12 @@ def _generate_compute_hex_basisvalues(L, basisvalues, X, ip, embedded_degrees,
     Y1 = 2 * X[ip * 3 + 1] - 1
     Y2 = 2 * X[ip * 3 + 2] - 1
 
-    if embedded_degrees > 0:
+    if embedded_degree > 0:
         bx += [Y0]
         by += [Y1]
         bz += [Y2]
 
-    # Only active if embedded_degrees > 1.
+    # Only active if embedded_degree > 1.
     for r in range(2, p):
         a3 = (2 * r - 1) / r
         a4 = (r - 1) / r
