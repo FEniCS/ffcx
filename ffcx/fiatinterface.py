@@ -21,7 +21,10 @@ supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "
                       "Lagrange", "Lobatto", "Nedelec 1st kind H(curl)", "Nedelec 2nd kind H(curl)",
                       "Radau", "Raviart-Thomas", "Real", "Bubble", "Quadrature", "Regge",
                       "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement", "Gauss-Lobatto-Legendre",
-                      "RTCF")
+                      "RTCF", "NCF",
+                      "RTCE", "NCE")
+# The following elements are not supported in FIAT yet, but will be supported here once they are
+#     "BDMCF", "BDMCE"
 
 # Cache for computed elements
 _cache = {}
@@ -151,7 +154,17 @@ def _create_hdiv_finiteelement(element: ufl.HDivElement) -> FIAT.TensorProductEl
     tp = _create_element(element._element)
     fiat_element = FIAT.Hdiv(tp)
     for a, b in zip(fiat_element.dual.nodes, tp.dual.nodes):
-        # TODO: expand these to do more than order 1
+        a.pt_dict = b.pt_dict
+        a.deriv_dict = b.deriv_dict
+
+    return fiat_element
+
+
+@_create_element.register(ufl.HCurlElement)
+def _create_hcurl_finiteelement(element: ufl.HCurlElement) -> FIAT.TensorProductElement:
+    tp = _create_element(element._element)
+    fiat_element = FIAT.Hcurl(tp)
+    for a, b in zip(fiat_element.dual.nodes, tp.dual.nodes):
         a.pt_dict = b.pt_dict
         a.deriv_dict = b.deriv_dict
 
@@ -273,18 +286,36 @@ def _flatten_quad(element):
     flat = FIAT.tensor_product.FlattenedDimensions(e)
 
     # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
-    if element.family == "RTCF":
+    if element.family == "RTCF" or element.family == "BDMCF":
         for dofs in flat.entity_dofs()[1].values():
             for d in dofs:
                 flat.dual.nodes[d].functional_type = "PointNormalEval"
+
+    # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
+    if element.family == "RTCE" or element.family == "BDMCE":
+        for dofs in flat.entity_dofs()[1].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointEdgeTangent"
 
     return flat
 
 
 def _flatten_hex(element):
-    e = _create_element(element.reconstruct(cell=_tpc_quadrilateral))
+    e = _create_element(element.reconstruct(cell=_tpc_hexahedron))
     flat = FIAT.tensor_product.FlattenedDimensions(e)
 
     # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
+    if element.family == "NCF":
+        for dofs in flat.entity_dofs()[2].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointNormalEval"
+
+    if element.family == "NCE":
+        for dofs in flat.entity_dofs()[1].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointEdgeTangent"
+        for dofs in flat.entity_dofs()[2].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointNormalEval"
 
     return flat

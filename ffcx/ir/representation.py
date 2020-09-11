@@ -818,78 +818,80 @@ def _extract_elements(fiat_element):
 
 
 def _get_basis_data_from_tp(e):
-    if isinstance(e, FIAT.enriched.EnrichedElement):
-        num_expansion_members = 0
-        dmats_list = []
-        coeffs_list = []
-        coeff_count = 0
-        for sub_e in e.elements():
-            d, c, n = _get_basis_data_from_tp(sub_e)
-            dmats_list.append(d)
-            coeffs_list.append(c)
-            coeff_count += c.shape[1]
-            num_expansion_members += n
-        dmats = [block_diag(*[d[i] for d in dmats_list]) for i, _ in enumerate(dmats_list[0])]
+    assert isinstance(e, FIAT.tensor_product.FlattenedDimensions)
+    coeffs, dmat = _get_coeffs_and_dmats_from_tp(e.element)
 
-        assert all(L == "contravariant piola" for L in e.mapping())
-        assert len(e.value_shape()) == 1
-        coeffs = [numpy.zeros([e.value_shape()[0], num_expansion_members]) for i in range(coeff_count)]
-        pre = 0
-        dof_n = 0
-        for i, c in enumerate(coeffs_list):
-            for dof in c:
-                if i == 0:
-                    coeffs[dof_n][i][0] = dof[0]
-                    coeffs[dof_n][i][2] = dof[1]
+    # Flatten the data
+    order = max(max(max(j) for j in i) for i in coeffs) + 1
+    dim = e.ref_el.get_dimension()
+
+    coeffs_new = numpy.zeros((len(coeffs), ) + e.value_shape() + (order ** dim, ))
+    for i, c in enumerate(coeffs):
+        for j, k in enumerate(itertools.product(range(order), repeat=dim)):
+            if k in c:
+                if len(e.value_shape()) == 0:
+                    coeffs_new[i][j] = c[k][0]
                 else:
-                    assert i == 1
-                    coeffs[dof_n][i][0] = dof[0]
-                    coeffs[dof_n][i][1] = dof[1]
-                dof_n += 1
-            pre += c.shape[1]
+                    for d in c[k]:
+                        coeffs_new[i][d][j] = c[k][d]
+    dmats_new = []
+    for i in range(dim):
+        dmat_new = numpy.zeros([order ** dim, order ** dim])
+        for j, k in enumerate(itertools.product(range(order), repeat=dim)):
+            for l, m in enumerate(itertools.product(range(order), repeat=dim)):
+                assert (k[i], m[i]) in dmat
+                dmat_new[(j, l)] = dmat[(k[i], m[i])]
+        dmats_new.append(dmat_new)
 
-        # coeffs = block_diag(*coeffs_list)
-        # coeffs = numpy.block(coeffs_list)
-        return dmats, coeffs, num_expansion_members
+    return dmats_new, coeffs_new, order ** dim
 
-    assert isinstance(e, FIAT.tensor_product.TensorProductElement)
-    A = e.A
-    B = e.B
-    # Attach suitable coefficients to element
-    if isinstance(A, FIAT.tensor_product.FlattenedDimensions):
-        # This is for hexahedral element
-        ac = A.element.A.get_coeffs()
-        bc = A.element.B.get_coeffs()
-        ac = numpy.block([[w * ac for w in v] for v in bc])
-        ad = A.element.A.dmats()
-        bd = A.element.B.dmats()
-        ai = numpy.eye(ad[0].shape[0])
-        bi = numpy.eye(bd[0].shape[0])
 
-        if len(bd) != 1:
-            raise NotImplementedError("Cannot create dmats")
+def _get_coeffs_and_dmats_from_tp(e):
+    if isinstance(e, FIAT.tensor_product.FlattenedDimensions):
+        return _get_coeffs_and_dmats_from_tp(e.element)
 
-        dmats = [numpy.block([[w * ai for w in v] for v in bd[0]])]
-        for mat in ad:
-            dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-        ad = dmats
-    else:
-        ac = A.get_coeffs()
-        ad = A.dmats()
-    bc = B.get_coeffs()
-    bd = B.dmats()
-    coeffs = numpy.block([[w * ac for w in v] for v in bc])
-    num_expansion_members = coeffs.shape[0]
-    ai = numpy.eye(ad[0].shape[0])
-    bi = numpy.eye(bd[0].shape[0])
+    if isinstance(e, FIAT.enriched.EnrichedElement):
+        coeffs = []
+        dmat = {}
+        for sub_e in e.elements():
+            co, dm = _get_coeffs_and_dmats_from_tp(sub_e)
+            coeffs += co
+            for i, j in dm.items():
+                if i in dmat:
+                    assert numpy.isclose(dmat[i], j)
+                dmat[i] = j
+        return coeffs, dmat
 
-    if len(bd) != 1:
-        raise NotImplementedError("Cannot create dmats")
+    if isinstance(e, FIAT.tensor_product.TensorProductElement):
+        coeffs = []
+        dmat = {}
+        a_co, a_dm = _get_coeffs_and_dmats_from_tp(e.A)
+        b_co, b_dm = _get_coeffs_and_dmats_from_tp(e.B)
+        for a in a_co:
+            for b in b_co:
+                if len(e.value_shape()) == 0:
+                    # Scalar TP element
+                    coeffs.append({ai + bi: {0: av[0] * bv[0]} for ai, av in a.items() for bi, bv in b.items()})
+                else:
+                    if e.B.get_formdegree() == 0:
+                        coeffs.append({ai + bi: {e.value_shape()[0] - 1:
+                                                 av[dim] * bv[0]} for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                    else:
+                        coeffs.append({ai + bi: {dim: av[dim] * bv[0]} for ai, av in a.items() for bi, bv in b.items() for dim in av})
+        for i, j in a_dm.items():
+            if i in dmat:
+                assert numpy.isclose(dmat[i], j)
+            dmat[i] = j
+        for i, j in b_dm.items():
+            if i in dmat:
+                assert numpy.isclose(dmat[i], j)
+            dmat[i] = j
+        return coeffs, dmat
 
-    dmats = [numpy.block([[w * ai for w in v] for v in bd[0]])]
-    for mat in ad:
-        dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-    return dmats, coeffs, num_expansion_members
+    coeffs = [{(i, ): {0: j} for i, j in enumerate(co)} for co in e.get_coeffs()]
+    dm, = e.dmats()
+    dmat = {(i, j ): value for i, row in enumerate(dm) for j, value in enumerate(row)}
+    return coeffs, dmat
 
 
 def _evaluate_basis(ufl_element, fiat_element, epsilon):
@@ -943,7 +945,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         num_components = ufl.utils.sequences.product(e.value_shape())
         if isinstance(e, FIAT.tensor_product.FlattenedDimensions):
             # Tensor product element
-            dmats, coeffs, num_expansion_members = _get_basis_data_from_tp(e.element)
+            dmats, coeffs, num_expansion_members = _get_basis_data_from_tp(e)
         else:
             coeffs = e.get_coeffs()
             dmats = e.dmats()
@@ -1014,7 +1016,7 @@ def _tabulate_dof_coordinates(ufl_element, element):
 
     # Bail out if any dual basis member is missing (element is not
     # nodal), this is strictly not necessary but simpler
-    if any(L is None for L in element.dual_basis()):
+    if any(L is None or L.pt_dict is None for L in element.dual_basis()):
         return {}
 
     if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
