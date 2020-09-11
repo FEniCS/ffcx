@@ -66,11 +66,9 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
 
     # Handle tensor-product structured elements
     if element.cell().cellname() == "quadrilateral":
-        e = _create_element(element.reconstruct(cell=_tpc_quadrilateral))
-        return FIAT.tensor_product.FlattenedDimensions(e)
+        return _flatten_quad(element)
     elif element.cell().cellname() == "hexahedron":
-        e = _create_element(element.reconstruct(cell=_tpc_hexahedron))
-        return FIAT.tensor_product.FlattenedDimensions(e)
+        return _flatten_hex(element)
 
     if element.family() not in FIAT.supported_elements:
         raise ValueError("Finite element of type \"{}\" is not supported by FIAT.".format(element.family()))
@@ -156,7 +154,6 @@ def _create_hdiv_finiteelement(element: ufl.HDivElement) -> FIAT.TensorProductEl
         # TODO: expand these to do more than order 1
         a.pt_dict = b.pt_dict
         a.deriv_dict = b.deriv_dict
-        a.functional_type = 'PointNormalEval'
 
     return fiat_element
 
@@ -269,3 +266,25 @@ def map_facet_points(points, facet, cellname):
         new_points += [x]
 
     return new_points
+
+
+def _flatten_quad(element):
+    e = _create_element(element.reconstruct(cell=_tpc_quadrilateral))
+    flat = FIAT.tensor_product.FlattenedDimensions(e)
+
+    # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
+    if element.family == "RTCF":
+        for dofs in flat.entity_dofs()[1].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointNormalEval"
+
+    return flat
+
+
+def _flatten_hex(element):
+    e = _create_element(element.reconstruct(cell=_tpc_quadrilateral))
+    flat = FIAT.tensor_product.FlattenedDimensions(e)
+
+    # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
+
+    return flat
