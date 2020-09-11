@@ -22,7 +22,6 @@ import warnings
 from collections import namedtuple
 
 import numpy
-from scipy.linalg import block_diag
 
 import FIAT
 import ufl
@@ -874,10 +873,11 @@ def _get_coeffs_and_dmats_from_tp(e):
                     coeffs.append({ai + bi: {0: av[0] * bv[0]} for ai, av in a.items() for bi, bv in b.items()})
                 else:
                     if e.B.get_formdegree() == 0:
-                        coeffs.append({ai + bi: {e.value_shape()[0] - 1:
-                                                 av[dim] * bv[0]} for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                        coeffs.append({ai + bi: {e.value_shape()[0] - 1: av[dim] * bv[0]}
+                                       for ai, av in a.items() for bi, bv in b.items() for dim in av})
                     else:
-                        coeffs.append({ai + bi: {dim: av[dim] * bv[0]} for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                        coeffs.append({ai + bi: {dim: av[dim] * bv[0]}
+                                       for ai, av in a.items() for bi, bv in b.items() for dim in av})
         for i, j in a_dm.items():
             if i in dmat:
                 assert numpy.isclose(dmat[i], j)
@@ -890,7 +890,7 @@ def _get_coeffs_and_dmats_from_tp(e):
 
     coeffs = [{(i, ): {0: j} for i, j in enumerate(co)} for co in e.get_coeffs()]
     dm, = e.dmats()
-    dmat = {(i, j ): value for i, row in enumerate(dm) for j, value in enumerate(row)}
+    dmat = {(i, j): value for i, row in enumerate(dm) for j, value in enumerate(row)}
     return coeffs, dmat
 
 
