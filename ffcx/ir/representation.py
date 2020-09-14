@@ -833,13 +833,17 @@ def _get_basis_data_from_tp(e):
                 else:
                     for d in c[k]:
                         coeffs_new[i][d][j] = c[k][d]
+
     dmats_new = []
-    for i in range(dim):
+    for d in range(dim):
         dmat_new = numpy.zeros([order ** dim, order ** dim])
-        for j, k in enumerate(itertools.product(range(order), repeat=dim)):
-            for l, m in enumerate(itertools.product(range(order), repeat=dim)):
-                assert (k[i], m[i]) in dmat
-                dmat_new[(j, l)] = dmat[(k[i], m[i])]
+        for row_n, row_indices in enumerate(itertools.product(range(order), repeat=dim)):
+            for col_n, col_indices in enumerate(itertools.product(range(order), repeat=dim)):
+                for i in range(dim):
+                    if d != i and row_indices[i] != col_indices[i]:
+                        break
+                else:
+                    dmat_new[row_n, col_n] = dmat[(row_indices[d], col_indices[d])]
         dmats_new.append(dmat_new)
 
     return dmats_new, coeffs_new, order ** dim
