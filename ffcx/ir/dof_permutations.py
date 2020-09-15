@@ -124,7 +124,7 @@ def base_permutations_from_subdofmap(ufl_element):
                     # TODO: Implement this
                     pass
                 elif t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
-                         "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
+                           "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
                     # Dof is a point evaluation, use sub_block_size 1
                     permuted = entity_functions[dim](type_dofs, 1)
                 elif t in ["ComponentPointEval", "IntegralMoment"]:
