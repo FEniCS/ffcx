@@ -832,7 +832,7 @@ def _get_basis_data_from_tp(e):
                     coeffs_new[i][j] = c[k][0]
                 else:
                     for d in c[k]:
-                        coeffs_new[i][d][j] = c[k][d]
+                        coeffs_new[i][d][j] = c[k][d] * (-1) ** (d + 1)
 
     dmats_new = []
     for d in range(dim):

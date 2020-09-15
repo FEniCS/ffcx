@@ -197,7 +197,9 @@ def _create_restricted_finiteelement(element: ufl.RestrictedElement):
 @_create_element.register(ufl.TensorProductElement)
 def _create_tp_finiteelement(element) -> FIAT.TensorProductElement:
     e0, e1 = element.sub_elements()
-    return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
+    fiat_element = FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
+    # TODO: fix pt_dicts here for 3D elements
+    return fiat_element
 
 
 def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:
@@ -286,13 +288,13 @@ def _flatten_quad(element):
     flat = FIAT.tensor_product.FlattenedDimensions(e)
 
     # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
-    if element.family == "RTCF" or element.family == "BDMCF":
+    if element.family() == "RTCF" or element.family() == "BDMCF":
         for dofs in flat.entity_dofs()[1].values():
             for d in dofs:
                 flat.dual.nodes[d].functional_type = "PointNormalEval"
 
     # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
-    if element.family == "RTCE" or element.family == "BDMCE":
+    if element.family() == "RTCE" or element.family() == "BDMCE":
         for dofs in flat.entity_dofs()[1].values():
             for d in dofs:
                 flat.dual.nodes[d].functional_type = "PointEdgeTangent"
@@ -305,17 +307,17 @@ def _flatten_hex(element):
     flat = FIAT.tensor_product.FlattenedDimensions(e)
 
     # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
-    if element.family == "NCF":
+    if element.family() == "NCF":
         for dofs in flat.entity_dofs()[2].values():
             for d in dofs:
                 flat.dual.nodes[d].functional_type = "PointNormalEval"
 
-    if element.family == "NCE":
+    if element.family() == "NCE":
         for dofs in flat.entity_dofs()[1].values():
             for d in dofs:
                 flat.dual.nodes[d].functional_type = "PointEdgeTangent"
         for dofs in flat.entity_dofs()[2].values():
             for d in dofs:
-                flat.dual.nodes[d].functional_type = "PointNormalEval"
+                flat.dual.nodes[d].functional_type = "PointFaceTangent"
 
     return flat

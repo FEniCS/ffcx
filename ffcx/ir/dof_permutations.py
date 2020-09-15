@@ -104,6 +104,7 @@ def base_permutations_from_subdofmap(ufl_element):
 
     perms = identity_permutations(num_perms, num_dofs)
     perm_n = 0
+
     # Iterate through the entities of the reference element
     for dim in range(1, tdim):
         for entity_n in range(entity_counts[dim]):
@@ -118,7 +119,11 @@ def base_permutations_from_subdofmap(ufl_element):
             for t in unique_types:
                 permuted = None
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
-                if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
+                if t == "PointFaceTangent" and ufl_element.family() == "NCE":
+                    # Treat NCE spaces as special cases
+                    # TODO: Implement this
+                    pass
+                elif t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                          "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
                     # Dof is a point evaluation, use sub_block_size 1
                     permuted = entity_functions[dim](type_dofs, 1)
