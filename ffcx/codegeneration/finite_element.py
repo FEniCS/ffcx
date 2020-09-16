@@ -147,7 +147,7 @@ def entity_reflection(L, i, cell_shape):
         num_faces = 4
         face_bitsize = 3
     if cell_shape == "hexahedron":
-        num_faces = 4
+        num_faces = 6
         face_bitsize = 3
     if i[0] == 1:
         return L.NE(L.BitwiseAnd(cell_info, L.BitShiftL(1, face_bitsize * num_faces + i[1])), 0)

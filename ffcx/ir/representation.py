@@ -875,16 +875,31 @@ def _get_coeffs_and_dmats_from_tp(e):
         b_co, b_dm = _get_coeffs_and_dmats_from_tp(e.B)
         for a in a_co:
             for b in b_co:
-                if len(e.value_shape()) == 0:
+                value_rank = len(e.value_shape())
+                if value_rank == 0:
                     # Scalar TP element
                     coeffs.append({ai + bi: {0: av[0] * bv[0]} for ai, av in a.items() for bi, bv in b.items()})
-                else:
-                    if e.B.get_formdegree() == 0:
-                        coeffs.append({ai + bi: {e.value_shape()[0] - 1: av[dim] * bv[0]}
-                                       for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                elif value_rank == 1:
+                    if e.mapping()[len(coeffs)] == "contravariant piola":
+                        # Hdiv
+                        if e.B.get_formdegree() == 0:
+                            coeffs.append({ai + bi: {e.value_shape()[0] - 1: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                        else:
+                            coeffs.append({ai + bi: {dim: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                    elif e.mapping()[len(coeffs)] == "covariant piola":
+                        # Hcurl
+                        if e.B.get_formdegree() == 1:
+                            coeffs.append({ai + bi: {e.value_shape()[0] - 1: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                        else:
+                            coeffs.append({ai + bi: {dim: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
                     else:
-                        coeffs.append({ai + bi: {dim: av[dim] * bv[0]}
-                                       for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                        raise RuntimeError("Unrecognised mapping: " + e.mapping()[len(coeffs)])
+                else:
+                    raise RuntimeError("Unsupported value rank: " + str(value_rank))
         for i, j in a_dm.items():
             if i in dmat:
                 assert numpy.isclose(dmat[i], j)
