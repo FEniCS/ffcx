@@ -816,7 +816,7 @@ def _extract_elements(fiat_element):
     return new_elements
 
 
-def _get_basis_data_from_tp(e):
+def _get_basis_data_from_tp(e, family):
     assert isinstance(e, FIAT.tensor_product.FlattenedDimensions)
     coeffs, dmat = _get_coeffs_and_dmats_from_tp(e.element)
 
@@ -832,7 +832,10 @@ def _get_basis_data_from_tp(e):
                     coeffs_new[i][j] = c[k][0]
                 else:
                     for d in c[k]:
-                        coeffs_new[i][d][j] = c[k][d] * (-1) ** (d + 1)
+                        if family in ["RTCF", "NCF"]:
+                            coeffs_new[i][d][j] = c[k][d] * (-1) ** d
+                        else:
+                            coeffs_new[i][d][j] = c[k][d]
 
     dmats_new = []
     for d in range(dim):
@@ -949,7 +952,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         num_components = ufl.utils.sequences.product(e.value_shape())
         if isinstance(e, FIAT.tensor_product.FlattenedDimensions):
             # Tensor product element
-            dmats, coeffs, num_expansion_members = _get_basis_data_from_tp(e)
+            dmats, coeffs, num_expansion_members = _get_basis_data_from_tp(e, ufl_element.family())
         else:
             coeffs = e.get_coeffs()
             dmats = e.dmats()
