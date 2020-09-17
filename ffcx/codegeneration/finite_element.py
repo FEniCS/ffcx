@@ -447,8 +447,10 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
     elif ir.cell_shape == "hexahedron":
         # TODO: fix this
-        raise RuntimeError("Evaluating with FaceTangents on hexahedra not yet supported")
         for entity, dofs, rot_type in ir.dof_face_tangents:
+            warnings.warn("Evaluating with FaceTangents on hexahedra not yet supported")
+            continue
+
             if entity[0] != 2:
                 warnings.warn("Face tangents an entity of dim != 2 not implemented.")
                 continue
