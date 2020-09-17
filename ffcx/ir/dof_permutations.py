@@ -119,9 +119,15 @@ def base_permutations_from_subdofmap(ufl_element):
             for t in unique_types:
                 permuted = None
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
-                if t == "PointFaceTangent" and ufl_element.family() == "NCE":
-                    # Treat NCE spaces as special cases
+                # First deal with special cases for tensor product Hdiv and Hcurl
+                if t == "PointFaceTangent" and dim == 2 and ufl_element.family() == "NCE":
                     permuted = permute_nce_face(type_dofs, 1)
+                elif t == "PointNormalEval" and dim == 2 and ufl_element.family() == "NCF":
+                    permuted = permute_ncf_face(type_dofs, 1)
+                elif t == "PointNormalEval" and dim == 1 and ufl_element.family() == "RTCF":
+                    permuted = permute_tp_edge(type_dofs, 1)
+                elif t == "PointEdgeTangent" and dim == 1 and ufl_element.family() == "RTCE":
+                    permuted = permute_tp_edge(type_dofs, 1)
                 elif t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                            "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
                     # Dof is a point evaluation, use sub_block_size 1
@@ -272,11 +278,40 @@ def get_frobenius_side_length(n):
     return s
 
 
+def permute_ncf_face(dofs_in, sub_block_size, reverse_blocks=False):
+    """Permute the dofs on a quadrilateral."""
+    n = len(dofs_in) // sub_block_size
+    s = math.floor(math.sqrt(n))
+    assert s ** 2 == n
+
+    if s == 1:
+        simple_dofs = [0]
+    elif s == 2:
+        simple_dofs = [0, 1, 2, 3]
+    else:
+        # TODO: fix higher order NCF spaces
+        raise RuntimeError("NCF spaces of order > 2 not yet supported")
+        simple_dofs = []
+        for i in [0] + list(range(2 * s, n, s)) + [s]:
+            simple_dofs += [i] + list(range(i + 2, i + s)) + [i + 1]
+    dofs = []
+    for d in simple_dofs:
+        dofs += [dofs_in[d * sub_block_size + k] for k in range(sub_block_size)]
+    assert len(dofs) == len(dofs_in)
+
+    return [quadrilateral_rotation(dofs, sub_block_size),
+            quadrilateral_reflection(dofs, sub_block_size, reverse_blocks)]
+
+
 def permute_nce_face(dofs, sub_block_size):
     """Permute the dofs on the face of a NCE space."""
-    order = math.floor(1 + math.sqrt(1 + 2 * len(dofs))) // 2
-    assert 2 * order * (order - 1) == len(dofs)
+    n = len(dofs) // sub_block_size
+    order = math.floor(1 + math.sqrt(1 + 2 * n)) // 2
+    assert 2 * order * (order - 1) == n
 
+    if order > 2:
+        raise RuntimeError("NCF spaces of order > 2 not yet supported")
+    # TODO: come back to this and work out if ends need doing separately
     # Make the rotation
     rot = []
     for i in range(order - 1):
@@ -334,6 +369,11 @@ def permute_edge(dofs, sub_block_size, reverse_blocks=False):
     return [edge_flip(dofs, sub_block_size, reverse_blocks)]
 
 
+def permute_tp_edge(dofs, sub_block_size, reverse_blocks=False):
+    """Permute the dofs on an edge."""
+    return [tp_edge_flip(dofs, sub_block_size, reverse_blocks)]
+
+
 def permute_triangle(dofs, sub_block_size, reverse_blocks=False):
     """Permute the dofs on a triangle."""
     return [triangle_rotation(dofs, sub_block_size), triangle_reflection(dofs, sub_block_size, reverse_blocks)]
@@ -356,6 +396,27 @@ def edge_flip(dofs, sub_block_size=1, reverse_blocks=False):
 
     perm = []
     for dof in range(n - 1, -1, -1):
+        if reverse_blocks:
+            # Reverse the dofs within a block
+            perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
+        else:
+            perm += [dof * sub_block_size + k for k in range(sub_block_size)]
+
+    assert len(perm) == len(dofs)
+
+    return [dofs[i] for i in perm]
+
+
+def tp_edge_flip(dofs, sub_block_size=1, reverse_blocks=False):
+    """Flip the dofs on an edge."""
+    n = len(dofs) // sub_block_size
+
+    perm = []
+    if n == 1:
+        ends = [0]
+    else:
+        ends = [1, 0]
+    for dof in ends + list(range(n - 1, 1, -1)):
         if reverse_blocks:
             # Reverse the dofs within a block
             perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
