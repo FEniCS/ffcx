@@ -121,8 +121,7 @@ def base_permutations_from_subdofmap(ufl_element):
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
                 if t == "PointFaceTangent" and ufl_element.family() == "NCE":
                     # Treat NCE spaces as special cases
-                    # TODO: Implement this
-                    pass
+                    permuted = permute_nce_face(type_dofs, 1)
                 elif t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
                            "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
                     # Dof is a point evaluation, use sub_block_size 1
@@ -217,14 +216,26 @@ def face_tangents_from_subdofmap(ufl_element):
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
                 for dof_pair in zip(type_dofs[::2], type_dofs[1::2]):
                     # (entity_dim, entity_number), dofs
-                    rotations.append(((2, entity_n), dof_pair))
+                    rotations.append(((2, entity_n), dof_pair, "simplex"))
             # FrobeniusIntegralMoment dofs
             if "FrobeniusIntegralMoment" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "FrobeniusIntegralMoment"]
                 s = get_frobenius_side_length(len(type_dofs))
                 for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
                     # (entity_dim, entity_number), dofs
-                    rotations.append(((2, entity_n), dof_pair))
+                    rotations.append(((2, entity_n), dof_pair, "simplex"))
+
+    if cname == "tetrahedron":
+        # Iterate through faces
+        for entity_n in range(len(entity_dofs[2])):
+            dofs = entity_dofs[2][entity_n]
+            types = [dof_types[i] for i in dofs]
+            # PointFaceTangent dofs
+            if "PointFaceTangent" in types:
+                type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
+                # (entity_dim, entity_number), dofs
+                rotations.append(((2, entity_n), type_dofs[:len(type_dofs) // 2], "tp1"))
+                rotations.append(((2, entity_n), type_dofs[len(type_dofs) // 2:], "tp2"))
 
     return rotations
 
@@ -259,6 +270,32 @@ def get_frobenius_side_length(n):
         s += 1
     assert 3 * s + s * (s - 1) == n
     return s
+
+
+def permute_nce_face(dofs, sub_block_size):
+    """Permute the dofs on the face of a NCE space"""
+    order = math.floor(1 + math.sqrt(1 + 2 * len(dofs))) // 2
+    assert 2 * order * (order - 1) == len(dofs)
+
+    # Make the rotation
+    rot = []
+    for i in range(order - 1):
+        for dof in range(order * (order + i) - 1, order * (order - 1 + i) - 1, -1):
+            rot += [dof * sub_block_size + k for k in range(sub_block_size)]
+    for i in range(order - 1):
+        for dof in range(order * (order - 2 - i), order * (order - 1 - i)):
+            rot += [dof * sub_block_size + k for k in range(sub_block_size)]
+    assert len(rot) == len(dofs)
+
+    # Make the reflection
+    ref = []
+    for dof in range(order * (order - 1), 2 * order * (order - 1)):
+        ref += [dof * sub_block_size + k for k in range(sub_block_size)]
+    for dof in range(order * (order - 1)):
+        ref += [dof * sub_block_size + k for k in range(sub_block_size)]
+
+    return [[dofs[i] for i in rot],
+            [dofs[i] for i in ref]]
 
 
 def permute_frobenius_face(dofs, sub_block_size):

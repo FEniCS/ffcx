@@ -152,23 +152,13 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
 @_create_element.register(ufl.HDivElement)
 def _create_hdiv_finiteelement(element: ufl.HDivElement) -> FIAT.TensorProductElement:
     tp = _create_element(element._element)
-    fiat_element = FIAT.Hdiv(tp)
-    for a, b in zip(fiat_element.dual.nodes, tp.dual.nodes):
-        a.pt_dict = b.pt_dict
-        a.deriv_dict = b.deriv_dict
-
-    return fiat_element
+    return FIAT.Hdiv(tp)
 
 
 @_create_element.register(ufl.HCurlElement)
 def _create_hcurl_finiteelement(element: ufl.HCurlElement) -> FIAT.TensorProductElement:
     tp = _create_element(element._element)
-    fiat_element = FIAT.Hcurl(tp)
-    for a, b in zip(fiat_element.dual.nodes, tp.dual.nodes):
-        a.pt_dict = b.pt_dict
-        a.deriv_dict = b.deriv_dict
-
-    return fiat_element
+    return FIAT.Hcurl(tp)
 
 
 @_create_element.register(ufl.TensorElement)
@@ -197,9 +187,7 @@ def _create_restricted_finiteelement(element: ufl.RestrictedElement):
 @_create_element.register(ufl.TensorProductElement)
 def _create_tp_finiteelement(element) -> FIAT.TensorProductElement:
     e0, e1 = element.sub_elements()
-    fiat_element = FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
-    # TODO: fix pt_dicts here for 3D elements
-    return fiat_element
+    return FIAT.TensorProductElement(_create_element(e0), _create_element(e1))
 
 
 def create_element(ufl_element: ufl.finiteelement) -> FIAT.FiniteElement:

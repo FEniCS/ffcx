@@ -348,7 +348,7 @@ class IntegralGenerator(object):
                 "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
         # Apply reflections (for FaceTangent dofs)
-        for entity, dofs in rot:
+        for entity, dofs, rot_type in rot:
             if entity[0] != 2:
                 warnings.warn("Face tangents an entity of dim != 2 not implemented.")
                 continue
@@ -360,17 +360,33 @@ class IntegralGenerator(object):
                     warnings.warn("Non-zero dof may have been stripped from table.")
                 continue
 
-            # Swap the values of two dofs if their face is reflected
-            reflected = self.backend.symbols.entity_reflection(L, entity, self.ir.cell_shape)
-            di0 = dofmap.index(dofs[0])
-            di1 = dofmap.index(dofs[1])
-            for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
-                indices0 = indices + (di0, )
-                indices1 = indices + (di1, )
-                temp0 = table[indices0]
-                temp1 = table[indices1]
-                table[indices0] = L.Conditional(reflected, temp1, temp0)
-                table[indices1] = L.Conditional(reflected, temp0, temp1)
+            if rot_type == "simplex":
+                # Swap the values of two dofs if their face is reflected
+                reflected = self.backend.symbols.entity_reflection(L, entity, self.ir.cell_shape)
+                di0 = dofmap.index(dofs[0])
+                di1 = dofmap.index(dofs[1])
+                for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
+                    indices0 = indices + (di0, )
+                    indices1 = indices + (di1, )
+                    temp0 = table[indices0]
+                    temp1 = table[indices1]
+                    table[indices0] = L.Conditional(reflected, temp1, temp0)
+                    table[indices1] = L.Conditional(reflected, temp0, temp1)
+            elif rot_type in ["tp1", "tp2"]:
+                # Multiply appropriate DOFs by -1 if their face is rotated
+                rotations = self.backend.symbols.entity_reflection(L, entity, self.ir.cell_shape)
+                for d in dofs:
+                    di = dofmap.index(d)
+                    for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
+                        indices_with_d = indices + (di, )
+                        if rot_type == "tp1":
+                            condition = L.Or(L.Eq(rotations, 2), L.Eq(rotations, 3))
+                        else:
+                            condition = L.Or(L.Eq(rotations, 1), L.Eq(rotations, 2))
+                        table[indices_with_d] = L.Conditional(
+                            condition, -table[indices_with_d], table[indices_with_d])
+            else:
+                raise RuntimeError("Unrecognised face tangent type.")
 
         parts = []
         # Define the table; do not make it const, as it may be changed by rotations
