@@ -380,9 +380,9 @@ class IntegralGenerator(object):
                     for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
                         indices_with_d = indices + (di, )
                         if rot_type == "tp1":
-                            condition = L.Or(L.Eq(rotations, 2), L.Eq(rotations, 3))
+                            condition = L.Or(L.EQ(rotations, 2), L.EQ(rotations, 3))
                         else:
-                            condition = L.Or(L.Eq(rotations, 1), L.Eq(rotations, 2))
+                            condition = L.Or(L.EQ(rotations, 1), L.EQ(rotations, 2))
                         table[indices_with_d] = L.Conditional(
                             condition, -table[indices_with_d], table[indices_with_d])
             else:
