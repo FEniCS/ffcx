@@ -225,7 +225,7 @@ def face_tangents_from_subdofmap(ufl_element):
                     # (entity_dim, entity_number), dofs
                     rotations.append(((2, entity_n), dof_pair, "simplex"))
 
-    if cname == "hexahedron":
+    elif cname == "hexahedron":
         # Iterate through faces
         for entity_n in range(len(entity_dofs[2])):
             dofs = entity_dofs[2][entity_n]
