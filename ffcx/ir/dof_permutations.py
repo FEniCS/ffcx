@@ -273,7 +273,7 @@ def get_frobenius_side_length(n):
 
 
 def permute_nce_face(dofs, sub_block_size):
-    """Permute the dofs on the face of a NCE space"""
+    """Permute the dofs on the face of a NCE space."""
     order = math.floor(1 + math.sqrt(1 + 2 * len(dofs))) // 2
     assert 2 * order * (order - 1) == len(dofs)
 
