@@ -10,6 +10,7 @@
 
 from collections import defaultdict
 import logging
+import warnings
 
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
@@ -442,7 +443,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             # Do rotation if the face is rotated
             rotations = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity[1] + 1), 3)
             face_tangents += [L.If(L.EQ(rotations, 1), body0),
-                      L.ElseIf(L.EQ(rotations, 2), body1)]
+                              L.ElseIf(L.EQ(rotations, 2), body1)]
 
     elif ir.cell_shape == "hexahedron":
         # TODO: fix this
@@ -473,7 +474,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 (r, 0, num_derivatives_g),
                 index_type=index_type,
                 body=face_tangents)]
-
 
     # Transform for each point
     point_loop_code = [
