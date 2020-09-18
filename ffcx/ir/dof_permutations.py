@@ -310,8 +310,9 @@ def permute_nce_face(dofs, sub_block_size):
     assert 2 * order * (order - 1) == n
 
     if order > 2:
-        raise RuntimeError("NCF spaces of order > 2 not yet supported")
-    # TODO: come back to this and work out if ends need doing separately
+        # TODO: fix higher order NCE spaces
+        raise RuntimeError("NCE spaces of order > 2 not yet supported")
+
     # Make the rotation
     rot = []
     for i in range(order - 1):

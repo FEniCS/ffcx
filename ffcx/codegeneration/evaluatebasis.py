@@ -287,6 +287,7 @@ def _generate_compute_quad_basisvalues(L, basisvalues, X, ip, embedded_degree,
     code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
 
     p = embedded_degree + 1
+    assert p * p == num_members
 
     bx = [1.0]
     by = [1.0]
@@ -323,6 +324,7 @@ def _generate_compute_hex_basisvalues(L, basisvalues, X, ip, embedded_degree,
     code = [L.ArrayDecl("double", basisvalues, (num_members, ), values=0)]
 
     p = embedded_degree + 1
+    assert p * p * p == num_members
 
     bx = [1.0]
     by = [1.0]

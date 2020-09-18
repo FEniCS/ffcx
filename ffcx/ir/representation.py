@@ -821,6 +821,7 @@ def _extract_elements(fiat_element):
 
 
 def _get_basis_data_from_tp(e, family):
+    """Get the coeffs and dmats of a tensor product element."""
     assert isinstance(e, FIAT.tensor_product.FlattenedDimensions)
     coeffs, dmat = _get_coeffs_and_dmats_from_tp(e.element)
 
@@ -837,6 +838,8 @@ def _get_basis_data_from_tp(e, family):
                 else:
                     for d in c[k]:
                         if family in ["RTCF", "NCF"]:
+                            # Swap the reference direction of some DOFs to make consistent
+                            # with low-to-high ordering.
                             coeffs_new[i][d][j] = c[k][d] * (-1) ** d
                         else:
                             coeffs_new[i][d][j] = c[k][d]
@@ -857,6 +860,7 @@ def _get_basis_data_from_tp(e, family):
 
 
 def _get_coeffs_and_dmats_from_tp(e):
+    """Get the coeffs in TP representation and scalar dmats of a tensor product element."""
     if isinstance(e, FIAT.tensor_product.FlattenedDimensions):
         return _get_coeffs_and_dmats_from_tp(e.element)
 
