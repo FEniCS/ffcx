@@ -43,6 +43,7 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
             kind = "element"
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
             expr = ufl_object[0]
+            points = ufl_object[1]
 
             # FIXME Move this to UFL, cache the computation
             coeffs = ufl.algorithms.extract_coefficients(expr)
@@ -65,8 +66,11 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
             domains = ufl.algorithms.analysis.unique_tuple(domains)
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
+            # Hash on UFL signature and points
             signature = ufl.algorithms.signature.compute_expression_signature(expr, rn)
             object_signature += signature
+            object_signature += repr(points)
+
             kind = "expression"
         else:
             raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
