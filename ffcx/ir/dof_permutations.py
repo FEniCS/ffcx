@@ -208,7 +208,7 @@ def face_tangents_from_subdofmap(ufl_element):
     entity_dofs = fiat_element.entity_dofs()
 
     face_tangents = {}
-    if len(entity_dofs) > 2:
+    if cname == "tetrahedron" or cname == "hexahedron":
         # Iterate through faces
         for entity_n in range(len(entity_dofs[2])):
             dofs = entity_dofs[2][entity_n]
@@ -217,8 +217,6 @@ def face_tangents_from_subdofmap(ufl_element):
                 tangent_data = {i: {} for i in range(6)}
             elif cname == "hexahedron":
                 tangent_data = {i: {} for i in range(8)}
-            else:
-                raise RuntimeError("Face tangents only implements on tetrahedra and hexahedra.")
 
             # PointFaceTangent dofs
             if cname == "tetrahedron" and "PointFaceTangent" in types:
