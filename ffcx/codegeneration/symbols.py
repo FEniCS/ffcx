@@ -97,6 +97,25 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
+    def entity_permutation(self, L, i, cell_shape):
+        """Returns the int that gives the permutation of the entity."""
+        cell_info = self.S("cell_permutation")
+        if cell_shape in ["triangle", "quadrilateral"]:
+            num_faces = 0
+            face_bitsize = 1
+            assert i[0] == 1
+        if cell_shape == "tetrahedron":
+            num_faces = 4
+            face_bitsize = 3
+        if cell_shape == "hexahedron":
+            num_faces = 6
+            face_bitsize = 3
+        if i[0] == 1:
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
+        elif i[0] == 2:
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 7)
+        return L.LiteralInt(0)
+
     def entity_reflection(self, L, i, cell_shape):
         """Returns the bool that says whether or not an entity has been reflected."""
         cell_info = self.S("cell_permutation")

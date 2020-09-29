@@ -398,7 +398,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 ])
         ]
 
-    # Fix face tangents
+    # Correct data for rotations and reflections of face tangents
     face_tangents = []
     temporary_variables = 0
     for (entity_dim, entity_n), face_tangent_data in ir.dof_face_tangents.items():
@@ -406,6 +406,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             warnings.warn("Face tangents an entity of dim != 2 not implemented.")
             continue
 
+        # Use temporary variables t0, t1, ... to store current data
         temps = {}
         for perm, ft in face_tangent_data.items():
             for combo in ft.values():
@@ -420,14 +421,14 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 v = values[ip, dof, r, physical_offsets[dof] + i]
                 body.append(L.Assign(v, sum(w * temps[dof] for dof, w in combo)))
 
+            # If cell_permutation has given value, overwrite data with linear combination of temporary data
             if len(body) > 0:
                 entity_perm = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity_n), 7)
 
                 if perm == 0:
-                    If = L.If
+                    face_tangents += [L.If(L.EQ(entity_perm, perm), body)]
                 else:
-                    If = L.ElseIf
-                face_tangents += [If(L.EQ(entity_perm, perm), body)]
+                    face_tangents += [L.ElseIf(L.EQ(entity_perm, perm), body)]
 
     if len(face_tangents) > 0:
         face_tangents = [

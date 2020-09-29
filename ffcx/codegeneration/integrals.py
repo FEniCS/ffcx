@@ -353,14 +353,16 @@ class IntegralGenerator(object):
                 continue
 
             for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
+                # Store current values in temps
                 temps = {}
                 for perm, ft in face_tangent_data.items():
                     for combo in ft.values():
                         for dof, w in combo:
                             if dof in dofmap:
                                 temps[dof] = table[indices + (dofmap.index(dof), )]
+                # Replace values with conditionals containing linear combinations of values in temps
                 for perm, ft in face_tangent_data.items():
-                    entity_perm = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity_n), 7)
+                    entity_perm = self.backend.symbols.entity_permutation(L, (entity_dim, entity_n), self.ir.cell_shape)
                     for dof, combo in ft.items():
                         if dof in dofmap:
                             table[indices + (dofmap.index(dof), )] = L.Conditional(
