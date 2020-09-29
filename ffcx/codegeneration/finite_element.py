@@ -400,77 +400,38 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
     # Fix face tangents
     face_tangents = []
-    if ir.cell_shape == "tetrahedron":
-        temp0 = L.Symbol("t0")
-        temp1 = L.Symbol("t1")
-        # Apply reflections (for FaceTangent dofs)
-        for entity, dofs, rot_type in ir.dof_face_tangents:
-            if entity[0] != 2:
-                warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-                continue
-            assert rot_type == "simplex"
-
-            # Swap the values of two dofs if their face is reflected
-            reflected = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity[1]), 1)
-
-            v0 = values[ip, dofs[0], r, physical_offsets[dofs[0]] + i]
-            v1 = values[ip, dofs[1], r, physical_offsets[dofs[1]] + i]
-            if len(face_tangents) == 0:
-                face_tangents += [
-                    L.VariableDecl("double", temp0, 0),
-                    L.VariableDecl("double", temp1, 0)]
-
-            face_tangents += [
-                L.Assign(temp0, L.Conditional(reflected, v1, v0)),
-                L.Assign(temp1, L.Conditional(reflected, v0, v1)),
-                L.Assign(v0, temp0),
-                L.Assign(v1, temp1)]
-
-            # Generate statements that rotate the dofs if their face is rotated
-            body0 = [
-                L.Assign(temp0, v0),
-                L.Assign(temp1, v1),
-                L.Assign(v0, -temp0 - temp1),
-                L.Assign(v1, temp0)
-            ]
-            body1 = [
-                L.Assign(temp0, v0),
-                L.Assign(temp1, v1),
-                L.Assign(v0, temp1),
-                L.Assign(v1, -temp0 - temp1)
-            ]
-
-            # Do rotation if the face is rotated
-            rotations = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity[1] + 1), 3)
-            face_tangents += [L.If(L.EQ(rotations, 1), body0),
-                              L.ElseIf(L.EQ(rotations, 2), body1)]
-
-    elif ir.cell_shape == "hexahedron":
-        # TODO: fix this
-        for entity, dofs, rot_type in ir.dof_face_tangents:
-            warnings.warn("Evaluating with FaceTangents on hexahedra not yet supported")
+    temporary_variables = 0
+    for (entity_dim, entity_n), ft_data in ir.dof_face_tangents.items():
+        if entity_dim != 2:
+            warnings.warn("Face tangents an entity of dim != 2 not implemented.")
             continue
 
-            if entity[0] != 2:
-                warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-                continue
-            assert rot_type in ["tp1", "tp2"]
+        temps = {}
+        for perm, ft_data2 in ft_data.items():
+            for combo in ft_data2.values():
+                for dof, w in combo:
+                    if dof not in temps:
+                        temps[dof] = L.Symbol("t" + str(len(temps)))
+        temporary_variables = max(temporary_variables, len(temps))
 
-            # Multiply appropriate DOFs by -1 if their face is rotated and/or reflected
-            rotations = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity[1] + 1), 3)
-            for d in dofs:
-                if rot_type == "tp1":
-                    condition = L.Or(L.EQ(rotations, 2), L.EQ(rotations, 3))
+        for perm, ft_data2 in ft_data.items():
+            body = []
+            for dof, combo in ft_data2.items():
+                v = values[ip, dof, r, physical_offsets[dof] + i]
+                body.append(L.Assign(v, sum(w * temps[dof] for dof, w in combo)))
+
+            if len(body) > 0:
+                entity_perm = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity_n), 7)
+
+                if perm == 0:
+                    If = L.If
                 else:
-                    condition = L.Or(L.EQ(rotations, 1), L.EQ(rotations, 2))
-                v = values[ip, d, r, physical_offsets[d] + i]
-                face_tangents += [
-                    L.Assign(v, L.Conditional(condition, -v, v))
-                ]
+                    If = L.ElseIf
+                face_tangents += [If(L.EQ(entity_perm, perm), body)]
 
     if len(face_tangents) > 0:
-        face_tangents = [
-            L.ForRanges(
+        face_tangents = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
+                         for i in range(temporary_variables)] + [L.ForRanges(
                 (s, 0, num_derivatives_t),
                 (i, 0, num_physical_components),
                 (r, 0, num_derivatives_g),

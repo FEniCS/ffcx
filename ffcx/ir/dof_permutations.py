@@ -68,16 +68,14 @@ def face_tangents(ufl_element):
         return face_tangents_from_subdofmap(ufl_element)
 
     if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-        block_size = ufl_element.num_sub_elements()
-        return [
-            tan
-            for tan in face_tangents(ufl_element.sub_elements()[0])
-            for i in range(block_size)
-        ]
+        if len(face_tangents(ufl_element.sub_elements()[0])) != 0:
+            raise NotImplementedError
 
     # If the element has sub elements, combine their rotations
-    rotations = []
+    rotations = {}
     for e in ufl_element.sub_elements():
+        if len(face_tangents(e)) != 0:
+            raise NotImplementedError
         rotations += face_tangents(e)
     return rotations
 
@@ -210,40 +208,81 @@ def face_tangents_from_subdofmap(ufl_element):
     dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
-    rotations = []
-    if cname == "tetrahedron":
+    face_tangents = {}
+    if len(entity_dofs) > 2:
         # Iterate through faces
         for entity_n in range(len(entity_dofs[2])):
             dofs = entity_dofs[2][entity_n]
             types = [dof_types[i] for i in dofs]
+            tangent_data = {i: {} for i in range(6)}
 
             # PointFaceTangent dofs
-            if "PointFaceTangent" in types:
+            if cname == "tetrahedron" and "PointFaceTangent" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
                 for dof_pair in zip(type_dofs[::2], type_dofs[1::2]):
-                    # (entity_dim, entity_number), dofs
-                    rotations.append(((2, entity_n), dof_pair, "simplex"))
+                    # rotations[(entity_dim, entity_number)][face_permuation][dof] = [(d_i, a_i)]
+                    # means:
+                    #   if {entity permutatation} == face_permutation:
+                    #       value[dof] = sum(d_i * a_i for i in range(...))
+                    tangent_data[0][dof_pair[0]] = [(dof_pair[0], 1)]
+                    tangent_data[1][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[2][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], 1)]
+                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
+                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
+
+                    tangent_data[0][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[1][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
+                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
+                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1)]
+                    tangent_data[5][dof_pair[1]] = [(dof_pair[1], -1)]
+
             # FrobeniusIntegralMoment dofs
-            if "FrobeniusIntegralMoment" in types:
+            if cname == "tetrahedron" and "FrobeniusIntegralMoment" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "FrobeniusIntegralMoment"]
                 s = get_frobenius_side_length(len(type_dofs))
                 for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
-                    # (entity_dim, entity_number), dofs
-                    rotations.append(((2, entity_n), dof_pair, "simplex"))
+                    tangent_data[0][dof_pair[0]] = [(dof_pair[0], 1)]
+                    tangent_data[1][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[2][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], 1)]
+                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
+                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
 
-    elif cname == "hexahedron":
-        # Iterate through faces
-        for entity_n in range(len(entity_dofs[2])):
-            dofs = entity_dofs[2][entity_n]
-            types = [dof_types[i] for i in dofs]
-            # PointFaceTangent dofs
-            if "PointFaceTangent" in types:
+                    tangent_data[0][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[1][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
+                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
+                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1)]
+                    tangent_data[5][dof_pair[1]] = [(dof_pair[1], -1)]
+
+            if cname == "hexahedron" and "PointFaceTangent" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
                 # (entity_dim, entity_number), dofs
-                rotations.append(((2, entity_n), type_dofs[:len(type_dofs) // 2], "tp1"))
-                rotations.append(((2, entity_n), type_dofs[len(type_dofs) // 2:], "tp2"))
+                for dof in type_dofs[:len(type_dofs) // 2]:
+                    tangent_data[0][dof] = [(dof, 1)]
+                    tangent_data[1][dof] = [(dof, 1)]
+                    tangent_data[2][dof] = [(dof, 1)]
+                    tangent_data[3][dof] = [(dof, 1)]
+                    tangent_data[4][dof] = [(dof, -1)]
+                    tangent_data[5][dof] = [(dof, -1)]
+                    tangent_data[6][dof] = [(dof, -1)]
+                    tangent_data[7][dof] = [(dof, -1)]
+                for dof in type_dofs[len(type_dofs) // 2:]:
+                    tangent_data[0][dof] = [(dof, 1)]
+                    tangent_data[1][dof] = [(dof, 1)]
+                    tangent_data[2][dof] = [(dof, -1)]
+                    tangent_data[3][dof] = [(dof, -1)]
+                    tangent_data[4][dof] = [(dof, -1)]
+                    tangent_data[5][dof] = [(dof, -1)]
+                    tangent_data[6][dof] = [(dof, 1)]
+                    tangent_data[7][dof] = [(dof, 1)]
 
-    return rotations
+            if max(len(a) for a in tangent_data.values()) > 0:
+                face_tangents[(2, entity_n)] = tangent_data
+
+    return face_tangents
 
 
 def get_entity_counts(fiat_element):

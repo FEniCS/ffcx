@@ -347,110 +347,28 @@ class IntegralGenerator(object):
             return [L.ArrayDecl(
                 "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
-        if self.ir.cell_shape == "tetrahedron":
-            # Apply reflections (for FaceTangent dofs)
-            for entity, dofs, rot_type in rot:
-                if entity[0] != 2:
-                    warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-                    continue
-                # Check that either all in the dofmap, or not in the dofmap.
-                # If they are not, skip this pair
-                included = [dof in dofmap for dof in dofs]
-                if False in included:
-                    if True in included:
-                        warnings.warn("Non-zero dof may have been stripped from table.")
-                    continue
+        for (entity_dim, entity_n), ft_data in rot.items():
+            if entity_dim != 2:
+                warnings.warn("Face tangents an entity of dim != 2 not implemented.")
+                continue
 
-                assert rot_type == "simplex"
-                # Swap the values of two dofs if their face is reflected
-                reflected = self.backend.symbols.entity_reflection(L, entity, self.ir.cell_shape)
-                di0 = dofmap.index(dofs[0])
-                di1 = dofmap.index(dofs[1])
-                for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
-                    indices0 = indices + (di0, )
-                    indices1 = indices + (di1, )
-                    temp0 = table[indices0]
-                    temp1 = table[indices1]
-                    table[indices0] = L.Conditional(reflected, temp1, temp0)
-                    table[indices1] = L.Conditional(reflected, temp0, temp1)
+            for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
+                temps = {}
+                for perm, ft_data2 in ft_data.items():
+                    for combo in ft_data2.values():
+                        for dof, w in combo:
+                            temps[dof] = table[indices + (dofmap.index(dof), )]
+                for perm, ft_data2 in ft_data.items():
+                    entity_perm = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity_n), 7)
+                    for dof, combo in ft_data2.items():
+                        table[indices + (dofmap.index(dof), )] = L.Conditional(
+                            L.EQ(entity_perm, perm),
+                            sum(w * temps[dof] for dof, w in combo),
+                            table[indices + (dofmap.index(dof), )]
+                        )
 
-        elif self.ir.cell_shape == "hexahedron":
-            for entity, dofs, rot_type in rot:
-                if entity[0] != 2:
-                    warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-                    continue
-                # Check that either all in the dofmap, or not in the dofmap.
-                # If they are not, skip this pair
-                included = [dof in dofmap for dof in dofs]
-                if False in included:
-                    if True in included:
-                        warnings.warn("Non-zero dof may have been stripped from table.")
-                    continue
-                assert rot_type in ["tp1", "tp2"]
-
-                # Multiply appropriate DOFs by -1 if their face is rotated and/or reflected
-                rotations = self.backend.symbols.entity_rotations(L, entity, self.ir.cell_shape)
-                for d in dofs:
-                    di = dofmap.index(d)
-                    for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
-                        indices_with_d = indices + (di, )
-                        if rot_type == "tp1":
-                            condition = L.Or(L.EQ(rotations, 2), L.EQ(rotations, 3))
-                        else:
-                            condition = L.Or(L.EQ(rotations, 1), L.EQ(rotations, 2))
-                        table[indices_with_d] = L.Conditional(
-                            condition, -table[indices_with_d], table[indices_with_d])
-
-        parts = []
-        # Define the table; do not make it const, as it may be changed by rotations
-        parts.append(L.ArrayDecl(
-            "double", name, table.shape, table, alignas=alignas, padlen=padlen))
-
-        if self.ir.cell_shape == "tetrahedron":
-            # Apply rotations (for FaceTangent dofs)
-            t = self.backend.symbols.named_table(name)
-            temp0 = L.Symbol("t0")
-            temp1 = L.Symbol("t1")
-            for entity, dofs, rot_type in rot:
-                if entity[0] != 2:
-                    warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-                    continue
-                # Check that either all in the dofmap, or not in the dofmap.
-                # If they are not, skip this pair
-                included = [dof in dofmap for dof in dofs]
-                if False in included:
-                    if True in included:
-                        warnings.warn("Non-zero dof may have been stripped from table.")
-                    continue
-
-                assert rot_type == "simplex"
-                # Generate statements that rotate the dofs if their face is rotated
-                indices0 = index_names + [dofmap.index(dofs[0])]
-                indices1 = index_names + [dofmap.index(dofs[1])]
-                body0 = [
-                    L.VariableDecl("const double", temp0, t[indices0]),
-                    L.VariableDecl("const double", temp1, t[indices1]),
-                    L.Assign(t[indices0], -temp0 - temp1),
-                    L.Assign(t[indices1], temp0)
-                ]
-                body1 = [
-                    L.VariableDecl("const double", temp0, t[indices0]),
-                    L.VariableDecl("const double", temp1, t[indices1]),
-                    L.Assign(t[indices0], temp1),
-                    L.Assign(t[indices1], -temp0 - temp1)
-                ]
-
-                # Add for loops over all dimensions of the table with size >1
-                for k, index in enumerate(index_names):
-                    if isinstance(index, str):
-                        body0 = L.ForRange(index, 0, table.shape[k], body0)
-                        body1 = L.ForRange(index, 0, table.shape[k], body1)
-                # Do rotation if the face is rotated
-                rotations = self.backend.symbols.entity_rotations(L, entity, self.ir.cell_shape)
-                parts += [L.If(L.EQ(rotations, 1), body0),
-                          L.ElseIf(L.EQ(rotations, 2), body1)]
-
-        return parts
+        return [L.ArrayDecl(
+            "const double", name, table.shape, table, alignas=alignas, padlen=padlen))]
 
     def generate_quadrature_loop(self, quadrature_rule):
         """Generate quadrature loop with for this num_points."""
