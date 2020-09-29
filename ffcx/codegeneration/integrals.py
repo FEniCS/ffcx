@@ -368,7 +368,7 @@ class IntegralGenerator(object):
                         )
 
         return [L.ArrayDecl(
-            "const double", name, table.shape, table, alignas=alignas, padlen=padlen))]
+            "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
     def generate_quadrature_loop(self, quadrature_rule):
         """Generate quadrature loop with for this num_points."""

@@ -76,7 +76,6 @@ def face_tangents(ufl_element):
     for e in ufl_element.sub_elements():
         if len(face_tangents(e)) != 0:
             raise NotImplementedError
-        rotations += face_tangents(e)
     return rotations
 
 
