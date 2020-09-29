@@ -228,17 +228,17 @@ def face_tangents_from_subdofmap(ufl_element):
                     #       value[dof] = sum(d_i * a_i for i in range(...))
                     tangent_data[0][dof_pair[0]] = [(dof_pair[0], 1)]
                     tangent_data[1][dof_pair[0]] = [(dof_pair[1], 1)]
-                    tangent_data[2][dof_pair[0]] = [(dof_pair[1], 1)]
-                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], 1)]
-                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
-                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
+                    tangent_data[2][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1)]
 
                     tangent_data[0][dof_pair[1]] = [(dof_pair[1], 1)]
                     tangent_data[1][dof_pair[1]] = [(dof_pair[0], 1)]
-                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
-                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
-                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1)]
-                    tangent_data[5][dof_pair[1]] = [(dof_pair[1], -1)]
+                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[5][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
 
             # FrobeniusIntegralMoment dofs
             if cname == "tetrahedron" and "FrobeniusIntegralMoment" in types:
@@ -247,17 +247,17 @@ def face_tangents_from_subdofmap(ufl_element):
                 for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
                     tangent_data[0][dof_pair[0]] = [(dof_pair[0], 1)]
                     tangent_data[1][dof_pair[0]] = [(dof_pair[1], 1)]
-                    tangent_data[2][dof_pair[0]] = [(dof_pair[1], 1)]
-                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], 1)]
-                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
-                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
+                    tangent_data[2][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1)]
 
                     tangent_data[0][dof_pair[1]] = [(dof_pair[1], 1)]
                     tangent_data[1][dof_pair[1]] = [(dof_pair[0], 1)]
-                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1), (dof_pair[1], -1)]
-                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1), (dof_pair[0], -1)]
-                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1)]
-                    tangent_data[5][dof_pair[1]] = [(dof_pair[1], -1)]
+                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[5][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
 
             if cname == "hexahedron" and "PointFaceTangent" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
