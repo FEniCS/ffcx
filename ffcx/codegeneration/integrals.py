@@ -329,7 +329,6 @@ class IntegralGenerator(object):
                 "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
         dofmap = self.ir.table_dofmaps[name]
-        index_names = ["ind_" + str(i) if j > 1 else 0 for i, j in enumerate(table.shape[:-1])]
 
         # Make the table have CExpr type so that conditionals can be put in it
         if has_reflections or has_rotations:

@@ -430,13 +430,11 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 face_tangents += [If(L.EQ(entity_perm, perm), body)]
 
     if len(face_tangents) > 0:
+        face_tangents = [
+            L.ForRanges((s, 0, num_derivatives_t), (i, 0, num_physical_components),
+                        (r, 0, num_derivatives_g), index_type=index_type, body=face_tangents)]
         face_tangents = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
-                         for i in range(temporary_variables)] + [L.ForRanges(
-                (s, 0, num_derivatives_t),
-                (i, 0, num_physical_components),
-                (r, 0, num_derivatives_g),
-                index_type=index_type,
-                body=face_tangents)]
+                         for i in range(temporary_variables)] + face_tangents
 
     # Transform for each point
     point_loop_code = [
