@@ -401,22 +401,22 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     # Fix face tangents
     face_tangents = []
     temporary_variables = 0
-    for (entity_dim, entity_n), ft_data in ir.dof_face_tangents.items():
+    for (entity_dim, entity_n), face_tangent_data in ir.dof_face_tangents.items():
         if entity_dim != 2:
             warnings.warn("Face tangents an entity of dim != 2 not implemented.")
             continue
 
         temps = {}
-        for perm, ft_data2 in ft_data.items():
-            for combo in ft_data2.values():
+        for perm, ft in face_tangent_data.items():
+            for combo in ft.values():
                 for dof, w in combo:
                     if dof not in temps:
                         temps[dof] = L.Symbol("t" + str(len(temps)))
         temporary_variables = max(temporary_variables, len(temps))
 
-        for perm, ft_data2 in ft_data.items():
+        for perm, ft in face_tangent_data.items():
             body = []
-            for dof, combo in ft_data2.items():
+            for dof, combo in ft.items():
                 v = values[ip, dof, r, physical_offsets[dof] + i]
                 body.append(L.Assign(v, sum(w * temps[dof] for dof, w in combo)))
 

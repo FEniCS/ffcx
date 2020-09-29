@@ -346,25 +346,28 @@ class IntegralGenerator(object):
             return [L.ArrayDecl(
                 "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
 
-        for (entity_dim, entity_n), ft_data in rot.items():
+        # Correct data for rotations and reflections of face tangents
+        for (entity_dim, entity_n), face_tangent_data in rot.items():
             if entity_dim != 2:
                 warnings.warn("Face tangents an entity of dim != 2 not implemented.")
                 continue
 
             for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
                 temps = {}
-                for perm, ft_data2 in ft_data.items():
-                    for combo in ft_data2.values():
+                for perm, ft in face_tangent_data.items():
+                    for combo in ft.values():
                         for dof, w in combo:
-                            temps[dof] = table[indices + (dofmap.index(dof), )]
-                for perm, ft_data2 in ft_data.items():
+                            if dof in dofmap:
+                                temps[dof] = table[indices + (dofmap.index(dof), )]
+                for perm, ft in face_tangent_data.items():
                     entity_perm = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity_n), 7)
-                    for dof, combo in ft_data2.items():
-                        table[indices + (dofmap.index(dof), )] = L.Conditional(
-                            L.EQ(entity_perm, perm),
-                            sum(w * temps[dof] for dof, w in combo),
-                            table[indices + (dofmap.index(dof), )]
-                        )
+                    for dof, combo in ft.items():
+                        if dof in dofmap:
+                            table[indices + (dofmap.index(dof), )] = L.Conditional(
+                                L.EQ(entity_perm, perm),
+                                sum(w * temps[dof] for dof, w in combo),
+                                table[indices + (dofmap.index(dof), )]
+                            )
 
         return [L.ArrayDecl(
             "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
