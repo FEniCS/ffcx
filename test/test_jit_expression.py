@@ -53,7 +53,7 @@ def test_matvec(compile_args):
 
     c_type, np_type = float_to_type("double")
 
-    A = np.zeros((2, 3), dtype=np_type)
+    A = np.zeros((3, 2), dtype=np_type)
     f_mat = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 
     # Coefficient storage XYXYXY
@@ -69,7 +69,7 @@ def test_matvec(compile_args):
         ffi.cast('double *', coords.ctypes.data))
 
     # Check the computation against correct NumPy value
-    assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat))
+    assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
 
     # Prepare NumPy array of points attached to the expression
     length = kernel.num_points * kernel.topological_dimension
@@ -108,7 +108,7 @@ def test_rank1(compile_args):
     # 2 components for vector components of expression
     # 3 points of evaluation
     # 6 degrees of freedom for rank1 form
-    A = np.zeros((2, 3, 6), dtype=np_type)
+    A = np.zeros((3, 2, 6), dtype=np_type)
 
     # Coefficient storage XYXYXY
     w = np.array([0.0], dtype=np_type)
@@ -134,4 +134,4 @@ def test_rank1(compile_args):
 
     u_correct = np.array([f[1], f[0]]) + gradf0
 
-    assert np.allclose(u_ffcx, u_correct)
+    assert np.allclose(u_ffcx, u_correct.T)
