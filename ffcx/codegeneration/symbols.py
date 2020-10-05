@@ -34,8 +34,13 @@ def format_mt_name(basename, mt):
     res = ufc_restriction_postfix(mt.restriction).replace("_", "_r")
     access += res
 
+    # Format global derivatives
+    if mt.global_derivatives:
+        assert basename == "J"
+        der = "_deriv_{0}".format(''.join(map(str, mt.global_derivatives)))
+        access += der
+
     # Format local derivatives
-    assert not mt.global_derivatives
     if mt.local_derivatives:
         der = "_d{0}".format(''.join(map(str, mt.local_derivatives)))
         access += der
@@ -92,6 +97,25 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
+    def entity_permutation(self, L, i, cell_shape):
+        """Returns the int that gives the permutation of the entity."""
+        cell_info = self.S("cell_permutation")
+        if cell_shape in ["triangle", "quadrilateral"]:
+            num_faces = 0
+            face_bitsize = 1
+            assert i[0] == 1
+        if cell_shape == "tetrahedron":
+            num_faces = 4
+            face_bitsize = 3
+        if cell_shape == "hexahedron":
+            num_faces = 6
+            face_bitsize = 3
+        if i[0] == 1:
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
+        elif i[0] == 2:
+            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 7)
+        return L.LiteralInt(0)
+
     def entity_reflection(self, L, i, cell_shape):
         """Returns the bool that says whether or not an entity has been reflected."""
         cell_info = self.S("cell_permutation")
@@ -103,7 +127,7 @@ class FFCXBackendSymbols(object):
             num_faces = 4
             face_bitsize = 3
         if cell_shape == "hexahedron":
-            num_faces = 4
+            num_faces = 6
             face_bitsize = 3
         if i[0] == 1:
             return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)

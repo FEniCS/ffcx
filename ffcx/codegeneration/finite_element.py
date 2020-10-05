@@ -10,6 +10,7 @@
 
 from collections import defaultdict
 import logging
+import warnings
 
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
@@ -147,7 +148,7 @@ def entity_reflection(L, i, cell_shape):
         num_faces = 4
         face_bitsize = 3
     if cell_shape == "hexahedron":
-        num_faces = 4
+        num_faces = 6
         face_bitsize = 3
     if i[0] == 1:
         return L.NE(L.BitwiseAnd(cell_info, L.BitShiftL(1, face_bitsize * num_faces + i[1])), 0)
@@ -396,6 +397,46 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                                                 transform[r, s] * mapped_value)])
                 ])
         ]
+
+    # Correct data for rotations and reflections of face tangents
+    face_tangents = []
+    temporary_variables = 0
+    for (entity_dim, entity_n), face_tangent_data in ir.dof_face_tangents.items():
+        if entity_dim != 2:
+            warnings.warn("Face tangents an entity of dim != 2 not implemented.")
+            continue
+
+        # Use temporary variables t0, t1, ... to store current data
+        temps = {}
+        for perm, ft in face_tangent_data.items():
+            for combo in ft.values():
+                for dof, w in combo:
+                    if dof not in temps:
+                        temps[dof] = L.Symbol("t" + str(len(temps)))
+        temporary_variables = max(temporary_variables, len(temps))
+
+        for perm, ft in face_tangent_data.items():
+            body = []
+            for dof, combo in ft.items():
+                v = values[ip, dof, r, physical_offsets[dof] + i]
+                body.append(L.Assign(v, sum(w * temps[dof] for dof, w in combo)))
+
+            # If cell_permutation has given value, overwrite data with linear combination of temporary data
+            if len(body) > 0:
+                entity_perm = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity_n), 7)
+
+                if perm == 0:
+                    face_tangents += [L.If(L.EQ(entity_perm, perm), body)]
+                else:
+                    face_tangents += [L.ElseIf(L.EQ(entity_perm, perm), body)]
+
+    if len(face_tangents) > 0:
+        face_tangents = [
+            L.ForRanges((s, 0, num_derivatives_t), (i, 0, num_physical_components),
+                        (r, 0, num_derivatives_g), index_type=index_type, body=face_tangents)]
+        face_tangents = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
+                         for i in range(temporary_variables)] + face_tangents
+
     # Transform for each point
     point_loop_code = [
         L.ForRange(
@@ -403,7 +444,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             0,
             num_points,
             index_type=index_type,
-            body=(transform_matrix_code + transform_apply_code))
+            body=(transform_matrix_code + transform_apply_code + face_tangents))
     ]
 
     # Join code

@@ -322,13 +322,14 @@ def get_modified_terminal_element(mt):
     elif isinstance(mt.terminal, ufl.classes.Jacobian):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of J.")
-        if gd:
-            raise RuntimeError("Not expecting global derivatives of J.")
+
         element = mt.terminal.ufl_domain().ufl_coordinate_element()
-        # Translate component J[i,d] to x element context rgrad(x[i])[d]
         assert len(mt.component) == 2
+        # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
-        ld = tuple(sorted((d, ) + ld))
+
+        # Grad(Jacobian(...)) should be a local derivative
+        ld = tuple(sorted((d, ) + gd + ld))
     else:
         return None
 

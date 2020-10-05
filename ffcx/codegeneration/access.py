@@ -172,8 +172,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError("Expecting reference facet coordinate to be symbolically rewritten.")
 
     def jacobian(self, e, mt, tabledata, num_points):
-        if mt.global_derivatives:
-            raise RuntimeError("Not expecting global derivatives of Jacobian.")
         if mt.averaged:
             raise RuntimeError("Not expecting average of Jacobian.")
         return self.symbols.J_component(mt)
