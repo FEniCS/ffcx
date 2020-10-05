@@ -197,9 +197,15 @@ def reflection_entities_from_subdofmap(ufl_element):
 
 
 def face_tangents_from_subdofmap(ufl_element):
-    """Calculate permutations and reflection entites for a root element.
-    Calculates the base permutations and the entities that the direction of vector-valued
-    functions depend on for an element with no sub elements."""
+    """Calculate the effect of permuting a face on the DOFs tangential to that face.
+
+    This function returns a dictionary with the format:
+        rotations[(entity_dim, entity_number)][face_permuation][dof] = [(d_i, a_i), ...]
+    This entry tells us that on the entity number entity_number of dimension entity_dim,
+    if the face permutation is equal to face_permutation, then the following should be
+    applied to the values for the DOFs on that face:
+        value[dof] = sum(d_i * a_i for i in (...))
+    """
     fiat_element = create_element(ufl_element)
     dual = fiat_element.dual_basis()
     cname = ufl_element.cell().cellname()
@@ -222,10 +228,6 @@ def face_tangents_from_subdofmap(ufl_element):
             if cname == "tetrahedron" and "PointFaceTangent" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
                 for dof_pair in zip(type_dofs[::2], type_dofs[1::2]):
-                    # rotations[(entity_dim, entity_number)][face_permuation][dof] = [(d_i, a_i)]
-                    # means:
-                    #   if {entity permutatation} == face_permutation:
-                    #       value[dof] = sum(d_i * a_i for i in range(...))
                     tangent_data[0][dof_pair[0]] = [(dof_pair[0], 1)]
                     tangent_data[1][dof_pair[0]] = [(dof_pair[1], 1)]
                     tangent_data[2][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
@@ -259,9 +261,9 @@ def face_tangents_from_subdofmap(ufl_element):
                     tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
                     tangent_data[5][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
 
+            # PointFaceTangent dofs on a hex
             if cname == "hexahedron" and "PointFaceTangent" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
-                # (entity_dim, entity_number), dofs
                 for dof in type_dofs[:len(type_dofs) // 2]:
                     tangent_data[0][dof] = [(dof, 1)]
                     tangent_data[1][dof] = [(dof, 1)]
