@@ -85,7 +85,14 @@ def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
         begin = 0
         end = 0
 
-    dofmap = tuple(range(begin, end, block_size))
+    for i in dofmap:
+        if i % block_size != dofmap[0] % block_size:
+            # If dofs are not all in the same block component, don't remove intermediate zeros
+            dofmap = tuple(range(begin, end))
+            break
+    else:
+        # If dofs are all in the same block component, keep only that block component
+        dofmap = tuple(range(begin, end, block_size))
 
     # Make subtable by dropping zero columns
     stripped_table = table[..., dofmap]
