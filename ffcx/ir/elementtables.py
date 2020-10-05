@@ -66,7 +66,7 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def strip_table_zeros(table, rtol=default_rtol, atol=default_atol):
+def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
     """Strip zero columns from table. Returns column range (begin, end) and the new compact table."""
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
@@ -84,6 +84,8 @@ def strip_table_zeros(table, rtol=default_rtol, atol=default_atol):
     else:
         begin = 0
         end = 0
+
+    dofmap = tuple(range(begin, end, block_size))
 
     # Make subtable by dropping zero columns
     stripped_table = table[..., dofmap]
@@ -544,8 +546,12 @@ def optimize_element_tables(tables,
 
         # Store original dof dimension before compressing
         num_dofs = tbl.shape[3]
+        ufl_element = table_origins[name][0]
+        block_size = 1
+        if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+            block_size = len(ufl_element.sub_elements())
 
-        dofrange, dofmap, tbl = strip_table_zeros(tbl, rtol=rtol, atol=atol)
+        dofrange, dofmap, tbl = strip_table_zeros(tbl, block_size, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
@@ -569,11 +575,11 @@ def optimize_element_tables(tables,
 
     # Build mapping from unique table name to the table itself
     unique_tables = {}
+    unique_table_origins = {}
     for ui, tbl in enumerate(unique_tables_list):
         uname = unique_names[ui]
         unique_tables[uname] = tbl
-
-    unique_table_origins = {}
+        unique_table_origins[uname] = table_origins[uname]
 
     return unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
         table_original_num_dofs
