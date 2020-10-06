@@ -66,7 +66,7 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def strip_table_zeros(table, rtol=default_rtol, atol=default_atol):
+def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
     """Strip zero columns from table. Returns column range (begin, end) and the new compact table."""
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
@@ -84,6 +84,15 @@ def strip_table_zeros(table, rtol=default_rtol, atol=default_atol):
     else:
         begin = 0
         end = 0
+
+    for i in dofmap:
+        if i % block_size != dofmap[0] % block_size:
+            # If dofs are not all in the same block component, don't remove intermediate zeros
+            dofmap = tuple(range(begin, end))
+            break
+    else:
+        # If dofs are all in the same block component, keep only that block component
+        dofmap = tuple(range(begin, end, block_size))
 
     # Make subtable by dropping zero columns
     stripped_table = table[..., dofmap]
@@ -322,13 +331,14 @@ def get_modified_terminal_element(mt):
     elif isinstance(mt.terminal, ufl.classes.Jacobian):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of J.")
-        if gd:
-            raise RuntimeError("Not expecting global derivatives of J.")
+
         element = mt.terminal.ufl_domain().ufl_coordinate_element()
-        # Translate component J[i,d] to x element context rgrad(x[i])[d]
         assert len(mt.component) == 2
+        # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
-        ld = tuple(sorted((d, ) + ld))
+
+        # Grad(Jacobian(...)) should be a local derivative
+        ld = tuple(sorted((d, ) + gd + ld))
     else:
         return None
 
@@ -543,8 +553,12 @@ def optimize_element_tables(tables,
 
         # Store original dof dimension before compressing
         num_dofs = tbl.shape[3]
+        ufl_element = table_origins[name][0]
+        block_size = 1
+        if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
+            block_size = len(ufl_element.sub_elements())
 
-        dofrange, dofmap, tbl = strip_table_zeros(tbl, rtol=rtol, atol=atol)
+        dofrange, dofmap, tbl = strip_table_zeros(tbl, block_size, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
@@ -568,11 +582,11 @@ def optimize_element_tables(tables,
 
     # Build mapping from unique table name to the table itself
     unique_tables = {}
+    unique_table_origins = {}
     for ui, tbl in enumerate(unique_tables_list):
         uname = unique_names[ui]
         unique_tables[uname] = tbl
-
-    unique_table_origins = {}
+        unique_table_origins[uname] = table_origins[uname]
 
     return unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
         table_original_num_dofs

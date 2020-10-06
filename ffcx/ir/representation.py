@@ -57,10 +57,12 @@ ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
                                        'reference_value_shape', 'degree', 'family', 'evaluate_basis',
                                        'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
                                        'base_permutations', 'dof_reflection_entities', 'block_size',
+                                       'dof_face_tangents',
                                        'create_sub_element', 'dof_types', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_support_dofs',
                                      'num_element_support_dofs', 'num_entity_dofs',
                                      'tabulate_entity_dofs', 'base_permutations', 'dof_reflection_entities',
+                                     'dof_face_tangents',
                                      'num_sub_dofmaps', 'create_sub_dofmap', 'dof_types',
                                      'block_size'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'signature', 'cell_shape',
@@ -197,6 +199,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
     ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
+    ir["dof_face_tangents"] = dof_permutations.face_tangents(ufl_element)
 
     ir["dof_types"] = [i.functional_type for i in fiat_element.dual_basis()]
     ir["entity_dofs"] = fiat_element.entity_dofs()
@@ -230,6 +233,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
     ir["base_permutations"] = dof_permutations.base_permutations(ufl_element)
     ir["dof_reflection_entities"] = dof_permutations.reflection_entities(ufl_element)
+    ir["dof_face_tangents"] = dof_permutations.face_tangents(ufl_element)
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(fiat_element)
@@ -816,6 +820,110 @@ def _extract_elements(fiat_element):
     return new_elements
 
 
+def _get_basis_data_from_tp(e, family):
+    """Get the coeffs and dmats of a tensor product element."""
+    assert isinstance(e, FIAT.tensor_product.FlattenedDimensions)
+    coeffs, dmat = _get_coeffs_and_dmats_from_tp(e.element)
+
+    # Flatten the data
+    order = max(max(max(j) for j in i) for i in coeffs) + 1
+    dim = e.ref_el.get_dimension()
+
+    coeffs_new = numpy.zeros((len(coeffs), ) + e.value_shape() + (order ** dim, ))
+    for i, c in enumerate(coeffs):
+        for j, k in enumerate(itertools.product(range(order), repeat=dim)):
+            if k in c:
+                if len(e.value_shape()) == 0:
+                    coeffs_new[i][j] = c[k][0]
+                else:
+                    for d in c[k]:
+                        if family in ["RTCF", "NCF"]:
+                            # Swap the reference direction of some DOFs to make consistent
+                            # with low-to-high ordering.
+                            coeffs_new[i][d][j] = c[k][d] * (-1) ** d
+                        else:
+                            coeffs_new[i][d][j] = c[k][d]
+
+    dmats_new = []
+    for d in range(dim):
+        dmat_new = numpy.zeros([order ** dim, order ** dim])
+        for row_n, row_indices in enumerate(itertools.product(range(order), repeat=dim)):
+            for col_n, col_indices in enumerate(itertools.product(range(order), repeat=dim)):
+                for i in range(dim):
+                    if d != i and row_indices[i] != col_indices[i]:
+                        break
+                else:
+                    dmat_new[row_n, col_n] = dmat[(row_indices[d], col_indices[d])]
+        dmats_new.append(dmat_new)
+
+    return dmats_new, coeffs_new, order ** dim
+
+
+def _get_coeffs_and_dmats_from_tp(e):
+    """Get the coeffs in TP representation and scalar dmats of a tensor product element."""
+    if isinstance(e, FIAT.tensor_product.FlattenedDimensions):
+        return _get_coeffs_and_dmats_from_tp(e.element)
+
+    if isinstance(e, FIAT.enriched.EnrichedElement):
+        coeffs = []
+        dmat = {}
+        for sub_e in e.elements():
+            co, dm = _get_coeffs_and_dmats_from_tp(sub_e)
+            coeffs += co
+            for i, j in dm.items():
+                if i in dmat:
+                    assert numpy.isclose(dmat[i], j)
+                dmat[i] = j
+        return coeffs, dmat
+
+    if isinstance(e, FIAT.tensor_product.TensorProductElement):
+        coeffs = []
+        dmat = {}
+        a_co, a_dm = _get_coeffs_and_dmats_from_tp(e.A)
+        b_co, b_dm = _get_coeffs_and_dmats_from_tp(e.B)
+        for a in a_co:
+            for b in b_co:
+                value_rank = len(e.value_shape())
+                if value_rank == 0:
+                    # Scalar TP element
+                    coeffs.append({ai + bi: {0: av[0] * bv[0]} for ai, av in a.items() for bi, bv in b.items()})
+                elif value_rank == 1:
+                    if e.mapping()[len(coeffs)] == "contravariant piola":
+                        # Hdiv
+                        if e.B.get_formdegree() == 0:
+                            coeffs.append({ai + bi: {e.value_shape()[0] - 1: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                        else:
+                            coeffs.append({ai + bi: {dim: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                    elif e.mapping()[len(coeffs)] == "covariant piola":
+                        # Hcurl
+                        if e.B.get_formdegree() == 1:
+                            coeffs.append({ai + bi: {e.value_shape()[0] - 1: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                        else:
+                            coeffs.append({ai + bi: {dim: av[dim] * bv[0]}
+                                           for ai, av in a.items() for bi, bv in b.items() for dim in av})
+                    else:
+                        raise RuntimeError("Unrecognised mapping: " + e.mapping()[len(coeffs)])
+                else:
+                    raise RuntimeError("Unsupported value rank: " + str(value_rank))
+        for i, j in a_dm.items():
+            if i in dmat:
+                assert numpy.isclose(dmat[i], j)
+            dmat[i] = j
+        for i, j in b_dm.items():
+            if i in dmat:
+                assert numpy.isclose(dmat[i], j)
+            dmat[i] = j
+        return coeffs, dmat
+
+    coeffs = [{(i, ): {0: j} for i, j in enumerate(co)} for co in e.get_coeffs()]
+    dm, = e.dmats()
+    dmat = {(i, j): value for i, row in enumerate(dm) for j, value in enumerate(row)}
+    return coeffs, dmat
+
+
 def _evaluate_basis(ufl_element, fiat_element, epsilon):
     """Compute intermediate representation for evaluate_basis."""
     cell = ufl_element.cell()
@@ -867,43 +975,7 @@ def _evaluate_basis(ufl_element, fiat_element, epsilon):
         num_components = ufl.utils.sequences.product(e.value_shape())
         if isinstance(e, FIAT.tensor_product.FlattenedDimensions):
             # Tensor product element
-            A = e.element.A
-            B = e.element.B
-            # Attach suitable coefficients to element
-            if isinstance(A, FIAT.tensor_product.FlattenedDimensions):
-                # This is for hexahedral element
-                ac = A.element.A.get_coeffs()
-                bc = A.element.B.get_coeffs()
-                ac = numpy.block([[w * ac for w in v] for v in bc])
-                ad = A.element.A.dmats()
-                bd = A.element.B.dmats()
-                ai = numpy.eye(ad[0].shape[0])
-                bi = numpy.eye(bd[0].shape[0])
-
-                if len(bd) != 1:
-                    raise NotImplementedError("Cannot create dmats")
-
-                dmats = [numpy.block([[w * ai for w in v] for v in bd[0]])]
-                for mat in ad:
-                    dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-                ad = dmats
-            else:
-                ac = A.get_coeffs()
-                ad = A.dmats()
-            bc = B.get_coeffs()
-            bd = B.dmats()
-            coeffs = numpy.block([[w * ac for w in v] for v in bc])
-            num_expansion_members = coeffs.shape[0]
-            ai = numpy.eye(ad[0].shape[0])
-            bi = numpy.eye(bd[0].shape[0])
-
-            if len(bd) != 1:
-                raise NotImplementedError("Cannot create dmats")
-
-            dmats = [numpy.block([[w * ai for w in v] for v in bd[0]])]
-            for mat in ad:
-                dmats += [numpy.block([[w * mat for w in v] for v in bi])]
-
+            dmats, coeffs, num_expansion_members = _get_basis_data_from_tp(e, ufl_element.family())
         else:
             coeffs = e.get_coeffs()
             dmats = e.dmats()
@@ -974,7 +1046,7 @@ def _tabulate_dof_coordinates(ufl_element, element):
 
     # Bail out if any dual basis member is missing (element is not
     # nodal), this is strictly not necessary but simpler
-    if any(L is None for L in element.dual_basis()):
+    if any(L is None or L.pt_dict is None for L in element.dual_basis()):
         return {}
 
     if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):

@@ -20,7 +20,11 @@ supported_families = ("Brezzi-Douglas-Marini", "Brezzi-Douglas-Fortin-Marini", "
                       "Discontinuous Lagrange", "Discontinuous Raviart-Thomas", "HDiv Trace",
                       "Lagrange", "Lobatto", "Nedelec 1st kind H(curl)", "Nedelec 2nd kind H(curl)",
                       "Radau", "Raviart-Thomas", "Real", "Bubble", "Quadrature", "Regge",
-                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement", "Gauss-Lobatto-Legendre")
+                      "Hellan-Herrmann-Johnson", "Q", "DQ", "TensorProductElement", "Gauss-Lobatto-Legendre",
+                      "RTCF", "NCF",
+                      "RTCE", "NCE")
+# The following elements are not supported in FIAT yet, but will be supported here once they are
+#     "BDMCF", "BDMCE"
 
 # Cache for computed elements
 _cache = {}
@@ -40,7 +44,8 @@ def reference_cell_vertices(cellname):
 
 @functools.singledispatch
 def _create_element(element):
-    raise ValueError("Element type is not supported.")
+    typename = type(element).__module__ + "." + type(element).__name__
+    raise ValueError("Element type " + typename + " is not supported.")
 
 
 @_create_element.register(ufl.FiniteElement)
@@ -64,11 +69,9 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
 
     # Handle tensor-product structured elements
     if element.cell().cellname() == "quadrilateral":
-        e = _create_element(element.reconstruct(cell=_tpc_quadrilateral))
-        return FIAT.tensor_product.FlattenedDimensions(e)
+        return _flatten_quad(element)
     elif element.cell().cellname() == "hexahedron":
-        e = _create_element(element.reconstruct(cell=_tpc_hexahedron))
-        return FIAT.tensor_product.FlattenedDimensions(e)
+        return _flatten_hex(element)
 
     if element.family() not in FIAT.supported_elements:
         raise ValueError("Finite element of type \"{}\" is not supported by FIAT.".format(element.family()))
@@ -144,6 +147,18 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
     fiat_element.tabulate = types.MethodType(tabulate, fiat_element)
 
     return fiat_element
+
+
+@_create_element.register(ufl.HDivElement)
+def _create_hdiv_finiteelement(element: ufl.HDivElement) -> FIAT.TensorProductElement:
+    tp = _create_element(element._element)
+    return FIAT.Hdiv(tp)
+
+
+@_create_element.register(ufl.HCurlElement)
+def _create_hcurl_finiteelement(element: ufl.HCurlElement) -> FIAT.TensorProductElement:
+    tp = _create_element(element._element)
+    return FIAT.Hcurl(tp)
 
 
 @_create_element.register(ufl.TensorElement)
@@ -254,3 +269,43 @@ def map_facet_points(points, facet, cellname):
         new_points += [x]
 
     return new_points
+
+
+def _flatten_quad(element):
+    e = _create_element(element.reconstruct(cell=_tpc_quadrilateral))
+    flat = FIAT.tensor_product.FlattenedDimensions(e)
+
+    # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
+    if element.family() == "RTCF" or element.family() == "BDMCF":
+        for dofs in flat.entity_dofs()[1].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointNormalEval"
+
+    # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
+    if element.family() == "RTCE" or element.family() == "BDMCE":
+        for dofs in flat.entity_dofs()[1].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointEdgeTangent"
+
+    return flat
+
+
+def _flatten_hex(element):
+    e = _create_element(element.reconstruct(cell=_tpc_hexahedron))
+    flat = FIAT.tensor_product.FlattenedDimensions(e)
+
+    # Overwrite undefined DOF types of Hdiv and Hcurl spaces with correct types
+    if element.family() == "NCF":
+        for dofs in flat.entity_dofs()[2].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointNormalEval"
+
+    if element.family() == "NCE":
+        for dofs in flat.entity_dofs()[1].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointEdgeTangent"
+        for dofs in flat.entity_dofs()[2].values():
+            for d in dofs:
+                flat.dual.nodes[d].functional_type = "PointFaceTangent"
+
+    return flat

@@ -68,17 +68,14 @@ def face_tangents(ufl_element):
         return face_tangents_from_subdofmap(ufl_element)
 
     if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-        block_size = ufl_element.num_sub_elements()
-        return [
-            tan
-            for tan in face_tangents(ufl_element.sub_elements()[0])
-            for i in range(block_size)
-        ]
+        if len(face_tangents(ufl_element.sub_elements()[0])) != 0:
+            raise NotImplementedError
 
     # If the element has sub elements, combine their rotations
-    rotations = []
+    rotations = {}
     for e in ufl_element.sub_elements():
-        rotations += face_tangents(e)
+        if len(face_tangents(e)) != 0:
+            raise NotImplementedError
     return rotations
 
 
@@ -104,6 +101,7 @@ def base_permutations_from_subdofmap(ufl_element):
 
     perms = identity_permutations(num_perms, num_dofs)
     perm_n = 0
+
     # Iterate through the entities of the reference element
     for dim in range(1, tdim):
         for entity_n in range(entity_counts[dim]):
@@ -118,8 +116,17 @@ def base_permutations_from_subdofmap(ufl_element):
             for t in unique_types:
                 permuted = None
                 type_dofs = [i for i, j in zip(dofs, types) if j == t]
-                if t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
-                         "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
+                # First deal with special cases for tensor product Hdiv and Hcurl
+                if t == "PointFaceTangent" and dim == 2 and ufl_element.family() == "NCE":
+                    permuted = permute_nce_face(type_dofs, 1)
+                elif t == "PointNormalEval" and dim == 2 and ufl_element.family() == "NCF":
+                    permuted = permute_ncf_face(type_dofs, 1)
+                elif t == "PointNormalEval" and dim == 1 and ufl_element.family() == "RTCF":
+                    permuted = permute_tp_edge(type_dofs, 1)
+                elif t == "PointEdgeTangent" and dim == 1 and ufl_element.family() == "RTCE":
+                    permuted = permute_tp_edge(type_dofs, 1)
+                elif t in ["PointEval", "PointNormalDeriv", "PointEdgeTangent",
+                           "PointDeriv", "PointNormalEval", "PointScaledNormalEval"]:
                     # Dof is a point evaluation, use sub_block_size 1
                     permuted = entity_functions[dim](type_dofs, 1)
                 elif t in ["ComponentPointEval", "IntegralMoment"]:
@@ -190,9 +197,15 @@ def reflection_entities_from_subdofmap(ufl_element):
 
 
 def face_tangents_from_subdofmap(ufl_element):
-    """Calculate permutations and reflection entites for a root element.
-    Calculates the base permutations and the entities that the direction of vector-valued
-    functions depend on for an element with no sub elements."""
+    """Calculate the effect of permuting a face on the DOFs tangential to that face.
+
+    This function returns a dictionary with the format:
+        rotations[(entity_dim, entity_number)][face_permuation][dof] = [(d_i, a_i), ...]
+    This entry tells us that on the entity number entity_number of dimension entity_dim,
+    if the face permutation is equal to face_permutation, then the following should be
+    applied to the values for the DOFs on that face:
+        value[dof] = sum(d_i * a_i for i in (...))
+    """
     fiat_element = create_element(ufl_element)
     dual = fiat_element.dual_basis()
     cname = ufl_element.cell().cellname()
@@ -200,28 +213,80 @@ def face_tangents_from_subdofmap(ufl_element):
     dof_types = [e.functional_type for e in dual]
     entity_dofs = fiat_element.entity_dofs()
 
-    rotations = []
-    if cname == "tetrahedron":
+    face_tangents = {}
+    if cname == "tetrahedron" or cname == "hexahedron":
         # Iterate through faces
         for entity_n in range(len(entity_dofs[2])):
             dofs = entity_dofs[2][entity_n]
             types = [dof_types[i] for i in dofs]
+            if cname == "tetrahedron":
+                tangent_data = {i: {} for i in range(6)}
+            elif cname == "hexahedron":
+                tangent_data = {i: {} for i in range(8)}
 
             # PointFaceTangent dofs
-            if "PointFaceTangent" in types:
+            if cname == "tetrahedron" and "PointFaceTangent" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
                 for dof_pair in zip(type_dofs[::2], type_dofs[1::2]):
-                    # (entity_dim, entity_number), dofs
-                    rotations.append(((2, entity_n), dof_pair))
+                    tangent_data[0][dof_pair[0]] = [(dof_pair[0], 1)]
+                    tangent_data[1][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[2][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1)]
+
+                    tangent_data[0][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[1][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[5][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+
             # FrobeniusIntegralMoment dofs
-            if "FrobeniusIntegralMoment" in types:
+            if cname == "tetrahedron" and "FrobeniusIntegralMoment" in types:
                 type_dofs = [i for i, t in zip(dofs, types) if t == "FrobeniusIntegralMoment"]
                 s = get_frobenius_side_length(len(type_dofs))
                 for dof_pair in zip(type_dofs[3 * s::2], type_dofs[3 * s + 1::2]):
-                    # (entity_dim, entity_number), dofs
-                    rotations.append(((2, entity_n), dof_pair))
+                    tangent_data[0][dof_pair[0]] = [(dof_pair[0], 1)]
+                    tangent_data[1][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[2][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[3][dof_pair[0]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[4][dof_pair[0]] = [(dof_pair[1], 1)]
+                    tangent_data[5][dof_pair[0]] = [(dof_pair[0], 1)]
 
-    return rotations
+                    tangent_data[0][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[1][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[2][dof_pair[1]] = [(dof_pair[0], 1)]
+                    tangent_data[3][dof_pair[1]] = [(dof_pair[1], 1)]
+                    tangent_data[4][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+                    tangent_data[5][dof_pair[1]] = [(dof_pair[0], -1), (dof_pair[1], -1)]
+
+            # PointFaceTangent dofs on a hex
+            if cname == "hexahedron" and "PointFaceTangent" in types:
+                type_dofs = [i for i, t in zip(dofs, types) if t == "PointFaceTangent"]
+                for dof in type_dofs[:len(type_dofs) // 2]:
+                    tangent_data[0][dof] = [(dof, 1)]
+                    tangent_data[1][dof] = [(dof, 1)]
+                    tangent_data[2][dof] = [(dof, 1)]
+                    tangent_data[3][dof] = [(dof, 1)]
+                    tangent_data[4][dof] = [(dof, -1)]
+                    tangent_data[5][dof] = [(dof, -1)]
+                    tangent_data[6][dof] = [(dof, -1)]
+                    tangent_data[7][dof] = [(dof, -1)]
+                for dof in type_dofs[len(type_dofs) // 2:]:
+                    tangent_data[0][dof] = [(dof, 1)]
+                    tangent_data[1][dof] = [(dof, 1)]
+                    tangent_data[2][dof] = [(dof, -1)]
+                    tangent_data[3][dof] = [(dof, -1)]
+                    tangent_data[4][dof] = [(dof, -1)]
+                    tangent_data[5][dof] = [(dof, -1)]
+                    tangent_data[6][dof] = [(dof, 1)]
+                    tangent_data[7][dof] = [(dof, 1)]
+
+            if max(len(a) for a in tangent_data.values()) > 0:
+                face_tangents[(2, entity_n)] = tangent_data
+
+    return face_tangents
 
 
 def get_entity_counts(fiat_element):
@@ -254,6 +319,62 @@ def get_frobenius_side_length(n):
         s += 1
     assert 3 * s + s * (s - 1) == n
     return s
+
+
+def permute_ncf_face(dofs_in, sub_block_size, reverse_blocks=False):
+    """Permute the dofs on a quadrilateral."""
+    n = len(dofs_in) // sub_block_size
+    s = math.floor(math.sqrt(n))
+    assert s ** 2 == n
+
+    if s == 1:
+        simple_dofs = [0]
+    elif s == 2:
+        simple_dofs = [0, 1, 2, 3]
+    else:
+        # TODO: fix higher order NCF spaces
+        raise RuntimeError("NCF spaces of order > 2 not yet supported")
+        simple_dofs = []
+        for i in [0] + list(range(2 * s, n, s)) + [s]:
+            simple_dofs += [i] + list(range(i + 2, i + s)) + [i + 1]
+    dofs = []
+    for d in simple_dofs:
+        dofs += [dofs_in[d * sub_block_size + k] for k in range(sub_block_size)]
+    assert len(dofs) == len(dofs_in)
+
+    return [quadrilateral_rotation(dofs, sub_block_size),
+            quadrilateral_reflection(dofs, sub_block_size, reverse_blocks)]
+
+
+def permute_nce_face(dofs, sub_block_size):
+    """Permute the dofs on the face of a NCE space."""
+    n = len(dofs) // sub_block_size
+    order = math.floor(1 + math.sqrt(1 + 2 * n)) // 2
+    assert 2 * order * (order - 1) == n
+
+    if order > 2:
+        # TODO: fix higher order NCE spaces
+        raise RuntimeError("NCE spaces of order > 2 not yet supported")
+
+    # Make the rotation
+    rot = []
+    for i in range(order - 1):
+        for dof in range(order * (order + i) - 1, order * (order - 1 + i) - 1, -1):
+            rot += [dof * sub_block_size + k for k in range(sub_block_size)]
+    for i in range(order - 1):
+        for dof in range(order * (order - 2 - i), order * (order - 1 - i)):
+            rot += [dof * sub_block_size + k for k in range(sub_block_size)]
+    assert len(rot) == len(dofs)
+
+    # Make the reflection
+    ref = []
+    for dof in range(order * (order - 1), 2 * order * (order - 1)):
+        ref += [dof * sub_block_size + k for k in range(sub_block_size)]
+    for dof in range(order * (order - 1)):
+        ref += [dof * sub_block_size + k for k in range(sub_block_size)]
+
+    return [[dofs[i] for i in rot],
+            [dofs[i] for i in ref]]
 
 
 def permute_frobenius_face(dofs, sub_block_size):
@@ -292,6 +413,11 @@ def permute_edge(dofs, sub_block_size, reverse_blocks=False):
     return [edge_flip(dofs, sub_block_size, reverse_blocks)]
 
 
+def permute_tp_edge(dofs, sub_block_size, reverse_blocks=False):
+    """Permute the dofs on an edge."""
+    return [tp_edge_flip(dofs, sub_block_size, reverse_blocks)]
+
+
 def permute_triangle(dofs, sub_block_size, reverse_blocks=False):
     """Permute the dofs on a triangle."""
     return [triangle_rotation(dofs, sub_block_size), triangle_reflection(dofs, sub_block_size, reverse_blocks)]
@@ -314,6 +440,27 @@ def edge_flip(dofs, sub_block_size=1, reverse_blocks=False):
 
     perm = []
     for dof in range(n - 1, -1, -1):
+        if reverse_blocks:
+            # Reverse the dofs within a block
+            perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
+        else:
+            perm += [dof * sub_block_size + k for k in range(sub_block_size)]
+
+    assert len(perm) == len(dofs)
+
+    return [dofs[i] for i in perm]
+
+
+def tp_edge_flip(dofs, sub_block_size=1, reverse_blocks=False):
+    """Flip the dofs on an edge."""
+    n = len(dofs) // sub_block_size
+
+    perm = []
+    if n == 1:
+        ends = [0]
+    else:
+        ends = [1, 0]
+    for dof in ends + list(range(n - 1, 1, -1)):
         if reverse_blocks:
             # Reverse the dofs within a block
             perm += [dof * sub_block_size + k for k in range(sub_block_size)][::-1]
