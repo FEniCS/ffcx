@@ -99,7 +99,6 @@ def generator(ir, parameters):
         sycl_fname = "tabulate_" + ir.integral_type + "_" + int_type
         sycl_defines = "#define " + sycl_fname + " " + integral_name + "\n"
         implementation = sycl_defines + implementation
-        print(implementation)
 
     return declaration, implementation
 
