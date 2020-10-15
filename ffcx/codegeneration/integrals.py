@@ -80,7 +80,6 @@ def generator(ir, parameters):
         factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
 
     # Format implementation code
-
     if integral_type == "custom":
         implementation = ufc_integrals.custom_factory.format(
             factory_name=factory_name,
@@ -93,6 +92,14 @@ def generator(ir, parameters):
             enabled_coefficients=code["enabled_coefficients"],
             tabulate_tensor=tabulate_tensor_fn,
             needs_permutation_data=ir.needs_permutation_data)
+
+    if parameters.get("sycl_defines", False):
+        integral_name = "tabulate_tensor_" + factory_name
+        int_type = "a" if ir.rank == 2 else "L"
+        sycl_fname = "tabulate_" + ir.integral_type + "_" + int_type
+        sycl_defines = "#define " + sycl_fname + " " + integral_name + "\n"
+        implementation = sycl_defines + implementation
+        print(implementation)
 
     return declaration, implementation
 
