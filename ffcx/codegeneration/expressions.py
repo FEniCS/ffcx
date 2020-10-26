@@ -102,14 +102,13 @@ class ExpressionGenerator:
 
         tables = self.ir.unique_tables
 
-        alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
         table_names = sorted(tables)
 
         for name in table_names:
             table = tables[name]
             decl = L.ArrayDecl(
-                "static const ufc_scalar_t", name, table.shape, table, alignas=alignas, padlen=padlen)
+                "static const ufc_scalar_t", name, table.shape, table, padlen=padlen)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -413,8 +412,7 @@ class ExpressionGenerator:
             parts += definitions
         if intermediates:
             if use_symbol_array:
-                alignas = self.ir.params["alignas"]
-                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas)]
+                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates))]
             parts += intermediates
         return parts
 

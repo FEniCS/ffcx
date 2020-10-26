@@ -237,7 +237,6 @@ class IntegralGenerator(object):
         if self.ir.integral_type in skip:
             return parts
 
-        alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
 
         # Loop over quadrature rules
@@ -249,7 +248,7 @@ class IntegralGenerator(object):
             parts += [
                 L.ArrayDecl(
                     "static const double", wsym, num_points,
-                    quadrature_rule.weights, alignas=alignas, padlen=padlen)
+                    quadrature_rule.weights, padlen=padlen)
             ]
 
         # Add leading comment if there are any tables
@@ -264,7 +263,6 @@ class IntegralGenerator(object):
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
 
-        alignas = self.ir.params["alignas"]
         padlen = self.ir.params["padlen"]
 
         if self.ir.integral_type in ufl.custom_integral_types:
@@ -276,7 +274,7 @@ class IntegralGenerator(object):
 
         for name in table_names:
             table = tables[name]
-            parts += self.declare_table(name, table, alignas, padlen)
+            parts += self.declare_table(name, table, padlen)
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
@@ -312,7 +310,7 @@ class IntegralGenerator(object):
                         conditions[indices] = L.NE(entity_ref, conditions[indices])
         return conditions
 
-    def declare_table(self, name, table, alignas, padlen):
+    def declare_table(self, name, table, padlen):
         """Declare a table.
         If the dof dimensions of the table have dof rotations, apply these rotations."""
         L = self.backend.language
@@ -326,7 +324,7 @@ class IntegralGenerator(object):
         # If the space has no vector-valued dofs, return the static table
         if not has_reflections and not has_rotations:
             return [L.ArrayDecl(
-                "static const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
+                "static const double", name, table.shape, table, padlen=padlen)]
 
         dofmap = self.ir.table_dofmaps[name]
 
@@ -344,7 +342,7 @@ class IntegralGenerator(object):
         # If the table has no rotations, then we are done
         if not has_rotations:
             return [L.ArrayDecl(
-                "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
+                "const double", name, table.shape, table, padlen=padlen)]
 
         # Correct data for rotations and reflections of face tangents
         for (entity_dim, entity_n), face_tangent_data in rot.items():
@@ -372,7 +370,7 @@ class IntegralGenerator(object):
                             )
 
         return [L.ArrayDecl(
-            "const double", name, table.shape, table, alignas=alignas, padlen=padlen)]
+            "const double", name, table.shape, table, padlen=padlen)]
 
     def generate_quadrature_loop(self, quadrature_rule):
         """Generate quadrature loop with for this num_points."""
@@ -412,8 +410,6 @@ class IntegralGenerator(object):
         chunk_size = 1
 
         gdim = self.ir.geometric_dimension
-
-        alignas = self.ir.params["alignas"]
 
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
@@ -461,7 +457,7 @@ class IntegralGenerator(object):
                 cwsym = self.backend.symbols.custom_quadrature_weights()
                 wsym = self.backend.symbols.custom_weights_table()
                 rule_parts += [
-                    L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0, alignas=alignas),
+                    L.ArrayDecl("ufc_scalar_t", wsym, chunk_size, 0),
                     L.ForRange(
                         iq,
                         0,
@@ -474,7 +470,7 @@ class IntegralGenerator(object):
                 cpsym = self.backend.symbols.custom_quadrature_points()
                 psym = self.backend.symbols.custom_points_table()
                 rule_parts += [
-                    L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0, alignas=alignas),
+                    L.ArrayDecl("ufc_scalar_t", psym, chunk_size * gdim, 0),
                     L.ForRange(
                         iq,
                         0,
@@ -499,8 +495,7 @@ class IntegralGenerator(object):
             for name in non_piecewise_tables:
                 table = tables[name]
                 decl = L.ArrayDecl(
-                    "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0,
-                    alignas=alignas)  # padlen=padlen)
+                    "ufc_scalar_t", name, (1, chunk_size, table.shape[2]), 0)
                 table_parts += [decl]
 
             table_parts += [L.Comment("FIXME: Fill element tables here")]
@@ -616,9 +611,8 @@ class IntegralGenerator(object):
             parts += definitions
         if intermediates:
             if use_symbol_array:
-                alignas = self.ir.params["alignas"]
                 padlen = self.ir.params["padlen"]
-                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), alignas=alignas, padlen=padlen)]
+                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), padlen=padlen)]
             parts += intermediates
         return parts
 

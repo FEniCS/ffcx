@@ -310,8 +310,6 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
 def generate_tabulate_dmats(L, dofs_data):
     """Tabulate the derivatives of the polynomial base."""
 
-    alignas = 32
-
     # Emit code for the dmats we've actually used
     dmats_code = [L.Comment("Tables of derivatives of the polynomial base (transpose).")]
 
@@ -352,8 +350,7 @@ def generate_tabulate_dmats(L, dofs_data):
             decl = L.ArrayDecl(
                 "static const double",
                 name, (num_mats, num_members, num_members),
-                values=matrix,
-                alignas=alignas)
+                values=matrix)
             dmats_code.append(decl)
 
         # Append name for each dof
