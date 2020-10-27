@@ -48,7 +48,7 @@ def default_parameters():
 
 
 def env_parameters():
-    """Returns parameters set in environmental variables"""
+    """Returns parameters set in environmental variables."""
 
     keys = os.environ.keys()
     params = {}
