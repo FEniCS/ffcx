@@ -1281,10 +1281,10 @@ class ArrayDecl(CStatement):
 
     """
 
-    __slots__ = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
+    __slots__ = ("typename", "symbol", "sizes", "padlen", "values")
     is_scoped = False
 
-    def __init__(self, typename, symbol, sizes=None, values=None, alignas=None, padlen=0):
+    def __init__(self, typename, symbol, sizes=None, values=None, padlen=0):
         assert isinstance(typename, str)
         self.typename = typename
 
@@ -1308,7 +1308,6 @@ class ArrayDecl(CStatement):
         else:
             self.values = values
 
-        self.alignas = alignas
         self.padlen = padlen
 
     def cs_format(self, precision=None):
@@ -1323,12 +1322,6 @@ class ArrayDecl(CStatement):
 
         # Join declaration
         decl = self.typename + " " + self.symbol.name + brackets
-
-        # NB! C++11 style alignas prefix syntax.
-        # If trying other target languages, must use other syntax.
-        if self.alignas:
-            align = "alignas(%d)" % int(self.alignas)
-            decl = align + " " + decl
 
         if self.values is None:
             # Undefined initial values
@@ -1355,7 +1348,7 @@ class ArrayDecl(CStatement):
                 return (decl + " =", Indented(initializer_lists))
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "alignas", "padlen", "values")
+        attributes = ("typename", "symbol", "sizes", "padlen", "values")
         return (isinstance(other, type(self))
                 and all(getattr(self, name) == getattr(self, name) for name in attributes))
 
