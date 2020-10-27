@@ -166,7 +166,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
 
-    parameters = default_parameters()
+    parameters_default = default_parameters()
 
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data
@@ -185,7 +185,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         #
         # 1. parameters["precision"]
         # 2. specified in metadata of integral
-        p_default = parameters["precision"]
+        p_default = parameters_default["precision"]
         precisions = set([integral.metadata().get("precision", p_default)
                           for integral in integral_data.integrals])
         precisions.discard(p_default)
@@ -203,8 +203,8 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
 
         integral_data.metadata["precision"] = p
 
-        qd_default = parameters["quadrature_degree"]
-        qr_default = parameters["quadrature_rule"]
+        qd_default = parameters_default["quadrature_degree"]
+        qr_default = parameters_default["quadrature_rule"]
 
         for i, integral in enumerate(integral_data.integrals):
             # ----- Extract quadrature degree

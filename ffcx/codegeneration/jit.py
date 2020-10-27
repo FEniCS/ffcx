@@ -95,6 +95,8 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     if parameters is not None:
         p.update(parameters)
 
+    p.update(ffcx.parameters.env_parameters())
+
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
         ffcx.naming.compute_signature(elements, _compute_parameter_signature(p)
@@ -147,6 +149,8 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
     if parameters is not None:
         p.update(parameters)
 
+    p.update(ffcx.parameters.env_parameters())
+
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
         ffcx.naming.compute_signature(forms, _compute_parameter_signature(p)
@@ -197,6 +201,8 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     if parameters is not None:
         p.update(parameters)
 
+    p.update(ffcx.parameters.env_parameters())
+
     # Get a signature for these forms
     module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, '', p)
 
@@ -238,6 +244,8 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
     p = ffcx.parameters.default_parameters()
     if parameters is not None:
         p.update(parameters)
+
+    p.update(ffcx.parameters.env_parameters())
 
     # Get a signature for these cmaps
     module_name = 'libffcx_cmaps_' + \

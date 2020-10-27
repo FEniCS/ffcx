@@ -18,7 +18,7 @@ import string
 import ufl
 from ffcx import __version__ as FFCX_VERSION
 from ffcx import compiler, formatting
-from ffcx.parameters import FFCX_PARAMETERS, default_parameters
+from ffcx.parameters import FFCX_PARAMETERS, default_parameters, env_parameters
 
 logger = logging.getLogger("ffcx")
 
@@ -52,6 +52,8 @@ def main(args=None):
     parameters = default_parameters()
     for param_name, param_val in parameters.items():
         parameters[param_name] = xargs.__dict__.get(param_name)
+
+    parameters.update(env_parameters())
 
     # Call parser and compiler for each file
     for filename in xargs.ufl_file:

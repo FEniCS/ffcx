@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+import os
 
 logger = logging.getLogger("ffcx")
 
@@ -44,3 +45,19 @@ def default_parameters():
         parameters[param] = value
 
     return parameters
+
+
+def env_parameters():
+    """Returns parameters set in environmental variables"""
+
+    keys = os.environ.keys()
+    params = {}
+    for name, value in FFCX_PARAMETERS.items():
+        param_name = "FFCX_" + name.upper()
+        param_type = type(value[0])
+
+        if param_name in keys:
+            params[name] = param_type(os.environ[param_name])
+            logger.info("Parameter {} forced to {} from environmental variable.".format(name, params[name]))
+
+    return params
