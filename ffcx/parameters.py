@@ -33,7 +33,9 @@ FFCX_PARAMETERS = {
                This value must be compatible with alignment of data structures allocated outside FFC.
                (-1 means no alignment assumed, safe option)"""),
     "padlen":
-        (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value.")
+        (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value."),
+    "verbosity":
+        (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.")
 }
 
 

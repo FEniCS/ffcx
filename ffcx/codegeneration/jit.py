@@ -96,6 +96,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
         p.update(parameters)
 
     p.update(ffcx.parameters.env_parameters())
+    logger.setLevel(p["verbosity"])
 
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
@@ -150,6 +151,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         p.update(parameters)
 
     p.update(ffcx.parameters.env_parameters())
+    logger.setLevel(p["verbosity"])
 
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
@@ -202,6 +204,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         p.update(parameters)
 
     p.update(ffcx.parameters.env_parameters())
+    logger.setLevel(p["verbosity"])
 
     # Get a signature for these forms
     module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, '', p)
@@ -246,6 +249,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
         p.update(parameters)
 
     p.update(ffcx.parameters.env_parameters())
+    logger.setLevel(p["verbosity"])
 
     # Get a signature for these cmaps
     module_name = 'libffcx_cmaps_' + \
