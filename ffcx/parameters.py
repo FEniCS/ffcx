@@ -53,17 +53,17 @@ def get_parameters():
     for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
-    USER_CONFIG_FILE = os.path.join(pathlib.Path.home(), ".config", "ffcx", "parameters.json")
-    PWD_CONFIG_FILE = os.path.join(os.getcwd(), ".ffcx_parameters.json")
+    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "parameters.json")
+    pwd_config_file = os.path.join(os.getcwd(), ".ffcx_parameters.json")
 
     try:
-        with open(USER_CONFIG_FILE) as f:
+        with open(user_config_file) as f:
             user_parameters = json.load(f)
     except FileNotFoundError:
         user_parameters = {}
 
     try:
-        with open(PWD_CONFIG_FILE) as f:
+        with open(pwd_config_file) as f:
             pwd_parameters = json.load(f)
     except FileNotFoundError:
         pwd_parameters = {}
