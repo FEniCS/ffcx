@@ -19,7 +19,7 @@ from collections import namedtuple
 import numpy
 
 import ufl
-from ffcx.parameters import default_parameters
+from ffcx.parameters import get_parameters
 
 logger = logging.getLogger("ffcx")
 
@@ -166,7 +166,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
 
-    parameters = default_parameters()
+    parameters = get_parameters()
 
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data

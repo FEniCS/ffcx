@@ -1,14 +1,18 @@
-# Copyright (C) 2005-2020 Anders Logg, Michal Habera
+# Copyright (C) 2005-2020 Anders Logg, Michal Habera, Jack S. Hale
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCX. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import configparser
 import logging
+import os
+import os.path
+import pathlib
 
 logger = logging.getLogger("ffcx")
 
-FFCX_PARAMETERS = {
+FFCX_DEFAULT_PARAMETERS = {
     "quadrature_rule":
         ("default", "Quadrature rule used for integration of element tensors."),
     "quadrature_degree":
@@ -36,11 +40,32 @@ FFCX_PARAMETERS = {
 }
 
 
-def default_parameters():
-    """Return (a copy of) the default parameter values for FFCX."""
+def get_parameters():
+    """Return (a copy of) the parameter values for FFCX.
+
+    Priority order is:
+      Environment variables
+      ~/.config/ffcx/paramters.cfg (user parameters)
+      $(pwd)/.ffcx_parameters.cfg (local parameters)
+      FFCX_DEFAULT_PARAMETERS
+
+    according to the logic of the standard Python ConfigParser class.
+    """
     parameters = {}
 
-    for param, (value, desc) in FFCX_PARAMETERS.items():
+    for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
+
+    USER_CONFIG_FILE = os.path.join(pathlib.Path.home(), ".config", "ffcx", "parameters.cfg")
+    PWD_CONFIG_FILE = os.path.join(os.getcwd(), ".ffcx_parameters.cfg")
+
+    config = configparser.ConfigParser()
+    parsed_config_files = config.read([parameters, USER_CONFIG_FILE, PWD_CONFIG_FILE])
+
+    for parsed_config_file in parsed_config_files:
+        logging.debug("Using parameter file at: ".format(str(parsed_config_file)))
+
+    logging.debug("Final parameter settings")
+    logging.debug(parameters)
 
     return parameters

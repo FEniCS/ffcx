@@ -18,7 +18,7 @@ import string
 import ufl
 from ffcx import __version__ as FFCX_VERSION
 from ffcx import compiler, formatting
-from ffcx.parameters import FFCX_PARAMETERS, default_parameters
+from ffcx.parameters import FFCX_DEFAULT_PARAMETERS, get_parameters
 
 logger = logging.getLogger("ffcx")
 
@@ -32,7 +32,7 @@ parser.add_argument("--visualise", action="store_true", help="visualise the IR g
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 
 # Add all parameters from FFC parameter system
-for param_name, (param_val, param_desc) in FFCX_PARAMETERS.items():
+for param_name, (param_val, param_desc) in FFCX_DEFAULT_PARAMETERS.items():
     parser.add_argument("--{}".format(param_name), default=param_val,
                         type=type(param_val), help="{} (default={})".format(param_desc, param_val))
 
@@ -49,7 +49,7 @@ def main(args=None):
         ffcx_logger.setLevel(logging.DEBUG)
 
     # Parse all other parameters
-    parameters = default_parameters()
+    parameters = get_parameters()
     for param_name, param_val in parameters.items():
         parameters[param_name] = xargs.__dict__.get(param_name)
 
