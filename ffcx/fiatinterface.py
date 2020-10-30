@@ -10,6 +10,7 @@ import types
 
 import numpy
 
+import libtab
 import FIAT
 import ufl
 
@@ -49,8 +50,16 @@ def _create_element(element):
 
 
 @_create_element.register(ufl.FiniteElement)
-def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
+def _create_finiteelement(element: ufl.FiniteElement):
     """Create FIAT element for UFL base type ufl.FiniteElement."""
+
+    print("Family = ", element.family())
+    print("Cell = ", element.cell().cellname())
+    print("Degree = ", element.degree())
+    libtab_element = libtab.create_element(element.family(),
+                                           element.cell().cellname(),
+                                           element.degree())
+
     if element.family() == "Real":
         e = create_element(ufl.FiniteElement("DG", element.cell(), 0))
         e.__class__ = type('SpaceOfReals', (type(e), SpaceOfReals), {})
@@ -84,7 +93,11 @@ def _create_finiteelement(element: ufl.FiniteElement) -> FIAT.FiniteElement:
         element_class = FIAT.supported_elements[element.family()]
 
     assert element.degree() is not None
-    return element_class(FIAT.ufc_cell(element.cell().cellname()), element.degree())
+    print('call class')
+    el = element_class(FIAT.ufc_cell(element.cell().cellname()), element.degree())
+    print('got el', el)
+    el.libtab_element = libtab_element
+    return el
 
 
 @_create_element.register(ufl.MixedElement)
@@ -101,6 +114,7 @@ def _create_mixed_finiteelement(element: ufl.MixedElement) -> FIAT.MixedElement:
                 elements.append(e)
 
     rextract(element.sub_elements())
+    print('ELement = ', elements)
     return FIAT.MixedElement(map(_create_element, elements))
 
 
@@ -145,6 +159,8 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
         }
 
     fiat_element.tabulate = types.MethodType(tabulate, fiat_element)
+
+    print('element = ', fiat_element)
 
     return fiat_element
 

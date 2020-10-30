@@ -9,6 +9,7 @@ import collections
 import logging
 
 import numpy
+import libtab
 
 import ufl
 import ufl.utils.derivativetuples
@@ -172,18 +173,27 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
+    print('ufl_element = ', ufl_element)
     fiat_element = create_element(ufl_element)
 
     # Extract arrays for the right scalar component
     component_tables = []
     sh = ufl_element.value_shape()
+    print('shape', sh)
     if sh == ():
         # Scalar valued element
         for entity in range(num_entities):
             entity_points = map_integral_points(points, integral_type, cell, entity)
-            tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
-            component_tables.append(tbl)
+            print(fiat_element.libtab_element)
+            tbl = fiat_element.tabulate(deriv_order, entity_points)
+            tbl2 = fiat_element.libtab_element.tabulate(deriv_order, entity_points)
+            index = libtab.index(*derivative_counts)
+            print(tbl, tbl2)
+            assert(numpy.allclose(tbl[derivative_counts], tbl2[index].transpose()))
+
+            component_tables.append(tbl2[index].transpose())
     elif len(sh) > 0 and ufl_element.num_sub_elements() == 0:
+        print('here')
         # 2-tensor-valued elements, not a tensor product
         # mapping flat_component back to tensor component
         (_, f2t) = ufl.permutation.build_component_numbering(sh, ufl_element.symmetry())
@@ -192,6 +202,14 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         for entity in range(num_entities):
             entity_points = map_integral_points(points, integral_type, cell, entity)
             tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            tbl2 = fiat_element.libtab_element.tabulate(deriv_order, entity_points)
+            index = libtab.index(*derivative_counts)
+            tbl2 = tbl2[index].transpose()
+            shape = tbl.shape
+            print(tbl2.shape, sh)
+            tbl2 = tbl2.reshape(shape)
+            print(tbl, tbl2, shape)
+
             if len(sh) == 1:
                 component_tables.append(tbl[:, t_comp[0], :])
             elif len(sh) == 2:
@@ -199,6 +217,8 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             else:
                 raise RuntimeError("Cannot tabulate tensor valued element with rank > 2")
     else:
+        print("Vector element **********")
+        print(ufl_element, fiat_element.elements())
         # Vector-valued or mixed element
         sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
         sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
@@ -235,6 +255,11 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
             # Tabulate subelement, this is dense nonzero table, [a, b, c]
             tbl = component_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            tbl2 = component_element.libtab_element.tabulate(deriv_order, entity_points)
+            index = libtab.index(*derivative_counts)
+            print('\n-------------\n', tbl,
+                  '\n-------------\n', tbl2[index].transpose(),
+                  '\n-------------\n')
 
             # Prepare a padded table with zeros
             padded_shape = (fiat_element.space_dimension(),) + fiat_element.value_shape() + (len(entity_points), )
