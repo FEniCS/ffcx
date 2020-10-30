@@ -27,9 +27,6 @@ FFCX_PARAMETERS = {
         (1e-6, "Relative precision to use when comparing finite element table values for table reuse."),
     "table_atol":
         (1e-9, "Absolute precision to use when comparing finite element table values for reuse."),
-    "alignas":
-        (32, """Memory alignment (in bytes) of some temporary objects in tabulation kernel
-                (finite element tables, intermediate variables array)"""),
     "assume_aligned":
         (-1, """Assumes alignment (in bytes) of pointers to tabulated tensor, coefficients and constants array.
                This value must be compatible with alignment of data structures allocated outside FFC.
