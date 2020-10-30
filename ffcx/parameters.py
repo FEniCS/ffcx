@@ -4,9 +4,8 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import configparser
+import json
 import logging
-import os
 import os.path
 import pathlib
 
@@ -44,26 +43,33 @@ def get_parameters():
     """Return (a copy of) the parameter values for FFCX.
 
     Priority order is:
-      Environment variables
-      ~/.config/ffcx/paramters.cfg (user parameters)
-      $(pwd)/.ffcx_parameters.cfg (local parameters)
+      environment variables (to discuss)
+      ~/.config/ffcx/paramters.json (user parameters)
+      $(pwd)/.ffcx_parameters.json (local parameters)
       FFCX_DEFAULT_PARAMETERS
-
-    according to the logic of the standard Python ConfigParser class.
     """
     parameters = {}
 
     for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
-    USER_CONFIG_FILE = os.path.join(pathlib.Path.home(), ".config", "ffcx", "parameters.cfg")
-    PWD_CONFIG_FILE = os.path.join(os.getcwd(), ".ffcx_parameters.cfg")
+    USER_CONFIG_FILE = os.path.join(pathlib.Path.home(), ".config", "ffcx", "parameters.json")
+    PWD_CONFIG_FILE = os.path.join(os.getcwd(), ".ffcx_parameters.json")
 
-    config = configparser.ConfigParser()
-    parsed_config_files = config.read([parameters, USER_CONFIG_FILE, PWD_CONFIG_FILE])
+    try:
+        with open(USER_CONFIG_FILE) as f:
+            user_parameters = json.load(f)
+    except FileNotFoundError:
+        user_parameters = {}
 
-    for parsed_config_file in parsed_config_files:
-        logging.debug("Using parameter file at: ".format(str(parsed_config_file)))
+    try:
+        with open(PWD_CONFIG_FILE) as f:
+            pwd_parameters = json.load(f)
+    except FileNotFoundError:
+        pwd_parameters = {}
+
+    parameters.update(user_parameters)
+    parameters.update(pwd_parameters)
 
     logging.debug("Final parameter settings")
     logging.debug(parameters)
