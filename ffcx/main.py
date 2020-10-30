@@ -26,7 +26,6 @@ parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFCX, https://fenicsproject.org)")
 parser.add_argument(
     "--version", action='version', version="%(prog)s " + ("(version {})".format(FFCX_VERSION)))
-parser.add_argument("-v", "--verbosity", action="count", help="verbose output (-vv for more verbosity)")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
@@ -42,16 +41,15 @@ parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 def main(args=None):
     xargs = parser.parse_args(args)
 
-    ffcx_logger = logging.getLogger("ffcx")
-    if xargs.verbosity == 1:
-        ffcx_logger.setLevel(logging.INFO)
-    if xargs.verbosity == 2:
-        ffcx_logger.setLevel(logging.DEBUG)
-
     # Parse all other parameters
     parameters = get_parameters()
     for param_name, param_val in parameters.items():
         parameters[param_name] = xargs.__dict__.get(param_name)
+
+    parameters.update(env_parameters())
+
+    ffcx_logger = logging.getLogger("ffcx")
+    ffcx_logger.setLevel(parameters["verbosity"])
 
     # Call parser and compiler for each file
     for filename in xargs.ufl_file:

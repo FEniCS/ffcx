@@ -6,6 +6,7 @@
 
 import json
 import logging
+import os
 import os.path
 import pathlib
 
@@ -35,7 +36,9 @@ FFCX_DEFAULT_PARAMETERS = {
                This value must be compatible with alignment of data structures allocated outside FFC.
                (-1 means no alignment assumed, safe option)"""),
     "padlen":
-        (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value.")
+        (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value."),
+    "verbosity":
+        (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.")
 }
 
 
@@ -68,8 +71,20 @@ def get_parameters():
     except FileNotFoundError:
         pwd_parameters = {}
 
+
+    keys = os.environ.keys()
+    env_parameters = {}
+    for name, value in FFCX_DEFAULT_PARAMETERS.items():
+        param_name = "FFCX_" + name.upper()
+        param_type = type(value[0])
+
+        if param_name in keys:
+            env_paramaters[name] = param_type(os.environ[param_name])
+            logger.info("Parameter {} forced to {} from environmental variable.".format(name, params[name]))
+
     parameters.update(user_parameters)
     parameters.update(pwd_parameters)
+    parameters.update(env_parameters)
 
     logging.debug("Final parameter settings")
     logging.debug(parameters)
