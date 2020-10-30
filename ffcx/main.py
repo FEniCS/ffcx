@@ -46,8 +46,6 @@ def main(args=None):
     for param_name, param_val in parameters.items():
         parameters[param_name] = xargs.__dict__.get(param_name)
 
-    parameters.update(env_parameters())
-
     ffcx_logger = logging.getLogger("ffcx")
     ffcx_logger.setLevel(parameters["verbosity"])
 

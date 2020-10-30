@@ -71,7 +71,6 @@ def get_parameters():
     except FileNotFoundError:
         pwd_parameters = {}
 
-
     keys = os.environ.keys()
     env_parameters = {}
     for name, value in FFCX_DEFAULT_PARAMETERS.items():
@@ -79,8 +78,8 @@ def get_parameters():
         param_type = type(value[0])
 
         if param_name in keys:
-            env_paramaters[name] = param_type(os.environ[param_name])
-            logger.info("Parameter {} forced to {} from environmental variable.".format(name, params[name]))
+            env_parameters[name] = param_type(os.environ[param_name])
+            logger.info("Parameter {} forced to {} from environmental variable.".format(name, env_parameters[name]))
 
     parameters.update(user_parameters)
     parameters.update(pwd_parameters)
