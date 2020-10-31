@@ -13,14 +13,6 @@ import pathlib
 logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_PARAMETERS = {
-    "quadrature_rule":
-        ("default", "Quadrature rule used for integration of element tensors."),
-    "quadrature_degree":
-        (-1, """Quadrature degree used for approximating integrals.
-                (-1 means automatically determined from integrand polynomial degree)"""),
-    "precision":
-        (-1, """Precision used when writing numbers (-1 for max precision).
-                Represents maximum number of digits after decimal point."""),
     "epsilon":
         (1e-14, "Machine precision, used for dropping zero terms in tables"),
     "scalar_type":
@@ -56,7 +48,7 @@ def get_parameters():
     for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
-    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "parameters.json")
+    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", ".ffcx_parameters.json")
     pwd_config_file = os.path.join(os.getcwd(), ".ffcx_parameters.json")
 
     try:
@@ -71,21 +63,10 @@ def get_parameters():
     except FileNotFoundError:
         pwd_parameters = {}
 
-    keys = os.environ.keys()
-    env_parameters = {}
-    for name, value in FFCX_DEFAULT_PARAMETERS.items():
-        param_name = "FFCX_" + name.upper()
-        param_type = type(value[0])
-
-        if param_name in keys:
-            env_parameters[name] = param_type(os.environ[param_name])
-            logger.info("Parameter {} forced to {} from environmental variable.".format(name, env_parameters[name]))
-
     parameters.update(user_parameters)
     parameters.update(pwd_parameters)
-    parameters.update(env_parameters)
 
-    logging.debug("Final parameter settings")
-    logging.debug(parameters)
+    logging.info("Final parameter settings")
+    logging.info(parameters)
 
     return parameters
