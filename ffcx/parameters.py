@@ -65,7 +65,7 @@ def get_parameters():
     parameters.update(user_parameters)
     parameters.update(pwd_parameters)
 
-    logging.info("Final parameter settings")
-    logging.info(parameters)
+    logger.info("Final parameter settings")
+    logger.info(parameters)
 
     return parameters
