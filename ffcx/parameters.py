@@ -38,8 +38,7 @@ def get_parameters():
     """Return (a copy of) the parameter values for FFCX.
 
     Priority order is:
-      environment variables (to discuss)
-      ~/.config/ffcx/paramters.json (user parameters)
+      ~/.config/ffcx/.ffcx_paramters.json (user parameters)
       $(pwd)/.ffcx_parameters.json (local parameters)
       FFCX_DEFAULT_PARAMETERS
     """
