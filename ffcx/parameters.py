@@ -39,7 +39,7 @@ FFCX_DEFAULT_PARAMETERS = {
 
 @functools.lru_cache
 def _load_parameters():
-    """Loads parameters from JSON files"""
+    """Loads parameters from JSON files."""
     user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
     try:
         with open(user_config_file) as f:
@@ -93,6 +93,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
+    # NOTE: _load_parameters uses functools.lru_cache
     user_parameters, pwd_parameters = _load_parameters()
 
     parameters.update(user_parameters)
