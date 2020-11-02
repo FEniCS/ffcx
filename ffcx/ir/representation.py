@@ -190,7 +190,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["evaluate_basis"] = "None"  # _evaluate_basis(ufl_element, fiat_element, epsilon)
     ir["evaluate_dof"] = "None"  # _evaluate_dof(ufl_element, fiat_element)
-    ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
+    ir["tabulate_dof_coordinates"] = {}  # _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 

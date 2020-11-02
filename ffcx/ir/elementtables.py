@@ -238,7 +238,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                 raise RuntimeError(
                     "Cannot tabulate tensor valued element with rank > 2")
     else:
-        print("Vector element")
+        print("Vector/mixed element", sh)
         # Vector-valued or mixed element
         sub_dims = [0] + list(e.space_dimension()
                               for e in fiat_element.elements())
@@ -267,7 +267,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         # Get the block size to switch XXYYZZ ordering to XYZXYZ
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = fiat_element.num_sub_elements()
-            print('block size = ', block_size, len(ufl_element.sub_elements()))
+            print('block size = ', block_size, ufl_element.num_sub_elements())
             ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
 
         def slice_size(r):
