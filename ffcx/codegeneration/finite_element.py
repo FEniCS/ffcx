@@ -17,7 +17,7 @@ import ufl
 from ffcx.codegeneration.evalderivs import (_generate_combinations,
                                             generate_evaluate_reference_basis_derivatives)
 from ffcx.codegeneration.evaluatebasis import generate_evaluate_reference_basis
-from ffcx.codegeneration.evaluatedof import generate_transform_values
+# from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch)
 
@@ -88,7 +88,7 @@ def create_sub_element(L, ir):
 
 def transform_values(L, ir, parameters):
     """Generate code for transform_values."""
-    return generate_transform_values(L, ir.evaluate_dof)
+    return []  # generate_transform_values(L, ir.evaluate_dof)
 
 
 def tabulate_reference_dof_coordinates(L, ir, parameters):

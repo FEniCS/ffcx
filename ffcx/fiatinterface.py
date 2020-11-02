@@ -95,7 +95,7 @@ def _create_finiteelement(element: ufl.FiniteElement):
     assert element.degree() is not None
     print('call class')
     el = element_class(FIAT.ufc_cell(element.cell().cellname()), element.degree())
-    print('got el', el)
+    print('got el ', el)
     el.libtab_element = libtab_element
     return el
 
@@ -120,6 +120,7 @@ def _create_mixed_finiteelement(element: ufl.MixedElement) -> FIAT.MixedElement:
 
 @_create_element.register(ufl.VectorElement)
 def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElement:
+    print("Vector element")
     fiat_element = FIAT.MixedElement(map(_create_element, element.sub_elements()))
 
     def reorder_for_vector_element(item, block_size):
@@ -160,36 +161,43 @@ def _create_vector_finiteelement(element: ufl.VectorElement) -> FIAT.MixedElemen
 
     fiat_element.tabulate = types.MethodType(tabulate, fiat_element)
 
-    print('element = ', fiat_element)
+    print('element = ', fiat_element, fiat_element.elements)
 
     return fiat_element
 
 
 @_create_element.register(ufl.HDivElement)
 def _create_hdiv_finiteelement(element: ufl.HDivElement) -> FIAT.TensorProductElement:
+    raise RuntimeError("Cannot handle this element type: {}".format(element))
+    print('HDIV', element, element._element)
     tp = _create_element(element._element)
     return FIAT.Hdiv(tp)
 
 
 @_create_element.register(ufl.HCurlElement)
 def _create_hcurl_finiteelement(element: ufl.HCurlElement) -> FIAT.TensorProductElement:
+    raise RuntimeError("Cannot handle this element type: {}".format(element))
+    print('Hcurl', element, element._element)
     tp = _create_element(element._element)
     return FIAT.Hcurl(tp)
 
 
 @_create_element.register(ufl.TensorElement)
 def _create_tensor_finiteelement(element: ufl.TensorElement) -> FIAT.MixedElement:
+    raise RuntimeError("Cannot handle this element type: {}".format(element))
     return _create_vector_finiteelement(element)
 
 
 @_create_element.register(ufl.EnrichedElement)
 def _create_enriched_finiteelement(element: ufl.EnrichedElement) -> FIAT.EnrichedElement:
+    raise RuntimeError("Cannot handle this element type: {}".format(element))
     elements = [create_element(e) for e in element._elements]
     return FIAT.EnrichedElement(*elements)
 
 
 @_create_element.register(ufl.NodalEnrichedElement)
 def _create_nodalenriched_finiteelement(element: ufl.NodalEnrichedElement) -> FIAT.NodalEnrichedElement:
+    raise RuntimeError("Cannot handle this element type: {}".format(element))
     elements = [create_element(e) for e in element._elements]
     return FIAT.NodalEnrichedElement(*elements)
 

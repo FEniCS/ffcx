@@ -177,15 +177,23 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["space_dimension"] = fiat_element.space_dimension()
+
+    sd = 0
+    if hasattr(fiat_element, "elements"):
+        for el in fiat_element.elements():
+            sd += el.libtab_element.ndofs
+    else:
+        sd = fiat_element.libtab_element.ndofs
+
+    ir["space_dimension"] = sd
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
     ir["degree"] = ufl_element.degree()
     ir["family"] = ufl_element.family()
 
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, fiat_element, epsilon)
-    ir["evaluate_dof"] = _evaluate_dof(ufl_element, fiat_element)
+    ir["evaluate_basis"] = "None"  # _evaluate_basis(ufl_element, fiat_element, epsilon)
+    ir["evaluate_dof"] = "None"  # _evaluate_dof(ufl_element, fiat_element)
     ir["tabulate_dof_coordinates"] = _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]

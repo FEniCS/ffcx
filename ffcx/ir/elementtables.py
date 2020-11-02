@@ -205,10 +205,10 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             tbl2 = fiat_element.libtab_element.tabulate(deriv_order, entity_points)
             index = libtab.index(*derivative_counts)
             tbl2 = tbl2[index].transpose()
-            shape = tbl.shape
-            print(tbl2.shape, sh)
-            tbl2 = tbl2.reshape(shape)
-            print(tbl, tbl2, shape)
+            shsum = sum(sh)
+            new_sh = (tbl2.shape[0] // shsum,) + sh + (tbl2.shape[1],)
+            print(tbl2.shape, new_sh)
+            tbl2 = tbl2.reshape(new_sh)
 
             if len(sh) == 1:
                 component_tables.append(tbl[:, t_comp[0], :])
@@ -257,8 +257,9 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             tbl = component_element.tabulate(deriv_order, entity_points)[derivative_counts]
             tbl2 = component_element.libtab_element.tabulate(deriv_order, entity_points)
             index = libtab.index(*derivative_counts)
+            tbl2 = tbl2[index].transpose()
             print('\n-------------\n', tbl,
-                  '\n-------------\n', tbl2[index].transpose(),
+                  '\n-------------\n', tbl2,
                   '\n-------------\n')
 
             # Prepare a padded table with zeros
