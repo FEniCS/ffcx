@@ -27,6 +27,7 @@ import FIAT
 import ufl
 from ffcx import naming
 from ffcx.fiatinterface import SpaceOfReals, create_element
+from ffcx.libtab_interface import create_libtab_elements
 from ffcx.ir import dof_permutations
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
@@ -165,6 +166,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     # Create FIAT element
     fiat_element = create_element(ufl_element)
+    libtab_elements = create_libtab_elements(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
@@ -178,13 +180,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
 
-    sd = 0
-    if hasattr(fiat_element, "elements"):
-        for el in fiat_element.elements():
-            sd += el.libtab_element.ndofs
-    else:
-        sd = fiat_element.libtab_element.ndofs
-
+    sd = sum([el.ndofs for el in libtab_elements])
     ir["space_dimension"] = sd
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
