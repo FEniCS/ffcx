@@ -32,7 +32,7 @@ parser.add_argument("-p", "--profile", action='store_true', help="enable profili
 
 # Add all parameters from FFC parameter system
 for param_name, (param_val, param_desc) in FFCX_DEFAULT_PARAMETERS.items():
-    parser.add_argument("--{}".format(param_name), default=param_val,
+    parser.add_argument("--{}".format(param_name),
                         type=type(param_val), help="{} (default={})".format(param_desc, param_val))
 
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
@@ -42,12 +42,8 @@ def main(args=None):
     xargs = parser.parse_args(args)
 
     # Parse all other parameters
-    parameters = get_parameters()
-    for param_name, param_val in parameters.items():
-        parameters[param_name] = xargs.__dict__.get(param_name)
-
-    ffcx_logger = logging.getLogger("ffcx")
-    ffcx_logger.setLevel(parameters["verbosity"])
+    priority_parameters = {k: v for k, v in xargs.__dict__.items() if v is not None}
+    parameters = get_parameters(priority_parameters)
 
     # Call parser and compiler for each file
     for filename in xargs.ufl_file:

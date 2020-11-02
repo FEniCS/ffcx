@@ -91,11 +91,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
 def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                      cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL elements and dofmaps into Python objects."""
-    p = ffcx.parameters.get_parameters()
-    if parameters is not None:
-        p.update(parameters)
-
-    logger.setLevel(p["verbosity"])
+    p = ffcx.parameters.get_parameters(parameters)
 
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
@@ -145,11 +141,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
 def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                   cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL forms into UFC Python objects."""
-    p = ffcx.parameters.get_parameters()
-    if parameters is not None:
-        p.update(parameters)
-
-    logger.setLevel(p["verbosity"])
+    p = ffcx.parameters.get_parameters(parameters)
 
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
@@ -197,11 +189,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         List of (UFL expression, evaluation points).
 
     """
-    p = ffcx.parameters.get_parameters()
-    if parameters is not None:
-        p.update(parameters)
-
-    logger.setLevel(p["verbosity"])
+    p = ffcx.parameters.get_parameters(parameters)
 
     # Get a signature for these forms
     module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, '', p)
@@ -241,11 +229,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
 def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                             cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL coordinate mappings into UFC Python objects."""
-    p = ffcx.parameters.get_parameters()
-    if parameters is not None:
-        p.update(parameters)
-
-    logger.setLevel(p["verbosity"])
+    p = ffcx.parameters.get_parameters(parameters)
 
     # Get a signature for these cmaps
     module_name = 'libffcx_cmaps_' + \

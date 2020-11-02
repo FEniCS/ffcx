@@ -36,6 +36,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     ----------
     ufl_objects
     parameters
+      FFCX parameters. These parameters take priority over all other set parameters.
 
     Returns
     -------

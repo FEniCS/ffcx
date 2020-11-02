@@ -9,6 +9,8 @@ import logging
 import os
 import os.path
 import pathlib
+import pprint
+from typing import Optional
 
 logger = logging.getLogger("ffcx")
 
@@ -34,21 +36,42 @@ FFCX_DEFAULT_PARAMETERS = {
 }
 
 
-def get_parameters():
-    """Return (a copy of) the parameter values for FFCX.
+def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
+    """Return (a copy of) the merged parameter values for FFCX.
 
-    Priority order is:
-      ~/.config/ffcx/.ffcx_paramters.json (user parameters)
-      $(pwd)/.ffcx_parameters.json (local parameters)
-      FFCX_DEFAULT_PARAMETERS
+    Parameters
+    ----------
+      priority_parameters: 
+        take priority over all other parameter values (see notes)
+
+    Returns
+    -------
+      dict: merged parameter values
+
+    Notes
+    -----
+
+    This function sets the log level from the merged parameter values prior to
+    returning.
+
+    Priority ordering of parameters is:
+      priority_parameters (API and command line parameters)
+      $(pwd)/ffcx_parameters.json (local parameters)
+      ~/.config/ffcx/ffcx_paramters.json (user parameters)
+      FFCX_DEFAULT_PARAMETERS in ffcx.parameters
+
+    Example ffcx_parameters.json file:
+
+      { "assume_aligned": 32, "epsilon": 1e-7 }
+
     """
     parameters = {}
 
     for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
-    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", ".ffcx_parameters.json")
-    pwd_config_file = os.path.join(os.getcwd(), ".ffcx_parameters.json")
+    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
+    pwd_config_file = os.path.join(os.getcwd(), "ffcx_parameters.json")
 
     try:
         with open(user_config_file) as f:
@@ -64,8 +87,11 @@ def get_parameters():
 
     parameters.update(user_parameters)
     parameters.update(pwd_parameters)
+    parameters.update(priority_parameters)
 
-    logger.info("Final parameter settings")
-    logger.info(parameters)
+    logger.setLevel(parameters["verbosity"])
+
+    logger.info("Final parameter values")
+    logger.info(pprint.pformat(parameters))
 
     return parameters
