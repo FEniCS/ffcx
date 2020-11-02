@@ -244,8 +244,16 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                               for e in fiat_element.elements())
         sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
                               for e in fiat_element.elements())
+
+        # libtab
+        libtab_sub_dims = [0] + [e.ndofs for e in libtab_elements]
+        libtab_sub_cmps = [0] + [e.value_size for e in libtab_elements]
+        print('sub_dims, sub_cmps = ', sub_dims, sub_cmps)
+        print('sub_dims, sub_cmps = ', libtab_sub_dims, libtab_sub_cmps)
+
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
+
 
         # Find index of sub element which corresponds to the current flat component
         component_element_index = numpy.where(
@@ -260,6 +268,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         # Get the block size to switch XXYYZZ ordering to XYZXYZ
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = fiat_element.num_sub_elements()
+            print('block size = ', block_size, len(ufl_element.sub_elements()))
             ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
 
         def slice_size(r):
