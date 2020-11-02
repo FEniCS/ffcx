@@ -41,7 +41,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
 
     Parameters
     ----------
-      priority_parameters: 
+      priority_parameters:
         take priority over all other parameter values (see notes)
 
     Returns
