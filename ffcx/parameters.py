@@ -77,7 +77,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     The ffcx_parameters.json files are cached on the first call. Subsequent
     calls to this function use this cache.
 
-    Priority ordering of parameters is:
+    Priority ordering of parameters from highest to lowest is:
       priority_parameters (API and command line parameters)
       $(pwd)/ffcx_parameters.json (local parameters)
       ~/.config/ffcx/ffcx_paramters.json (user parameters)
