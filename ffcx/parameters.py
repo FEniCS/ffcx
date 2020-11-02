@@ -87,7 +87,8 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
 
     parameters.update(user_parameters)
     parameters.update(pwd_parameters)
-    parameters.update(priority_parameters)
+    if priority_parameters is not None:
+        parameters.update(priority_parameters)
 
     logger.setLevel(parameters["verbosity"])
 
