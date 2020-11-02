@@ -254,7 +254,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
 
-
         # Find index of sub element which corresponds to the current flat component
         component_element_index = numpy.where(
             crange <= flat_component)[0].shape[0] - 1
