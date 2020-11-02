@@ -50,7 +50,6 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
 
     Notes
     -----
-
     This function sets the log level from the merged parameter values prior to
     returning.
 
