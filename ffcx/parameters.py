@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import functools
 import json
 import logging
 import os
@@ -36,6 +37,27 @@ FFCX_DEFAULT_PARAMETERS = {
 }
 
 
+@functools.lru_cache
+def _load_parameters():
+    """Loads parameters from JSON files"""
+    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
+
+    try:
+        with open(user_config_file) as f:
+            user_parameters = json.load(f)
+    except FileNotFoundError:
+        user_parameters = {}
+
+    pwd_config_file = os.path.join(os.getcwd(), "ffcx_parameters.json")
+    try:
+        with open(pwd_config_file) as f:
+            pwd_parameters = json.load(f)
+    except FileNotFoundError:
+        pwd_parameters = {}
+
+    return (user_parameters, pwd_parameters)
+
+
 def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     """Return (a copy of) the merged parameter values for FFCX.
 
@@ -53,6 +75,9 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     This function sets the log level from the merged parameter values prior to
     returning.
 
+    The ffcx_parameters.json files are cached on the first call. Subsequent
+    calls to this function use this cache.
+
     Priority ordering of parameters is:
       priority_parameters (API and command line parameters)
       $(pwd)/ffcx_parameters.json (local parameters)
@@ -69,20 +94,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
-    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
-    pwd_config_file = os.path.join(os.getcwd(), "ffcx_parameters.json")
-
-    try:
-        with open(user_config_file) as f:
-            user_parameters = json.load(f)
-    except FileNotFoundError:
-        user_parameters = {}
-
-    try:
-        with open(pwd_config_file) as f:
-            pwd_parameters = json.load(f)
-    except FileNotFoundError:
-        pwd_parameters = {}
+    user_parameters, pwd_parameters = _load_parameters()
 
     parameters.update(user_parameters)
     parameters.update(pwd_parameters)
