@@ -14,6 +14,7 @@ import libtab
 import ufl
 import ufl.utils.derivativetuples
 from ffcx.fiatinterface import create_element
+from ffcx.libtab_interface import create_libtab_elements
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -173,42 +174,55 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
+    numpy.set_printoptions(suppress=True, precision=2)
     print('ufl_element = ', ufl_element)
     fiat_element = create_element(ufl_element)
+    print("FIAT element = ", fiat_element)
+    libtab_elements = create_libtab_elements(ufl_element)
+    print("LIBTAB elements = ", libtab_elements)
 
     # Extract arrays for the right scalar component
     component_tables = []
     sh = ufl_element.value_shape()
     print('shape', sh)
     if sh == ():
+        assert len(libtab_elements) == 1
         # Scalar valued element
         for entity in range(num_entities):
             entity_points = map_integral_points(points, integral_type, cell, entity)
-            print(fiat_element.libtab_element)
             tbl = fiat_element.tabulate(deriv_order, entity_points)
-            tbl2 = fiat_element.libtab_element.tabulate(deriv_order, entity_points)
-            index = libtab.index(*derivative_counts)
-            print(tbl, tbl2)
-            assert(numpy.allclose(tbl[derivative_counts], tbl2[index].transpose()))
 
-            component_tables.append(tbl2[index].transpose())
+            # libtab
+            tbl2 = libtab_elements[0].tabulate(deriv_order, entity_points)
+            index = libtab.index(*derivative_counts)
+            tbl2 = tbl2[index].transpose()
+            print('\n+++++++++++++++++++\n', tbl[derivative_counts],
+                  '\n+++++++++++++++++++\n', tbl2,
+                  '\n+++++++++++++++++++\n')
+            assert(numpy.allclose(tbl[derivative_counts], tbl2))
+
+            component_tables.append(tbl2)
     elif len(sh) > 0 and ufl_element.num_sub_elements() == 0:
-        print('here')
+        print('Tensor valued')
         # 2-tensor-valued elements, not a tensor product
         # mapping flat_component back to tensor component
         (_, f2t) = ufl.permutation.build_component_numbering(sh, ufl_element.symmetry())
         t_comp = f2t[flat_component]
 
+        assert len(libtab_elements) == 1
+
         for entity in range(num_entities):
             entity_points = map_integral_points(points, integral_type, cell, entity)
             tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
-            tbl2 = fiat_element.libtab_element.tabulate(deriv_order, entity_points)
+
+            # libtab
+            tbl2 = libtab_element[0].tabulate(deriv_order, entity_points)
             index = libtab.index(*derivative_counts)
             tbl2 = tbl2[index].transpose()
             shsum = sum(sh)
             new_sh = (tbl2.shape[0] // shsum,) + sh + (tbl2.shape[1],)
-            print(tbl2.shape, new_sh)
             tbl2 = tbl2.reshape(new_sh)
+            print('\n=============\n',tbl,'\n============\n', tbl2,'\n===========\n')
 
             if len(sh) == 1:
                 component_tables.append(tbl[:, t_comp[0], :])
@@ -217,8 +231,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             else:
                 raise RuntimeError("Cannot tabulate tensor valued element with rank > 2")
     else:
-        print("Vector element **********")
-        print(ufl_element, fiat_element.elements())
+        print("Vector element")
         # Vector-valued or mixed element
         sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
         sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
@@ -233,6 +246,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         cr = crange[component_element_index:component_element_index + 2]
 
         component_element = fiat_element.elements()[component_element_index]
+        component_element_libtab = libtab_elements[component_element_index]
 
         # Get the block size to switch XXYYZZ ordering to XYZXYZ
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
@@ -255,7 +269,9 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
             # Tabulate subelement, this is dense nonzero table, [a, b, c]
             tbl = component_element.tabulate(deriv_order, entity_points)[derivative_counts]
-            tbl2 = component_element.libtab_element.tabulate(deriv_order, entity_points)
+
+            #libtab
+            tbl2 = component_element_libtab.tabulate(deriv_order, entity_points)
             index = libtab.index(*derivative_counts)
             tbl2 = tbl2[index].transpose()
             print('\n-------------\n', tbl,
