@@ -88,7 +88,7 @@ def create_sub_element(L, ir):
 
 def transform_values(L, ir, parameters):
     """Generate code for transform_values."""
-    return []  # generate_transform_values(L, ir.evaluate_dof)
+    return [L.Return(-1)]  # generate_transform_values(L, ir.evaluate_dof)
 
 
 def tabulate_reference_dof_coordinates(L, ir, parameters):
