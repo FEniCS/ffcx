@@ -80,7 +80,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     Priority ordering of parameters from highest to lowest is:
       priority_parameters (API and command line parameters)
       $(pwd)/ffcx_parameters.json (local parameters)
-      ~/.config/ffcx/ffcx_paramters.json (user parameters)
+      ~/.config/ffcx/ffcx_parameters.json (user parameters)
       FFCX_DEFAULT_PARAMETERS in ffcx.parameters
 
     Example ffcx_parameters.json file:
