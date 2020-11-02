@@ -222,13 +222,15 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
             # libtab
             tbl2 = libtab_elements[0].tabulate(deriv_order, entity_points)
-            index = libtab.index(*derivative_counts)
-            tbl2 = tbl2[index].transpose()
-            shsum = sum(sh)
-            new_sh = (tbl2.shape[0] // shsum,) + sh + (tbl2.shape[1],)
-            tbl2 = tbl2.reshape(new_sh)
+            tbl2 = tbl2[libtab.index(*derivative_counts)]
+            sum_sh = sum(sh)
+            bshape = (tbl2.shape[0],) + sh + (tbl2.shape[1] // sum_sh,)
+            tbl2 = tbl2.reshape(bshape).transpose()
+
             print('\n=============\n', tbl,
                   '\n============\n', tbl2, '\n===========\n')
+
+            print(numpy.allclose(tbl, tbl2))
 
             if len(sh) == 1:
                 component_tables.append(tbl[:, t_comp[0], :])
