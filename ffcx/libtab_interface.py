@@ -29,7 +29,7 @@ def create_quadrature(cellname, degree, rule):
     return None, None
 
 
-class LibtabBase:
+class LibtabBaseElement:
     def tabulate(self, nderivs, points):
         raise NotImplementedError
 
@@ -46,7 +46,7 @@ class LibtabBase:
         raise NotImplementedError
 
 
-class MixedElement:
+class MixedElement(LibtabBaseElement):
     def __init__(self, sub_elements):
         assert len(sub_elements) > 0
         self.sub_elements = sub_elements
@@ -84,7 +84,7 @@ class MixedElement:
         return sum(e.value_size for e in self.sub_elements)
 
 
-class BlockedElement:
+class BlockedElement(LibtabBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
         self.sub_element = sub_element
