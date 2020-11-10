@@ -4,8 +4,6 @@ import libtab
 
 
 def create_libtab_element(ufl_element):
-    elements = []
-
     if isinstance(ufl_element, ufl.VectorElement):
         return BlockedElement(create_libtab_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements())
@@ -33,15 +31,15 @@ def create_quadrature(cellname, degree, rule):
 
 class LibtabBase:
     def tabulate(self, nderivs, points):
-        raise NotImplemtedError
+        raise NotImplementedError
 
     @property
     def base_permutations(self):
-        raise NotImplemtedError
+        raise NotImplementedError
 
     @property
     def ndofs(self):
-        raise NotImplemtedError
+        raise NotImplementedError
 
     @property
     def value_shape(self):
@@ -54,7 +52,7 @@ class MixedElement:
         self.sub_elements = sub_elements
 
     def tabulate(self, nderivs, points):
-        results = [_tabulate_libtab_elements(e, nderivs, points) for e in self.sub_elements]
+        results = [e.tabulate(nderivs, points) for e in self.sub_elements]
         return [numpy.hstack([r[i] for r in results]) for i, _ in enumerate(results[0])]
 
     @property
@@ -97,7 +95,7 @@ class BlockedElement:
             self.block_shape = block_shape
 
     def tabulate(self, nderivs, points):
-        assert len(self.block_shape) == 1 # TODO: block shape
+        assert len(self.block_shape) == 1  # TODO: block shape
 
         output = []
         for table in self.sub_element.tabulate(nderivs, points):
@@ -110,14 +108,15 @@ class BlockedElement:
 
     @property
     def base_permutations(self):
-        assert len(self.block_shape) == 1 # TODO: block shape
+        assert len(self.block_shape) == 1  # TODO: block shape
 
         output = []
         for perm in self.sub_element.base_permutations:
             new_perm = numpy.zeros((perm.shape[0] * self.block_size, perm.shape[1] * self.block_size))
             for i, row in enumerate(perm):
                 for j, entry in enumerate(row):
-                    new_perm[i * self.block_size: (i+1) * self.block_size, j * self.block_size: (j+1) * self.block_size] = entry
+                    new_perm[i * self.block_size: (i + 1) * self.block_size,
+                             j * self.block_size: (j + 1) * self.block_size] = entry
             output.append(new_perm)
         return output
 

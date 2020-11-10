@@ -266,11 +266,11 @@ class FFCXBackendAccess(object):
         # num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get dof and component
-        dof, = vertex_scalar_dofs[mt.component[0]]
-        component = mt.component[1]
+        # dof, = vertex_scalar_dofs[mt.component[0]]
+        # component = mt.component[1]
 
-        expr = self.symbols.domain_dof_access(dof, component, gdim, num_scalar_dofs, mt.restriction)
-        return expr
+        # expr = self.symbols.domain_dof_access(dof, component, gdim, num_scalar_dofs, mt.restriction)
+        # return expr
 
     def cell_edge_vectors(self, e, mt, tabledata, num_points):
         # Get properties of domain
@@ -298,22 +298,22 @@ class FFCXBackendAccess(object):
         #   num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get edge vertices
-        edge = mt.component[0]
-        edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
-        vertex0, vertex1 = edge_vertices
+        # edge = mt.component[0]
+        # edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
+        # vertex0, vertex1 = edge_vertices
 
         # Get dofs and component
-        dof0, = vertex_scalar_dofs[vertex0]
-        dof1, = vertex_scalar_dofs[vertex1]
-        component = mt.component[1]
+        # dof0, = vertex_scalar_dofs[vertex0]
+        # dof1, = vertex_scalar_dofs[vertex1]
+        # component = mt.component[1]
 
-        expr = (self.symbols.domain_dof_access(dof0, component,
-                                               gdim, num_scalar_dofs,
-                                               mt.restriction)
-                - self.symbols.domain_dof_access(dof1, component,
-                                                 gdim, num_scalar_dofs,
-                                                 mt.restriction))
-        return expr
+        # expr = (self.symbols.domain_dof_access(dof0, component,
+        #                                        gdim, num_scalar_dofs,
+        #                                        mt.restriction)
+        #         - self.symbols.domain_dof_access(dof1, component,
+        #                                          gdim, num_scalar_dofs,
+        #                                          mt.restriction))
+        # return expr
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
@@ -343,22 +343,22 @@ class FFCXBackendAccess(object):
         #num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get edge vertices
-        facet = self.symbols.entity("facet", mt.restriction)
-        facet_edge = mt.component[0]
-        facet_edge_vertices = L.Symbol("{0}_facet_edge_vertices".format(cellname))
-        vertex0 = facet_edge_vertices[facet][facet_edge][0]
-        vertex1 = facet_edge_vertices[facet][facet_edge][1]
+        # facet = self.symbols.entity("facet", mt.restriction)
+        # facet_edge = mt.component[0]
+        # facet_edge_vertices = L.Symbol("{0}_facet_edge_vertices".format(cellname))
+        # vertex0 = facet_edge_vertices[facet][facet_edge][0]
+        # vertex1 = facet_edge_vertices[facet][facet_edge][1]
 
         # Get dofs and component
-        component = mt.component[1]
-        assert coordinate_element.degree() == 1, "Assuming degree 1 element"
-        dof0 = vertex0
-        dof1 = vertex1
-        expr = (
-            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
-            - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
+        # component = mt.component[1]
+        # assert coordinate_element.degree() == 1, "Assuming degree 1 element"
+        # dof0 = vertex0
+        # dof1 = vertex1
+        # expr = (
+        #     self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
+        #     - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
 
-        return expr
+        # return expr
 
     def _pass(self, *args, **kwargs):
         """Return one."""
