@@ -13,7 +13,6 @@ import libtab
 
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.fiatinterface import create_element
 from ffcx.libtab_interface import create_libtab_elements
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
@@ -177,8 +176,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
     numpy.set_printoptions(suppress=True, precision=2)
     print('ufl_element = ', ufl_element)
-    fiat_element = create_element(ufl_element)
-    print("FIAT element = ", fiat_element)
     libtab_elements = create_libtab_elements(ufl_element)
     print("LIBTAB elements = ", libtab_elements)
 
@@ -190,18 +187,11 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         assert len(libtab_elements) == 1
         # Scalar valued element
         for entity in range(num_entities):
-            entity_points = map_integral_points(
-                points, integral_type, cell, entity)
-            tbl = fiat_element.tabulate(deriv_order, entity_points)
 
             # libtab
-            tbl2 = libtab_elements[0].tabulate(deriv_order, entity_points)
+            tbl = libtab_elements[0].tabulate(deriv_order, entity_points)
             index = libtab.index(*derivative_counts)
-            tbl2 = tbl2[index].transpose()
-            print('\n+++++++++++++++++++\n', tbl[derivative_counts],
-                  '\n+++++++++++++++++++\n', tbl2,
-                  '\n+++++++++++++++++++\n')
-            assert(numpy.allclose(tbl[derivative_counts], tbl2))
+            tbl = tbl[index].transpose()
 
             component_tables.append(tbl2)
     elif len(sh) > 0 and ufl_element.num_sub_elements() == 0:
@@ -217,41 +207,24 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         for entity in range(num_entities):
             entity_points = map_integral_points(
                 points, integral_type, cell, entity)
-            tbl = fiat_element.tabulate(deriv_order, entity_points)[
-                derivative_counts]
-
-            # libtab
-            tbl2 = libtab_elements[0].tabulate(deriv_order, entity_points)
-            tbl2 = tbl2[libtab.index(*derivative_counts)]
+            tbl = libtab_elements[0].tabulate(deriv_order, entity_points)
+            tbl = tbl[libtab.index(*derivative_counts)]
             sum_sh = sum(sh)
-            bshape = (tbl2.shape[0],) + sh + (tbl2.shape[1] // sum_sh,)
-            tbl2 = tbl2.reshape(bshape).transpose()
-
-            print('\n=============\n', tbl,
-                  '\n============\n', tbl2, '\n===========\n')
-
-            print(numpy.allclose(tbl, tbl2))
+            bshape = (tbl.shape[0],) + sh + (tbl.shape[1] // sum_sh,)
+            tbl = tbl.reshape(bshape).transpose()
 
             if len(sh) == 1:
-                component_tables.append(tbl[:, t_comp[0], :])
+                component_tables.append(tbl2[:, t_comp[0], :])
             elif len(sh) == 2:
-                component_tables.append(tbl[:, t_comp[0], t_comp[1], :])
+                component_tables.append(tbl2[:, t_comp[0], t_comp[1], :])
             else:
                 raise RuntimeError(
                     "Cannot tabulate tensor valued element with rank > 2")
     else:
         print("Vector/mixed element", sh)
         # Vector-valued or mixed element
-        sub_dims = [0] + list(e.space_dimension()
-                              for e in fiat_element.elements())
-        sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
-                              for e in fiat_element.elements())
-
-        # libtab
         libtab_sub_dims = [0] + [e.ndofs for e in libtab_elements]
         libtab_sub_cmps = [0] + [e.value_size for e in libtab_elements]
-        print('sub_dims, sub_cmps = ', sub_dims, sub_cmps)
-        print('sub_dims, sub_cmps = ', libtab_sub_dims, libtab_sub_cmps)
 
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
@@ -263,14 +236,14 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         ir = irange[component_element_index:component_element_index + 2]
         cr = crange[component_element_index:component_element_index + 2]
 
-        component_element = fiat_element.elements()[component_element_index]
-        component_element_libtab = libtab_elements[component_element_index]
+        component_element = libtab_elements[component_element_index]
 
         # Get the block size to switch XXYYZZ ordering to XYZXYZ
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-            block_size = fiat_element.num_sub_elements()
-            print('block size = ', block_size, ufl_element.num_sub_elements())
-            ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
+            raise NotImplementedError
+            #block_size = fiat_element.num_sub_elements()
+            #print('block size = ', block_size, ufl_element.num_sub_elements())
+            #ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
 
         def slice_size(r):
             if len(r) == 1:
@@ -301,8 +274,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                   '\n-------------\n')
 
             # Prepare a padded table with zeros
-            padded_shape = (fiat_element.space_dimension(),) + \
-                fiat_element.value_shape() + (len(entity_points), )
+            padded_shape = None #(fiat_element.space_dimension(),) + fiat_element.value_shape() + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
             tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)

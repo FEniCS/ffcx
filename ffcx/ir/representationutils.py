@@ -11,8 +11,6 @@ import logging
 import numpy
 
 import ufl
-from ffcx.fiatinterface import (create_quadrature, map_facet_points,
-                                reference_cell_vertices)
 
 logger = logging.getLogger("ffcx")
 
@@ -48,12 +46,11 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
 
     if integral_type == "cell":
-        (points, weights) = create_quadrature(cell.cellname(), degree, rule)
+        (points, weights) = None  # create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
-        (points, weights) = create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree,
-                                              rule)
+        (points, weights) = None  # create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree, rule)
     elif integral_type in ufl.measure.point_integral_types:
-        (points, weights) = create_quadrature("vertex", degree, rule)
+        (points, weights) = None  # create_quadrature("vertex", degree, rule)
     elif integral_type == "expression":
         (points, weights) = (None, None)
     else:
@@ -89,8 +86,8 @@ def map_integral_points(points, integral_type, cell, entity):
         return numpy.asarray(points)
     elif entity_dim == tdim - 1:
         assert points.shape[1] == tdim - 1
-        return numpy.asarray(map_facet_points(points, entity, cell.cellname()))
+        return None  # numpy.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
-        return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
+        return None  # numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
         raise RuntimeError("Can't map points from entity_dim=%s" % (entity_dim, ))

@@ -9,7 +9,6 @@ import logging
 import warnings
 
 import ufl
-from ffcx.fiatinterface import create_element
 from ufl.finiteelement import MixedElement
 
 logger = logging.getLogger("ffcx")
@@ -260,9 +259,11 @@ class FFCXBackendAccess(object):
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
-        fiat_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
-        num_scalar_dofs = fiat_scalar_element.space_dimension()
+
+        raise NotImplementedError
+        #fiat_scalar_element = create_element(ufl_scalar_element)
+        #vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
+        #num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get dof and component
         dof, = vertex_scalar_dofs[mt.component[0]]
@@ -290,9 +291,11 @@ class FFCXBackendAccess(object):
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
-        fiat_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
-        num_scalar_dofs = fiat_scalar_element.space_dimension()
+
+        raise NotImplementedError
+        #fiat_scalar_element = create_element(ufl_scalar_element)
+        #vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
+        #num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get edge vertices
         edge = mt.component[0]
@@ -334,8 +337,10 @@ class FFCXBackendAccess(object):
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
-        fiat_scalar_element = create_element(ufl_scalar_element)
-        num_scalar_dofs = fiat_scalar_element.space_dimension()
+
+        raise NotImplementedError
+        #fiat_scalar_element = create_element(ufl_scalar_element)
+        #num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get edge vertices
         facet = self.symbols.entity("facet", mt.restriction)
