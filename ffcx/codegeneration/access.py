@@ -316,7 +316,7 @@ class FFCXBackendAccess(object):
         # return expr
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
-        L = self.language
+        # L = self.language
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
@@ -339,8 +339,8 @@ class FFCXBackendAccess(object):
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
         raise NotImplementedError
-        #fiat_scalar_element = create_element(ufl_scalar_element)
-        #num_scalar_dofs = fiat_scalar_element.space_dimension()
+        # fiat_scalar_element = create_element(ufl_scalar_element)
+        # num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get edge vertices
         # facet = self.symbols.entity("facet", mt.restriction)
