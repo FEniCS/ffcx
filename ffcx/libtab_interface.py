@@ -42,8 +42,10 @@ class LibtabBaseElement:
         raise NotImplementedError
 
     @property
-    def value_shape(self):
+    def value_size(self):
         raise NotImplementedError
+
+    # TODO: def value_shape
 
 
 class MixedElement(LibtabBaseElement):
