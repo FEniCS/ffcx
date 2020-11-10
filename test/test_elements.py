@@ -23,7 +23,7 @@
 import numpy
 import pytest
 
-from ffcx.fiatinterface import create_element
+from ffcx.libtab_interface import create_libtab_element
 from ufl import FiniteElement
 
 
@@ -50,45 +50,45 @@ def random_point(shape):
 @pytest.mark.parametrize("degree, expected_dim", [(1, 3), (2, 6), (3, 10)])
 def test_continuous_lagrange(degree, expected_dim):
     "Test space dimensions of continuous Lagrange elements."
-    P = create_element(FiniteElement("Lagrange", "triangle", degree))
-    assert P.space_dimension() == expected_dim
+    P = create_libtab_element(FiniteElement("Lagrange", "triangle", degree))
+    assert P.ndofs == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def test_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree))
-    assert P.space_dimension() == expected_dim
+    P = create_libtab_element(FiniteElement("Lagrange", "quadrilateral", degree))
+    assert P.ndofs == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def test_continuous_lagrange_quadrilateral_spectral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
-    assert P.space_dimension() == expected_dim
+    P = create_libtab_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
+    assert P.ndofs == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."
-    P = create_element(FiniteElement("DG", "triangle", degree))
-    assert P.space_dimension() == expected_dim
+    P = create_libtab_element(FiniteElement("DG", "triangle", degree))
+    assert P.ndofs == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim",
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
-    P = create_element(FiniteElement("Regge", "triangle", degree))
-    assert P.space_dimension() == expected_dim
+    P = create_libtab_element(FiniteElement("Regge", "triangle", degree))
+    assert P.ndofs == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim",
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_hhj(degree, expected_dim):
     "Test space dimensions of Hellan-Herrmann-Johnson element."
-    P = create_element(FiniteElement("HHJ", "triangle", degree))
-    assert P.space_dimension() == expected_dim
+    P = create_libtab_element(FiniteElement("HHJ", "triangle", degree))
+    assert P.ndofs == expected_dim
 
 
 class TestFunctionValues():
@@ -183,7 +183,7 @@ supported (non-mixed) for low degrees"""
     @pytest.mark.parametrize("family, cell, degree, reference", tests)
     def test_values(self, family, cell, degree, reference):
         # Create element
-        element = create_element(FiniteElement(family, cell, degree))
+        element = create_libtab_element(FiniteElement(family, cell, degree))
 
         # Get some points and check basis function values at points
         points = [random_point(element_coords(cell)) for i in range(5)]

@@ -9,6 +9,7 @@ import hashlib
 import logging
 
 import numpy
+from ffcx.libtab_interface import create_quadrature
 
 import ufl
 
@@ -46,16 +47,16 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
 
     if integral_type == "cell":
-        (points, weights) = None  # create_quadrature(cell.cellname(), degree, rule)
+        return create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
-        (points, weights) = None  # create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree, rule)
+        return create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree, rule)
     elif integral_type in ufl.measure.point_integral_types:
-        (points, weights) = None  # create_quadrature("vertex", degree, rule)
+        return create_quadrature("vertex", degree, rule)
     elif integral_type == "expression":
-        (points, weights) = (None, None)
-    else:
-        logging.exception("Unknown integral type: {}".format(integral_type))
-    return (points, weights)
+        return (None, None)
+
+    logging.exception("Unknown integral type: {}".format(integral_type))
+    return (None, None)
 
 
 def integral_type_to_entity_dim(integral_type, tdim):

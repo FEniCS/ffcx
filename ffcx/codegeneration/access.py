@@ -261,9 +261,9 @@ class FFCXBackendAccess(object):
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
         raise NotImplementedError
-        #fiat_scalar_element = create_element(ufl_scalar_element)
-        #vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
-        #num_scalar_dofs = fiat_scalar_element.space_dimension()
+        # fiat_scalar_element = create_element(ufl_scalar_element)
+        # vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
+        # num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get dof and component
         dof, = vertex_scalar_dofs[mt.component[0]]
@@ -293,9 +293,9 @@ class FFCXBackendAccess(object):
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
         raise NotImplementedError
-        #fiat_scalar_element = create_element(ufl_scalar_element)
-        #vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
-        #num_scalar_dofs = fiat_scalar_element.space_dimension()
+        # fiat_scalar_element = create_element(ufl_scalar_element)
+        # vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
+        #   num_scalar_dofs = fiat_scalar_element.space_dimension()
 
         # Get edge vertices
         edge = mt.component[0]
