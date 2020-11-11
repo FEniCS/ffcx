@@ -252,4 +252,11 @@ def generator(ir, parameters):
     declaration = ufc_form.declaration.format(factory_name=d["factory_name"],
                                               name_from_uflfile=d["name_from_uflfile"])
 
+    # Define space dimension for the form
+    if parameters.get("sycl_defines", False):
+        elm_define = "space_dimension_" + ir.create_finite_element[0]
+        int_type = "a" if ir.rank == 2 else "L"
+        spec_dim = "#define " + int_type + "_num_dofs " + elm_define + "\n"
+        implementation = spec_dim + implementation
+
     return declaration, implementation
