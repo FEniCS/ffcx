@@ -123,10 +123,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             for i, v in S.nodes.items():
                 deps = [S.nodes[j]['expression'] for j in S.out_edges[i]]
                 if deps:
-                    try:
-                        v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
-                    except:
-                        from IPython import embed; embed()
+                    v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
             # Rebuild scalar target expressions and graph (this may be
             # overkill and possible to optimize away if it turns out to be

@@ -283,46 +283,63 @@ class IntegralGenerator(object):
         ])
         return parts
 
-    def get_entity_reflection_conditions(self, table, name):
-        """Gets an array of conditions stating when each dof is reflected."""
-        L = self.backend.language
-        c_false = L.LiteralBool(False)
-        conditions = numpy.full(table.shape, c_false, dtype=L.CExpr)
-
-        ref = self.ir.table_dof_reflection_entities[name]
-        dofmap = self.ir.table_dofmaps[name]
-
-        for dof, entities in enumerate(ref):
-            if entities is None or dof not in dofmap:
-                continue
-            for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
-                indices += (dofmap.index(dof), )
-                for entity in entities:
-                    entity_ref = self.backend.symbols.entity_reflection(L, entity, self.ir.cell_shape)
-                    if conditions[indices] == c_false:
-                        # No condition has been added yet, so overwrite false
-                        conditions[indices] = entity_ref
-                    elif conditions[indices] == entity_ref:
-                        # A != A is always false
-                        conditions[indices] = c_false
-                    else:
-                        # This is not the first condition, so XOR
-                        conditions[indices] = L.NE(entity_ref, conditions[indices])
-        return conditions
-
     def declare_table(self, name, table, padlen):
         """Declare a table.
         If the dof dimensions of the table have dof rotations, apply these rotations."""
         L = self.backend.language
         c_false = L.LiteralBool(False)
 
-        rot = self.ir.table_dof_face_tangents[name]
-        ref = self.ir.table_dof_reflection_entities[name]
-        has_reflections = len([j for j in ref if j is not None]) > 0
-        has_rotations = len(rot) > 0
+        base_perms = self.ir.table_dof_base_permutations[name]
+
+        # NOTE: If we upgrade the minimun required Python version to >=3.7, dicts are
+        # ordered, so these can be replaced
+        if self.ir.cell_shape == "interval":
+            entities = {}
+        elif self.ir.cell_shape == "triangle":
+            entities = {1: 3}
+        elif self.ir.cell_shape == "quadrilateral":
+            entities = {1: 4}
+        elif self.ir.cell_shape == "tetrahedron":
+            entities = {1: 6, 2: 4}
+            face_rotation_order = 3
+        elif self.ir.cell_shape == "hexahedron":
+            entities = {1: 12, 2: 6}
+            face_rotation_order = 4
+        else:
+            raise NotImplementedError
+
+        perm_n = 0
+        needs_permuting = False
+
+        if 1 in entities:
+            for edge in range(entities[1]):
+                edge_ref = self.backend.symbols.entity_reflection(L, (1, edge), self.ir.cell_shape)
+                perm = base_perms[perm_n]
+                for dof, row in enumerate(perm):
+                    if not numpy.allclose(row, [1 if i == dof else 0 for i, j in enumerate(row)]):
+                        if not needs_permuting:
+                            needs_permuting = True
+                            table = numpy.array(table, dtype=L.CExpr)
+                        ################################# TODO ###########################################
+                        new_value = sum(i * j for i, j in zip(row, table[dof]) if not numpy.isclose(i, 0))
+                perm_n += 1
+
+        if 2 in entities:
+            for face in range(entities[2]):
+                face_ref = self.backend.symbols.entity_reflection(L, (2, face), self.ir.cell_shape)
+                print(f"Face {face} rot: {base_perms[perm_n]}")
+                perm_n += 1
+
+                face_rot = self.backend.symbols.entity_rotation(L, (2, face), self.ir.cell_shape)
+                print(f"Face {face} ref: {base_perms[perm_n]}")
+                perm_n += 1
+
+        assert perm_n == len(base_perms)
+
+        # from IPython import embed; embed()
 
         # If the space has no vector-valued dofs, return the static table
-        if not has_reflections and not has_rotations:
+        if not needs_permuting or 1:  ## TODO
             return [L.ArrayDecl(
                 "static const double", name, table.shape, table, padlen=padlen)]
 

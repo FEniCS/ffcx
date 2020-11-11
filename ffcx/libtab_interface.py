@@ -45,7 +45,9 @@ class LibtabBaseElement:
     def value_size(self):
         raise NotImplementedError
 
-    # TODO: def value_shape
+    @property
+    def value_shape(self):
+        raise NotImplementedError
 
 
 class MixedElement(LibtabBaseElement):
@@ -84,6 +86,14 @@ class MixedElement(LibtabBaseElement):
     @property
     def value_size(self):
         return sum(e.value_size for e in self.sub_elements)
+
+    @property
+    def value_shape(self):
+        shape = tuple()
+        for e in self.sub_elements:
+            shape += e.value_shape
+        return shape
+
 
 
 class BlockedElement(LibtabBaseElement):
@@ -133,3 +143,7 @@ class BlockedElement(LibtabBaseElement):
     @property
     def value_size(self):
         return self.block_size * self.sub_element.value_size
+
+    @property
+    def value_shape(self):
+        return (self.value_size, )
