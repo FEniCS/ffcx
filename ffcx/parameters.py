@@ -1,22 +1,21 @@
-# Copyright (C) 2005-2020 Anders Logg, Michal Habera
+# Copyright (C) 2005-2020 Anders Logg, Michal Habera, Jack S. Hale
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCX. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import functools
+import json
 import logging
+import os
+import os.path
+import pathlib
+import pprint
+from typing import Optional
 
 logger = logging.getLogger("ffcx")
 
-FFCX_PARAMETERS = {
-    "quadrature_rule":
-        ("default", "Quadrature rule used for integration of element tensors."),
-    "quadrature_degree":
-        (-1, """Quadrature degree used for approximating integrals.
-                (-1 means automatically determined from integrand polynomial degree)"""),
-    "precision":
-        (-1, """Precision used when writing numbers (-1 for max precision).
-                Represents maximum number of digits after decimal point."""),
+FFCX_DEFAULT_PARAMETERS = {
     "epsilon":
         (1e-14, "Machine precision, used for dropping zero terms in tables"),
     "scalar_type":
@@ -33,16 +32,80 @@ FFCX_PARAMETERS = {
                (-1 means no alignment assumed, safe option)"""),
     "padlen":
         (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value."),
+    "verbosity":
+        (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc."),
     "sycl_defines":
         (False, "True to generate SYCL definition headers. ")
 }
 
 
-def default_parameters():
-    """Return (a copy of) the default parameter values for FFCX."""
+@functools.lru_cache(maxsize=None)
+def _load_parameters():
+    """Loads parameters from JSON files."""
+    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
+    try:
+        with open(user_config_file) as f:
+            user_parameters = json.load(f)
+    except FileNotFoundError:
+        user_parameters = {}
+
+    pwd_config_file = os.path.join(os.getcwd(), "ffcx_parameters.json")
+    try:
+        with open(pwd_config_file) as f:
+            pwd_parameters = json.load(f)
+    except FileNotFoundError:
+        pwd_parameters = {}
+
+    return (user_parameters, pwd_parameters)
+
+
+def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
+    """Return (a copy of) the merged parameter values for FFCX.
+
+    Parameters
+    ----------
+      priority_parameters:
+        take priority over all other parameter values (see notes)
+
+    Returns
+    -------
+      dict: merged parameter values
+
+    Notes
+    -----
+    This function sets the log level from the merged parameter values prior to
+    returning.
+
+    The ffcx_parameters.json files are cached on the first call. Subsequent
+    calls to this function use this cache.
+
+    Priority ordering of parameters from highest to lowest is:
+      priority_parameters (API and command line parameters)
+      $(pwd)/ffcx_parameters.json (local parameters)
+      ~/.config/ffcx/ffcx_parameters.json (user parameters)
+      FFCX_DEFAULT_PARAMETERS in ffcx.parameters
+
+    Example ffcx_parameters.json file:
+
+      { "assume_aligned": 32, "epsilon": 1e-7 }
+
+    """
     parameters = {}
 
-    for param, (value, desc) in FFCX_PARAMETERS.items():
+    for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
+
+    # NOTE: _load_parameters uses functools.lru_cache
+    user_parameters, pwd_parameters = _load_parameters()
+
+    parameters.update(user_parameters)
+    parameters.update(pwd_parameters)
+    if priority_parameters is not None:
+        parameters.update(priority_parameters)
+
+    logger.setLevel(parameters["verbosity"])
+
+    logger.info("Final parameter values")
+    logger.info(pprint.pformat(parameters))
 
     return parameters
