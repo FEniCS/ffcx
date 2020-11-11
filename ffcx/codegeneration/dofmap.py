@@ -85,20 +85,6 @@ def generator(ir, parameters):
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
     d["block_size"] = ir.block_size
 
-    num_perms = len(ir.base_permutations)
-    if num_perms == 0:
-        num_dofs = 0
-    else:
-        num_dofs = len(ir.base_permutations[0])
-
-    bp = []
-    for i, perm in enumerate(ir.base_permutations):
-        for j, val in enumerate(perm):
-            bp.append(str(val))
-    d["base_permutations"] = ("static const int bp[" + str(num_perms * num_dofs) + "] = {"
-                              + ",".join(bp) + "};\n  dofmap->base_permutations = bp;\n")
-    d["size_base_permutations"] = num_perms * num_dofs
-
     import ffcx.codegeneration.C.cnodes as L
 
     # Functions

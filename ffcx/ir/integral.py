@@ -22,7 +22,7 @@ from ffcx.ir.elementtables import build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
-from ffcx.ir import dof_permutations
+from ffcx.libtab_interface import create_libtab_element
 
 logger = logging.getLogger("ffcx")
 
@@ -59,9 +59,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     ir["integrand"] = {}
 
     ir["table_dofmaps"] = {}
-    ir["table_dof_face_tangents"] = {}
-    ir["table_dof_reflection_entities"] = {}
-
+    ir["table_dof_base_permutations"] = {}
     ir["needs_permutation_data"] = 0
 
     for quadrature_rule, integrand in integrands.items():
@@ -103,13 +101,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             ir["needs_permutation_data"] = 1
 
         for k, v in table_origins.items():
-            ir["table_dof_face_tangents"][k] = dof_permutations.face_tangents(v[0])
-            ir["table_dof_reflection_entities"][k] = dof_permutations.reflection_entities(v[0])
-            for j in ir["table_dof_face_tangents"][k]:
-                if j is not None:
-                    ir["needs_permutation_data"] = 1
-            if len(ir["table_dof_reflection_entities"][k]) > 0:
-                ir["needs_permutation_data"] = 1
+            ir["table_dof_base_permutations"][k] = create_libtab_element(v[0]).base_permutations
+            ir["needs_permutation_data"] = 1  # TODO: make 0 if all matrices are identity
 
         for td in mt_unique_table_reference.values():
             ir["table_dofmaps"][td.name] = td.dofmap
@@ -130,7 +123,10 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             for i, v in S.nodes.items():
                 deps = [S.nodes[j]['expression'] for j in S.out_edges[i]]
                 if deps:
-                    v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
+                    try:
+                        v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
+                    except:
+                        from IPython import embed; embed()
 
             # Rebuild scalar target expressions and graph (this may be
             # overkill and possible to optimize away if it turns out to be

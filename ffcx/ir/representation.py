@@ -79,6 +79,7 @@ ir_integral = namedtuple('ir_integral', ['integral_type', 'subdomain_id',
                                          'tensor_shape', 'coefficient_numbering',
                                          'coefficient_offsets', 'original_constant_offsets', 'params', 'cell_shape',
                                          'unique_tables', 'unique_table_types', 'table_dofmaps',
+                                         'table_dof_base_permutations',
                                          'integrand', 'name', 'precision', 'needs_permutation_data'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
@@ -86,6 +87,7 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_si
                                                  'physical_offsets', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'params', 'unique_tables',
                                              'unique_table_types', 'integrand', 'table_dofmaps',
+                                             'table_dof_base_permutations',
                                              'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points',
@@ -1107,6 +1109,7 @@ def element_needs_oriented_jacobian(fiat_element):
     # Check whether this element needs an oriented jacobian (only
     # contravariant piolas seem to need it)
     # TODO
+    return False
     raise NotImplementedError
     return "contravariant piola" in fiat_element.mapping()
 

@@ -37,9 +37,6 @@ ufc_dofmap* create_{factory_name}(void)
   dofmap->create_sub_dofmap = create_sub_dofmap_{factory_name};
   dofmap->create = create_{factory_name};
 
-  dofmap->size_base_permutations = {size_base_permutations};
-  {base_permutations}
-
   return dofmap;
 }}
 
