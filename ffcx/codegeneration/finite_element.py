@@ -520,7 +520,7 @@ def generator(ir, parameters):
     # Define space dimension for the element
     if parameters.get("sycl_defines", False):
         elm_defininiton = "space_dimension_" + ir.name
-        define_dimension = "#define " + elm_defininiton + " " + str(ir.space_dimension) + "\n"
+        define_dimension = "\n#define " + elm_defininiton + " " + str(ir.space_dimension) + "\n"
         implementation = define_dimension + implementation
 
     return declaration, implementation

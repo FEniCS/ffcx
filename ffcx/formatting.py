@@ -145,15 +145,14 @@ def _generate_includes(parameters):
         "#include <ufc.h>",
     ]
 
-    sycl_defines = parameters.get("sycl_defines", False)
-    if sycl_defines:
-        default_c_includes.append("#define restrict __restrict__")
-
     s_h = set(default_h_includes)
     s_c = set(default_c_includes)
 
     includes_h = "\n".join(sorted(s_h)) + "\n" if s_h else ""
     includes_c = "\n".join(sorted(s_c)) + "\n" if s_c else ""
+
+    if parameters.get("sycl_defines", False):
+        includes_c = includes_c + "\n#define restrict __restrict__ \n"
 
     return includes_h, includes_c
 
