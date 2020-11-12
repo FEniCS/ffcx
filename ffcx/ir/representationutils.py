@@ -9,7 +9,7 @@ import hashlib
 import logging
 
 import numpy
-from ffcx.libtab_interface import create_quadrature
+from ffcx.libtab_interface import create_quadrature, reference_cell_vertices, map_facet_points
 
 import ufl
 
@@ -87,8 +87,8 @@ def map_integral_points(points, integral_type, cell, entity):
         return numpy.asarray(points)
     elif entity_dim == tdim - 1:
         assert points.shape[1] == tdim - 1
-        return None  # numpy.asarray(map_facet_points(points, entity, cell.cellname()))
+        return numpy.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
-        return None  # numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
+        return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
         raise RuntimeError("Can't map points from entity_dim=%s" % (entity_dim, ))

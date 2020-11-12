@@ -311,6 +311,9 @@ class IntegralGenerator(object):
         perm_n = 0
         needs_permuting = False
 
+        return [L.ArrayDecl(
+            "static const double", name, table.shape, table, padlen=padlen)]
+
         if 1 in entities:
             for edge in range(entities[1]):
                 edge_ref = self.backend.symbols.entity_reflection(L, (1, edge), self.ir.cell_shape)

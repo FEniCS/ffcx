@@ -3,6 +3,15 @@ import ufl
 import libtab
 
 
+libtab_cells = {
+    "interval": libtab.CellType.interval,
+    "triangle": libtab.CellType.triangle,
+    "tetrahedron": libtab.CellType.tetrahedron,
+    "quadrilateral": libtab.CellType.quadrilateral,
+    "hexahedron": libtab.CellType.hexahedron
+}
+
+
 def create_libtab_element(ufl_element):
     if isinstance(ufl_element, ufl.VectorElement):
         return BlockedElement(create_libtab_element(ufl_element.sub_elements()[0]),
@@ -147,3 +156,15 @@ class BlockedElement(LibtabBaseElement):
     @property
     def value_shape(self):
         return (self.value_size, )
+
+
+def reference_cell_vertices(cellname):
+    return libtab.geometry(libtab_cells[cellname])
+
+
+def map_facet_points(points, facet, cellname):
+    geom = libtab.geometry(libtab_cells[cellname])
+    facet_vertices = [geom[0] for i in libtab.topology(libtab_cells[cellname])[-2][facet]]
+
+    return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
+            for p in points]
