@@ -46,7 +46,7 @@ def test_cmap_triangle(degree, compile_args):
 
 
 @pytest.mark.parametrize("degree", [1, 2])
-def test_cmap_quads(degree, compile_args):
+def xtest_cmap_quads(degree, compile_args):
     """Test quadrilateral cell"""
     # Assuming FIAT Tensor Product layout of cell.
 
@@ -82,7 +82,7 @@ def test_cmap_quads(degree, compile_args):
 
 
 @pytest.mark.parametrize("degree", [1, 2, 3])
-def test_cmap_hex(degree, compile_args):
+def xtest_cmap_hex(degree, compile_args):
     """Test hexahedron cell"""
     # Assuming FIAT Tensor Product layout of cell.
 
