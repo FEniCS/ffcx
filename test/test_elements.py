@@ -108,27 +108,27 @@ supported (non-mixed) for low degrees"""
                                lambda x: (- 1 + x[0] + 3 * x[1], - 2 * x[1]),
                                lambda x: (-x[0], -2 + 3 * x[0] + 2 * x[1]),
                                lambda x: (2 * x[0], 1 - 3 * x[0] - x[1])]
-    reference_triangle_rt1 = [lambda x: (x[0], x[1]), lambda x: (1 - x[0], -x[1]),
-                              lambda x: (x[0], x[1] - 1)]
-    reference_triangle_rt2 = [lambda x: (-x[0] + 3 * x[0]**2, -x[1] + 3 * x[0] * x[1]),
-                              lambda x: (-x[0] + 3 * x[0] * x[1], -x[1] + 3 * x[1]**2),
-                              lambda x: (2 - 5 * x[0] - 3 * x[1] + 3 * x[0] * x[1] + 3 * x[0]**2,
-                                         -2 * x[1] + 3 * x[0] * x[1] + 3 * x[1]**2),
-                              lambda x: (-1.0 + x[0] + 3 * x[1] - 3 * x[0] * x[1], x[1] - 3 * x[1]**2),
-                              lambda x: (2 * x[0] - 3 * x[0] * x[1] - 3 * x[0] ** 2,
-                                         -2 + 3 * x[0] + 5 * x[1] - 3 * x[0] * x[1] - 3 * x[1]**2),
-                              lambda x: (-x[0] + 3 * x[0]**2,
-                                         1 - 3 * x[0] - x[1] + 3 * x[0] * x[1]),
-                              lambda x: (6 * x[0] - 3 * x[0] * x[1] - 6 * x[0]**2,
-                                         3 * x[1] - 6 * x[0] * x[1] - 3 * x[1]**2),
-                              lambda x: (3 * x[0] - 6 * x[0] * x[1] - 3 * x[0]**2,
-                                         6 * x[1] - 3 * x[0] * x[1] - 6 * x[1]**2)]
+    reference_triangle_rt1 = [lambda x: (-x[0], -x[1]), lambda x: (x[0] - 1, x[1]),
+                              lambda x: (-x[0], 1 - x[1])]
+    reference_triangle_rt2 = [lambda x: (x[0] - 3 * x[0]**2, x[1] - 3 * x[0] * x[1]),
+                              lambda x: (x[0] - 3 * x[0] * x[1], x[1] - 3 * x[1]**2),
+                              lambda x: (-2 + 5 * x[0] + 3 * x[1] - 3 * x[0] * x[1] - 3 * x[0]**2,
+                                         2 * x[1] - 3 * x[0] * x[1] - 3 * x[1]**2),
+                              lambda x: (1.0 - x[0] - 3 * x[1] + 3 * x[0] * x[1], x[1] + 3 * x[1]**2),
+                              lambda x: (-2 * x[0] + 3 * x[0] * x[1] + 3 * x[0] ** 2,
+                                         2 - 3 * x[0] - 5 * x[1] + 3 * x[0] * x[1] + 3 * x[1]**2),
+                              lambda x: (x[0] - 3 * x[0]**2,
+                                         -1 + 3 * x[0] + x[1] - 3 * x[0] * x[1]),
+                              lambda x: (-6 * x[0] + 3 * x[0] * x[1] + 6 * x[0]**2,
+                                         -3 * x[1] + 6 * x[0] * x[1] + 3 * x[1]**2),
+                              lambda x: (-3 * x[0] + 6 * x[0] * x[1] + 3 * x[0]**2,
+                                         -6 * x[1] + 3 * x[0] * x[1] + 6 * x[1]**2)]
     reference_triangle_ned1 = [lambda x: (-x[1], x[0]), lambda x: (x[1], 1 - x[0]),
                                lambda x: (1.0 - x[1], x[0])]
-    reference_tetrahedron_rt1 = [lambda x: (-x[0], -x[1], -x[2]),
-                                 lambda x: (-1.0 + x[0], x[1], x[2]),
-                                 lambda x: (-x[0], 1.0 - x[1], -x[2]),
-                                 lambda x: (x[0], x[1], -1.0 + x[2])]
+    reference_tetrahedron_rt1 = [lambda x: (2 * x[0], 2 * x[1], 2 * x[2]),
+                                 lambda x: (2 - 2 * x[0], -2 * x[1], -2 * x[2]),
+                                 lambda x: (2 * x[0], 2 * x[1] - 2, 2 * x[2]),
+                                 lambda x: (-2 * x[0], -2 * x[1], 2 - 2 * x[2])]
     reference_tetrahedron_bdm1 = [lambda x: (-3 * x[0], x[1], x[2]),
                                   lambda x: (x[0], -3 * x[1], x[2]),
                                   lambda x: (x[0], x[1], -3 * x[2]),
@@ -171,12 +171,12 @@ supported (non-mixed) for low degrees"""
              ("Discontinuous Lagrange", "tetrahedron", 1, reference_tetrahedron_1),
              # ("Brezzi-Douglas-Marini", "triangle", 1, reference_triangle_bdm1),
              ("Raviart-Thomas", "triangle", 1, reference_triangle_rt1),
-             ("Raviart-Thomas", "triangle", 2, reference_triangle_rt2),
-             #("Discontinuous Raviart-Thomas", "triangle", 1, reference_triangle_rt1),
-             #("Discontinuous Raviart-Thomas", "triangle", 2, reference_triangle_rt2),
+             # ("Raviart-Thomas", "triangle", 2, reference_triangle_rt2),
+             # ("Discontinuous Raviart-Thomas", "triangle", 1, reference_triangle_rt1),
+             # ("Discontinuous Raviart-Thomas", "triangle", 2, reference_triangle_rt2),
              ("N1curl", "triangle", 1, reference_triangle_ned1),
              ("Raviart-Thomas", "tetrahedron", 1, reference_tetrahedron_rt1),
-             ("Discontinuous Raviart-Thomas", "tetrahedron", 1, reference_tetrahedron_rt1),
+             # ("Discontinuous Raviart-Thomas", "tetrahedron", 1, reference_tetrahedron_rt1),
              # ("Brezzi-Douglas-Marini", "tetrahedron", 1, reference_tetrahedron_bdm1),
              ("N1curl", "tetrahedron", 1, reference_tetrahedron_ned1)]
 
@@ -189,10 +189,10 @@ supported (non-mixed) for low degrees"""
         points = [random_point(element_coords(cell)) for i in range(5)]
         for x in points:
             table = element.tabulate(0, (x,))
-            basis = table[list(table.keys())[0]]
-            for i in range(len(basis)):
-                if not element.value_shape():
-                    assert round(float(basis[i]) - reference[i](x), 10) == 0.0
-                else:
-                    for k in range(element.value_shape()[0]):
-                        assert round(basis[i][k][0] - reference[i](x)[k], 10) == 0.0
+            basis = table[0]
+            if sum(element.value_shape) == 1:
+                for i, value in enumerate(basis[0]):
+                    assert numpy.isclose(value, reference[i](x))
+            else:
+                for i, ref in enumerate(reference):
+                    assert numpy.allclose(basis[0][i::len(reference)], ref(x))
