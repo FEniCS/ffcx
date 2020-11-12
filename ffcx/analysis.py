@@ -19,7 +19,6 @@ from collections import namedtuple
 import numpy
 
 import ufl
-from ffcx.parameters import default_parameters
 
 logger = logging.getLogger("ffcx")
 
@@ -37,6 +36,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     ----------
     ufl_objects
     parameters
+      FFCX parameters. These parameters take priority over all other set parameters.
 
     Returns
     -------
@@ -166,8 +166,6 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
 
-    parameters = default_parameters()
-
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data
     for id, integral_data in enumerate(form_data.integral_data):
@@ -179,47 +177,31 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
 
-        # ----- Extract precision
-        #
-        # The priority of precision determination is following
-        #
-        # 1. parameters["precision"]
-        # 2. specified in metadata of integral
-        p_default = parameters["precision"]
+        # Extract precision
+        p_default = -1
         precisions = set([integral.metadata().get("precision", p_default)
                           for integral in integral_data.integrals])
         precisions.discard(p_default)
 
-        if parameters["precision"] != p_default:
-            p = parameters["precision"]
-        elif len(precisions) == 1:
+        if len(precisions) == 1:
             p = precisions.pop()
         elif len(precisions) == 0:
+            # Default precision
             p = numpy.finfo("double").precision + 1  # == 16
-        elif len(precisions) > 1:
-            raise RuntimeError("Only one precision allowed within integrals grouped by subdomain.")
         else:
-            raise RuntimeError("Unable to determine quadrature degree.")
+            raise RuntimeError("Only one precision allowed within integrals grouped by subdomain.")
 
         integral_data.metadata["precision"] = p
 
-        qd_default = parameters["quadrature_degree"]
-        qr_default = parameters["quadrature_rule"]
+        qd_default = -1
+        qr_default = "default"
 
         for i, integral in enumerate(integral_data.integrals):
-            # ----- Extract quadrature degree
-            #
-            # The priority of quadrature degree determination is following
-            #
-            # 1. Parameters["quadrature_degree"]
-            # 2. Specified in metadata of integral
-            # 3. Estimated by UFL
+            # Extract quadrature degree
             qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
             qd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
 
-            if parameters["quadrature_degree"] != qd_default:
-                qd = parameters["quadrature_degree"]
-            elif qd_metadata != qd_default:
+            if qd_metadata != qd_default:
                 qd = qd_metadata
             else:
                 qd = qd_estimated
@@ -234,19 +216,8 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                         "Number of integration points per cell is: {}. Consider using 'quadrature_degree' "
                         "to reduce number.".format(num_points))
 
-            # ----- Extract quadrature rule
-            #
-            # The priority of quadrature rule determination is following
-            #
-            # 1. parameters["quadrature_rule"]
-            # 2. specified in metadata of integral
-            qr_metadata = integral.metadata().get("quadrature_rule", qr_default)
-            if parameters["quadrature_rule"] != qr_default:
-                qr = parameters["quadrature_rule"]
-            elif qr_metadata != qr_default:
-                qr = qr_metadata
-            else:
-                qr = qr_default
+            # Extract quadrature rule
+            qr = integral.metadata().get("quadrature_rule", qr_default)
 
             logger.info("Integral {}, integral group {}:".format(i, id))
             logger.info("--- quadrature rule: {}".format(qr))
