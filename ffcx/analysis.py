@@ -111,7 +111,7 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
 
 def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
     """Analyzes and preprocesses expressions."""
-    preserve_geometry_types = (ufl.CellVolume, ufl.FacetArea)
+    preserve_geometry_types = (ufl.classes.Jacobian, )
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
     expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
