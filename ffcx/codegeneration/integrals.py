@@ -308,7 +308,7 @@ class IntegralGenerator(object):
         else:
             raise NotImplementedError
 
-        if not self.ir.needs_permutation_data:
+        if not self.ir.table_needs_permutation_data[name]:
             return [L.ArrayDecl(
                 "static const double", name, table.shape, table, padlen=padlen)]
 
@@ -317,85 +317,44 @@ class IntegralGenerator(object):
         perm_n = 0
         dofmap = self.ir.table_dofmaps[name]
 
+        perm_data = []
         if 1 in entities:
             for edge in range(entities[1]):
-                edge_ref = self.backend.symbols.entity_reflection(L, (1, edge), self.ir.cell_shape)
-                perm = base_perms[perm_n]
-                for index, dof in enumerate(dofmap):
-                    if dof >= len(perm):
-                        from IPython import embed; embed()
-                    row = perm[dof]
-                    if not numpy.allclose(row, [1 if i == dof else 0 for i, j in enumerate(row)]):
-                        ################################# TODO ###########################################
-                        new_value = sum(row[i] * j for i, j in zip(dofmap, table[index]) if not numpy.isclose(row[i], 0))
-                        from IPython import embed; embed()
-                        table[index] = L.Conditional(edge_ref, new_value, table[index])
+                perm_data.append((
+                    self.backend.symbols.entity_reflection(L, (1, edge), self.ir.cell_shape),
+                    None,
+                    base_perms[perm_n]
+                ))
                 perm_n += 1
-
         if 2 in entities:
             for face in range(entities[2]):
-                face_ref = self.backend.symbols.entity_reflection(L, (2, face), self.ir.cell_shape)
-                print(f"Face {face} rot: {base_perms[perm_n]}")
+                for rot in range(1, face_rotation_order):
+                    perm_data.append((
+                        self.backend.symbols.entity_rotations(L, (2, face), self.ir.cell_shape),
+                        rot,
+                        numpy.linalg.matrix_power(base_perms[perm_n], rot)
+                    ))
                 perm_n += 1
-
-                face_rot = self.backend.symbols.entity_rotation(L, (2, face), self.ir.cell_shape)
-                print(f"Face {face} ref: {base_perms[perm_n]}")
+                perm_data.append((
+                    self.backend.symbols.entity_reflection(L, (2, face), self.ir.cell_shape),
+                    None,
+                    base_perms[perm_n]
+                ))
                 perm_n += 1
 
         assert perm_n == len(base_perms)
 
-        return [L.ArrayDecl(
-            "const double", name, table.shape, table, padlen=padlen)]
-
-
-
-        # If the space has no vector-valued dofs, return the static table
-        if not needs_permuting or 1:  ## TODO
-            return [L.ArrayDecl(
-                "static const double", name, table.shape, table, padlen=padlen)]
-
-        dofmap = self.ir.table_dofmaps[name]
-
-        # Make the table have CExpr type so that conditionals can be put in it
-        if has_reflections or has_rotations:
-            table = numpy.array(table, dtype=L.CExpr)
-
-        # Multiply dofs that whose reversed by reflecting an entity by 1 or -1
-        if has_reflections:
-            conditions = self.get_entity_reflection_conditions(table, name)
-            for indices in itertools.product(*[range(n) for n in table.shape]):
-                if conditions[indices] != c_false:
-                    table[indices] = L.Conditional(conditions[indices], -table[indices], table[indices])
-
-        # If the table has no rotations, then we are done
-        if not has_rotations:
-            return [L.ArrayDecl(
-                "const double", name, table.shape, table, padlen=padlen)]
-
-        # Correct data for rotations and reflections of face tangents
-        for (entity_dim, entity_n), face_tangent_data in rot.items():
-            if entity_dim != 2:
-                warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-                continue
-
-            for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
-                # Store current values in temps
-                temps = {}
-                for perm, ft in face_tangent_data.items():
-                    for combo in ft.values():
-                        for dof, w in combo:
-                            if dof in dofmap:
-                                temps[dof] = table[indices + (dofmap.index(dof), )]
-                # Replace values with conditionals containing linear combinations of values in temps
-                for perm, ft in face_tangent_data.items():
-                    entity_perm = self.backend.symbols.entity_permutation(L, (entity_dim, entity_n), self.ir.cell_shape)
-                    for dof, combo in ft.items():
-                        if dof in dofmap:
-                            table[indices + (dofmap.index(dof), )] = L.Conditional(
-                                L.EQ(entity_perm, perm),
-                                sum(w * temps[dof] for dof, w in combo),
-                                table[indices + (dofmap.index(dof), )]
-                            )
+        for entity_perm, value, perm in perm_data:
+            if value is None:
+                condition = entity_perm
+            else:
+                condition = L.EQ(entity_perm, value)
+            for index, dof in enumerate(dofmap):
+                row = perm[index]
+                if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
+                    for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
+                        new_value = sum(i * j for i, j in zip(row, table[indices]) if not numpy.isclose(i, 0))
+                        table[indices + (index, )] = L.Conditional(condition, new_value, table[indices + (index, )])
 
         return [L.ArrayDecl(
             "const double", name, table.shape, table, padlen=padlen)]

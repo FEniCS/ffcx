@@ -180,7 +180,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     # Extract arrays for the right scalar component
     component_tables = []
     sh = ufl_element.value_shape()
-    print('shape', sh)
     if sh == ():
         # Scalar valued element
         for entity in range(num_entities):
@@ -193,7 +192,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
             component_tables.append(tbl)
     elif len(sh) > 0 and ufl_element.num_sub_elements() == 0:
-        print('Tensor valued')
         # 2-tensor-valued elements, not a tensor product
         # mapping flat_component back to tensor component
         (_, f2t) = ufl.permutation.build_component_numbering(
@@ -217,7 +215,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                 raise RuntimeError(
                     "Cannot tabulate tensor valued element with rank > 2")
     else:
-        print("Vector/mixed element", sh)
         # Vector-valued or mixed element
         sub_dims = [0] + [e.ndofs for e in libtab_element.sub_elements]
         sub_cmps = [0] + [e.value_size for e in libtab_element.sub_elements]
@@ -798,6 +795,7 @@ def build_optimized_tables(quadrature_rule,
         # Some more metadata stored under the ename
         ttype = unique_table_ttypes[ename]
 
+        offset = 0
         # Add offset to dofmap and dofrange for restricted terminals
         if mt.restriction and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of dofs before table optimization
@@ -806,7 +804,9 @@ def build_optimized_tables(quadrature_rule,
             dofrange = (b + offset, e + offset)
             dofmap = tuple(i + offset for i in dofmap)
 
-        base_perms = create_libtab_element(table_origins[name][0]).base_permutations
+        base_perms = [
+            [[p[i - offset][j - offset] for j in dofmap] for i in dofmap]
+            for p in create_libtab_element(table_origins[name][0]).base_permutations]
 
         needs_permutation_data = False
         for p in base_perms:

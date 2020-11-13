@@ -80,7 +80,7 @@ ir_integral = namedtuple('ir_integral', ['integral_type', 'subdomain_id',
                                          'coefficient_offsets', 'original_constant_offsets', 'params', 'cell_shape',
                                          'unique_tables', 'unique_table_types', 'table_dofmaps',
                                          'table_dof_base_permutations',
-                                         'integrand', 'name', 'precision', 'needs_permutation_data'])
+                                         'integrand', 'name', 'precision', 'table_needs_permutation_data', 'needs_permutation_data'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
                                                  'geometric_dimension', 'topological_dimension', 'dofs',
@@ -91,7 +91,7 @@ ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'para
                                              'coefficient_numbering', 'coefficient_offsets',
                                              'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
                                              'original_constant_offsets', 'original_coefficient_positions', 'points',
-                                             'needs_permutation_data'])
+                                             'table_needs_permutation_data', 'needs_permutation_data'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
 

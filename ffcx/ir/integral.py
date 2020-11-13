@@ -61,6 +61,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     ir["table_dofmaps"] = {}
     ir["table_dof_base_permutations"] = {}
     ir["needs_permutation_data"] = 0
+    ir["table_needs_permutation_data"] = {}
 
     for quadrature_rule, integrand in integrands.items():
 
@@ -96,13 +97,10 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
-        ir["needs_permutation_data"] = 0
         for td in mt_unique_table_reference.values():
+            ir["table_needs_permutation_data"][td.name] = td.needs_permutation_data
             if td.needs_permutation_data:
                 ir["needs_permutation_data"] = 1
-                break
-
-        for td in mt_unique_table_reference.values():
             ir["table_dof_base_permutations"][td.name] = td.dof_base_permutations
             ir["table_dofmaps"][td.name] = td.dofmap
 
