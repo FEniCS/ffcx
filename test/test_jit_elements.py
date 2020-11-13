@@ -7,7 +7,7 @@
 import numpy as np
 import pytest
 
-import ffcx
+# import ffcx
 # import ffcx.codegeneration.jit
 import ufl
 
