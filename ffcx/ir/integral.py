@@ -22,7 +22,6 @@ from ffcx.ir.elementtables import build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
-from ffcx.libtab_interface import create_libtab_element
 
 logger = logging.getLogger("ffcx")
 

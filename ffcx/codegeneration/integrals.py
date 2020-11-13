@@ -7,7 +7,6 @@
 import collections
 import itertools
 import logging
-import warnings
 
 import numpy
 
@@ -287,7 +286,6 @@ class IntegralGenerator(object):
         """Declare a table.
         If the dof dimensions of the table have dof rotations, apply these rotations."""
         L = self.backend.language
-        c_false = L.LiteralBool(False)
 
         base_perms = self.ir.table_dof_base_permutations[name]
 

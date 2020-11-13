@@ -8,14 +8,14 @@ import numpy as np
 import pytest
 
 import ffcx
-import ffcx.codegeneration.jit
+# import ffcx.codegeneration.jit
 import ufl
 
 # families = ["Lagrange", "Brezzi-Douglas-Marini", "Raviart-Thomas", "N1curl", "N2curl"]
-families = ["Lagrange", "Raviart-Thomas", "N1curl", "N2curl"]
+# families = ["Lagrange", "Raviart-Thomas", "N1curl", "N2curl"]
 # cells = [ufl.triangle, ufl.quadrilateral, ufl.tetrahedron, ufl.hexahedron]
-cells = [ufl.triangle, ufl.tetrahedron]
-degrees = [1, 2, 3]
+# cells = [ufl.triangle, ufl.tetrahedron]
+# degrees = [1, 2, 3]
 
 
 @pytest.fixture(scope="module")
