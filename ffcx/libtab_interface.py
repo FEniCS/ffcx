@@ -137,7 +137,7 @@ class BlockedElement(LibtabBaseElement):
             for i, row in enumerate(perm):
                 for j, entry in enumerate(row):
                     new_perm[i * self.block_size: (i + 1) * self.block_size,
-                             j * self.block_size: (j + 1) * self.block_size] = entry
+                             j * self.block_size: (j + 1) * self.block_size] = entry * numpy.identity(self.block_size)
             output.append(new_perm)
         return output
 

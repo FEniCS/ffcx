@@ -308,23 +308,28 @@ class IntegralGenerator(object):
         else:
             raise NotImplementedError
 
-        perm_n = 0
-        needs_permuting = False
+        if not self.ir.needs_permutation_data:
+            return [L.ArrayDecl(
+                "static const double", name, table.shape, table, padlen=padlen)]
 
-        return [L.ArrayDecl(
-            "static const double", name, table.shape, table, padlen=padlen)]
+        table = numpy.array(table, dtype=L.CExpr)
+
+        perm_n = 0
+        dofmap = self.ir.table_dofmaps[name]
 
         if 1 in entities:
             for edge in range(entities[1]):
                 edge_ref = self.backend.symbols.entity_reflection(L, (1, edge), self.ir.cell_shape)
                 perm = base_perms[perm_n]
-                for dof, row in enumerate(perm):
+                for index, dof in enumerate(dofmap):
+                    if dof >= len(perm):
+                        from IPython import embed; embed()
+                    row = perm[dof]
                     if not numpy.allclose(row, [1 if i == dof else 0 for i, j in enumerate(row)]):
-                        if not needs_permuting:
-                            needs_permuting = True
-                            table = numpy.array(table, dtype=L.CExpr)
                         ################################# TODO ###########################################
-                        new_value = sum(i * j for i, j in zip(row, table[dof]) if not numpy.isclose(i, 0))
+                        new_value = sum(row[i] * j for i, j in zip(dofmap, table[index]) if not numpy.isclose(row[i], 0))
+                        from IPython import embed; embed()
+                        table[index] = L.Conditional(edge_ref, new_value, table[index])
                 perm_n += 1
 
         if 2 in entities:
@@ -339,7 +344,10 @@ class IntegralGenerator(object):
 
         assert perm_n == len(base_perms)
 
-        # from IPython import embed; embed()
+        return [L.ArrayDecl(
+            "const double", name, table.shape, table, padlen=padlen)]
+
+
 
         # If the space has no vector-valued dofs, return the static table
         if not needs_permuting or 1:  ## TODO

@@ -36,7 +36,7 @@ valid_ttypes = set(("quadrature", )) | set(
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
     ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise", "is_uniform",
-     "is_permuted"])
+     "is_permuted", "dof_base_permutations", "needs_permutation_data"])
 
 
 # TODO: Get restriction postfix from somewhere central
@@ -806,10 +806,18 @@ def build_optimized_tables(quadrature_rule,
             dofrange = (b + offset, e + offset)
             dofmap = tuple(i + offset for i in dofmap)
 
+        base_perms = create_libtab_element(table_origins[name][0]).base_permutations
+
+        needs_permutation_data = False
+        for p in base_perms:
+            if not numpy.allclose(p, numpy.identity(len(p))):
+                needs_permutation_data = True
+
         # Store reference to unique table for this mt
         mt_unique_table_reference[mt] = unique_table_reference_t(
             ename, unique_tables[ename], dofrange, dofmap, original_dim, ttype,
-            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted)
+            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted, base_perms,
+            needs_permutation_data)
 
     return (unique_tables, unique_table_ttypes, unique_table_num_dofs,
-            mt_unique_table_reference, table_origins, needs_permutation_data)
+            mt_unique_table_reference)

@@ -86,8 +86,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                              if is_modified_terminal(v['expression'])}
 
         (unique_tables, unique_table_types, unique_table_num_dofs,
-         mt_unique_table_reference, table_origins,
-         needs_permutation_data) = build_optimized_tables(
+         mt_unique_table_reference) = build_optimized_tables(
             quadrature_rule,
             cell,
             integral_type,
@@ -97,14 +96,14 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
-        if needs_permutation_data:
-            ir["needs_permutation_data"] = 1
-
-        for k, v in table_origins.items():
-            ir["table_dof_base_permutations"][k] = create_libtab_element(v[0]).base_permutations
-            ir["needs_permutation_data"] = 1  # TODO: make 0 if all matrices are identity
+        ir["needs_permutation_data"] = 0
+        for td in mt_unique_table_reference.values():
+            if td.needs_permutation_data:
+                ir["needs_permutation_data"] = 1
+                break
 
         for td in mt_unique_table_reference.values():
+            ir["table_dof_base_permutations"][td.name] = td.dof_base_permutations
             ir["table_dofmaps"][td.name] = td.dofmap
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
