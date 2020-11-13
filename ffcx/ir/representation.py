@@ -221,18 +221,31 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
     if hasattr(libtab_element, "block_size"):
         ir["block_size"] = libtab_element.block_size
+        libtab_element = libtab_element.sub_element
     else:
         ir["block_size"] = 1
 
     # Precompute repeatedly used items
-    num_dofs_per_entity = []  # TODO: _num_dofs_per_entity(fiat_element)
-    entity_dofs = []  # TODO: fiat_element.entity_dofs()
+    for i in libtab_element.entity_dofs:
+        if max(i) != min(i):
+            raise RuntimeError("Elements withe different numbers of DOFs on subentities of the same dimension"
+                               " not yet supported in FFcx.")
+    num_dofs_per_entity = [i[0] for i in libtab_element.entity_dofs]
+
+    start_dof = 0
+    entity_dofs = []
+    for i in libtab_element.entity_dofs:
+        dofs_list = []
+        for j in i:
+            dofs_list.append([start_dof + k for k in range(j)])
+            start_dof += j
+        entity_dofs.append(dofs_list)
 
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
 
     ir["num_global_support_dofs"] = 0  # TODO: _num_global_support_dofs(fiat_element)
-    ir["num_element_support_dofs"] = 0  # TODO: fiat_element.space_dimension() - ir["num_global_support_dofs"]
+    ir["num_element_support_dofs"] = libtab_element.ndofs - ir["num_global_support_dofs"]
 
     return ir_dofmap(**ir)
 
