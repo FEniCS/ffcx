@@ -38,7 +38,7 @@ def create_quadrature(cellname, degree, rule):
     if cellname == "tetrahedron":
         return libtab.make_quadrature([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], degree)
 
-    raise NotImplementedError(f"Quadrature on {celltype} cell not implemented.")
+    raise NotImplementedError(f"Quadrature on {cellname} cell not implemented.")
     return None, None
 
 
