@@ -73,6 +73,14 @@ class LibtabBaseElement:
     def entity_dof_numbers(self):
         raise NotImplementedError
 
+    @property
+    def coeffs(self):
+        raise NotImplementedError
+
+    @property
+    def num_global_support_dofs(self):
+        raise NotImplementedError
+
 
 class LibtabElement(LibtabBaseElement):
     def __init__(self, element):
@@ -103,6 +111,7 @@ class LibtabElement(LibtabBaseElement):
 
     @property
     def entity_dof_numbers(self):
+        # TODO: move this to libtab, then remove this wrapper class
         start_dof = 0
         entity_dofs = []
         for i in self.entity_dofs:
@@ -112,6 +121,15 @@ class LibtabElement(LibtabBaseElement):
                 start_dof += j
             entity_dofs.append(dofs_list)
         return entity_dofs
+
+    @property
+    def coeffs(self):
+        return self.element.coeffs
+
+    @property
+    def num_global_support_dofs(self):
+        # TODO
+        return 0
 
 
 class MixedElement(LibtabBaseElement):
@@ -175,6 +193,21 @@ class MixedElement(LibtabBaseElement):
             start_dof += e.ndofs
         return dofs
 
+    @property
+    def coeffs(self):
+        coeff_matrix = numpy.zeros((
+            sum(e.ndofs for e in self.sub_elements),
+            max(e.coeffs.shape[1] for e in self.sub_elements)))
+        start_dof = 0
+        for e in self.sub_elements:
+            coeff_matrix[start_dof:e.ndofs, :e.coeffs.shape[1]] = e.coeffs
+            start_dof += e.ndofs
+        return coeff_matrix
+
+    @property
+    def num_global_support_dofs(self):
+        return sum(e.num_global_support_dofs for e in self.sub_elements)
+
 
 class BlockedElement(LibtabBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
@@ -236,3 +269,12 @@ class BlockedElement(LibtabBaseElement):
     def entity_dof_numbers(self):
         # TODO: should this return this, or should it take blocks into account?
         return self.sub_element.entity_dof_numbers
+
+    @property
+    def coeffs(self):
+        # TODO: should this return this, or should it take blocks into account?
+        return self.sub_element.coeffs
+
+    @property
+    def num_global_support_dofs(self):
+        return self.sub_element.num_global_support_dofs * self.block_size
