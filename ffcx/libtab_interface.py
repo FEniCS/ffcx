@@ -23,23 +23,26 @@ def create_libtab_element(ufl_element):
     if isinstance(ufl_element, ufl.MixedElement):
         return MixedElement([create_libtab_element(e) for e in ufl_element.sub_elements()])
 
-    return libtab.create_element(
-        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree())
+    return LibtabElement(libtab.create_element(
+        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
 
 
 def create_quadrature(cellname, degree, rule):
-    # TODO
     if cellname == "vertex":
         return [[]], [1]
-    if cellname == "interval":
-        return libtab.make_quadrature([[0], [1]], degree)
-    if cellname == "triangle":
-        return libtab.make_quadrature([[0, 0], [1, 0], [0, 1]], degree)
-    if cellname == "tetrahedron":
-        return libtab.make_quadrature([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], degree)
+    return libtab.make_quadrature(libtab_cells[cellname], degree)
 
-    raise NotImplementedError(f"Quadrature on {cellname} cell not implemented.")
-    return None, None
+
+def reference_cell_vertices(cellname):
+    return libtab.geometry(libtab_cells[cellname])
+
+
+def map_facet_points(points, facet, cellname):
+    geom = libtab.geometry(libtab_cells[cellname])
+    facet_vertices = [geom[0] for i in libtab.topology(libtab_cells[cellname])[-2][facet]]
+
+    return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
+            for p in points]
 
 
 class LibtabBaseElement:
@@ -61,6 +64,54 @@ class LibtabBaseElement:
     @property
     def value_shape(self):
         raise NotImplementedError
+
+    @property
+    def entity_dofs(self):
+        raise NotImplementedError
+
+    @property
+    def entity_dof_numbers(self):
+        raise NotImplementedError
+
+
+class LibtabElement(LibtabBaseElement):
+    def __init__(self, element):
+        self.element = element
+
+    def tabulate(self, nderivs, points):
+        return self.element.tabulate(nderivs, points)
+
+    @property
+    def base_permutations(self):
+        return self.element.base_permutations
+
+    @property
+    def ndofs(self):
+        return self.element.ndofs
+
+    @property
+    def value_size(self):
+        return self.element.value_size
+
+    @property
+    def value_shape(self):
+        return self.element.value_shape
+
+    @property
+    def entity_dofs(self):
+        return self.element.entity_dofs
+
+    @property
+    def entity_dof_numbers(self):
+        start_dof = 0
+        entity_dofs = []
+        for i in self.entity_dofs:
+            dofs_list = []
+            for j in i:
+                dofs_list.append([start_dof + k for k in range(j)])
+                start_dof += j
+            entity_dofs.append(dofs_list)
+        return entity_dofs
 
 
 class MixedElement(LibtabBaseElement):
@@ -106,6 +157,23 @@ class MixedElement(LibtabBaseElement):
         for e in self.sub_elements:
             shape += e.value_shape
         return shape
+
+    @property
+    def entity_dofs(self):
+        data = [e.entity_dofs for e in self.sub_elements]
+        return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
+                for tdim, entities in enumerate(data[0])]
+
+    @property
+    def entity_dof_numbers(self):
+        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dof_numbers]
+        start_dof = 0
+        for e in self.sub_elements:
+            for tdim, entities in e.entity_dof_numbers:
+                for entity_n, entity_dofs in enumerate(entities):
+                    dofs[tdim][entity_n] += [start_dof + i for i in entity_dofs]
+            start_dof += e.ndofs
+        return dofs
 
 
 class BlockedElement(LibtabBaseElement):
@@ -160,14 +228,12 @@ class BlockedElement(LibtabBaseElement):
     def value_shape(self):
         return (self.value_size, )
 
+    @property
+    def entity_dofs(self):
+        return self.sub_element.entity_dofs
 
-def reference_cell_vertices(cellname):
-    return libtab.geometry(libtab_cells[cellname])
+    @property
+    def entity_dof_numbers(self):
+        # TODO: should this return this, or should it take blocks into account?
+        return self.sub_element.entity_dof_numbers
 
-
-def map_facet_points(points, facet, cellname):
-    geom = libtab.geometry(libtab_cells[cellname])
-    facet_vertices = [geom[0] for i in libtab.topology(libtab_cells[cellname])[-2][facet]]
-
-    return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
-            for p in points]

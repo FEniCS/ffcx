@@ -37,62 +37,45 @@ logger = logging.getLogger("ffcx")
 # List of supported integral types
 ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
 
-ir_form = namedtuple('ir_form', ['id', 'prefix', 'name', 'signature', 'rank',
-                                 'num_coefficients', 'num_constants', 'name_from_uflfile',
-                                 'function_spaces',
-                                 'original_coefficient_position',
-                                 'coefficient_names', 'constant_names',
-                                 'create_coordinate_mapping', 'create_finite_element',
-                                 'create_dofmap', 'create_cell_integral',
-                                 'get_cell_integral_ids', 'create_exterior_facet_integral',
-                                 'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
-                                 'get_interior_facet_integral_ids', 'create_vertex_integral',
-                                 'get_vertex_integral_ids', 'create_custom_integral',
-                                 'get_custom_integral_ids'])
-ir_element = namedtuple('ir_element', ['id', 'name', 'signature', 'cell_shape',
-                                       'topological_dimension',
-                                       'geometric_dimension', 'space_dimension', 'value_shape',
-                                       'reference_value_shape', 'degree', 'family', 'evaluate_basis',
-                                       'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
-                                       'base_permutations', 'block_size',
-                                       'create_sub_element', 'entity_dofs'])
-ir_dofmap = namedtuple('ir_dofmap', ['id', 'name', 'signature', 'num_global_support_dofs',
-                                     'num_element_support_dofs', 'num_entity_dofs',
-                                     'tabulate_entity_dofs', 'base_permutations',
-                                     'num_sub_dofmaps', 'create_sub_dofmap',
-                                     'block_size'])
-ir_coordinate_map = namedtuple('ir_coordinate_map', ['id', 'prefix', 'name', 'signature', 'cell_shape',
-                                                     'topological_dimension',
-                                                     'geometric_dimension',
-                                                     'compute_physical_coordinates',
-                                                     'compute_reference_coordinates', 'compute_jacobians',
-                                                     'compute_jacobian_determinants',
-                                                     'compute_jacobian_inverses', 'compute_geometry', 'tables',
-                                                     'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
-                                                     'coordinate_finite_element_classname',
-                                                     'scalar_coordinate_finite_element_classname',
-                                                     'scalar_dofmap_name', 'is_affine'])
-ir_integral = namedtuple('ir_integral', ['integral_type', 'subdomain_id',
-                                         'rank', 'geometric_dimension', 'topological_dimension',
-                                         'entitytype', 'num_facets', 'num_vertices', 'needs_oriented',
-                                         'enabled_coefficients', 'element_dimensions', 'element_ids',
-                                         'tensor_shape', 'coefficient_numbering',
-                                         'coefficient_offsets', 'original_constant_offsets', 'params', 'cell_shape',
-                                         'unique_tables', 'unique_table_types', 'table_dofmaps',
-                                         'table_dof_base_permutations',
-                                         'integrand', 'name', 'precision', 'table_needs_permutation_data',
-                                         'needs_permutation_data'])
+ir_form = namedtuple('ir_form', [
+    'id', 'prefix', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
+    'name_from_uflfile', 'function_spaces', 'original_coefficient_position',
+    'coefficient_names', 'constant_names', 'create_coordinate_mapping', 'create_finite_element',
+    'create_dofmap', 'create_cell_integral', 'get_cell_integral_ids', 'create_exterior_facet_integral',
+    'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
+    'get_interior_facet_integral_ids', 'create_vertex_integral', 'get_vertex_integral_ids',
+    'create_custom_integral', 'get_custom_integral_ids'])
+ir_element = namedtuple('ir_element', [
+    'id', 'name', 'signature', 'cell_shape', 'topological_dimension', 'expansion_coefficients',
+    'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
+    'family', 'evaluate_basis', 'evaluate_dof', 'tabulate_dof_coordinates', 'num_sub_elements',
+    'block_size', 'create_sub_element', 'entity_dofs'])
+ir_dofmap = namedtuple('ir_dofmap', [
+    'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
+    'tabulate_entity_dofs', 'base_permutations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
+ir_coordinate_map = namedtuple('ir_coordinate_map', [
+    'id', 'prefix', 'name', 'signature', 'cell_shape', 'topological_dimension', 'geometric_dimension',
+    'compute_physical_coordinates', 'compute_reference_coordinates', 'compute_jacobians',
+    'compute_jacobian_determinants', 'compute_jacobian_inverses', 'compute_geometry', 'tables',
+    'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
+    'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname',
+    'scalar_dofmap_name', 'is_affine'])
+ir_integral = namedtuple('ir_integral', [
+    'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
+    'num_facets', 'num_vertices', 'needs_oriented', 'enabled_coefficients', 'element_dimensions',
+    'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
+    'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
+    'table_dofmaps', 'table_dof_base_permutations', 'integrand', 'name', 'precision',
+    'table_needs_permutation_data', 'needs_permutation_data'])
 ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
-ir_evaluate_dof = namedtuple('ir_evaluate_dof', ['mappings', 'reference_value_size', 'physical_value_size',
-                                                 'geometric_dimension', 'topological_dimension', 'dofs',
-                                                 'physical_offsets', 'cell_shape'])
-ir_expression = namedtuple('ir_expression', ['name', 'element_dimensions', 'params', 'unique_tables',
-                                             'unique_table_types', 'integrand', 'table_dofmaps',
-                                             'table_dof_base_permutations',
-                                             'coefficient_numbering', 'coefficient_offsets',
-                                             'integral_type', 'entitytype', 'tensor_shape', 'expression_shape',
-                                             'original_constant_offsets', 'original_coefficient_positions', 'points',
-                                             'table_needs_permutation_data', 'needs_permutation_data'])
+ir_evaluate_dof = namedtuple('ir_evaluate_dof', [
+    'mappings', 'reference_value_size', 'physical_value_size', 'geometric_dimension',
+    'topological_dimension', 'dofs', 'physical_offsets', 'cell_shape'])
+ir_expression = namedtuple('ir_expression', [
+    'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
+    'table_dofmaps', 'table_dof_base_permutations', 'coefficient_numbering', 'coefficient_offsets',
+    'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
+    'original_coefficient_positions', 'points', 'table_needs_permutation_data', 'needs_permutation_data'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
 
@@ -188,14 +171,16 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    ir["base_permutations"] = libtab_element.base_permutations
+    # ir["base_permutations"] = libtab_element.base_permutations
 
     if hasattr(libtab_element, "block_size"):
         ir["block_size"] = libtab_element.block_size
     else:
         ir["block_size"] = 1
 
-    ir["entity_dofs"] = None  # TODO
+    ir["entity_dofs"] = libtab_element.entity_dof_numbers
+
+    ir["expansion_coefficients"] = None  # TODO
 
     return ir_element(**ir)
 
@@ -232,17 +217,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
                                " not yet supported in FFcx.")
     num_dofs_per_entity = [i[0] for i in libtab_element.entity_dofs]
 
-    start_dof = 0
-    entity_dofs = []
-    for i in libtab_element.entity_dofs:
-        dofs_list = []
-        for j in i:
-            dofs_list.append([start_dof + k for k in range(j)])
-            start_dof += j
-        entity_dofs.append(dofs_list)
-
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_entity_dofs"] = (entity_dofs, num_dofs_per_entity)
+    ir["tabulate_entity_dofs"] = (libtab_element.entity_dof_numbers, num_dofs_per_entity)
 
     ir["num_global_support_dofs"] = 0  # TODO: _num_global_support_dofs(fiat_element)
     ir["num_element_support_dofs"] = libtab_element.ndofs - ir["num_global_support_dofs"]

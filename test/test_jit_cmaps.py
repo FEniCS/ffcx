@@ -31,7 +31,7 @@ def test_cmap_triangle(degree, compile_args):
     X = np.array([[1 / 3, 1 / 3]], dtype=np.float64)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
     compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    # assert np.isclose(sum(phi), 1.0)
+    assert np.isclose(sum(phi), 1.0)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
@@ -66,7 +66,7 @@ def xtest_cmap_quads(degree, compile_args):
     X = np.array([[0.5, 0.5]], dtype=np.float64)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
     compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    # assert np.isclose(sum(phi), 1.0)
+    assert np.isclose(sum(phi), 1.0)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
@@ -102,7 +102,7 @@ def xtest_cmap_hex(degree, compile_args):
     X = np.array([[0.5, 0.5, 0.5]], dtype=np.float64)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
     compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    # assert np.isclose(sum(phi), 1.0)
+    assert np.isclose(sum(phi), 1.0)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
@@ -138,7 +138,7 @@ def test_cmap_tet(degree, compile_args):
     X = np.array([[0.25, 0.25, 0.25]], dtype=np.float64)
     X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
     compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    # assert np.isclose(sum(phi), 1.0)
+    assert np.isclose(sum(phi), 1.0)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
