@@ -236,4 +236,3 @@ class BlockedElement(LibtabBaseElement):
     def entity_dof_numbers(self):
         # TODO: should this return this, or should it take blocks into account?
         return self.sub_element.entity_dof_numbers
-
