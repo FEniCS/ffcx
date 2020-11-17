@@ -6,7 +6,6 @@
 
 import ffcx
 import ffcx.codegeneration.jit
-import numpy as np
 import pytest
 
 import ufl
