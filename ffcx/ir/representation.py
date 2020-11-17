@@ -666,8 +666,8 @@ def _tabulate_dof_coordinates(ufl_element, element):
     """Compute intermediate representation of tabulate_dof_coordinates."""
     raise NotImplementedError
 
-    if uses_integral_moments(element):
-        return {}
+    # if uses_integral_moments(element):
+    #    return {}
 
     # Bail out if any dual basis member is missing (element is not
     # nodal), this is strictly not necessary but simpler

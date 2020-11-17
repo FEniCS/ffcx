@@ -10,7 +10,6 @@
 
 from collections import defaultdict
 import logging
-import warnings
 
 import numpy
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
@@ -141,7 +140,7 @@ def entity_rotations(L, i, cell_shape):
     cell_info = L.Symbol("cell_permutation")
     assert cell_shape in ["tetrahedron", "hexahedron"]
     assert i[0] == 2
-    return L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * i[1]), 7)
+    return L.BitwiseAnd(L.BitShiftR(cell_info, 3 * i[1]), 7)
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):
@@ -417,7 +416,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     if len(apply_permutations) > 0:
         apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
                               for i in range(temporary_variables)] + apply_permutations
-
 
     # Transform for each point
     point_loop_code = [
