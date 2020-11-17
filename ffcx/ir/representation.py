@@ -49,7 +49,8 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension', 'expansion_coefficients',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'tabulate_dof_coordinates', 'num_sub_elements', 'block_size', 'create_sub_element',
-    'entity_dofs', 'base_permutations'])
+    'entity_dofs', 'base_permutations', 'reference_offsets', 'physical_offsets', 'dof_mappings',
+    'num_reference_components'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'base_permutations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
@@ -178,6 +179,11 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["base_permutations"] = libtab_element.base_permutations
     ir["expansion_coefficients"] = libtab_element.coeffs
+
+    ir["reference_offsets"] = [0 for i in range(libtab_element.ndofs)]  # TODO
+    ir["physical_offsets"] = [0 for i in range(libtab_element.ndofs)]  # TODO
+    ir["dof_mappings"] = ["affine" for i in range(libtab_element.ndofs)]  # TODO
+    ir["num_reference_components"] = 1  # TODO
 
     return ir_element(**ir)
 

@@ -12,6 +12,7 @@ from collections import defaultdict
 import logging
 import warnings
 
+import numpy
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
 from ffcx.codegeneration.evalderivs import (_generate_combinations,
@@ -118,23 +119,13 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
 
 
 def evaluate_reference_basis(L, ir, parameters):
-    data = ir.evaluate_basis
-    if isinstance(data, str):
-        # Function has not been requested
-        msg = "evaluate_reference_basis: {}".format(data)
-        return [L.Comment(msg), L.Return(-1)]
-
-    return generate_evaluate_reference_basis(L, data, parameters)
+    # FIXME
+    return [L.Return(-1)]
 
 
 def evaluate_reference_basis_derivatives(L, ir, parameters):
-    data = ir.evaluate_basis
-    if isinstance(data, str):
-        # Function has not been requested
-        msg = "evaluate_reference_basis_derivatives: {}".format(data)
-        return [L.Comment(msg), L.Return(-1)]
-
-    return generate_evaluate_reference_basis_derivatives(L, data, ir.name, parameters)
+    # FIXME
+    return [L.Return(-1)]
 
 
 def entity_reflection(L, i, cell_shape):
@@ -157,21 +148,23 @@ def entity_reflection(L, i, cell_shape):
     return L.LiteralBool(False)
 
 
-def transform_reference_basis_derivatives(L, ir, parameters):
-    data = ir.evaluate_basis
-    if isinstance(data, str):
-        # Function has not been requested
-        msg = "transform_reference_basis_derivatives: {}".format(data)
-        return [L.Comment(msg), L.Return(-1)]
+def entity_rotations(L, i, cell_shape):
+    """Returns number of times an entity has been rotates."""
+    cell_info = L.Symbol("cell_permutation")
+    assert cell_shape in ["tetrahedron", "hexahedron"]
+    assert i[0] == 2
+    return L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * i[1]), 7)
 
+
+def transform_reference_basis_derivatives(L, ir, parameters):
     # Get some known dimensions
     # element_cellname = data["cellname"]
-    gdim = data["geometric_dimension"]
-    tdim = data["topological_dimension"]
-    max_degree = data["max_degree"]
-    reference_value_size = data["reference_value_size"]
-    physical_value_size = data["physical_value_size"]
-    num_dofs = len(data["dofs_data"])
+    gdim = ir.geometric_dimension
+    tdim = ir.topological_dimension
+    max_degree = ir.degree
+    reference_value_size = ufl.product(ir.reference_value_shape)
+    physical_value_size = ufl.product(ir.value_shape)
+    num_dofs = ir.space_dimension
 
     max_g_d = gdim**max_degree
     max_t_d = tdim**max_degree
@@ -278,51 +271,17 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         L.ArrayDecl(
             "const " + index_type,
             reference_offsets, (num_dofs, ),
-            values=[dof_data["reference_offset"] for dof_data in data["dofs_data"]]),
+            values=ir.reference_offsets),
         L.ArrayDecl(
             "const " + index_type,
             physical_offsets, (num_dofs, ),
-            values=[dof_data["physical_offset"] for dof_data in data["dofs_data"]])
+            values=ir.physical_offsets)
     ]
-
-    # Make array of which vector dofs to reflect the direction of
-    contains_reflections = False
-    reflect_dofs = []
-    c_false = L.LiteralBool(False)
-
-    for dre in ir.dof_reflection_entities:
-        if dre is None:
-            # Dof does not need reflecting, so put false in array
-            reflect_dofs.append(c_false)
-        else:
-            # Loop through entities that the direction of the dof depends on to
-            # make a conditional
-            ref = c_false
-            for j in dre:
-                new_ref = entity_reflection(L, j, ir.cell_shape)
-                if ref == c_false:
-                    # No condition has been added yet, so overwrite false
-                    ref = new_ref
-                elif ref == new_ref:
-                    # A != A is false
-                    ref = c_false
-                else:
-                    # This is not the first condition, so XOR
-                    ref = L.NE(ref, new_ref)
-            reflect_dofs.append(ref)
-            if ref != c_false:
-                # Mark this space as needing reflections
-                contains_reflections = True
-
-    # If one or more dofs need reflecting, write the array
-    if contains_reflections:
-        dof_attributes_code.append(L.ArrayDecl(
-            "const bool", L.Symbol("reflected_dofs"), (len(reflect_dofs), ), values=reflect_dofs))
 
     # Build dof lists for each mapping type
     mapping_dofs = defaultdict(list)
-    for idof, dof_data in enumerate(data["dofs_data"]):
-        mapping_dofs[dof_data["mapping"]].append(idof)
+    for idof, mapping in enumerate(ir.dof_mappings):
+        mapping_dofs[mapping].append(idof)
 
     # Generate code for each mapping type
     d = L.Symbol("d")
@@ -351,7 +310,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
 
         # How many components does each basis function with this mapping have?
         # This should be uniform, i.e. there should be only one element in this set:
-        num_reference_components, = set(data["dofs_data"][i]["num_components"] for i in idofs)
+        num_reference_components = ir.num_reference_components
 
         M_scale, M_row, num_physical_components = generate_element_mapping(
             mapping, i, num_reference_components, tdim, gdim, J[ip], detJ[ip], K[ip])
@@ -366,10 +325,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             "piola", "Piola")
 
         mapped_value = L.Symbol("mapped_value")
-        if contains_reflections:
-            vec_scale = L.Conditional(L.Symbol("reflected_dofs")[idof], -1, 1)
-        else:
-            vec_scale = 1
 
         transform_apply_code += [
             L.ForRanges(
@@ -384,7 +339,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                     L.Comment(msg),
                     L.VariableDecl(
                         "const double", mapped_value,
-                        M_scale * vec_scale * sum(
+                        M_scale * sum(
                             M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
                             for jj in range(num_reference_components))),
                     # Apply derivative transformation, for order=0 this reduces to
@@ -398,44 +353,83 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 ])
         ]
 
-    # Correct data for rotations and reflections of face tangents
-    face_tangents = []
+    base_perms = ir.base_permutations
+
+    if ir.cell_shape == "interval":
+        entities = {}
+    elif ir.cell_shape == "triangle":
+        entities = {1: 3}
+    elif ir.cell_shape == "quadrilateral":
+        entities = {1: 4}
+    elif ir.cell_shape == "tetrahedron":
+        entities = {1: 6, 2: 4}
+        face_rotation_order = 3
+    elif ir.cell_shape == "hexahedron":
+        entities = {1: 12, 2: 6}
+        face_rotation_order = 4
+    else:
+        raise NotImplementedError
+
+    perm_n = 0
+    perm_data = []
+    if 1 in entities:
+        for edge in range(entities[1]):
+            perm_data.append((
+                entity_reflection(L, (1, edge), ir.cell_shape),
+                None,
+                base_perms[perm_n]
+            ))
+            perm_n += 1
+    if 2 in entities:
+        for face in range(entities[2]):
+            for rot in range(1, face_rotation_order):
+                perm_data.append((
+                    entity_rotations(L, (2, face), ir.cell_shape),
+                    rot,
+                    numpy.linalg.matrix_power(base_perms[perm_n], rot)
+                ))
+            perm_n += 1
+            perm_data.append((
+                entity_reflection(L, (2, face), ir.cell_shape),
+                None,
+                base_perms[perm_n]
+            ))
+            perm_n += 1
+
+    assert perm_n == len(base_perms)
+
+    # Apply entity permutations
+    apply_permutations = []
     temporary_variables = 0
-    for (entity_dim, entity_n), face_tangent_data in ir.dof_face_tangents.items():
-        if entity_dim != 2:
-            warnings.warn("Face tangents an entity of dim != 2 not implemented.")
-            continue
+    for entity_perm, value, perm in perm_data:
+        body = []
 
         # Use temporary variables t0, t1, ... to store current data
         temps = {}
-        for perm, ft in face_tangent_data.items():
-            for combo in ft.values():
-                for dof, w in combo:
-                    if dof not in temps:
+        for index, row in enumerate(perm):
+            if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
+                for dof, w in enumerate(row):
+                    if not numpy.isclose(w, 0) and dof not in temps:
                         temps[dof] = L.Symbol("t" + str(len(temps)))
+                body.append(L.Assign(values[ip, dof, r, physical_offsets[dof] + i],
+                                     sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
         temporary_variables = max(temporary_variables, len(temps))
 
-        for perm, ft in face_tangent_data.items():
-            body = []
-            for dof, combo in ft.items():
-                v = values[ip, dof, r, physical_offsets[dof] + i]
-                body.append(L.Assign(v, sum(w * temps[dof] for dof, w in combo)))
+        body = [L.Assign(t, values[ip, dof, r, physical_offsets[dof] + i]) for dof, t in temps.items()] + body
 
-            # If cell_permutation has given value, overwrite data with linear combination of temporary data
-            if len(body) > 0:
-                entity_perm = L.BitwiseAnd(L.BitShiftR(L.Symbol("cell_permutation"), 3 * entity_n), 7)
+        if value is None:
+            condition = entity_perm
+        else:
+            condition = L.EQ(entity_perm, value)
 
-                if perm == 0:
-                    face_tangents += [L.If(L.EQ(entity_perm, perm), body)]
-                else:
-                    face_tangents += [L.ElseIf(L.EQ(entity_perm, perm), body)]
+        apply_permutations.append(L.If(condition,
+                                       L.ForRanges((s, 0, num_derivatives_t), (i, 0, num_physical_components),
+                                                   (r, 0, num_derivatives_g), index_type=index_type, body=body)))
 
-    if len(face_tangents) > 0:
-        face_tangents = [
-            L.ForRanges((s, 0, num_derivatives_t), (i, 0, num_physical_components),
-                        (r, 0, num_derivatives_g), index_type=index_type, body=face_tangents)]
-        face_tangents = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
-                         for i in range(temporary_variables)] + face_tangents
+    if len(apply_permutations) > 0:
+        apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
+                              for i in range(temporary_variables)] + apply_permutations
+
 
     # Transform for each point
     point_loop_code = [
@@ -444,7 +438,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             0,
             num_points,
             index_type=index_type,
-            body=(transform_matrix_code + transform_apply_code + face_tangents))
+            body=(transform_matrix_code + transform_apply_code + apply_permutations))
     ]
 
     # Join code
