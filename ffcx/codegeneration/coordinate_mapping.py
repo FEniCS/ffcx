@@ -32,7 +32,6 @@ def generator(ir, parameters):
     d["is_affine"] = 1 if ir.is_affine else 0
     d["cell_shape"] = ir.cell_shape
     d["scalar_dofmap_name"] = ir.scalar_dofmap_name
-    d["coord_element_factory_name"] = ir.scalar_coordinate_finite_element_classname
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

@@ -20,20 +20,6 @@ int reference_value_dimension_{factory_name}(int i)
   {reference_value_dimension}
 }}
 
-int evaluate_reference_basis_{factory_name}(double* restrict reference_values,
-                                            int num_points,
-                                            const double* restrict X)
-{{
-  {evaluate_reference_basis}
-}}
-
-int evaluate_reference_basis_derivatives_{factory_name}(double * restrict reference_values,
-                                          int order, int num_points,
-                                          const double * restrict X)
-{{
-  {evaluate_reference_basis_derivatives}
-}}
-
 int transform_reference_basis_derivatives_{factory_name}(
     double * restrict values, int order, int num_points,
     const double * restrict reference_values,
@@ -82,8 +68,6 @@ ufc_finite_element* create_{factory_name}(void)
   element->degree = {degree};
   element->family = {family};
   element->block_size = {block_size};
-  element->evaluate_reference_basis = evaluate_reference_basis_{factory_name};
-  element->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{factory_name};
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};
   element->transform_values = transform_values_{factory_name};
   element->tabulate_reference_dof_coordinates = tabulate_reference_dof_coordinates_{factory_name};

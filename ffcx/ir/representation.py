@@ -46,7 +46,7 @@ ir_form = namedtuple('ir_form', [
     'get_interior_facet_integral_ids', 'create_vertex_integral', 'get_vertex_integral_ids',
     'create_custom_integral', 'get_custom_integral_ids'])
 ir_element = namedtuple('ir_element', [
-    'id', 'name', 'signature', 'cell_shape', 'topological_dimension', 'expansion_coefficients',
+    'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'tabulate_dof_coordinates', 'num_sub_elements', 'block_size', 'create_sub_element',
     'entity_dofs', 'base_permutations', 'reference_offsets', 'physical_offsets', 'dof_mappings',
@@ -178,7 +178,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["entity_dofs"] = libtab_element.entity_dof_numbers
 
     ir["base_permutations"] = libtab_element.base_permutations
-    ir["expansion_coefficients"] = libtab_element.coeffs
 
     ir["reference_offsets"] = [0 for i in range(libtab_element.ndofs)]  # TODO
     ir["physical_offsets"] = [0 for i in range(libtab_element.ndofs)]  # TODO

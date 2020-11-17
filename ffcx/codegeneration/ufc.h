@@ -120,13 +120,6 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
-    int (*evaluate_reference_basis)(double* restrict reference_values,
-                                    int num_points, const double* restrict X);
-
-    int (*evaluate_reference_basis_derivatives)(
-        double* restrict reference_values, int order, int num_points,
-        const double* restrict X);
-
     /// Map the reference values on to the cell
     /// @param[in] cell_permutations An integer that says how each entity of the
     ///         cell of dimension < tdim has been permuted relative to a
@@ -231,11 +224,6 @@ extern "C"
     /// the new object is obtained with malloc(), and the caller is
     /// reponsible for freeing it by calling free().
     ufc_dofmap* (*create_scalar_dofmap)(void);
-
-    /// Evaluate basis (and derivatives) of the associated element
-    int (*evaluate_basis_derivatives)(
-        double* restrict reference_values, int order, int num_points,
-        const double* restrict X);
 
   } ufc_coordinate_mapping;
 

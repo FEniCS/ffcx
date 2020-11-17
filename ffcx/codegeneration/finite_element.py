@@ -15,9 +15,7 @@ import warnings
 import numpy
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
-from ffcx.codegeneration.evalderivs import (_generate_combinations,
-                                            generate_evaluate_reference_basis_derivatives)
-from ffcx.codegeneration.evaluatebasis import generate_evaluate_reference_basis
+from ffcx.codegeneration.evalderivs import _generate_combinations
 # from ffcx.codegeneration.evaluatedof import generate_transform_values
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch)
@@ -116,16 +114,6 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
     copy = L.MemCopy(dof_X, reference_dof_coordinates, tdim * len(points), "double")
     ret = L.Return(0)
     return [decl, copy, ret]
-
-
-def evaluate_reference_basis(L, ir, parameters):
-    # FIXME
-    return [L.Return(-1)]
-
-
-def evaluate_reference_basis_derivatives(L, ir, parameters):
-    # FIXME
-    return [L.Return(-1)]
 
 
 def entity_reflection(L, i, cell_shape):
@@ -477,12 +465,6 @@ def generator(ir, parameters):
 
     d["value_dimension"] = value_dimension(L, ir.value_shape)
     d["reference_value_dimension"] = reference_value_dimension(L, ir.reference_value_shape)
-
-    statements = evaluate_reference_basis(L, ir, parameters)
-    d["evaluate_reference_basis"] = L.StatementList(statements)
-
-    statements = evaluate_reference_basis_derivatives(L, ir, parameters)
-    d["evaluate_reference_basis_derivatives"] = L.StatementList(statements)
 
     statements = transform_reference_basis_derivatives(L, ir, parameters)
     d["transform_reference_basis_derivatives"] = L.StatementList(statements)

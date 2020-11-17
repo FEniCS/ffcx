@@ -31,16 +31,16 @@ def test_finite_element(compile_args):
     assert ufc_element.reference_value_dimension(2) == 1
     assert ufc_element.reference_value_size == 1
     assert ufc_element.block_size == 1
-    X = np.array([[0.0, 0.0], [0.5, 0.5]])
-    npoint = X.shape[0]
-    X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
-    vals = np.zeros((npoint, 3, 1))
-    vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
-    ufc_element.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
+    # X = np.array([[0.0, 0.0], [0.5, 0.5]])
+    # npoint = X.shape[0]
+    # X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
+    # vals = np.zeros((npoint, 3, 1))
+    # vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+    # ufc_element.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
     # assert np.allclose(vals, [[[1], [0], [0]], [[0], [.5], [.5]]])
-    vals = np.zeros(6)
-    vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
-    ufc_element.tabulate_reference_dof_coordinates(vals_ptr)
+    # vals = np.zeros(6)
+    # vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+    # ufc_element.tabulate_reference_dof_coordinates(vals_ptr)
     # assert np.allclose(vals, [0, 0, 1, 0, 0, 1])
     assert ufc_element.num_sub_elements == 0
 
@@ -80,16 +80,16 @@ def test_vector_element(compile_args):
     assert ufc_element.reference_value_dimension(2) == 1
     assert ufc_element.reference_value_size == 2
     assert ufc_element.block_size == 2
-    X = np.array([[0.0, 0.0], [0.5, 0.5]])
-    npoint = X.shape[0]
-    X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
-    vals = np.zeros((npoint, 3, 1))
-    vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
-    ufc_element.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
+    # X = np.array([[0.0, 0.0], [0.5, 0.5]])
+    # npoint = X.shape[0]
+    # X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
+    # vals = np.zeros((npoint, 3, 1))
+    # vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+    # ufc_element.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
     # assert np.allclose(vals, [[[1], [0], [0]], [[0], [.5], [.5]]])
-    vals = np.zeros(6)
-    vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
-    ufc_element.tabulate_reference_dof_coordinates(vals_ptr)
+    # vals = np.zeros(6)
+    # vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+    # ufc_element.tabulate_reference_dof_coordinates(vals_ptr)
     # assert np.allclose(vals, [0, 0, 1, 0, 0, 1])
     assert ufc_element.num_sub_elements == 2
 
@@ -129,16 +129,16 @@ def test_tensor_element(compile_args):
     assert ufc_element.reference_value_dimension(2) == 1
     assert ufc_element.reference_value_size == 4
     assert ufc_element.block_size == 4
-    X = np.array([[0.0, 0.0], [0.5, 0.5]])
-    npoint = X.shape[0]
-    X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
-    vals = np.zeros((npoint, 3, 1))
-    vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
-    ufc_element.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
+    # X = np.array([[0.0, 0.0], [0.5, 0.5]])
+    # npoint = X.shape[0]
+    # X_ptr = module.ffi.cast("const double *", module.ffi.from_buffer(X))
+    # vals = np.zeros((npoint, 3, 1))
+    # vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+    # ufc_element.evaluate_reference_basis(vals_ptr, npoint, X_ptr)
     # assert np.allclose(vals, [[[1], [0], [0]], [[0], [.5], [.5]]])
-    vals = np.zeros(6)
-    vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
-    ufc_element.tabulate_reference_dof_coordinates(vals_ptr)
+    # vals = np.zeros(6)
+    # vals_ptr = module.ffi.cast("double *", module.ffi.from_buffer(vals))
+    # ufc_element.tabulate_reference_dof_coordinates(vals_ptr)
     # assert np.allclose(vals, [0, 0, 1, 0, 0, 1])
     assert ufc_element.num_sub_elements == 4
 
