@@ -18,7 +18,7 @@ logger = logging.getLogger("ffcx")
 
 class QuadratureRule:
     def __init__(self, points, weights):
-        self.points = points
+        self.points = numpy.ascontiguousarray(points)  # TODO: change libtab to make this unnecessary
         self.weights = weights
         self._hash = None
 
