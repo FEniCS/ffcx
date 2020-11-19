@@ -63,7 +63,7 @@ def float_product(factors):
 def MemCopy(src, dst, size, type):
     src = as_cexpr_or_string_symbol(src)
     dst = as_cexpr_or_string_symbol(dst)
-    size = as_cexpr_or_string_symbol("{}*sizeof({})".format(size, type))
+    size = as_cexpr_or_string_symbol(f"{size}*sizeof({type})")
     return Call("memcpy", (dst, src, size))
 
 
@@ -1330,7 +1330,9 @@ class ArrayDecl(CStatement):
             # Zero initial values
             # (NB! C style zero initialization, not sure about other target languages)
             nb = len(sizes)
-            return decl + " = {lbr} 0 {rbr};".format(lbr="{" * nb, rbr="}" * nb)
+            lbr = "{" * nb
+            rbr = "}" * nb
+            return f"{decl} = {lbr} 0 {rbr};"
         else:
             # Construct initializer lists for arbitrary multidimensional array values
             if self.values.dtype.kind == "f":

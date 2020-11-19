@@ -49,7 +49,7 @@ def visualise_graph(Gx, filename):
 
         c = v.get('component')
         if c:
-            G.get_node(nd).attr['label'] += ', comp={}'.format(c)
+            G.get_node(nd).attr['label'] += f", comp={c}"
 
     for nd, eds in Gx.out_edges.items():
         for ed in eds:

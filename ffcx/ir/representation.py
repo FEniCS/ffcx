@@ -142,7 +142,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
 def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsilon):
     """Compute intermediate representation of element."""
 
-    logger.info("Computing IR for element {}".format(ufl_element))
+    logger.info(f"Computing IR for element {ufl_element}")
 
     # Create libtab elements
     libtab_element = create_libtab_element(ufl_element)
@@ -190,7 +190,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     """Compute intermediate representation of dofmap."""
 
-    logger.info("Computing IR for dofmap of {}".format(ufl_element))
+    logger.info(f"Computing IR for dofmap of {ufl_element}")
 
     # Create libtab elements
     libtab_element = create_libtab_element(ufl_element)
@@ -286,7 +286,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
                                    finite_element_names):
     """Compute intermediate representation of coordinate mapping."""
 
-    logger.info("Computing IR for coordinate mapping {}".format(ufl_coordinate_element))
+    logger.info(f"Computing IR for coordinate mapping {ufl_coordinate_element}")
 
     cell = ufl_coordinate_element.cell()
     cellname = cell.cellname()
@@ -351,7 +351,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
     irs = []
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
 
-        logger.info("Computing IR for integral in integral group {}".format(itg_data_index))
+        logger.info(f"Computing IR for integral in integral group {itg_data_index}")
 
         # Compute representation
         entitytype = _entity_types[itg_data.integral_type]
@@ -509,7 +509,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
                      dofmap_names, coordinate_mapping_names, object_names):
     """Compute intermediate representation of form."""
 
-    logger.info("Computing IR for form {}".format(form_id))
+    logger.info(f"Computing IR for form {form_id}")
 
     # Store id
     ir = {"id": form_id}
@@ -556,21 +556,21 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     form_name = object_names.get(id(form_data.original_form), form_id)
 
     ir["function_spaces"] = fs
-    ir["name_from_uflfile"] = "form_{}_{}".format(prefix, form_name)
+    ir["name_from_uflfile"] = f"form_{prefix}_{form_name}"
 
     # Create integral ids and names using form prefix (integrals are
     # always generated as part of form so don't get their own prefix)
     for integral_type in ufc_integral_types:
         irdata = _create_foo_integral(prefix, form_id, integral_type, form_data)
-        ir["create_{}_integral".format(integral_type)] = irdata
-        ir["get_{}_integral_ids".format(integral_type)] = irdata
+        ir[f"create_{integral_type}_integral"] = irdata
+        ir[f"get_{integral_type}_integral_ids"] = irdata
 
     return ir_form(**ir)
 
 
 def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
 
-    logger.info("Computing IR for expression {}".format(index))
+    logger.info(f"Computing IR for expression {index}")
 
     # Compute representation
     ir = {}
@@ -703,7 +703,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
     for itg_data in form_data.integral_data:
         if isinstance(itg_data.subdomain_id, int):
             if itg_data.subdomain_id < 0:
-                raise ValueError("Integral subdomain ID must be non-negative, not {}".format(itg_data.subdomain_id))
+                raise ValueError(f"Integral subdomain ID must be non-negative, not {itg_data.subdomain_id}")
             if (itg_data.integral_type == integral_type):
                 subdomain_ids += [itg_data.subdomain_id]
                 classnames += [naming.integral_name(integral_type, form_data.original_form,

@@ -55,7 +55,7 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     elif integral_type == "expression":
         return (None, None)
 
-    logging.exception("Unknown integral type: {}".format(integral_type))
+    logging.exception(f"Unknown integral type: {integral_type}")
     return (None, None)
 
 
@@ -73,7 +73,7 @@ def integral_type_to_entity_dim(integral_type, tdim):
     elif integral_type == "expression":
         entity_dim = tdim
     else:
-        raise RuntimeError("Unknown integral_type: {}".format(integral_type))
+        raise RuntimeError(f"Unknown integral_type: {integral_type}")
     return entity_dim
 
 
@@ -91,4 +91,4 @@ def map_integral_points(points, integral_type, cell, entity):
     elif entity_dim == 0:
         return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
-        raise RuntimeError("Can't map points from entity_dim=%s" % (entity_dim, ))
+        raise RuntimeError(f"Can't map points from entity_dim={entity_dim}")
