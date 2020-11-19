@@ -9,11 +9,10 @@ import collections
 import logging
 
 import numpy
-import libtab
 
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.libtab_interface import create_libtab_element
+from ffcx.libtab_interface import create_libtab_element, libtab_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -187,7 +186,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                 points, integral_type, cell, entity)
             # libtab
             tbl = libtab_element.tabulate(deriv_order, entity_points)
-            index = libtab.index(*derivative_counts)
+            index = libtab_index(*derivative_counts)
             tbl = tbl[index].transpose()
 
             component_tables.append(tbl)
@@ -202,7 +201,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             entity_points = map_integral_points(
                 points, integral_type, cell, entity)
             tbl = libtab_element.tabulate(deriv_order, entity_points)
-            tbl = tbl[libtab.index(*derivative_counts)]
+            tbl = tbl[libtab_index(*derivative_counts)]
             sum_sh = sum(sh)
             bshape = (tbl.shape[0],) + sh + (tbl.shape[1] // sum_sh,)
             tbl = tbl.reshape(bshape).transpose()
@@ -215,6 +214,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                 raise RuntimeError(
                     "Cannot tabulate tensor valued element with rank > 2")
     else:
+
         # Vector-valued or mixed element
         sub_dims = [0] + [e.ndofs for e in libtab_element.sub_elements]
         sub_cmps = [0] + [e.value_size for e in libtab_element.sub_elements]
@@ -254,11 +254,10 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             # libtab
             tbl = component_element.tabulate(
                 deriv_order, entity_points)
-            index = libtab.index(*derivative_counts)
+            index = libtab_index(*derivative_counts)
             tbl = tbl[index].transpose()
 
             # Prepare a padded table with zeros
-            # TODO: The following line should use value_shape (eg for tensor elements)
             padded_shape = (libtab_element.ndofs,) + libtab_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
@@ -462,6 +461,7 @@ def build_element_tables(quadrature_rule,
         element_number = element_numbers[element]
         name = generate_psi_table_name(quadrature_rule, element_number, avg, entitytype,
                                        local_derivatives, flat_component)
+
         if name not in tables:
             tdim = cell.topological_dimension()
             if entitytype == "facet":

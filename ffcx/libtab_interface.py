@@ -27,6 +27,10 @@ def create_libtab_element(ufl_element):
         ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
 
 
+def libtab_index(*args):
+    return libtab.index(*args)
+
+
 def create_quadrature(cellname, degree, rule):
     if cellname == "vertex":
         return [[]], [1]
@@ -39,7 +43,7 @@ def reference_cell_vertices(cellname):
 
 def map_facet_points(points, facet, cellname):
     geom = libtab.geometry(libtab_cells[cellname])
-    facet_vertices = [geom[0] for i in libtab.topology(libtab_cells[cellname])[-2][facet]]
+    facet_vertices = [geom[i] for i in libtab.topology(libtab_cells[cellname])[-2][facet]]
 
     return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
             for p in points]
@@ -83,6 +87,14 @@ class LibtabBaseElement:
 
     @property
     def family_name(self):
+        raise NotImplementedError
+
+    @property
+    def reference_topology(self):
+        raise NotImplementedError
+
+    @property
+    def reference_geometry(self):
         raise NotImplementedError
 
 
@@ -139,6 +151,14 @@ class LibtabElement(LibtabBaseElement):
     def family_name(self):
         return self.element.family_name
 
+    @property
+    def reference_topology(self):
+        return libtab.topology(self.element.cell_type)
+
+    @property
+    def reference_geometry(self):
+        return libtab.geometry(self.element.cell_type)
+
 
 class MixedElement(LibtabBaseElement):
     def __init__(self, sub_elements):
@@ -181,7 +201,7 @@ class MixedElement(LibtabBaseElement):
     def value_shape(self):
         shape = tuple()
         for e in self.sub_elements:
-            shape += e.value_shape
+            shape += tuple(e.value_shape)
         return shape
 
     @property
@@ -195,7 +215,7 @@ class MixedElement(LibtabBaseElement):
         dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dof_numbers]
         start_dof = 0
         for e in self.sub_elements:
-            for tdim, entities in e.entity_dof_numbers:
+            for tdim, entities in enumerate(e.entity_dof_numbers):
                 for entity_n, entity_dofs in enumerate(entities):
                     dofs[tdim][entity_n] += [start_dof + i for i in entity_dofs]
             start_dof += e.ndofs
@@ -219,6 +239,14 @@ class MixedElement(LibtabBaseElement):
     @property
     def family_name(self):
         return "mixed element"
+
+    @property
+    def reference_topology(self):
+        return self.sub_elements[0].reference_topology
+
+    @property
+    def reference_geometry(self):
+        return self.sub_elements[0].reference_geometry
 
 
 class BlockedElement(LibtabBaseElement):
@@ -294,3 +322,11 @@ class BlockedElement(LibtabBaseElement):
     @property
     def family_name(self):
         return self.sub_element.family_name
+
+    @property
+    def reference_topology(self):
+        return self.sub_element.reference_topology
+
+    @property
+    def reference_geometry(self):
+        return self.sub_element.reference_geometry

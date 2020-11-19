@@ -428,13 +428,16 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                                      sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
         temporary_variables = max(temporary_variables, len(temps))
 
-        body = [L.Assign(t, values[ip, dof, r, physical_offsets[dof] + i]) for dof, t in temps.items()] + body
+        # If changes would be made, continue to next entity
+        if len(body) == 0:
+            continue
 
         if value is None:
             condition = entity_perm
         else:
             condition = L.EQ(entity_perm, value)
 
+        body = [L.Assign(t, values[ip, dof, r, physical_offsets[dof] + i]) for dof, t in temps.items()] + body
         apply_permutations.append(L.If(condition,
                                        L.ForRanges((s, 0, num_derivatives_t), (i, 0, num_physical_components),
                                                    (r, 0, num_derivatives_g), index_type=index_type, body=body)))

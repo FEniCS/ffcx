@@ -10,6 +10,7 @@ import warnings
 
 import ufl
 from ufl.finiteelement import MixedElement
+from ffcx.libtab_interface import create_libtab_element
 
 logger = logging.getLogger("ffcx")
 
@@ -292,28 +293,24 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        raise NotImplementedError
-        # fiat_scalar_element = create_element(ufl_scalar_element)
-        # vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
-        #   num_scalar_dofs = fiat_scalar_element.space_dimension()
+        libtab_scalar_element = create_libtab_element(ufl_scalar_element)
+        vertex_scalar_dofs = libtab_scalar_element.entity_dof_numbers[0]
+        num_scalar_dofs = libtab_scalar_element.ndofs
 
         # Get edge vertices
-        # edge = mt.component[0]
-        # edge_vertices = fiat_scalar_element.get_reference_element().get_topology()[1][edge]
-        # vertex0, vertex1 = edge_vertices
+        edge = mt.component[0]
+        vertex0, vertex1 = libtab_scalar_element.reference_topology[1][edge]
 
         # Get dofs and component
-        # dof0, = vertex_scalar_dofs[vertex0]
-        # dof1, = vertex_scalar_dofs[vertex1]
-        # component = mt.component[1]
+        dof0, = vertex_scalar_dofs[vertex0]
+        dof1, = vertex_scalar_dofs[vertex1]
+        component = mt.component[1]
 
-        # expr = (self.symbols.domain_dof_access(dof0, component,
-        #                                        gdim, num_scalar_dofs,
-        #                                        mt.restriction)
-        #         - self.symbols.domain_dof_access(dof1, component,
-        #                                          gdim, num_scalar_dofs,
-        #                                          mt.restriction))
-        # return expr
+        return self.symbols.domain_dof_access(
+            dof0, component, gdim, num_scalar_dofs, mt.restriction
+        ) - self.symbols.domain_dof_access(
+            dof1, component, gdim, num_scalar_dofs, mt.restriction
+        )
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
         # L = self.language
