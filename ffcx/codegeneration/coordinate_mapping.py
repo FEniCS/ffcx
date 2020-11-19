@@ -15,11 +15,11 @@ def generator(ir, parameters):
     """Generate UFC code for a coordinate mapping."""
 
     logger.info("Generating code for coordinate mapping:")
-    logger.info(f"--- cell shape: {ir.cell_shape}"
-    logger.info(f"--- gdim: {ir.geometric_dimension}"
-    logger.info(f"--- tdim: {ir.topological_dimension}"
-    logger.info(f"--- name: {ir.name}"
-    logger.info(f"--- scalar dofmap name: {ir.scalar_dofmap_name}"
+    logger.info(f"--- cell shape: {ir.cell_shape}")
+    logger.info(f"--- gdim: {ir.geometric_dimension}")
+    logger.info(f"--- tdim: {ir.topological_dimension}")
+    logger.info(f"--- name: {ir.name}")
+    logger.info(f"--- scalar dofmap name: {ir.scalar_dofmap_name}")
 
     d = {}
 

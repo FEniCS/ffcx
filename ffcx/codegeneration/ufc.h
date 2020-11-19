@@ -203,8 +203,10 @@ extern "C"
     /// Return coordinate_mapping signature string
     const char* signature;
 
-    ///
+    /// The finite element family name for the mapping
     const char* element_family;
+
+    /// The finite element degree used in the mapping
     int element_degree;
 
     /// Create object of the same type. Memory for the new object is
