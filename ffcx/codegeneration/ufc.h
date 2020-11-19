@@ -203,6 +203,10 @@ extern "C"
     /// Return coordinate_mapping signature string
     const char* signature;
 
+    ///
+    const char* element_family;
+    int element_degree;
+
     /// Create object of the same type. Memory for the new object is
     /// obtained with malloc(), and the caller is reponsible for
     /// freeing it by calling free().
@@ -214,7 +218,7 @@ extern "C"
     /// Return topological dimension of the coordinate_mapping
     int topological_dimension;
 
-    /// Boolean flag for affine 
+    /// Boolean flag for affine
     int is_affine;
 
     /// Return cell shape of the coordinate_mapping

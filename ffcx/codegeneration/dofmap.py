@@ -63,7 +63,7 @@ def sub_dofmap_declaration(L, ir):
     classnames = set(ir.create_sub_dofmap)
     code = ""
     for name in classnames:
-        code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
+        code += f"ufc_dofmap* create_{name}(void);\n"
     return code
 
 
@@ -71,14 +71,14 @@ def generator(ir, parameters):
     """Generate UFC code for a dofmap."""
 
     logger.info("Generating code for dofmap:")
-    logger.info("--- num element support dofs: {}".format(ir.num_element_support_dofs))
-    logger.info("--- name: {}".format(ir.name))
+    logger.info(f"--- num element support dofs: {ir.num_element_support_dofs}")
+    logger.info(f"--- name: {ir.name}")
 
     d = {}
 
     # Attributes
     d["factory_name"] = ir.name
-    d["signature"] = "\"{}\"".format(ir.signature)
+    d["signature"] = f"\"{ir.signature}\""
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps

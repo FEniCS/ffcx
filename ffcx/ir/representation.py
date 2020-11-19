@@ -58,7 +58,7 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', [
     'id', 'prefix', 'name', 'signature', 'cell_shape', 'topological_dimension', 'geometric_dimension',
     'compute_physical_coordinates', 'compute_reference_coordinates', 'compute_jacobians',
     'compute_jacobian_determinants', 'compute_jacobian_inverses', 'compute_geometry', 'tables',
-    'coordinate_element_degree', 'num_scalar_coordinate_element_dofs',
+    'coordinate_element_degree', 'num_scalar_coordinate_element_dofs', 'coordinate_element_family',
     'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname',
     'scalar_dofmap_name', 'is_affine'])
 ir_integral = namedtuple('ir_integral', [
@@ -320,6 +320,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     # Store tables and other coordinate element data
     ir["tables"] = tables
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
+    ir["coordinate_element_family"] = "Lagrange"  # TODO
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
     ir["is_affine"] = ir["coordinate_element_degree"] == 1 and cellname in ("interval", "triangle", "tetrahedron")
 

@@ -75,7 +75,7 @@ def sub_element_declaration(L, ir):
     classnames = set(ir.create_sub_element)
     code = ""
     for name in classnames:
-        code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
+        code += f"ufc_finite_element* create_{name}(void);\n"
     return code
 
 
@@ -438,14 +438,14 @@ def generator(ir, parameters):
     """Generate UFC code for a finite element."""
 
     logger.info("Generating code for finite element:")
-    logger.info("--- family: {}".format(ir.family))
-    logger.info("--- degree: {}".format(ir.degree))
-    logger.info("--- value shape: {}".format(ir.value_shape))
-    logger.info("--- name: {}".format(ir.name))
+    logger.info(f"--- family: {ir.family}")
+    logger.info(f"--- degree: {ir.degree}")
+    logger.info(f"--- value shape: {ir.value_shape}")
+    logger.info(f"--- name: {ir.name}")
 
     d = {}
     d["factory_name"] = ir.name
-    d["signature"] = "\"{}\"".format(ir.signature)
+    d["signature"] = f"\"{ir.signature}\""
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
@@ -455,7 +455,7 @@ def generator(ir, parameters):
     d["reference_value_rank"] = len(ir.reference_value_shape)
     d["reference_value_size"] = ufl.product(ir.reference_value_shape)
     d["degree"] = ir.degree
-    d["family"] = "\"{}\"".format(ir.family)
+    d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
 

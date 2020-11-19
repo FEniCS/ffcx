@@ -75,7 +75,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
         L.If(
             L.EQ(order, 0), [
                 L.Return(
-                    L.Call("evaluate_reference_basis_{}".format(classname),
+                    L.Call(f"evaluate_reference_basis_{classname}",
                            (reference_values, num_points, X)))
             ]),
         # Compute number of derivatives of this order
@@ -144,7 +144,7 @@ def generate_evaluate_reference_basis_derivatives(L, data, classname, parameters
 
         shape_dmats = numpy.shape(dof_data["dmats"][0])
         if shape_dmats[0] != shape_dmats[1]:
-            logging.exception("Something is wrong with the dmats: {}".format(dof_data["dmats"]))
+            logging.exception(f"Something is wrong with the dmats: {dof_data['dmats']}")
 
         aux = L.Symbol("aux")
         dmats = L.Symbol("dmats")

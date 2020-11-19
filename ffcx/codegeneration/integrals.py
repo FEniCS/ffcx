@@ -22,8 +22,8 @@ logger = logging.getLogger("ffcx")
 def generator(ir, parameters):
 
     logger.info("Generating code for integral:")
-    logger.info("--- type: {}".format(ir.integral_type))
-    logger.info("--- name: {}".format(ir.name))
+    logger.info(f"--- type: {ir.integral_type}")
+    logger.info(f"--- name: {ir.name}")
 
     """Generate code for an integral."""
     factory_name = ir.name
@@ -61,7 +61,7 @@ def generator(ir, parameters):
     # this will do for now:
     initializer_list = ", ".join("true" if enabled else "false" for enabled in ir.enabled_coefficients)
     if ir.enabled_coefficients:
-        enabled_coeffs_code = '\n'.join(["[{}] = {{ {} }};".format(len(ir.enabled_coefficients), initializer_list)])
+        enabled_coeffs_code = f"[{len(ir.enabled_coefficients)}] = {{ {initializer_list} }};"
     else:
         enabled_coeffs_code = "[1] = {false};  /* No coefficients, but C does not permit zero-sized arrays */"
 
@@ -188,15 +188,11 @@ class IntegralGenerator(object):
 
         alignment = self.ir.params['assume_aligned']
         if alignment != -1:
-            parts += [L.VerbatimStatement("A = (ufc_scalar_t*)__builtin_assume_aligned(A, {});"
-                                          .format(alignment)),
-                      L.VerbatimStatement("w = (const ufc_scalar_t*)__builtin_assume_aligned(w, {});"
-                                          .format(alignment)),
-                      L.VerbatimStatement("c = (const ufc_scalar_t*)__builtin_assume_aligned(c, {});"
-                                          .format(alignment)),
+            parts += [L.VerbatimStatement(f"A = (ufc_scalar_t*)__builtin_assume_aligned(A, {alignment});"),
+                      L.VerbatimStatement(f"w = (const ufc_scalar_t*)__builtin_assume_aligned(w, {alignment});"),
+                      L.VerbatimStatement(f"c = (const ufc_scalar_t*)__builtin_assume_aligned(c, {alignment});"),
                       L.VerbatimStatement(
-                          "coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {});"
-                          .format(alignment))]
+                          f"coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
@@ -364,7 +360,7 @@ class IntegralGenerator(object):
         # Generate varying partition
         body = self.generate_varying_partition(quadrature_rule)
         body = L.commented_code_list(
-            body, "Quadrature loop body setup for quadrature rule {}".format(quadrature_rule.id()))
+            body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
@@ -403,7 +399,7 @@ class IntegralGenerator(object):
         body = self.generate_unstructured_varying_partition(num_points)
         body = L.commented_code_list(body, [
             "Run-time quadrature loop body setup",
-            "(chunk_size={0}, analysis_num_points={1})".format(chunk_size, num_points)
+            f"(chunk_size={chunk_size}, analysis_num_points={num_points})"
         ])
 
         # Generate dofblock parts, some of this
@@ -497,10 +493,10 @@ class IntegralGenerator(object):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol("sp_{}".format(quadrature_rule.id()))
+        arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}")
         parts = self.generate_partition(arraysymbol, F, "piecewise", None)
         parts = L.commented_code_list(
-            parts, "Quadrature loop independent computations for quadrature rule {}".format(quadrature_rule.id()))
+            parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
         return parts
 
     def generate_varying_partition(self, quadrature_rule):
@@ -509,10 +505,10 @@ class IntegralGenerator(object):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol("sv_{}".format(quadrature_rule.id()))
+        arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}")
         parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
         parts = L.commented_code_list(
-            parts, "Varying computations for quadrature rule {}".format(quadrature_rule.id()))
+            parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
         return parts
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):

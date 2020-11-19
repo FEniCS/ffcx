@@ -24,6 +24,8 @@ ufc_coordinate_mapping* create_{factory_name}(void)
 {{
   ufc_coordinate_mapping* cmap = (ufc_coordinate_mapping*)malloc(sizeof(*cmap));
   cmap->signature = {signature};
+  cmap->element_family = {family};
+  cmap->element_degree = {degree};
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
