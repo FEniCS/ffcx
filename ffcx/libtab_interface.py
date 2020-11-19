@@ -81,6 +81,10 @@ class LibtabBaseElement:
     def num_global_support_dofs(self):
         raise NotImplementedError
 
+    @property
+    def family_name(self):
+        raise NotImplementedError
+
 
 class LibtabElement(LibtabBaseElement):
     def __init__(self, element):
@@ -130,6 +134,10 @@ class LibtabElement(LibtabBaseElement):
     def num_global_support_dofs(self):
         # TODO
         return 0
+
+    @property
+    def family_name(self):
+        return self.element.family_name
 
 
 class MixedElement(LibtabBaseElement):
@@ -208,6 +216,10 @@ class MixedElement(LibtabBaseElement):
     def num_global_support_dofs(self):
         return sum(e.num_global_support_dofs for e in self.sub_elements)
 
+    @property
+    def family_name(self):
+        return "mixed element"
+
 
 class BlockedElement(LibtabBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
@@ -278,3 +290,7 @@ class BlockedElement(LibtabBaseElement):
     @property
     def num_global_support_dofs(self):
         return self.sub_element.num_global_support_dofs * self.block_size
+
+    @property
+    def family_name(self):
+        return self.sub_element.family_name

@@ -164,7 +164,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
     ir["degree"] = ufl_element.degree()
-    ir["family"] = ufl_element.family()
+    ir["family"] = libtab_element.family_name
 
     ir["tabulate_dof_coordinates"] = {}  # _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
@@ -317,10 +317,12 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     # NB! The entries below breaks the pattern of using ir keywords == code keywords,
     # which I personally don't find very useful anyway (martinal).
 
+    libtab_element = create_libtab_element(ufl_coordinate_element)
+
     # Store tables and other coordinate element data
     ir["tables"] = tables
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
-    ir["coordinate_element_family"] = "Lagrange"  # TODO
+    ir["coordinate_element_family"] = libtab_element.family_name
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
     ir["is_affine"] = ir["coordinate_element_degree"] == 1 and cellname in ("interval", "triangle", "tetrahedron")
 
