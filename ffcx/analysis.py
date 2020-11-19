@@ -214,7 +214,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 if num_points >= 100:
                     warnings.warn(
                         f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
-                        "to reduce number."
+                        "to reduce number.")
 
             # Extract quadrature rule
             qr = integral.metadata().get("quadrature_rule", qr_default)
