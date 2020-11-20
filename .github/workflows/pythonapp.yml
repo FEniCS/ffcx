@@ -65,4 +65,4 @@ jobs:
         if: always()
       - name: Runs demos
         run: |
-          ffcx demo/*.ufl
+          python${{ matrix.python-version }} -m pytest --durations=10 demo/test_demos.py
