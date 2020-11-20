@@ -13,6 +13,9 @@ libtab_cells = {
 
 
 def create_libtab_element(ufl_element):
+    # TODO: EnrichedElement
+    # TODO: Short/alternative names for elements
+
     if isinstance(ufl_element, ufl.VectorElement):
         return BlockedElement(create_libtab_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements())
@@ -199,10 +202,7 @@ class MixedElement(LibtabBaseElement):
 
     @property
     def value_shape(self):
-        shape = tuple()
-        for e in self.sub_elements:
-            shape += tuple(e.value_shape)
-        return shape
+        return (sum(e.value_size for e in self.sub_elements), )
 
     @property
     def entity_dofs(self):
@@ -261,13 +261,15 @@ class BlockedElement(LibtabBaseElement):
 
     def tabulate(self, nderivs, points):
         assert len(self.block_shape) == 1  # TODO: block shape
+        assert self.value_size == self.block_size  # TODO: remove this assumption
 
         output = []
         for table in self.sub_element.tabulate(nderivs, points):
-            new_table = numpy.zeros((self.block_size * table.shape[0], table.shape[1]))
+            new_table = numpy.zeros((table.shape[0], table.shape[1] * self.block_size * self.block_size))
             for i, row in enumerate(table):
                 for j, item in enumerate(row):
-                    new_table[i, j * self.block_size: (j + 1) * self.block_size] = item
+                    new_table[i, j * self.block_size: (j + 1) * self.block_size] = [
+                        item if k == j else 0 for k in range(self.block_size)]
             output.append(new_table)
         return output
 
