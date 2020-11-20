@@ -1,4 +1,5 @@
 import os
+import sys
 import pytest
 
 demo_dir = os.path.dirname(os.path.realpath(__file__))
@@ -13,6 +14,6 @@ for file in os.listdir(demo_dir):
 def test_demo(file):
     assert os.system(f"cd {demo_dir} && ffcx {file}.ufl") == 0
     assert os.system(f"cd {demo_dir} && "
-                     "CPATH=/usr/local/lib/python3.8/dist-packages/ffcx/codegeneration/ "
-                     "gcc -I/usr/include/python3.8 -fPIC -shared {file}.c "
-                     "-o {file}.so")
+                     "CPATH=../ffcx/codegeneration/ "
+                     f"gcc -I/usr/include/python{sys.version_info.major}.{sys.version_info.minor} -fPIC "
+                     f"-shared {file}.c -o {file}.so") == 0
