@@ -51,28 +51,28 @@ def random_point(shape):
 def test_continuous_lagrange(degree, expected_dim):
     "Test space dimensions of continuous Lagrange elements."
     P = create_libtab_element(FiniteElement("Lagrange", "triangle", degree))
-    assert P.ndofs == expected_dim
+    assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
     P = create_libtab_element(FiniteElement("Lagrange", "quadrilateral", degree))
-    assert P.ndofs == expected_dim
+    assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral_spectral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
     P = create_libtab_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
-    assert P.ndofs == expected_dim
+    assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."
     P = create_libtab_element(FiniteElement("DG", "triangle", degree))
-    assert P.ndofs == expected_dim
+    assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim",
@@ -80,7 +80,7 @@ def test_discontinuous_lagrange(degree, expected_dim):
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
     P = create_libtab_element(FiniteElement("Regge", "triangle", degree))
-    assert P.ndofs == expected_dim
+    assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim",
@@ -88,7 +88,7 @@ def test_regge(degree, expected_dim):
 def xtest_hhj(degree, expected_dim):
     "Test space dimensions of Hellan-Herrmann-Johnson element."
     P = create_libtab_element(FiniteElement("HHJ", "triangle", degree))
-    assert P.ndofs == expected_dim
+    assert P.dim == expected_dim
 
 
 class TestFunctionValues():
