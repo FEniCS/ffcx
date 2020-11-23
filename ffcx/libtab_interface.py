@@ -61,7 +61,7 @@ class LibtabBaseElement:
         raise NotImplementedError
 
     @property
-    def ndofs(self):
+    def dim(self):
         raise NotImplementedError
 
     @property
@@ -113,8 +113,8 @@ class LibtabElement(LibtabBaseElement):
         return self.element.base_permutations
 
     @property
-    def ndofs(self):
-        return self.element.ndofs
+    def dim(self):
+        return self.element.dim
 
     @property
     def value_size(self):
@@ -193,8 +193,8 @@ class MixedElement(LibtabBaseElement):
         return output
 
     @property
-    def ndofs(self):
-        return sum(e.ndofs for e in self.sub_elements)
+    def dim(self):
+        return sum(e.dim for e in self.sub_elements)
 
     @property
     def value_size(self):
@@ -218,18 +218,18 @@ class MixedElement(LibtabBaseElement):
             for tdim, entities in enumerate(e.entity_dof_numbers):
                 for entity_n, entity_dofs in enumerate(entities):
                     dofs[tdim][entity_n] += [start_dof + i for i in entity_dofs]
-            start_dof += e.ndofs
+            start_dof += e.dim
         return dofs
 
     @property
     def coeffs(self):
         coeff_matrix = numpy.zeros((
-            sum(e.ndofs for e in self.sub_elements),
+            sum(e.dim for e in self.sub_elements),
             max(e.coeffs.shape[1] for e in self.sub_elements)))
         start_dof = 0
         for e in self.sub_elements:
-            coeff_matrix[start_dof:e.ndofs, :e.coeffs.shape[1]] = e.coeffs
-            start_dof += e.ndofs
+            coeff_matrix[start_dof:e.dim, :e.coeffs.shape[1]] = e.coeffs
+            start_dof += e.dim
         return coeff_matrix
 
     @property
@@ -288,8 +288,8 @@ class BlockedElement(LibtabBaseElement):
         return output
 
     @property
-    def ndofs(self):
-        return self.sub_element.ndofs * self.block_size
+    def dim(self):
+        return self.sub_element.dim * self.block_size
 
     @property
     def sub_elements(self):

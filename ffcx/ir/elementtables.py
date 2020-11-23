@@ -216,7 +216,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     else:
 
         # Vector-valued or mixed element
-        sub_dims = [0] + [e.ndofs for e in libtab_element.sub_elements]
+        sub_dims = [0] + [e.dim for e in libtab_element.sub_elements]
         sub_cmps = [0] + [e.value_size for e in libtab_element.sub_elements]
 
         irange = numpy.cumsum(sub_dims)
@@ -258,7 +258,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             tbl = tbl[index].transpose()
 
             # Prepare a padded table with zeros
-            padded_shape = (libtab_element.ndofs,) + libtab_element.value_shape + (len(entity_points), )
+            padded_shape = (libtab_element.dim,) + libtab_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
             tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)

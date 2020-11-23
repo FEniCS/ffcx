@@ -295,7 +295,7 @@ class FFCXBackendAccess(object):
 
         libtab_scalar_element = create_libtab_element(ufl_scalar_element)
         vertex_scalar_dofs = libtab_scalar_element.entity_dof_numbers[0]
-        num_scalar_dofs = libtab_scalar_element.ndofs
+        num_scalar_dofs = libtab_scalar_element.dim
 
         # Get edge vertices
         edge = mt.component[0]

@@ -15,7 +15,7 @@ logger = logging.getLogger("ffcx")
 
 def num_coordinate_component_dofs(coordinate_element):
     """Get the number of dofs for a coordinate component for this degree."""
-    return create_libtab_element(coordinate_element).sub_element.ndofs
+    return create_libtab_element(coordinate_element).sub_element.dim
 
 
 class FFCXBackendDefinitions(object):

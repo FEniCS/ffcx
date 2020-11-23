@@ -159,7 +159,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
 
-    ir["space_dimension"] = libtab_element.ndofs
+    ir["space_dimension"] = libtab_element.dim
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
@@ -179,9 +179,9 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["base_permutations"] = libtab_element.base_permutations
 
-    ir["reference_offsets"] = [0 for i in range(libtab_element.ndofs)]  # TODO
-    ir["physical_offsets"] = [0 for i in range(libtab_element.ndofs)]  # TODO
-    ir["dof_mappings"] = ["affine" for i in range(libtab_element.ndofs)]  # TODO
+    ir["reference_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
+    ir["physical_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
+    ir["dof_mappings"] = ["affine" for i in range(libtab_element.dim)]  # TODO
     ir["num_reference_components"] = 1  # TODO
 
     return ir_element(**ir)
@@ -223,7 +223,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["tabulate_entity_dofs"] = (libtab_element.entity_dof_numbers, num_dofs_per_entity)
 
     ir["num_global_support_dofs"] = libtab_element.num_global_support_dofs
-    ir["num_element_support_dofs"] = libtab_element.ndofs - ir["num_global_support_dofs"]
+    ir["num_element_support_dofs"] = libtab_element.dim - ir["num_global_support_dofs"]
 
     return ir_dofmap(**ir)
 
@@ -379,7 +379,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         ir["element_dimensions"] = {
-            ufl_element: create_libtab_element(ufl_element).ndofs
+            ufl_element: create_libtab_element(ufl_element).dim
             for ufl_element in unique_elements
         }
 
@@ -594,7 +594,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
     ir["element_dimensions"] = {
-        ufl_element: create_libtab_element(ufl_element).ndofs
+        ufl_element: create_libtab_element(ufl_element).dim
         for ufl_element in analysis.unique_elements
     }
 
