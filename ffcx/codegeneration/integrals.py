@@ -343,12 +343,13 @@ class IntegralGenerator(object):
                 condition = entity_perm
             else:
                 condition = L.EQ(entity_perm, value)
+            prev_table = table.copy()
             for index, dof in enumerate(dofmap):
                 row = perm[index]
                 if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
-                    for indices in itertools.product(*[range(n) for n in table.shape[:-1]]):
-                        new_value = sum(i * j for i, j in zip(row, table[indices]) if not numpy.isclose(i, 0))
-                        table[indices + (index, )] = L.Conditional(condition, new_value, table[indices + (index, )])
+                    for indices in itertools.product(*[range(n) for n in prev_table.shape[:-1]]):
+                        new_value = sum(i * j for i, j in zip(row, prev_table[indices]) if not numpy.isclose(i, 0))
+                        table[indices + (index, )] = L.Conditional(condition, new_value, prev_table[indices + (index, )])
 
         return [L.ArrayDecl(
             "const double", name, table.shape, table, padlen=padlen)]
