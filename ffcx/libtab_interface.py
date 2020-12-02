@@ -61,6 +61,10 @@ class LibtabBaseElement:
         raise NotImplementedError
 
     @property
+    def interpolation_info(self):
+        raise NotImplementedError
+
+    @property
     def dim(self):
         raise NotImplementedError
 
@@ -111,6 +115,10 @@ class LibtabElement(LibtabBaseElement):
     @property
     def base_permutations(self):
         return self.element.base_permutations
+
+    @property
+    def interpolation_info(self):
+        return self.element.interpolation_info
 
     @property
     def dim(self):
@@ -191,6 +199,24 @@ class MixedElement(LibtabBaseElement):
                 col_start += i.shape[1]
             output.append(new_perm)
         return output
+
+    @property
+    def interpolation_info(self):
+        matrices = []
+        points = []
+        for e in self.sub_elements:
+            m, p = e.interpolation_info
+            matrices.append(m)
+            points.append(p)
+        points = np.vstack(points)
+        matrix = np.zeros((self.dim, len(points)))
+        start_row = 0
+        start_col = 0
+        for m in matrices:
+            matrix[start_row: start_row + m.shape[0], start_col: start_col + m.shape[1]] = m
+            start_row += m.shape[0]
+            start_col += m.shape[1]
+        return matrix, points
 
     @property
     def dim(self):
@@ -286,6 +312,11 @@ class BlockedElement(LibtabBaseElement):
                              j * self.block_size: (j + 1) * self.block_size] = entry * numpy.identity(self.block_size)
             output.append(new_perm)
         return output
+
+    @property
+    def interpolation_info(self):
+        # TODO: should this return this, or should it take blocks into account?
+        return self.sub_element.interpolation_info
 
     @property
     def dim(self):

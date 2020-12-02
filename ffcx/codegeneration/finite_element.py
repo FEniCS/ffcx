@@ -141,6 +141,110 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
     return [decl, copy, ret]
 
 
+def interpolate_into_cell(L, ir, parameters):
+    if ir.interpolation_info[1].shape[0] != ir.space_dimension:
+        return [L.Return(-1)]
+
+    lines = []
+
+    # Output argument
+    coeffs = L.Symbol("coefficients")
+    # Input argument
+    coeffs_in = L.Symbol("evaluations")
+
+    # TODO: Do we need to map values back to reference?
+    # TODO: permute
+
+    for i, row in enumerate(ir.interpolation_info[0]):
+        lines.append(L.Assign(coeffs[i], sum(coeffs_in[j] * k for j, k in enumerate(row) if not numpy.isclose(k, 0))))
+
+    perm_data = make_perm_data(L, ir)
+
+    # Apply entity permutations
+    apply_permutations = []
+    temporary_variables = 0
+    for entity_perm, value, perm in perm_data:
+        body = []
+
+        # Use temporary variables t0, t1, ... to store current data
+        temps = {}
+        for index, row in enumerate(perm):
+            if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
+                for dof, w in enumerate(row):
+                    if not numpy.isclose(w, 0) and dof not in temps:
+                        temps[dof] = L.Symbol("t" + str(len(temps)))
+                body.append(L.Assign(coeffs[index],
+                                     sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
+        temporary_variables = max(temporary_variables, len(temps))
+
+        # If no changes would be made, continue to next entity
+        if len(body) == 0:
+            continue
+
+        if value is None:
+            condition = entity_perm
+        else:
+            condition = L.EQ(entity_perm, value)
+
+        body = [L.Assign(t, coeffs[dof]) for dof, t in temps.items()] + body
+        apply_permutations.append(L.If(condition, body))
+
+    if len(apply_permutations) > 0:
+        apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
+                              for i in range(temporary_variables)] + apply_permutations
+
+    return lines + apply_permutations + [L.Return(0)]
+
+
+def make_perm_data(L, ir):
+    base_perms = ir.base_permutations
+
+    if ir.cell_shape == "interval":
+        entities = {}
+    elif ir.cell_shape == "triangle":
+        entities = {1: 3}
+    elif ir.cell_shape == "quadrilateral":
+        entities = {1: 4}
+    elif ir.cell_shape == "tetrahedron":
+        entities = {1: 6, 2: 4}
+        face_rotation_order = 3
+    elif ir.cell_shape == "hexahedron":
+        entities = {1: 12, 2: 6}
+        face_rotation_order = 4
+    else:
+        raise NotImplementedError
+
+    perm_n = 0
+    perm_data = []
+    if 1 in entities:
+        for edge in range(entities[1]):
+            perm_data.append((
+                entity_reflection(L, (1, edge), ir.cell_shape),
+                None,
+                base_perms[perm_n]
+            ))
+            perm_n += 1
+    if 2 in entities:
+        for face in range(entities[2]):
+            for rot in range(1, face_rotation_order):
+                perm_data.append((
+                    entity_rotations(L, (2, face), ir.cell_shape),
+                    rot,
+                    numpy.linalg.matrix_power(base_perms[perm_n], rot)
+                ))
+            perm_n += 1
+            perm_data.append((
+                entity_reflection(L, (2, face), ir.cell_shape),
+                None,
+                base_perms[perm_n]
+            ))
+            perm_n += 1
+
+    assert perm_n == len(base_perms)
+
+    return perm_data
+
+
 def entity_reflection(L, i, cell_shape):
     """Returns the bool that says whether or not an entity has been reflected."""
     cell_info = L.Symbol("cell_permutation")
@@ -366,50 +470,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 ])
         ]
 
-    base_perms = ir.base_permutations
-
-    if ir.cell_shape == "interval":
-        entities = {}
-    elif ir.cell_shape == "triangle":
-        entities = {1: 3}
-    elif ir.cell_shape == "quadrilateral":
-        entities = {1: 4}
-    elif ir.cell_shape == "tetrahedron":
-        entities = {1: 6, 2: 4}
-        face_rotation_order = 3
-    elif ir.cell_shape == "hexahedron":
-        entities = {1: 12, 2: 6}
-        face_rotation_order = 4
-    else:
-        raise NotImplementedError
-
-    perm_n = 0
-    perm_data = []
-    if 1 in entities:
-        for edge in range(entities[1]):
-            perm_data.append((
-                entity_reflection(L, (1, edge), ir.cell_shape),
-                None,
-                base_perms[perm_n]
-            ))
-            perm_n += 1
-    if 2 in entities:
-        for face in range(entities[2]):
-            for rot in range(1, face_rotation_order):
-                perm_data.append((
-                    entity_rotations(L, (2, face), ir.cell_shape),
-                    rot,
-                    numpy.linalg.matrix_power(base_perms[perm_n], rot)
-                ))
-            perm_n += 1
-            perm_data.append((
-                entity_reflection(L, (2, face), ir.cell_shape),
-                None,
-                base_perms[perm_n]
-            ))
-            perm_n += 1
-
-    assert perm_n == len(base_perms)
+    perm_data = make_perm_data(L, ir)
 
     # Apply entity permutations
     apply_permutations = []
@@ -428,7 +489,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                                      sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
         temporary_variables = max(temporary_variables, len(temps))
 
-        # If changes would be made, continue to next entity
+        # If no changes would be made, continue to next entity
         if len(body) == 0:
             continue
 
@@ -488,6 +549,15 @@ def generator(ir, parameters):
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
 
+    num_points = ir.interpolation_info[1].shape[0]
+    d["num_interpolation_points"] = num_points
+    i_points = []
+    for i, point in enumerate(ir.interpolation_info[1]):
+        for j, val in enumerate(point):
+            i_points.append(str(val))
+    d["interpolation_points"] = (f"static const double i_points[{num_points * ir.topological_dimension}] = {{"
+                                 f"{','.join(i_points)}}};\n  element->interpolation_points = i_points;\n")
+
     import ffcx.codegeneration.C.cnodes as L
 
     d["value_dimension"] = value_dimension(L, ir.value_shape)
@@ -501,6 +571,9 @@ def generator(ir, parameters):
 
     statements = tabulate_reference_dof_coordinates(L, ir, parameters)
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
+
+    statements = interpolate_into_cell(L, ir, parameters)
+    d["interpolate_into_cell"] = L.StatementList(statements)
 
     statements = create_sub_element(L, ir)
     d["sub_element_declaration"] = sub_element_declaration(L, ir)

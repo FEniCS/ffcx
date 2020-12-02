@@ -131,6 +131,12 @@ extern "C"
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
+    const double* interpolation_points;
+    int num_interpolation_points;
+    int (*interpolate_into_cell)(
+      ufc_scalar_t* restrict coefficients, const ufc_scalar_t* restrict evaluations,
+      const uint32_t cell_permutation);
+
     /// Create a new finite element for sub element i (for a mixed
     /// element). Memory for the new object is obtained with malloc(),
     /// and the caller is reponsible for freeing it by calling free().
