@@ -208,8 +208,8 @@ class MixedElement(LibtabBaseElement):
             m, p = e.interpolation_info
             matrices.append(m)
             points.append(p)
-        points = np.vstack(points)
-        matrix = np.zeros((self.dim, len(points)))
+        points = numpy.vstack(points)
+        matrix = numpy.zeros((self.dim, len(points)))
         start_row = 0
         start_col = 0
         for m in matrices:

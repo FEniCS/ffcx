@@ -44,7 +44,6 @@ def test_lagrange_triangle(compile_args, order, mode):
 
     coeffs = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
 
-    coords = np.array([1.0, 0.0, 2.0, 0.0, 0.0, 1.0], dtype=np.float64)
     element0.interpolate_into_cell(
         ffi.cast('{type} *'.format(type=c_type), coeffs.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), coeffs_in.ctypes.data), 0)
@@ -84,7 +83,6 @@ def test_lagrange_tetrahedron(compile_args, order, mode):
 
     coeffs = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=np_type)
 
-    coords = np.array([1.0, 0.0, 2.0, 0.0, 0.0, 1.0], dtype=np.float64)
     element0.interpolate_into_cell(
         ffi.cast('{type} *'.format(type=c_type), coeffs.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), coeffs_in.ctypes.data), 0)
@@ -92,7 +90,6 @@ def test_lagrange_tetrahedron(compile_args, order, mode):
     # Check that the result is the same as the input
     assert np.allclose(coeffs, coeffs_in)
 
-    # TODO: debug on TETS
     # Check that passing in permutations correctly reverses edges
     for edge in range(6):
         element0.interpolate_into_cell(
@@ -107,7 +104,6 @@ def test_lagrange_tetrahedron(compile_args, order, mode):
                 assert np.allclose(coeffs[start: end], range(end - 1, start - 1, -1))
             else:
                 assert np.allclose(coeffs[start: end], range(start, end))
-
 
     # Check that passing in permutation conts correctly permutes face data
     if order > 4:
