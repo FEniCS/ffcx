@@ -266,11 +266,11 @@ def entity_reflection(L, i, cell_shape):
 
 
 def entity_rotations(L, i, cell_shape):
-    """Returns number of times an entity has been rotates."""
+    """Returns number of times an entity has been rotated."""
     cell_info = L.Symbol("cell_permutation")
     assert cell_shape in ["tetrahedron", "hexahedron"]
     assert i[0] == 2
-    return L.BitwiseAnd(L.BitShiftR(cell_info, 3 * i[1]), 7)
+    return L.BitwiseAnd(L.BitShiftR(cell_info, 3 * i[1] + 1), 3)
 
 
 def transform_reference_basis_derivatives(L, ir, parameters):

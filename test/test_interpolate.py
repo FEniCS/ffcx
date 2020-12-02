@@ -98,7 +98,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode):
         element0.interpolate_into_cell(
             ffi.cast('{type} *'.format(type=c_type), coeffs.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), coeffs_in.ctypes.data),
-            1 << edge)
+            1 << (12 + edge))
 
         for e in range(6):
             start = 4 + (order - 1) * e
@@ -108,27 +108,25 @@ def test_lagrange_tetrahedron(compile_args, order, mode):
             else:
                 assert np.allclose(coeffs[start: end], range(start, end))
 
-    return
+
     # Check that passing in permutation conts correctly permutes face data
-    start = 4 + 6 * (order - 1)
-    end = start + (order - 1) * (order - 2) // 2
-    for rots in range(3):
-        for refs in range(2):
-            perm = (rots * 2 + refs) << 6
-            new_coords = [1., 0., 0.]
-            points = [[2.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-            new_coords += points[rots]
-            if refs:
-                new_coords += points[(rots - 1) % 3]
-                new_coords += points[(rots + 1) % 3]
-            else:
-                new_coords += points[(rots + 1) % 3]
-                new_coords += points[(rots - 1) % 3]
-            new_coords = np.array(new_coords, dtype=np.float64)
-            perm_b = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=np_type)
-            default_integral.tabulate_tensor(
-                ffi.cast('{type} *'.format(type=c_type), perm_b.ctypes.data),
-                ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-                ffi.NULL,
-                ffi.cast('double *', new_coords.ctypes.data), ffi.NULL, ffi.NULL, perm)
-            assert np.allclose(b[start:end], perm_b[start:end])
+    if order > 4:
+        raise NotImplementedError("This test is not implemented yet for higher of order >4.")
+    if order == 4:
+        expected = [(0, 1, 2), (0, 2, 1),
+                    (2, 0, 1), (2, 1, 0),
+                    (1, 2, 0), (1, 0, 2)]
+        for face in range(4):
+            start = 4 + 6 * (order - 1) + face * (order - 1) * (order - 2) // 2
+            end = start + (order - 1) * (order - 2) // 2
+            for rots in range(3):
+                for refs in range(2):
+                    perm = rots * 2 + refs
+                    element0.interpolate_into_cell(
+                        ffi.cast('{type} *'.format(type=c_type), coeffs.ctypes.data),
+                        ffi.cast('{type} *'.format(type=c_type), coeffs_in.ctypes.data),
+                        perm << (3 * face))
+
+                    assert np.allclose(coeffs[:start], range(start))
+                    assert np.allclose(coeffs[start:end], [start + i for i in expected[perm]])
+                    assert np.allclose(coeffs[end:], range(end, len(coeffs)))

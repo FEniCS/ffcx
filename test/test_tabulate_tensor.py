@@ -211,7 +211,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
             ffi.cast('{type} *'.format(type=c_type), perm_b.ctypes.data),
             ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
             ffi.NULL,
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 1 << edge)
+            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 1 << (12 + edge))
 
         for e in range(6):
             start = 4 + (order - 1) * e
@@ -226,7 +226,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     end = start + (order - 1) * (order - 2) // 2
     for rots in range(3):
         for refs in range(2):
-            perm = (rots * 2 + refs) << 6
+            perm = (rots * 2 + refs)  # << 6
             new_coords = [1., 0., 0.]
             points = [[2.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
             new_coords += points[rots]
