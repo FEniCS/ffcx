@@ -50,7 +50,7 @@ ir_element = namedtuple('ir_element', [
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'tabulate_dof_coordinates', 'num_sub_elements', 'block_size', 'create_sub_element',
     'entity_dofs', 'base_permutations', 'reference_offsets', 'physical_offsets', 'dof_mappings',
-    'num_reference_components', 'interpolation_info'])
+    'num_reference_components', 'interpolation_matrix', 'interpolation_points'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'base_permutations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
@@ -178,7 +178,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["entity_dofs"] = libtab_element.entity_dof_numbers
 
     ir["base_permutations"] = libtab_element.base_permutations
-    ir["interpolation_info"] = libtab_element.interpolation_info
+    ir["interpolation_matrix"] = libtab_element.interpolation_matrix
+    ir["interpolation_points"] = libtab_element.points
 
     ir["reference_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
     ir["physical_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO

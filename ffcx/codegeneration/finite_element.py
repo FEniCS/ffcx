@@ -142,7 +142,7 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
 
 
 def interpolate_into_cell(L, ir, parameters):
-    if ir.interpolation_info[1].shape[0] != ir.space_dimension:
+    if ir.interpolation_points.shape[0] != ir.space_dimension:
         return [L.Return(-1)]
 
     lines = []
@@ -155,7 +155,7 @@ def interpolate_into_cell(L, ir, parameters):
     # TODO: Do we need to map values back to reference?
     # TODO: permute
 
-    for i, row in enumerate(ir.interpolation_info[0]):
+    for i, row in enumerate(ir.interpolation_matrix):
         lines.append(L.Assign(coeffs[i], sum(coeffs_in[j] * k for j, k in enumerate(row) if not numpy.isclose(k, 0))))
 
     perm_data = make_perm_data(L, ir)
@@ -549,10 +549,10 @@ def generator(ir, parameters):
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
 
-    num_points = ir.interpolation_info[1].shape[0]
+    num_points = ir.interpolation_points.shape[0]
     d["num_interpolation_points"] = num_points
     i_points = []
-    for i, point in enumerate(ir.interpolation_info[1]):
+    for i, point in enumerate(ir.interpolation_points):
         for j, val in enumerate(point):
             i_points.append(str(val))
     d["interpolation_points"] = (f"static const double i_points[{num_points * ir.topological_dimension}] = {{"

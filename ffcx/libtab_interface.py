@@ -61,7 +61,11 @@ class LibtabBaseElement:
         raise NotImplementedError
 
     @property
-    def interpolation_info(self):
+    def interpolation_matrix(self):
+        raise NotImplementedError
+
+    @property
+    def points(self):
         raise NotImplementedError
 
     @property
@@ -117,8 +121,12 @@ class LibtabElement(LibtabBaseElement):
         return self.element.base_permutations
 
     @property
-    def interpolation_info(self):
-        return self.element.interpolation_info
+    def interpolation_matrix(self):
+        return self.element.interpolation_matrix
+
+    @property
+    def points(self):
+        return self.element.points
 
     @property
     def dim(self):
@@ -201,22 +209,20 @@ class MixedElement(LibtabBaseElement):
         return output
 
     @property
-    def interpolation_info(self):
-        matrices = []
-        points = []
-        for e in self.sub_elements:
-            m, p = e.interpolation_info
-            matrices.append(m)
-            points.append(p)
-        points = numpy.vstack(points)
-        matrix = numpy.zeros((self.dim, len(points)))
+    def interpolation_matrix(self):
+        matrix = numpy.zeros((self.dim, len(self.points)))
         start_row = 0
         start_col = 0
-        for m in matrices:
+        for e in self.sub_elements:
+            m = e.interpolation_matrix
             matrix[start_row: start_row + m.shape[0], start_col: start_col + m.shape[1]] = m
             start_row += m.shape[0]
             start_col += m.shape[1]
-        return matrix, points
+        return matrix
+
+    @property
+    def points(self):
+        return numpy.vstack([e.points for e in self.sub_elements])
 
     @property
     def dim(self):
@@ -314,9 +320,14 @@ class BlockedElement(LibtabBaseElement):
         return output
 
     @property
-    def interpolation_info(self):
+    def interpolation_matrix(self):
         # TODO: should this return this, or should it take blocks into account?
-        return self.sub_element.interpolation_info
+        return self.sub_element.interpolation_matrix
+
+    @property
+    def points(self):
+        # TODO: should this return this, or should it take blocks into account?
+        return self.sub_element.points
 
     @property
     def dim(self):
