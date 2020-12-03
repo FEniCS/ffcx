@@ -548,6 +548,7 @@ def generator(ir, parameters):
     d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
+    d["needs_permutation_data"] = ir.needs_permutation_data
 
     num_points = ir.interpolation_points.shape[0]
     d["num_interpolation_points"] = num_points

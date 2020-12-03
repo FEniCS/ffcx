@@ -131,6 +131,7 @@ extern "C"
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
+    int needs_permutation_data;
     const double* interpolation_points;
     int num_interpolation_points;
     int (*interpolate_into_cell)(
