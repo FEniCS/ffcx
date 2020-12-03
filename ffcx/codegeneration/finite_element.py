@@ -485,7 +485,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 for dof, w in enumerate(row):
                     if not numpy.isclose(w, 0) and dof not in temps:
                         temps[dof] = L.Symbol("t" + str(len(temps)))
-                body.append(L.Assign(values[ip, dof, r, physical_offsets[dof] + i],
+                body.append(L.Assign(values[ip, index, r, physical_offsets[index] + i],
                                      sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
         temporary_variables = max(temporary_variables, len(temps))
 
