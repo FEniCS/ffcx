@@ -159,10 +159,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
 
-    ir["space_dimension"] = libtab_element.dim
-    ir["value_shape"] = ufl_element.value_shape()
-    ir["reference_value_shape"] = ufl_element.reference_value_shape()
-
     ir["degree"] = ufl_element.degree()
     ir["family"] = libtab_element.family_name
 
@@ -172,9 +168,15 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     if hasattr(libtab_element, "block_size"):
         ir["block_size"] = libtab_element.block_size
+        libtab_element = libtab_element.sub_element
+        ufl_element = ufl_element.sub_elements()[0]
     else:
         ir["block_size"] = 1
 
+    ir["value_shape"] = ufl_element.value_shape()
+    ir["reference_value_shape"] = ufl_element.reference_value_shape()
+
+    ir["space_dimension"] = libtab_element.dim
     ir["entity_dofs"] = libtab_element.entity_dof_numbers
 
     ir["base_permutations"] = libtab_element.base_permutations
@@ -211,13 +213,13 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
-    ir["base_permutations"] = libtab_element.base_permutations
-
     if hasattr(libtab_element, "block_size"):
         ir["block_size"] = libtab_element.block_size
         libtab_element = libtab_element.sub_element
     else:
         ir["block_size"] = 1
+
+    ir["base_permutations"] = libtab_element.base_permutations
 
     # Precompute repeatedly used items
     for i in libtab_element.entity_dofs:
