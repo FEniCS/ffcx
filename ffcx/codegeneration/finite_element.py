@@ -281,7 +281,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
     max_degree = ir.degree
     reference_value_size = ufl.product(ir.reference_value_shape)
     physical_value_size = ufl.product(ir.value_shape)
-    num_dofs = ir.space_dimension
+    num_dofs = ir.space_dimension // ir.block_size
 
     max_g_d = gdim**max_degree
     max_t_d = tdim**max_degree

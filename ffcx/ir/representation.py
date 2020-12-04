@@ -166,17 +166,18 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
+    ir["space_dimension"] = libtab_element.dim
+
     if hasattr(libtab_element, "block_size"):
         ir["block_size"] = libtab_element.block_size
-        libtab_element = libtab_element.sub_element
         ufl_element = ufl_element.sub_elements()[0]
+        libtab_element = create_libtab_element(ufl_element)
     else:
         ir["block_size"] = 1
 
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
-    ir["space_dimension"] = libtab_element.dim
     ir["entity_dofs"] = libtab_element.entity_dof_numbers
 
     ir["base_permutations"] = libtab_element.base_permutations
