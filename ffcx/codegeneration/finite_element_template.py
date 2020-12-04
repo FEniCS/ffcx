@@ -78,7 +78,7 @@ ufc_finite_element* create_{factory_name}(void)
   element->needs_permutation_data = {needs_permutation_data};
 
   element->num_interpolation_points = {num_interpolation_points};
-  {interpolation_points};
+  {interpolation_points}
   element->interpolate_into_cell = interpolate_into_cell_{factory_name};
 
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};

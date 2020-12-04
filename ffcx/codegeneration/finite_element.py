@@ -142,7 +142,7 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
 
 
 def interpolate_into_cell(L, ir, parameters):
-    if ir.interpolation_points.shape[0] != ir.space_dimension:
+    if ir.interpolation_matrix.shape[0] != ir.space_dimension:
         return [L.Return(-1)]
 
     lines = []

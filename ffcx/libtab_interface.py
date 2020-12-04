@@ -321,12 +321,16 @@ class BlockedElement(LibtabBaseElement):
 
     @property
     def interpolation_matrix(self):
-        # TODO: should this return this, or should it take blocks into account?
-        return self.sub_element.interpolation_matrix
+        sub_mat = self.sub_element.interpolation_matrix
+        mat = numpy.zeros((sub_mat.shape[0] * self.block_size, sub_mat.shape[1] * self.block_size))
+        for i, row in enumerate(sub_mat):
+            for j, entry in enumerate(row):
+                mat[i * self.block_size: (i + 1) * self.block_size,
+                    j * self.block_size: (j + 1) * self.block_size] = entry * numpy.identity(self.block_size)
+        return mat
 
     @property
     def points(self):
-        # TODO: should this return this, or should it take blocks into account?
         return self.sub_element.points
 
     @property
