@@ -142,7 +142,7 @@ def tabulate_reference_dof_coordinates(L, ir, parameters):
 
 
 def interpolate_into_cell(L, ir, parameters):
-    if ir.interpolation_matrix.shape[0] != ir.space_dimension:
+    if ir.interpolation_matrix.shape[0] * ir.block_size != ir.space_dimension:
         return [L.Return(-1)]
 
     lines = []
@@ -158,7 +158,7 @@ def interpolate_into_cell(L, ir, parameters):
     for i, row in enumerate(ir.interpolation_matrix):
         lines.append(L.Assign(coeffs[i], sum(coeffs_in[j] * k for j, k in enumerate(row) if not numpy.isclose(k, 0))))
 
-    perm_data = make_perm_data(L, ir)
+    perm_data = make_perm_data(L, ir.base_permutations, ir.cell_shape)
 
     # Apply entity permutations
     apply_permutations = []
@@ -196,19 +196,17 @@ def interpolate_into_cell(L, ir, parameters):
     return lines + apply_permutations + [L.Return(0)]
 
 
-def make_perm_data(L, ir):
-    base_perms = ir.base_permutations
-
-    if ir.cell_shape == "interval":
+def make_perm_data(L, base_perms, cell_shape):
+    if cell_shape == "interval":
         entities = {}
-    elif ir.cell_shape == "triangle":
+    elif cell_shape == "triangle":
         entities = {1: 3}
-    elif ir.cell_shape == "quadrilateral":
+    elif cell_shape == "quadrilateral":
         entities = {1: 4}
-    elif ir.cell_shape == "tetrahedron":
+    elif cell_shape == "tetrahedron":
         entities = {1: 6, 2: 4}
         face_rotation_order = 3
-    elif ir.cell_shape == "hexahedron":
+    elif cell_shape == "hexahedron":
         entities = {1: 12, 2: 6}
         face_rotation_order = 4
     else:
@@ -219,7 +217,7 @@ def make_perm_data(L, ir):
     if 1 in entities:
         for edge in range(entities[1]):
             perm_data.append((
-                entity_reflection(L, (1, edge), ir.cell_shape),
+                entity_reflection(L, (1, edge), cell_shape),
                 None,
                 base_perms[perm_n]
             ))
@@ -228,13 +226,13 @@ def make_perm_data(L, ir):
         for face in range(entities[2]):
             for rot in range(1, face_rotation_order):
                 perm_data.append((
-                    entity_rotations(L, (2, face), ir.cell_shape),
+                    entity_rotations(L, (2, face), cell_shape),
                     rot,
                     numpy.linalg.matrix_power(base_perms[perm_n], rot)
                 ))
             perm_n += 1
             perm_data.append((
-                entity_reflection(L, (2, face), ir.cell_shape),
+                entity_reflection(L, (2, face), cell_shape),
                 None,
                 base_perms[perm_n]
             ))
@@ -470,7 +468,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 ])
         ]
 
-    perm_data = make_perm_data(L, ir)
+    perm_data = make_perm_data(L, ir.base_permutations, ir.cell_shape)
 
     # Apply entity permutations
     apply_permutations = []

@@ -168,9 +168,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["space_dimension"] = libtab_element.dim
 
-    ir["interpolation_matrix"] = libtab_element.interpolation_matrix
-    ir["interpolation_points"] = libtab_element.points
-
     if hasattr(libtab_element, "block_size"):
         ir["block_size"] = libtab_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
@@ -178,17 +175,19 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     else:
         ir["block_size"] = 1
 
+    ir["interpolation_matrix"] = libtab_element.interpolation_matrix
+    ir["interpolation_points"] = libtab_element.points
+
+    ir["base_permutations"] = libtab_element.base_permutations
+    ir["needs_permutation_data"] = 0
+    for p in libtab_element.base_permutations:
+        if not numpy.allclose(p, numpy.identity(len(p))):
+            ir["needs_permutation_data"] = 1
+
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
     ir["entity_dofs"] = libtab_element.entity_dof_numbers
-
-    ir["base_permutations"] = libtab_element.base_permutations
-    ir["needs_permutation_data"] = 0
-
-    for p in libtab_element.base_permutations:
-        if not numpy.allclose(p, numpy.identity(len(p))):
-            ir["needs_permutation_data"] = 1
 
     ir["reference_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
     ir["physical_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO

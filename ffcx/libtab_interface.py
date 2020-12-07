@@ -312,10 +312,8 @@ class BlockedElement(LibtabBaseElement):
         output = []
         for perm in self.sub_element.base_permutations:
             new_perm = numpy.zeros((perm.shape[0] * self.block_size, perm.shape[1] * self.block_size))
-            for i, row in enumerate(perm):
-                for j, entry in enumerate(row):
-                    new_perm[i * self.block_size: (i + 1) * self.block_size,
-                             j * self.block_size: (j + 1) * self.block_size] = entry * numpy.identity(self.block_size)
+            for i in range(self.block_size):
+                new_perm[i::self.block_size, i::self.block_size] = perm
             output.append(new_perm)
         return output
 
