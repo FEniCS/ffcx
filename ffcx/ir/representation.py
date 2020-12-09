@@ -191,8 +191,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["reference_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
     ir["physical_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
-    ir["dof_mappings"] = ["affine" for i in range(libtab_element.dim)]  # TODO
-    ir["num_reference_components"] = 1  # TODO
+    ir["dof_mappings"] = libtab_element.dof_mappings
+    ir["num_reference_components"] = libtab_element.value_size
 
     return ir_element(**ir)
 

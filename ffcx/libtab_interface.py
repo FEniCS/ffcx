@@ -108,6 +108,10 @@ class LibtabBaseElement:
     def reference_geometry(self):
         raise NotImplementedError
 
+    @property
+    def dof_mappings(self):
+        raise NotImplementedError
+
 
 class LibtabElement(LibtabBaseElement):
     def __init__(self, element):
@@ -177,6 +181,10 @@ class LibtabElement(LibtabBaseElement):
     @property
     def reference_geometry(self):
         return libtab.geometry(self.element.cell_type)
+
+    @property
+    def dof_mappings(self):
+        return [self.element.mapping_name for i in range(self.dim)]
 
 
 class MixedElement(LibtabBaseElement):
@@ -280,6 +288,13 @@ class MixedElement(LibtabBaseElement):
     def reference_geometry(self):
         return self.sub_elements[0].reference_geometry
 
+    @property
+    def dof_mappings(self):
+        out = []
+        for e in self.sub_elements:
+            out += e.dof_mappings
+        return out
+
 
 class BlockedElement(LibtabBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
@@ -377,3 +392,7 @@ class BlockedElement(LibtabBaseElement):
     @property
     def reference_geometry(self):
         return self.sub_element.reference_geometry
+
+    @property
+    def dof_mappings(self):
+        self.sub_elements.dof_mappings * self.block_size
