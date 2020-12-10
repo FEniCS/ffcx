@@ -11,6 +11,13 @@ libtab_cells = {
     "hexahedron": libtab.CellType.hexahedron
 }
 
+element_names = {
+    "Lagrange": ["CG"],
+    "Discontinuous Lagrange": ["DG"],
+    "Raviart-Thomas": ["RT"],
+    "Nedelec 1st kind H(curl)": ["Nedelec", "N1curl"],
+    "Nedelec 2nd kind H(curl)": ["N2curl"],
+}
 
 def create_libtab_element(ufl_element):
     # TODO: EnrichedElement
@@ -25,6 +32,11 @@ def create_libtab_element(ufl_element):
 
     if isinstance(ufl_element, ufl.MixedElement):
         return MixedElement([create_libtab_element(e) for e in ufl_element.sub_elements()])
+
+    for family, options in element_names.items():
+        if ufl_element.family() == family or ufl_element.family() in options:
+            return LibtabElement(libtab.create_element(
+                family, ufl_element.cell().cellname(), ufl_element.degree()))
 
     return LibtabElement(libtab.create_element(
         ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
@@ -205,7 +217,6 @@ class MixedElement(LibtabBaseElement):
 
         output = []
         for p in perms:
-            print(p)
             new_perm = numpy.zeros((sum(i.shape[0] for i in p), sum(i.shape[1] for i in p)))
             row_start = 0
             col_start = 0
@@ -218,7 +229,7 @@ class MixedElement(LibtabBaseElement):
 
     @property
     def interpolation_matrix(self):
-        matrix = numpy.zeros((self.dim, len(self.points)))
+        matrix = numpy.zeros((self.dim, len(self.points) * self.value_size))
         start_row = 0
         start_col = 0
         for e in self.sub_elements:
@@ -395,4 +406,4 @@ class BlockedElement(LibtabBaseElement):
 
     @property
     def dof_mappings(self):
-        self.sub_elements.dof_mappings * self.block_size
+        return self.sub_element.dof_mappings * self.block_size
