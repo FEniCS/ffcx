@@ -257,7 +257,7 @@ class MixedElement(LibtabBaseElement):
                 start_col += m.shape[1]
             return matrix
         except ValueError:
-            return numpy.zeros((0,0))
+            return numpy.zeros((0, 0))
 
     @property
     def points(self):
