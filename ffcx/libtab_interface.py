@@ -324,7 +324,6 @@ class MixedElement(LibtabBaseElement):
         return out
 
 
-
 class BlockedElement(LibtabBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
