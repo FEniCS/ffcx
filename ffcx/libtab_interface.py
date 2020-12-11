@@ -11,13 +11,12 @@ libtab_cells = {
     "hexahedron": libtab.CellType.hexahedron
 }
 
-element_names = {
-    "Lagrange": ["CG"],
-    "Discontinuous Lagrange": ["DG"],
-    "Raviart-Thomas": ["RT"],
-    "Nedelec 1st kind H(curl)": ["Nedelec", "N1curl"],
-    "Nedelec 2nd kind H(curl)": ["N2curl"],
+# This dictionary can be used to map ufl element names to libtab element names.
+# Currently all the names agree but this will not necessarily remian true.
+ufl_to_libtab_names = {
+    "Lagrange": "Lagrange"
 }
+
 
 def create_libtab_element(ufl_element):
     # TODO: EnrichedElement
@@ -33,10 +32,9 @@ def create_libtab_element(ufl_element):
     if isinstance(ufl_element, ufl.MixedElement):
         return MixedElement([create_libtab_element(e) for e in ufl_element.sub_elements()])
 
-    for family, options in element_names.items():
-        if ufl_element.family() == family or ufl_element.family() in options:
-            return LibtabElement(libtab.create_element(
-                family, ufl_element.cell().cellname(), ufl_element.degree()))
+    if ufl_element.family() in ufl_to_libtab_names:
+        return LibtabElement(libtab.create_element(
+            ufl_to_libtab_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
 
     return LibtabElement(libtab.create_element(
         ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
