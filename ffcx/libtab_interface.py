@@ -122,6 +122,10 @@ class LibtabBaseElement:
     def dof_mappings(self):
         raise NotImplementedError
 
+    @property
+    def num_reference_components(self):
+        raise NotImplementedError
+
 
 class LibtabElement(LibtabBaseElement):
     def __init__(self, element):
@@ -195,6 +199,10 @@ class LibtabElement(LibtabBaseElement):
     @property
     def dof_mappings(self):
         return [self.element.mapping_name for i in range(self.dim)]
+
+    @property
+    def num_reference_components(self):
+        return {self.element.mapping_name: self.value_size}
 
 
 class MixedElement(LibtabBaseElement):
@@ -304,6 +312,18 @@ class MixedElement(LibtabBaseElement):
             out += e.dof_mappings
         return out
 
+    @property
+    def num_reference_components(self):
+        out = {}
+        for e in self.sub_elements:
+            for i, j in e.num_reference_components.items():
+                if i in out:
+                    assert out[i] == j
+                else:
+                    out[i] = j
+        return out
+
+
 
 class BlockedElement(LibtabBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
@@ -405,3 +425,7 @@ class BlockedElement(LibtabBaseElement):
     @property
     def dof_mappings(self):
         return self.sub_element.dof_mappings * self.block_size
+
+    @property
+    def num_reference_components(self):
+        return self.sub_element.num_reference_components

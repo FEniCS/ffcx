@@ -424,8 +424,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         physical_offset = physical_offsets[idof]
 
         # How many components does each basis function with this mapping have?
-        # This should be uniform, i.e. there should be only one element in this set:
-        num_reference_components = ir.num_reference_components
+        num_reference_components = ir.num_reference_components[mapping]
 
         M_scale, M_row, num_physical_components = generate_element_mapping(
             mapping, i, num_reference_components, tdim, gdim, J[ip], detJ[ip], K[ip])
