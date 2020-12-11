@@ -261,7 +261,10 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             padded_shape = (libtab_element.dim,) + libtab_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
-            tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+            try:
+                tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+            except:
+                from IPython import embed; embed()()
             padded_tbl[slice(*ir), slice(*cr)] = tab
 
             component_tables.append(padded_tbl[:, flat_component, :])

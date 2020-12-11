@@ -211,11 +211,22 @@ class MixedElement(LibtabBaseElement):
         self.sub_elements = sub_elements
 
     def tabulate(self, nderivs, points):
+        tables = []
         results = [e.tabulate(nderivs, points) for e in self.sub_elements]
-        return [numpy.hstack([r[i] for r in results]) for i, _ in enumerate(results[0])]
+        for deriv_tables in zip(*results):
+            new_table = numpy.zeros((len(points), self.value_size * self.dim))
+            start = 0
+            for e, t in zip(self.sub_elements, deriv_tables):
+                for i in range(0, e.dim, e.value_size):
+                    new_table[:, start: start + e.value_size] = t[:, i: i + e.value_size]
+                    start += self.value_size
+            tables.append(new_table)
+        return tables
 
     @property
     def base_permutations(self):
+        for e in self.sub_elements[1:]:
+            assert len(e.base_permutations) == len(self.sub_elements[0].base_permutations)
         perms = [[] for i in self.sub_elements[0].base_permutations]
         for e in self.sub_elements:
             for i, b in enumerate(e.base_permutations):
@@ -235,19 +246,25 @@ class MixedElement(LibtabBaseElement):
 
     @property
     def interpolation_matrix(self):
-        matrix = numpy.zeros((self.dim, len(self.points) * self.value_size))
-        start_row = 0
-        start_col = 0
-        for e in self.sub_elements:
-            m = e.interpolation_matrix
-            matrix[start_row: start_row + m.shape[0], start_col: start_col + m.shape[1]] = m
-            start_row += m.shape[0]
-            start_col += m.shape[1]
-        return matrix
+        try:
+            matrix = numpy.zeros((self.dim, len(self.points) * self.value_size))
+            start_row = 0
+            start_col = 0
+            for e in self.sub_elements:
+                m = e.interpolation_matrix
+                matrix[start_row: start_row + m.shape[0], start_col: start_col + m.shape[1]] = m
+                start_row += m.shape[0]
+                start_col += m.shape[1]
+            return matrix
+        except ValueError:
+            return numpy.zeros((0,0))
 
     @property
     def points(self):
-        return numpy.vstack([e.points for e in self.sub_elements])
+        try:
+            return numpy.vstack([e.points for e in self.sub_elements])
+        except ValueError:
+            return numpy.zeros(0)
 
     @property
     def dim(self):
@@ -341,10 +358,9 @@ class BlockedElement(LibtabBaseElement):
         output = []
         for table in self.sub_element.tabulate(nderivs, points):
             new_table = numpy.zeros((table.shape[0], table.shape[1] * self.block_size * self.block_size))
-            for i, row in enumerate(table):
-                for j, item in enumerate(row):
-                    new_table[i, j * self.block_size: (j + 1) * self.block_size] = [
-                        item if k == j else 0 for k in range(self.block_size)]
+            for block in range(self.block_size):
+                col = block * (self.block_size + 1)
+                new_table[:, col: col + table.shape[1]] = table
             output.append(new_table)
         return output
 
