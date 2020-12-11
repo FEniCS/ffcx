@@ -69,16 +69,16 @@ def test_vector_element(compile_args):
     assert ufc_element.topological_dimension == 2
     assert ufc_element.geometric_dimension == 2
     assert ufc_element.space_dimension == 6
-    assert ufc_element.value_rank == 1
-    assert ufc_element.value_dimension(0) == 2
+    assert ufc_element.value_rank == 0
+    assert ufc_element.value_dimension(0) == 1
     assert ufc_element.value_dimension(1) == 1
     assert ufc_element.value_dimension(2) == 1
-    assert ufc_element.value_size == 2
-    assert ufc_element.reference_value_rank == 1
-    assert ufc_element.reference_value_dimension(0) == 2
+    assert ufc_element.value_size == 1
+    assert ufc_element.reference_value_rank == 0
+    assert ufc_element.reference_value_dimension(0) == 1
     assert ufc_element.reference_value_dimension(1) == 1
     assert ufc_element.reference_value_dimension(2) == 1
-    assert ufc_element.reference_value_size == 2
+    assert ufc_element.reference_value_size == 1
     assert ufc_element.block_size == 2
     # X = np.array([[0.0, 0.0], [0.5, 0.5]])
     # npoint = X.shape[0]
@@ -118,16 +118,16 @@ def test_tensor_element(compile_args):
     assert ufc_element.topological_dimension == 2
     assert ufc_element.geometric_dimension == 2
     assert ufc_element.space_dimension == 12
-    assert ufc_element.value_rank == 2
-    assert ufc_element.value_dimension(0) == 2
-    assert ufc_element.value_dimension(1) == 2
+    assert ufc_element.value_rank == 0
+    assert ufc_element.value_dimension(0) == 1
+    assert ufc_element.value_dimension(1) == 1
     assert ufc_element.value_dimension(2) == 1
-    assert ufc_element.value_size == 4
-    assert ufc_element.reference_value_rank == 2
-    assert ufc_element.reference_value_dimension(0) == 2
-    assert ufc_element.reference_value_dimension(1) == 2
+    assert ufc_element.value_size == 1
+    assert ufc_element.reference_value_rank == 0
+    assert ufc_element.reference_value_dimension(0) == 1
+    assert ufc_element.reference_value_dimension(1) == 1
     assert ufc_element.reference_value_dimension(2) == 1
-    assert ufc_element.reference_value_size == 4
+    assert ufc_element.reference_value_size == 1
     assert ufc_element.block_size == 4
     # X = np.array([[0.0, 0.0], [0.5, 0.5]])
     # npoint = X.shape[0]
