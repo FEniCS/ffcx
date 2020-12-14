@@ -86,7 +86,7 @@ jobs:
           path: "docs"
           ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
       - name: Push documentation to repository FEniCS/docs
-        if: ${{ github.repository == 'FEniCS/ffcx' && runner.os == 'linux' }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && runner.os == 'linux' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         run: |
           git config --global user.email "fenics@github.com"
           git config --global user.name "FEniCS GitHub Actions"
