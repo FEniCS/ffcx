@@ -28,7 +28,7 @@ https://www.fenicsproject.org
 Documentation
 =============
 
-Documentation can be viewed at https://fenics-ffcx.readthedocs.org/.
+Documentation can be viewed at https://docs.fenicsproject.org/ffcx
 
 
 License
