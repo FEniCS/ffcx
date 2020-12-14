@@ -69,7 +69,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          pip install sphinx
+          pip install sphinx sphinx_rtd_theme
           cd doc
           make html
       - name: Upload documentation artifact
