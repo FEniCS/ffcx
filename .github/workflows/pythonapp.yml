@@ -63,6 +63,38 @@ jobs:
         # Use always() to always run this step to publish test results
         # when there are test failures
         if: always()
+      - name: 
       - name: Runs demos
         run: |
           ffcx demo/*.ufl
+
+      - name: Build documentation
+        run: |
+          pip install sphinx
+          cd doc
+          make html
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: doc
+          path: |
+            doc/build/html/
+          retention-days: 2
+          if-no-files-found: error
+      - name: Checkout FEniCS/docs
+        uses: actions/checkout@v2
+        with:
+          repository: "FEniCS/docs"
+          path: "docs"
+          ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
+      - name: Push documentation to repository FEniCS/docs
+        if: ${{ github.repository == 'FEniCS/ffcx' && runner.os == 'linux' }}
+        run: |
+          git config --global user.email "fenics@github.com"
+          git config --global user.name "FEniCS GitHub Actions"
+          mkdir -p docs/ffcx
+          cp -r doc/build/html/* docs/ffcx/
+          cd docs
+          git add --all
+          git commit --allow-empty -m "C++ and Python FEniCS/ffcx@${{ github.sha }}"
+          git push
