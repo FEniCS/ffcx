@@ -40,8 +40,7 @@ int transform_values_{factory_name}(
 }}
 
 int permute_dof_coordinates_{factory_name}(
-     double* restrict permuted_coords,
-     const uint32_t cell_permutation)
+     double* restrict coords, const uint32_t cell_permutation)
 {{
   {permute_dof_coordinates}
 }}

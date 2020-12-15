@@ -170,13 +170,16 @@ def permute_dof_coordinates(L, ir, parameters):
     lines = []
     for mat in ir.base_permutations:
         for row in mat:
-            if not numpy.isclose(sum(abs(i) for i in row),1) or not numpy.isclose(max(abs(i) for i in row), 1):
+            if not numpy.isclose(sum(abs(i) for i in row), 1) or not numpy.isclose(max(abs(i) for i in row), 1):
                 return [L.Return(-1)]
 
-    coords = L.Symbol("permuted_coords")
+    coords = L.Symbol("coords")
+    block = L.Symbol("block")
 
     apply_permutations = apply_permutations_to_data(
-        L, ir, coords, block_size=ir.topological_dimension, rotations_first=False)
+        L, ir, coords,
+        indices=lambda dof: dof * ir.topological_dimension + block, ranges=[(block, 0, ir.topological_dimension)],
+        rotations_first=False)
     return lines + apply_permutations + [L.Return(0)]
 
 
@@ -232,7 +235,8 @@ def make_perm_data(L, base_perms, cell_shape, rotations_first=True, reversed_rot
     return perm_data
 
 
-def apply_permutations_to_data(L, ir, data, block_size=1, rotations_first=True, reversed_rotations=False):
+def apply_permutations_to_data(L, ir, data, rotations_first=True, reversed_rotations=False,
+                               indices=lambda dof: dof, ranges=None):
     perm_data = make_perm_data(
         L, ir.base_permutations, ir.cell_shape,
         rotations_first=rotations_first, reversed_rotations=reversed_rotations)
@@ -241,31 +245,34 @@ def apply_permutations_to_data(L, ir, data, block_size=1, rotations_first=True, 
     apply_permutations = []
     temporary_variables = 0
     for entity_perm, value, perm in perm_data:
-        for block in range(block_size):
-            body = []
+        body = []
 
-            # Use temporary variables t0, t1, ... to store current data
-            temps = {}
-            for index, row in enumerate(perm):
-                if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
-                    for dof, w in enumerate(row):
-                        if not numpy.isclose(w, 0) and dof * block_size + block not in temps:
-                            temps[dof * block_size + block] = L.Symbol("t" + str(len(temps)))
-                    body.append(L.Assign(data[index * block_size + block],
-                                         sum(w * temps[dof * block_size + block] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
-            temporary_variables = max(temporary_variables, len(temps))
+        # Use temporary variables t0, t1, ... to store current data
+        temps = {}
+        for index, row in enumerate(perm):
+            if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
+                for dof, w in enumerate(row):
+                    if not numpy.isclose(w, 0) and dof not in temps:
+                        temps[dof] = L.Symbol("t" + str(len(temps)))
+                body.append(L.Assign(data[indices(index)],
+                                     sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
+        temporary_variables = max(temporary_variables, len(temps))
 
-            # If no changes would be made, continue to next entity
-            if len(body) == 0:
-                continue
+        # If no changes would be made, continue to next entity
+        if len(body) == 0:
+            continue
 
-            if value is None:
-                condition = entity_perm
-            else:
-                condition = L.EQ(entity_perm, value)
+        if value is None:
+            condition = entity_perm
+        else:
+            condition = L.EQ(entity_perm, value)
 
-            body = [L.Assign(t, data[dof]) for dof, t in temps.items()] + body
+        body = [L.Assign(t, data[indices(dof)]) for dof, t in temps.items()] + body
+        if ranges is None:
             apply_permutations.append(L.If(condition, body))
+        else:
+            apply_permutations.append(L.If(condition,
+                                           L.ForRanges(*ranges, index_type=index_type, body=body)))
 
     if len(apply_permutations) > 0:
         apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
@@ -498,42 +505,11 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 ])
         ]
 
-    perm_data = make_perm_data(L, ir.base_permutations, ir.cell_shape)
-
-    # Apply entity permutations
-    apply_permutations = []
-    temporary_variables = 0
-    for entity_perm, value, perm in perm_data:
-        body = []
-
-        # Use temporary variables t0, t1, ... to store current data
-        temps = {}
-        for index, row in enumerate(perm):
-            if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
-                for dof, w in enumerate(row):
-                    if not numpy.isclose(w, 0) and dof not in temps:
-                        temps[dof] = L.Symbol("t" + str(len(temps)))
-                body.append(L.Assign(values[ip, index, r, physical_offsets[index] + i],
-                                     sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
-        temporary_variables = max(temporary_variables, len(temps))
-
-        # If no changes would be made, continue to next entity
-        if len(body) == 0:
-            continue
-
-        if value is None:
-            condition = entity_perm
-        else:
-            condition = L.EQ(entity_perm, value)
-
-        body = [L.Assign(t, values[ip, dof, r, physical_offsets[dof] + i]) for dof, t in temps.items()] + body
-        apply_permutations.append(L.If(condition,
-                                       L.ForRanges((s, 0, num_derivatives_t), (i, 0, num_physical_components),
-                                                   (r, 0, num_derivatives_g), index_type=index_type, body=body)))
-
-    if len(apply_permutations) > 0:
-        apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
-                              for i in range(temporary_variables)] + apply_permutations
+    apply_permutations = apply_permutations_to_data(
+        L, ir, values,
+        indices=lambda dof: (ip, dof, r, physical_offsets[dof] + i),
+        ranges=[(s, 0, num_derivatives_t), (i, 0, num_physical_components),
+                (r, 0, num_derivatives_g)])
 
     # Transform for each point
     point_loop_code = [
