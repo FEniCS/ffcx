@@ -509,7 +509,8 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         L, ir, values,
         indices=lambda dof: (ip, dof, r, physical_offsets[dof] + i),
         ranges=[(s, 0, num_derivatives_t), (i, 0, num_physical_components),
-                (r, 0, num_derivatives_g)])
+                (r, 0, num_derivatives_g)],
+        rotations_first=False)
 
     # Transform for each point
     point_loop_code = [
