@@ -196,6 +196,62 @@ def interpolate_into_cell(L, ir, parameters):
     return lines + apply_permutations + [L.Return(0)]
 
 
+def permute_dof_coordinates(L, ir, parameters):
+    if ir.interpolation_points.shape[0] * ir.block_size != ir.space_dimension:
+        return [L.Return(-1)]
+
+    lines = []
+    for mat in ir.base_permutations:
+        for row in mat:
+            if not numpy.isclose(sum(abs(i) for i in row),1) or not numpy.isclose(max(abs(i) for i in row), 1):
+                return [L.Return(-1)]
+
+    # Output argument
+    coords = L.Symbol("permuted_coords")
+    # Input argument
+    coords_in = L.Symbol("dof_coords")
+
+    perm_data = make_perm_data(L, ir.base_permutations, ir.cell_shape)
+
+    tdim = ir.topological_dimension
+
+    # Apply entity permutations
+    apply_permutations = []
+    temporary_variables = 0
+    for entity_perm, value, perm in perm_data[::-1]:
+        for d in range(tdim):
+            body = []
+
+            # Use temporary variables t0, t1, ... to store current data
+            temps = {}
+            for index, row in enumerate(perm):
+                if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
+                    for dof, w in enumerate(row):
+                        if not numpy.isclose(w, 0) and dof * tdim + d not in temps:
+                            temps[dof * tdim + d] = L.Symbol("t" + str(len(temps)))
+                    body.append(L.Assign(coords[index * tdim + d],
+                                         sum(w * temps[dof * tdim + d] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
+            temporary_variables = max(temporary_variables, len(temps))
+
+            # If no changes would be made, continue to next entity
+            if len(body) == 0:
+                continue
+
+            if value is None:
+                condition = entity_perm
+            else:
+                condition = L.EQ(entity_perm, value)
+
+            body = [L.Assign(t, coords[i]) for i, t in temps.items()] + body
+            apply_permutations.append(L.If(condition, body))
+
+    if len(apply_permutations) > 0:
+        apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
+                              for i in range(temporary_variables)] + apply_permutations
+
+    return lines + apply_permutations + [L.Return(0)]
+
+
 def make_perm_data(L, base_perms, cell_shape):
     if cell_shape == "interval":
         entities = {}
@@ -569,6 +625,9 @@ def generator(ir, parameters):
 
     statements = tabulate_reference_dof_coordinates(L, ir, parameters)
     d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
+
+    statements = permute_dof_coordinates(L, ir, parameters)
+    d["permute_dof_coordinates"] = L.StatementList(statements)
 
     statements = interpolate_into_cell(L, ir, parameters)
     d["interpolate_into_cell"] = L.StatementList(statements)

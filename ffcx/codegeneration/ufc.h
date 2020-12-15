@@ -123,6 +123,10 @@ extern "C"
                             const double* restrict coordinate_dofs,
                             const ufc_coordinate_mapping* restrict cm);
 
+    /// TODO: doc
+    int (*permute_dof_coordinates)(double* coords,
+                                   const uint32_t cell_permutation);
+
     // FIXME: change to 'const double* reference_dof_coordinates()'
     /// Tabulate the coordinates of all dofs on a reference cell
     int (*tabulate_reference_dof_coordinates)(
