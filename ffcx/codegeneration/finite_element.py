@@ -158,40 +158,7 @@ def interpolate_into_cell(L, ir, parameters):
     for i, row in enumerate(ir.interpolation_matrix):
         lines.append(L.Assign(coeffs[i], sum(coeffs_in[j] * k for j, k in enumerate(row) if not numpy.isclose(k, 0))))
 
-    perm_data = make_perm_data(L, ir.base_permutations, ir.cell_shape)
-
-    # Apply entity permutations
-    apply_permutations = []
-    temporary_variables = 0
-    for entity_perm, value, perm in perm_data:
-        body = []
-
-        # Use temporary variables t0, t1, ... to store current data
-        temps = {}
-        for index, row in enumerate(perm):
-            if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
-                for dof, w in enumerate(row):
-                    if not numpy.isclose(w, 0) and dof not in temps:
-                        temps[dof] = L.Symbol("t" + str(len(temps)))
-                body.append(L.Assign(coeffs[index],
-                                     sum(w * temps[dof] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
-        temporary_variables = max(temporary_variables, len(temps))
-
-        # If no changes would be made, continue to next entity
-        if len(body) == 0:
-            continue
-
-        if value is None:
-            condition = entity_perm
-        else:
-            condition = L.EQ(entity_perm, value)
-
-        body = [L.Assign(t, coeffs[dof]) for dof, t in temps.items()] + body
-        apply_permutations.append(L.If(condition, body))
-
-    if len(apply_permutations) > 0:
-        apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
-                              for i in range(temporary_variables)] + apply_permutations
+    apply_permutations = apply_permutations_to_data(L, ir, coeffs)
 
     return lines + apply_permutations + [L.Return(0)]
 
@@ -206,53 +173,14 @@ def permute_dof_coordinates(L, ir, parameters):
             if not numpy.isclose(sum(abs(i) for i in row),1) or not numpy.isclose(max(abs(i) for i in row), 1):
                 return [L.Return(-1)]
 
-    # Output argument
     coords = L.Symbol("permuted_coords")
-    # Input argument
-    coords_in = L.Symbol("dof_coords")
 
-    perm_data = make_perm_data(L, ir.base_permutations, ir.cell_shape)
-
-    tdim = ir.topological_dimension
-
-    # Apply entity permutations
-    apply_permutations = []
-    temporary_variables = 0
-    for entity_perm, value, perm in perm_data[::-1]:
-        for d in range(tdim):
-            body = []
-
-            # Use temporary variables t0, t1, ... to store current data
-            temps = {}
-            for index, row in enumerate(perm):
-                if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
-                    for dof, w in enumerate(row):
-                        if not numpy.isclose(w, 0) and dof * tdim + d not in temps:
-                            temps[dof * tdim + d] = L.Symbol("t" + str(len(temps)))
-                    body.append(L.Assign(coords[index * tdim + d],
-                                         sum(w * temps[dof * tdim + d] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
-            temporary_variables = max(temporary_variables, len(temps))
-
-            # If no changes would be made, continue to next entity
-            if len(body) == 0:
-                continue
-
-            if value is None:
-                condition = entity_perm
-            else:
-                condition = L.EQ(entity_perm, value)
-
-            body = [L.Assign(t, coords[i]) for i, t in temps.items()] + body
-            apply_permutations.append(L.If(condition, body))
-
-    if len(apply_permutations) > 0:
-        apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
-                              for i in range(temporary_variables)] + apply_permutations
-
+    apply_permutations = apply_permutations_to_data(
+        L, ir, coords, block_size=ir.topological_dimension, rotations_first=False)
     return lines + apply_permutations + [L.Return(0)]
 
 
-def make_perm_data(L, base_perms, cell_shape):
+def make_perm_data(L, base_perms, cell_shape, rotations_first=True, reversed_rotations=False):
     if cell_shape == "interval":
         entities = {}
     elif cell_shape == "triangle":
@@ -280,23 +208,70 @@ def make_perm_data(L, base_perms, cell_shape):
             perm_n += 1
     if 2 in entities:
         for face in range(entities[2]):
+            reflection = (
+                entity_reflection(L, (2, face), cell_shape),
+                None,
+                base_perms[perm_n + 1]
+            )
+            if not rotations_first:
+                perm_data.append(reflection)
             for rot in range(1, face_rotation_order):
+                if reversed_rotations:
+                    rot = face_rotation_order - rot
                 perm_data.append((
                     entity_rotations(L, (2, face), cell_shape),
                     rot,
                     numpy.linalg.matrix_power(base_perms[perm_n], rot)
                 ))
-            perm_n += 1
-            perm_data.append((
-                entity_reflection(L, (2, face), cell_shape),
-                None,
-                base_perms[perm_n]
-            ))
-            perm_n += 1
+            if rotations_first:
+                perm_data.append(reflection)
+            perm_n += 2
 
     assert perm_n == len(base_perms)
 
     return perm_data
+
+
+def apply_permutations_to_data(L, ir, data, block_size=1, rotations_first=True, reversed_rotations=False):
+    perm_data = make_perm_data(
+        L, ir.base_permutations, ir.cell_shape,
+        rotations_first=rotations_first, reversed_rotations=reversed_rotations)
+
+    # Apply entity permutations
+    apply_permutations = []
+    temporary_variables = 0
+    for entity_perm, value, perm in perm_data:
+        for block in range(block_size):
+            body = []
+
+            # Use temporary variables t0, t1, ... to store current data
+            temps = {}
+            for index, row in enumerate(perm):
+                if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
+                    for dof, w in enumerate(row):
+                        if not numpy.isclose(w, 0) and dof * block_size + block not in temps:
+                            temps[dof * block_size + block] = L.Symbol("t" + str(len(temps)))
+                    body.append(L.Assign(data[index * block_size + block],
+                                         sum(w * temps[dof * block_size + block] for dof, w in enumerate(row) if not numpy.isclose(w, 0))))
+            temporary_variables = max(temporary_variables, len(temps))
+
+            # If no changes would be made, continue to next entity
+            if len(body) == 0:
+                continue
+
+            if value is None:
+                condition = entity_perm
+            else:
+                condition = L.EQ(entity_perm, value)
+
+            body = [L.Assign(t, data[dof]) for dof, t in temps.items()] + body
+            apply_permutations.append(L.If(condition, body))
+
+    if len(apply_permutations) > 0:
+        apply_permutations = [L.VariableDecl("double", L.Symbol("t" + str(i)), 0)
+                              for i in range(temporary_variables)] + apply_permutations
+
+    return apply_permutations
 
 
 def entity_reflection(L, i, cell_shape):
