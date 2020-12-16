@@ -158,15 +158,15 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-
+    ir["space_dimension"] = libtab_element.dim
+    ir["value_shape"] = ufl_element.value_shape()
+    ir["reference_value_shape"] = ufl_element.reference_value_shape()
     ir["degree"] = ufl_element.degree()
     ir["family"] = libtab_element.family_name
 
     ir["tabulate_dof_coordinates"] = {}  # _tabulate_dof_coordinates(ufl_element, fiat_element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
-
-    ir["space_dimension"] = libtab_element.dim
 
     if hasattr(libtab_element, "block_size"):
         ir["block_size"] = libtab_element.block_size
@@ -183,9 +183,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     for p in libtab_element.base_permutations:
         if not numpy.allclose(p, numpy.identity(len(p))):
             ir["needs_permutation_data"] = 1
-
-    ir["value_shape"] = ufl_element.value_shape()
-    ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
     ir["entity_dofs"] = libtab_element.entity_dof_numbers
 

@@ -297,14 +297,8 @@ class MixedElement(LibtabBaseElement):
 
     @property
     def coeffs(self):
-        coeff_matrix = numpy.zeros((
-            sum(e.dim for e in self.sub_elements),
-            max(e.coeffs.shape[1] for e in self.sub_elements)))
-        start_dof = 0
-        for e in self.sub_elements:
-            coeff_matrix[start_dof:e.dim, :e.coeffs.shape[1]] = e.coeffs
-            start_dof += e.dim
-        return coeff_matrix
+        # Return empty matrix to disable interpolation into mixed elements
+        return numpy.zeros(0, 0)
 
     @property
     def num_global_support_dofs(self):

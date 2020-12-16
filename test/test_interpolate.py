@@ -110,8 +110,8 @@ def test_lagrange_tetrahedron(compile_args, order, mode):
         raise NotImplementedError("This test is not implemented yet for higher of order >4.")
     if order == 4:
         expected = [(0, 1, 2), (0, 2, 1),
-                    (2, 0, 1), (2, 1, 0),
-                    (1, 2, 0), (1, 0, 2)]
+                    (2, 0, 1), (1, 0, 2),
+                    (1, 2, 0), (2, 1, 0)]
         for face in range(4):
             start = 4 + 6 * (order - 1) + face * (order - 1) * (order - 2) // 2
             end = start + (order - 1) * (order - 2) // 2
