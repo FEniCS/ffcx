@@ -409,12 +409,13 @@ class BlockedElement(LibtabBaseElement):
 
     @property
     def entity_dofs(self):
-        return self.sub_element.entity_dofs
+        return [[j * self.block_size for j in i] for i in self.sub_element.entity_dofs]
 
     @property
     def entity_dof_numbers(self):
         # TODO: should this return this, or should it take blocks into account?
-        return self.sub_element.entity_dof_numbers
+        return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
+                 for j in i] for i in self.sub_element.entity_dof_numbers]
 
     @property
     def coeffs(self):
