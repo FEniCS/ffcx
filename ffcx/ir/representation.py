@@ -159,8 +159,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = libtab_element.dim
-    ir["value_shape"] = ufl_element.value_shape()
-    ir["reference_value_shape"] = ufl_element.reference_value_shape()
     ir["degree"] = ufl_element.degree()
     ir["family"] = libtab_element.family_name
 
@@ -174,6 +172,9 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
         libtab_element = create_libtab_element(ufl_element)
     else:
         ir["block_size"] = 1
+
+    ir["value_shape"] = ufl_element.value_shape()
+    ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
     ir["interpolation_matrix"] = libtab_element.interpolation_matrix
     ir["interpolation_points"] = libtab_element.points
