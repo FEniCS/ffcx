@@ -178,12 +178,11 @@ def permute_dof_coordinates(L, ir, parameters):
 
     apply_permutations = apply_permutations_to_data(
         L, ir, coords,
-        indices=lambda dof: dof * ir.topological_dimension + block, ranges=[(block, 0, ir.topological_dimension)],
-        rotations_first=False)
+        indices=lambda dof: dof * ir.topological_dimension + block, ranges=[(block, 0, ir.topological_dimension)])
     return lines + apply_permutations + [L.Return(0)]
 
 
-def make_perm_data(L, base_perms, cell_shape, rotations_first=True, reversed_rotations=False):
+def make_perm_data(L, base_perms, cell_shape, rotations_first=False, reversed_rotations=False):
     if cell_shape == "interval":
         entities = {}
     elif cell_shape == "triangle":
@@ -235,7 +234,7 @@ def make_perm_data(L, base_perms, cell_shape, rotations_first=True, reversed_rot
     return perm_data
 
 
-def apply_permutations_to_data(L, ir, data, rotations_first=True, reversed_rotations=False,
+def apply_permutations_to_data(L, ir, data, rotations_first=False, reversed_rotations=False,
                                indices=lambda dof: dof, ranges=None):
     perm_data = make_perm_data(
         L, ir.base_permutations, ir.cell_shape,
@@ -509,8 +508,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         L, ir, values,
         indices=lambda dof: (ip, dof, r, physical_offsets[dof] + i),
         ranges=[(s, 0, num_derivatives_t), (i, 0, num_physical_components),
-                (r, 0, num_derivatives_g)],
-        rotations_first=False)
+                (r, 0, num_derivatives_g)])
 
     # Transform for each point
     point_loop_code = [
