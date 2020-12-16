@@ -351,10 +351,10 @@ class BlockedElement(LibtabBaseElement):
 
         output = []
         for table in self.sub_element.tabulate(nderivs, points):
-            new_table = numpy.zeros((table.shape[0], table.shape[1] * self.block_size * self.block_size))
+            new_table = numpy.zeros((table.shape[0], table.shape[1] * self.block_size**2))
             for block in range(self.block_size):
                 col = block * (self.block_size + 1)
-                new_table[:, col: col + table.shape[1]] = table
+                new_table[:, col: col + table.shape[1] * self.block_size**2: self.block_size**2] = table
             output.append(new_table)
         return output
 
