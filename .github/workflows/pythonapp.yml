@@ -91,8 +91,8 @@ jobs:
           cd docs
           git config --global user.email "fenics@github.com"
           git config --global user.name "FEniCS GitHub Actions"
-          mkdir -p ffcx/master
           git rm -r ffcx/master/*
+          mkdir -p ffcx/master
           cp -r ../doc/build/html/* ffcx/master
           git add --all
           git commit --allow-empty -m "Python FEniCS/ffcx@${{ github.sha }}"
