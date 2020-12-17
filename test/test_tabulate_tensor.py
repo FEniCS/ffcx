@@ -32,20 +32,23 @@ def float_to_type(name):
 def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lambda i: i):
     x = sympy.Symbol("x")
     y = sympy.Symbol("y")
+    from sympy import S
     poly_basis = [x**i * y**j for i in range(order + 1) for j in range(order + 1 - i)]
     # vertices
-    eval_points = [c for c in corners]
+    eval_points = [S(c) for c in corners]
     # edges
     for e in [(1, 2), (0, 2), (0, 1)]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
-        eval_points += [tuple(a + (b - a) * i / order for a, b in zip(p0, p1)) for i in range(1, order)]
+        eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order) for a, b in zip(p0, p1))
+                        for i in range(1, order)]
     # face
     for f in [(0, 1, 2)]:
         p0 = corners[f[0]]
         p1 = corners[f[1]]
         p2 = corners[f[2]]
-        eval_points += [tuple(a + (b - a) * i / order + (c - a) * j / order for a, b, c in zip(p0, p1, p2))
+        eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order)
+                        + sympy.Rational((c - a) * j, order) for a, b, c in zip(p0, p1, p2))
                         for i in range(1, order) for j in range(1, order - i)]
 
     dual_mat = [[f.subs(x, p[0]).subs(y, p[1]) for p in eval_points] for f in poly_basis]
@@ -122,22 +125,25 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
     x = sympy.Symbol("x")
     y = sympy.Symbol("y")
     z = sympy.Symbol("z")
+    from sympy import S
     poly_basis = [
         x**i * y**j * z**k for i in range(order + 1) for j in range(order + 1 - i)
         for k in range(order + 1 - i - j)]
     # vertices
-    eval_points = [c for c in corners]
+    eval_points = [S(c) for c in corners]
     # edges
     for e in [(2, 3), (1, 3), (1, 2), (0, 3), (0, 2), (0, 1)]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
-        eval_points += [tuple(a + (b - a) * i / order for a, b in zip(p0, p1)) for i in range(1, order)]
+        eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order) for a, b in zip(p0, p1))
+                        for i in range(1, order)]
     # face
     for f in [(1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2)]:
         p0 = corners[f[0]]
         p1 = corners[f[1]]
         p2 = corners[f[2]]
-        eval_points += [tuple(a + (b - a) * i / order + (c - a) * j / order for a, b, c in zip(p0, p1, p2))
+        eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order)
+                        + sympy.Rational((c - a) * j, order) for a, b, c in zip(p0, p1, p2))
                         for i in range(1, order) for j in range(1, order - i)]
     # interior
     for v in [(0, 1, 2, 3)]:
@@ -145,8 +151,8 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
         p1 = corners[v[1]]
         p2 = corners[v[2]]
         p3 = corners[v[3]]
-        eval_points += [tuple(a + (b - a) * i / order + (c - a) * j / order + (d - a) * k / order
-                              for a, b, c, d in zip(p0, p1, p2, p3))
+        eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order) + sympy.Rational((c - a) * j, order)
+                        + sympy.Rational((d - a) * k, order) for a, b, c, d in zip(p0, p1, p2, p3))
                         for i in range(1, order) for j in range(1, order - i) for k in range(1, order - i - j)]
 
     dual_mat = [[f.subs(x, p[0]).subs(y, p[1]).subs(z, p[2]) for p in eval_points] for f in poly_basis]
