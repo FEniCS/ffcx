@@ -70,6 +70,9 @@ def main(args=None):
         if len(ufd.forms) > 0:
             code_h, code_c = compiler.compile_ufl_objects(
                 ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)
+        elif len(ufd.expressions) > 0:
+            code_h, code_c = compiler.compile_ufl_objects(
+                ufd.expressions, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)
         else:
             code_h, code_c = compiler.compile_ufl_objects(
                 ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)

@@ -6,6 +6,13 @@
 
 declaration = """
 ufc_expression* create_expression_{factory_name}(void);
+
+// Helper used to create expression using name which was given to the
+// form in the UFL file.
+// This helper is called in user c++ code.
+//
+ufc_expression* create_expression(void);
+
 """
 
 factory = """
@@ -37,6 +44,11 @@ ufc_expression* create_{factory_name}(void)
   expression->num_components = {num_components};
 
   return expression;
+}}
+
+ufc_expression* create_expression(void)
+{{
+  return create_{factory_name}();
 }}
 
 // End of code for expression {factory_name}

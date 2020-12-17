@@ -1,0 +1,11 @@
+import numpy
+
+cmap = VectorElement("Lagrange", triangle, 1)
+mesh = Mesh(cmap)
+
+el = FiniteElement("Lagrange", triangle, 2)
+V = FunctionSpace(mesh, el)
+
+u = TrialFunction(V)
+
+expressions = [(grad(u), numpy.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]))]
