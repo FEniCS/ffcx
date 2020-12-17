@@ -442,9 +442,7 @@ def test_custom_quadrature(compile_args):
 
 def test_curl_curl(compile_args):
     V = ufl.FiniteElement("N1curl", "triangle", 2)
-    mesh = ufl.Mesh(V)
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
-
     a = ufl.inner(ufl.curl(u), ufl.curl(v)) * ufl.dx
 
     forms = [a]
