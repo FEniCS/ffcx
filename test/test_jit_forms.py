@@ -438,3 +438,14 @@ def test_custom_quadrature(compile_args):
 
     # Check that A is diagonal
     assert np.count_nonzero(A - np.diag(np.diagonal(A))) == 0
+
+
+def test_curl_curl(compile_args):
+    V = ufl.FiniteElement("N1curl", "triangle", 2)
+    mesh = ufl.Mesh(V)
+    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+
+    a = ufl.inner(ufl.curl(u), ufl.curl(v)) * ufl.dx
+
+    forms = [a]
+    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)

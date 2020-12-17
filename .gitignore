@@ -54,6 +54,9 @@ demo/*.so
 # Tests
 **/.cache/
 __pycache__
+test/compile-cache/
+test/libffcx_*
+test/*.pdf
 
 # setuptools temps
 *.egg-info/
