@@ -389,9 +389,9 @@ static const double
     quadrilateral_reference_facet_normals[UFC_NUM_FACETS_IN_QUADRILATERAL]
                                          [UFC_TDIM_2]
     = {
+        {0.0, -1.0},
         {-1.0, 0.0},
         {1.0, 0.0},
-        {0.0, -1.0},
         {0.0, 1.0},
 };
 
