@@ -54,7 +54,7 @@
 #define UFC_TDIM_2 2
 #define UFC_TDIM_3 3
 
-/// --- Local reference cell coordinates by UFC conventions ---
+/// --- Local reference cell coordinates by basix conventions ---
 
 static const double interval_vertices[UFC_NUM_VERTICES_IN_INTERVAL][UFC_TDIM_1]
     = {{0.0}, {1.0}};
@@ -70,8 +70,8 @@ static const double quadrilateral_vertices[UFC_NUM_VERTICES_IN_QUADRILATERAL]
                                           [UFC_TDIM_2]
     = {
         {0.0, 0.0},
-        {0.0, 1.0},
         {1.0, 0.0},
+        {0.0, 1.0},
         {1.0, 1.0},
 };
 
@@ -82,7 +82,7 @@ static const double hexahedron_vertices[UFC_NUM_VERTICES_IN_HEXAHEDRON]
         {1.0, 0.0, 0.0}, {1.0, 0.0, 1.0}, {1.0, 1.0, 0.0}, {1.0, 1.0, 1.0},
 };
 
-/// --- Local reference cell midpoint by UFC conventions ---
+/// --- Local reference cell midpoint by basix conventions ---
 
 static const double interval_midpoint[UFC_TDIM_1] = {0.5};
 
@@ -94,7 +94,7 @@ static const double quadrilateral_midpoint[UFC_TDIM_2] = {0.5, 0.5};
 
 static const double hexahedron_midpoint[UFC_TDIM_3] = {0.5, 0.5, 0.5};
 
-/// --- Local reference cell facet midpoints by UFC conventions ---
+/// --- Local reference cell facet midpoints by basix conventions ---
 
 static const double interval_facet_midpoint[UFC_NUM_FACETS_IN_INTERVAL]
                                            [UFC_TDIM_1]
@@ -116,20 +116,20 @@ static const double tetrahedron_facet_midpoint[UFC_NUM_FACETS_IN_TETRAHEDRON]
 static const double
     quadrilateral_facet_midpoint[UFC_NUM_FACETS_IN_QUADRILATERAL][UFC_TDIM_2]
     = {
+        {0.5, 0.0},
         {0.0, 0.5},
         {1.0, 0.5},
-        {0.5, 0.0},
         {0.5, 1.0},
 };
 
 static const double hexahedron_facet_midpoint[UFC_NUM_FACETS_IN_HEXAHEDRON]
                                              [UFC_TDIM_3]
     = {
-        {0.0, 0.5, 0.5}, {1.0, 0.5, 0.5}, {0.5, 0.0, 0.5},
-        {0.5, 1.0, 0.5}, {0.5, 0.5, 0.0}, {0.5, 0.5, 1.0},
+        {0.5, 0.5, 0.0}, {0.5, 0.0, 0.5}, {0.0, 0.5, 0.5},
+        {1.0, 0.5, 0.5}, {0.5, 1.0, 0.5}, {0.5, 0.5, 1.0},
 };
 
-/// --- Local reference cell facet orientations by UFC conventions ---
+/// --- Local reference cell facet orientations by basix conventions ---
 
 static const double interval_facet_orientations[UFC_NUM_FACETS_IN_INTERVAL] = {
     -1.0,
@@ -167,7 +167,7 @@ static const double hexahedron_facet_orientations[UFC_NUM_FACETS_IN_HEXAHEDRON]
   };
 */
 
-/// --- Local reference cell entity relations by UFC conventions ---
+/// --- Local reference cell entity relations by basix conventions ---
 
 static const unsigned int triangle_edge_vertices[UFC_NUM_EDGES_IN_TRIANGLE][2]
     = {{1, 2}, {0, 2}, {0, 1}};
@@ -188,11 +188,11 @@ static const unsigned int
 static const unsigned int hexahedron_edge_vertices[UFC_NUM_EDGES_IN_HEXAHEDRON]
                                                   [2]
     = {
-        {0, 1}, {2, 3}, {4, 5}, {6, 7}, {0, 2}, {1, 3},
-        {4, 6}, {5, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7},
+        {0, 1}, {0, 2}, {0, 4}, {1, 3}, {1, 5}, {2, 3},
+        {2, 6}, {3, 7}, {4, 5}, {4, 7}, {5, 7}, {6, 7},
 };
 
-/// --- Local reference cell entity relations by UFC conventions ---
+/// --- Local reference cell entity relations by basix conventions ---
 
 static const unsigned int interval_facet_vertices[UFC_NUM_FACETS_IN_INTERVAL][1]
     = {{0}, {1}};
@@ -220,17 +220,17 @@ static const unsigned int
                                 [UFC_NUM_VERTICES_IN_INTERVAL]
     = {
         {0, 1},
-        {2, 3},
         {0, 2},
         {1, 3},
+        {2, 3},
 };
 
 static const unsigned int
     hexahedron_facet_vertices[UFC_NUM_FACETS_IN_HEXAHEDRON]
                              [UFC_NUM_VERTICES_IN_QUADRILATERAL]
     = {
-        {0, 1, 2, 3}, {4, 5, 6, 7}, {0, 1, 4, 5},
-        {2, 3, 6, 7}, {0, 2, 4, 6}, {1, 3, 5, 7},
+        {0, 1, 2, 3}, {0, 1, 4, 5}, {0, 2, 4, 6},
+        {1, 3, 5, 7}, {2, 3, 6, 7}, {4, 5, 6, 7},
 };
 
 static const unsigned int
@@ -238,12 +238,12 @@ static const unsigned int
                                   [UFC_NUM_FACETS_IN_QUADRILATERAL]
                                   [UFC_NUM_VERTICES_IN_INTERVAL]
     = {
-        {{0, 1}, {2, 3}, {0, 2}, {1, 3}}, {{4, 5}, {6, 7}, {4, 6}, {5, 7}},
-        {{0, 1}, {4, 5}, {0, 4}, {1, 5}}, {{2, 3}, {6, 7}, {2, 6}, {3, 7}},
-        {{0, 2}, {4, 6}, {0, 4}, {2, 6}}, {{1, 3}, {5, 7}, {1, 5}, {3, 7}},
+        {{0, 1}, {0, 2}, {1, 3}, {2, 3}}, {{0, 1}, {0, 4}, {1, 5}, {4, 5}},
+        {{0, 2}, {0, 4}, {2, 6}, {4, 6}}, {{1, 3}, {1, 5}, {3, 7}, {5, 7}},
+        {{2, 3}, {2, 6}, {3, 6}, {3, 7}}, {{4, 5}, {4, 6}, {5, 7}, {6, 7}},
 };
 
-/// --- Reference cell edge vectors by UFC conventions (edge vertex 1 - edge
+/// --- Reference cell edge vectors by basix conventions (edge vertex 1 - edge
 /// vertex 0 for each edge in cell) ---
 
 static const double triangle_reference_edge_vectors[UFC_NUM_EDGES_IN_TRIANGLE]
@@ -295,18 +295,18 @@ static const double
     quadrilateral_reference_edge_vectors[UFC_NUM_EDGES_IN_QUADRILATERAL]
                                         [UFC_TDIM_2]
     = {
-        {0.0, 1.0},
-        {0.0, 1.0},
         {1.0, 0.0},
+        {0.0, 1.0},
+        {0.0, 1.0},
         {1.0, 0.0},
 };
 
 static const double
     hexahedron_reference_edge_vectors[UFC_NUM_EDGES_IN_HEXAHEDRON][UFC_TDIM_3]
     = {
-        {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0},
-        {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0},
-        {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0},
+        {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 1.0, 0.0},
+        {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0}, {0.0, 0.0, 1.0}, {0.0, 0.0, 1.0},
+        {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0}, {1.0, 0.0, 0.0},
 };
 
 // Edge vectors for each quadrilateral facet of a hexahedron
@@ -315,49 +315,49 @@ static const double hexahedron_facet_reference_edge_vectors
     = {
         {
             // facet 0
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
+            {1.0, 0.0, 0.0},
             {0.0, 1.0, 0.0},
             {0.0, 1.0, 0.0},
+            {1.0, 0.0, 0.0},
         },
         {
             // facet 1
+            {1.0, 0.0, 0.0},
             {0.0, 0.0, 1.0},
             {0.0, 0.0, 1.0},
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
+            {1.0, 0.0, 0.0},
         },
         {
             // facet 2
+            {0.0, 1.0, 0.0},
             {0.0, 0.0, 1.0},
             {0.0, 0.0, 1.0},
-            {1.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0},
         },
         {
             // facet 3
+            {0.0, 1.0, 0.0},
             {0.0, 0.0, 1.0},
             {0.0, 0.0, 1.0},
-            {1.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0},
         },
         {
             // facet 4
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
             {1.0, 0.0, 0.0},
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
             {1.0, 0.0, 0.0},
         },
         {
             // facet 5
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
             {1.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
             {1.0, 0.0, 0.0},
         },
 };
 
-/// --- Reference cell facet normals by UFC conventions (outwards pointing on
+/// --- Reference cell facet normals by basix conventions (outwards pointing on
 /// reference cell) ---
 
 static const double interval_reference_facet_normals[UFC_NUM_FACETS_IN_INTERVAL]
@@ -398,11 +398,11 @@ static const double
 static const double
     hexahedron_reference_facet_normals[UFC_NUM_FACETS_IN_HEXAHEDRON][UFC_TDIM_3]
     = {
-        {-1.0, 0.0, 0.0}, {1.0, 0.0, 0.0},  {0.0, -1.0, 0.0},
-        {0.0, 1.0, 0.0},  {0.0, 0.0, -1.0}, {0.0, 0.0, 1.0},
+        {0.0, 0.0, -1.0}, {0.0, -1.0, 0.0},  {-1.0, 0.0, 0.0},
+        {1.0, 0.0, 0.0},  {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0},
 };
 
-/// --- Reference cell volumes by UFC conventions ---
+/// --- Reference cell volumes by basix conventions ---
 
 static const double interval_reference_cell_volume = 1.0;
 static const double triangle_reference_cell_volume = 0.5;
@@ -417,7 +417,7 @@ static const double quadrilateral_reference_facet_volume = 1.0;
 static const double hexahedron_reference_facet_volume = 1.0;
 
 /// --- Jacobians of reference facet cell to reference cell coordinate mappings
-/// by UFC conventions ---
+/// by basix conventions ---
 
 static const double
     triangle_reference_facet_jacobian[UFC_NUM_FACETS_IN_TRIANGLE][UFC_TDIM_2]
@@ -442,9 +442,9 @@ static const double
     quadrilateral_reference_facet_jacobian[UFC_NUM_FACETS_IN_QUADRILATERAL]
                                           [UFC_TDIM_2][UFC_TDIM_2 - 1]
     = {
-        {{0.0}, {1.0}},
-        {{0.0}, {1.0}},
         {{1.0}, {0.0}},
+        {{0.0}, {1.0}},
+        {{0.0}, {1.0}},
         {{1.0}, {0.0}},
 };
 
@@ -452,11 +452,11 @@ static const double
     hexahedron_reference_facet_jacobian[UFC_NUM_FACETS_IN_HEXAHEDRON]
                                        [UFC_TDIM_3][UFC_TDIM_3 - 1]
     = {
-        {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
-        {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
-        {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
-        {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
         {{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}},
+        {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
+        {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
+        {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}},
+        {{1.0, 0.0}, {0.0, 0.0}, {0.0, 1.0}},
         {{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}},
 };
 
