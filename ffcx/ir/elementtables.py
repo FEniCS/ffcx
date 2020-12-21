@@ -12,7 +12,7 @@ import numpy
 
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.libtab_interface import create_libtab_element, libtab_index
+from ffcx.basix_interface import create_basix_element, basix_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -174,7 +174,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
     numpy.set_printoptions(suppress=True, precision=2)
-    libtab_element = create_libtab_element(ufl_element)
+    basix_element = create_basix_element(ufl_element)
 
     # Extract arrays for the right scalar component
     component_tables = []
@@ -184,9 +184,9 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         for entity in range(num_entities):
             entity_points = map_integral_points(
                 points, integral_type, cell, entity)
-            # libtab
-            tbl = libtab_element.tabulate(deriv_order, entity_points)
-            index = libtab_index(*derivative_counts)
+            # basix
+            tbl = basix_element.tabulate(deriv_order, entity_points)
+            index = basix_index(*derivative_counts)
             tbl = tbl[index].transpose()
 
             component_tables.append(tbl)
@@ -200,8 +200,8 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         for entity in range(num_entities):
             entity_points = map_integral_points(
                 points, integral_type, cell, entity)
-            tbl = libtab_element.tabulate(deriv_order, entity_points)
-            tbl = tbl[libtab_index(*derivative_counts)]
+            tbl = basix_element.tabulate(deriv_order, entity_points)
+            tbl = tbl[basix_index(*derivative_counts)]
             sum_sh = sum(sh)
             bshape = (tbl.shape[0],) + sh + (tbl.shape[1] // sum_sh,)
             tbl = tbl.reshape(bshape).transpose()
@@ -216,8 +216,8 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     else:
 
         # Vector-valued or mixed element
-        sub_dims = [0] + [e.dim for e in libtab_element.sub_elements]
-        sub_cmps = [0] + [e.value_size for e in libtab_element.sub_elements]
+        sub_dims = [0] + [e.dim for e in basix_element.sub_elements]
+        sub_cmps = [0] + [e.value_size for e in basix_element.sub_elements]
 
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
@@ -229,11 +229,11 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         ir = irange[component_element_index:component_element_index + 2]
         cr = crange[component_element_index:component_element_index + 2]
 
-        component_element = libtab_element.sub_elements[component_element_index]
+        component_element = basix_element.sub_elements[component_element_index]
 
         # Get the block size to switch XXYYZZ ordering to XYZXYZ
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-            block_size = libtab_element.block_size
+            block_size = basix_element.block_size
             ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
 
         def slice_size(r):
@@ -251,14 +251,14 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             entity_points = map_integral_points(
                 points, integral_type, cell, entity)
 
-            # libtab
+            # basix
             tbl = component_element.tabulate(
                 deriv_order, entity_points)
-            index = libtab_index(*derivative_counts)
+            index = basix_index(*derivative_counts)
             tbl = tbl[index].transpose()
 
             # Prepare a padded table with zeros
-            padded_shape = (libtab_element.dim,) + libtab_element.value_shape + (len(entity_points), )
+            padded_shape = (basix_element.dim,) + basix_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
             tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
@@ -806,7 +806,7 @@ def build_optimized_tables(quadrature_rule,
 
         base_perms = [
             [[p[i - offset][j - offset] for j in dofmap] for i in dofmap]
-            for p in create_libtab_element(table_origins[name][0]).base_permutations]
+            for p in create_basix_element(table_origins[name][0]).base_permutations]
 
         needs_permutation_data = False
         for p in base_perms:

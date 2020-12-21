@@ -19,7 +19,7 @@ else:
     REQUIREMENTS = [
         "numpy",
         "cffi",
-        "fenics-libtab",
+        "fenics-basix",
         "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
     ]
 

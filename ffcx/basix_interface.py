@@ -1,62 +1,62 @@
 import numpy
 import ufl
-import libtab
+import basix
 
 
-libtab_cells = {
-    "interval": libtab.CellType.interval,
-    "triangle": libtab.CellType.triangle,
-    "tetrahedron": libtab.CellType.tetrahedron,
-    "quadrilateral": libtab.CellType.quadrilateral,
-    "hexahedron": libtab.CellType.hexahedron
+basix_cells = {
+    "interval": basix.CellType.interval,
+    "triangle": basix.CellType.triangle,
+    "tetrahedron": basix.CellType.tetrahedron,
+    "quadrilateral": basix.CellType.quadrilateral,
+    "hexahedron": basix.CellType.hexahedron
 }
 
-# This dictionary can be used to map ufl element names to libtab element names.
+# This dictionary can be used to map ufl element names to basix element names.
 # Currently all the names agree but this will not necessarily remian true.
-ufl_to_libtab_names = {
-    "Lagrange": "Lagrange"
+ufl_to_basix_names = {
+    "DQ": "Discontinuous Lagrange"
 }
 
 
-def create_libtab_element(ufl_element):
+def create_basix_element(ufl_element):
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
 
     if isinstance(ufl_element, ufl.VectorElement):
-        return BlockedElement(create_libtab_element(ufl_element.sub_elements()[0]),
+        return BlockedElement(create_basix_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements())
     if isinstance(ufl_element, ufl.TensorElement):
-        return BlockedElement(create_libtab_element(ufl_element.sub_elements()[0]),
+        return BlockedElement(create_basix_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements(), None)  # TODO: block shape
 
     if isinstance(ufl_element, ufl.MixedElement):
-        return MixedElement([create_libtab_element(e) for e in ufl_element.sub_elements()])
+        return MixedElement([create_basix_element(e) for e in ufl_element.sub_elements()])
 
-    if ufl_element.family() in ufl_to_libtab_names:
-        return LibtabElement(libtab.create_element(
-            ufl_to_libtab_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
+    if ufl_element.family() in ufl_to_basix_names:
+        return LibtabElement(basix.create_element(
+            ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
 
-    return LibtabElement(libtab.create_element(
+    return LibtabElement(basix.create_element(
         ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
 
 
-def libtab_index(*args):
-    return libtab.index(*args)
+def basix_index(*args):
+    return basix.index(*args)
 
 
 def create_quadrature(cellname, degree, rule):
     if cellname == "vertex":
         return [[]], [1]
-    return libtab.make_quadrature(libtab_cells[cellname], degree)
+    return basix.make_quadrature(basix_cells[cellname], degree)
 
 
 def reference_cell_vertices(cellname):
-    return libtab.geometry(libtab_cells[cellname])
+    return basix.geometry(basix_cells[cellname])
 
 
 def map_facet_points(points, facet, cellname):
-    geom = libtab.geometry(libtab_cells[cellname])
-    facet_vertices = [geom[i] for i in libtab.topology(libtab_cells[cellname])[-2][facet]]
+    geom = basix.geometry(basix_cells[cellname])
+    facet_vertices = [geom[i] for i in basix.topology(basix_cells[cellname])[-2][facet]]
 
     return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
             for p in points]
@@ -164,7 +164,7 @@ class LibtabElement(LibtabBaseElement):
 
     @property
     def entity_dof_numbers(self):
-        # TODO: move this to libtab, then remove this wrapper class
+        # TODO: move this to basix, then remove this wrapper class
         start_dof = 0
         entity_dofs = []
         for i in self.entity_dofs:
@@ -190,11 +190,11 @@ class LibtabElement(LibtabBaseElement):
 
     @property
     def reference_topology(self):
-        return libtab.topology(self.element.cell_type)
+        return basix.topology(self.element.cell_type)
 
     @property
     def reference_geometry(self):
-        return libtab.geometry(self.element.cell_type)
+        return basix.geometry(self.element.cell_type)
 
     @property
     def dof_mappings(self):

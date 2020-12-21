@@ -8,14 +8,14 @@
 import logging
 
 import ufl
-from ffcx.libtab_interface import create_libtab_element
+from ffcx.basix_interface import create_basix_element
 
 logger = logging.getLogger("ffcx")
 
 
 def num_coordinate_component_dofs(coordinate_element):
     """Get the number of dofs for a coordinate component for this degree."""
-    return create_libtab_element(coordinate_element).sub_element.dim
+    return create_basix_element(coordinate_element).sub_element.dim
 
 
 class FFCXBackendDefinitions(object):

@@ -9,7 +9,7 @@ import hashlib
 import logging
 
 import numpy
-from ffcx.libtab_interface import create_quadrature, reference_cell_vertices, map_facet_points
+from ffcx.basix_interface import create_quadrature, reference_cell_vertices, map_facet_points
 
 import ufl
 
@@ -18,7 +18,7 @@ logger = logging.getLogger("ffcx")
 
 class QuadratureRule:
     def __init__(self, points, weights):
-        self.points = numpy.ascontiguousarray(points)  # TODO: change libtab to make this unnecessary
+        self.points = numpy.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
         self.weights = weights
         self._hash = None
 

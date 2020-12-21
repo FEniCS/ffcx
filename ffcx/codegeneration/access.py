@@ -10,7 +10,7 @@ import warnings
 
 import ufl
 from ufl.finiteelement import MixedElement
-from ffcx.libtab_interface import create_libtab_element
+from ffcx.basix_interface import create_basix_element
 
 logger = logging.getLogger("ffcx")
 
@@ -293,13 +293,13 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        libtab_scalar_element = create_libtab_element(ufl_scalar_element)
-        vertex_scalar_dofs = libtab_scalar_element.entity_dof_numbers[0]
-        num_scalar_dofs = libtab_scalar_element.dim
+        basix_scalar_element = create_basix_element(ufl_scalar_element)
+        vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
+        num_scalar_dofs = basix_scalar_element.dim
 
         # Get edge vertices
         edge = mt.component[0]
-        vertex0, vertex1 = libtab_scalar_element.reference_topology[1][edge]
+        vertex0, vertex1 = basix_scalar_element.reference_topology[1][edge]
 
         # Get dofs and component
         dof0, = vertex_scalar_dofs[vertex0]

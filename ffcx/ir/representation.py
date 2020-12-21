@@ -25,7 +25,7 @@ import numpy
 
 import ufl
 from ffcx import naming
-from ffcx.libtab_interface import create_libtab_element
+from ffcx.basix_interface import create_basix_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -144,8 +144,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     logger.info(f"Computing IR for element {ufl_element}")
 
-    # Create libtab elements
-    libtab_element = create_libtab_element(ufl_element)
+    # Create basix elements
+    basix_element = create_basix_element(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
@@ -158,9 +158,9 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["cell_shape"] = cellname
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["space_dimension"] = libtab_element.dim
+    ir["space_dimension"] = basix_element.dim
     ir["degree"] = ufl_element.degree()
-    ir["family"] = libtab_element.family_name
+    ir["family"] = basix_element.family_name
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
@@ -168,28 +168,28 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    if hasattr(libtab_element, "block_size"):
-        ir["block_size"] = libtab_element.block_size
+    if hasattr(basix_element, "block_size"):
+        ir["block_size"] = basix_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
-        libtab_element = create_libtab_element(ufl_element)
+        basix_element = create_basix_element(ufl_element)
     else:
         ir["block_size"] = 1
 
-    ir["interpolation_matrix"] = libtab_element.interpolation_matrix
-    ir["interpolation_points"] = libtab_element.points
+    ir["interpolation_matrix"] = basix_element.interpolation_matrix
+    ir["interpolation_points"] = basix_element.points
 
-    ir["base_permutations"] = libtab_element.base_permutations
+    ir["base_permutations"] = basix_element.base_permutations
     ir["needs_permutation_data"] = 0
-    for p in libtab_element.base_permutations:
+    for p in basix_element.base_permutations:
         if not numpy.allclose(p, numpy.identity(len(p))):
             ir["needs_permutation_data"] = 1
 
-    ir["entity_dofs"] = libtab_element.entity_dof_numbers
+    ir["entity_dofs"] = basix_element.entity_dof_numbers
 
-    ir["reference_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
-    ir["physical_offsets"] = [0 for i in range(libtab_element.dim)]  # TODO
-    ir["dof_mappings"] = libtab_element.dof_mappings
-    ir["num_reference_components"] = libtab_element.num_reference_components
+    ir["reference_offsets"] = [0 for i in range(basix_element.dim)]  # TODO
+    ir["physical_offsets"] = [0 for i in range(basix_element.dim)]  # TODO
+    ir["dof_mappings"] = basix_element.dof_mappings
+    ir["num_reference_components"] = basix_element.num_reference_components
 
     return ir_element(**ir)
 
@@ -199,8 +199,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
-    # Create libtab elements
-    libtab_element = create_libtab_element(ufl_element)
+    # Create basix elements
+    basix_element = create_basix_element(ufl_element)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -211,26 +211,26 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
-    if hasattr(libtab_element, "block_size"):
-        ir["block_size"] = libtab_element.block_size
-        libtab_element = libtab_element.sub_element
+    if hasattr(basix_element, "block_size"):
+        ir["block_size"] = basix_element.block_size
+        basix_element = basix_element.sub_element
     else:
         ir["block_size"] = 1
 
-    ir["base_permutations"] = libtab_element.base_permutations
+    ir["base_permutations"] = basix_element.base_permutations
 
     # Precompute repeatedly used items
-    for i in libtab_element.entity_dofs:
+    for i in basix_element.entity_dofs:
         if max(i) != min(i):
             raise RuntimeError("Elements withe different numbers of DOFs on subentities of the same dimension"
                                " not yet supported in FFcx.")
-    num_dofs_per_entity = [i[0] for i in libtab_element.entity_dofs]
+    num_dofs_per_entity = [i[0] for i in basix_element.entity_dofs]
 
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_entity_dofs"] = (libtab_element.entity_dof_numbers, num_dofs_per_entity)
+    ir["tabulate_entity_dofs"] = (basix_element.entity_dof_numbers, num_dofs_per_entity)
 
-    ir["num_global_support_dofs"] = libtab_element.num_global_support_dofs
-    ir["num_element_support_dofs"] = libtab_element.dim - ir["num_global_support_dofs"]
+    ir["num_global_support_dofs"] = basix_element.num_global_support_dofs
+    ir["num_element_support_dofs"] = basix_element.dim - ir["num_global_support_dofs"]
 
     return ir_dofmap(**ir)
 
@@ -256,7 +256,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
     # with a VectorElement of scalar subelements
     selement = ufl_element.sub_elements()[0]
 
-    libtab_element = create_libtab_element(selement)
+    basix_element = create_basix_element(selement)
     cell = selement.cell()
     tdim = cell.topological_dimension()
 
@@ -267,8 +267,8 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
     midpoint = cell_midpoint(cell)
 
     # Tabulate basis
-    t0 = libtab_element.tabulate(1, [origin])
-    tm = libtab_element.tabulate(1, [midpoint])
+    t0 = basix_element.tabulate(1, [origin])
+    tm = basix_element.tabulate(1, [midpoint])
 
     # Get basis values at cell origin
     tables["x0"] = t0[0][:, 0]
@@ -324,12 +324,12 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     # NB! The entries below breaks the pattern of using ir keywords == code keywords,
     # which I personally don't find very useful anyway (martinal).
 
-    libtab_element = create_libtab_element(ufl_coordinate_element)
+    basix_element = create_basix_element(ufl_coordinate_element)
 
     # Store tables and other coordinate element data
     ir["tables"] = tables
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
-    ir["coordinate_element_family"] = libtab_element.family_name
+    ir["coordinate_element_family"] = basix_element.family_name
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
     ir["is_affine"] = ir["coordinate_element_degree"] == 1 and cellname in ("interval", "triangle", "tetrahedron")
 
@@ -386,7 +386,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         ir["element_dimensions"] = {
-            ufl_element: create_libtab_element(ufl_element).dim
+            ufl_element: create_basix_element(ufl_element).dim
             for ufl_element in unique_elements
         }
 
@@ -601,7 +601,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
     ir["element_dimensions"] = {
-        ufl_element: create_libtab_element(ufl_element).dim
+        ufl_element: create_basix_element(ufl_element).dim
         for ufl_element in analysis.unique_elements
     }
 
