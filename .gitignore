@@ -50,6 +50,9 @@ install_manifest.txt
 demo/*.c
 demo/*.h
 demo/*.so
+test/*.c
+test/*.h
+test/*.so
 
 # Tests
 **/.cache/
