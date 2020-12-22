@@ -33,10 +33,10 @@ def create_basix_element(ufl_element):
         return MixedElement([create_basix_element(e) for e in ufl_element.sub_elements()])
 
     if ufl_element.family() in ufl_to_basix_names:
-        return LibtabElement(basix.create_element(
+        return BasixElement(basix.create_element(
             ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
 
-    return LibtabElement(basix.create_element(
+    return BasixElement(basix.create_element(
         ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
 
 
@@ -62,7 +62,7 @@ def map_facet_points(points, facet, cellname):
             for p in points]
 
 
-class LibtabBaseElement:
+class BasixBaseElement:
     def tabulate(self, nderivs, points):
         raise NotImplementedError
 
@@ -127,7 +127,7 @@ class LibtabBaseElement:
         raise NotImplementedError
 
 
-class LibtabElement(LibtabBaseElement):
+class BasixElement(BasixBaseElement):
     def __init__(self, element):
         self.element = element
 
@@ -205,7 +205,7 @@ class LibtabElement(LibtabBaseElement):
         return {self.element.mapping_name: self.value_size}
 
 
-class MixedElement(LibtabBaseElement):
+class MixedElement(BasixBaseElement):
     def __init__(self, sub_elements):
         assert len(sub_elements) > 0
         self.sub_elements = sub_elements
@@ -335,7 +335,7 @@ class MixedElement(LibtabBaseElement):
         return out
 
 
-class BlockedElement(LibtabBaseElement):
+class BlockedElement(BasixBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
         self.sub_element = sub_element
