@@ -165,7 +165,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
-    ir["tabulate_dof_coordinates"] = {}  # _tabulate_dof_coordinates(ufl_element, fiat_element)
+    ir["tabulate_dof_coordinates"] = {}
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 

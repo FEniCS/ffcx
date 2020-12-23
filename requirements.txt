@@ -1,4 +1,4 @@
 numpy
 cffi
--e git+https://github.com/FEniCS/fiat.git#egg=fiat
+-e git+https://github.com/FEniCS/basix.git#egg=basix
 -e git+https://github.com/FEniCS/ufl.git#egg=ufl

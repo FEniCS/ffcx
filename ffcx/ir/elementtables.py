@@ -244,9 +244,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             if len(r) == 3:
                 return 1 + (r[1] - r[0] - 1) // r[2]
 
-        # Follows from FIAT's MixedElement tabulation
-        # Tabulating MixedElement in FIAT would result in tabulated subelements
-        # padded with zeros
         for entity in range(num_entities):
             entity_points = map_integral_points(
                 points, integral_type, cell, entity)
