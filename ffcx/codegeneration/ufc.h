@@ -135,9 +135,23 @@ extern "C"
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
-    int needs_permutation_data;
+    /// Indicates whether permutation data needs to be passed into various
+    /// functions
+    bool needs_permutation_data;
+
+    /// If true, the interpolation matrix is the identity
+    bool interpolation_is_identity;
+
+    /// Points on the reference element that a function should be evaluated at
+    /// for interpolation
     const double* interpolation_points;
+
+    /// The number of interpolation points
     int num_interpolation_points;
+
+    /// Applies the interpolation matrix and cell permutation to data obtain
+    /// from evaluation a function at interpolation points. This returns the
+    /// function coefficients for the cell.
     int (*interpolate_into_cell)(
       ufc_scalar_t* restrict coefficients, const ufc_scalar_t* restrict evaluations,
       const uint32_t cell_permutation);

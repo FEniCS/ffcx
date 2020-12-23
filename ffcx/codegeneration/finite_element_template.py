@@ -82,6 +82,7 @@ ufc_finite_element* create_{factory_name}(void)
   element->block_size = {block_size};
 
   element->needs_permutation_data = {needs_permutation_data};
+  element->interpolation_is_identity = {interpolation_is_identity};
 
   element->num_interpolation_points = {num_interpolation_points};
   {interpolation_points}

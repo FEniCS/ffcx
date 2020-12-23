@@ -50,7 +50,8 @@ ir_element = namedtuple('ir_element', [
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'tabulate_dof_coordinates', 'num_sub_elements', 'block_size', 'create_sub_element',
     'entity_dofs', 'base_permutations', 'reference_offsets', 'physical_offsets', 'dof_mappings',
-    'num_reference_components', 'interpolation_matrix', 'interpolation_points', 'needs_permutation_data'])
+    'num_reference_components', 'interpolation_matrix', 'interpolation_points', 'needs_permutation_data',
+    'interpolation_is_identity'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'base_permutations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
@@ -175,8 +176,13 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     else:
         ir["block_size"] = 1
 
-    ir["interpolation_matrix"] = basix_element.interpolation_matrix
+    im = basix_element.interpolation_matrix
+    ir["interpolation_matrix"] = im
     ir["interpolation_points"] = basix_element.points
+    if im.shape[0] == im.shape[1] and numpy.allclose(im, numpy.identity(im.shape[0])):
+        ir["interpolation_is_identity"] = 1
+    else:
+        ir["interpolation_is_identity"] = 0
 
     ir["base_permutations"] = basix_element.base_permutations
     ir["needs_permutation_data"] = 0
