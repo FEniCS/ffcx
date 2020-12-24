@@ -176,9 +176,9 @@ static const unsigned int
     quadrilateral_edge_vertices[UFC_NUM_EDGES_IN_QUADRILATERAL][2]
     = {
         {0, 1},
-        {2, 3},
         {0, 2},
         {1, 3},
+        {2, 3},
 };
 
 static const unsigned int hexahedron_edge_vertices[UFC_NUM_EDGES_IN_HEXAHEDRON]
@@ -385,9 +385,9 @@ static const double
     quadrilateral_reference_facet_normals[UFC_NUM_FACETS_IN_QUADRILATERAL]
                                          [UFC_TDIM_2]
     = {
-        {0.0, -1.0},
+        {0.0, 1.0},
         {-1.0, 0.0},
-        {1.0, 0.0},
+        {-1.0, 0.0},
         {0.0, 1.0},
 };
 
