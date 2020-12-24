@@ -115,6 +115,7 @@ extern "C"
         const double* restrict J, const double* restrict detJ,
         const double* restrict K, const uint32_t cell_permutation);
 
+    /// @todo Fix docstring
     /// Map values of field from physical to reference space which has
     /// been evaluated at points given by
     /// tabulate_reference_dof_coordinates.
@@ -126,11 +127,6 @@ extern "C"
     /// TODO: doc
     int (*permute_dof_coordinates)(double* coords,
                                    const uint32_t cell_permutation);
-
-    // FIXME: change to 'const double* reference_dof_coordinates()'
-    /// Tabulate the coordinates of all dofs on a reference cell
-    int (*tabulate_reference_dof_coordinates)(
-        double* restrict reference_dof_coordinates);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
@@ -152,9 +148,9 @@ extern "C"
     /// Applies the interpolation matrix and cell permutation to data obtain
     /// from evaluation a function at interpolation points. This returns the
     /// function coefficients for the cell.
-    int (*interpolate_into_cell)(
-      ufc_scalar_t* restrict coefficients, const ufc_scalar_t* restrict evaluations,
-      const uint32_t cell_permutation);
+    int (*interpolate_into_cell)(ufc_scalar_t* restrict coefficients,
+                                 const ufc_scalar_t* restrict evaluations,
+                                 const uint32_t cell_permutation);
 
     /// Create a new finite element for sub element i (for a mixed
     /// element). Memory for the new object is obtained with malloc(),

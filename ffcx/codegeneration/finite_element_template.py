@@ -51,11 +51,6 @@ int interpolate_into_cell_{factory_name}(ufc_scalar_t* restrict coefficients, co
   {interpolate_into_cell}
 }}
 
-int tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
-{{
-  {tabulate_reference_dof_coordinates}
-}}
-
 {sub_element_declaration}
 ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
@@ -90,7 +85,6 @@ ufc_finite_element* create_{factory_name}(void)
 
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};
   element->transform_values = transform_values_{factory_name};
-  element->tabulate_reference_dof_coordinates = tabulate_reference_dof_coordinates_{factory_name};
   element->permute_dof_coordinates = permute_dof_coordinates_{factory_name};
   element->num_sub_elements = {num_sub_elements};
   element->create_sub_element = create_sub_element_{factory_name};

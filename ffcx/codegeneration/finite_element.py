@@ -115,32 +115,6 @@ def transform_values(L, ir, parameters):
     return [L.Return(-1)]  # generate_transform_values(L, ir.evaluate_dof)
 
 
-def tabulate_reference_dof_coordinates(L, ir, parameters):
-    # TODO: ensure points is a numpy array,
-    #   get tdim from points.shape[1],
-    #   place points in ir directly instead of the subdict
-    ir = ir.tabulate_dof_coordinates
-
-    # Raise error if tabulate_reference_dof_coordinates is ill-defined
-    if not ir:
-        return [L.Return(-1)]
-
-    # Extract coordinates and cell dimension
-    tdim = ir.tdim
-    points = ir.points
-
-    # Output argument
-    reference_dof_coordinates = L.Symbol("reference_dof_coordinates")
-
-    # Reference coordinates
-    dof_X = L.Symbol("dof_X")
-    dof_X_values = [X[jj] for X in points for jj in range(tdim)]
-    decl = L.ArrayDecl("static const double", dof_X, (len(points) * tdim, ), values=dof_X_values)
-    copy = L.MemCopy(dof_X, reference_dof_coordinates, tdim * len(points), "double")
-    ret = L.Return(0)
-    return [decl, copy, ret]
-
-
 def interpolate_into_cell(L, ir, parameters):
     if ir.interpolation_matrix.shape[0] * ir.block_size != ir.space_dimension:
         return [L.Return(-1)]
@@ -573,9 +547,6 @@ def generator(ir, parameters):
 
     statements = transform_values(L, ir, parameters)
     d["transform_values"] = L.StatementList(statements)
-
-    statements = tabulate_reference_dof_coordinates(L, ir, parameters)
-    d["tabulate_reference_dof_coordinates"] = L.StatementList(statements)
 
     statements = permute_dof_coordinates(L, ir, parameters)
     d["permute_dof_coordinates"] = L.StatementList(statements)
