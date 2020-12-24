@@ -47,7 +47,7 @@ def basix_index(*args):
 def create_quadrature(cellname, degree, rule):
     if cellname == "vertex":
         return [[]], [1]
-    return basix.make_quadrature(basix_cells[cellname], degree)
+    return basix.make_quadrature(rule, basix_cells[cellname], degree)
 
 
 def reference_cell_vertices(cellname):
