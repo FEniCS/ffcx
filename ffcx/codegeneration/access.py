@@ -261,17 +261,16 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        raise NotImplementedError
-        # fiat_scalar_element = create_element(ufl_scalar_element)
-        # vertex_scalar_dofs = fiat_scalar_element.entity_dofs()[0]
-        # num_scalar_dofs = fiat_scalar_element.space_dimension()
+        basix_scalar_element = create_basix_element(ufl_scalar_element)
+        vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
+        num_scalar_dofs = basix_scalar_element.dim
 
         # Get dof and component
-        # dof, = vertex_scalar_dofs[mt.component[0]]
-        # component = mt.component[1]
+        dof, = vertex_scalar_dofs[mt.component[0]]
+        component = mt.component[1]
 
-        # expr = self.symbols.domain_dof_access(dof, component, gdim, num_scalar_dofs, mt.restriction)
-        # return expr
+        expr = self.symbols.domain_dof_access(dof, component, gdim, num_scalar_dofs, mt.restriction)
+        return expr
 
     def cell_edge_vectors(self, e, mt, tabledata, num_points):
         # Get properties of domain
