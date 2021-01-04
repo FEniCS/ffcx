@@ -33,6 +33,9 @@ def generator(ir, parameters):
     d["cell_shape"] = ir.cell_shape
     d["scalar_dofmap_name"] = ir.scalar_dofmap_name
 
+    d["needs_permutation_data"] = ir.needs_permutation_data
+    d["element_factory_name"] = ir.coordinate_finite_element_classname
+
     d["family"] = f"\"{ir.coordinate_element_family}\""
     d["degree"] = ir.coordinate_element_degree
 

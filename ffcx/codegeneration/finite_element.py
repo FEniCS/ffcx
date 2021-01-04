@@ -141,7 +141,6 @@ def permute_dof_coordinates(L, ir, parameters):
     if ir.interpolation_points.shape[0] * ir.block_size != ir.space_dimension:
         return [L.Return(-1)]
 
-    lines = []
     for mat in ir.base_permutations:
         for row in mat:
             if not numpy.isclose(sum(abs(i) for i in row), 1) or not numpy.isclose(max(abs(i) for i in row), 1):
@@ -149,11 +148,12 @@ def permute_dof_coordinates(L, ir, parameters):
 
     coords = L.Symbol("coords")
     block = L.Symbol("block")
+    block_size = L.Symbol("dim")
 
     apply_permutations = apply_permutations_to_data(
         L, ir, coords,
-        indices=lambda dof: dof * ir.topological_dimension + block, ranges=[(block, 0, ir.topological_dimension)])
-    return lines + apply_permutations + [L.Return(0)]
+        indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)])
+    return apply_permutations + [L.Return(0)]
 
 
 def make_perm_data(L, base_perms, cell_shape, rotations_first=False, reversed_rotations=False):

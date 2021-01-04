@@ -126,7 +126,7 @@ extern "C"
 
     /// TODO: doc
     int (*permute_dof_coordinates)(double* coords,
-                                   const uint32_t cell_permutation);
+                                   const uint32_t cell_permutation, int dim);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
@@ -227,6 +227,14 @@ extern "C"
 
     /// Boolean flag for affine
     int is_affine;
+
+    /// Indicates whether permutation data needs to be passed into various
+    /// functions
+    bool needs_permutation_data;
+
+    /// TODO: doc
+    int (*permute_dof_coordinates)(double* coords,
+                                   const uint32_t cell_permutation, int dim);
 
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
