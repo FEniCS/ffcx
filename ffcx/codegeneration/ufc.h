@@ -236,6 +236,9 @@ extern "C"
     int (*permute_dof_coordinates)(double* coords,
                                    const uint32_t cell_permutation, int dim);
 
+    /// TODO: doc
+    int (*get_dof_permutation)(int* dof_list, const uint32_t cell_permutation);
+
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
 

@@ -7,6 +7,7 @@
 import logging
 
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
+from ffcx.codegeneration.utils import apply_permutations_to_data
 
 logger = logging.getLogger("ffcx")
 
@@ -36,6 +37,11 @@ def generator(ir, parameters):
     d["needs_permutation_data"] = ir.needs_permutation_data
     d["element_factory_name"] = ir.coordinate_finite_element_classname
 
+    import ffcx.codegeneration.C.cnodes as L
+
+    statements = get_dof_permutation(L, ir.base_permutations, ir.cell_shape)
+    d["get_dof_permutation"] = L.StatementList(statements)
+
     d["family"] = f"\"{ir.coordinate_element_family}\""
     d["degree"] = ir.coordinate_element_degree
 
@@ -54,3 +60,9 @@ def generator(ir, parameters):
     declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.name, prefix=ir.prefix)
 
     return declaration, implementation
+
+
+def get_dof_permutation(L, base_permutations, cell_shape):
+    data = L.Symbol("dof_list")
+    return apply_permutations_to_data(L, base_permutations, cell_shape, data,
+                                      dtype="int") + [L.Return(0)]

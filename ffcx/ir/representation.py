@@ -61,7 +61,7 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', [
     'compute_jacobian_determinants', 'compute_jacobian_inverses', 'compute_geometry', 'tables',
     'coordinate_element_degree', 'num_scalar_coordinate_element_dofs', 'coordinate_element_family',
     'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname',
-    'scalar_dofmap_name', 'is_affine', 'needs_permutation_data'])
+    'scalar_dofmap_name', 'is_affine', 'needs_permutation_data', 'base_permutations'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
     'num_facets', 'num_vertices', 'needs_oriented', 'enabled_coefficients', 'element_dimensions',
@@ -336,6 +336,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     for p in basix_element.base_permutations:
         if not numpy.allclose(p, numpy.identity(len(p))):
             ir["needs_permutation_data"] = 1
+    ir["base_permutations"] = basix_element.sub_element.base_permutations
 
     # Store tables and other coordinate element data
     ir["tables"] = tables
