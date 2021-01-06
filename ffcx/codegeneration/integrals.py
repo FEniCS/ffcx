@@ -302,6 +302,7 @@ class IntegralGenerator(object):
         else:
             raise NotImplementedError
 
+        # TODO: can this use the same permutation application function as in finite_element.py?
         if not self.ir.table_needs_permutation_data[name]:
             return [L.ArrayDecl(
                 "static const double", name, table.shape, table, padlen=padlen)]
@@ -322,19 +323,18 @@ class IntegralGenerator(object):
                 perm_n += 1
         if 2 in entities:
             for face in range(entities[2]):
+                perm_data.append((
+                    self.backend.symbols.entity_reflection(L, (2, face), self.ir.cell_shape),
+                    None,
+                    base_perms[perm_n + 1]
+                ))
                 for rot in range(1, face_rotation_order):
                     perm_data.append((
                         self.backend.symbols.entity_rotations(L, (2, face), self.ir.cell_shape),
                         rot,
                         numpy.linalg.matrix_power(base_perms[perm_n], rot)
                     ))
-                perm_n += 1
-                perm_data.append((
-                    self.backend.symbols.entity_reflection(L, (2, face), self.ir.cell_shape),
-                    None,
-                    base_perms[perm_n]
-                ))
-                perm_n += 1
+                perm_n += 2
 
         assert perm_n == len(base_perms)
 

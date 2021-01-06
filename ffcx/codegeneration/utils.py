@@ -125,6 +125,9 @@ def make_perm_data(L, base_perms, cell_shape, rotations_first=False, reversed_ro
 def apply_permutations_to_data(L, base_permutations, cell_shape, data,
                                rotations_first=False, reversed_rotations=False,
                                indices=lambda dof: dof, ranges=None, dtype="double"):
+    assert not rotations_first  # TODO: remove these options as they are always False
+    assert not reversed_rotations  # TODO: remove these options as they are always False
+
     perm_data = make_perm_data(
         L, base_permutations, cell_shape,
         rotations_first=rotations_first, reversed_rotations=reversed_rotations)
