@@ -733,25 +733,17 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
     return subdomain_ids, classnames
 
 
-def element_needs_oriented_jacobian(fiat_element):
+def element_needs_oriented_jacobian(basix_element):
     # Check whether this element needs an oriented jacobian (only
     # contravariant piolas seem to need it)
-    # TODO
-    return False
-    raise NotImplementedError
-    return "contravariant piola" in fiat_element.mapping()
+    return "contravariant piola" in basix_element.dof_mappings
 
 
 def form_needs_oriented_jacobian(form_data):
     # Check whether this form needs an oriented jacobian (only forms
     # involving contravariant piola mappings seem to need it)
-
+    for ufl_element in form_data.unique_elements:
+        element = create_basix_element(ufl_element)
+        if element_needs_oriented_jacobian(element):
+            return True
     return False
-    # TODO
-
-    # raise NotImplementedError
-    # for ufl_element in form_data.unique_elements:
-    #     element = create_element(ufl_element)
-    #     if "contravariant piola" in element.mapping():
-    #         return True
-    # return False
