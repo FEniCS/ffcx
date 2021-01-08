@@ -15,6 +15,7 @@ from ffcx.codegeneration import integrals_template as ufc_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.elementtables import piecewise_ttypes
+from ffcx.codegeneration.utils import make_perm_data
 
 logger = logging.getLogger("ffcx")
 
@@ -312,31 +313,7 @@ class IntegralGenerator(object):
         perm_n = 0
         dofmap = self.ir.table_dofmaps[name]
 
-        perm_data = []
-        if 1 in entities:
-            for edge in range(entities[1]):
-                perm_data.append((
-                    self.backend.symbols.entity_reflection(L, (1, edge), self.ir.cell_shape),
-                    None,
-                    base_perms[perm_n]
-                ))
-                perm_n += 1
-        if 2 in entities:
-            for face in range(entities[2]):
-                perm_data.append((
-                    self.backend.symbols.entity_reflection(L, (2, face), self.ir.cell_shape),
-                    None,
-                    base_perms[perm_n + 1]
-                ))
-                for rot in range(1, face_rotation_order):
-                    perm_data.append((
-                        self.backend.symbols.entity_rotations(L, (2, face), self.ir.cell_shape),
-                        rot,
-                        numpy.linalg.matrix_power(base_perms[perm_n], rot)
-                    ))
-                perm_n += 2
-
-        assert perm_n == len(base_perms)
+        perm_data = make_perm_data(L, base_perms, self.ir.cell_shape)
 
         for entity_perm, value, perm in perm_data:
             if value is None:
