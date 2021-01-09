@@ -254,10 +254,7 @@ class IntegralGenerator(object):
         return parts
 
     def generate_element_tables(self):
-        """Generate static tables with precomputed element basis
-        function values in quadrature points.
-
-        """
+        """Generate static tables with precomputed element basis function values in quadrature points."""
         L = self.backend.language
         parts = []
 

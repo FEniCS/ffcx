@@ -145,9 +145,9 @@ extern "C"
     /// The number of interpolation points
     int num_interpolation_points;
 
-    /// Applies the interpolation matrix and cell permutation to data obtain
-    /// from evaluation a function at interpolation points. This returns the
-    /// function coefficients for the cell.
+    /// Applies the interpolation matrix and cell permutation to data
+    /// obtain from evaluation a function at interpolation points. This
+    /// returns the function coefficients for the cell.
     int (*interpolate_into_cell)(ufc_scalar_t* restrict coefficients,
                                  const ufc_scalar_t* restrict evaluations,
                                  const uint32_t cell_permutation);
