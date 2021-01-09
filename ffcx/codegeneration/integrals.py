@@ -9,13 +9,12 @@ import itertools
 import logging
 
 import numpy
-
 import ufl
 from ffcx.codegeneration import integrals_template as ufc_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
-from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.codegeneration.utils import make_perm_data
+from ffcx.ir.elementtables import piecewise_ttypes
 
 logger = logging.getLogger("ffcx")
 
@@ -198,11 +197,13 @@ class IntegralGenerator(object):
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables()
 
-        # Generate the tables of basis function values and preintegrated blocks
+        # Generate the tables of basis function values and preintegrated
+        # blocks
         parts += self.generate_element_tables()
 
-        # Loop generation code will produce parts to go before quadloops,
-        # to define the quadloops, and to go after the quadloops
+        # Loop generation code will produce parts to go before
+        # quadloops, to define the quadloops, and to go after the
+        # quadloops
         all_preparts = []
         all_quadparts = []
 
@@ -210,7 +211,8 @@ class IntegralGenerator(object):
             # Generate code to compute piecewise constant scalar factors
             all_preparts += self.generate_piecewise_partition(rule)
 
-            # Generate code to integrate reusable blocks of final element tensor
+            # Generate code to integrate reusable blocks of final
+            # element tensor
             preparts, quadparts = self.generate_quadrature_loop(rule)
             all_preparts += preparts
             all_quadparts += quadparts
@@ -227,8 +229,8 @@ class IntegralGenerator(object):
 
         parts = []
 
-        # No quadrature tables for custom (given argument)
-        # or point (evaluation in single vertex)
+        # No quadrature tables for custom (given argument) or point
+        # (evaluation in single vertex)
         skip = ufl.custom_integral_types + ufl.measure.point_integral_types
         if self.ir.integral_type in skip:
             return parts
@@ -252,7 +254,10 @@ class IntegralGenerator(object):
         return parts
 
     def generate_element_tables(self):
-        """Generate static tables with precomputed element basis function values in quadrature points."""
+        """Generate static tables with precomputed element basis
+        function values in quadrature points.
+
+        """
         L = self.backend.language
         parts = []
 
@@ -281,27 +286,14 @@ class IntegralGenerator(object):
 
     def declare_table(self, name, table, padlen):
         """Declare a table.
-        If the dof dimensions of the table have dof rotations, apply these rotations."""
+
+        If the dof dimensions of the table have dof rotations, apply
+        these rotations.
+
+        """
         L = self.backend.language
 
         base_perms = self.ir.table_dof_base_permutations[name]
-
-        # NOTE: If we upgrade the minimun required Python version to
-        # >=3.7, dicts are ordered, so these can be replaced
-        # if self.ir.cell_shape == "interval":
-        #     entities = {}
-        # elif self.ir.cell_shape == "triangle":
-        #     # entities = {1: 3}
-        # elif self.ir.cell_shape == "quadrilateral":
-        #     # entities = {1: 4}
-        # elif self.ir.cell_shape == "tetrahedron":
-        #     # entities = {1: 6, 2: 4}
-        #     face_rotation_order = 3
-        # elif self.ir.cell_shape == "hexahedron":
-        #     # entities = {1: 12, 2: 6}
-        #     face_rotation_order = 4
-        # else:
-        #     raise NotImplementedError
 
         # TODO: can this use the same permutation application function
         # as in finite_element.py?
@@ -310,12 +302,8 @@ class IntegralGenerator(object):
                 "static const double", name, table.shape, table, padlen=padlen)]
 
         table = numpy.array(table, dtype=L.CExpr)
-
-        # perm_n = 0
         dofmap = self.ir.table_dofmaps[name]
-
         perm_data = make_perm_data(L, base_perms, self.ir.cell_shape)
-
         for entity_perm, value, perm in perm_data:
             if value is None:
                 condition = entity_perm
@@ -342,15 +330,16 @@ class IntegralGenerator(object):
         body = L.commented_code_list(
             body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
-        # Generate dofblock parts, some of this
-        # will be placed before or after quadloop
+        # Generate dofblock parts, some of this will be placed before or
+        # after quadloop
         preparts, quadparts = \
             self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
 
         # Wrap body in loop or scope
         if not body:
-            # Could happen for integral with everything zero and optimized away
+            # Could happen for integral with everything zero and
+            # optimized away
             quadparts = []
         else:
             num_points = quadrature_rule.points.shape[0]
@@ -382,20 +371,22 @@ class IntegralGenerator(object):
             f"(chunk_size={chunk_size}, analysis_num_points={num_points})"
         ])
 
-        # Generate dofblock parts, some of this
-        # will be placed before or after quadloop
+        # Generate dofblock parts, some of this will be placed before or
+        # after quadloop
         preparts, quadparts = \
             self.generate_dofblock_partition(num_points)
         body += quadparts
 
         # Wrap body in loop
         if not body:
-            # Could happen for integral with everything zero and optimized away
+            # Could happen for integral with everything zero and
+            # optimized away
             quadparts = []
         else:
             rule_parts = []
 
-            # Define two-level quadrature loop; over chunks then over points in chunk
+            # Define two-level quadrature loop; over chunks then over
+            # points in chunk
             iq_chunk = L.Symbol("iq_chunk")
             np = self.backend.symbols.num_custom_quadrature_points()
             num_point_blocks = (np + chunk_size - 1) / chunk_size
@@ -449,7 +440,8 @@ class IntegralGenerator(object):
             # Preparations for element tables
             table_parts = []
 
-            # Only declare non-piecewise tables, computed inside chunk loop
+            # Only declare non-piecewise tables, computed inside chunk
+            # loop
             non_piecewise_tables = [
                 name for name in sorted(tables) if table_types[name] not in piecewise_ttypes
             ]
@@ -505,13 +497,15 @@ class IntegralGenerator(object):
             v = attr['expression']
             mt = attr.get('mt')
 
-            # Generate code only if the expression is not already in cache
+            # Generate code only if the expression is not already in
+            # cache
             if not self.get_var(quadrature_rule, v):
                 if v._ufl_is_literal_:
                     vaccess = self.backend.ufl_to_language.get(v)
                 elif mt is not None:
-                    # All finite element based terminals have table data, as well
-                    # as some, but not all, of the symbolic geometric terminals
+                    # All finite element based terminals have table
+                    # data, as well as some, but not all, of the
+                    # symbolic geometric terminals
                     tabledata = attr.get('tr')
 
                     # Backend specific modified terminal translation
@@ -544,9 +538,11 @@ class IntegralGenerator(object):
                         vaccess = vexpr
                     elif isinstance(v, ufl.classes.Condition):
                         # Inline the conditions x < y, condition values
-                        # This removes the need to handle boolean intermediate variables.
-                        # With tensor-valued conditionals it may not be optimal but we
-                        # let the compiler take responsibility for optimizing those cases.
+                        # This removes the need to handle boolean
+                        # intermediate variables. With tensor-valued
+                        # conditionals it may not be optimal but we let
+                        # the compiler take responsibility for
+                        # optimizing those cases.
                         vaccess = vexpr
                     elif any(op._ufl_is_literal_ for op in v.ufl_operands):
                         # Skip intermediates for e.g. -2.0*x,
@@ -687,8 +683,8 @@ class IntegralGenerator(object):
 
         iq = self.backend.symbols.quadrature_loop_index()
 
-        # Override dof index with quadrature loop index for arguments with
-        # quadrature element, to index B like B[iq*num_dofs + iq]
+        # Override dof index with quadrature loop index for arguments
+        # with quadrature element, to index B like B[iq*num_dofs + iq]
         arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
         B_indices = []
         for i in range(block_rank):
@@ -728,7 +724,8 @@ class IntegralGenerator(object):
             if not defined:
                 quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
-        # Naively accumulate integrand for this block in the innermost loop
+        # Naively accumulate integrand for this block in the innermost
+        # loop
         assert not blockdata.transposed
         A_shape = self.ir.tensor_shape
 
@@ -747,7 +744,8 @@ class IntegralGenerator(object):
             break
 
         if expand_loop:
-            # If DOFs in dofrange are not equally spaced, then expand out the for loop
+            # If DOFs in dofrange are not equally spaced, then expand
+            # out the for loop
             for A_indices, B_indices in zip(itertools.product(*blockmap),
                                             itertools.product(*[range(len(b)) for b in blockmap])):
                 quadparts += [
