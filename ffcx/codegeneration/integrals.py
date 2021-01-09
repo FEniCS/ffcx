@@ -286,31 +286,32 @@ class IntegralGenerator(object):
 
         base_perms = self.ir.table_dof_base_permutations[name]
 
-        # NOTE: If we upgrade the minimun required Python version to >=3.7, dicts are
-        # ordered, so these can be replaced
-        if self.ir.cell_shape == "interval":
-            entities = {}
-        elif self.ir.cell_shape == "triangle":
-            entities = {1: 3}
-        elif self.ir.cell_shape == "quadrilateral":
-            entities = {1: 4}
-        elif self.ir.cell_shape == "tetrahedron":
-            entities = {1: 6, 2: 4}
-            face_rotation_order = 3
-        elif self.ir.cell_shape == "hexahedron":
-            entities = {1: 12, 2: 6}
-            face_rotation_order = 4
-        else:
-            raise NotImplementedError
+        # NOTE: If we upgrade the minimun required Python version to
+        # >=3.7, dicts are ordered, so these can be replaced
+        # if self.ir.cell_shape == "interval":
+        #     entities = {}
+        # elif self.ir.cell_shape == "triangle":
+        #     # entities = {1: 3}
+        # elif self.ir.cell_shape == "quadrilateral":
+        #     # entities = {1: 4}
+        # elif self.ir.cell_shape == "tetrahedron":
+        #     # entities = {1: 6, 2: 4}
+        #     face_rotation_order = 3
+        # elif self.ir.cell_shape == "hexahedron":
+        #     # entities = {1: 12, 2: 6}
+        #     face_rotation_order = 4
+        # else:
+        #     raise NotImplementedError
 
-        # TODO: can this use the same permutation application function as in finite_element.py?
+        # TODO: can this use the same permutation application function
+        # as in finite_element.py?
         if not self.ir.table_needs_permutation_data[name]:
             return [L.ArrayDecl(
                 "static const double", name, table.shape, table, padlen=padlen)]
 
         table = numpy.array(table, dtype=L.CExpr)
 
-        perm_n = 0
+        # perm_n = 0
         dofmap = self.ir.table_dofmaps[name]
 
         perm_data = make_perm_data(L, base_perms, self.ir.cell_shape)
