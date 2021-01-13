@@ -139,12 +139,12 @@ def interpolate_into_cell(L, ir, parameters):
 
 
 def apply_dof_transformation(L, ir, parameters, reverse=False):
-    coords = L.Symbol("coords")
+    data = L.Symbol("data")
     block = L.Symbol("block")
     block_size = L.Symbol("dim")
 
     apply_permutations = apply_permutations_to_data(
-        L, ir.base_permutations, ir.cell_shape, coords, reverse=reverse,
+        L, ir.base_permutations, ir.cell_shape, data, reverse=reverse,
         indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)])
     return apply_permutations + [L.Return(0)]
 

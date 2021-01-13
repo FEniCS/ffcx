@@ -39,13 +39,13 @@ int transform_values_{factory_name}(
 }}
 
 int apply_dof_transformation_{factory_name}(
-     double* restrict coords, const uint32_t cell_permutation, const int dim)
+     double* restrict data, const uint32_t cell_permutation, const int dim)
 {{
   {apply_dof_transformation}
 }}
 
 int apply_reverse_dof_transformation_{factory_name}(
-     double* restrict coords, const uint32_t cell_permutation, const int dim)
+     double* restrict data, const uint32_t cell_permutation, const int dim)
 {{
   {apply_reverse_dof_transformation}
 }}
