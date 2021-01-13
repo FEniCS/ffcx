@@ -345,14 +345,6 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 ])
         ]
 
-
-    apply_permutations = apply_permutations_to_data(
-        L, ir.base_permutations, ir.cell_shape, values,
-#        rotations_first=True, reversed_rotations=True,
-        indices=lambda dof: (ip, dof, r, physical_offsets[dof] + i),
-        ranges=[(s, 0, num_derivatives_t), (i, 0, num_physical_components),
-                (r, 0, num_derivatives_g)])
-
     # Transform for each point
     point_loop_code = [
         L.ForRange(
@@ -360,7 +352,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             0,
             num_points,
             index_type=index_type,
-            body=(transform_matrix_code + transform_apply_code + apply_permutations))
+            body=(transform_matrix_code + transform_apply_code))
     ]
 
     # Join code

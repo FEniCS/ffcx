@@ -113,7 +113,7 @@ extern "C"
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
-        const double* restrict K, const uint32_t cell_permutation);
+        const double* restrict K);
 
     /// @todo Fix docstring
     /// Map values of field from physical to reference space which has
