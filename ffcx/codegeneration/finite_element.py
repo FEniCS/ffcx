@@ -138,21 +138,13 @@ def interpolate_into_cell(L, ir, parameters):
     return lines + apply_permutations + [L.Return(0)]
 
 
-def permute_dof_coordinates(L, ir, parameters):
-    if ir.interpolation_points.shape[0] * ir.block_size != ir.space_dimension:
-        return [L.Return(-1)]
-
-    for mat in ir.base_permutations:
-        for row in mat:
-            if not numpy.isclose(sum(abs(i) for i in row), 1) or not numpy.isclose(max(abs(i) for i in row), 1):
-                return [L.Return(-1)]
-
+def apply_dof_transformation(L, ir, parameters, reverse=False):
     coords = L.Symbol("coords")
     block = L.Symbol("block")
     block_size = L.Symbol("dim")
 
     apply_permutations = apply_permutations_to_data(
-        L, ir.base_permutations, ir.cell_shape, coords,
+        L, ir.base_permutations, ir.cell_shape, coords, reverse=reverse,
         indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)])
     return apply_permutations + [L.Return(0)]
 
@@ -353,8 +345,10 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 ])
         ]
 
+
     apply_permutations = apply_permutations_to_data(
         L, ir.base_permutations, ir.cell_shape, values,
+#        rotations_first=True, reversed_rotations=True,
         indices=lambda dof: (ip, dof, r, physical_offsets[dof] + i),
         ranges=[(s, 0, num_derivatives_t), (i, 0, num_physical_components),
                 (r, 0, num_derivatives_g)])
@@ -423,8 +417,11 @@ def generator(ir, parameters):
     statements = transform_values(L, ir, parameters)
     d["transform_values"] = L.StatementList(statements)
 
-    statements = permute_dof_coordinates(L, ir, parameters)
-    d["permute_dof_coordinates"] = L.StatementList(statements)
+    statements = apply_dof_transformation(L, ir, parameters)
+    d["apply_dof_transformation"] = L.StatementList(statements)
+
+    statements = apply_dof_transformation(L, ir, parameters, True)
+    d["apply_reverse_dof_transformation"] = L.StatementList(statements)
 
     statements = interpolate_into_cell(L, ir, parameters)
     d["interpolate_into_cell"] = L.StatementList(statements)

@@ -70,7 +70,7 @@ def generate_return_int_switch(L, i, values, default):
                                           "int")
 
 
-def make_perm_data(L, base_perms, cell_shape, rotations_first=False, reversed_rotations=False):
+def make_perm_data(L, base_perms, cell_shape, reverse=False):
     if cell_shape == "interval":
         entities = {}
     elif cell_shape == "triangle":
@@ -103,17 +103,17 @@ def make_perm_data(L, base_perms, cell_shape, rotations_first=False, reversed_ro
                 None,
                 base_perms[perm_n + 1]
             )
-            if not rotations_first:
+            if not reverse:
                 perm_data.append(reflection)
             for rot in range(1, face_rotation_order):
-                if reversed_rotations:
+                if reverse:
                     rot = face_rotation_order - rot
                 perm_data.append((
                     entity_rotations(L, (2, face), cell_shape),
                     rot,
                     numpy.linalg.matrix_power(base_perms[perm_n], rot)
                 ))
-            if rotations_first:
+            if reverse:
                 perm_data.append(reflection)
             perm_n += 2
 
@@ -122,15 +122,9 @@ def make_perm_data(L, base_perms, cell_shape, rotations_first=False, reversed_ro
     return perm_data
 
 
-def apply_permutations_to_data(L, base_permutations, cell_shape, data,
-                               rotations_first=False, reversed_rotations=False,
+def apply_permutations_to_data(L, base_permutations, cell_shape, data, reverse=False,
                                indices=lambda dof: dof, ranges=None, dtype="double"):
-    assert not rotations_first  # TODO: remove these options as they are always False
-    assert not reversed_rotations  # TODO: remove these options as they are always False
-
-    perm_data = make_perm_data(
-        L, base_permutations, cell_shape,
-        rotations_first=rotations_first, reversed_rotations=reversed_rotations)
+    perm_data = make_perm_data(L, base_permutations, cell_shape, reverse=reverse)
 
     # Apply entity permutations
     apply_permutations = []

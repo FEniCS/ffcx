@@ -125,7 +125,11 @@ extern "C"
                             const ufc_coordinate_mapping* restrict cm);
 
     /// TODO: doc
-    int (*permute_dof_coordinates)(double* coords,
+    int (*apply_dof_transformation)(double* coords,
+                                   const uint32_t cell_permutation, int dim);
+
+    /// TODO: doc
+    int (*apply_reverse_dof_transformation)(double* coords,
                                    const uint32_t cell_permutation, int dim);
 
     /// Return the number of sub elements (for a mixed element)
@@ -233,7 +237,7 @@ extern "C"
     bool needs_permutation_data;
 
     /// TODO: doc
-    int (*permute_dof_coordinates)(double* coords,
+    int (*apply_dof_transformation)(double* coords,
                                    const uint32_t cell_permutation, int dim);
 
     /// TODO: doc

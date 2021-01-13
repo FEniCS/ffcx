@@ -36,7 +36,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->topological_dimension = {topological_dimension};
   cmap->is_affine = {is_affine};
   cmap->needs_permutation_data = {needs_permutation_data};
-  cmap->permute_dof_coordinates = permute_dof_coordinates_{element_factory_name};
+  cmap->apply_dof_transformation = apply_dof_transformation_{element_factory_name};
   cmap->get_dof_permutation = get_dof_permutation_{factory_name};
   cmap->cell_shape = {cell_shape};
   cmap->create_scalar_dofmap = create_{scalar_dofmap_name};

@@ -39,10 +39,16 @@ int transform_values_{factory_name}(
   {transform_values}
 }}
 
-int permute_dof_coordinates_{factory_name}(
+int apply_dof_transformation_{factory_name}(
      double* restrict coords, const uint32_t cell_permutation, const int dim)
 {{
-  {permute_dof_coordinates}
+  {apply_dof_transformation}
+}}
+
+int apply_reverse_dof_transformation_{factory_name}(
+     double* restrict coords, const uint32_t cell_permutation, const int dim)
+{{
+  {apply_reverse_dof_transformation}
 }}
 
 int interpolate_into_cell_{factory_name}(ufc_scalar_t* restrict coefficients, const ufc_scalar_t* restrict evaluations,
@@ -85,7 +91,8 @@ ufc_finite_element* create_{factory_name}(void)
 
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};
   element->transform_values = transform_values_{factory_name};
-  element->permute_dof_coordinates = permute_dof_coordinates_{factory_name};
+  element->apply_dof_transformation = apply_dof_transformation_{factory_name};
+  element->apply_reverse_dof_transformation = apply_reverse_dof_transformation_{factory_name};
   element->num_sub_elements = {num_sub_elements};
   element->create_sub_element = create_sub_element_{factory_name};
   element->create = create_{factory_name};
