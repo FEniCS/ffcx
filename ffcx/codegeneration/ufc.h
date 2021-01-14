@@ -132,14 +132,13 @@ extern "C"
     int (*apply_dof_transformation)(double* data,
                                     const uint32_t cell_permutation, int dim);
 
-    /// Apply reverse dof tranformations to some data
+    /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
     /// @param[in] dim The number of data items for each DOD
-    int (*apply_reverse_dof_transformation)(double* data,
-                                            const uint32_t cell_permutation,
-                                            int dim);
+    int (*apply_dof_transformation_to_scalar)(ufc_scalar_t* data,
+                                              const uint32_t cell_permutation, int dim);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;

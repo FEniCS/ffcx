@@ -380,9 +380,7 @@ def generator(ir, parameters):
 
     statements = apply_dof_transformation(L, ir, parameters)
     d["apply_dof_transformation"] = L.StatementList(statements)
-
-    statements = apply_dof_transformation(L, ir, parameters, True)
-    d["apply_reverse_dof_transformation"] = L.StatementList(statements)
+    d["apply_dof_transformation_to_scalar"] = L.StatementList(statements)
 
     statements = create_sub_element(L, ir)
     d["sub_element_declaration"] = sub_element_declaration(L, ir)
