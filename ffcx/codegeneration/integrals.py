@@ -8,19 +8,17 @@ import collections
 import itertools
 import logging
 
-import numpy
 import ufl
 from ffcx.codegeneration import integrals_template as ufc_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
-from ffcx.codegeneration.utils import make_perm_data
+from ffcx.codegeneration.utils import apply_permutations_to_data
 from ffcx.ir.elementtables import piecewise_ttypes
 
 logger = logging.getLogger("ffcx")
 
 
 def generator(ir, parameters):
-
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.integral_type}")
     logger.info(f"--- name: {ir.name}")
@@ -79,7 +77,6 @@ def generator(ir, parameters):
         factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
 
     # Format implementation code
-
     if integral_type == "custom":
         implementation = ufc_integrals.custom_factory.format(
             factory_name=factory_name,
@@ -92,7 +89,6 @@ def generator(ir, parameters):
             enabled_coefficients=code["enabled_coefficients"],
             tabulate_tensor=tabulate_tensor_fn,
             needs_permutation_data=ir.needs_permutation_data)
-
     return declaration, implementation
 
 
@@ -290,33 +286,21 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
 
-        base_perms = self.ir.table_dof_base_permutations[name]
-
-        # TODO: can this use the same permutation application function
-        # as in finite_element.py?
         if not self.ir.table_needs_permutation_data[name]:
             return [L.ArrayDecl(
                 "static const double", name, table.shape, table, padlen=padlen)]
 
-        table = numpy.array(table, dtype=L.CExpr)
-        dofmap = self.ir.table_dofmaps[name]
-        perm_data = make_perm_data(L, base_perms, self.ir.cell_shape)
-        for entity_perm, value, perm in perm_data:
-            if value is None:
-                condition = entity_perm
-            else:
-                condition = L.EQ(entity_perm, value)
-            prev_table = table.copy()
-            for index, dof in enumerate(dofmap):
-                row = perm[index]
-                if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
-                    for indices in itertools.product(*[range(n) for n in prev_table.shape[:-1]]):
-                        new_value = sum(i * j for i, j in zip(row, prev_table[indices]) if not numpy.isclose(i, 0))
-                        table[indices + (index, )] = L.Conditional(condition, new_value,
-                                                                   prev_table[indices + (index, )])
+        out = [L.ArrayDecl(
+            "double", name, table.shape, table, padlen=padlen)]
 
-        return [L.ArrayDecl(
-            "const double", name, table.shape, table, padlen=padlen)]
+        dummy_vars = tuple(0 if j == 1 else L.Symbol(f"i{i}") for i, j in enumerate(table.shape[:-1]))
+        ranges = tuple((dummy_vars[i], 0, j) for i, j in enumerate(table.shape[:-1]) if j != 1)
+        apply_perms = apply_permutations_to_data(
+            L, self.ir.table_dof_base_permutations[name], self.ir.cell_shape, L.Symbol(name),
+            indices=lambda dof: dummy_vars + (dof, ), ranges=ranges)
+        if len(apply_perms) > 0:
+            out += ["{"] + apply_perms + ["}"]
+        return out
 
     def generate_quadrature_loop(self, quadrature_rule):
         """Generate quadrature loop with for this num_points."""
