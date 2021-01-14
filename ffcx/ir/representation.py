@@ -50,8 +50,7 @@ ir_element = namedtuple('ir_element', [
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'create_sub_element',
     'entity_dofs', 'base_permutations', 'reference_offsets', 'physical_offsets', 'dof_mappings',
-    'num_reference_components', 'interpolation_matrix', 'interpolation_points', 'needs_permutation_data',
-    'interpolation_is_identity'])
+    'num_reference_components', 'needs_permutation_data', 'interpolation_is_identity'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'base_permutations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
@@ -175,8 +174,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
         ir["block_size"] = 1
 
     im = basix_element.interpolation_matrix
-    ir["interpolation_matrix"] = im
-    ir["interpolation_points"] = basix_element.points
     if im.shape[0] == im.shape[1] and numpy.allclose(im, numpy.identity(im.shape[0])):
         ir["interpolation_is_identity"] = 1
     else:
@@ -453,8 +450,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
                     # Trapezoidal rule
                     return (numpy.array([[0.0], [1.0]]), numpy.array([1.0 / 2.0, 1.0 / 2.0]))
             else:
-                (points, weights) = create_quadrature_points_and_weights(integral_type, cell, degree,
-                                                                         scheme)
+                points, weights = create_quadrature_points_and_weights(
+                    integral_type, cell, degree, scheme)
 
             points = numpy.asarray(points)
             weights = numpy.asarray(weights)
