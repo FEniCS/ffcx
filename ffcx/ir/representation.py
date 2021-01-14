@@ -48,7 +48,7 @@ ir_form = namedtuple('ir_form', [
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
-    'family', 'tabulate_dof_coordinates', 'num_sub_elements', 'block_size', 'create_sub_element',
+    'family', 'num_sub_elements', 'block_size', 'create_sub_element',
     'entity_dofs', 'base_permutations', 'reference_offsets', 'physical_offsets', 'dof_mappings',
     'num_reference_components', 'interpolation_matrix', 'interpolation_points', 'needs_permutation_data',
     'interpolation_is_identity'])
@@ -69,7 +69,6 @@ ir_integral = namedtuple('ir_integral', [
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
     'table_dofmaps', 'table_dof_base_permutations', 'integrand', 'name', 'precision',
     'table_needs_permutation_data', 'needs_permutation_data'])
-ir_tabulate_dof_coordinates = namedtuple('ir_tabulate_dof_coordinates', ['tdim', 'gdim', 'points', 'cell_shape'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', [
     'mappings', 'reference_value_size', 'physical_value_size', 'geometric_dimension',
     'topological_dimension', 'dofs', 'physical_offsets', 'cell_shape'])
@@ -165,7 +164,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
-    ir["tabulate_dof_coordinates"] = {}
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
@@ -682,29 +680,6 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     ir.update(expression_ir)
 
     return ir_expression(**ir)
-
-
-def _tabulate_dof_coordinates(ufl_element, element):
-    """Compute intermediate representation of tabulate_dof_coordinates."""
-    raise NotImplementedError
-
-    # if uses_integral_moments(element):
-    #    return {}
-
-    # Bail out if any dual basis member is missing (element is not
-    # nodal), this is strictly not necessary but simpler
-    if any(L is None or L.pt_dict is None for L in element.dual_basis()):
-        return {}
-
-    if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-        element = element.elements()[0]
-
-    cell = ufl_element.cell()
-    return ir_tabulate_dof_coordinates(
-        tdim=cell.topological_dimension(),
-        gdim=cell.geometric_dimension(),
-        points=[sorted(L.pt_dict.keys())[0] for L in element.dual_basis()],
-        cell_shape=cell.cellname())
 
 
 def _create_foo_integral(prefix, form_id, integral_type, form_data):
