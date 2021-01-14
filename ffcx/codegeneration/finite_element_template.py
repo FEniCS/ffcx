@@ -50,12 +50,6 @@ int apply_reverse_dof_transformation_{factory_name}(
   {apply_reverse_dof_transformation}
 }}
 
-int interpolate_into_cell_{factory_name}(ufc_scalar_t* restrict coefficients, const ufc_scalar_t* restrict evaluations,
-      const uint32_t cell_permutation)
-{{
-  {interpolate_into_cell}
-}}
-
 {sub_element_declaration}
 ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
@@ -83,10 +77,6 @@ ufc_finite_element* create_{factory_name}(void)
 
   element->needs_permutation_data = {needs_permutation_data};
   element->interpolation_is_identity = {interpolation_is_identity};
-
-  element->num_interpolation_points = {num_interpolation_points};
-  {interpolation_points}
-  element->interpolate_into_cell = interpolate_into_cell_{factory_name};
 
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};
   element->transform_values = transform_values_{factory_name};

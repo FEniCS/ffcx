@@ -116,28 +116,6 @@ def transform_values(L, ir, parameters):
     return [L.Return(-1)]  # generate_transform_values(L, ir.evaluate_dof)
 
 
-def interpolate_into_cell(L, ir, parameters):
-    if ir.interpolation_matrix.shape[0] * ir.block_size != ir.space_dimension:
-        return [L.Return(-1)]
-
-    lines = []
-
-    # Output argument
-    coeffs = L.Symbol("coefficients")
-    # Input argument
-    coeffs_in = L.Symbol("evaluations")
-
-    # TODO: Do we need to map values back to reference?
-    # TODO: permute
-
-    for i, row in enumerate(ir.interpolation_matrix):
-        lines.append(L.Assign(coeffs[i], sum(coeffs_in[j] * k for j, k in enumerate(row) if not numpy.isclose(k, 0))))
-
-    apply_permutations = apply_permutations_to_data(L, ir.base_permutations, ir.cell_shape, coeffs)
-
-    return lines + apply_permutations + [L.Return(0)]
-
-
 def apply_dof_transformation(L, ir, parameters, reverse=False):
     data = L.Symbol("data")
     block = L.Symbol("block")
@@ -389,15 +367,6 @@ def generator(ir, parameters):
     d["needs_permutation_data"] = ir.needs_permutation_data
     d["interpolation_is_identity"] = ir.interpolation_is_identity
 
-    num_points = ir.interpolation_points.shape[0]
-    d["num_interpolation_points"] = num_points
-    i_points = []
-    for i, point in enumerate(ir.interpolation_points):
-        for j, val in enumerate(point):
-            i_points.append(str(val))
-    d["interpolation_points"] = (f"static const double i_points[{num_points * ir.topological_dimension}] = {{"
-                                 f"{','.join(i_points)}}};\n  element->interpolation_points = i_points;\n")
-
     import ffcx.codegeneration.C.cnodes as L
 
     d["value_dimension"] = value_dimension(L, ir.value_shape)
@@ -414,9 +383,6 @@ def generator(ir, parameters):
 
     statements = apply_dof_transformation(L, ir, parameters, True)
     d["apply_reverse_dof_transformation"] = L.StatementList(statements)
-
-    statements = interpolate_into_cell(L, ir, parameters)
-    d["interpolate_into_cell"] = L.StatementList(statements)
 
     statements = create_sub_element(L, ir)
     d["sub_element_declaration"] = sub_element_declaration(L, ir)
