@@ -235,24 +235,12 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             body=L.Assign(values_symbol[iz], 0.0)),
     ]
 
-    # Make offsets available in generated code
-    reference_offsets = L.Symbol("reference_offsets")
-    physical_offsets = L.Symbol("physical_offsets")
-    dof_attributes_code = [
-        L.ArrayDecl(
-            "const " + index_type,
-            reference_offsets, (num_dofs, ),
-            values=ir.reference_offsets),
-        L.ArrayDecl(
-            "const " + index_type,
-            physical_offsets, (num_dofs, ),
-            values=ir.physical_offsets)
-    ]
-
     # Build dof lists for each mapping type
     mapping_dofs = defaultdict(list)
     for idof, mapping in enumerate(ir.dof_mappings):
         mapping_dofs[mapping].append(idof)
+
+    dof_attributes_code = []
 
     # Generate code for each mapping type
     d = L.Symbol("d")
@@ -275,21 +263,11 @@ def transform_reference_basis_derivatives(L, ir, parameters):
             dofrange = (d, 0, len(idofs))
             idof = idofs_symbol[d]
 
-        # NB! Array access to offsets, these are not Python integers
-        reference_offset = reference_offsets[idof]
-        physical_offset = physical_offsets[idof]
-
         # How many components does each basis function with this mapping have?
         num_reference_components = ir.num_reference_components[mapping]
 
         M_scale, M_row, num_physical_components = generate_element_mapping(
             mapping, i, num_reference_components, tdim, gdim, J[ip], detJ[ip], K[ip])
-
-        #            transform_apply_body = [
-        #                L.AssignAdd(values[ip, idof, r, physical_offset + k],
-        #                            transform[r, s] * reference_values[ip, idof, s, reference_offset + k])
-        #                for k in range(num_physical_components)
-        #            ]
 
         msg = "Using %s transform to map values back to the physical element." % mapping.replace(
             "piola", "Piola")
@@ -305,20 +283,20 @@ def transform_reference_basis_derivatives(L, ir, parameters):
                 body=[
                     # Unrolled application of mapping to one physical component,
                     # for affine this automatically reduces to
-                    #   mapped_value = reference_values[..., reference_offset]
+                    #   mapped_value = reference_values[..., 0]
                     L.Comment(msg),
                     L.VariableDecl(
                         "const double", mapped_value,
                         M_scale * sum(
-                            M_row[jj] * reference_values[ip, idof, s, reference_offset + jj]
+                            M_row[jj] * reference_values[ip, idof, s, jj]
                             for jj in range(num_reference_components))),
                     # Apply derivative transformation, for order=0 this reduces to
-                    # values[ip,idof,0,physical_offset+i] = transform[0,0]*mapped_value
+                    # values[ip,idof,0,i] = transform[0,0]*mapped_value
                     L.Comment("Mapping derivatives back to the physical element"),
                     L.ForRanges((r, 0, num_derivatives_g),
                                 index_type=index_type,
                                 body=[
-                                    L.AssignAdd(values[ip, idof, r, physical_offset + i],
+                                    L.AssignAdd(values[ip, idof, r, i],
                                                 transform[r, s] * mapped_value)])
                 ])
         ]

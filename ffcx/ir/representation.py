@@ -49,7 +49,7 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'create_sub_element',
-    'entity_dofs', 'base_permutations', 'reference_offsets', 'physical_offsets', 'dof_mappings',
+    'entity_dofs', 'base_permutations', 'dof_mappings',
     'num_reference_components', 'needs_permutation_data', 'interpolation_is_identity'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
@@ -70,7 +70,7 @@ ir_integral = namedtuple('ir_integral', [
     'table_needs_permutation_data', 'needs_permutation_data'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', [
     'mappings', 'reference_value_size', 'physical_value_size', 'geometric_dimension',
-    'topological_dimension', 'dofs', 'physical_offsets', 'cell_shape'])
+    'topological_dimension', 'dofs', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'table_dof_base_permutations', 'coefficient_numbering', 'coefficient_offsets',
@@ -187,8 +187,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["entity_dofs"] = basix_element.entity_dof_numbers
 
-    ir["reference_offsets"] = [0 for i in range(basix_element.dim)]  # TODO
-    ir["physical_offsets"] = [0 for i in range(basix_element.dim)]  # TODO
     ir["dof_mappings"] = basix_element.dof_mappings
     ir["num_reference_components"] = basix_element.num_reference_components
 
