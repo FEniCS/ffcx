@@ -111,11 +111,6 @@ def create_sub_element(L, ir):
     return generate_return_new_switch(L, "i", classnames)
 
 
-def transform_values(L, ir, parameters):
-    """Generate code for transform_values."""
-    return [L.Return(-1)]  # generate_transform_values(L, ir.evaluate_dof)
-
-
 def apply_dof_transformation(L, ir, parameters, reverse=False):
     data = L.Symbol("data")
     block = L.Symbol("block")
@@ -374,9 +369,6 @@ def generator(ir, parameters):
 
     statements = transform_reference_basis_derivatives(L, ir, parameters)
     d["transform_reference_basis_derivatives"] = L.StatementList(statements)
-
-    statements = transform_values(L, ir, parameters)
-    d["transform_values"] = L.StatementList(statements)
 
     statements = apply_dof_transformation(L, ir, parameters)
     d["apply_dof_transformation"] = L.StatementList(statements)

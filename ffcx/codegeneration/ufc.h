@@ -108,21 +108,11 @@ extern "C"
     /// @param[in] cell_permutations An integer that says how each entity of the
     ///         cell of dimension < tdim has been permuted relative to a
     ///         low-to-high ordering of the cell.
-
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
         const double* restrict K);
-
-    /// @todo Fix docstring
-    /// Map values of field from physical to reference space which has
-    /// been evaluated at points given by
-    /// tabulate_reference_dof_coordinates.
-    int (*transform_values)(ufc_scalar_t* restrict reference_values,
-                            const ufc_scalar_t* restrict physical_values,
-                            const double* restrict coordinate_dofs,
-                            const ufc_coordinate_mapping* restrict cm);
 
     /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
