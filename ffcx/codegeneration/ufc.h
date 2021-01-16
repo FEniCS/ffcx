@@ -119,8 +119,8 @@ extern "C"
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
     /// @param[in] dim The number of data items for each DOD
-    int (*apply_dof_transformation)(double* data,
-                                    const uint32_t cell_permutation, int dim);
+    int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
+                                    int dim);
 
     /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
@@ -128,7 +128,8 @@ extern "C"
     /// cell's entities
     /// @param[in] dim The number of data items for each DOD
     int (*apply_dof_transformation_to_scalar)(ufc_scalar_t* data,
-                                              const uint32_t cell_permutation, int dim);
+                                              uint32_t cell_permutation,
+                                              int dim);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
@@ -221,11 +222,11 @@ extern "C"
     bool needs_permutation_data;
 
     /// TODO: doc
-    int (*apply_dof_transformation)(double* coords,
-                                   const uint32_t cell_permutation, int dim);
+    int (*apply_dof_transformation)(double* coords, uint32_t cell_permutation,
+                                    int dim);
 
     /// TODO: doc
-    int (*get_dof_permutation)(int* dof_list, const uint32_t cell_permutation);
+    int (*get_dof_permutation)(int* dof_list, uint32_t cell_permutation);
 
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
@@ -288,7 +289,7 @@ extern "C"
       const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      const uint32_t cell_permutation);
+      uint32_t cell_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///

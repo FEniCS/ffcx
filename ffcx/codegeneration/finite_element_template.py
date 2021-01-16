@@ -31,13 +31,13 @@ int transform_reference_basis_derivatives_{factory_name}(
 
 
 int apply_dof_transformation_{factory_name}(
-     double* restrict data, const uint32_t cell_permutation, const int dim)
+     double* restrict data, uint32_t cell_permutation, int dim)
 {{
   {apply_dof_transformation}
 }}
 
 int apply_dof_transformation_to_scalar_{factory_name}(
-     ufc_scalar_t* restrict data, const uint32_t cell_permutation, const int dim)
+     ufc_scalar_t* restrict data, uint32_t cell_permutation, int dim)
 {{
   {apply_dof_transformation_to_scalar}
 }}
