@@ -312,7 +312,7 @@ class FFCXBackendAccess(object):
         )
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
-        # L = self.language
+        L = self.language
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
@@ -334,27 +334,26 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        raise NotImplementedError
-        # fiat_scalar_element = create_element(ufl_scalar_element)
-        # num_scalar_dofs = fiat_scalar_element.space_dimension()
+        basix_scalar_element = create_basix_element(ufl_scalar_element)
+        num_scalar_dofs = basix_scalar_element.dim
 
         # Get edge vertices
-        # facet = self.symbols.entity("facet", mt.restriction)
-        # facet_edge = mt.component[0]
-        # facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices")
-        # vertex0 = facet_edge_vertices[facet][facet_edge][0]
-        # vertex1 = facet_edge_vertices[facet][facet_edge][1]
+        facet = self.symbols.entity("facet", mt.restriction)
+        facet_edge = mt.component[0]
+        facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices")
+        vertex0 = facet_edge_vertices[facet][facet_edge][0]
+        vertex1 = facet_edge_vertices[facet][facet_edge][1]
 
         # Get dofs and component
-        # component = mt.component[1]
-        # assert coordinate_element.degree() == 1, "Assuming degree 1 element"
-        # dof0 = vertex0
-        # dof1 = vertex1
-        # expr = (
-        #     self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
-        #     - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
+        component = mt.component[1]
+        assert coordinate_element.degree() == 1, "Assuming degree 1 element"
+        dof0 = vertex0
+        dof1 = vertex1
+        expr = (
+            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
+            - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
 
-        # return expr
+        return expr
 
     def _pass(self, *args, **kwargs):
         """Return one."""
