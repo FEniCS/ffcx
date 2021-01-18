@@ -225,11 +225,18 @@ extern "C"
     /// functions
     bool needs_permutation_data;
 
-    /// Permutes a list of DOF numbers
-    /// As a coordinate mapping is always Lagrange or Q, the DOF permutation
-    /// will always be a rearrangement of DOF points, so this is valid in this
-    /// case.
-    int (*permute_dofs)(int* dof_list, uint32_t cell_permutation);
+    /// Apply dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOD
+    int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
+                                    int dim);
+
+    /// Gets the permutation of the DOF numbering.
+    /// As a coordinate mapping is always Lagrange or Q, the DOF permutation will
+    /// always be a rearrangement of DOF points, so this is valid in this case.
+    int (*get_dof_permutation)(int* dof_list, uint32_t cell_permutation);
 
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;

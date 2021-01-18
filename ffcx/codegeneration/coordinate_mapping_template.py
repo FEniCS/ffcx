@@ -20,9 +20,9 @@ ufc_coordinate_mapping* create_coordinate_map_{prefix}(void);
 factory = """
 // Code for coordinate mapping {factory_name}
 
-int permute_dofs_{factory_name}(int* dof_list, const uint32_t cell_permutation)
+int get_dof_permutation_{factory_name}(int* dof_list, const uint32_t cell_permutation)
 {{
-  {permute_dofs}
+  {get_dof_permutation}
 }}
 
 ufc_coordinate_mapping* create_{factory_name}(void)
@@ -36,7 +36,8 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->topological_dimension = {topological_dimension};
   cmap->is_affine = {is_affine};
   cmap->needs_permutation_data = {needs_permutation_data};
-  cmap->permute_dofs = permute_dofs_{factory_name};
+  cmap->apply_dof_transformation = apply_dof_transformation_{element_factory_name};
+  cmap->get_dof_permutation = get_dof_permutation_{factory_name};
   cmap->cell_shape = {cell_shape};
   cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
   return cmap;
