@@ -29,23 +29,15 @@ int transform_reference_basis_derivatives_{factory_name}(
   {transform_reference_basis_derivatives}
 }}
 
-int transform_values_{factory_name}(
-     ufc_scalar_t* restrict reference_values,
-     const ufc_scalar_t* restrict physical_values,
-     const double* restrict coordinate_dofs,
-     const ufc_coordinate_mapping* restrict cm)
-{{
-  {transform_values}
-}}
 
 int apply_dof_transformation_{factory_name}(
-     double* restrict data, const uint32_t cell_permutation, const int dim)
+     double* restrict data, uint32_t cell_permutation, int dim)
 {{
   {apply_dof_transformation}
 }}
 
 int apply_dof_transformation_to_scalar_{factory_name}(
-     ufc_scalar_t* restrict data, const uint32_t cell_permutation, const int dim)
+     ufc_scalar_t* restrict data, uint32_t cell_permutation, int dim)
 {{
   {apply_dof_transformation_to_scalar}
 }}
@@ -79,7 +71,6 @@ ufc_finite_element* create_{factory_name}(void)
   element->interpolation_is_identity = {interpolation_is_identity};
 
   element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};
-  element->transform_values = transform_values_{factory_name};
   element->apply_dof_transformation = apply_dof_transformation_{factory_name};
   element->apply_dof_transformation_to_scalar = apply_dof_transformation_to_scalar_{factory_name};
   element->num_sub_elements = {num_sub_elements};

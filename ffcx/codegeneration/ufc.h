@@ -108,29 +108,19 @@ extern "C"
     /// @param[in] cell_permutations An integer that says how each entity of the
     ///         cell of dimension < tdim has been permuted relative to a
     ///         low-to-high ordering of the cell.
-
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
         const double* restrict K);
 
-    /// @todo Fix docstring
-    /// Map values of field from physical to reference space which has
-    /// been evaluated at points given by
-    /// tabulate_reference_dof_coordinates.
-    int (*transform_values)(ufc_scalar_t* restrict reference_values,
-                            const ufc_scalar_t* restrict physical_values,
-                            const double* restrict coordinate_dofs,
-                            const ufc_coordinate_mapping* restrict cm);
-
     /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
     /// @param[in] dim The number of data items for each DOD
-    int (*apply_dof_transformation)(double* data,
-                                    const uint32_t cell_permutation, int dim);
+    int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
+                                    int dim);
 
     /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
@@ -138,7 +128,8 @@ extern "C"
     /// cell's entities
     /// @param[in] dim The number of data items for each DOD
     int (*apply_dof_transformation_to_scalar)(ufc_scalar_t* data,
-                                              const uint32_t cell_permutation, int dim);
+                                              uint32_t cell_permutation,
+                                              int dim);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
@@ -239,13 +230,13 @@ extern "C"
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
     /// @param[in] dim The number of data items for each DOD
-    int (*apply_dof_transformation)(double* data,
-                                 const uint32_t cell_permutation, int dim);
+    int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
+                                    int dim);
 
     /// Gets the permutation of the DOF numbering.
     /// As a coordinate mapping is always Lagrange or Q, the DOF permutation will
     /// always be a rearrangement of DOF points, so this is valid in this case.
-    int (*get_dof_permutation)(int* dof_list, const uint32_t cell_permutation);
+    int (*get_dof_permutation)(int* dof_list, uint32_t cell_permutation);
 
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
@@ -308,7 +299,7 @@ extern "C"
       const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      const uint32_t cell_permutation);
+      uint32_t cell_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
