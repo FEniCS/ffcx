@@ -111,7 +111,7 @@ def create_sub_element(L, ir):
     return generate_return_new_switch(L, "i", classnames)
 
 
-def apply_dof_transformation(L, ir, parameters, reverse=False):
+def apply_dof_transformation(L, ir, parameters, reverse=False, dtype="double"):
     """Write function that applies the DOF tranformations/permutations to some data."""
     data = L.Symbol("data")
     block = L.Symbol("block")
@@ -119,7 +119,8 @@ def apply_dof_transformation(L, ir, parameters, reverse=False):
 
     apply_permutations = apply_permutations_to_data(
         L, ir.base_permutations, ir.cell_shape, data, reverse=reverse,
-        indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)])
+        indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)],
+        dtype=dtype)
     return apply_permutations + [L.Return(0)]
 
 
@@ -351,6 +352,8 @@ def generator(ir, parameters):
 
     statements = apply_dof_transformation(L, ir, parameters)
     d["apply_dof_transformation"] = L.StatementList(statements)
+
+    statements = apply_dof_transformation(L, ir, parameters, dtype="ufc_scalar_t")
     d["apply_dof_transformation_to_scalar"] = L.StatementList(statements)
 
     statements = create_sub_element(L, ir)
