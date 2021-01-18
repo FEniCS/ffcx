@@ -40,6 +40,9 @@ def generator(ir, parameters):
     statements = permute_dofs(L, ir.base_permutations, ir.cell_shape)
     d["permute_dofs"] = L.StatementList(statements)
 
+    statements = unpermute_dofs(L, ir.base_permutations, ir.cell_shape)
+    d["unpermute_dofs"] = L.StatementList(statements)
+
     d["family"] = f"\"{ir.coordinate_element_family}\""
     d["degree"] = ir.coordinate_element_degree
 
@@ -64,3 +67,9 @@ def permute_dofs(L, base_permutations, cell_shape):
     data = L.Symbol("dof_list")
     return apply_permutations_to_data(L, base_permutations, cell_shape, data,
                                       dtype="int") + [L.Return(0)]
+
+
+def permute_dofs(L, base_permutations, cell_shape):
+    data = L.Symbol("dof_list")
+    return apply_permutations_to_data(L, base_permutations, cell_shape, data,
+                                      reverse=True, dtype="int") + [L.Return(0)]
