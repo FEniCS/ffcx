@@ -117,6 +117,7 @@ def transform_values(L, ir, parameters):
 
 
 def apply_dof_transformation(L, ir, parameters, reverse=False):
+    """Write function that applies the DOF tranformations/permutations to some data."""
     data = L.Symbol("data")
     block = L.Symbol("block")
     block_size = L.Symbol("dim")

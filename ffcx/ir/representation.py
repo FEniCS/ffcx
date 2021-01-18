@@ -221,8 +221,8 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     # Precompute repeatedly used items
     for i in basix_element.entity_dofs:
         if max(i) != min(i):
-            raise RuntimeError("Elements withe different numbers of DOFs on subentities of the same dimension"
-                               " not yet supported in FFcx.")
+            raise RuntimeError("Elements with different numbers of DOFs on subentities of the same dimension"
+                               " are not yet supported in FFCx.")
     num_dofs_per_entity = [i[0] for i in basix_element.entity_dofs]
 
     ir["num_entity_dofs"] = num_dofs_per_entity
@@ -426,6 +426,8 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
             elif scheme == "vertex":
+                # FIXME: Could this come from basix?
+
                 # The vertex scheme, i.e., averaging the function value in the
                 # vertices and multiplying with the simplex volume, is only of
                 # order 1 and inferior to other generic schemes in terms of

@@ -148,6 +148,10 @@ extern "C"
     bool needs_permutation_data;
 
     /// If true, the interpolation matrix is the identity
+    /// Interpolation matrix maps point-wise values at set of points into values
+    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity, then
+    /// the space is defined by a series of point evaluations, and so the interpolation
+    /// points are the DOF coordinates.
     bool interpolation_is_identity;
 
     /// Create a new finite element for sub element i (for a mixed
@@ -230,11 +234,17 @@ extern "C"
     /// functions
     bool needs_permutation_data;
 
-    /// TODO: doc
-    int (*apply_dof_transformation)(double* coords,
-                                   const uint32_t cell_permutation, int dim);
+    /// Apply dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOD
+    int (*apply_dof_transformation)(double* data,
+                                 const uint32_t cell_permutation, int dim);
 
-    /// TODO: doc
+    /// Gets the permutation of the DOF numbering.
+    /// As a coordinate mapping is always Lagrange or Q, the DOF permutation will
+    /// always be a rearrangement of DOF points, so this is valid in this case.
     int (*get_dof_permutation)(int* dof_list, const uint32_t cell_permutation);
 
     /// Return cell shape of the coordinate_mapping
