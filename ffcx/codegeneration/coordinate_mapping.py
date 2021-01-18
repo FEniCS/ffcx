@@ -69,7 +69,7 @@ def permute_dofs(L, base_permutations, cell_shape):
                                       dtype="int") + [L.Return(0)]
 
 
-def permute_dofs(L, base_permutations, cell_shape):
+def unpermute_dofs(L, base_permutations, cell_shape):
     data = L.Symbol("dof_list")
     return apply_permutations_to_data(L, base_permutations, cell_shape, data,
                                       reverse=True, dtype="int") + [L.Return(0)]
