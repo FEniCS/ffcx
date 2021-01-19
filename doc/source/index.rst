@@ -21,14 +21,12 @@ API reference
    ffcx.codegeneration
    ffcx.compiler
    ffcx.formatting
-   ffcx.jitcompiler
    ffcx.main
    ffcx.__main__
    ffcx.parameters
    ffcx.representation
    ffcx.utils
-   ffcx.fiatinterface
-   ffcx.optimization
+   ffcx.basix_interface
    ffcx.representationutils
 
 
