@@ -36,10 +36,12 @@ def generator(ir, parameters):
     d["scalar_dofmap_name"] = ir.scalar_dofmap_name
 
     d["needs_permutation_data"] = ir.needs_permutation_data
-    d["element_factory_name"] = ir.coordinate_finite_element_classname
 
-    statements = get_dof_permutation(L, ir.base_permutations, ir.cell_shape)
-    d["get_dof_permutation"] = L.StatementList(statements)
+    statements = permute_dofs(L, ir.base_permutations, ir.cell_shape)
+    d["permute_dofs"] = L.StatementList(statements)
+
+    statements = unpermute_dofs(L, ir.base_permutations, ir.cell_shape)
+    d["unpermute_dofs"] = L.StatementList(statements)
 
     d["family"] = f"\"{ir.coordinate_element_family}\""
     d["degree"] = ir.coordinate_element_degree
@@ -61,7 +63,13 @@ def generator(ir, parameters):
     return declaration, implementation
 
 
-def get_dof_permutation(L, base_permutations, cell_shape):
+def permute_dofs(L, base_permutations, cell_shape):
     data = L.Symbol("dof_list")
     return apply_permutations_to_data(L, base_permutations, cell_shape, data,
                                       dtype="int") + [L.Return(0)]
+
+
+def unpermute_dofs(L, base_permutations, cell_shape):
+    data = L.Symbol("dof_list")
+    return apply_permutations_to_data(L, base_permutations, cell_shape, data,
+                                      reverse=True, dtype="int") + [L.Return(0)]
