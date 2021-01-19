@@ -36,7 +36,6 @@ def generator(ir, parameters):
     d["scalar_dofmap_name"] = ir.scalar_dofmap_name
 
     d["needs_permutation_data"] = ir.needs_permutation_data
-    d["element_factory_name"] = ir.coordinate_finite_element_classname
 
     statements = permute_dofs(L, ir.base_permutations, ir.cell_shape)
     d["permute_dofs"] = L.StatementList(statements)
