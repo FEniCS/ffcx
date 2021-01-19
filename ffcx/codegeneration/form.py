@@ -114,7 +114,7 @@ class UFCForm:
 
     def coordinate_mapping_declaration(self, L, ir):
         classname = ir.create_coordinate_mapping
-        code = "ufc_coordinate_mapping* create_{name}(void);\n".format(name=classname[0])
+        code = f"ufc_coordinate_mapping* create_{classname[0]}(void);\n"
         return code
 
     def create_finite_element(self, L, ir):
@@ -126,7 +126,7 @@ class UFCForm:
         classnames = set(ir.create_finite_element)
         code = ""
         for name in classnames:
-            code += "ufc_finite_element* create_{name}(void);\n".format(name=name)
+            code += f"ufc_finite_element* create_{name}(void);\n"
         return code
 
     def create_dofmap(self, L, ir):
@@ -138,7 +138,7 @@ class UFCForm:
         classnames = set(ir.create_dofmap)
         code = ""
         for name in classnames:
-            code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
+            code += f"ufc_dofmap* create_{name}(void);\n"
         return code
 
     def create_functionspace(self, L, ir):
@@ -148,11 +148,9 @@ class UFCForm:
         i = 0
         for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
             body = "ufc_function_space* space = (ufc_function_space*)malloc(sizeof(*space));\n"
-            body += "space->create_element = create_{finite_element_classname};\n".format(
-                finite_element_classname=element)
-            body += "space->create_dofmap = create_{dofmap_classname};\n".format(dofmap_classname=dofmap)
-            body += "space->create_coordinate_mapping = create_{coordinate_map_classname};\n".format(
-                coordinate_map_classname=cmap)
+            body += f"space->create_element = create_{element};\n"
+            body += f"space->create_dofmap = create_{dofmap};\n"
+            body += f"space->create_coordinate_mapping = create_{cmap};\n"
             body += "return space;"
 
             condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
@@ -191,13 +189,13 @@ def generator(ir, parameters):
     """Generate UFC code for a form."""
 
     logger.info("Generating code for form:")
-    logger.info("--- rank: {}".format(ir.rank))
-    logger.info("--- name: {}".format(ir.name))
+    logger.info(f"--- rank: {ir.rank}")
+    logger.info(f"--- name: {ir.name}")
 
     d = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
-    d["signature"] = "\"{}\"".format(ir.signature)
+    d["signature"] = f"\"{ir.signature}\""
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants

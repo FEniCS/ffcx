@@ -63,7 +63,7 @@ def sub_dofmap_declaration(L, ir):
     classnames = set(ir.create_sub_dofmap)
     code = ""
     for name in classnames:
-        code += "ufc_dofmap* create_{name}(void);\n".format(name=name)
+        code += f"ufc_dofmap* create_{name}(void);\n"
     return code
 
 
@@ -71,33 +71,19 @@ def generator(ir, parameters):
     """Generate UFC code for a dofmap."""
 
     logger.info("Generating code for dofmap:")
-    logger.info("--- num element support dofs: {}".format(ir.num_element_support_dofs))
-    logger.info("--- name: {}".format(ir.name))
+    logger.info(f"--- num element support dofs: {ir.num_element_support_dofs}")
+    logger.info(f"--- name: {ir.name}")
 
     d = {}
 
     # Attributes
     d["factory_name"] = ir.name
-    d["signature"] = "\"{}\"".format(ir.signature)
+    d["signature"] = f"\"{ir.signature}\""
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
     d["block_size"] = ir.block_size
-
-    num_perms = len(ir.base_permutations)
-    if num_perms == 0:
-        num_dofs = 0
-    else:
-        num_dofs = len(ir.base_permutations[0])
-
-    bp = []
-    for i, perm in enumerate(ir.base_permutations):
-        for j, val in enumerate(perm):
-            bp.append(str(val))
-    d["base_permutations"] = ("static const int bp[" + str(num_perms * num_dofs) + "] = {"
-                              + ",".join(bp) + "};\n  dofmap->base_permutations = bp;\n")
-    d["size_base_permutations"] = num_perms * num_dofs
 
     import ffcx.codegeneration.C.cnodes as L
 

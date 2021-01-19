@@ -46,9 +46,20 @@ install_manifest.txt
 # Visual Studio Code project config
 .vscode
 
+# c, h and so files due to running demos
+demo/*.c
+demo/*.h
+demo/*.so
+test/*.c
+test/*.h
+test/*.so
+
 # Tests
 **/.cache/
 __pycache__
+test/compile-cache/
+test/libffcx_*
+test/*.pdf
 
 # setuptools temps
 *.egg-info/

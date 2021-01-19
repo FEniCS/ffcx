@@ -8,21 +8,14 @@
 import logging
 
 import ufl
-
-from ffcx.fiatinterface import create_element
+from ffcx.basix_interface import create_basix_element
 
 logger = logging.getLogger("ffcx")
 
 
 def num_coordinate_component_dofs(coordinate_element):
-    """Get the number of dofs for a coordinate component for this degree.
-
-    """
-    fiat_elements = create_element(coordinate_element).elements()
-    # Extracting only first component degrees of freedom from FIAT
-    fiat_element = fiat_elements[0]
-    assert(all(isinstance(element, type(fiat_element)) for element in fiat_elements))
-    return fiat_element.space_dimension()
+    """Get the number of dofs for a coordinate component for this degree."""
+    return create_basix_element(coordinate_element).sub_element.dim
 
 
 class FFCXBackendDefinitions(object):

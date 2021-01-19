@@ -24,15 +24,15 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y graphviz libgraphviz-dev pkg-config
+          sudo apt-get install -y graphviz libgraphviz-dev pkg-config libeigen3-dev
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
-        run: brew install graphviz pkg-config
+        run: brew install graphviz pkg-config eigen
       - name: Install dependencies (Python)
         run: |
           pip install --upgrade pip
           pip install pygraphviz
-          pip install git+https://github.com/FEniCS/fiat.git --user
+          pip install git+https://github.com/FEniCS/basix.git --user
           pip install git+https://github.com/FEniCS/ufl.git --user
       - name: Lint with flake8
         run: |
@@ -47,7 +47,7 @@ jobs:
           pip install .
       - name: Run units tests
         run: |
-          pip install coveralls coverage pytest pytest-cov pytest-xdist
+          pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
@@ -65,4 +65,35 @@ jobs:
         if: always()
       - name: Runs demos
         run: |
-          ffcx demo/*.ufl
+          python${{ matrix.python-version }} -m pytest demo/test_demos.py
+
+      - name: Build documentation
+        run: |
+          pip install sphinx sphinx_rtd_theme
+          cd doc
+          make html
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: doc-${{ matrix.os }}-${{ matrix.python-version }}
+          path: doc/build/html/
+          retention-days: 2
+          if-no-files-found: error
+      - name: Checkout FEniCS/docs
+        uses: actions/checkout@v2
+        with:
+          repository: "FEniCS/docs"
+          path: "docs"
+          ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
+      - name: Push documentation to repository FEniCS/docs
+        if: ${{ github.repository == 'FEniCS/ffcx' && github.ref == 'refs/heads/master' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
+        run: |
+          cd docs
+          git config --global user.email "fenics@github.com"
+          git config --global user.name "FEniCS GitHub Actions"
+          git rm -r ffcx/master/*
+          mkdir -p ffcx/master
+          cp -r ../doc/build/html/* ffcx/master
+          git add --all
+          git commit --allow-empty -m "Python FEniCS/ffcx@${{ github.sha }}"
+          git push

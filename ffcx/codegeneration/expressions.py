@@ -20,8 +20,8 @@ def generator(ir, parameters):
     """Generate UFC code for an expression."""
 
     logger.info("Generating code for expression:")
-    logger.info("--- points: {}".format(ir.points))
-    logger.info("--- name: {}".format(ir.name))
+    logger.info(f"--- points: {ir.points}")
+    logger.info(f"--- name: {ir.name}")
 
     factory_name = ir.name
 
@@ -32,7 +32,7 @@ def generator(ir, parameters):
     eg = ExpressionGenerator(ir, backend)
 
     code = {}
-    code["name"] = "{}_expression".format(ir.name)
+    code["name"] = f"{ir.name}_expression"
     parts = eg.generate()
 
     body = format_indented_lines(parts.cs_format(), 1)
@@ -129,7 +129,7 @@ class ExpressionGenerator:
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
-            body, "Points loop body setup quadrature loop {}".format(self.quadrature_rule.id()))
+            body, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}")
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
@@ -155,10 +155,10 @@ class ExpressionGenerator:
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol("sv_{}".format(self.quadrature_rule.id()))
+        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}")
         parts = self.generate_partition(arraysymbol, F, "varying")
         parts = L.commented_code_list(
-            parts, "Unstructured varying computations for quadrature rule {}".format(self.quadrature_rule.id()))
+            parts, f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}")
         return parts
 
     def generate_piecewise_partition(self):

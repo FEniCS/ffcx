@@ -9,17 +9,16 @@ import hashlib
 import logging
 
 import numpy
+from ffcx.basix_interface import create_quadrature, reference_cell_vertices, map_facet_points
 
 import ufl
-from ffcx.fiatinterface import (create_quadrature, map_facet_points,
-                                reference_cell_vertices)
 
 logger = logging.getLogger("ffcx")
 
 
 class QuadratureRule:
     def __init__(self, points, weights):
-        self.points = points
+        self.points = numpy.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
         self.weights = weights
         self._hash = None
 
@@ -47,18 +46,18 @@ class QuadratureRule:
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
 
+    # from IPython import embed; embed()
     if integral_type == "cell":
-        (points, weights) = create_quadrature(cell.cellname(), degree, rule)
+        return create_quadrature(cell.cellname(), degree + 1, rule)
     elif integral_type in ufl.measure.facet_integral_types:
-        (points, weights) = create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree,
-                                              rule)
+        return create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree + 1, rule)
     elif integral_type in ufl.measure.point_integral_types:
-        (points, weights) = create_quadrature("vertex", degree, rule)
+        return create_quadrature("vertex", degree + 1, rule)
     elif integral_type == "expression":
-        (points, weights) = (None, None)
-    else:
-        logging.exception("Unknown integral type: {}".format(integral_type))
-    return (points, weights)
+        return (None, None)
+
+    logging.exception(f"Unknown integral type: {integral_type}")
+    return (None, None)
 
 
 def integral_type_to_entity_dim(integral_type, tdim):
@@ -75,7 +74,7 @@ def integral_type_to_entity_dim(integral_type, tdim):
     elif integral_type == "expression":
         entity_dim = tdim
     else:
-        raise RuntimeError("Unknown integral_type: {}".format(integral_type))
+        raise RuntimeError(f"Unknown integral_type: {integral_type}")
     return entity_dim
 
 
@@ -93,4 +92,4 @@ def map_integral_points(points, integral_type, cell, entity):
     elif entity_dim == 0:
         return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
-        raise RuntimeError("Can't map points from entity_dim=%s" % (entity_dim, ))
+        raise RuntimeError(f"Can't map points from entity_dim={entity_dim}")

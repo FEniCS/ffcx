@@ -27,7 +27,7 @@ def format_mt_name(basename, mt):
 
     # Add averaged state to name
     if mt.averaged:
-        avg = "_a{0}".format(mt.averaged)
+        avg = f"_a{mt.averaged}"
         access += avg
 
     # Format restriction
@@ -37,17 +37,17 @@ def format_mt_name(basename, mt):
     # Format global derivatives
     if mt.global_derivatives:
         assert basename == "J"
-        der = "_deriv_{0}".format(''.join(map(str, mt.global_derivatives)))
+        der = f"_deriv_{''.join(map(str, mt.global_derivatives))}"
         access += der
 
     # Format local derivatives
     if mt.local_derivatives:
-        der = "_d{0}".format(''.join(map(str, mt.local_derivatives)))
+        der = f"_d{''.join(map(str, mt.local_derivatives))}"
         access += der
 
     # Add flattened component to name
     if mt.component:
-        comp = "_c{0}".format(mt.flat_component)
+        comp = f"_c{mt.flat_component}"
         access += comp
 
     return access
@@ -90,7 +90,7 @@ class FFCXBackendSymbols(object):
         elif entitytype == "vertex":
             return self.S("vertex[0]")
         else:
-            logging.exception("Unknown entitytype {}".format(entitytype))
+            logging.exception(f"Unknown entitytype {entitytype}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument #iarg."""
@@ -180,11 +180,11 @@ class FFCXBackendSymbols(object):
 
     def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
-        return self.S("weights_{}".format(quadrature_rule.id()))
+        return self.S(f"weights_{quadrature_rule.id()}")
 
     def points_table(self, quadrature_rule):
         """Table of quadrature points (points on the reference integration entity)."""
-        return self.S("points_{}".format(quadrature_rule.id()))
+        return self.S(f"points_{quadrature_rule.id()}")
 
     def x_component(self, mt):
         """Physical coordinate component."""
