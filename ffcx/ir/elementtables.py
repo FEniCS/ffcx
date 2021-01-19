@@ -12,7 +12,7 @@ import numpy
 
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.fiatinterface import create_element
+from ffcx.basix_interface import create_basix_element, basix_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -29,12 +29,13 @@ table_origin_t = collections.namedtuple(
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
-valid_ttypes = set(("quadrature", )) | set(piecewise_ttypes) | set(uniform_ttypes)
+valid_ttypes = set(("quadrature", )) | set(
+    piecewise_ttypes) | set(uniform_ttypes)
 
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
     ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise", "is_uniform",
-     "is_permuted"])
+     "is_permuted", "dof_base_permutations", "needs_permutation_data"])
 
 
 # TODO: Get restriction postfix from somewhere central
@@ -172,7 +173,8 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
-    fiat_element = create_element(ufl_element)
+    numpy.set_printoptions(suppress=True, precision=2)
+    basix_element = create_basix_element(ufl_element)
 
     # Extract arrays for the right scalar component
     component_tables = []
@@ -180,43 +182,58 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     if sh == ():
         # Scalar valued element
         for entity in range(num_entities):
-            entity_points = map_integral_points(points, integral_type, cell, entity)
-            tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            entity_points = map_integral_points(
+                points, integral_type, cell, entity)
+            # basix
+            tbl = basix_element.tabulate(deriv_order, entity_points)
+            index = basix_index(*derivative_counts)
+            tbl = tbl[index].transpose()
+
             component_tables.append(tbl)
     elif len(sh) > 0 and ufl_element.num_sub_elements() == 0:
         # 2-tensor-valued elements, not a tensor product
         # mapping flat_component back to tensor component
-        (_, f2t) = ufl.permutation.build_component_numbering(sh, ufl_element.symmetry())
+        (_, f2t) = ufl.permutation.build_component_numbering(
+            sh, ufl_element.symmetry())
         t_comp = f2t[flat_component]
 
         for entity in range(num_entities):
-            entity_points = map_integral_points(points, integral_type, cell, entity)
-            tbl = fiat_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            entity_points = map_integral_points(
+                points, integral_type, cell, entity)
+            tbl = basix_element.tabulate(deriv_order, entity_points)
+            tbl = tbl[basix_index(*derivative_counts)]
+            sum_sh = sum(sh)
+            bshape = (tbl.shape[0],) + sh + (tbl.shape[1] // sum_sh,)
+            tbl = tbl.reshape(bshape).transpose()
+
             if len(sh) == 1:
                 component_tables.append(tbl[:, t_comp[0], :])
             elif len(sh) == 2:
                 component_tables.append(tbl[:, t_comp[0], t_comp[1], :])
             else:
-                raise RuntimeError("Cannot tabulate tensor valued element with rank > 2")
+                raise RuntimeError(
+                    "Cannot tabulate tensor valued element with rank > 2")
     else:
+
         # Vector-valued or mixed element
-        sub_dims = [0] + list(e.space_dimension() for e in fiat_element.elements())
-        sub_cmps = [0] + list(numpy.prod(e.value_shape(), dtype=int)
-                              for e in fiat_element.elements())
+        sub_dims = [0] + [e.dim for e in basix_element.sub_elements]
+        sub_cmps = [0] + [e.value_size for e in basix_element.sub_elements]
+
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
 
         # Find index of sub element which corresponds to the current flat component
-        component_element_index = numpy.where(crange <= flat_component)[0].shape[0] - 1
+        component_element_index = numpy.where(
+            crange <= flat_component)[0].shape[0] - 1
 
         ir = irange[component_element_index:component_element_index + 2]
         cr = crange[component_element_index:component_element_index + 2]
 
-        component_element = fiat_element.elements()[component_element_index]
+        component_element = basix_element.sub_elements[component_element_index]
 
         # Get the block size to switch XXYYZZ ordering to XYZXYZ
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-            block_size = fiat_element.num_sub_elements()
+            block_size = basix_element.block_size
             ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
 
         def slice_size(r):
@@ -227,17 +244,18 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             if len(r) == 3:
                 return 1 + (r[1] - r[0] - 1) // r[2]
 
-        # Follows from FIAT's MixedElement tabulation
-        # Tabulating MixedElement in FIAT would result in tabulated subelements
-        # padded with zeros
         for entity in range(num_entities):
-            entity_points = map_integral_points(points, integral_type, cell, entity)
+            entity_points = map_integral_points(
+                points, integral_type, cell, entity)
 
-            # Tabulate subelement, this is dense nonzero table, [a, b, c]
-            tbl = component_element.tabulate(deriv_order, entity_points)[derivative_counts]
+            # basix
+            tbl = component_element.tabulate(
+                deriv_order, entity_points)
+            index = basix_index(*derivative_counts)
+            tbl = tbl[index].transpose()
 
             # Prepare a padded table with zeros
-            padded_shape = (fiat_element.space_dimension(),) + fiat_element.value_shape() + (len(entity_points), )
+            padded_shape = (basix_element.dim,) + basix_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
             tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
@@ -299,7 +317,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged, entityty
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
     name += {"cell": "", "facet": "_F", "vertex": "_V"}[entitytype]
-    name += "_Q{}".format(quadrature_rule.id())
+    name += f"_Q{quadrature_rule.id()}"
     return name
 
 
@@ -310,9 +328,11 @@ def get_modified_terminal_element(mt):
     # Extract element from FormArguments and relevant GeometricQuantities
     if isinstance(mt.terminal, ufl.classes.FormArgument):
         if gd and mt.reference_value:
-            raise RuntimeError("Global derivatives of reference values not defined.")
+            raise RuntimeError(
+                "Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
-            raise RuntimeError("Local derivatives of global values not defined.")
+            raise RuntimeError(
+                "Local derivatives of global values not defined.")
         element = mt.terminal.ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
@@ -350,7 +370,8 @@ def get_modified_terminal_element(mt):
 
     # Change derivatives format for table lookup
     tdim = mt.terminal.ufl_domain().topological_dimension()
-    local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(ld, tdim)
+    local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
+        ld, tdim)
 
     return element, mt.averaged, local_derivatives, fc
 
@@ -437,6 +458,7 @@ def build_element_tables(quadrature_rule,
         element_number = element_numbers[element]
         name = generate_psi_table_name(quadrature_rule, element_number, avg, entitytype,
                                        local_derivatives, flat_component)
+
         if name not in tables:
             tdim = cell.topological_dimension()
             if entitytype == "facet":
@@ -450,7 +472,8 @@ def build_element_tables(quadrature_rule,
                     new_table = []
                     for ref in range(2):
                         new_table.append(get_ffcx_table_values(
-                            permute_quadrature_interval(quadrature_rule.points, ref),
+                            permute_quadrature_interval(
+                                quadrature_rule.points, ref),
                             cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                     tables[name] = numpy.array(new_table)
@@ -462,7 +485,8 @@ def build_element_tables(quadrature_rule,
                         for rot in range(3):
                             for ref in range(2):
                                 new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_triangle(quadrature_rule.points, ref, rot),
+                                    permute_quadrature_triangle(
+                                        quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                         tables[name] = numpy.array(new_table)
@@ -472,7 +496,8 @@ def build_element_tables(quadrature_rule,
                         for rot in range(4):
                             for ref in range(2):
                                 new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_quadrilateral(quadrature_rule.points, ref, rot),
+                                    permute_quadrature_quadrilateral(
+                                        quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                         tables[name] = numpy.array(new_table)
@@ -558,7 +583,8 @@ def optimize_element_tables(tables,
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = len(ufl_element.sub_elements())
 
-        dofrange, dofmap, tbl = strip_table_zeros(tbl, block_size, rtol=rtol, atol=atol)
+        dofrange, dofmap, tbl = strip_table_zeros(
+            tbl, block_size, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
@@ -578,7 +604,8 @@ def optimize_element_tables(tables,
         ui = name_to_unique_index[name]
         if ui not in unique_names:
             unique_names[ui] = name
-    table_unames = {name: unique_names[name_to_unique_index[name]] for name in name_to_unique_index}
+    table_unames = {
+        name: unique_names[name_to_unique_index[name]] for name in name_to_unique_index}
 
     # Build mapping from unique table name to the table itself
     unique_tables = {}
@@ -610,13 +637,15 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
 
 def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
     return not all(
-        numpy.allclose(table[0, :, :, :], table[i, :, :, :], rtol=rtol, atol=atol)
+        numpy.allclose(table[0, :, :, :],
+                       table[i, :, :, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[0]))
 
 
 def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
     return all(
-        numpy.allclose(table[0, :, 0, :], table[0, :, i, :], rtol=rtol, atol=atol)
+        numpy.allclose(table[0, :, 0, :],
+                       table[0, :, i, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[2]))
 
 
@@ -653,7 +682,8 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
 
 def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
     return all(
-        numpy.allclose(table[0, 0, :, :], table[0, i, :, :], rtol=rtol, atol=atol)
+        numpy.allclose(table[0, 0, :, :],
+                       table[0, i, :, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[1]))
 
 
@@ -685,13 +715,16 @@ def build_optimized_tables(quadrature_rule,
 
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
-        table_original_num_dofs = optimize_element_tables(tables, table_origins, rtol=rtol, atol=atol)
+        table_original_num_dofs = optimize_element_tables(
+            tables, table_origins, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
-    unique_table_num_dofs = {uname: tbl.shape[-1] for uname, tbl in unique_tables.items()}
+    unique_table_num_dofs = {uname: tbl.shape[-1]
+                             for uname, tbl in unique_tables.items()}
 
     # Analyze tables for properties useful for optimization
-    unique_table_ttypes = analyse_table_types(unique_tables, rtol=rtol, atol=atol)
+    unique_table_ttypes = analyse_table_types(
+        unique_tables, rtol=rtol, atol=atol)
 
     # Compress tables that are constant along num_entities or num_points
     for uname, tabletype in unique_table_ttypes.items():
@@ -759,6 +792,7 @@ def build_optimized_tables(quadrature_rule,
         # Some more metadata stored under the ename
         ttype = unique_table_ttypes[ename]
 
+        offset = 0
         # Add offset to dofmap and dofrange for restricted terminals
         if mt.restriction and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of dofs before table optimization
@@ -767,10 +801,20 @@ def build_optimized_tables(quadrature_rule,
             dofrange = (b + offset, e + offset)
             dofmap = tuple(i + offset for i in dofmap)
 
+        base_perms = [
+            [[p[i - offset][j - offset] for j in dofmap] for i in dofmap]
+            for p in create_basix_element(table_origins[name][0]).base_permutations]
+
+        needs_permutation_data = False
+        for p in base_perms:
+            if not numpy.allclose(p, numpy.identity(len(p))):
+                needs_permutation_data = True
+
         # Store reference to unique table for this mt
         mt_unique_table_reference[mt] = unique_table_reference_t(
             ename, unique_tables[ename], dofrange, dofmap, original_dim, ttype,
-            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted)
+            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted, base_perms,
+            needs_permutation_data)
 
     return (unique_tables, unique_table_ttypes, unique_table_num_dofs,
-            mt_unique_table_reference, table_origins, needs_permutation_data)
+            mt_unique_table_reference)

@@ -185,11 +185,11 @@ class UFL2CNodesTranslatorCpp(object):
         if otype in self.call_lookup:
             return self.call_lookup[otype](o, *args)
         else:
-            raise RuntimeError("Missing C formatting rule for expr type {0}.".format(otype))
+            raise RuntimeError(f"Missing C formatting rule for expr type {otype}.")
 
     def expr(self, o, *args):
         """Generic fallback with error message for missing rules."""
-        raise RuntimeError("Missing C formatting rule for expr type {0}.".format(o._ufl_class_))
+        raise RuntimeError(f"Missing C formatting rule for expr type {o._ufl_class_}.")
 
     # === Formatting rules for scalar literals ===
 

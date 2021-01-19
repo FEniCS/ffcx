@@ -122,14 +122,13 @@ class ModifiedTerminal(object):
     #    return self.as_tuple() < other.as_tuple()
 
     def __str__(self):
-        s = []
-        s += ["terminal:           {0}".format(self.terminal)]
-        s += ["global_derivatives: {0}".format(self.global_derivatives)]
-        s += ["local_derivatives:  {0}".format(self.local_derivatives)]
-        s += ["averaged:           {0}".format(self.averaged)]
-        s += ["component:          {0}".format(self.component)]
-        s += ["restriction:        {0}".format(self.restriction)]
-        return '\n'.join(s)
+        return (
+            f"terminal:           {self.terminal}\n"
+            f"global_derivatives: {self.global_derivatives}\n"
+            f"local_derivatives:  {self.local_derivatives}\n"
+            f"averaged:           {self.averaged}\n"
+            f"component:          {self.component}\n"
+            f"restriction:        {self.restriction}")
 
 
 def is_modified_terminal(v):

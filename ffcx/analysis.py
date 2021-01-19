@@ -148,9 +148,9 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     """
 
     if form.empty():
-        raise RuntimeError("Form ({}) seems to be zero: cannot compile it.".format(str(form)))
+        raise RuntimeError(f"Form ({form}) seems to be zero: cannot compile it.")
     if _has_custom_integrals(form):
-        raise RuntimeError("Form ({}) contains unsupported custom integrals.".format(str(form)))
+        raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
     # Check for complex mode
     complex_mode = "complex" in parameters.get("scalar_type", "double")
@@ -213,16 +213,16 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 num_points = ((qd + 1 + 1) // 2)**tdim
                 if num_points >= 100:
                     warnings.warn(
-                        "Number of integration points per cell is: {}. Consider using 'quadrature_degree' "
-                        "to reduce number.".format(num_points))
+                        f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
+                        "to reduce number.")
 
             # Extract quadrature rule
             qr = integral.metadata().get("quadrature_rule", qr_default)
 
-            logger.info("Integral {}, integral group {}:".format(i, id))
-            logger.info("--- quadrature rule: {}".format(qr))
-            logger.info("--- quadrature degree: {}".format(qd))
-            logger.info("--- precision: {}".format(p))
+            logger.info(f"Integral {i}, integral group {id}:")
+            logger.info(f"--- quadrature rule: {qr}")
+            logger.info(f"--- quadrature degree: {qd}")
+            logger.info(f"--- precision: {p}")
 
             # Update the old metadata
             metadata = integral.metadata()

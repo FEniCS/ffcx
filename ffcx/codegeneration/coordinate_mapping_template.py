@@ -20,17 +20,31 @@ ufc_coordinate_mapping* create_coordinate_map_{prefix}(void);
 factory = """
 // Code for coordinate mapping {factory_name}
 
+int permute_dofs_{factory_name}(int* dof_list, const uint32_t cell_permutation)
+{{
+  {permute_dofs}
+}}
+
+int unpermute_dofs_{factory_name}(int* dof_list, const uint32_t cell_permutation)
+{{
+  {unpermute_dofs}
+}}
+
 ufc_coordinate_mapping* create_{factory_name}(void)
 {{
   ufc_coordinate_mapping* cmap = (ufc_coordinate_mapping*)malloc(sizeof(*cmap));
   cmap->signature = {signature};
+  cmap->element_family = {family};
+  cmap->element_degree = {degree};
   cmap->create = create_{factory_name};
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
   cmap->is_affine = {is_affine};
+  cmap->needs_permutation_data = {needs_permutation_data};
+  cmap->permute_dofs = permute_dofs_{factory_name};
+  cmap->unpermute_dofs = unpermute_dofs_{factory_name};
   cmap->cell_shape = {cell_shape};
   cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
-  cmap->evaluate_basis_derivatives = evaluate_reference_basis_derivatives_{coord_element_factory_name};
   return cmap;
 }}
 
@@ -38,7 +52,6 @@ ufc_coordinate_mapping* create_coordinate_map_{prefix}(void)
 {{
   return create_{factory_name}();
 }}
-
 
 // End of code for coordinate mapping {factory_name}
 """
