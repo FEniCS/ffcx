@@ -19,7 +19,6 @@ def test_demo(file):
         "Mini",  # EnrichedElement
         "MixedGradient", "TraceElement",  # HDiv Trace
         "MassHdiv_2D_1", "MassHdiv_2D_3", "MixedPoisson", "MassHdiv_2D_2",  # Brezzi-Douglas-Marini
-        "QuadratureElement"  # Quadrature
     ]:
         # Skip demos that use elements not yet implemented in basix
         pytest.skip()

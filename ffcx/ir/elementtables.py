@@ -12,7 +12,7 @@ import numpy
 
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.basix_interface import create_basix_element, basix_index
+from ffcx.element_interface import create_element, basix_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -174,7 +174,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
     numpy.set_printoptions(suppress=True, precision=2)
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
 
     # Extract arrays for the right scalar component
     component_tables = []
@@ -257,6 +257,8 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             # Prepare a padded table with zeros
             padded_shape = (basix_element.dim,) + basix_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
+            print(ufl_element.family(), index)
+            print(tbl)
 
             tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
             padded_tbl[slice(*ir), slice(*cr)] = tab
@@ -803,7 +805,7 @@ def build_optimized_tables(quadrature_rule,
 
         base_perms = [
             [[p[i - offset][j - offset] for j in dofmap] for i in dofmap]
-            for p in create_basix_element(table_origins[name][0]).base_permutations]
+            for p in create_element(table_origins[name][0]).base_permutations]
 
         needs_permutation_data = False
         for p in base_perms:

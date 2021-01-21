@@ -25,7 +25,7 @@ import numpy
 
 import ufl
 from ffcx import naming
-from ffcx.basix_interface import create_basix_element
+from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -144,7 +144,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     logger.info(f"Computing IR for element {ufl_element}")
 
     # Create basix elements
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
@@ -169,7 +169,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
-        basix_element = create_basix_element(ufl_element)
+        basix_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
 
@@ -199,7 +199,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
     # Create basix elements
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -255,7 +255,7 @@ def _tabulate_coordinate_mapping_basis(ufl_element):
     # with a VectorElement of scalar subelements
     selement = ufl_element.sub_elements()[0]
 
-    basix_element = create_basix_element(selement)
+    basix_element = create_element(selement)
     cell = selement.cell()
     tdim = cell.topological_dimension()
 
@@ -323,7 +323,7 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     # NB! The entries below breaks the pattern of using ir keywords == code keywords,
     # which I personally don't find very useful anyway (martinal).
 
-    basix_element = create_basix_element(ufl_coordinate_element)
+    basix_element = create_element(ufl_coordinate_element)
 
     ir["needs_permutation_data"] = 0
     for p in basix_element.base_permutations:
@@ -391,7 +391,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         ir["element_dimensions"] = {
-            ufl_element: create_basix_element(ufl_element).dim
+            ufl_element: create_element(ufl_element).dim
             for ufl_element in unique_elements
         }
 
@@ -608,7 +608,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
     ir["element_dimensions"] = {
-        ufl_element: create_basix_element(ufl_element).dim
+        ufl_element: create_element(ufl_element).dim
         for ufl_element in analysis.unique_elements
     }
 
@@ -715,7 +715,7 @@ def form_needs_oriented_jacobian(form_data):
     # Check whether this form needs an oriented jacobian (only forms
     # involving contravariant piola mappings seem to need it)
     for ufl_element in form_data.unique_elements:
-        element = create_basix_element(ufl_element)
+        element = create_element(ufl_element)
         if element_needs_oriented_jacobian(element):
             return True
     return False
