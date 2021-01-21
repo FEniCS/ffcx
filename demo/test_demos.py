@@ -13,7 +13,7 @@ for file in os.listdir(demo_dir):
 @pytest.mark.parametrize("file", ufl_files)
 def test_demo(file):
     if file in [
-        "MixedPoissonDual", # Discontinuous Raviart-Thomas
+        "MixedPoissonDual",  # Discontinuous Raviart-Thomas
         "BiharmonicHHJ",  # Hellan-Herrmann-Johnson
         "NodalMini",  # NodalEnrichedElement
         "Mini",  # EnrichedElement
