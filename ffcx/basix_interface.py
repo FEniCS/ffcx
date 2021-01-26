@@ -1,6 +1,7 @@
 import numpy
 import ufl
 import basix
+from basix import MappingType, mapping_to_str  # noqa: F401
 
 
 basix_cells = {
@@ -198,11 +199,11 @@ class BasixElement(BasixBaseElement):
 
     @property
     def dof_mappings(self):
-        return [self.element.mapping_name for i in range(self.dim)]
+        return [self.element.mapping_type for i in range(self.dim)]
 
     @property
     def num_reference_components(self):
-        return {self.element.mapping_name: self.value_size}
+        return {self.element.mapping_type: self.value_size}
 
 
 class MixedElement(BasixBaseElement):

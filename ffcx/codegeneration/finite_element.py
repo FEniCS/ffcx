@@ -17,6 +17,7 @@ import ufl
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch,
                                        apply_permutations_to_data)
+from ffcx.basix_interface import MappingType, mapping_to_str
 
 logger = logging.getLogger("ffcx")
 
@@ -53,22 +54,22 @@ def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix="
 
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
-    if mapping == "affine":
+    if mapping == MappingType.identity:
         assert num_reference_components == 1
         num_physical_components = 1
         M_scale = 1
         M_row = [1]  # M_row[0] == 1
-    elif mapping == "contravariant piola":
+    elif mapping == MappingType.contravariantPiola:
         assert num_reference_components == tdim
         num_physical_components = gdim
         M_scale = 1.0 / detJ
         M_row = [J[i, jj] for jj in range(tdim)]
-    elif mapping == "covariant piola":
+    elif mapping == MappingType.covariantPiola:
         assert num_reference_components == tdim
         num_physical_components = gdim
         M_scale = 1.0
         M_row = [K[jj, i] for jj in range(tdim)]
-    elif mapping == "double covariant piola":
+    elif mapping == MappingType.doubleCovariantPiola:
         assert num_reference_components == tdim**2
         num_physical_components = gdim**2
         # g_il = K_ji G_jk K_kl = K_ji K_kl G_jk
@@ -76,7 +77,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
         i1 = i % tdim  # l ...
         M_scale = 1.0
         M_row = [K[jj, i0] * K[kk, i1] for jj in range(tdim) for kk in range(tdim)]
-    elif mapping == "double contravariant piola":
+    elif mapping == MappingType.doubleContravariantPiola:
         assert num_reference_components == tdim**2
         num_physical_components = gdim**2
         # g_il = (det J)^(-2) Jij G_jk Jlk = (det J)^(-2) Jij Jlk G_jk
@@ -85,7 +86,7 @@ def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J
         M_scale = 1.0 / (detJ * detJ)
         M_row = [J[i0, jj] * J[i1, kk] for jj in range(tdim) for kk in range(tdim)]
     else:
-        raise RuntimeError("Unknown mapping: %s" % mapping)
+        raise RuntimeError("Unknown mapping")
 
     return M_scale, M_row, num_physical_components
 
@@ -266,8 +267,7 @@ def transform_reference_basis_derivatives(L, ir, parameters):
         M_scale, M_row, num_physical_components = generate_element_mapping(
             mapping, i, num_reference_components, tdim, gdim, J[ip], detJ[ip], K[ip])
 
-        msg = "Using %s transform to map values back to the physical element." % mapping.replace(
-            "piola", "Piola")
+        msg = f"Using {mapping_to_str(mapping)} transform to map values back to the physical element."
 
         mapped_value = L.Symbol("mapped_value")
 
