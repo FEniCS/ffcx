@@ -25,7 +25,7 @@ import numpy
 
 import ufl
 from ffcx import naming
-from ffcx.basix_interface import create_basix_element, MappingType
+from ffcx.basix_interface import create_basix_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -63,7 +63,7 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', [
     'scalar_dofmap_name', 'is_affine', 'needs_permutation_data', 'base_permutations'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
-    'num_facets', 'num_vertices', 'needs_oriented', 'enabled_coefficients', 'element_dimensions',
+    'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
     'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
     'table_dofmaps', 'table_dof_base_permutations', 'integrand', 'name', 'precision',
@@ -383,7 +383,6 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
             "entitytype": entitytype,
             "num_facets": cell.num_facets(),
             "num_vertices": cell.num_vertices(),
-            "needs_oriented": form_needs_oriented_jacobian(form_data),
             "enabled_coefficients": itg_data.enabled_coefficients,
             "cell_shape": cellname
         }
@@ -703,19 +702,3 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
                                                     form_id, itg_data.subdomain_id)]
 
     return subdomain_ids, classnames
-
-
-def element_needs_oriented_jacobian(basix_element):
-    # Check whether this element needs an oriented jacobian (only
-    # contravariant piolas seem to need it)
-    return MappingType.contravariantPiola in basix_element.dof_mappings
-
-
-def form_needs_oriented_jacobian(form_data):
-    # Check whether this form needs an oriented jacobian (only forms
-    # involving contravariant piola mappings seem to need it)
-    for ufl_element in form_data.unique_elements:
-        element = create_basix_element(ufl_element)
-        if element_needs_oriented_jacobian(element):
-            return True
-    return False

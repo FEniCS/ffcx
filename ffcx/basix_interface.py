@@ -1,7 +1,6 @@
 import numpy
 import ufl
 import basix
-from basix import MappingType  # noqa: F401
 
 
 basix_cells = {
