@@ -8,7 +8,6 @@
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
 
-from collections import defaultdict
 import logging
 
 import numpy
@@ -17,10 +16,8 @@ import ufl
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch,
                                        apply_permutations_to_data)
-from ffcx.basix_interface import MappingType, mapping_to_str
 
 logger = logging.getLogger("ffcx")
-
 index_type = "int"
 
 
@@ -50,45 +47,6 @@ def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix="
     combinations = combinations[order - 1]
 
     return code, combinations
-
-
-def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
-    # Select transformation to apply
-    if mapping == MappingType.identity:
-        assert num_reference_components == 1
-        num_physical_components = 1
-        M_scale = 1
-        M_row = [1]  # M_row[0] == 1
-    elif mapping == MappingType.contravariantPiola:
-        assert num_reference_components == tdim
-        num_physical_components = gdim
-        M_scale = 1.0 / detJ
-        M_row = [J[i, jj] for jj in range(tdim)]
-    elif mapping == MappingType.covariantPiola:
-        assert num_reference_components == tdim
-        num_physical_components = gdim
-        M_scale = 1.0
-        M_row = [K[jj, i] for jj in range(tdim)]
-    elif mapping == MappingType.doubleCovariantPiola:
-        assert num_reference_components == tdim**2
-        num_physical_components = gdim**2
-        # g_il = K_ji G_jk K_kl = K_ji K_kl G_jk
-        i0 = i // tdim  # i in the line above
-        i1 = i % tdim  # l ...
-        M_scale = 1.0
-        M_row = [K[jj, i0] * K[kk, i1] for jj in range(tdim) for kk in range(tdim)]
-    elif mapping == MappingType.doubleContravariantPiola:
-        assert num_reference_components == tdim**2
-        num_physical_components = gdim**2
-        # g_il = (det J)^(-2) Jij G_jk Jlk = (det J)^(-2) Jij Jlk G_jk
-        i0 = i // tdim  # i in the line above
-        i1 = i % tdim  # l ...
-        M_scale = 1.0 / (detJ * detJ)
-        M_row = [J[i0, jj] * J[i1, kk] for jj in range(tdim) for kk in range(tdim)]
-    else:
-        raise RuntimeError("Unknown mapping")
-
-    return M_scale, M_row, num_physical_components
 
 
 def value_dimension(L, value_shape):

@@ -25,7 +25,7 @@ import numpy
 
 import ufl
 from ffcx import naming
-from ffcx.basix_interface import create_basix_element
+from ffcx.basix_interface import create_basix_element, MappingType
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -708,7 +708,7 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
 def element_needs_oriented_jacobian(basix_element):
     # Check whether this element needs an oriented jacobian (only
     # contravariant piolas seem to need it)
-    return "contravariant piola" in basix_element.dof_mappings
+    return MappingType.contravariantPiola in basix_element.dof_mappings
 
 
 def form_needs_oriented_jacobian(form_data):
