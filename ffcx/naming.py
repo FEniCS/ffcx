@@ -73,7 +73,7 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
 
             kind = "expression"
         else:
-            raise RuntimeError("Unknown ufl object type {}".format(ufl_object.__class__.__name__))
+            raise RuntimeError(f"Unknown ufl object type {ufl_object.__class__.__name__}")
 
     # Build combined signature
     signatures = [object_signature, str(ffcx.__version__), ffcx.codegeneration.get_signature(), kind, tag]

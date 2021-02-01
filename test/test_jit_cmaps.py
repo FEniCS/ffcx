@@ -6,7 +6,6 @@
 
 import ffcx
 import ffcx.codegeneration.jit
-import numpy as np
 import pytest
 
 import ufl
@@ -24,14 +23,6 @@ def test_cmap_triangle(degree, compile_args):
     assert compiled_cmap[0].is_affine == (1 if (degree == 1) else 0)
     assert compiled_cmap[0].geometric_dimension == 2
     assert compiled_cmap[0].topological_dimension == 2
-
-    # Reference coordinates X to basis
-    phi = np.zeros(((degree + 2) * (degree + 1)) // 2, dtype=np.float64)
-    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
-    X = np.array([[1 / 3, 1 / 3]], dtype=np.float64)
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    assert np.isclose(sum(phi), 1.0)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
@@ -59,14 +50,6 @@ def test_cmap_quads(degree, compile_args):
     assert compiled_cmap[0].is_affine == 0
     assert compiled_cmap[0].geometric_dimension == 2
     assert compiled_cmap[0].topological_dimension == 2
-
-    # Reference coordinates X to basis
-    phi = np.zeros((degree + 1) ** 2, dtype=np.float64)
-    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
-    X = np.array([[0.5, 0.5]], dtype=np.float64)
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    assert np.isclose(sum(phi), 1.0)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
@@ -96,14 +79,6 @@ def test_cmap_hex(degree, compile_args):
     assert compiled_cmap[0].geometric_dimension == 3
     assert compiled_cmap[0].topological_dimension == 3
 
-    # Reference coordinates X to basis
-    phi = np.zeros((degree + 1) ** 3, dtype=np.float64)
-    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
-    X = np.array([[0.5, 0.5, 0.5]], dtype=np.float64)
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    assert np.isclose(sum(phi), 1.0)
-
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 
     assert num_entity_dofs[0] == 1
@@ -131,14 +106,6 @@ def test_cmap_tet(degree, compile_args):
     assert compiled_cmap[0].is_affine == (1 if (degree == 1) else 0)
     assert compiled_cmap[0].geometric_dimension == 3
     assert compiled_cmap[0].topological_dimension == 3
-
-    # Reference coordinates X to basis
-    phi = np.zeros((degree + 3) * (degree + 2) * (degree + 1) // 6, dtype=np.float64)
-    phi_ptr = module.ffi.cast("double *", module.ffi.from_buffer(phi))
-    X = np.array([[0.25, 0.25, 0.25]], dtype=np.float64)
-    X_ptr = module.ffi.cast("double *", module.ffi.from_buffer(X))
-    compiled_cmap[0].evaluate_basis_derivatives(phi_ptr, 0, X.shape[0], X_ptr)
-    assert np.isclose(sum(phi), 1.0)
 
     num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
 

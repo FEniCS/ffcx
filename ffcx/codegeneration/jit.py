@@ -82,10 +82,10 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
                 compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
                 return compiled_objects, compiled_module
 
-            logger.info("Waiting for {} to appear.".format(str(ready_name)))
+            logger.info(f"Waiting for {ready_name} to appear.")
             time.sleep(1)
-        raise TimeoutError("""JIT compilation timed out, probably due to a failed previous compile.
-        Try cleaning cache (e.g. remove {}) or increase timeout parameter.""".format(c_filename))
+        raise TimeoutError(f"""JIT compilation timed out, probably due to a failed previous compile.
+        Try cleaning cache (e.g. remove {c_filename}) or increase timeout parameter.""")
 
 
 def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,

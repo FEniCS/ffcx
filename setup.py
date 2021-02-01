@@ -4,8 +4,8 @@ import subprocess
 import string
 import setuptools
 
-if sys.version_info < (3, 5):
-    print("Python 3.5 or higher required, please upgrade.")
+if sys.version_info < (3, 6):
+    print("Python 3.6 or higher required, please upgrade.")
     sys.exit(1)
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
@@ -19,7 +19,7 @@ else:
     REQUIREMENTS = [
         "numpy",
         "cffi",
-        "fenics-fiat{}".format(RESTRICT_REQUIREMENTS),
+        "fenics-basix",
         "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
     ]
 

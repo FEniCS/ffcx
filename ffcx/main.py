@@ -25,15 +25,15 @@ logger = logging.getLogger("ffcx")
 parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFCX, https://fenicsproject.org)")
 parser.add_argument(
-    "--version", action='version', version="%(prog)s " + ("(version {})".format(FFCX_VERSION)))
+    "--version", action='version', version=f"%(prog)s (version {FFCX_VERSION})")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 
 # Add all parameters from FFC parameter system
 for param_name, (param_val, param_desc) in FFCX_DEFAULT_PARAMETERS.items():
-    parser.add_argument("--{}".format(param_name),
-                        type=type(param_val), help="{} (default={})".format(param_desc, param_val))
+    parser.add_argument(f"--{param_name}",
+                        type=type(param_val), help=f"{param_desc} (default={param_val})")
 
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
@@ -83,7 +83,7 @@ def main(args=None):
         # Turn off profiling and write status to file
         if xargs.profile:
             pr.disable()
-            pfn = "ffcx_{0}.profile".format(prefix)
+            pfn = f"ffcx_{prefix}.profile"
             pr.dump_stats(pfn)
 
     return 0

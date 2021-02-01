@@ -51,22 +51,6 @@ extern "C"
     vertex = 60,
   } ufc_shape;
 
-  typedef enum
-  {
-    PointEval = 1,
-    ComponentPointEval = 2,
-    PointNormalDeriv = 3,
-    IntegralMoment = 4,
-    FrobeniusIntegralMoment = 5,
-    PointEdgeTangent = 6,
-    PointFaceTangent = 7,
-    PointScaledNormalEval = 8,
-    PointDeriv = 9,
-    IntegralMomentOfNormalDerivative = 10,
-    PointNormalEval = 11,
-    PointwiseInnerProductEval = 12,
-  } ufc_doftype;
-
   /// Forward declarations
   typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
@@ -120,39 +104,46 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
-    int (*evaluate_reference_basis)(double* restrict reference_values,
-                                    int num_points, const double* restrict X);
-
-    int (*evaluate_reference_basis_derivatives)(
-        double* restrict reference_values, int order, int num_points,
-        const double* restrict X);
-
     /// Map the reference values on to the cell
     /// @param[in] cell_permutations An integer that says how each entity of the
     ///         cell of dimension < tdim has been permuted relative to a
     ///         low-to-high ordering of the cell.
-
     int (*transform_reference_basis_derivatives)(
         double* restrict values, int order, int num_points,
         const double* restrict reference_values, const double* restrict X,
         const double* restrict J, const double* restrict detJ,
-        const double* restrict K, const uint32_t cell_permutation);
+        const double* restrict K);
 
-    /// Map values of field from physical to reference space which has
-    /// been evaluated at points given by
-    /// tabulate_reference_dof_coordinates.
-    int (*transform_values)(ufc_scalar_t* restrict reference_values,
-                            const ufc_scalar_t* restrict physical_values,
-                            const double* restrict coordinate_dofs,
-                            const ufc_coordinate_mapping* restrict cm);
+    /// Apply dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOD
+    int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
+                                    int dim);
 
-    // FIXME: change to 'const double* reference_dof_coordinates()'
-    /// Tabulate the coordinates of all dofs on a reference cell
-    int (*tabulate_reference_dof_coordinates)(
-        double* restrict reference_dof_coordinates);
+    /// Apply dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOD
+    int (*apply_dof_transformation_to_scalar)(ufc_scalar_t* data,
+                                              uint32_t cell_permutation,
+                                              int dim);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
+
+    /// Indicates whether permutation data needs to be passed into various
+    /// functions
+    bool needs_permutation_data;
+
+    /// If true, the interpolation matrix is the identity
+    /// Interpolation matrix maps point-wise values at set of points into values
+    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity, then
+    /// the space is defined by a series of point evaluations, and so the interpolation
+    /// points are the DOF coordinates.
+    bool interpolation_is_identity;
 
     /// Create a new finite element for sub element i (for a mixed
     /// element). Memory for the new object is obtained with malloc(),
@@ -170,12 +161,6 @@ extern "C"
 
     /// Return a string identifying the dofmap
     const char* signature;
-
-    /// The base DoF permutations
-    const int* base_permutations;
-
-    /// The size of the base DoF permutations array
-    int size_base_permutations;
 
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
@@ -216,6 +201,12 @@ extern "C"
     /// Return coordinate_mapping signature string
     const char* signature;
 
+    /// The finite element family name for the mapping
+    const char* element_family;
+
+    /// The finite element degree used in the mapping
+    int element_degree;
+
     /// Create object of the same type. Memory for the new object is
     /// obtained with malloc(), and the caller is reponsible for
     /// freeing it by calling free().
@@ -227,8 +218,24 @@ extern "C"
     /// Return topological dimension of the coordinate_mapping
     int topological_dimension;
 
-    /// Boolean flag for affine 
+    /// Boolean flag for affine
     int is_affine;
+
+    /// Indicates whether permutation data needs to be passed into various
+    /// functions
+    bool needs_permutation_data;
+
+    /// Permutes a list of DOF numbers
+    /// As a coordinate mapping is always Lagrange or Q, the DOF permutation
+    /// will always be a rearrangement of DOF points, so this is valid in this
+    /// case.
+    int (*permute_dofs)(int* dof_list, uint32_t cell_permutation);
+
+    /// Reverses a permutation of a list of DOF numbers
+    /// As a coordinate mapping is always Lagrange or Q, the DOF permutation
+    /// will always be a rearrangement of DOF points, so this is valid in this
+    /// case.
+    int (*unpermute_dofs)(int* dof_list, uint32_t cell_permutation);
 
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
@@ -237,11 +244,6 @@ extern "C"
     /// the new object is obtained with malloc(), and the caller is
     /// reponsible for freeing it by calling free().
     ufc_dofmap* (*create_scalar_dofmap)(void);
-
-    /// Evaluate basis (and derivatives) of the associated element
-    int (*evaluate_basis_derivatives)(
-        double* restrict reference_values, int order, int num_points,
-        const double* restrict X);
 
   } ufc_coordinate_mapping;
 
@@ -296,7 +298,7 @@ extern "C"
       const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      const uint32_t cell_permutation);
+      uint32_t cell_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
