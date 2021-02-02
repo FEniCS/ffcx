@@ -14,6 +14,7 @@ basix_cells = {
 # This dictionary can be used to map ufl element names to basix element names.
 # Currently all the names agree but this will not necessarily remian true.
 ufl_to_basix_names = {
+    "Q": "Lagrange",
     "DQ": "Discontinuous Lagrange"
 }
 
@@ -186,7 +187,7 @@ class BasixElement(BasixBaseElement):
 
     @property
     def family_name(self):
-        return self.element.family_name
+        return basix.family_to_str(self.element.family)
 
     @property
     def reference_topology(self):
@@ -198,11 +199,11 @@ class BasixElement(BasixBaseElement):
 
     @property
     def dof_mappings(self):
-        return [self.element.mapping_name for i in range(self.dim)]
+        return [basix.mapping_to_str(self.element.mapping_type).lower() for i in range(self.dim)]
 
     @property
     def num_reference_components(self):
-        return {self.element.mapping_name: self.value_size}
+        return {basix.mapping_to_str(self.element.mapping_type).lower(): self.value_size}
 
 
 class MixedElement(BasixBaseElement):
