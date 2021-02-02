@@ -187,7 +187,7 @@ class BasixElement(BasixBaseElement):
 
     @property
     def family_name(self):
-        return basix.family_to_str(self.element.family)
+        return basix.family_to_str(self.element.family).lower()
 
     @property
     def reference_topology(self):
