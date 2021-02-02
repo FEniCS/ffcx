@@ -422,7 +422,7 @@ class BlockedElement(BasixBaseElement):
 
     @property
     def family_name(self):
-        return basix.family_to_str(self.sub_element.family)
+        return self.sub_element.family_name
 
     @property
     def reference_topology(self):
