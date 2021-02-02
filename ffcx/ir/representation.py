@@ -49,8 +49,8 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'create_sub_element',
-    'entity_dofs', 'base_permutations', 'dof_mappings',
-    'num_reference_components', 'needs_permutation_data', 'interpolation_is_identity'])
+    'entity_dofs', 'base_permutations',
+    'needs_permutation_data', 'interpolation_is_identity'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'base_permutations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
@@ -187,7 +187,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["entity_dofs"] = basix_element.entity_dof_numbers
 
-    ir["dof_mappings"] = basix_element.dof_mappings
     ir["num_reference_components"] = basix_element.num_reference_components
 
     return ir_element(**ir)
