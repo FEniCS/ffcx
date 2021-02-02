@@ -186,7 +186,7 @@ class BasixElement(BasixBaseElement):
 
     @property
     def family_name(self):
-        return self.element.family_name
+        return basix.family_to_str(self.element.family)
 
     @property
     def reference_topology(self):
@@ -198,11 +198,11 @@ class BasixElement(BasixBaseElement):
 
     @property
     def dof_mappings(self):
-        return [self.element.mapping_name for i in range(self.dim)]
+        return [basix.mapping_to_str(self.element.mapping_type) for i in range(self.dim)]
 
     @property
     def num_reference_components(self):
-        return {self.element.mapping_name: self.value_size}
+        return {basix.mapping_to_str(self.element.mapping_type): self.value_size}
 
 
 class MixedElement(BasixBaseElement):
@@ -422,7 +422,7 @@ class BlockedElement(BasixBaseElement):
 
     @property
     def family_name(self):
-        return self.sub_element.family_name
+        return basix.family_to_str(self.sub_element.family)
 
     @property
     def reference_topology(self):

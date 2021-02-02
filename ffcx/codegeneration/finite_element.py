@@ -53,7 +53,7 @@ def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix="
 
 def generate_element_mapping(mapping, i, num_reference_components, tdim, gdim, J, detJ, K):
     # Select transformation to apply
-    if mapping == "affine":
+    if mapping == "identity":
         assert num_reference_components == 1
         num_physical_components = 1
         M_scale = 1
