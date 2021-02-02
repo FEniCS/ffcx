@@ -187,8 +187,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
 
     ir["entity_dofs"] = basix_element.entity_dof_numbers
 
-    ir["num_reference_components"] = basix_element.num_reference_components
-
     return ir_element(**ir)
 
 
