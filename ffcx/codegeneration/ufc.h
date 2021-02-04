@@ -118,7 +118,7 @@ extern "C"
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
-    /// @param[in] dim The number of data items for each DOD
+    /// @param[in] dim The number of data items for each DOF
     int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
                                     int dim);
 
@@ -126,10 +126,27 @@ extern "C"
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
-    /// @param[in] dim The number of data items for each DOD
+    /// @param[in] dim The number of data items for each DOF
     int (*apply_dof_transformation_to_scalar)(ufc_scalar_t* data,
                                               uint32_t cell_permutation,
                                               int dim);
+
+    /// Apply inverse transpose dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOF
+    int (*apply_inverse_transpose_dof_transformation)(double* data,
+                                                      uint32_t cell_permutation,
+                                                      int dim);
+
+    /// Apply inverse transpose dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOF
+    int (*apply_inverse_transpose_dof_transformation_to_scalar)(
+        ufc_scalar_t* data, uint32_t cell_permutation, int dim);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
