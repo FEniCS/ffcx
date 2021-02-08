@@ -104,16 +104,6 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
-    /// Map the reference values on to the cell
-    /// @param[in] cell_permutations An integer that says how each entity of the
-    ///         cell of dimension < tdim has been permuted relative to a
-    ///         low-to-high ordering of the cell.
-    int (*transform_reference_basis_derivatives)(
-        double* restrict values, int order, int num_points,
-        const double* restrict reference_values, const double* restrict X,
-        const double* restrict J, const double* restrict detJ,
-        const double* restrict K);
-
     /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
