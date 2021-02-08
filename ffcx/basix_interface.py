@@ -119,14 +119,6 @@ class BasixBaseElement:
     def reference_geometry(self):
         raise NotImplementedError
 
-    @property
-    def dof_mappings(self):
-        raise NotImplementedError
-
-    @property
-    def num_reference_components(self):
-        raise NotImplementedError
-
 
 class BasixElement(BasixBaseElement):
     def __init__(self, element):
@@ -196,14 +188,6 @@ class BasixElement(BasixBaseElement):
     @property
     def reference_geometry(self):
         return basix.geometry(self.element.cell_type)
-
-    @property
-    def dof_mappings(self):
-        return [basix.mapping_to_str(self.element.mapping_type).lower() for i in range(self.dim)]
-
-    @property
-    def num_reference_components(self):
-        return {basix.mapping_to_str(self.element.mapping_type).lower(): self.value_size}
 
 
 class MixedElement(BasixBaseElement):
@@ -317,24 +301,6 @@ class MixedElement(BasixBaseElement):
     def reference_geometry(self):
         return self.sub_elements[0].reference_geometry
 
-    @property
-    def dof_mappings(self):
-        out = []
-        for e in self.sub_elements:
-            out += e.dof_mappings
-        return out
-
-    @property
-    def num_reference_components(self):
-        out = {}
-        for e in self.sub_elements:
-            for i, j in e.num_reference_components.items():
-                if i in out:
-                    assert out[i] == j
-                else:
-                    out[i] = j
-        return out
-
 
 class BlockedElement(BasixBaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
@@ -432,11 +398,3 @@ class BlockedElement(BasixBaseElement):
     @property
     def reference_geometry(self):
         return self.sub_element.reference_geometry
-
-    @property
-    def dof_mappings(self):
-        return self.sub_element.dof_mappings * self.block_size
-
-    @property
-    def num_reference_components(self):
-        return self.sub_element.num_reference_components
