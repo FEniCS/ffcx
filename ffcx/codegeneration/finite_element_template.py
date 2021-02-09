@@ -20,42 +20,16 @@ int reference_value_dimension_{factory_name}(int i)
   {reference_value_dimension}
 }}
 
-int evaluate_reference_basis_{factory_name}(double* restrict reference_values,
-                                            int num_points,
-                                            const double* restrict X)
+int apply_dof_transformation_{factory_name}(
+     double* restrict data, uint32_t cell_permutation, int dim)
 {{
-  {evaluate_reference_basis}
+  {apply_dof_transformation}
 }}
 
-int evaluate_reference_basis_derivatives_{factory_name}(double * restrict reference_values,
-                                          int order, int num_points,
-                                          const double * restrict X)
+int apply_dof_transformation_to_scalar_{factory_name}(
+     ufc_scalar_t* restrict data, uint32_t cell_permutation, int dim)
 {{
-  {evaluate_reference_basis_derivatives}
-}}
-
-int transform_reference_basis_derivatives_{factory_name}(
-    double * restrict values, int order, int num_points,
-    const double * restrict reference_values,
-    const double * restrict X, const double * restrict J,
-    const double * restrict detJ, const double * restrict K,
-    const uint32_t cell_permutation)
-{{
-  {transform_reference_basis_derivatives}
-}}
-
-int transform_values_{factory_name}(
-     ufc_scalar_t* restrict reference_values,
-     const ufc_scalar_t* restrict physical_values,
-     const double* restrict coordinate_dofs,
-     const ufc_coordinate_mapping* restrict cm)
-{{
-  {transform_values}
-}}
-
-int tabulate_reference_dof_coordinates_{factory_name}(double* restrict reference_dof_coordinates)
-{{
-  {tabulate_reference_dof_coordinates}
+  {apply_dof_transformation_to_scalar}
 }}
 
 {sub_element_declaration}
@@ -82,11 +56,12 @@ ufc_finite_element* create_{factory_name}(void)
   element->degree = {degree};
   element->family = {family};
   element->block_size = {block_size};
-  element->evaluate_reference_basis = evaluate_reference_basis_{factory_name};
-  element->evaluate_reference_basis_derivatives = evaluate_reference_basis_derivatives_{factory_name};
-  element->transform_reference_basis_derivatives = transform_reference_basis_derivatives_{factory_name};
-  element->transform_values = transform_values_{factory_name};
-  element->tabulate_reference_dof_coordinates = tabulate_reference_dof_coordinates_{factory_name};
+
+  element->needs_permutation_data = {needs_permutation_data};
+  element->interpolation_is_identity = {interpolation_is_identity};
+
+  element->apply_dof_transformation = apply_dof_transformation_{factory_name};
+  element->apply_dof_transformation_to_scalar = apply_dof_transformation_to_scalar_{factory_name};
   element->num_sub_elements = {num_sub_elements};
   element->create_sub_element = create_sub_element_{factory_name};
   element->create = create_{factory_name};

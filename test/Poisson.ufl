@@ -20,7 +20,10 @@
 #
 # Compile this form with FFC: ffcx Poisson.ufl
 
-element = FiniteElement("Lagrange", triangle, 1)
+cell = triangle
+mesh = Mesh(VectorElement('P', cell, 2))
+
+element = FiniteElement("Lagrange", triangle, 2)
 
 u = TrialFunction(element)
 v = TestFunction(element)

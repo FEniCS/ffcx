@@ -22,7 +22,6 @@ from ffcx.ir.elementtables import build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
-from ffcx.ir import dof_permutations
 
 logger = logging.getLogger("ffcx")
 
@@ -59,10 +58,9 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     ir["integrand"] = {}
 
     ir["table_dofmaps"] = {}
-    ir["table_dof_face_tangents"] = {}
-    ir["table_dof_reflection_entities"] = {}
-
+    ir["table_dof_base_permutations"] = {}
     ir["needs_permutation_data"] = 0
+    ir["table_needs_permutation_data"] = {}
 
     for quadrature_rule, integrand in integrands.items():
 
@@ -88,8 +86,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                              if is_modified_terminal(v['expression'])}
 
         (unique_tables, unique_table_types, unique_table_num_dofs,
-         mt_unique_table_reference, table_origins,
-         needs_permutation_data) = build_optimized_tables(
+         mt_unique_table_reference) = build_optimized_tables(
             quadrature_rule,
             cell,
             integral_type,
@@ -99,19 +96,11 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
-        if needs_permutation_data:
-            ir["needs_permutation_data"] = 1
-
-        for k, v in table_origins.items():
-            ir["table_dof_face_tangents"][k] = dof_permutations.face_tangents(v[0])
-            ir["table_dof_reflection_entities"][k] = dof_permutations.reflection_entities(v[0])
-            for j in ir["table_dof_face_tangents"][k]:
-                if j is not None:
-                    ir["needs_permutation_data"] = 1
-            if len(ir["table_dof_reflection_entities"][k]) > 0:
-                ir["needs_permutation_data"] = 1
-
         for td in mt_unique_table_reference.values():
+            ir["table_needs_permutation_data"][td.name] = td.needs_permutation_data
+            if td.needs_permutation_data:
+                ir["needs_permutation_data"] = 1
+            ir["table_dof_base_permutations"][td.name] = td.dof_base_permutations
             ir["table_dofmaps"][td.name] = td.dofmap
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
