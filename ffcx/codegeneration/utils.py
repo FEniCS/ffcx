@@ -70,7 +70,7 @@ def generate_return_int_switch(L, i, values, default):
                                           "int")
 
 
-def make_perm_data(L, base_perms, cell_shape, reverse=False):
+def make_perm_data(L, base_perms, cell_shape, inverse=False, transpose=False):
     if cell_shape == "interval":
         entities = {}
     elif cell_shape == "triangle":
@@ -103,28 +103,34 @@ def make_perm_data(L, base_perms, cell_shape, reverse=False):
                 None,
                 base_perms[perm_n + 1]
             )
-            if not reverse:
+            if (not inverse and not transpose) or (inverse and transpose):
                 perm_data.append(reflection)
             for rot in range(1, face_rotation_order):
-                if reverse:
-                    rot = face_rotation_order - rot
+                if inverse:
+                    power = face_rotation_order - rot
+                else:
+                    power = rot
                 perm_data.append((
                     entity_rotations(L, (2, face), cell_shape),
                     rot,
-                    numpy.linalg.matrix_power(base_perms[perm_n], rot)
+                    numpy.linalg.matrix_power(base_perms[perm_n], power)
                 ))
-            if reverse:
+            if (inverse or transpose) and not (inverse and transpose):
                 perm_data.append(reflection)
             perm_n += 2
 
     assert perm_n == len(base_perms)
 
+    if transpose:
+        perm_data = [(i[0], i[1], i[2].T) for i in perm_data]
+
     return perm_data
 
 
-def apply_permutations_to_data(L, base_permutations, cell_shape, data, reverse=False,
+def apply_permutations_to_data(L, base_permutations, cell_shape, data, inverse=False,
+                               transpose=False,
                                indices=lambda dof: dof, ranges=None, dtype="double"):
-    perm_data = make_perm_data(L, base_permutations, cell_shape, reverse=reverse)
+    perm_data = make_perm_data(L, base_permutations, cell_shape, inverse=inverse, transpose=transpose)
 
     # Apply entity permutations
     apply_permutations = []
