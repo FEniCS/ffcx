@@ -5,10 +5,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 declaration = """
-ufc_expression* create_expression_{factory_name}(void);
+ufc_expression* create_{factory_name}(void);
 
-// Helper used to create expression using name which was given to the
-// form in the UFL file.
+// Helper used to create expression
 // This helper is called in user c++ code.
 //
 ufc_expression* create_expression(void);
@@ -18,10 +17,10 @@ ufc_expression* create_expression(void);
 factory = """
 // Code for expression {factory_name}
 
-void tabulate_expression_{factory_name}(ufc_scalar_t* restrict A,
-                                        const ufc_scalar_t* restrict w,
-                                        const ufc_scalar_t* restrict c,
-                                        const double* restrict coordinate_dofs)
+void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
+                                    const ufc_scalar_t* restrict w,
+                                    const ufc_scalar_t* restrict c,
+                                    const double* restrict coordinate_dofs)
 {{
 {tabulate_expression}
 }}
@@ -31,11 +30,13 @@ ufc_expression* create_{factory_name}(void)
 
   ufc_expression* expression = (ufc_expression*)malloc(sizeof(*expression));
 
-  {original_coefficient_positions}
-  {points}
-  {value_shape}
+{original_coefficient_positions}
+{coefficient_names}
+{constant_names}
+{points}
+{value_shape}
 
-  expression->tabulate_expression = tabulate_expression_{factory_name};
+  expression->tabulate_expression = tabulate_tensor_{factory_name};
   expression->num_coefficients = {num_coefficients};
   expression->num_points = {num_points};
   expression->topological_dimension = {topological_dimension};

@@ -1,0 +1,10 @@
+element = FiniteElement("Lagrange", triangle, 2)
+coordinate_el = VectorElement("Lagrange", triangle, 1)
+mesh = Mesh(coordinate_el)
+
+V = FunctionSpace(mesh, element)
+
+u = TrialFunction(V)
+f = Coefficient(V)
+
+expressions = [(f * grad(u), [[0.0, 0.1]])]

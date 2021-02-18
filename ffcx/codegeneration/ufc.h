@@ -347,11 +347,20 @@ extern "C"
                                 const ufc_scalar_t* restrict c,
                                 const double* restrict coordinate_dofs);
 
-    /// Positions of coefficients in original expression
-    const int* original_coefficient_positions;
-
     /// Number of coefficients
     int num_coefficients;
+
+    /// Number of constants
+    int num_constants;
+
+    /// Original coefficient position for each coefficient
+    const int* original_coefficient_positions;
+
+    /// List of names of coefficients
+    const char** coefficient_names;
+
+    /// List of names of constants
+    const char** constant_names;
 
     /// Number of evaluation points
     int num_points;

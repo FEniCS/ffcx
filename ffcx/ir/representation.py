@@ -75,7 +75,8 @@ ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'table_dof_base_permutations', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
-    'original_coefficient_positions', 'points', 'table_needs_permutation_data', 'needs_permutation_data'])
+    'original_coefficient_positions', 'points', 'table_needs_permutation_data', 'needs_permutation_data',
+    'coefficient_names', 'constant_names'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
 
@@ -129,7 +130,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise)
+    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise, object_names)
                       for i, expr in enumerate(analysis.expressions)]
 
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
@@ -584,7 +585,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
+def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, object_names):
 
     logger.info(f"Computing IR for expression {index}")
 
@@ -636,6 +637,12 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
+
+    ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
+                               for j, obj in enumerate(coefficients)]
+
+    ir["constant_names"] = [object_names.get(id(obj), "c%d" % j)
+                            for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))]
 
     ir["original_coefficient_positions"] = original_coefficient_positions
 

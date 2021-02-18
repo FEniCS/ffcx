@@ -11,6 +11,7 @@ import ufl
 from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.codegeneration.utils import generate_return_new_switch
 from ffcx.ir.representation import ir_expression
 
 logger = logging.getLogger("ffcx")
@@ -41,6 +42,12 @@ def generator(ir, parameters):
     code["original_coefficient_positions"] = format_indented_lines(
         eg.generate_original_coefficient_positions().cs_format(), 1)
 
+    code["coefficient_names"] = format_indented_lines(
+        eg.generate_coefficient_names().cs_format(), 1)
+
+    code["constant_names"] = format_indented_lines(
+        eg.generate_constant_names().cs_format(), 1)
+
     code["points"] = format_indented_lines(eg.generate_points().cs_format(), 1)
     code["value_shape"] = format_indented_lines(eg.generate_value_shape().cs_format(), 1)
 
@@ -49,6 +56,8 @@ def generator(ir, parameters):
         factory_name=factory_name,
         tabulate_expression=code["tabulate_expression"],
         original_coefficient_positions=code["original_coefficient_positions"],
+        coefficient_names=code["coefficient_names"],
+        constant_names=code["constant_names"],
         num_coefficients=len(ir.coefficient_numbering),
         num_points=ir.points.shape[0],
         topological_dimension=ir.points.shape[1],
@@ -433,6 +442,30 @@ class ExpressionGenerator:
             parts += [L.Assign("expression->original_coefficient_positions", orig_pos)]
         else:
             parts = []
+        return L.StatementList(parts)
+
+    def generate_coefficient_names(self):
+        L = self.backend.language
+        num_coeffs = len(self.ir.original_coefficient_positions)
+        names = L.Symbol("coefficient_names")
+        cnames = self.ir.coefficient_names
+        if num_coeffs > 0:
+            parts = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
+            parts += [L.Assign("expression->coefficient_names", names)]
+        else:
+            parts = []
+        return L.StatementList(parts)
+
+    def generate_constant_names(self):
+        """Generate code that maps original position of a constant to its name."""
+        L = self.backend.language
+        cnames = self.ir.constant_names
+        names = L.Symbol("names")
+        if (len(cnames) == 0):
+            parts = []
+        else:
+            parts = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
+            parts += [L.Assign("expression->constant_names", names)]
         return L.StatementList(parts)
 
     def generate_points(self):
