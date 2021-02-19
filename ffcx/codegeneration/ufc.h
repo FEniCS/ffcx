@@ -104,21 +104,11 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
-    /// Map the reference values on to the cell
-    /// @param[in] cell_permutations An integer that says how each entity of the
-    ///         cell of dimension < tdim has been permuted relative to a
-    ///         low-to-high ordering of the cell.
-    int (*transform_reference_basis_derivatives)(
-        double* restrict values, int order, int num_points,
-        const double* restrict reference_values, const double* restrict X,
-        const double* restrict J, const double* restrict detJ,
-        const double* restrict K);
-
     /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
-    /// @param[in] dim The number of data items for each DOD
+    /// @param[in] dim The number of data items for each DOF
     int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
                                     int dim);
 
@@ -126,10 +116,27 @@ extern "C"
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
-    /// @param[in] dim The number of data items for each DOD
+    /// @param[in] dim The number of data items for each DOF
     int (*apply_dof_transformation_to_scalar)(ufc_scalar_t* data,
                                               uint32_t cell_permutation,
                                               int dim);
+
+    /// Apply inverse transpose dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOF
+    int (*apply_inverse_transpose_dof_transformation)(double* data,
+                                                      uint32_t cell_permutation,
+                                                      int dim);
+
+    /// Apply inverse transpose dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOF
+    int (*apply_inverse_transpose_dof_transformation_to_scalar)(
+        ufc_scalar_t* data, uint32_t cell_permutation, int dim);
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
