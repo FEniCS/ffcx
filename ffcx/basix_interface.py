@@ -15,7 +15,11 @@ basix_cells = {
 # Currently all the names agree but this will not necessarily remian true.
 ufl_to_basix_names = {
     "Q": "Lagrange",
-    "DQ": "Discontinuous Lagrange"
+    "DQ": "Discontinuous Lagrange",
+    "RTCE": "Nedelec 1st kind H(curl)",
+    "NCE": "Nedelec 1st kind H(curl)",
+    "RTCF": "Raviart-Thomas",
+    "NCF": "Raviart-Thomas",
 }
 
 
