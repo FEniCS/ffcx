@@ -214,7 +214,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                 raise RuntimeError(
                     "Cannot tabulate tensor valued element with rank > 2")
     else:
-
         # Vector-valued or mixed element
         sub_dims = [0] + [e.dim for e in basix_element.sub_elements]
         sub_cmps = [0] + [e.value_size for e in basix_element.sub_elements]
@@ -258,7 +257,14 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             padded_shape = (basix_element.dim,) + basix_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
-            tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+            if basix_element.family_name == "mixed element":
+                tab = numpy.zeros_like(tbl.reshape(slice_size(ir), slice_size(cr), -1))
+                for basis_i in range(tab.shape[0]):
+                    for value_i in range(tab.shape[1]):
+                        tab[basis_i, value_i] = tbl[value_i * tab.shape[0] + basis_i]
+            else:
+                tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+
             padded_tbl[slice(*ir), slice(*cr)] = tab
 
             component_tables.append(padded_tbl[:, flat_component, :])
