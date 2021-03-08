@@ -42,7 +42,7 @@ jobs:
         run: |
           cmake -G Ninja -B build-dir -S ./basix
           cmake --build build-dir
-          cmake --install build-dir
+          sudo cmake --install build-dir
           pip -m pip install ./basix/python
           pip install --upgrade pip
           pip install pygraphviz
