@@ -1,0 +1,66 @@
+# This workflow will install Basix, FFCx, DOLFINx and run the DOLFINx unit tests.
+
+name: DOLFINx integration
+
+on: pull_request
+
+jobs:
+  build:
+    name: Run DOLFINx tests
+    runs-on: ubuntu-latest
+    container: fenicsproject/test-env:openmpi
+
+    env:
+      CC: clang-10
+      CXX: clang++-10
+
+      PETSC_ARCH: linux-gnu-complex-32
+      OMPI_ALLOW_RUN_AS_ROOT: 1
+      OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+      OMPI_MCA_rmaps_base_oversubscribe: 1
+      OMPI_MCA_plm: isolated
+      OMPI_MCA_btl_vader_single_copy_mechanism: none
+      OMPI_MCA_mpi_yield_when_idle: 1
+      OMPI_MCA_hwloc_base_binding_policy: none
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies (Python)
+        run: |
+          python3 -m pip install --upgrade pip
+      - name: Install UFL
+        run: |
+          python3 -m pip install git+https://github.com/FEniCS/ufl.git
+
+      - name: Clone Basix
+        uses: actions/checkout@v2
+        with:
+          path: ./basix
+          repository: FEniCS/basix
+          ref: main
+
+      - name: Install Basix
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
+          cmake --build build-dir
+          cmake --install build-dir
+          pip3 install ./basix/python
+
+      - name: Install FFCx
+        run: |
+          pip3 install .
+
+      - name: Clone DOLFINx
+        uses: actions/checkout@v2
+        with:
+          path: ./dolfinx
+          repository: FEniCS/dolfinx
+      - name: Clone and install DOLFINx
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
+          cmake --build build
+          cmake --install build
+          pip3 -v install --global-option build --global-option --debug dolfinx/python/
+
+      - name: Run DOLFINx unit tests
+        run: python3 -m pytest -n auto dolfinx/python/test/unit
