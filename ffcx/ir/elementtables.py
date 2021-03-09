@@ -257,16 +257,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             padded_shape = (basix_element.dim,) + basix_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
-            if basix_element.family_name == "mixed element":
-                tab = tbl.reshape(slice_size(cr), slice_size(ir), -1).transpose((1, 0, 2))
-                print("<<")
-                print(tab)
-                print(tbl.reshape(slice_size(ir), slice_size(cr), -1))
-                numpy.allclose(tab,
-                                      tbl.reshape(slice_size(ir), slice_size(cr), -1))
-                print(">>\n")
-            else:
-                tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+            tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
 
             padded_tbl[slice(*ir), slice(*cr)] = tab
 
