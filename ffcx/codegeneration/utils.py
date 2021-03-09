@@ -130,7 +130,8 @@ def make_transformation_data(L, base_transformations, cell_shape, inverse=False,
 def apply_transformations_to_data(L, base_transformations, cell_shape, data, inverse=False,
                                   transpose=False,
                                   indices=lambda dof: dof, ranges=None, dtype="double"):
-    transformation_data = make_transformation_data(L, base_transformations, cell_shape, inverse=inverse, transpose=transpose)
+    transformation_data = make_transformation_data(
+        L, base_transformations, cell_shape, inverse=inverse, transpose=transpose)
 
     # Apply entity transformations
     apply_transformations = []
@@ -163,8 +164,8 @@ def apply_transformations_to_data(L, base_transformations, cell_shape, data, inv
         if ranges is None:
             apply_transformations.append(L.If(condition, body))
         else:
-            apply_transformations.append(L.If(condition,
-                                           L.ForRanges(*ranges, index_type=index_type, body=body)))
+            apply_transformations.append(L.If(
+                condition, L.ForRanges(*ranges, index_type=index_type, body=body)))
 
     if len(apply_transformations) > 0:
         apply_transformations = [L.VariableDecl(dtype, L.Symbol("t" + str(i)), 0)

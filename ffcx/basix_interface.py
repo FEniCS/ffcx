@@ -335,7 +335,8 @@ class BlockedElement(BasixBaseElement):
 
         output = []
         for transformation in self.sub_element.base_transformations:
-            new_transformation = numpy.zeros((transformation.shape[0] * self.block_size, transformation.shape[1] * self.block_size))
+            new_transformation = numpy.zeros((transformation.shape[0] * self.block_size,
+                                              transformation.shape[1] * self.block_size))
             for i in range(self.block_size):
                 new_transformation[i::self.block_size, i::self.block_size] = transformation
             output.append(new_transformation)
