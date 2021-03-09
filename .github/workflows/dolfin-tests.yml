@@ -39,8 +39,7 @@ jobs:
           repository: FEniCS/basix
       - name: Install Basix
         run: |
-          cd basix
-          python3 -m pip install .
+          python3 -m pip install basix/
 
       - name: Install FFCx
         run: |
@@ -53,7 +52,6 @@ jobs:
           repository: FEniCS/dolfinx
       - name: Clone and install DOLFINx
         run: |
-          cd dolfinx
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
           cmake --build build
           cmake --install build
