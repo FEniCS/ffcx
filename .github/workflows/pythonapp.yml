@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies (Python)
         run: |
-          cmake -G Ninja -B build-dir -S ./basix
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
           cmake --build build-dir
           sudo cmake --install build-dir
           pip install ./basix/python
