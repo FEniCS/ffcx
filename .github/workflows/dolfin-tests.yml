@@ -43,12 +43,12 @@ jobs:
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
           cmake --build build-dir
-          sudo cmake --install build-dir
-          pip install ./basix/python
+          cmake --install build-dir
+          pip3 install ./basix/python
 
       - name: Install FFCx
         run: |
-          python3 -m pip install .
+          pip3 install .
 
       - name: Clone DOLFINx
         uses: actions/checkout@v2
@@ -60,7 +60,7 @@ jobs:
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
           cmake --build build
           cmake --install build
-          python3 -m pip -v install --global-option build --global-option --debug dolfinx/python/
+          pip3 -v install --global-option build --global-option --debug dolfinx/python/
 
       - name: Run DOLFINx unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
