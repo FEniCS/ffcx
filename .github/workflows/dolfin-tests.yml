@@ -28,9 +28,6 @@ jobs:
       - name: Install dependencies (Python)
         run: |
           python3 -m pip install --upgrade pip
-      - name: Install FFCx
-        run: |
-          python3 -m pip install .
       - name: Install UFL
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
@@ -40,7 +37,9 @@ jobs:
           git clone https://github.com/FEniCS/basix.git
           cd basix
           python3 -m pip install .
-
+      - name: Install FFCx
+        run: |
+          python3 -m pip install .
       - name: Clone and install DOLFINx
         run: |
           git clone https://github.com/FEniCS/dolfinx.git
