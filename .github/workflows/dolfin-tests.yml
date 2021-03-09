@@ -37,9 +37,14 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
+          ref: main
+
       - name: Install Basix
         run: |
-          python3 -m pip install basix/
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
+          cmake --build build-dir
+          sudo cmake --install build-dir
+          pip install ./basix/python
 
       - name: Install FFCx
         run: |
