@@ -40,11 +40,11 @@ jobs:
 
       - name: Install dependencies (Python)
         run: |
+          pip install --upgrade pip
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
           cmake --build build-dir
           sudo cmake --install build-dir
           pip install ./basix/python
-          pip install --upgrade pip
           pip install pygraphviz
           pip install git+https://github.com/FEniCS/ufl.git --user
 
