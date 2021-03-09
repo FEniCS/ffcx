@@ -31,22 +31,33 @@ jobs:
       - name: Install UFL
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-      - name: Clone and install Basix
+
+      - name: Clone Basix
+        uses: actions/checkout@v2
+        with:
+          path: ./basix
+          repository: FEniCS/basix
+      - name: Install Basix
         run: |
-          git clone https://github.com/FEniCS/basix.git
           cd basix
           python3 -m pip install .
+
       - name: Install FFCx
         run: |
           python3 -m pip install .
+
+      - name: Clone DOLFINx
+        uses: actions/checkout@v2
+        with:
+          path: ./dolfinx
+          repository: FEniCS/dolfinx
       - name: Clone and install DOLFINx
         run: |
-          git clone https://github.com/FEniCS/dolfinx.git
           cd dolfinx
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S cpp/
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
           cmake --build build
           cmake --install build
-          python3 -m pip -v install --global-option build --global-option --debug python/
+          python3 -m pip -v install --global-option build --global-option --debug dolfinx/python/
 
       - name: Run DOLFINx unit tests
-        run: python3 -m pytest -n=auto dolfinx/python/test/unit
+        run: python3 -m pytest -n auto dolfinx/python/test/unit
