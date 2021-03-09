@@ -70,7 +70,7 @@ def generate_return_int_switch(L, i, values, default):
                                           "int")
 
 
-def make_perm_data(L, base_perms, cell_shape, inverse=False, transpose=False):
+def make_transformation_data(L, base_transformations, cell_shape, inverse=False, transpose=False):
     if cell_shape == "interval":
         entities = {}
     elif cell_shape == "triangle":
@@ -86,61 +86,61 @@ def make_perm_data(L, base_perms, cell_shape, inverse=False, transpose=False):
     else:
         raise NotImplementedError
 
-    perm_n = 0
-    perm_data = []
+    transformation_n = 0
+    transformation_data = []
     if 1 in entities:
         for edge in range(entities[1]):
-            perm_data.append((
+            transformation_data.append((
                 entity_reflection(L, (1, edge), cell_shape),
                 None,
-                base_perms[perm_n]
+                base_transformations[transformation_n]
             ))
-            perm_n += 1
+            transformation_n += 1
     if 2 in entities:
         for face in range(entities[2]):
             reflection = (
                 entity_reflection(L, (2, face), cell_shape),
                 None,
-                base_perms[perm_n + 1]
+                base_transformations[transformation_n + 1]
             )
             if (not inverse and not transpose) or (inverse and transpose):
-                perm_data.append(reflection)
+                transformation_data.append(reflection)
             for rot in range(1, face_rotation_order):
                 if inverse:
                     power = face_rotation_order - rot
                 else:
                     power = rot
-                perm_data.append((
+                transformation_data.append((
                     entity_rotations(L, (2, face), cell_shape),
                     rot,
-                    numpy.linalg.matrix_power(base_perms[perm_n], power)
+                    numpy.linalg.matrix_power(base_transformations[transformation_n], power)
                 ))
             if (inverse or transpose) and not (inverse and transpose):
-                perm_data.append(reflection)
-            perm_n += 2
+                transformation_data.append(reflection)
+            transformation_n += 2
 
-    assert perm_n == len(base_perms)
+    assert transformation_n == len(base_transformations)
 
     if transpose:
-        perm_data = [(i[0], i[1], i[2].T) for i in perm_data]
+        transformation_data = [(i[0], i[1], i[2].T) for i in transformation_data]
 
-    return perm_data
+    return transformation_data
 
 
-def apply_permutations_to_data(L, base_permutations, cell_shape, data, inverse=False,
-                               transpose=False,
-                               indices=lambda dof: dof, ranges=None, dtype="double"):
-    perm_data = make_perm_data(L, base_permutations, cell_shape, inverse=inverse, transpose=transpose)
+def apply_transformations_to_data(L, base_transformations, cell_shape, data, inverse=False,
+                                  transpose=False,
+                                  indices=lambda dof: dof, ranges=None, dtype="double"):
+    transformation_data = make_transformation_data(L, base_transformations, cell_shape, inverse=inverse, transpose=transpose)
 
-    # Apply entity permutations
-    apply_permutations = []
+    # Apply entity transformations
+    apply_transformations = []
     temporary_variables = 0
-    for entity_perm, value, perm in perm_data:
+    for entity_transformation, value, transformation in transformation_data:
         body = []
 
         # Use temporary variables t0, t1, ... to store current data
         temps = {}
-        for index, row in enumerate(perm):
+        for index, row in enumerate(transformation):
             if not numpy.allclose(row, [1 if i == index else 0 for i, j in enumerate(row)]):
                 for dof, w in enumerate(row):
                     if not numpy.isclose(w, 0) and dof not in temps:
@@ -155,22 +155,22 @@ def apply_permutations_to_data(L, base_permutations, cell_shape, data, inverse=F
             continue
 
         if value is None:
-            condition = entity_perm
+            condition = entity_transformation
         else:
-            condition = L.EQ(entity_perm, value)
+            condition = L.EQ(entity_transformation, value)
 
         body = [L.Assign(t, data[indices(dof)]) for dof, t in temps.items()] + body
         if ranges is None:
-            apply_permutations.append(L.If(condition, body))
+            apply_transformations.append(L.If(condition, body))
         else:
-            apply_permutations.append(L.If(condition,
+            apply_transformations.append(L.If(condition,
                                            L.ForRanges(*ranges, index_type=index_type, body=body)))
 
-    if len(apply_permutations) > 0:
-        apply_permutations = [L.VariableDecl(dtype, L.Symbol("t" + str(i)), 0)
-                              for i in range(temporary_variables)] + apply_permutations
+    if len(apply_transformations) > 0:
+        apply_transformations = [L.VariableDecl(dtype, L.Symbol("t" + str(i)), 0)
+                                 for i in range(temporary_variables)] + apply_transformations
 
-    return apply_permutations
+    return apply_transformations
 
 
 def entity_reflection(L, i, cell_shape):
