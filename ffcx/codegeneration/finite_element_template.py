@@ -69,7 +69,7 @@ ufc_finite_element* create_{factory_name}(void)
   element->family = {family};
   element->block_size = {block_size};
 
-  element->needs_permutation_data = {needs_permutation_data};
+  element->needs_transformation_data = {needs_transformation_data};
   element->interpolation_is_identity = {interpolation_is_identity};
 
   element->apply_dof_transformation = apply_dof_transformation_{factory_name};

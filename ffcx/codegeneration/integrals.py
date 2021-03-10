@@ -12,7 +12,7 @@ import ufl
 from ffcx.codegeneration import integrals_template as ufc_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
-from ffcx.codegeneration.utils import apply_permutations_to_data
+from ffcx.codegeneration.utils import apply_transformations_to_data
 from ffcx.ir.elementtables import piecewise_ttypes
 
 logger = logging.getLogger("ffcx")
@@ -82,13 +82,13 @@ def generator(ir, parameters):
             factory_name=factory_name,
             enabled_coefficients=code["enabled_coefficients"],
             tabulate_tensor=tabulate_tensor_fn,
-            needs_permutation_data=ir.needs_permutation_data)
+            needs_transformation_data=ir.needs_transformation_data)
     else:
         implementation = ufc_integrals.factory.format(
             factory_name=factory_name,
             enabled_coefficients=code["enabled_coefficients"],
             tabulate_tensor=tabulate_tensor_fn,
-            needs_permutation_data=ir.needs_permutation_data)
+            needs_transformation_data=ir.needs_transformation_data)
     return declaration, implementation
 
 
@@ -286,7 +286,7 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
 
-        if not self.ir.table_needs_permutation_data[name]:
+        if not self.ir.table_needs_transformation_data[name]:
             return [L.ArrayDecl(
                 "static const double", name, table.shape, table, padlen=padlen)]
 
@@ -295,11 +295,11 @@ class IntegralGenerator(object):
 
         dummy_vars = tuple(0 if j == 1 else L.Symbol(f"i{i}") for i, j in enumerate(table.shape[:-1]))
         ranges = tuple((dummy_vars[i], 0, j) for i, j in enumerate(table.shape[:-1]) if j != 1)
-        apply_perms = apply_permutations_to_data(
-            L, self.ir.table_dof_base_permutations[name], self.ir.cell_shape, L.Symbol(name),
+        apply_transformations = apply_transformations_to_data(
+            L, self.ir.table_dof_base_transformations[name], self.ir.cell_shape, L.Symbol(name),
             indices=lambda dof: dummy_vars + (dof, ), ranges=ranges)
-        if len(apply_perms) > 0:
-            out += ["{"] + apply_perms + ["}"]
+        if len(apply_transformations) > 0:
+            out += ["{"] + apply_transformations + ["}"]
         return out
 
     def generate_quadrature_loop(self, quadrature_rule):
