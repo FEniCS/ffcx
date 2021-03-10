@@ -37,7 +37,7 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: mscroggs/base_trans
+          ref: main
 
       - name: Install Basix
         run: |
