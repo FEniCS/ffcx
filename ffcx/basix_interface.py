@@ -72,7 +72,7 @@ class BasixBaseElement:
         raise NotImplementedError
 
     @property
-    def base_permutations(self):
+    def base_transformations(self):
         raise NotImplementedError
 
     @property
@@ -132,8 +132,8 @@ class BasixElement(BasixBaseElement):
         return self.element.tabulate(nderivs, points)
 
     @property
-    def base_permutations(self):
-        return self.element.base_permutations
+    def base_transformations(self):
+        return self.element.base_transformations
 
     @property
     def interpolation_matrix(self):
@@ -213,24 +213,24 @@ class MixedElement(BasixBaseElement):
         return tables
 
     @property
-    def base_permutations(self):
+    def base_transformations(self):
         for e in self.sub_elements[1:]:
-            assert len(e.base_permutations) == len(self.sub_elements[0].base_permutations)
-        perms = [[] for i in self.sub_elements[0].base_permutations]
+            assert len(e.base_transformations) == len(self.sub_elements[0].base_transformations)
+        transformations = [[] for i in self.sub_elements[0].base_transformations]
         for e in self.sub_elements:
-            for i, b in enumerate(e.base_permutations):
-                perms[i].append(b)
+            for i, b in enumerate(e.base_transformations):
+                transformations[i].append(b)
 
         output = []
-        for p in perms:
-            new_perm = numpy.zeros((sum(i.shape[0] for i in p), sum(i.shape[1] for i in p)))
+        for p in transformations:
+            new_transformation = numpy.zeros((sum(i.shape[0] for i in p), sum(i.shape[1] for i in p)))
             row_start = 0
             col_start = 0
             for i in p:
-                new_perm[row_start: row_start + i.shape[0], col_start: col_start + i.shape[1]] = i
+                new_transformation[row_start: row_start + i.shape[0], col_start: col_start + i.shape[1]] = i
                 row_start += i.shape[0]
                 col_start += i.shape[1]
-            output.append(new_perm)
+            output.append(new_transformation)
         return output
 
     @property
@@ -330,15 +330,16 @@ class BlockedElement(BasixBaseElement):
         return output
 
     @property
-    def base_permutations(self):
+    def base_transformations(self):
         assert len(self.block_shape) == 1  # TODO: block shape
 
         output = []
-        for perm in self.sub_element.base_permutations:
-            new_perm = numpy.zeros((perm.shape[0] * self.block_size, perm.shape[1] * self.block_size))
+        for transformation in self.sub_element.base_transformations:
+            new_transformation = numpy.zeros((transformation.shape[0] * self.block_size,
+                                              transformation.shape[1] * self.block_size))
             for i in range(self.block_size):
-                new_perm[i::self.block_size, i::self.block_size] = perm
-            output.append(new_perm)
+                new_transformation[i::self.block_size, i::self.block_size] = transformation
+            output.append(new_transformation)
         return output
 
     @property

@@ -15,7 +15,7 @@ import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
 from ffcx.codegeneration.utils import (generate_return_int_switch,
                                        generate_return_new_switch,
-                                       apply_permutations_to_data)
+                                       apply_transformations_to_data)
 
 logger = logging.getLogger("ffcx")
 index_type = "int"
@@ -71,16 +71,16 @@ def create_sub_element(L, ir):
 
 
 def apply_dof_transformation(L, ir, parameters, inverse=False, transpose=False, dtype="double"):
-    """Write function that applies the DOF tranformations/permutations to some data."""
+    """Write function that applies the DOF transformations to some data."""
     data = L.Symbol("data")
     block = L.Symbol("block")
     block_size = L.Symbol("dim")
 
-    apply_permutations = apply_permutations_to_data(
-        L, ir.base_permutations, ir.cell_shape, data, inverse=inverse, transpose=transpose,
+    apply_transformations = apply_transformations_to_data(
+        L, ir.base_transformations, ir.cell_shape, data, inverse=inverse, transpose=transpose,
         indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)],
         dtype=dtype)
-    return apply_permutations + [L.Return(0)]
+    return apply_transformations + [L.Return(0)]
 
 
 def generator(ir, parameters):
@@ -107,7 +107,7 @@ def generator(ir, parameters):
     d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
-    d["needs_permutation_data"] = ir.needs_permutation_data
+    d["needs_transformation_data"] = ir.needs_transformation_data
     d["interpolation_is_identity"] = ir.interpolation_is_identity
 
     import ffcx.codegeneration.C.cnodes as L
