@@ -46,7 +46,7 @@ jobs:
           sudo cmake --install build-dir
           pip install ./basix/python
           pip install pygraphviz
-          pip install git+https://github.com/FEniCS/ufl.git --user
+          pip install git+https://github.com/FEniCS/ufl.git@michal/expressions --user
 
       - name: Lint with flake8
         run: |

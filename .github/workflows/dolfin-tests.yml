@@ -30,14 +30,14 @@ jobs:
           python3 -m pip install --upgrade pip
       - name: Install UFL
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git
+          python3 -m pip install git+https://github.com/FEniCS/ufl.git@michal/expressions
 
       - name: Clone Basix
         uses: actions/checkout@v2
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: main
+          ref: michal/ufc-expressions
 
       - name: Install Basix
         run: |
