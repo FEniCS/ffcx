@@ -399,7 +399,7 @@ extern "C"
     int num_components;
 
     /// Number of Arguments
-    int rank;
+    int num_arguments;
 
     /// Number of dofs for Arguments
     /// Dimensions: num_argument_dofs[rank].

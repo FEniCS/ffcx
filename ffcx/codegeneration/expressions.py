@@ -11,7 +11,6 @@ import ufl
 from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
-from ffcx.codegeneration.utils import generate_return_new_switch
 from ffcx.ir.representation import ir_expression
 
 logger = logging.getLogger("ffcx")
@@ -50,6 +49,7 @@ def generator(ir, parameters):
 
     code["points"] = format_indented_lines(eg.generate_points().cs_format(), 1)
     code["value_shape"] = format_indented_lines(eg.generate_value_shape().cs_format(), 1)
+    code["num_argument_dofs"] = format_indented_lines(eg.generate_num_argument_dofs().cs_format(), 1)
 
     # Format implementation code
     implementation = expressions_template.factory.format(
@@ -65,7 +65,8 @@ def generator(ir, parameters):
         num_components=len(ir.expression_shape),
         points=code["points"],
         value_shape=code["value_shape"],
-        rank=ir.)
+        num_arguments=len(ir.tensor_shape),
+        num_argument_dofs=code["num_argument_dofs"])
 
     return declaration, implementation
 
@@ -487,4 +488,11 @@ class ExpressionGenerator:
         # C doesn't allow for empty array declaration -> create a dummy zero array in this case
         shape = self.ir.expression_shape if len(self.ir.expression_shape) > 0 else [0]
         parts = L.ArrayDecl("static const int", "value_shape", values=shape, sizes=len(shape))
+        return parts
+
+    def generate_num_argument_dofs(self):
+        L = self.backend.language
+        # C doesn't allow for empty array declaration -> create a dummy zero array in this case
+        num_arg_dofs = self.ir.tensor_shape if len(self.ir.tensor_shape) > 0 else [0]
+        parts = L.ArrayDecl("static const int", "num_argument_dofs", values=num_arg_dofs, sizes=len(num_arg_dofs))
         return parts

@@ -45,7 +45,7 @@ ufc_expression* create_{factory_name}(void)
   expression->points = *points;
   expression->value_shape = value_shape;
   expression->num_components = {num_components};
-  expression->rank = {rank};
+  expression->num_arguments = {num_arguments};
   expression->num_argument_dofs = num_argument_dofs;
 
   return expression;
