@@ -59,11 +59,13 @@ def generator(ir, parameters):
         coefficient_names=code["coefficient_names"],
         constant_names=code["constant_names"],
         num_coefficients=len(ir.coefficient_numbering),
+        num_constants=len(ir.constant_names),
         num_points=ir.points.shape[0],
         topological_dimension=ir.points.shape[1],
         num_components=len(ir.expression_shape),
         points=code["points"],
-        value_shape=code["value_shape"])
+        value_shape=code["value_shape"],
+        rank=ir.)
 
     return declaration, implementation
 

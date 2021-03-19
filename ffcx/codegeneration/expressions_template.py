@@ -35,14 +35,18 @@ ufc_expression* create_{factory_name}(void)
 {constant_names}
 {points}
 {value_shape}
+{num_argument_dofs}
 
   expression->tabulate_expression = tabulate_tensor_{factory_name};
   expression->num_coefficients = {num_coefficients};
+  expression->num_constants = {num_constants};
   expression->num_points = {num_points};
   expression->topological_dimension = {topological_dimension};
   expression->points = *points;
   expression->value_shape = value_shape;
   expression->num_components = {num_components};
+  expression->rank = {rank};
+  expression->num_argument_dofs = num_argument_dofs;
 
   return expression;
 }}

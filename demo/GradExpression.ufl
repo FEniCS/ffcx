@@ -6,5 +6,6 @@ V = FunctionSpace(mesh, element)
 
 u = TrialFunction(V)
 f = Coefficient(V)
+c = Constant(mesh)
 
-expressions = [(f * grad(u), [[0.0, 0.1]])]
+expressions = [(c * f * grad(u), [[0.0, 0.1]])]

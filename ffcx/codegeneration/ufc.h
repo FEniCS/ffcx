@@ -332,12 +332,23 @@ extern "C"
     bool needs_permutation_data;
   } ufc_custom_integral;
 
+
+  /// Expression evaluated at compile-time known points in
+  /// a reference cell.
+  ///
+  /// The expression has values in the reference space,
+  /// so any expression with non-trivial push-forward should
+  /// be propely mapped after tabulation.
+  ///
+  /// Could represent a linear operators as well, if the expression
+  /// contains Arguments.
   typedef struct ufc_expression
   {
 
     /// Evaluate expression into tensor A with compiled evaluation points
     ///
     /// @param[out] A
+    ///         Dimensions: A[num_points][num_components][num_argument_dofs]
     /// @param[in] w
     ///         Coefficients attached to the expression.
     ///         Dimensions: w[coefficient][dof].
@@ -386,6 +397,14 @@ extern "C"
 
     /// Number of components of return_shape
     int num_components;
+
+    /// Number of Arguments
+    int rank;
+
+    /// Number of dofs for Arguments
+    /// Dimensions: num_argument_dofs[rank].
+    const int* num_argument_dofs;
+
   } ufc_expression;
 
   /// This class defines the interface for the assembly of the global
