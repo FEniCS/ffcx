@@ -91,7 +91,7 @@ ufc_integral* create_{factory_name}(void)
   ufc_integral* integral = (ufc_integral*)malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
-  integral->needs_permutation_data = {needs_permutation_data};
+  integral->needs_transformation_data = {needs_transformation_data};
   return integral;
 }}
 
@@ -109,7 +109,7 @@ ufc_custom_integral* create_{factory_name}(void)
   ufc_custom_integral* integral = (ufc_custom_integral*)malloc(sizeof(*integral));
   integral->enabled_coefficients = enabled;
   integral->tabulate_tensor = tabulate_tensor_{factory_name};
-  integral->needs_permutation_data = {needs_permutation_data};
+  integral->needs_transformation_data = {needs_transformation_data};
   return integral;
 }}
 

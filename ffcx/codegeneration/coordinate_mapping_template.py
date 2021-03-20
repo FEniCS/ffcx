@@ -40,7 +40,7 @@ ufc_coordinate_mapping* create_{factory_name}(void)
   cmap->geometric_dimension = {geometric_dimension};
   cmap->topological_dimension = {topological_dimension};
   cmap->is_affine = {is_affine};
-  cmap->needs_permutation_data = {needs_permutation_data};
+  cmap->needs_transformation_data = {needs_transformation_data};
   cmap->permute_dofs = permute_dofs_{factory_name};
   cmap->unpermute_dofs = unpermute_dofs_{factory_name};
   cmap->cell_shape = {cell_shape};
