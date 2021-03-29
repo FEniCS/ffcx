@@ -9,7 +9,7 @@ Breaks the compilation into several sequential stages.
 The output of each stage is the input of the next stage.
 
 Compiler stages:
----------------
+----------------
 
 0. Language, parsing
 

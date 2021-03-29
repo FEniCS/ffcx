@@ -72,7 +72,7 @@ ir_evaluate_dof = namedtuple('ir_evaluate_dof', [
     'mappings', 'reference_value_size', 'physical_value_size', 'geometric_dimension',
     'topological_dimension', 'dofs', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', [
-    'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
+    'name', 'signature', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'table_dof_base_transformations', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
     'original_coefficient_positions', 'points', 'table_needs_transformation_data',
@@ -591,6 +591,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     original_expression = (expression[2], expression[1])
     sig = naming.compute_signature([original_expression], "", parameters)
     ir["name"] = "expression_{!s}".format(sig)
+    ir["signature"] = sig
 
     original_expression = expression[2]
     points = expression[1]

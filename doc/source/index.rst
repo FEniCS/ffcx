@@ -24,10 +24,16 @@ API reference
    ffcx.main
    ffcx.__main__
    ffcx.parameters
-   ffcx.representation
-   ffcx.utils
+   ffcx.ir
    ffcx.basix_interface
-   ffcx.representationutils
+   ffcx.codegeneration
+
+
+UFC
+===
+.. toctree::
+
+   ufc
 
 
 Indices and tables

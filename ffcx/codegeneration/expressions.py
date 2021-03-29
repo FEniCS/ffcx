@@ -53,6 +53,7 @@ def generator(ir, parameters):
 
     # Format implementation code
     implementation = expressions_template.factory.format(
+        signature=f"\"{ir.signature}\"",
         factory_name=factory_name,
         tabulate_expression=code["tabulate_expression"],
         original_coefficient_positions=code["original_coefficient_positions"],

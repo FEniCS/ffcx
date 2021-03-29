@@ -40,6 +40,7 @@ ufc_expression* create_{factory_name}(void)
 {value_shape}
 {num_argument_dofs}
 
+  expression->signature = {signature};
   expression->tabulate_expression = tabulate_tensor_{factory_name};
   expression->num_coefficients = {num_coefficients};
   expression->num_constants = {num_constants};
