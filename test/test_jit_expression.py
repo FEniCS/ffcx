@@ -59,6 +59,8 @@ def test_matvec(compile_args):
     # Coefficient storage XYXYXY
     w = np.array(f_mat.T.flatten(), dtype=np_type)
     c = np.array([0.5], dtype=np_type)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     # Coords storage XYXYXY
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
@@ -66,7 +68,10 @@ def test_matvec(compile_args):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data))
+        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast('int *', entity_index.ctypes.data),
+        ffi.cast('uint8_t *', quad_perm.ctypes.data),
+        ffi.cast('uint32_t', 0))
 
     # Check the computation against correct NumPy value
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
@@ -113,6 +118,8 @@ def test_rank1(compile_args):
     # Coefficient storage XYXYXY
     w = np.array([0.0], dtype=np_type)
     c = np.array([0.0], dtype=np_type)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     # Coords storage XYXYXY
     coords = np.array(points.flatten(), dtype=np.float64)
@@ -120,7 +127,10 @@ def test_rank1(compile_args):
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data))
+        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast('int *', entity_index.ctypes.data),
+        ffi.cast('uint8_t *', quad_perm.ctypes.data),
+        ffi.cast('uint32_t', 0))
 
     f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
 

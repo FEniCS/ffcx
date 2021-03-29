@@ -340,30 +340,18 @@ extern "C"
   /// so any expression with non-trivial push-forward should
   /// be propely mapped after tabulation.
   ///
-  /// Could represent a linear operators as well, if the expression
+  /// Could represent a linear operators, if the expression
   /// contains Arguments.
   typedef struct ufc_expression
   {
-
     /// Evaluate expression into tensor A with compiled evaluation points
     ///
     /// @param[out] A
     ///         Dimensions: A[num_points][num_components][num_argument_dofs]
-    /// @param[in] w
-    ///         Coefficients attached to the expression.
-    ///         Dimensions: w[coefficient][dof].
-    /// @param[in] c
-    ///         Constants attached to the expression.
-    ///         Dimensions: c[constant][dim].
-    /// @param[in] coordinate_dofs
-    ///         Values of degrees of freedom of coordinate element.
-    ///         Defines the geometry of the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
     ///
-    void (*tabulate_expression)(ufc_scalar_t* restrict A,
-                                const ufc_scalar_t* restrict w,
-                                const ufc_scalar_t* restrict c,
-                                const double* restrict coordinate_dofs);
+    /// @see ufc_tabulate_tensor
+    ///
+    ufc_tabulate_tensor* tabulate_expression;
 
     /// Number of coefficients
     int num_coefficients;
@@ -402,7 +390,7 @@ extern "C"
     int num_arguments;
 
     /// Number of dofs for Arguments
-    /// Dimensions: num_argument_dofs[rank].
+    /// Dimensions: num_argument_dofs[num_arguments].
     const int* num_argument_dofs;
 
   } ufc_expression;

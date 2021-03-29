@@ -20,7 +20,10 @@ factory = """
 void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
                                     const ufc_scalar_t* restrict w,
                                     const ufc_scalar_t* restrict c,
-                                    const double* restrict coordinate_dofs)
+                                    const double* restrict coordinate_dofs,
+                                    const int* restrict unused_local_index,
+                                    const uint8_t* restrict quadrature_permutation,
+                                    const uint32_t cell_permutation)
 {{
 {tabulate_expression}
 }}
