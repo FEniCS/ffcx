@@ -21,7 +21,7 @@ def generator(ir, parameters):
     logger.info(f"--- gdim: {ir.geometric_dimension}")
     logger.info(f"--- tdim: {ir.topological_dimension}")
     logger.info(f"--- name: {ir.name}")
-    logger.info(f"--- scalar dofmap name: {ir.scalar_dofmap_name}")
+    logger.info(f"--- scalar dofmap name: {ir.scalar_dofmap}")
 
     d = {}
 
@@ -33,7 +33,7 @@ def generator(ir, parameters):
     d["topological_dimension"] = ir.topological_dimension
     d["is_affine"] = 1 if ir.is_affine else 0
     d["cell_shape"] = ir.cell_shape
-    d["scalar_dofmap_name"] = ir.scalar_dofmap_name
+    d["scalar_dofmap"] = L.AddressOf(L.Symbol(ir.scalar_dofmap))
 
     d["needs_transformation_data"] = ir.needs_transformation_data
 

@@ -29,7 +29,6 @@ UFC_HEADER_DECL = "typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */
 header = ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
 UFC_HEADER_DECL += header + "\n"
-UFC_HEADER_DECL += "void free(void *); \n"
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
 UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
@@ -79,7 +78,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
                 compiled_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(compiled_module)
 
-                compiled_objects = [getattr(compiled_module.lib, "create_" + name)() for name in object_names]
+                compiled_objects = [getattr(compiled_module.lib, name) for name in object_names]
                 return compiled_objects, compiled_module
 
             logger.info(f"Waiting for {ready_name} to appear.")
@@ -118,8 +117,8 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
-        element_template = "ufc_finite_element * create_{name}(void);\n"
-        dofmap_template = "ufc_dofmap * create_{name}(void);\n"
+        element_template = "extern ufc_finite_element {name};\n"
+        dofmap_template = "extern ufc_dofmap {name};\n"
         for i in range(len(elements)):
             decl += element_template.format(name=names[i * 2])
             decl += dofmap_template.format(name=names[i * 2 + 1])
@@ -163,7 +162,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
-        form_template = "ufc_form * create_{name}(void);\n"
+        form_template = "extern ufc_form {name};\n"
         for name in form_names:
             decl += form_template.format(name=name)
 
@@ -210,7 +209,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL + UFC_EXPRESSION_DECL
 
-        expression_template = "ufc_expression* create_{name}(void);\n"
+        expression_template = "extern ufc_expression {name};\n"
         for name in expr_names:
             decl += expression_template.format(name=name)
 
@@ -250,7 +249,7 @@ def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10,
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL + UFC_DOFMAP_DECL
-        cmap_template = "ufc_coordinate_mapping * create_{name}(void);\n"
+        cmap_template = "extern ufc_coordinate_mapping {name};\n"
 
         for name in cmap_names:
             decl += cmap_template.format(name=name)
@@ -327,9 +326,7 @@ def _load_objects(cache_dir, module_name, object_names):
     compiled_objects = []
     for name in object_names:
         # Call UFC factory to create object data struct (calls malloc)
-        obj = getattr(compiled_module.lib, "create_" + name)()
-
-        # Set garbage collector to use C free()
-        compiled_objects.append(compiled_module.ffi.gc(obj, compiled_module.lib.free))
+        obj = getattr(compiled_module.lib, name)
+        compiled_objects.append(obj)
 
     return compiled_objects, compiled_module

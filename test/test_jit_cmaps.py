@@ -24,7 +24,7 @@ def test_cmap_triangle(degree, compile_args):
     assert compiled_cmap[0].geometric_dimension == 2
     assert compiled_cmap[0].topological_dimension == 2
 
-    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    num_entity_dofs = compiled_cmap[0].scalar_dofmap.num_entity_dofs
 
     assert num_entity_dofs[0] == 1
     assert num_entity_dofs[2] == 0
@@ -50,7 +50,7 @@ def test_cmap_quads(degree, compile_args):
     assert compiled_cmap[0].geometric_dimension == 2
     assert compiled_cmap[0].topological_dimension == 2
 
-    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    num_entity_dofs = compiled_cmap[0].scalar_dofmap.num_entity_dofs
 
     assert num_entity_dofs[0] == 1
     assert num_entity_dofs[3] == 0
@@ -77,7 +77,7 @@ def test_cmap_hex(degree, compile_args):
     assert compiled_cmap[0].geometric_dimension == 3
     assert compiled_cmap[0].topological_dimension == 3
 
-    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    num_entity_dofs = compiled_cmap[0].scalar_dofmap.num_entity_dofs
 
     assert num_entity_dofs[0] == 1
 
@@ -105,7 +105,7 @@ def test_cmap_tet(degree, compile_args):
     assert compiled_cmap[0].geometric_dimension == 3
     assert compiled_cmap[0].topological_dimension == 3
 
-    num_entity_dofs = compiled_cmap[0].create_scalar_dofmap().num_entity_dofs
+    num_entity_dofs = compiled_cmap[0].scalar_dofmap.num_entity_dofs
 
     assert num_entity_dofs[0] == 1
     assert num_entity_dofs[2] == 0

@@ -4,18 +4,12 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
-ufc_coordinate_mapping* create_{factory_name}(void);
+extern ufc_coordinate_mapping {factory_name};
 
 // Helper used to create coordinate map using name given to the
 // UFL file.
-// This helper is called in user c++ code.
-//
-ufc_coordinate_mapping* create_coordinate_map_{prefix}(void);
+extern ufc_coordinate_mapping* coordinate_mapping_{prefix};
 """
-
-# declaration = """
-# ufc_coordinate_mapping* create_{factory_name}(void);
-# """
 
 factory = """
 // Code for coordinate mapping {factory_name}
@@ -30,28 +24,22 @@ int unpermute_dofs_{factory_name}(int* dof_list, const uint32_t cell_permutation
   {unpermute_dofs}
 }}
 
-ufc_coordinate_mapping* create_{factory_name}(void)
+ufc_coordinate_mapping {factory_name} =
 {{
-  ufc_coordinate_mapping* cmap = (ufc_coordinate_mapping*)malloc(sizeof(*cmap));
-  cmap->signature = {signature};
-  cmap->element_family = {family};
-  cmap->element_degree = {degree};
-  cmap->create = create_{factory_name};
-  cmap->geometric_dimension = {geometric_dimension};
-  cmap->topological_dimension = {topological_dimension};
-  cmap->is_affine = {is_affine};
-  cmap->needs_transformation_data = {needs_transformation_data};
-  cmap->permute_dofs = permute_dofs_{factory_name};
-  cmap->unpermute_dofs = unpermute_dofs_{factory_name};
-  cmap->cell_shape = {cell_shape};
-  cmap->create_scalar_dofmap = create_{scalar_dofmap_name};
-  return cmap;
-}}
+  .signature = {signature},
+  .element_family = {family},
+  .element_degree = {degree},
+  .geometric_dimension = {geometric_dimension},
+  .topological_dimension = {topological_dimension},
+  .is_affine = {is_affine},
+  .needs_transformation_data = {needs_transformation_data},
+  .permute_dofs = permute_dofs_{factory_name},
+  .unpermute_dofs = unpermute_dofs_{factory_name},
+  .cell_shape = {cell_shape},
+  .scalar_dofmap = {scalar_dofmap}
+}};
 
-ufc_coordinate_mapping* create_coordinate_map_{prefix}(void)
-{{
-  return create_{factory_name}();
-}}
+ufc_coordinate_mapping* coordinate_mapping_{prefix} = &{factory_name};
 
 // End of code for coordinate mapping {factory_name}
 """

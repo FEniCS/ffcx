@@ -52,14 +52,13 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
         assert compiled_f.rank == len(f.arguments())
 
     ffi = cffi.FFI()
-    form0 = compiled_forms[0][0]
+    form0 = compiled_forms[0]
 
-    assert form0.num_cell_integrals == 1
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.intc)
-    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert form0.num_integrals(module.lib.cell) == 1
+    ids = form0.integral_ids(module.lib.cell)
     assert ids[0] == -1
 
-    default_integral = form0.create_cell_integral(ids[0])
+    default_integral = form0.integrals(module.lib.cell)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -118,8 +117,8 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_cell_integral(-1)
-    form1 = compiled_forms[1][0].create_cell_integral(-1)
+    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
+    form1 = compiled_forms[1].integrals(module.lib.cell)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -171,7 +170,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_cell_integral(-1)
+    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -214,7 +213,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_cell_integral(-1)
+    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((4, 4), dtype=np_type)
@@ -247,7 +246,7 @@ def test_form_coefficient(compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0][0].create_cell_integral(-1)
+    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
     A = np.zeros((3, 3), dtype=np.float64)
     w = np.array([1.0, 1.0, 1.0], dtype=np.float64)
     c = np.array([], dtype=np.float64)
@@ -285,27 +284,22 @@ def test_subdomains(compile_args):
 
     ffi = cffi.FFI()
 
-    form0 = compiled_forms[0][0]
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.intc)
-    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    form0 = compiled_forms[0]
+    ids = form0.integral_ids(module.lib.cell)
     assert ids[0] == -1 and ids[1] == 2
 
-    form1 = compiled_forms[1][0]
-    ids = np.zeros(form1.num_cell_integrals, dtype=np.intc)
-    form1.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    form1 = compiled_forms[1]
+    ids = form1.integral_ids(module.lib.cell)
     assert ids[0] == -1 and ids[1] == 2
 
-    form2 = compiled_forms[2][0]
-    ids = np.zeros(form2.num_cell_integrals, dtype=np.intc)
-    form2.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    form2 = compiled_forms[2]
+    ids = form2.integral_ids(module.lib.cell)
     assert ids[0] == 1 and ids[1] == 2
 
-    form3 = compiled_forms[3][0]
-    ids = np.zeros(form3.num_cell_integrals, dtype=np.intc)
-    form3.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
-    assert len(ids) == 0
-    ids = np.zeros(form3.num_exterior_facet_integrals, dtype=np.intc)
-    form3.get_exterior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    form3 = compiled_forms[3]
+    assert form3.num_integrals(module.lib.cell) == 0
+
+    ids = form3.integral_ids(module.lib.exterior_facet)
     assert ids[0] == 0 and ids[1] == 210
 
 
@@ -324,15 +318,12 @@ def test_interior_facet_integral(mode, compile_args):
 
     ffi = cffi.FFI()
 
-    form0 = compiled_forms[0][0]
-    ids = np.zeros(form0.num_interior_facet_integrals, dtype=np.intc)
-    form0.get_interior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
-    assert ids[0] == -1
+    form0 = compiled_forms[0]
 
     ffi = cffi.FFI()
     c_type, np_type = float_to_type(mode)
 
-    integral0 = form0.create_interior_facet_integral(-1)
+    integral0 = form0.integrals(module.lib.interior_facet)[0]
     A = np.zeros((6, 6), dtype=np_type)
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np.float64)
@@ -371,8 +362,8 @@ def test_conditional(mode, compile_args):
     compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
-    form0 = compiled_forms[0][0].create_cell_integral(-1)
-    form1 = compiled_forms[1][0].create_cell_integral(-1)
+    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
+    form1 = compiled_forms[1].integrals(module.lib.cell)[0]
 
     ffi = cffi.FFI()
     c_type, np_type = float_to_type(mode)
@@ -423,8 +414,8 @@ def test_custom_quadrature(compile_args):
     compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
-    form = compiled_forms[0][0]
-    default_integral = form.create_cell_integral(-1)
+    form = compiled_forms[0]
+    default_integral = form.integrals(module.lib.cell)[0]
 
     A = np.zeros((6, 6), dtype=np.float64)
     w = np.array([], dtype=np.float64)
@@ -501,14 +492,10 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
-    form0 = compiled_forms[0][0]
+    form0 = compiled_forms[0]
 
-    assert form0.num_cell_integrals == 1
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.intc)
-    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
-    assert ids[0] == -1
-
-    default_integral = form0.create_cell_integral(ids[0])
+    assert form0.num_integrals(module.lib.cell) == 1
+    default_integral = form0.integrals(module.lib.cell)[0]
 
     c_type, np_type = float_to_type(mode)
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
@@ -605,14 +592,11 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
-    form0 = compiled_forms[0][0]
+    form0 = compiled_forms[0]
 
-    assert form0.num_cell_integrals == 1
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.intc)
-    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
-    assert ids[0] == -1
+    assert form0.num_integrals(module.lib.cell) == 1
 
-    default_integral = form0.create_cell_integral(ids[0])
+    default_integral = form0.integrals(module.lib.cell)[0]
 
     c_type, np_type = float_to_type(mode)
     b = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=np_type)

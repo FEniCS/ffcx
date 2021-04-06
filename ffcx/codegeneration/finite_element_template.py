@@ -4,21 +4,15 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_finite_element* create_{factory_name}(void);
+extern ufc_finite_element {factory_name};
 """
 
 factory = """
 // Code for element {factory_name}
 
-int value_dimension_{factory_name}(int i)
-{{
-  {value_dimension}
-}}
-
-int reference_value_dimension_{factory_name}(int i)
-{{
-  {reference_value_dimension}
-}}
+{value_shape_init}
+{reference_value_shape_init}
+{sub_elements_init}
 
 int apply_dof_transformation_{factory_name}(
      double* restrict data, uint32_t cell_permutation, int dim)
@@ -44,46 +38,35 @@ int apply_inverse_transpose_dof_transformation_to_scalar_{factory_name}(
   {apply_inverse_transpose_dof_transformation_to_scalar}
 }}
 
-{sub_element_declaration}
-ufc_finite_element* create_sub_element_{factory_name}(int i)
+ufc_finite_element {factory_name} = 
 {{
-  {create_sub_element}
-}}
+  .signature = {signature},
+  .cell_shape = {cell_shape},
+  .topological_dimension = {topological_dimension},
+  .geometric_dimension = {geometric_dimension},
+  .space_dimension = {space_dimension},
+  .value_rank = {value_rank},
+  .value_shape = {value_shape},
+  .value_size = {value_size},
+  .reference_value_rank = {reference_value_rank},
+  .reference_value_shape = {reference_value_shape},
+  .reference_value_size = {reference_value_size},
+  .degree = {degree},
+  .family = {family},
+  .block_size = {block_size},
 
-ufc_finite_element* create_{factory_name}(void)
-{{
-  ufc_finite_element* element = (ufc_finite_element*)malloc(sizeof(*element));
+  .needs_transformation_data = {needs_transformation_data},
+  .interpolation_is_identity = {interpolation_is_identity},
 
-  element->signature = {signature};
-  element->cell_shape = {cell_shape};
-  element->topological_dimension = {topological_dimension};
-  element->geometric_dimension = {geometric_dimension};
-  element->space_dimension = {space_dimension};
-  element->value_rank = {value_rank};
-  element->value_dimension = value_dimension_{factory_name};
-  element->value_size = {value_size};
-  element->reference_value_rank = {reference_value_rank};
-  element->reference_value_dimension = reference_value_dimension_{factory_name};
-  element->reference_value_size = {reference_value_size};
-  element->degree = {degree};
-  element->family = {family};
-  element->block_size = {block_size};
-
-  element->needs_transformation_data = {needs_transformation_data};
-  element->interpolation_is_identity = {interpolation_is_identity};
-
-  element->apply_dof_transformation = apply_dof_transformation_{factory_name};
-  element->apply_dof_transformation_to_scalar = apply_dof_transformation_to_scalar_{factory_name};
-  element->apply_inverse_transpose_dof_transformation
-      = apply_inverse_transpose_dof_transformation_{factory_name};
-  element->apply_inverse_transpose_dof_transformation_to_scalar
-      = apply_inverse_transpose_dof_transformation_to_scalar_{factory_name};
-  element->num_sub_elements = {num_sub_elements};
-  element->create_sub_element = create_sub_element_{factory_name};
-  element->create = create_{factory_name};
-
-  return element;
-}}
+  .apply_dof_transformation = apply_dof_transformation_{factory_name},
+  .apply_dof_transformation_to_scalar = apply_dof_transformation_to_scalar_{factory_name},
+  .apply_inverse_transpose_dof_transformation
+      = apply_inverse_transpose_dof_transformation_{factory_name},
+  .apply_inverse_transpose_dof_transformation_to_scalar
+      = apply_inverse_transpose_dof_transformation_to_scalar_{factory_name},
+  .num_sub_elements = {num_sub_elements},
+  .sub_elements = {sub_elements}
+}};
 
 // End of code for element {factory_name}
 """

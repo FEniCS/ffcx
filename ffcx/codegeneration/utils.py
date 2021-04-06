@@ -10,31 +10,6 @@ import numpy
 index_type = "int"
 
 
-def generate_return_new(L, classname):
-    return L.Return(L.Call("create_" + classname))
-
-
-def generate_return_new_switch(L, i, classnames, args=None):
-
-    if isinstance(i, str):
-        i = L.Symbol(i)
-
-    def create(classname):
-        return L.Call("create_" + classname)
-
-    default = L.Return(L.Null())
-    if classnames:
-        cases = []
-        if args is None:
-            args = list(range(len(classnames)))
-        for j, classname in zip(args, classnames):
-            if classname:
-                cases.append((j, L.Return(create(classname))))
-        return L.Switch(i, cases, default=default)
-    else:
-        return default
-
-
 def generate_return_literal_switch(L,
                                    i,
                                    values,
