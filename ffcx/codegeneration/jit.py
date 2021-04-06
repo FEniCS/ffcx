@@ -325,7 +325,6 @@ def _load_objects(cache_dir, module_name, object_names):
 
     compiled_objects = []
     for name in object_names:
-        # Call UFC factory to create object data struct (calls malloc)
         obj = getattr(compiled_module.lib, name)
         compiled_objects.append(obj)
 
