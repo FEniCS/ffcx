@@ -1341,7 +1341,7 @@ class ArrayDecl(CStatement):
                 formatter = format_int
             elif self.values.dtype == numpy.bool_:
                 def format_bool(x, precision=None):
-                    return "true" if x == True else "false"
+                    return "true" if x is True else "false"
                 formatter = format_bool
             else:
                 formatter = format_value

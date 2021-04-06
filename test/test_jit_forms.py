@@ -282,8 +282,6 @@ def test_subdomains(compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    ffi = cffi.FFI()
-
     form0 = compiled_forms[0]
     ids = form0.integral_ids(module.lib.cell)
     assert ids[0] == -1 and ids[1] == 2

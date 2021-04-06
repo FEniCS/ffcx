@@ -38,7 +38,7 @@ int apply_inverse_transpose_dof_transformation_to_scalar_{factory_name}(
   {apply_inverse_transpose_dof_transformation_to_scalar}
 }}
 
-ufc_finite_element {factory_name} = 
+ufc_finite_element {factory_name} =
 {{
   .signature = {signature},
   .cell_shape = {cell_shape},

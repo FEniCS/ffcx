@@ -571,8 +571,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     ufc_integral_types = ("cell", "exterior_facet", "interior_facet")
     for integral_type in ufc_integral_types:
         subdomain_ids, classnames = _create_foo_integral(form_id, integral_type, form_data)
-        ir[f"classnames"][integral_type] = classnames
-        ir[f"subdomain_ids"][integral_type] = subdomain_ids
+        ir["classnames"][integral_type] = classnames
+        ir["subdomain_ids"][integral_type] = subdomain_ids
 
     return ir_form(**ir)
 

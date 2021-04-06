@@ -78,7 +78,8 @@ def generator(ir, parameters):
 
     if len(ir.sub_dofmaps) > 0:
         d["sub_dofmaps_initialization"] = L.ArrayDecl(
-            "ufc_dofmap*", f"sub_dofmaps_{ir.name}", values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.sub_dofmaps], sizes=len(ir.sub_dofmaps))
+            "ufc_dofmap*", f"sub_dofmaps_{ir.name}",
+            values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.sub_dofmaps], sizes=len(ir.sub_dofmaps))
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""

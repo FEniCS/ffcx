@@ -47,10 +47,6 @@ def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix="
     return code, combinations
 
 
-def reference_value_dimension(L, reference_value_shape):
-    return generate_return_int_switch(L, "i", reference_value_shape, 1)
-
-
 def apply_dof_transformation(L, ir, parameters, inverse=False, transpose=False, dtype="double"):
     """Write function that applies the DOF transformations to some data."""
     data = L.Symbol("data")
@@ -104,7 +100,8 @@ def generator(ir, parameters):
     if len(ir.value_shape) > 0:
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
         d["reference_value_shape_init"] = L.ArrayDecl(
-            "int", f"reference_value_shape_{ir.name}", values=ir.reference_value_shape, sizes=len(ir.reference_value_shape))
+            "int", f"reference_value_shape_{ir.name}",
+            values=ir.reference_value_shape, sizes=len(ir.reference_value_shape))
     else:
         d["reference_value_shape"] = "NULL"
         d["reference_value_shape_init"] = ""
@@ -121,7 +118,8 @@ def generator(ir, parameters):
     if len(ir.sub_elements) > 0:
         d["sub_elements"] = f"sub_elements_{ir.name}"
         d["sub_elements_init"] = L.ArrayDecl(
-            "ufc_finite_element*", f"sub_elements_{ir.name}", values=[L.AddressOf(L.Symbol(el)) for el in ir.sub_elements], sizes=len(ir.sub_elements))
+            "ufc_finite_element*", f"sub_elements_{ir.name}",
+            values=[L.AddressOf(L.Symbol(el)) for el in ir.sub_elements], sizes=len(ir.sub_elements))
     else:
         d["sub_elements"] = "NULL"
         d["sub_elements_init"] = ""

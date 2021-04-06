@@ -58,7 +58,8 @@ def generator(ir, parameters):
     L = backend.language
     if len(ir.enabled_coefficients) > 0:
         code["enabled_coefficients_init"] = L.ArrayDecl(
-            "bool", f"enabled_coefficients_{ir.name}", values=ir.enabled_coefficients, sizes=len(ir.enabled_coefficients))
+            "bool", f"enabled_coefficients_{ir.name}",
+            values=ir.enabled_coefficients, sizes=len(ir.enabled_coefficients))
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""

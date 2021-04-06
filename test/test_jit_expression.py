@@ -78,7 +78,8 @@ def test_matvec(compile_args):
     assert np.allclose(points, points_kernel)
 
     # Check the value shape attached to the expression
-    value_shape = np.frombuffer(ffi.buffer(expression.value_shape, expression.num_components * ffi.sizeof("int")), np.intc)
+    value_shape = np.frombuffer(ffi.buffer(expression.value_shape,
+                                           expression.num_components * ffi.sizeof("int")), np.intc)
     assert np.allclose(expr.ufl_shape, value_shape)
 
 

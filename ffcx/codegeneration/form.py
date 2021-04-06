@@ -70,7 +70,8 @@ def generator(ir, parameters):
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
         d["finite_elements_init"] = L.ArrayDecl("ufc_finite_element*", f"finite_elements_{ir.name}", values=[
-                                                L.AddressOf(L.Symbol(el)) for el in ir.finite_elements], sizes=len(ir.finite_elements))
+                                                L.AddressOf(L.Symbol(el)) for el in ir.finite_elements],
+                                                sizes=len(ir.finite_elements))
     else:
         d["finite_elements"] = L.Null()
         d["finite_elements_init"] = ""
@@ -91,7 +92,8 @@ def generator(ir, parameters):
         if len(ir.classnames[itg_type]) > 0:
             code += [L.ArrayDecl(
                 "static ufc_integral*", f"integrals_{itg_type}_{ir.name}",
-                values=[L.AddressOf(L.Symbol(itg)) for itg in ir.classnames[itg_type]], sizes=len(ir.classnames[itg_type]))]
+                values=[L.AddressOf(L.Symbol(itg)) for itg in ir.classnames[itg_type]],
+                sizes=len(ir.classnames[itg_type]))]
             cases.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}"))))
 
             code_ids += [L.ArrayDecl(
