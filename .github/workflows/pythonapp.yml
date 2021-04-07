@@ -2,7 +2,7 @@
 # with a single version of Python For more information see:
 # https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: FFCX CI
+name: FFCx CI
 
 on: [push, pull_request]
 
@@ -11,8 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: [3.7, 3.8]
+        os: [ubuntu-latest]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
       - uses: actions/checkout@v2
@@ -20,49 +20,69 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Get Basix and install
+        uses: actions/checkout@v2
+        with:
+          path: ./basix
+          repository: FEniCS/basix
+          ref: main
+
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y graphviz libgraphviz-dev pkg-config libeigen3-dev
+          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libeigen3-dev
+
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
-        run: brew install graphviz pkg-config eigen
+        run: brew install graphviz ninja pkg-config eigen
+
       - name: Install dependencies (Python)
         run: |
           pip install --upgrade pip
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
+          cmake --build build-dir
+          sudo cmake --install build-dir
+          pip install ./basix/python
           pip install pygraphviz
-          pip install git+https://github.com/FEniCS/basix.git --user
           pip install git+https://github.com/FEniCS/ufl.git --user
+
       - name: Lint with flake8
         run: |
           pip install flake8
           flake8 --statistics ffcx/ test/
+
       - name: Check documentation style
         run: |
           pip install pydocstyle
           pydocstyle .
+
       - name: Install ffcx
         run: |
           pip install .
+
       - name: Run units tests
         run: |
           pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: |
           coveralls
+
       - name: Upload pytest test results
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@main
         with:
           name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
         # Use always() to always run this step to publish test results
         # when there are test failures
         if: always()
+
       - name: Runs demos
         run: |
           python${{ matrix.python-version }} -m pytest demo/test_demos.py
@@ -72,6 +92,7 @@ jobs:
           pip install sphinx sphinx_rtd_theme
           cd doc
           make html
+
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v2
         with:
@@ -86,14 +107,14 @@ jobs:
           path: "docs"
           ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
       - name: Push documentation to repository FEniCS/docs
-        if: ${{ github.repository == 'FEniCS/ffcx' && github.ref == 'refs/heads/master' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         run: |
           cd docs
           git config --global user.email "fenics@github.com"
           git config --global user.name "FEniCS GitHub Actions"
-          git rm -r ffcx/master/*
-          mkdir -p ffcx/master
-          cp -r ../doc/build/html/* ffcx/master
+          git rm -r ffcx/main/*
+          mkdir -p ffcx/main
+          cp -r ../doc/build/html/* ffcx/main
           git add --all
           git commit --allow-empty -m "Python FEniCS/ffcx@${{ github.sha }}"
           git push

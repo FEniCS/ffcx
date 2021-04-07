@@ -14,7 +14,12 @@ basix_cells = {
 # This dictionary can be used to map ufl element names to basix element names.
 # Currently all the names agree but this will not necessarily remian true.
 ufl_to_basix_names = {
-    "DQ": "Discontinuous Lagrange"
+    "Q": "Lagrange",
+    "DQ": "Discontinuous Lagrange",
+    "RTCE": "Nedelec 1st kind H(curl)",
+    "NCE": "Nedelec 1st kind H(curl)",
+    "RTCF": "Raviart-Thomas",
+    "NCF": "Raviart-Thomas",
 }
 
 
@@ -70,7 +75,7 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def base_permutations(self):
+    def base_transformations(self):
         raise NotImplementedError
 
     @property
@@ -121,14 +126,6 @@ class BaseElement:
     def reference_geometry(self):
         raise NotImplementedError
 
-    @property
-    def dof_mappings(self):
-        raise NotImplementedError
-
-    @property
-    def num_reference_components(self):
-        raise NotImplementedError
-
 
 class BasixElement(BaseElement):
     def __init__(self, element):
@@ -138,8 +135,8 @@ class BasixElement(BaseElement):
         return self.element.tabulate(nderivs, points)
 
     @property
-    def base_permutations(self):
-        return self.element.base_permutations
+    def base_transformations(self):
+        return self.element.base_transformations
 
     @property
     def interpolation_matrix(self):
@@ -189,7 +186,7 @@ class BasixElement(BaseElement):
 
     @property
     def family_name(self):
-        return self.element.family_name
+        return basix.family_to_str(self.element.family)
 
     @property
     def reference_topology(self):
@@ -198,14 +195,6 @@ class BasixElement(BaseElement):
     @property
     def reference_geometry(self):
         return basix.geometry(self.element.cell_type)
-
-    @property
-    def dof_mappings(self):
-        return [self.element.mapping_name for i in range(self.dim)]
-
-    @property
-    def num_reference_components(self):
-        return {self.element.mapping_name: self.value_size}
 
 
 class MixedElement(BaseElement):
@@ -227,24 +216,24 @@ class MixedElement(BaseElement):
         return tables
 
     @property
-    def base_permutations(self):
+    def base_transformations(self):
         for e in self.sub_elements[1:]:
-            assert len(e.base_permutations) == len(self.sub_elements[0].base_permutations)
-        perms = [[] for i in self.sub_elements[0].base_permutations]
+            assert len(e.base_transformations) == len(self.sub_elements[0].base_transformations)
+        transformations = [[] for i in self.sub_elements[0].base_transformations]
         for e in self.sub_elements:
-            for i, b in enumerate(e.base_permutations):
-                perms[i].append(b)
+            for i, b in enumerate(e.base_transformations):
+                transformations[i].append(b)
 
         output = []
-        for p in perms:
-            new_perm = numpy.zeros((sum(i.shape[0] for i in p), sum(i.shape[1] for i in p)))
+        for p in transformations:
+            new_transformation = numpy.zeros((sum(i.shape[0] for i in p), sum(i.shape[1] for i in p)))
             row_start = 0
             col_start = 0
             for i in p:
-                new_perm[row_start: row_start + i.shape[0], col_start: col_start + i.shape[1]] = i
+                new_transformation[row_start: row_start + i.shape[0], col_start: col_start + i.shape[1]] = i
                 row_start += i.shape[0]
                 col_start += i.shape[1]
-            output.append(new_perm)
+            output.append(new_transformation)
         return output
 
     @property
@@ -319,24 +308,6 @@ class MixedElement(BaseElement):
     def reference_geometry(self):
         return self.sub_elements[0].reference_geometry
 
-    @property
-    def dof_mappings(self):
-        out = []
-        for e in self.sub_elements:
-            out += e.dof_mappings
-        return out
-
-    @property
-    def num_reference_components(self):
-        out = {}
-        for e in self.sub_elements:
-            for i, j in e.num_reference_components.items():
-                if i in out:
-                    assert out[i] == j
-                else:
-                    out[i] = j
-        return out
-
 
 class BlockedElement(BaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
@@ -362,15 +333,16 @@ class BlockedElement(BaseElement):
         return output
 
     @property
-    def base_permutations(self):
+    def base_transformations(self):
         assert len(self.block_shape) == 1  # TODO: block shape
 
         output = []
-        for perm in self.sub_element.base_permutations:
-            new_perm = numpy.zeros((perm.shape[0] * self.block_size, perm.shape[1] * self.block_size))
+        for transformation in self.sub_element.base_transformations:
+            new_transformation = numpy.zeros((transformation.shape[0] * self.block_size,
+                                              transformation.shape[1] * self.block_size))
             for i in range(self.block_size):
-                new_perm[i::self.block_size, i::self.block_size] = perm
-            output.append(new_perm)
+                new_transformation[i::self.block_size, i::self.block_size] = transformation
+            output.append(new_transformation)
         return output
 
     @property

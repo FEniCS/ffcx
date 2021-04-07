@@ -35,7 +35,7 @@ valid_ttypes = set(("quadrature", )) | set(
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
     ["name", "values", "dofrange", "dofmap", "original_dim", "ttype", "is_piecewise", "is_uniform",
-     "is_permuted", "dof_base_permutations", "needs_permutation_data"])
+     "is_permuted", "dof_base_transformations", "needs_transformation_data"])
 
 
 # TODO: Get restriction postfix from somewhere central
@@ -214,7 +214,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                 raise RuntimeError(
                     "Cannot tabulate tensor valued element with rank > 2")
     else:
-
         # Vector-valued or mixed element
         sub_dims = [0] + [e.dim for e in basix_element.sub_elements]
         sub_cmps = [0] + [e.value_size for e in basix_element.sub_elements]
@@ -261,6 +260,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             print(tbl)
 
             tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+
             padded_tbl[slice(*ir), slice(*cr)] = tab
 
             component_tables.append(padded_tbl[:, flat_component, :])
@@ -631,7 +631,7 @@ def is_ones_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
-    num_perms, num_entities, num_points, num_dofs = table.shape
+    num_transformations, num_entities, num_points, num_dofs = table.shape
     Id = numpy.eye(num_points)
     return (num_points == num_dofs and all(
         numpy.allclose(table[0, i, :, :], Id, rtol=rtol, atol=atol) for i in range(num_entities)))
@@ -652,7 +652,7 @@ def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
-    num_perms, num_entities, num_points, num_dofs = table.shape
+    num_transformations, num_entities, num_points, num_dofs = table.shape
     if is_zeros_table(table, rtol=rtol, atol=atol):
         # Table is empty or all values are 0.0
         ttype = "zeros"
@@ -769,7 +769,7 @@ def build_optimized_tables(quadrature_rule,
         unique_table_ttypes[ename] = unique_table_ttypes[uname]
         del unique_table_ttypes[uname]
 
-    needs_permutation_data = False
+    needs_transformation_data = False
     # Build mapping from modified terminal to unique table with metadata
     # { mt: (unique name,
     #        (table dof range begin, table dof range end),
@@ -783,7 +783,7 @@ def build_optimized_tables(quadrature_rule,
         original_dim = table_original_num_dofs[name]
         is_permuted = table_permuted[name]
         if is_permuted:
-            needs_permutation_data = True
+            needs_transformation_data = True
 
         # Map name -> uname
         uname = table_unames[name]
@@ -803,20 +803,20 @@ def build_optimized_tables(quadrature_rule,
             dofrange = (b + offset, e + offset)
             dofmap = tuple(i + offset for i in dofmap)
 
-        base_perms = [
+        base_transformations = [
             [[p[i - offset][j - offset] for j in dofmap] for i in dofmap]
-            for p in create_element(table_origins[name][0]).base_permutations]
+            for p in create_element(table_origins[name][0]).base_transformations]
 
-        needs_permutation_data = False
-        for p in base_perms:
+        needs_transformation_data = False
+        for p in base_transformations:
             if not numpy.allclose(p, numpy.identity(len(p))):
-                needs_permutation_data = True
+                needs_transformation_data = True
 
         # Store reference to unique table for this mt
         mt_unique_table_reference[mt] = unique_table_reference_t(
             ename, unique_tables[ename], dofrange, dofmap, original_dim, ttype,
-            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted, base_perms,
-            needs_permutation_data)
+            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted, base_transformations,
+            needs_transformation_data)
 
     return (unique_tables, unique_table_ttypes, unique_table_num_dofs,
             mt_unique_table_reference)

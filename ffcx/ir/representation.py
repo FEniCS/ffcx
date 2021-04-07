@@ -49,33 +49,33 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'create_sub_element',
-    'entity_dofs', 'base_permutations', 'dof_mappings',
-    'num_reference_components', 'needs_permutation_data', 'interpolation_is_identity'])
+    'entity_dofs', 'base_transformations',
+    'needs_transformation_data', 'interpolation_is_identity'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
-    'tabulate_entity_dofs', 'base_permutations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
+    'tabulate_entity_dofs', 'base_transformations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', [
     'id', 'prefix', 'name', 'signature', 'cell_shape', 'topological_dimension', 'geometric_dimension',
     'compute_physical_coordinates', 'compute_reference_coordinates', 'compute_jacobians',
     'compute_jacobian_determinants', 'compute_jacobian_inverses', 'compute_geometry', 'tables',
     'coordinate_element_degree', 'num_scalar_coordinate_element_dofs', 'coordinate_element_family',
     'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname',
-    'scalar_dofmap_name', 'is_affine', 'needs_permutation_data', 'base_permutations'])
+    'scalar_dofmap_name', 'is_affine', 'needs_transformation_data', 'base_transformations'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
-    'num_facets', 'num_vertices', 'needs_oriented', 'enabled_coefficients', 'element_dimensions',
+    'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
     'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
-    'table_dofmaps', 'table_dof_base_permutations', 'integrand', 'name', 'precision',
-    'table_needs_permutation_data', 'needs_permutation_data'])
+    'table_dofmaps', 'table_dof_base_transformations', 'integrand', 'name', 'precision',
+    'table_needs_transformation_data', 'needs_transformation_data'])
 ir_evaluate_dof = namedtuple('ir_evaluate_dof', [
     'mappings', 'reference_value_size', 'physical_value_size', 'geometric_dimension',
     'topological_dimension', 'dofs', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
-    'table_dofmaps', 'table_dof_base_permutations', 'coefficient_numbering', 'coefficient_offsets',
+    'table_dofmaps', 'table_dof_base_transformations', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
-    'original_coefficient_positions', 'points', 'table_needs_permutation_data', 'needs_permutation_data'])
+    'original_coefficient_positions', 'points', 'table_needs_transformation_data', 'needs_transformation_data'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
 
@@ -179,16 +179,13 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     else:
         ir["interpolation_is_identity"] = 0
 
-    ir["base_permutations"] = basix_element.base_permutations
-    ir["needs_permutation_data"] = 0
-    for p in basix_element.base_permutations:
+    ir["base_transformations"] = basix_element.base_transformations
+    ir["needs_transformation_data"] = 0
+    for p in basix_element.base_transformations:
         if not numpy.allclose(p, numpy.identity(len(p))):
-            ir["needs_permutation_data"] = 1
+            ir["needs_transformation_data"] = 1
 
     ir["entity_dofs"] = basix_element.entity_dof_numbers
-
-    ir["dof_mappings"] = basix_element.dof_mappings
-    ir["num_reference_components"] = basix_element.num_reference_components
 
     return ir_element(**ir)
 
@@ -216,7 +213,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     else:
         ir["block_size"] = 1
 
-    ir["base_permutations"] = basix_element.base_permutations
+    ir["base_transformations"] = basix_element.base_transformations
 
     # Precompute repeatedly used items
     for i in basix_element.entity_dofs:
@@ -325,11 +322,11 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
 
     basix_element = create_element(ufl_coordinate_element)
 
-    ir["needs_permutation_data"] = 0
-    for p in basix_element.base_permutations:
+    ir["needs_transformation_data"] = 0
+    for p in basix_element.base_transformations:
         if not numpy.allclose(p, numpy.identity(len(p))):
-            ir["needs_permutation_data"] = 1
-    ir["base_permutations"] = basix_element.sub_element.base_permutations
+            ir["needs_transformation_data"] = 1
+    ir["base_transformations"] = basix_element.sub_element.base_transformations
 
     # Store tables and other coordinate element data
     ir["tables"] = tables
@@ -383,7 +380,6 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
             "entitytype": entitytype,
             "num_facets": cell.num_facets(),
             "num_vertices": cell.num_vertices(),
-            "needs_oriented": form_needs_oriented_jacobian(form_data),
             "enabled_coefficients": itg_data.enabled_coefficients,
             "cell_shape": cellname
         }
@@ -497,7 +493,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         _offset = 0
         for constant in form_data.original_form.constants():
             original_constant_offsets[constant] = _offset
-            _offset += numpy.product(constant.ufl_shape, dtype=numpy.int)
+            _offset += numpy.product(constant.ufl_shape, dtype=int)
 
         ir["original_constant_offsets"] = original_constant_offsets
 
@@ -658,7 +654,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     _offset = 0
     for constant in ufl.algorithms.analysis.extract_constants(expression):
         original_constant_offsets[constant] = _offset
-        _offset += numpy.product(constant.ufl_shape, dtype=numpy.int)
+        _offset += numpy.product(constant.ufl_shape, dtype=int)
 
     ir["original_constant_offsets"] = original_constant_offsets
 
@@ -703,19 +699,3 @@ def _create_foo_integral(prefix, form_id, integral_type, form_data):
                                                     form_id, itg_data.subdomain_id)]
 
     return subdomain_ids, classnames
-
-
-def element_needs_oriented_jacobian(basix_element):
-    # Check whether this element needs an oriented jacobian (only
-    # contravariant piolas seem to need it)
-    return "contravariant piola" in basix_element.dof_mappings
-
-
-def form_needs_oriented_jacobian(form_data):
-    # Check whether this form needs an oriented jacobian (only forms
-    # involving contravariant piola mappings seem to need it)
-    for ufl_element in form_data.unique_elements:
-        element = create_element(ufl_element)
-        if element_needs_oriented_jacobian(element):
-            return True
-    return False

@@ -7,8 +7,8 @@ FFC-X: The FEniCS Form Compiler
 .. image:: https://readthedocs.org/projects/fenics-ffcx/badge/?version=latest
    :target: https://fenics-ffcx.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
-.. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg?branch=master
-   :target: https://coveralls.io/github/FEniCS/ffcx?branch=master
+.. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg?branch=main
+   :target: https://coveralls.io/github/FEniCS/ffcx?branch=main
 
 FFC-X is a new version of the FEniCS Form Compiler. It is being actively
 developed and is compatible with DOLFIN-X.
@@ -28,7 +28,7 @@ https://www.fenicsproject.org
 Documentation
 =============
 
-Documentation can be viewed at https://docs.fenicsproject.org/ffcx/master
+Documentation can be viewed at https://docs.fenicsproject.org/ffcx/main
 
 
 License
@@ -37,7 +37,7 @@ License
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+  (at your option) any later version. 
 
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of

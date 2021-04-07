@@ -104,21 +104,11 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
-    /// Map the reference values on to the cell
-    /// @param[in] cell_permutations An integer that says how each entity of the
-    ///         cell of dimension < tdim has been permuted relative to a
-    ///         low-to-high ordering of the cell.
-    int (*transform_reference_basis_derivatives)(
-        double* restrict values, int order, int num_points,
-        const double* restrict reference_values, const double* restrict X,
-        const double* restrict J, const double* restrict detJ,
-        const double* restrict K);
-
     /// Apply dof tranformations to some data
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
-    /// @param[in] dim The number of data items for each DOD
+    /// @param[in] dim The number of data items for each DOF
     int (*apply_dof_transformation)(double* data, uint32_t cell_permutation,
                                     int dim);
 
@@ -126,17 +116,34 @@ extern "C"
     /// @param[in] data The data to be transformed
     /// @param[in] cell_permutation An integer encoding the orientation of the
     /// cell's entities
-    /// @param[in] dim The number of data items for each DOD
+    /// @param[in] dim The number of data items for each DOF
     int (*apply_dof_transformation_to_scalar)(ufc_scalar_t* data,
                                               uint32_t cell_permutation,
                                               int dim);
 
+    /// Apply inverse transpose dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOF
+    int (*apply_inverse_transpose_dof_transformation)(double* data,
+                                                      uint32_t cell_permutation,
+                                                      int dim);
+
+    /// Apply inverse transpose dof tranformations to some data
+    /// @param[in] data The data to be transformed
+    /// @param[in] cell_permutation An integer encoding the orientation of the
+    /// cell's entities
+    /// @param[in] dim The number of data items for each DOF
+    int (*apply_inverse_transpose_dof_transformation_to_scalar)(
+        ufc_scalar_t* data, uint32_t cell_permutation, int dim);
+
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
-    /// Indicates whether permutation data needs to be passed into various
+    /// Indicates whether transformation data needs to be passed into various
     /// functions
-    bool needs_permutation_data;
+    bool needs_transformation_data;
 
     /// If true, the interpolation matrix is the identity
     /// Interpolation matrix maps point-wise values at set of points into values
@@ -221,18 +228,18 @@ extern "C"
     /// Boolean flag for affine
     int is_affine;
 
-    /// Indicates whether permutation data needs to be passed into various
+    /// Indicates whether transformation data needs to be passed into various
     /// functions
-    bool needs_permutation_data;
+    bool needs_transformation_data;
 
     /// Permutes a list of DOF numbers
-    /// As a coordinate mapping is always Lagrange or Q, the DOF permutation
+    /// As a coordinate mapping is always Lagrange or Q, the DOF transformation
     /// will always be a rearrangement of DOF points, so this is valid in this
     /// case.
     int (*permute_dofs)(int* dof_list, uint32_t cell_permutation);
 
     /// Reverses a permutation of a list of DOF numbers
-    /// As a coordinate mapping is always Lagrange or Q, the DOF permutation
+    /// As a coordinate mapping is always Lagrange or Q, the DOF transformation
     /// will always be a rearrangement of DOF points, so this is valid in this
     /// case.
     int (*unpermute_dofs)(int* dof_list, uint32_t cell_permutation);
@@ -315,14 +322,14 @@ extern "C"
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor* tabulate_tensor;
-    bool needs_permutation_data;
+    bool needs_transformation_data;
   } ufc_integral;
 
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor_custom* tabulate_tensor;
-    bool needs_permutation_data;
+    bool needs_transformation_data;
   } ufc_custom_integral;
 
   typedef struct ufc_expression
