@@ -6,9 +6,6 @@
 
 import pytest
 
-import ffcx
-import ufl
-
 
 @pytest.fixture(scope="module")
 def compile_args():
