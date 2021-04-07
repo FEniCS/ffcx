@@ -418,7 +418,8 @@ class BlockedElement(BaseElement):
 
 class QuadratureElement(BaseElement):
     def __init__(self, ufl_element):
-        self._points, _ = create_quadrature(ufl_element.cell().cellname(), ufl_element.degree(), "default")
+        self._points, _ = create_quadrature(ufl_element.cell().cellname(),
+                                            ufl_element.degree(), ufl_element.quadrature_scheme())
         self._ufl_element = ufl_element
 
     def tabulate(self, nderivs, points):
