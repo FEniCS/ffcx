@@ -37,7 +37,7 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: main
+          ref: mscroggs/dof-transformations
 
       - name: Install Basix
         run: |

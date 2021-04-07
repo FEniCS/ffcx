@@ -133,7 +133,7 @@ class BasixElement(BasixBaseElement):
 
     @property
     def base_transformations(self):
-        return self.element.base_transformations
+        return self.element.base_transformations()
 
     @property
     def interpolation_matrix(self):
