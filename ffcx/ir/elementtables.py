@@ -256,8 +256,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             # Prepare a padded table with zeros
             padded_shape = (basix_element.dim,) + basix_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
-            print(ufl_element.family(), index)
-            print(tbl)
 
             tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
 

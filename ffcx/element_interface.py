@@ -431,7 +431,7 @@ class QuadratureElement(BaseElement):
         return tables
 
     @property
-    def base_permutations(self):
+    def base_transformations(self):
         perm_count = 0
         for i in range(1, self._ufl_element.cell().topological_dimension()):
             if i == 1:
