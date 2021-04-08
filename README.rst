@@ -18,7 +18,7 @@ high-level description of the form in the Unified Form Language (UFL),
 it generates efficient low-level C code that can be used to assemble the
 corresponding discrete operator (tensor). In particular, a bilinear form
 may be assembled into a matrix and a linear form may be assembled into a
-vector.  FFCX may be used either from the command line (by invoking the
+vector.  FFC-X may be used either from the command line (by invoking the
 ``ffcx`` command) or as a Python module (``import ffcx``).
 
 FFC-X is part of the FEniCS Project. For more information, visit
