@@ -60,7 +60,7 @@ ir_coordinate_map = namedtuple('ir_coordinate_map', [
     'compute_jacobian_determinants', 'compute_jacobian_inverses', 'compute_geometry', 'tables',
     'coordinate_element_degree', 'num_scalar_coordinate_element_dofs', 'coordinate_element_family',
     'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname',
-    'scalar_dofmap_name', 'is_affine', 'needs_transformation_data', 'base_transformations'])
+    'scalar_dofmap_name', 'needs_transformation_data', 'base_transformations'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
@@ -333,7 +333,6 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
     ir["coordinate_element_family"] = basix_element.family_name
     ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
-    ir["is_affine"] = ir["coordinate_element_degree"] == 1 and cellname in ("interval", "triangle", "tetrahedron")
 
     # Get classnames for coordinate element
     ir["coordinate_finite_element_classname"] = finite_element_names[ufl_coordinate_element]

@@ -20,7 +20,6 @@ def test_cmap_triangle(degree, compile_args):
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args, cache_dir=".")
 
-    assert compiled_cmap[0].is_affine == (1 if (degree == 1) else 0)
     assert compiled_cmap[0].geometric_dimension == 2
     assert compiled_cmap[0].topological_dimension == 2
 
@@ -46,7 +45,6 @@ def test_cmap_quads(degree, compile_args):
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args)
 
-    assert compiled_cmap[0].is_affine == 0
     assert compiled_cmap[0].geometric_dimension == 2
     assert compiled_cmap[0].topological_dimension == 2
 
@@ -73,7 +71,6 @@ def test_cmap_hex(degree, compile_args):
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args)
 
-    assert compiled_cmap[0].is_affine == 0
     assert compiled_cmap[0].geometric_dimension == 3
     assert compiled_cmap[0].topological_dimension == 3
 
@@ -101,7 +98,6 @@ def test_cmap_tet(degree, compile_args):
     compiled_cmap, module = ffcx.codegeneration.jit.compile_coordinate_maps(
         [mesh], cffi_extra_compile_args=compile_args)
 
-    assert compiled_cmap[0].is_affine == (1 if (degree == 1) else 0)
     assert compiled_cmap[0].geometric_dimension == 3
     assert compiled_cmap[0].topological_dimension == 3
 
