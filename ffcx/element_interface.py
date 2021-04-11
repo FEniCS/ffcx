@@ -23,23 +23,26 @@ ufl_to_basix_names = {
 }
 
 
-def create_basix_element(ufl_element):
+def create_element(ufl_element):
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
 
     if isinstance(ufl_element, ufl.VectorElement):
-        return BlockedElement(create_basix_element(ufl_element.sub_elements()[0]),
+        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements())
     if isinstance(ufl_element, ufl.TensorElement):
-        return BlockedElement(create_basix_element(ufl_element.sub_elements()[0]),
+        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements(), None)  # TODO: block shape
 
     if isinstance(ufl_element, ufl.MixedElement):
-        return MixedElement([create_basix_element(e) for e in ufl_element.sub_elements()])
+        return MixedElement([create_element(e) for e in ufl_element.sub_elements()])
 
     if ufl_element.family() in ufl_to_basix_names:
         return BasixElement(basix.create_element(
             ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
+
+    if ufl_element.family() == "Quadrature":
+        return QuadratureElement(ufl_element)
 
     return BasixElement(basix.create_element(
         ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
@@ -67,7 +70,7 @@ def map_facet_points(points, facet, cellname):
             for p in points]
 
 
-class BasixBaseElement:
+class BaseElement:
     def tabulate(self, nderivs, points):
         raise NotImplementedError
 
@@ -124,7 +127,7 @@ class BasixBaseElement:
         raise NotImplementedError
 
 
-class BasixElement(BasixBaseElement):
+class BasixElement(BaseElement):
     def __init__(self, element):
         self.element = element
 
@@ -194,7 +197,7 @@ class BasixElement(BasixBaseElement):
         return basix.geometry(self.element.cell_type)
 
 
-class MixedElement(BasixBaseElement):
+class MixedElement(BaseElement):
     def __init__(self, sub_elements):
         assert len(sub_elements) > 0
         self.sub_elements = sub_elements
@@ -306,7 +309,7 @@ class MixedElement(BasixBaseElement):
         return self.sub_elements[0].reference_geometry
 
 
-class BlockedElement(BasixBaseElement):
+class BlockedElement(BaseElement):
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
         self.sub_element = sub_element
@@ -403,3 +406,109 @@ class BlockedElement(BasixBaseElement):
     @property
     def reference_geometry(self):
         return self.sub_element.reference_geometry
+
+    @property
+    def dof_mappings(self):
+        return self.sub_element.dof_mappings * self.block_size
+
+    @property
+    def num_reference_components(self):
+        return self.sub_element.num_reference_components
+
+
+class QuadratureElement(BaseElement):
+    def __init__(self, ufl_element):
+        self._points, _ = create_quadrature(ufl_element.cell().cellname(),
+                                            ufl_element.degree(), ufl_element.quadrature_scheme())
+        self._ufl_element = ufl_element
+
+    def tabulate(self, nderivs, points):
+        if nderivs > 0:
+            raise ValueError("Cannot take derivatives of Quadrature element.")
+
+        if points.shape != self.points.shape:
+            raise ValueError("Mismatch of tabulation points and element points.")
+        tables = [numpy.eye(points.shape[0], points.shape[0])]
+        return tables
+
+    @property
+    def base_transformations(self):
+        perm_count = 0
+        for i in range(1, self._ufl_element.cell().topological_dimension()):
+            if i == 1:
+                perm_count += self._ufl_element.cell().num_edges()
+            if i == 2:
+                perm_count += self._ufl_element.cell().num_facets() * 2
+
+        return [numpy.identity(self.dim) for i in range(perm_count)]
+
+    @property
+    def interpolation_matrix(self):
+        return numpy.eye(self.points.shape[0], self.points.shape[1])
+
+    @property
+    def points(self):
+        return self._points
+
+    @property
+    def dim(self):
+        return self.points.shape[0]
+
+    @property
+    def value_size(self):
+        return 1
+
+    @property
+    def value_shape(self):
+        return [1]
+
+    @property
+    def entity_dofs(self):
+        dofs = []
+        tdim = self._ufl_element.cell().topological_dimension()
+
+        if tdim >= 1:
+            dofs += [[0] * self._ufl_element.cell().num_vertices()]
+
+        if tdim >= 2:
+            dofs += [[0] * self._ufl_element.cell().num_edges()]
+
+        if tdim >= 3:
+            dofs += [[0] * self._ufl_element.cell().num_facets()]
+
+        dofs += [[self.dim]]
+        return dofs
+
+    @property
+    def entity_dof_numbers(self):
+        # TODO: move this to basix, then remove this wrapper class
+        start_dof = 0
+        entity_dofs = []
+        for i in self.entity_dofs:
+            dofs_list = []
+            for j in i:
+                dofs_list.append([start_dof + k for k in range(j)])
+                start_dof += j
+            entity_dofs.append(dofs_list)
+        return entity_dofs
+
+    @property
+    def coeffs(self):
+        raise NotImplementedError
+
+    @property
+    def num_global_support_dofs(self):
+        return 0
+
+    @property
+    def family_name(self):
+        return self._ufl_element.family()
+
+    @property
+    def dof_mappings(self):
+        assert self._ufl_element.mapping() == "identity"
+        return ["affine"] * self.dim
+
+    @property
+    def num_reference_components(self):
+        return {"affine": self.value_size}

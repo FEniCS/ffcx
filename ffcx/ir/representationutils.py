@@ -9,7 +9,7 @@ import hashlib
 import logging
 
 import numpy
-from ffcx.basix_interface import create_quadrature, reference_cell_vertices, map_facet_points
+from ffcx.element_interface import create_quadrature, reference_cell_vertices, map_facet_points
 
 import ufl
 
