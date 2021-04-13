@@ -220,22 +220,6 @@ extern "C"
     /// Boolean flag for affine
     int is_affine;
 
-    /// Indicates whether transformation data needs to be passed into various
-    /// functions
-    bool needs_transformation_data;
-
-    /// Permutes a list of DOF numbers
-    /// As a coordinate mapping is always Lagrange or Q, the DOF transformation
-    /// will always be a rearrangement of DOF points, so this is valid in this
-    /// case.
-    int (*permute_dofs)(int* dof_list, uint32_t cell_permutation);
-
-    /// Reverses a permutation of a list of DOF numbers
-    /// As a coordinate mapping is always Lagrange or Q, the DOF transformation
-    /// will always be a rearrangement of DOF points, so this is valid in this
-    /// case.
-    int (*unpermute_dofs)(int* dof_list, uint32_t cell_permutation);
-
     /// Return cell shape of the coordinate_mapping
     ufc_shape cell_shape;
 

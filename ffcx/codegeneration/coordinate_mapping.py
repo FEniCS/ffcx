@@ -7,8 +7,6 @@
 import logging
 
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
-from ffcx.codegeneration.utils import apply_transformations_to_data
-import ffcx.codegeneration.C.cnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -35,14 +33,6 @@ def generator(ir, parameters):
     d["cell_shape"] = ir.cell_shape
     d["scalar_dofmap"] = L.AddressOf(L.Symbol(ir.scalar_dofmap))
 
-    d["needs_transformation_data"] = ir.needs_transformation_data
-
-    statements = permute_dofs(L, ir.base_transformations, ir.cell_shape)
-    d["permute_dofs"] = L.StatementList(statements)
-
-    statements = unpermute_dofs(L, ir.base_transformations, ir.cell_shape)
-    d["unpermute_dofs"] = L.StatementList(statements)
-
     d["family"] = f"\"{ir.coordinate_element_family}\""
     d["degree"] = ir.coordinate_element_degree
 
@@ -61,15 +51,3 @@ def generator(ir, parameters):
     declaration = ufc_coordinate_mapping.declaration.format(factory_name=ir.name, prefix=ir.prefix)
 
     return declaration, implementation
-
-
-def permute_dofs(L, base_transformations, cell_shape):
-    data = L.Symbol("dof_list")
-    return apply_transformations_to_data(L, base_transformations, cell_shape, data,
-                                         dtype="int") + [L.Return(0)]
-
-
-def unpermute_dofs(L, base_transformations, cell_shape):
-    data = L.Symbol("dof_list")
-    return apply_transformations_to_data(L, base_transformations, cell_shape, data,
-                                         inverse=True, dtype="int") + [L.Return(0)]

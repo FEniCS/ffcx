@@ -32,9 +32,6 @@ ufc_coordinate_mapping {factory_name} =
   .geometric_dimension = {geometric_dimension},
   .topological_dimension = {topological_dimension},
   .is_affine = {is_affine},
-  .needs_transformation_data = {needs_transformation_data},
-  .permute_dofs = permute_dofs_{factory_name},
-  .unpermute_dofs = unpermute_dofs_{factory_name},
   .cell_shape = {cell_shape},
   .scalar_dofmap = {scalar_dofmap}
 }};
