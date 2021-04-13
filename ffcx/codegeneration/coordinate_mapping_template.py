@@ -14,16 +14,6 @@ extern ufc_coordinate_mapping* coordinate_mapping_{prefix};
 factory = """
 // Code for coordinate mapping {factory_name}
 
-int permute_dofs_{factory_name}(int* dof_list, const uint32_t cell_permutation)
-{{
-  {permute_dofs}
-}}
-
-int unpermute_dofs_{factory_name}(int* dof_list, const uint32_t cell_permutation)
-{{
-  {unpermute_dofs}
-}}
-
 ufc_coordinate_mapping {factory_name} =
 {{
   .signature = {signature},
