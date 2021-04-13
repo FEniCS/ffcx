@@ -112,7 +112,6 @@ def generator(ir, parameters):
 
     # FIXME: Should be handled differently, revise how ufc_function_space is
     # generated
-    i = 0
     for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
         code += [f"static ufc_function_space functionspace_{name} ="]
         code += ["{"]
@@ -121,14 +120,12 @@ def generator(ir, parameters):
         code += [f".coordinate_mapping = &{cmap}"]
         code += ["};"]
 
-    for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
+    for i, (name, (element, dofmap, cmap)) in enumerate(ir.function_spaces.items()):
         condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
         if i == 0:
             code += [L.If(condition, L.Return(L.Symbol(f"&functionspace_{name}")))]
         else:
             code += [L.ElseIf(condition, L.Return(L.Symbol(f"&functionspace_{name}")))]
-
-        i += 1
 
     code += ["return NULL;\n"]
 
