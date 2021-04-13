@@ -7,6 +7,7 @@
 import logging
 
 import ffcx.codegeneration.coordinate_mapping_template as ufc_coordinate_mapping
+import ffcx.codegeneration.C.cnodes as L
 
 logger = logging.getLogger("ffcx")
 
