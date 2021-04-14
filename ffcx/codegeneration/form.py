@@ -146,11 +146,13 @@ class UFCForm:
         function_name = L.Symbol("function_name")
 
         i = 0
-        for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
+        for (name, (element, dofmap, cmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
             body = "ufc_function_space* space = (ufc_function_space*)malloc(sizeof(*space));\n"
             body += f"space->create_element = create_{element};\n"
             body += f"space->create_dofmap = create_{dofmap};\n"
             body += f"space->create_coordinate_mapping = create_{cmap};\n"
+            body += f"space->geometry_family = \"{cmap_family}\";\n"
+            body += f"space->geometry_degree = {cmap_degree};\n"
             body += "return space;"
 
             condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)

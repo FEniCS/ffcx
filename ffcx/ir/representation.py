@@ -22,7 +22,6 @@ import warnings
 from collections import namedtuple
 
 import numpy
-
 import ufl
 from ffcx import naming
 from ffcx.basix_interface import create_basix_element
@@ -539,7 +538,9 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
         name = object_names.get(id(function), str(function))
         el = function.ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
-        fs[name] = (finite_element_names[el], dofmap_names[el], coordinate_mapping_names[cmap])
+        family = cmap.family()
+        degree = cmap.degree()
+        fs[name] = (finite_element_names[el], dofmap_names[el], coordinate_mapping_names[cmap], family, degree )
 
     form_name = object_names.get(id(form_data.original_form), form_id)
 
@@ -574,7 +575,8 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     try:
         cell = expression.ufl_domain().ufl_cell()
     except AttributeError:
-        # This case corresponds to a spatially constant expression without any dependencies
+        # This case corresponds to a spatially constant expression
+        # without any dependencies
         cell = None
 
     # Prepare dimensions of all unique element in expression, including

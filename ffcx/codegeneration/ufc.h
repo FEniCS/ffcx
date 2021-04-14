@@ -147,9 +147,9 @@ extern "C"
 
     /// If true, the interpolation matrix is the identity
     /// Interpolation matrix maps point-wise values at set of points into values
-    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity, then
-    /// the space is defined by a series of point evaluations, and so the interpolation
-    /// points are the DOF coordinates.
+    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity,
+    /// then the space is defined by a series of point evaluations, and so the
+    /// interpolation points are the DOF coordinates.
     bool interpolation_is_identity;
 
     /// Create a new finite element for sub element i (for a mixed
@@ -508,6 +508,13 @@ extern "C"
     // with malloc(), and the caller is reponsible for freeing it by
     // calling free().
     ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
+
+    /// The family of the finite element for the geometry map
+    const char* geometry_family;
+
+    /// The degree of the finite element for the geometry map
+    int geometry_degree;
+
   } ufc_function_space;
 
 #ifdef __cplusplus
