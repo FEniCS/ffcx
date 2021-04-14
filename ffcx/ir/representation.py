@@ -472,7 +472,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     ir = {}
 
     original_expression = (expression[2], expression[1])
-    sig = naming.compute_signature([original_expression], "", parameters)
+    sig = naming.compute_signature([original_expression], "")
     ir["name"] = "expression_{!s}".format(sig)
 
     original_expression = expression[2]
