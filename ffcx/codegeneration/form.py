@@ -106,17 +106,6 @@ class UFCForm:
             code += [L.Return(names)]
         return L.StatementList(code)
 
-    def create_coordinate_mapping(self, L, ir):
-        classnames = ir.create_coordinate_mapping
-        # list of length 1 until we support multiple domains
-        assert len(classnames) == 1
-        return generate_return_new(L, classnames[0])
-
-    def coordinate_mapping_declaration(self, L, ir):
-        classname = ir.create_coordinate_mapping
-        code = f"ufc_coordinate_mapping* create_{classname[0]}(void);\n"
-        return code
-
     def create_finite_element(self, L, ir):
         i = L.Symbol("i")
         classnames = ir.create_finite_element
@@ -146,11 +135,10 @@ class UFCForm:
         function_name = L.Symbol("function_name")
 
         i = 0
-        for (name, (element, dofmap, cmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
+        for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
             body = "ufc_function_space* space = (ufc_function_space*)malloc(sizeof(*space));\n"
             body += f"space->create_element = create_{element};\n"
             body += f"space->create_dofmap = create_{dofmap};\n"
-            body += f"space->create_coordinate_mapping = create_{cmap};\n"
             body += f"space->geometry_family = \"{cmap_family}\";\n"
             body += f"space->geometry_degree = {cmap_degree};\n"
             body += "return space;"
@@ -217,8 +205,6 @@ def generator(ir, parameters):
     d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir)
     d["constant_name_map"] = generator.generate_constant_original_position_to_name_map(L, ir)
 
-    d["create_coordinate_mapping"] = generator.create_coordinate_mapping(L, ir)
-    d["coordinate_mapping_declaration"] = generator.coordinate_mapping_declaration(L, ir)
     d["create_finite_element"] = generator.create_finite_element(L, ir)
     d["finite_element_declaration"] = generator.finite_element_declaration(L, ir)
     d["create_dofmap"] = generator.create_dofmap(L, ir)

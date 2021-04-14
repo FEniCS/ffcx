@@ -10,17 +10,10 @@ import ffcx
 import ufl
 
 
-def compute_signature(ufl_objects, tag, coordinate_mapping=False):
+def compute_signature(ufl_objects, tag):
     """Compute the signature hash.
     Based on the UFL type of the objects and an additional optional
     'tag'.
-
-    Note
-    ----
-    The parameter `coordinate_mapping` is used to force compilation of
-    finite element as a coordinate mapping element. There is no way to
-    find this information just by looking at type of `ufl_object`
-    passed.
 
     """
 
@@ -34,9 +27,6 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
             # When coordinate mapping is represented by a Mesh, just getting
             # its coordinate element
             object_signature += repr(ufl_object.ufl_coordinate_element())
-            kind = "coordinate_mapping"
-        elif coordinate_mapping and isinstance(ufl_object, ufl.FiniteElementBase):
-            object_signature += repr(ufl_object)
             kind = "coordinate_mapping"
         elif isinstance(ufl_object, ufl.FiniteElementBase):
             object_signature += repr(ufl_object)
@@ -101,9 +91,3 @@ def dofmap_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
     return "dofmap_{!s}".format(sig)
-
-
-def coordinate_map_name(ufl_element, prefix):
-    assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], prefix, coordinate_mapping=True)
-    return "coordinate_mapping_{!s}".format(sig)

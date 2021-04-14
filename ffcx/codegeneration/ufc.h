@@ -52,7 +52,6 @@ extern "C"
   } ufc_shape;
 
   /// Forward declarations
-  typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
 
@@ -199,41 +198,6 @@ extern "C"
     /// freeing it by calling free().
     ufc_dofmap* (*create)(void);
   } ufc_dofmap;
-
-  /// A representation of a coordinate mapping parameterized by a local
-  /// finite element basis on each cell
-  typedef struct ufc_coordinate_mapping
-  {
-
-    /// Return coordinate_mapping signature string
-    const char* signature;
-
-    /// The finite element family name for the mapping
-    const char* element_family;
-
-    /// The finite element degree used in the mapping
-    int element_degree;
-
-    /// Create object of the same type. Memory for the new object is
-    /// obtained with malloc(), and the caller is reponsible for
-    /// freeing it by calling free().
-    ufc_coordinate_mapping* (*create)(void);
-
-    /// Return geometric dimension of the coordinate_mapping
-    int geometric_dimension;
-
-    /// Return topological dimension of the coordinate_mapping
-    int topological_dimension;
-
-    /// Return cell shape of the coordinate_mapping
-    ufc_shape cell_shape;
-
-    /// Create dofmap for the underlying scalar element. Memory for
-    /// the new object is obtained with malloc(), and the caller is
-    /// reponsible for freeing it by calling free().
-    ufc_dofmap* (*create_scalar_dofmap)(void);
-
-  } ufc_coordinate_mapping;
 
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
@@ -401,11 +365,6 @@ extern "C"
     /// Return list of names of constants
     const char** (*constant_name_map)(void);
 
-    /// Create a new coordinate mapping. Memory for the new object is
-    /// obtained with malloc(), and the caller is reponsible for
-    /// freeing it by calling free().
-    ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
-
     /// Create a new finite element for the i-th argument function,
     /// where 0 <= i < r+n. Memory for the new object is obtained with
     /// malloc(), and the caller is reponsible for freeing it by
@@ -502,12 +461,6 @@ extern "C"
     // malloc(), and the caller is reponsible for freeing it by
     // calling free().
     ufc_dofmap* (*create_dofmap)(void);
-
-    // Pointer to factory function that creates a new
-    // ufc_coordinate_mapping. Memory for the new object is obtained
-    // with malloc(), and the caller is reponsible for freeing it by
-    // calling free().
-    ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
 
     /// The family of the finite element for the geometry map
     const char* geometry_family;

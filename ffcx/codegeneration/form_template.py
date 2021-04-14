@@ -42,12 +42,6 @@ const char** constant_name_{factory_name}(void)
 {constant_name_map}
 }}
 
-{coordinate_mapping_declaration}
-ufc_coordinate_mapping* create_coordinate_mapping_{factory_name}(void)
-{{
-{create_coordinate_mapping}
-}}
-
 {finite_element_declaration}
 ufc_finite_element* create_finite_element_{factory_name}(int i)
 {{
@@ -123,7 +117,6 @@ ufc_form* create_{factory_name}(void)
   form->coefficient_name_map = coefficient_name_{factory_name};
   form->constant_name_map = constant_name_{factory_name};
 
-  form->create_coordinate_mapping = create_coordinate_mapping_{factory_name};
   form->create_finite_element = create_finite_element_{factory_name};
   form->create_dofmap = create_dofmap_{factory_name};
 
