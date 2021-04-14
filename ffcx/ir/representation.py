@@ -56,11 +56,7 @@ ir_dofmap = namedtuple('ir_dofmap', [
     'tabulate_entity_dofs', 'base_transformations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
 ir_coordinate_map = namedtuple('ir_coordinate_map', [
     'id', 'prefix', 'name', 'signature', 'cell_shape', 'topological_dimension', 'geometric_dimension',
-    'compute_physical_coordinates', 'compute_reference_coordinates', 'compute_jacobians',
-    'compute_jacobian_determinants', 'compute_jacobian_inverses', 'compute_geometry', 'tables',
-    'coordinate_element_degree', 'num_scalar_coordinate_element_dofs', 'coordinate_element_family',
-    'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname',
-    'scalar_dofmap_name', 'needs_transformation_data', 'base_transformations'])
+    'coordinate_element_degree', 'coordinate_element_family', 'scalar_dofmap_name'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
@@ -310,36 +306,17 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = ufl_coordinate_element.value_size()
 
-    ir["compute_physical_coordinates"] = None  # currently unused, corresponds to function name
-    ir["compute_reference_coordinates"] = None  # currently unused, corresponds to function name
-    ir["compute_jacobians"] = None  # currently unused, corresponds to function name
-    ir["compute_jacobian_determinants"] = None  # currently unused, corresponds to function name
-    ir["compute_jacobian_inverses"] = None  # currently unused, corresponds to function name
-    ir["compute_geometry"] = None  # currently unused, corresponds to function name
-
     # NB! The entries below breaks the pattern of using ir keywords == code keywords,
     # which I personally don't find very useful anyway (martinal).
 
     basix_element = create_basix_element(ufl_coordinate_element)
 
-    ir["needs_transformation_data"] = 0
-    for p in basix_element.base_transformations:
-        if not numpy.allclose(p, numpy.identity(len(p))):
-            ir["needs_transformation_data"] = 1
-    ir["base_transformations"] = basix_element.sub_element.base_transformations
-
     # Store tables and other coordinate element data
-    ir["tables"] = tables
     ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
     ir["coordinate_element_family"] = basix_element.family_name
-    ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
-
-    # Get classnames for coordinate element
-    ir["coordinate_finite_element_classname"] = finite_element_names[ufl_coordinate_element]
 
     # Get classnames for finite element and dofmap of scalar subelement
     scalar_element = ufl_coordinate_element.sub_elements()[0]
-    ir["scalar_coordinate_finite_element_classname"] = finite_element_names[scalar_element]
     ir["scalar_dofmap_name"] = dofmap_names[scalar_element]
 
     return ir_coordinate_map(**ir)
