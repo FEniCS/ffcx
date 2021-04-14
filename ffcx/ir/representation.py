@@ -24,7 +24,7 @@ from collections import namedtuple
 import numpy
 import ufl
 from ffcx import naming
-from ffcx.basix_interface import create_basix_element
+from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -130,7 +130,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     logger.info(f"Computing IR for element {ufl_element}")
 
     # Create basix elements
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
@@ -155,7 +155,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
-        basix_element = create_basix_element(ufl_element)
+        basix_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
 
@@ -182,7 +182,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
     # Create basix elements
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -272,7 +272,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         ir["element_dimensions"] = {
-            ufl_element: create_basix_element(ufl_element).dim
+            ufl_element: create_element(ufl_element).dim
             for ufl_element in unique_elements
         }
 
@@ -489,7 +489,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
     ir["element_dimensions"] = {
-        ufl_element: create_basix_element(ufl_element).dim
+        ufl_element: create_element(ufl_element).dim
         for ufl_element in analysis.unique_elements
     }
 

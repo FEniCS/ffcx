@@ -10,7 +10,7 @@ import warnings
 
 import ufl
 from ufl.finiteelement import MixedElement
-from ffcx.basix_interface import create_basix_element
+from ffcx.element_interface import create_element
 
 logger = logging.getLogger("ffcx")
 
@@ -261,7 +261,7 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        basix_scalar_element = create_basix_element(ufl_scalar_element)
+        basix_scalar_element = create_element(ufl_scalar_element)
         vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
         num_scalar_dofs = basix_scalar_element.dim
 
@@ -292,7 +292,7 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        basix_scalar_element = create_basix_element(ufl_scalar_element)
+        basix_scalar_element = create_element(ufl_scalar_element)
         vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
         num_scalar_dofs = basix_scalar_element.dim
 
@@ -334,7 +334,7 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        basix_scalar_element = create_basix_element(ufl_scalar_element)
+        basix_scalar_element = create_element(ufl_scalar_element)
         num_scalar_dofs = basix_scalar_element.dim
 
         # Get edge vertices
