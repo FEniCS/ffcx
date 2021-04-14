@@ -65,6 +65,11 @@ jobs:
       - name: Run units tests
         run: |
           pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
+          python -m pytest test/test_elements.py::TestFunctionValues::test_values[N1curl-tetrahedron-1-reference9]
+
+      - name: Run units tests
+        run: |
+          pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
