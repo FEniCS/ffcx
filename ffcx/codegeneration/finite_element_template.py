@@ -20,30 +20,6 @@ int reference_value_dimension_{factory_name}(int i)
   {reference_value_dimension}
 }}
 
-int apply_dof_transformation_{factory_name}(
-     double* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_dof_transformation}
-}}
-
-int apply_dof_transformation_to_scalar_{factory_name}(
-     ufc_scalar_t* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_dof_transformation_to_scalar}
-}}
-
-int apply_inverse_transpose_dof_transformation_{factory_name}(
-     double* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_inverse_transpose_dof_transformation}
-}}
-
-int apply_inverse_transpose_dof_transformation_to_scalar_{factory_name}(
-     ufc_scalar_t* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_inverse_transpose_dof_transformation_to_scalar}
-}}
-
 {sub_element_declaration}
 ufc_finite_element* create_sub_element_{factory_name}(int i)
 {{
@@ -72,12 +48,6 @@ ufc_finite_element* create_{factory_name}(void)
   element->needs_transformation_data = {needs_transformation_data};
   element->interpolation_is_identity = {interpolation_is_identity};
 
-  element->apply_dof_transformation = apply_dof_transformation_{factory_name};
-  element->apply_dof_transformation_to_scalar = apply_dof_transformation_to_scalar_{factory_name};
-  element->apply_inverse_transpose_dof_transformation
-      = apply_inverse_transpose_dof_transformation_{factory_name};
-  element->apply_inverse_transpose_dof_transformation_to_scalar
-      = apply_inverse_transpose_dof_transformation_to_scalar_{factory_name};
   element->num_sub_elements = {num_sub_elements};
   element->create_sub_element = create_sub_element_{factory_name};
   element->create = create_{factory_name};

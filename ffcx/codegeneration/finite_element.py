@@ -14,8 +14,7 @@ import numpy
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
 from ffcx.codegeneration.utils import (generate_return_int_switch,
-                                       generate_return_new_switch,
-                                       apply_transformations_to_data)
+                                       generate_return_new_switch)
 
 logger = logging.getLogger("ffcx")
 index_type = "int"
@@ -70,19 +69,6 @@ def create_sub_element(L, ir):
     return generate_return_new_switch(L, "i", classnames)
 
 
-def apply_dof_transformation(L, ir, parameters, inverse=False, transpose=False, dtype="double"):
-    """Write function that applies the DOF transformations to some data."""
-    data = L.Symbol("data")
-    block = L.Symbol("block")
-    block_size = L.Symbol("dim")
-
-    apply_transformations = apply_transformations_to_data(
-        L, ir.base_transformations, ir.cell_shape, data, inverse=inverse, transpose=transpose,
-        indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)],
-        dtype=dtype)
-    return apply_transformations + [L.Return(0)]
-
-
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
 
@@ -114,15 +100,6 @@ def generator(ir, parameters):
 
     d["value_dimension"] = value_dimension(L, ir.value_shape)
     d["reference_value_dimension"] = reference_value_dimension(L, ir.reference_value_shape)
-
-    d["apply_dof_transformation"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters))
-    d["apply_dof_transformation_to_scalar"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, dtype="ufc_scalar_t"))
-    d["apply_inverse_transpose_dof_transformation"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, inverse=True, transpose=True))
-    d["apply_inverse_transpose_dof_transformation_to_scalar"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, dtype="ufc_scalar_t", inverse=True, transpose=True))
 
     statements = create_sub_element(L, ir)
     d["sub_element_declaration"] = sub_element_declaration(L, ir)
