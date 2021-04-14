@@ -183,23 +183,16 @@ supported (non-mixed) for low degrees"""
     @pytest.mark.parametrize("family, cell, degree, reference", tests)
     def test_values(self, family, cell, degree, reference):
         # Create element
-        print("A")
         element = create_basix_element(FiniteElement(family, cell, degree))
-        print("B")
 
         # Get some points and check basis function values at points
         points = [random_point(element_coords(cell)) for i in range(5)]
-        print("C")
         for x in points:
-            print("D")
             table = element.tabulate(0, (x,))
-            print("E")
             basis = table[0]
-            print("F")
             if sum(element.value_shape) == 1:
                 for i, value in enumerate(basis[0]):
                     assert numpy.isclose(value, reference[i](x))
             else:
                 for i, ref in enumerate(reference):
                     assert numpy.allclose(basis[0][i::len(reference)], ref(x))
-            print("G")
