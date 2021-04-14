@@ -291,9 +291,6 @@ def _compute_coordinate_mapping_ir(ufl_coordinate_element,
 
     assert ufl_coordinate_element.value_shape() == (cell.geometric_dimension(), )
 
-    # Compute element values
-    tables = _tabulate_coordinate_mapping_basis(ufl_coordinate_element)
-
     # Store id
     ir = {"id": element_numbers[ufl_coordinate_element]}
     ir["prefix"] = prefix
@@ -540,7 +537,7 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         family = cmap.family()
         degree = cmap.degree()
-        fs[name] = (finite_element_names[el], dofmap_names[el], coordinate_mapping_names[cmap], family, degree )
+        fs[name] = (finite_element_names[el], dofmap_names[el], coordinate_mapping_names[cmap], family, degree)
 
     form_name = object_names.get(id(form_data.original_form), form_id)
 
