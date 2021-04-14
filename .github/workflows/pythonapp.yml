@@ -65,7 +65,7 @@ jobs:
       - name: Run units tests
         run: |
           pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
-          python -m pytest test/test_elements.py::TestFunctionValues::test_values[N1curl-tetrahedron-1-reference9]
+          python -m pytest test/test_elements.py::TestFunctionValues::test_values[N1curl-tetrahedron-1-reference9] -vs
 
       - name: Run units tests
         run: |
