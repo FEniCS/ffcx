@@ -23,9 +23,7 @@ from ffcx.codegeneration.integrals import generator as integral_generator
 
 logger = logging.getLogger("ffcx")
 
-code_blocks = namedtuple("code_blocks", ["elements", "dofmaps",
-                                         "integrals",
-                                         "forms", "expressions"])
+code_blocks = namedtuple("code_blocks", ["elements", "dofmaps", "integrals", "forms", "expressions"])
 
 
 def generate_code(ir, parameters):
