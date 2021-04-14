@@ -26,7 +26,7 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: main
+          ref: mscroggs/apply-dof-transformations
 
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
