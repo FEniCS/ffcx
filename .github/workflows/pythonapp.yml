@@ -53,6 +53,7 @@ jobs:
           pip install .
 
       - run: python3 run_me.py
+        name: testing
 
       - name: Lint with flake8
         run: |
