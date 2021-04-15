@@ -18,34 +18,6 @@ logger = logging.getLogger("ffcx")
 index_type = "int"
 
 
-def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix=""):
-    max_num_derivatives = tdim**max_degree
-    combinations = L.Symbol("combinations" + suffix)
-
-    # This precomputes the combinations for each order and stores in code as table
-    # Python equivalent precomputed for each valid order:
-    combinations_shape = (max_degree, max_num_derivatives, max_degree)
-    all_combinations = numpy.zeros(combinations_shape, dtype=int)
-    for q in range(1, max_degree + 1):
-        for row in range(1, max_num_derivatives):
-            for num in range(0, row):
-                for col in range(q - 1, -1, -1):
-                    if all_combinations[q - 1][row][col] > tdim - 2:
-                        all_combinations[q - 1][row][col] = 0
-                    else:
-                        all_combinations[q - 1][row][col] += 1
-                        break
-    code = [
-        L.Comment("Precomputed combinations"),
-        L.ArrayDecl(
-            "const " + index_type, combinations, combinations_shape, values=all_combinations),
-    ]
-    # Select the right order for further access
-    combinations = combinations[order - 1]
-
-    return code, combinations
-
-
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
 
