@@ -55,40 +55,29 @@ def generator(ir, parameters):
     code["initializer_list"] = ""
     code["destructor"] = ""
 
-    # TODO: I don't know how to implement this using the format dict,
-    # this will do for now:
-    initializer_list = ", ".join("true" if enabled else "false" for enabled in ir.enabled_coefficients)
-    if ir.enabled_coefficients:
-        enabled_coeffs_code = f"[{len(ir.enabled_coefficients)}] = {{ {initializer_list} }};"
+    L = backend.language
+    if len(ir.enabled_coefficients) > 0:
+        code["enabled_coefficients_init"] = L.ArrayDecl(
+            "bool", f"enabled_coefficients_{ir.name}",
+            values=ir.enabled_coefficients, sizes=len(ir.enabled_coefficients))
+        code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
-        enabled_coeffs_code = "[1] = {false};  /* No coefficients, but C does not permit zero-sized arrays */"
+        code["enabled_coefficients_init"] = ""
+        code["enabled_coefficients"] = L.Null()
 
-    code["enabled_coefficients"] = enabled_coeffs_code
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
     if parameters["tabulate_tensor_void"]:
         code["tabulate_tensor"] = ""
 
-    # Format tabulate tensor body
-    tabulate_tensor_declaration = ufc_integrals.tabulate_implementation[
-        integral_type]
-    tabulate_tensor_fn = tabulate_tensor_declaration.format(
-        factory_name=factory_name, tabulate_tensor=code["tabulate_tensor"])
+    implementation = ufc_integrals.factory.format(
+        factory_name=factory_name,
+        enabled_coefficients=code["enabled_coefficients"],
+        enabled_coefficients_init=code["enabled_coefficients_init"],
+        tabulate_tensor=code["tabulate_tensor"],
+        needs_transformation_data=ir.needs_transformation_data)
 
-    # Format implementation code
-    if integral_type == "custom":
-        implementation = ufc_integrals.custom_factory.format(
-            factory_name=factory_name,
-            enabled_coefficients=code["enabled_coefficients"],
-            tabulate_tensor=tabulate_tensor_fn,
-            needs_transformation_data=ir.needs_transformation_data)
-    else:
-        implementation = ufc_integrals.factory.format(
-            factory_name=factory_name,
-            enabled_coefficients=code["enabled_coefficients"],
-            tabulate_tensor=tabulate_tensor_fn,
-            needs_transformation_data=ir.needs_transformation_data)
     return declaration, implementation
 
 

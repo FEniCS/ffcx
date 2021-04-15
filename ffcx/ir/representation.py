@@ -33,29 +33,20 @@ from ufl.sorting import sorted_expr_sum
 
 logger = logging.getLogger("ffcx")
 
-# List of supported integral types
-ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
-
 ir_form = namedtuple('ir_form', [
     'id', 'prefix', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
     'name_from_uflfile', 'function_spaces', 'original_coefficient_position',
-    'coefficient_names', 'constant_names', 'create_finite_element',
-    'create_dofmap', 'create_cell_integral', 'get_cell_integral_ids', 'create_exterior_facet_integral',
-    'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
-    'get_interior_facet_integral_ids', 'create_vertex_integral', 'get_vertex_integral_ids',
-    'create_custom_integral', 'get_custom_integral_ids'])
+    'coefficient_names', 'constant_names', 'finite_elements',
+    'dofmaps', 'classnames', 'subdomain_ids'])
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
-    'family', 'num_sub_elements', 'block_size', 'create_sub_element',
+    'family', 'num_sub_elements', 'block_size', 'sub_elements',
     'entity_dofs', 'base_transformations',
     'needs_transformation_data', 'interpolation_is_identity'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
-    'tabulate_entity_dofs', 'base_transformations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
-ir_coordinate_map = namedtuple('ir_coordinate_map', [
-    'id', 'prefix', 'name', 'signature', 'cell_shape', 'topological_dimension', 'geometric_dimension',
-    'coordinate_element_degree', 'coordinate_element_family', 'scalar_dofmap_name'])
+    'tabulate_entity_dofs', 'base_transformations', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
@@ -150,7 +141,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
+    ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size
@@ -190,7 +181,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
     # Compute data for each function
     ir["signature"] = "FFCX dofmap for " + repr(ufl_element)
-    ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
+    ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
     if hasattr(basix_element, "block_size"):
@@ -432,11 +423,11 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
-    ir["create_finite_element"] = [
+    ir["finite_elements"] = [
         finite_element_names[e]
         for e in form_data.argument_elements + form_data.coefficient_elements
     ]
-    ir["create_dofmap"] = [
+    ir["dofmaps"] = [
         dofmap_names[e] for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
@@ -456,10 +447,13 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
 
     # Create integral ids and names using form prefix (integrals are
     # always generated as part of form so don't get their own prefix)
+    ir["classnames"] = {}
+    ir["subdomain_ids"] = {}
+    ufc_integral_types = ("cell", "exterior_facet", "interior_facet")
     for integral_type in ufc_integral_types:
-        irdata = _create_foo_integral(prefix, form_id, integral_type, form_data)
-        ir[f"create_{integral_type}_integral"] = irdata
-        ir[f"get_{integral_type}_integral_ids"] = irdata
+        subdomain_ids, classnames = _create_foo_integral(form_id, integral_type, form_data)
+        ir["classnames"][integral_type] = classnames
+        ir["subdomain_ids"][integral_type] = subdomain_ids
 
     return ir_form(**ir)
 
@@ -560,7 +554,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     return ir_expression(**ir)
 
 
-def _create_foo_integral(prefix, form_id, integral_type, form_data):
+def _create_foo_integral(form_id, integral_type, form_data):
     """Compute intermediate representation of create_foo_integral."""
     subdomain_ids = []
     classnames = []
