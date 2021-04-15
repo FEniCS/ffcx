@@ -56,7 +56,7 @@ jobs:
         name: testing
         continue-on-error: true
 
-      - run: cat test_output
+      - run: echo $(cat test_output)
         name: testing        
 
       - name: Lint with flake8
