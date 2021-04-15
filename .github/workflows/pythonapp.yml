@@ -62,6 +62,8 @@ jobs:
         run: |
           pip install .
 
+      - run: python3 run_me.py
+
       - name: Run units tests
         run: |
           pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
