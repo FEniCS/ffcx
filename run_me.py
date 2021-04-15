@@ -17,11 +17,9 @@
 #
 # Modified by Marie E. Rognes, 2010
 # Modified by Lizao Li, 2016
-"Unit tests for FFCX"
 
 
 import numpy
-import pytest
 
 from ffcx.basix_interface import create_basix_element
 from ufl import FiniteElement
