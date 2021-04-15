@@ -115,11 +115,11 @@ def generator(ir, parameters):
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
-        code += [f".geometry_family = \"{cmap_family}\:"]
+        code += [f".geometry_family = \"{cmap_family}\","]
         code += [f".geometry_degree = {cmap_degree}"]
         code += ["};"]
 
-    for i, (name, (element, dofmap, cmap)) in enumerate(ir.function_spaces.items()):
+    for i, (name, (element, dofmap, cmap_family, cmap_degree)) in enumerate(ir.function_spaces.items()):
         condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
         if i == 0:
             code += [L.If(condition, L.Return(L.Symbol(f"&functionspace_{name}")))]
