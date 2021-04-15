@@ -25,38 +25,6 @@ from ffcx.basix_interface import create_basix_element
 from ufl import FiniteElement
 
 
-def element_coords(cell):
-    if cell == "interval":
-        return [(0,), (1,)]
-    elif cell == "triangle":
-        return [(0, 0), (1, 0), (0, 1)]
-    elif cell == "tetrahedron":
-        return [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
-    elif cell == "quadrilateral":
-        return [(0, 0), (1, 0), (0, 1), (1, 1)]
-    elif cell == "hexahedron":
-        return [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0), (0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
-    else:
-        RuntimeError("Unknown cell type")
-
-
-def random_point(shape):
-    w = numpy.random.random(len(shape))
-    return sum([numpy.array(shape[i]) * w[i] for i in range(len(shape))]) / sum(w)
-
-
 print("A")
 element = create_basix_element(FiniteElement("N1curl", "tetrahedron", 1))
 print("B")
-points = [random_point(element_coords(cell)) for i in range(5)]
-print("C")
-for i, x in enumerate(points):
-    print(f"D{i}")
-    table = element.tabulate(0, (x,))
-    print(f"E{i}")
-    basis = table[0]
-    print(f"F{i}")
-    for j in range(3):
-        print(f"G{i},{j}")
-        print(basis[0][j::3])
-        print(f"H{i},{j}")
