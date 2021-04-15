@@ -108,8 +108,8 @@ def generator(ir, parameters):
     code = []
     function_name = L.Symbol("function_name")
 
-    # FIXME: Should be handled differently, revise how ufc_function_space is
-    # generated
+    # FIXME: Should be handled differently, revise how
+    # ufc_function_space is generated
     for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
         code += [f"static ufc_function_space functionspace_{name} ="]
         code += ["{"]
