@@ -32,8 +32,6 @@ UFC_HEADER_DECL += header + "\n"
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
 UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
-UFC_COORDINATEMAPPING_DECL = '\n'.join(re.findall('typedef struct ufc_coordinate_mapping.*?ufc_coordinate_mapping;',
-                                                  ufc_h, re.DOTALL))
 UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufc_form.*?ufc_form;', ufc_h, re.DOTALL))
 
 UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor\).*?\);', ufc_h, re.DOTALL))
@@ -160,7 +158,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
-            UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL
+            UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
         form_template = "extern ufc_form {name};\n"
         for name in form_names:
@@ -191,9 +189,8 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     p = ffcx.parameters.get_parameters(parameters)
 
     # Get a signature for these forms
-    module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, '', p)
-
-    expr_names = ["expression_{!s}".format(ffcx.naming.compute_signature([expression], "", p))
+    module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, "")
+    expr_names = ["expression_{!s}".format(ffcx.naming.compute_signature([expression], ""))
                   for expression in expressions]
 
     if cache_dir is not None:
@@ -207,7 +204,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     try:
         scalar_type = p["scalar_type"].replace("complex", "_Complex")
         decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
-            UFC_COORDINATEMAPPING_DECL + UFC_INTEGRAL_DECL + UFC_FORM_DECL + UFC_EXPRESSION_DECL
+            UFC_INTEGRAL_DECL + UFC_FORM_DECL + UFC_EXPRESSION_DECL
 
         expression_template = "extern ufc_expression {name};\n"
         for name in expr_names:
@@ -222,47 +219,6 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         raise
 
     obj, module = _load_objects(cache_dir, module_name, expr_names)
-    return obj, module
-
-
-def compile_coordinate_maps(meshes, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                            cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
-    """Compile a list of UFL coordinate mappings into UFC Python objects."""
-    p = ffcx.parameters.get_parameters(parameters)
-
-    # Get a signature for these cmaps
-    module_name = 'libffcx_cmaps_' + \
-        ffcx.naming.compute_signature(meshes, _compute_parameter_signature(
-            p) + str(cffi_extra_compile_args) + str(cffi_debug), True)
-
-    cmap_names = [ffcx.naming.coordinate_map_name(
-        mesh.ufl_coordinate_element(), "JIT") for mesh in meshes]
-
-    if cache_dir is not None:
-        cache_dir = Path(cache_dir)
-        obj, mod = get_cached_module(module_name, cmap_names, cache_dir, timeout)
-        if obj is not None:
-            return obj, mod
-    else:
-        cache_dir = Path(tempfile.mkdtemp())
-
-    try:
-        scalar_type = p["scalar_type"].replace("complex", "_Complex")
-        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_COORDINATEMAPPING_DECL + UFC_DOFMAP_DECL
-        cmap_template = "extern ufc_coordinate_mapping {name};\n"
-
-        for name in cmap_names:
-            decl += cmap_template.format(name=name)
-
-        _compile_objects(decl, meshes, cmap_names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
-    except Exception:
-        # remove c file so that it will not timeout next time
-        c_filename = cache_dir.joinpath(module_name + ".c")
-        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        raise
-
-    obj, module = _load_objects(cache_dir, module_name, cmap_names)
     return obj, module
 
 

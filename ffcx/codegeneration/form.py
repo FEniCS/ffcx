@@ -65,8 +65,6 @@ def generator(ir, parameters):
         code += [L.Return(names)]
     d["constant_name_map"] = L.StatementList(code)
 
-    d["coordinate_mapping"] = L.AddressOf(L.Symbol(ir.coordinate_mappings[0]))
-
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
         d["finite_elements_init"] = L.ArrayDecl("ufc_finite_element*", f"finite_elements_{ir.name}", values=[
@@ -110,17 +108,18 @@ def generator(ir, parameters):
     code = []
     function_name = L.Symbol("function_name")
 
-    # FIXME: Should be handled differently, revise how ufc_function_space is
-    # generated
-    for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
+    # FIXME: Should be handled differently, revise how
+    # ufc_function_space is generated
+    for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
         code += [f"static ufc_function_space functionspace_{name} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
-        code += [f".coordinate_mapping = &{cmap}"]
+        code += [f".geometry_family = \"{cmap_family}\","]
+        code += [f".geometry_degree = {cmap_degree}"]
         code += ["};"]
 
-    for i, (name, (element, dofmap, cmap)) in enumerate(ir.function_spaces.items()):
+    for i, (name, (element, dofmap, cmap_family, cmap_degree)) in enumerate(ir.function_spaces.items()):
         condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
         if i == 0:
             code += [L.If(condition, L.Return(L.Symbol(f"&functionspace_{name}")))]

@@ -64,7 +64,6 @@ ufc_form {factory_name} =
   .coefficient_name_map = coefficient_name_{factory_name},
   .constant_name_map = constant_name_{factory_name},
 
-  .coordinate_mapping = {coordinate_mapping},
   .finite_elements = {finite_elements},
   .dofmaps = {dofmaps},
 

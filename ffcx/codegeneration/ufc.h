@@ -59,7 +59,6 @@ extern "C"
   } ufc_integral_type;
 
   /// Forward declarations
-  typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
 
@@ -154,9 +153,9 @@ extern "C"
 
     /// If true, the interpolation matrix is the identity
     /// Interpolation matrix maps point-wise values at set of points into values
-    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity, then
-    /// the space is defined by a series of point evaluations, and so the interpolation
-    /// points are the DOF coordinates.
+    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity,
+    /// then the space is defined by a series of point evaluations, and so the
+    /// interpolation points are the DOF coordinates.
     bool interpolation_is_identity;
 
     /// Get a finite element for sub element i (for a mixed
@@ -196,37 +195,6 @@ extern "C"
     ufc_dofmap** sub_dofmaps;
 
   } ufc_dofmap;
-
-  /// A representation of a coordinate mapping parameterized by a local
-  /// finite element basis on each cell
-  typedef struct ufc_coordinate_mapping
-  {
-
-    /// Return coordinate_mapping signature string
-    const char* signature;
-
-    /// The finite element family name for the mapping
-    const char* element_family;
-
-    /// The finite element degree used in the mapping
-    int element_degree;
-
-    /// Return geometric dimension of the coordinate_mapping
-    int geometric_dimension;
-
-    /// Return topological dimension of the coordinate_mapping
-    int topological_dimension;
-
-    /// Boolean flag for affine
-    int is_affine;
-
-    /// Return cell shape of the coordinate_mapping
-    ufc_shape cell_shape;
-
-    /// Dofmap for the underlying scalar element.
-    ufc_dofmap* scalar_dofmap;
-
-  } ufc_coordinate_mapping;
 
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
@@ -390,8 +358,6 @@ extern "C"
     /// Return list of names of constants
     const char** (*constant_name_map)(void);
 
-    ufc_coordinate_mapping* coordinate_mapping;
-
     /// Get a finite element for the i-th argument function,
     /// where 0 <= i < r+n.
     ///
@@ -426,7 +392,12 @@ extern "C"
   {
     ufc_finite_element* finite_element;
     ufc_dofmap* dofmap;
-    ufc_coordinate_mapping* coordinate_mapping;
+
+    /// The family of the finite element for the geometry map
+    const char* geometry_family;
+
+    /// The degree of the finite element for the geometry map
+    int geometry_degree;
   } ufc_function_space;
 
 #ifdef __cplusplus
