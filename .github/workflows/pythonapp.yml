@@ -48,17 +48,6 @@ jobs:
           pip install pygraphviz
           pip install git+https://github.com/FEniCS/ufl.git --user
 
-      - name: Install ffcx
-        run: |
-          pip install .
-
-      - run: python3 run_me.py >> test_output
-        name: testing
-        continue-on-error: true
-
-      - run: echo $(cat test_output)
-        name: testing        
-
       - name: Lint with flake8
         run: |
           pip install flake8
@@ -72,8 +61,6 @@ jobs:
       - name: Install ffcx
         run: |
           pip install .
-
-      - run: python3 run_me.py
 
       - name: Run units tests
         run: |
