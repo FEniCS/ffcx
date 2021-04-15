@@ -52,8 +52,12 @@ jobs:
         run: |
           pip install .
 
-      - run: python3 run_me.py
+      - run: python3 run_me.py >> test_output
         name: testing
+        continue-on-error: true
+
+      - run: cat test_output
+        name: testing        
 
       - name: Lint with flake8
         run: |
