@@ -24,7 +24,10 @@ import numpy
 from ffcx.basix_interface import create_basix_element
 from ufl import FiniteElement
 
+import basix
+basix.create_element("Nedelec 1st kind H(curl)", "tetrahedron", 1)
+
 
 print("A")
-element = create_basix_element(FiniteElement("N1curl", "tetrahedron", 1))
+#element = create_basix_element(FiniteElement("N1curl", "tetrahedron", 1))
 print("B")
