@@ -10,7 +10,6 @@
 
 import logging
 
-import numpy
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
 
