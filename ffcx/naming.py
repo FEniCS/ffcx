@@ -23,11 +23,6 @@ def compute_signature(ufl_objects, tag):
         if isinstance(ufl_object, ufl.Form):
             kind = "form"
             object_signature += ufl_object.signature()
-        elif isinstance(ufl_object, ufl.Mesh):
-            # When coordinate mapping is represented by a Mesh, just getting
-            # its coordinate element
-            object_signature += repr(ufl_object.ufl_coordinate_element())
-            kind = "coordinate_mapping"
         elif isinstance(ufl_object, ufl.FiniteElementBase):
             object_signature += repr(ufl_object)
             kind = "element"
