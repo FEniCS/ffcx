@@ -1312,7 +1312,7 @@ class ArrayDecl(CStatement):
 
     def cs_format(self, precision=None):
         if not all(self.sizes):
-            raise RuntimeError("Detected an array dimension of zero. This is not valid in C.")
+            raise RuntimeError(f"Detected an array {self.symbol} dimension of zero. This is not valid in C.")
 
         # Pad innermost array dimension
         sizes = pad_innermost_dim(self.sizes, self.padlen)
@@ -1339,6 +1339,10 @@ class ArrayDecl(CStatement):
                 formatter = format_float
             elif self.values.dtype.kind == "i":
                 formatter = format_int
+            elif self.values.dtype == numpy.bool_:
+                def format_bool(x, precision=None):
+                    return "true" if x is True else "false"
+                formatter = format_bool
             else:
                 formatter = format_value
             initializer_lists = build_initializer_lists(

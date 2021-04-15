@@ -51,8 +51,14 @@ extern "C"
     vertex = 60,
   } ufc_shape;
 
+  typedef enum
+  {
+    cell = 0,
+    exterior_facet = 1,
+    interior_facet = 2
+  } ufc_integral_type;
+
   /// Forward declarations
-  typedef struct ufc_coordinate_mapping ufc_coordinate_mapping;
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
 
@@ -79,7 +85,7 @@ extern "C"
     int value_rank;
 
     /// Return the dimension of the value space for axis i
-    int (*value_dimension)(int i);
+    int* value_shape;
 
     /// Return the number of components of the value space
     int value_size;
@@ -88,7 +94,7 @@ extern "C"
     int reference_value_rank;
 
     /// Return the dimension of the reference value space for axis i
-    int (*reference_value_dimension)(int i);
+    int* reference_value_shape;
 
     /// Return the number of components of the reference value space
     int reference_value_size;
@@ -113,20 +119,15 @@ extern "C"
 
     /// If true, the interpolation matrix is the identity
     /// Interpolation matrix maps point-wise values at set of points into values
-    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity, then
-    /// the space is defined by a series of point evaluations, and so the interpolation
-    /// points are the DOF coordinates.
+    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity,
+    /// then the space is defined by a series of point evaluations, and so the
+    /// interpolation points are the DOF coordinates.
     bool interpolation_is_identity;
 
-    /// Create a new finite element for sub element i (for a mixed
-    /// element). Memory for the new object is obtained with malloc(),
-    /// and the caller is reponsible for freeing it by calling free().
-    ufc_finite_element* (*create_sub_element)(int i);
+    /// Get a finite element for sub element i (for a mixed
+    /// element).
+    ufc_finite_element** sub_elements;
 
-    /// Create a new class instance. Memory for the new object is
-    /// obtained with malloc(), and the caller is reponsible for
-    /// freeing it by calling free().
-    ufc_finite_element* (*create)(void);
   } ufc_finite_element;
 
   typedef struct ufc_dofmap
@@ -155,70 +156,11 @@ extern "C"
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
 
-    /// Create a new dofmap for sub dofmap i (for a mixed
-    /// element). Memory for the new object is obtained with malloc(),
-    /// and the caller is reponsible for freeing it by calling free().
-    ufc_dofmap* (*create_sub_dofmap)(int i);
+    /// Get a dofmap for sub dofmap i (for a mixed
+    /// element).
+    ufc_dofmap** sub_dofmaps;
 
-    /// Create a new class instance. Memory for the new object is
-    /// obtained with malloc(), and the caller is reponsible for
-    /// freeing it by calling free().
-    ufc_dofmap* (*create)(void);
   } ufc_dofmap;
-
-  /// A representation of a coordinate mapping parameterized by a local
-  /// finite element basis on each cell
-  typedef struct ufc_coordinate_mapping
-  {
-
-    /// Return coordinate_mapping signature string
-    const char* signature;
-
-    /// The finite element family name for the mapping
-    const char* element_family;
-
-    /// The finite element degree used in the mapping
-    int element_degree;
-
-    /// Create object of the same type. Memory for the new object is
-    /// obtained with malloc(), and the caller is reponsible for
-    /// freeing it by calling free().
-    ufc_coordinate_mapping* (*create)(void);
-
-    /// Return geometric dimension of the coordinate_mapping
-    int geometric_dimension;
-
-    /// Return topological dimension of the coordinate_mapping
-    int topological_dimension;
-
-    /// Boolean flag for affine
-    int is_affine;
-
-    /// Indicates whether transformation data needs to be passed into various
-    /// functions
-    bool needs_transformation_data;
-
-    /// Permutes a list of DOF numbers
-    /// As a coordinate mapping is always Lagrange or Q, the DOF transformation
-    /// will always be a rearrangement of DOF points, so this is valid in this
-    /// case.
-    int (*permute_dofs)(int* dof_list, uint32_t cell_permutation);
-
-    /// Reverses a permutation of a list of DOF numbers
-    /// As a coordinate mapping is always Lagrange or Q, the DOF transformation
-    /// will always be a rearrangement of DOF points, so this is valid in this
-    /// case.
-    int (*unpermute_dofs)(int* dof_list, uint32_t cell_permutation);
-
-    /// Return cell shape of the coordinate_mapping
-    ufc_shape cell_shape;
-
-    /// Create dofmap for the underlying scalar element. Memory for
-    /// the new object is obtained with malloc(), and the caller is
-    /// reponsible for freeing it by calling free().
-    ufc_dofmap* (*create_scalar_dofmap)(void);
-
-  } ufc_coordinate_mapping;
 
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
@@ -373,12 +315,8 @@ extern "C"
     /// Number of constants
     int num_constants;
 
-    /// Return original coefficient position for each coefficient
-    ///
-    /// @param i
-    ///        Coefficient number, 0 <= i < n
-    ///
-    int (*original_coefficient_position)(int i);
+    /// Original coefficient position for each coefficient
+    int* original_coefficient_position;
 
     /// Return list of names of coefficients
     const char** (*coefficient_name_map)(void);
@@ -386,113 +324,46 @@ extern "C"
     /// Return list of names of constants
     const char** (*constant_name_map)(void);
 
-    /// Create a new coordinate mapping. Memory for the new object is
-    /// obtained with malloc(), and the caller is reponsible for
-    /// freeing it by calling free().
-    ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
-
-    /// Create a new finite element for the i-th argument function,
-    /// where 0 <= i < r+n. Memory for the new object is obtained with
-    /// malloc(), and the caller is reponsible for freeing it by
-    /// calling free().
+    /// Get a finite element for the i-th argument function,
+    /// where 0 <= i < r+n.
     ///
     /// @param i
     ///        Argument number if 0 <= i < r
     ///        Coefficient number j=i-r if r+j <= i < r+n
     ///
-    ufc_finite_element* (*create_finite_element)(int i);
+    ufc_finite_element** finite_elements;
 
-    /// Create a new dofmap for the i-th argument function, where 0 <=
-    /// i < r+n.  Memory for the new object is obtained with malloc(),
-    /// and the caller is reponsible for freeing it by calling free().
+    /// Get a dofmap for the i-th argument function, where 0 <=
+    /// i < r+n.
     ///
     /// @param i
     ///        Argument number if 0 <= i < r
     ///        Coefficient number j=i-r if r+j <= i < r+n
     ///
-    ufc_dofmap* (*create_dofmap)(int i);
+    ufc_dofmap** dofmaps;
 
-    /// All ids for cell integrals
-    void (*get_cell_integral_ids)(int* ids);
+    /// All ids for integrals
+    int* (*integral_ids)(ufc_integral_type);
 
-    /// All ids for exterior facet integrals
-    void (*get_exterior_facet_integral_ids)(int* ids);
+    /// Number of integrals
+    int (*num_integrals)(ufc_integral_type);
 
-    /// All ids for interior facet integrals
-    void (*get_interior_facet_integral_ids)(int* ids);
-
-    /// All ids for vertex integrals
-    void (*get_vertex_integral_ids)(int* ids);
-
-    /// All ids for custom integrals
-    void (*get_custom_integral_ids)(int* ids);
-
-    /// Number of cell integrals
-    int num_cell_integrals;
-
-    /// Number of exterior facet integrals
-    int num_exterior_facet_integrals;
-
-    /// Number of interior facet integrals
-    int num_interior_facet_integrals;
-
-    /// Number of vertex integrals
-    int num_vertex_integrals;
-
-    /// Number of custom integrals
-    int num_custom_integrals;
-
-    /// Create a new cell integral on sub domain subdomain_id. Memory
-    /// for the new object is obtained with malloc(), and the caller
-    /// is reponsible for freeing it by calling free().
-    ufc_integral* (*create_cell_integral)(int subdomain_id);
-
-    /// Create a new exterior facet integral on sub domain
-    /// subdomain_id. Memory for the new object is obtained with
-    /// malloc(), and the caller is reponsible for freeing it by
-    /// calling free().
-    ufc_integral* (*create_exterior_facet_integral)(int subdomain_id);
-
-    /// Create a new interior facet integral on sub domain
-    /// subdomain_id. Memory for the new object is obtained with
-    /// malloc(), and the caller is reponsible for freeing it by
-    /// calling free().
-    ufc_integral* (*create_interior_facet_integral)(int subdomain_id);
-
-    /// Create a new vertex integral on sub domain
-    /// subdomain_id. Memory for the new object is obtained with
-    /// malloc(), and the caller is reponsible for freeing it by
-    /// calling free().
-    ufc_integral* (*create_vertex_integral)(int subdomain_id);
-
-    /// Create a new custom integral on sub domain
-    /// subdomain_id. Memory for the new object is obtained with
-    /// malloc(), and the caller is reponsible for freeing it by
-    /// calling free().
-    ufc_custom_integral* (*create_custom_integral)(int subdomain_id);
+    /// Get an integral on sub domain subdomain_id.
+    ufc_integral** (*integrals)(ufc_integral_type);
 
   } ufc_form;
 
   // FIXME: Formalise a UFC 'function space'.
   typedef struct ufc_function_space
   {
-    // Pointer to factory function that creates a new
-    // ufc_finite_element. Memory for the new object is obtained with
-    // malloc(), and the caller is reponsible for freeing it by
-    // calling free().
-    ufc_finite_element* (*create_element)(void);
+    ufc_finite_element* finite_element;
+    ufc_dofmap* dofmap;
 
-    // Pointer to factory function that creates a new
-    // ufc_dofmap. Memory for the new object is obtained with
-    // malloc(), and the caller is reponsible for freeing it by
-    // calling free().
-    ufc_dofmap* (*create_dofmap)(void);
+    /// The family of the finite element for the geometry map
+    const char* geometry_family;
 
-    // Pointer to factory function that creates a new
-    // ufc_coordinate_mapping. Memory for the new object is obtained
-    // with malloc(), and the caller is reponsible for freeing it by
-    // calling free().
-    ufc_coordinate_mapping* (*create_coordinate_mapping)(void);
+    /// The degree of the finite element for the geometry map
+    int geometry_degree;
   } ufc_function_space;
 
 #ifdef __cplusplus

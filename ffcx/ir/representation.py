@@ -22,10 +22,9 @@ import warnings
 from collections import namedtuple
 
 import numpy
-
 import ufl
 from ffcx import naming
-from ffcx.basix_interface import create_basix_element
+from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -34,33 +33,20 @@ from ufl.sorting import sorted_expr_sum
 
 logger = logging.getLogger("ffcx")
 
-# List of supported integral types
-ufc_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "custom")
-
 ir_form = namedtuple('ir_form', [
     'id', 'prefix', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
     'name_from_uflfile', 'function_spaces', 'original_coefficient_position',
-    'coefficient_names', 'constant_names', 'create_coordinate_mapping', 'create_finite_element',
-    'create_dofmap', 'create_cell_integral', 'get_cell_integral_ids', 'create_exterior_facet_integral',
-    'get_exterior_facet_integral_ids', 'create_interior_facet_integral',
-    'get_interior_facet_integral_ids', 'create_vertex_integral', 'get_vertex_integral_ids',
-    'create_custom_integral', 'get_custom_integral_ids'])
+    'coefficient_names', 'constant_names', 'finite_elements',
+    'dofmaps', 'classnames', 'subdomain_ids'])
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
-    'family', 'num_sub_elements', 'block_size', 'create_sub_element',
+    'family', 'num_sub_elements', 'block_size', 'sub_elements',
     'entity_dofs', 'base_transformations',
     'needs_transformation_data', 'interpolation_is_identity'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
-    'tabulate_entity_dofs', 'base_transformations', 'num_sub_dofmaps', 'create_sub_dofmap', 'block_size'])
-ir_coordinate_map = namedtuple('ir_coordinate_map', [
-    'id', 'prefix', 'name', 'signature', 'cell_shape', 'topological_dimension', 'geometric_dimension',
-    'compute_physical_coordinates', 'compute_reference_coordinates', 'compute_jacobians',
-    'compute_jacobian_determinants', 'compute_jacobian_inverses', 'compute_geometry', 'tables',
-    'coordinate_element_degree', 'num_scalar_coordinate_element_dofs', 'coordinate_element_family',
-    'coordinate_finite_element_classname', 'scalar_coordinate_finite_element_classname',
-    'scalar_dofmap_name', 'is_affine', 'needs_transformation_data', 'base_transformations'])
+    'tabulate_entity_dofs', 'base_transformations', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
@@ -77,7 +63,7 @@ ir_expression = namedtuple('ir_expression', [
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
     'original_coefficient_positions', 'points', 'table_needs_transformation_data', 'needs_transformation_data'])
 
-ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'coordinate_mappings', 'integrals', 'forms', 'expressions'])
+ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
 
 def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise):
@@ -94,8 +80,6 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     # within each IR computation would be expensive due to UFL signature computations
     finite_element_names = {e: naming.finite_element_name(e, prefix) for e in analysis.unique_elements}
     dofmap_names = {e: naming.dofmap_name(e, prefix) for e in analysis.unique_elements}
-    coordinate_mapping_names = {cmap: naming.coordinate_map_name(
-        cmap, prefix) for cmap in analysis.unique_coordinate_elements}
     integral_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
         for itg_index, itg_data in enumerate(fd.integral_data):
@@ -111,12 +95,6 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
         _compute_dofmap_ir(e, analysis.element_numbers, dofmap_names) for e in analysis.unique_elements
     ]
 
-    ir_coordinate_mappings = [
-        _compute_coordinate_mapping_ir(e, prefix, analysis.element_numbers,
-                                       coordinate_mapping_names, dofmap_names, finite_element_names)
-        for e in analysis.unique_coordinate_elements
-    ]
-
     irs = [
         _compute_integral_ir(fd, i, prefix, analysis.element_numbers, integral_names, parameters, visualise)
         for (i, fd) in enumerate(analysis.form_data)
@@ -125,7 +103,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
 
     ir_forms = [
         _compute_form_ir(fd, i, prefix, analysis.element_numbers, finite_element_names,
-                         dofmap_names, coordinate_mapping_names, object_names)
+                         dofmap_names, object_names)
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
@@ -133,7 +111,6 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
                       for i, expr in enumerate(analysis.expressions)]
 
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
-                   coordinate_mappings=ir_coordinate_mappings,
                    integrals=ir_integrals, forms=ir_forms,
                    expressions=ir_expressions)
 
@@ -144,7 +121,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     logger.info(f"Computing IR for element {ufl_element}")
 
     # Create basix elements
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
@@ -164,12 +141,12 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsi
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["create_sub_element"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
+    ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
-        basix_element = create_basix_element(ufl_element)
+        basix_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
 
@@ -196,7 +173,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
     # Create basix elements
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -204,7 +181,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
     # Compute data for each function
     ir["signature"] = "FFCX dofmap for " + repr(ufl_element)
-    ir["create_sub_dofmap"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
+    ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
     if hasattr(basix_element, "block_size"):
@@ -243,107 +220,6 @@ _midpoints = {
 def cell_midpoint(cell):
     # TODO: Is this defined somewhere more central where we can get it from?
     return _midpoints[cell.cellname()]
-
-
-def _tabulate_coordinate_mapping_basis(ufl_element):
-    # TODO: Move this function to a table generation module?
-
-    # Get scalar element, assuming coordinates are represented
-    # with a VectorElement of scalar subelements
-    selement = ufl_element.sub_elements()[0]
-
-    basix_element = create_basix_element(selement)
-    cell = selement.cell()
-    tdim = cell.topological_dimension()
-
-    tables = {}
-
-    # Get points
-    origin = (0.0, ) * tdim
-    midpoint = cell_midpoint(cell)
-
-    # Tabulate basis
-    t0 = basix_element.tabulate(1, [origin])
-    tm = basix_element.tabulate(1, [midpoint])
-
-    # Get basis values at cell origin
-    tables["x0"] = t0[0][:, 0]
-
-    # Get basis values at cell midpoint
-    tables["xm"] = tm[0][:, 0]
-
-    # Get basis derivative values at cell origin
-    tables["J0"] = numpy.asarray([t0[d][:, 0] for d in range(1, 1 + tdim)])
-
-    # Get basis derivative values at cell midpoint
-    tables["Jm"] = numpy.asarray([tm[d][:, 0] for d in range(1, 1 + tdim)])
-
-    return tables
-
-
-def _compute_coordinate_mapping_ir(ufl_coordinate_element,
-                                   prefix,
-                                   element_numbers,
-                                   coordinate_mapping_names,
-                                   dofmap_names,
-                                   finite_element_names):
-    """Compute intermediate representation of coordinate mapping."""
-
-    logger.info(f"Computing IR for coordinate mapping {ufl_coordinate_element}")
-
-    cell = ufl_coordinate_element.cell()
-    cellname = cell.cellname()
-
-    assert ufl_coordinate_element.value_shape() == (cell.geometric_dimension(), )
-
-    # Compute element values
-    tables = _tabulate_coordinate_mapping_basis(ufl_coordinate_element)
-
-    # Store id
-    ir = {"id": element_numbers[ufl_coordinate_element]}
-    ir["prefix"] = prefix
-    ir["name"] = coordinate_mapping_names[ufl_coordinate_element]
-
-    # Compute data for each function
-    ir["signature"] = "FFCX coordinate_mapping from " + repr(ufl_coordinate_element)
-    ir["cell_shape"] = cellname
-    ir["topological_dimension"] = cell.topological_dimension()
-    ir["geometric_dimension"] = ufl_coordinate_element.value_size()
-
-    ir["compute_physical_coordinates"] = None  # currently unused, corresponds to function name
-    ir["compute_reference_coordinates"] = None  # currently unused, corresponds to function name
-    ir["compute_jacobians"] = None  # currently unused, corresponds to function name
-    ir["compute_jacobian_determinants"] = None  # currently unused, corresponds to function name
-    ir["compute_jacobian_inverses"] = None  # currently unused, corresponds to function name
-    ir["compute_geometry"] = None  # currently unused, corresponds to function name
-
-    # NB! The entries below breaks the pattern of using ir keywords == code keywords,
-    # which I personally don't find very useful anyway (martinal).
-
-    basix_element = create_basix_element(ufl_coordinate_element)
-
-    ir["needs_transformation_data"] = 0
-    for p in basix_element.base_transformations:
-        if not numpy.allclose(p, numpy.identity(len(p))):
-            ir["needs_transformation_data"] = 1
-    ir["base_transformations"] = basix_element.sub_element.base_transformations
-
-    # Store tables and other coordinate element data
-    ir["tables"] = tables
-    ir["coordinate_element_degree"] = ufl_coordinate_element.degree()
-    ir["coordinate_element_family"] = basix_element.family_name
-    ir["num_scalar_coordinate_element_dofs"] = tables["x0"].shape[0]
-    ir["is_affine"] = ir["coordinate_element_degree"] == 1 and cellname in ("interval", "triangle", "tetrahedron")
-
-    # Get classnames for coordinate element
-    ir["coordinate_finite_element_classname"] = finite_element_names[ufl_coordinate_element]
-
-    # Get classnames for finite element and dofmap of scalar subelement
-    scalar_element = ufl_coordinate_element.sub_elements()[0]
-    ir["scalar_coordinate_finite_element_classname"] = finite_element_names[scalar_element]
-    ir["scalar_dofmap_name"] = dofmap_names[scalar_element]
-
-    return ir_coordinate_map(**ir)
 
 
 def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integral_names,
@@ -387,7 +263,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         ir["element_dimensions"] = {
-            ufl_element: create_basix_element(ufl_element).dim
+            ufl_element: create_element(ufl_element).dim
             for ufl_element in unique_elements
         }
 
@@ -518,7 +394,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
 
 
 def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element_names,
-                     dofmap_names, coordinate_mapping_names, object_names):
+                     dofmap_names, object_names):
     """Compute intermediate representation of form."""
 
     logger.info(f"Computing IR for form {form_id}")
@@ -547,14 +423,11 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
-    ir["create_coordinate_mapping"] = [
-        coordinate_mapping_names[e] for e in form_data.coordinate_elements
-    ]
-    ir["create_finite_element"] = [
+    ir["finite_elements"] = [
         finite_element_names[e]
         for e in form_data.argument_elements + form_data.coefficient_elements
     ]
-    ir["create_dofmap"] = [
+    ir["dofmaps"] = [
         dofmap_names[e] for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
@@ -563,7 +436,9 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
         name = object_names.get(id(function), str(function))
         el = function.ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
-        fs[name] = (finite_element_names[el], dofmap_names[el], coordinate_mapping_names[cmap])
+        family = cmap.family()
+        degree = cmap.degree()
+        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
 
     form_name = object_names.get(id(form_data.original_form), form_id)
 
@@ -572,10 +447,13 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
 
     # Create integral ids and names using form prefix (integrals are
     # always generated as part of form so don't get their own prefix)
+    ir["classnames"] = {}
+    ir["subdomain_ids"] = {}
+    ufc_integral_types = ("cell", "exterior_facet", "interior_facet")
     for integral_type in ufc_integral_types:
-        irdata = _create_foo_integral(prefix, form_id, integral_type, form_data)
-        ir[f"create_{integral_type}_integral"] = irdata
-        ir[f"get_{integral_type}_integral_ids"] = irdata
+        subdomain_ids, classnames = _create_foo_integral(form_id, integral_type, form_data)
+        ir["classnames"][integral_type] = classnames
+        ir["subdomain_ids"][integral_type] = subdomain_ids
 
     return ir_form(**ir)
 
@@ -588,7 +466,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     ir = {}
 
     original_expression = (expression[2], expression[1])
-    sig = naming.compute_signature([original_expression], "", parameters)
+    sig = naming.compute_signature([original_expression], "")
     ir["name"] = "expression_{!s}".format(sig)
 
     original_expression = expression[2]
@@ -598,13 +476,14 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     try:
         cell = expression.ufl_domain().ufl_cell()
     except AttributeError:
-        # This case corresponds to a spatially constant expression without any dependencies
+        # This case corresponds to a spatially constant expression
+        # without any dependencies
         cell = None
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
     ir["element_dimensions"] = {
-        ufl_element: create_basix_element(ufl_element).dim
+        ufl_element: create_element(ufl_element).dim
         for ufl_element in analysis.unique_elements
     }
 
@@ -675,7 +554,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     return ir_expression(**ir)
 
 
-def _create_foo_integral(prefix, form_id, integral_type, form_data):
+def _create_foo_integral(form_id, integral_type, form_data):
     """Compute intermediate representation of create_foo_integral."""
     subdomain_ids = []
     classnames = []

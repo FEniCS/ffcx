@@ -86,9 +86,9 @@ class FFCXBackendSymbols(object):
             postfix = "[0]"
             if restriction == "-":
                 postfix = "[1]"
-            return self.S("facet" + postfix)
+            return self.S("entity_local_index" + postfix)
         elif entitytype == "vertex":
-            return self.S("vertex[0]")
+            return self.S("entity_local_index[0]")
         else:
             logging.exception(f"Unknown entitytype {entitytype}")
 

@@ -21,14 +21,8 @@ def test_finite_element(compile_args):
     assert ufc_element.geometric_dimension == 2
     assert ufc_element.space_dimension == 3
     assert ufc_element.value_rank == 0
-    assert ufc_element.value_dimension(0) == 1
-    assert ufc_element.value_dimension(1) == 1
-    assert ufc_element.value_dimension(2) == 1
     assert ufc_element.value_size == 1
     assert ufc_element.reference_value_rank == 0
-    assert ufc_element.reference_value_dimension(0) == 1
-    assert ufc_element.reference_value_dimension(1) == 1
-    assert ufc_element.reference_value_dimension(2) == 1
     assert ufc_element.reference_value_size == 1
     assert ufc_element.block_size == 1
     assert ufc_element.num_sub_elements == 0
@@ -42,7 +36,7 @@ def test_finite_element(compile_args):
     assert ufc_dofmap.num_entity_dofs[2] == 0
     assert ufc_dofmap.num_entity_dofs[3] == 0
     for v in range(3):
-        vals = np.zeros(1, dtype=np.int)
+        vals = np.zeros(1, dtype=np.int32)
         vals_ptr = module.ffi.cast("int *", module.ffi.from_buffer(vals))
         ufc_dofmap.tabulate_entity_dofs(vals_ptr, 0, v)
         assert vals[0] == v
@@ -59,14 +53,10 @@ def test_vector_element(compile_args):
     assert ufc_element.geometric_dimension == 2
     assert ufc_element.space_dimension == 6
     assert ufc_element.value_rank == 1
-    assert ufc_element.value_dimension(0) == 2
-    assert ufc_element.value_dimension(1) == 1
-    assert ufc_element.value_dimension(2) == 1
+    assert ufc_element.value_shape[0] == 2
     assert ufc_element.value_size == 2
     assert ufc_element.reference_value_rank == 1
-    assert ufc_element.reference_value_dimension(0) == 2
-    assert ufc_element.reference_value_dimension(1) == 1
-    assert ufc_element.reference_value_dimension(2) == 1
+    assert ufc_element.reference_value_shape[0] == 2
     assert ufc_element.reference_value_size == 2
     assert ufc_element.block_size == 2
     assert ufc_element.num_sub_elements == 2
@@ -80,7 +70,7 @@ def test_vector_element(compile_args):
     assert ufc_dofmap.num_entity_dofs[2] == 0
     assert ufc_dofmap.num_entity_dofs[3] == 0
     for v in range(3):
-        vals = np.zeros(1, dtype=np.int)
+        vals = np.zeros(1, dtype=np.int32)
         vals_ptr = module.ffi.cast("int *", module.ffi.from_buffer(vals))
         ufc_dofmap.tabulate_entity_dofs(vals_ptr, 0, v)
         assert vals[0] == v
@@ -97,14 +87,12 @@ def test_tensor_element(compile_args):
     assert ufc_element.geometric_dimension == 2
     assert ufc_element.space_dimension == 12
     assert ufc_element.value_rank == 2
-    assert ufc_element.value_dimension(0) == 2
-    assert ufc_element.value_dimension(1) == 2
-    assert ufc_element.value_dimension(2) == 1
+    assert ufc_element.value_shape[0] == 2
+    assert ufc_element.value_shape[1] == 2
     assert ufc_element.value_size == 4
     assert ufc_element.reference_value_rank == 2
-    assert ufc_element.reference_value_dimension(0) == 2
-    assert ufc_element.reference_value_dimension(1) == 2
-    assert ufc_element.reference_value_dimension(2) == 1
+    assert ufc_element.reference_value_shape[0] == 2
+    assert ufc_element.reference_value_shape[1] == 2
     assert ufc_element.reference_value_size == 4
     assert ufc_element.block_size == 4
     assert ufc_element.num_sub_elements == 4

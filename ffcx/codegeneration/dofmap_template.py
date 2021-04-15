@@ -4,41 +4,33 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-ufc_dofmap* create_{factory_name}(void);
+extern ufc_dofmap {factory_name};
 """
 
 factory = """
 // Code for dofmap {factory_name}
+
+{sub_dofmaps_initialization}
 
 void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 {{
 {tabulate_entity_dofs}
 }}
 
-{sub_dofmap_declaration}
-ufc_dofmap* create_sub_dofmap_{factory_name}(int i)
+ufc_dofmap {factory_name} =
 {{
-{create_sub_dofmap}
-}}
-
-ufc_dofmap* create_{factory_name}(void)
-{{
-  ufc_dofmap* dofmap = (ufc_dofmap*)malloc(sizeof(*dofmap));
-  dofmap->signature = {signature};
-  dofmap->block_size = {block_size};
-  dofmap->num_global_support_dofs = {num_global_support_dofs};
-  dofmap->num_element_support_dofs = {num_element_support_dofs};
-  dofmap->num_entity_dofs[0] = {num_entity_dofs[0]};
-  dofmap->num_entity_dofs[1] = {num_entity_dofs[1]};
-  dofmap->num_entity_dofs[2] = {num_entity_dofs[2]};
-  dofmap->num_entity_dofs[3] = {num_entity_dofs[3]};
-  dofmap->tabulate_entity_dofs = tabulate_entity_dofs_{factory_name};
-  dofmap->num_sub_dofmaps = {num_sub_dofmaps};
-  dofmap->create_sub_dofmap = create_sub_dofmap_{factory_name};
-  dofmap->create = create_{factory_name};
-
-  return dofmap;
-}}
+  .signature = {signature},
+  .block_size = {block_size},
+  .num_global_support_dofs = {num_global_support_dofs},
+  .num_element_support_dofs = {num_element_support_dofs},
+  .num_entity_dofs[0] = {num_entity_dofs[0]},
+  .num_entity_dofs[1] = {num_entity_dofs[1]},
+  .num_entity_dofs[2] = {num_entity_dofs[2]},
+  .num_entity_dofs[3] = {num_entity_dofs[3]},
+  .tabulate_entity_dofs = tabulate_entity_dofs_{factory_name},
+  .num_sub_dofmaps = {num_sub_dofmaps},
+  .sub_dofmaps = {sub_dofmaps}
+}};
 
 // End of code for dofmap {factory_name}
 """

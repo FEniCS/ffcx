@@ -29,7 +29,7 @@ dx = dx(degree=degree, scheme=scheme)
 # Configure quadrature elements with compatible rule
 element = FiniteElement("Lagrange", triangle, 2)
 QE      = FiniteElement("Quadrature", triangle, degree, quad_scheme=scheme)
-sig     = VectorElement("Quadrature", triangle, degree, quad_scheme=scheme)
+sig     = MixedElement(QE, QE)
 
 u    = TrialFunction(element)
 v    = TestFunction(element)
