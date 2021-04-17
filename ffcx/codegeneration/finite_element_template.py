@@ -14,30 +14,6 @@ factory = """
 {reference_value_shape_init}
 {sub_elements_init}
 
-int apply_dof_transformation_{factory_name}(
-     double* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_dof_transformation}
-}}
-
-int apply_dof_transformation_to_scalar_{factory_name}(
-     ufc_scalar_t* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_dof_transformation_to_scalar}
-}}
-
-int apply_inverse_transpose_dof_transformation_{factory_name}(
-     double* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_inverse_transpose_dof_transformation}
-}}
-
-int apply_inverse_transpose_dof_transformation_to_scalar_{factory_name}(
-     ufc_scalar_t* restrict data, uint32_t cell_permutation, int dim)
-{{
-  {apply_inverse_transpose_dof_transformation_to_scalar}
-}}
-
 ufc_finite_element {factory_name} =
 {{
   .signature = {signature},
@@ -58,12 +34,6 @@ ufc_finite_element {factory_name} =
   .needs_transformation_data = {needs_transformation_data},
   .interpolation_is_identity = {interpolation_is_identity},
 
-  .apply_dof_transformation = apply_dof_transformation_{factory_name},
-  .apply_dof_transformation_to_scalar = apply_dof_transformation_to_scalar_{factory_name},
-  .apply_inverse_transpose_dof_transformation
-      = apply_inverse_transpose_dof_transformation_{factory_name},
-  .apply_inverse_transpose_dof_transformation_to_scalar
-      = apply_inverse_transpose_dof_transformation_to_scalar_{factory_name},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};

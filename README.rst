@@ -1,24 +1,24 @@
-===============================
-FFC-X: The FEniCS Form Compiler
-===============================
+==============================
+FFCx: The FEniCS Form Compiler
+==============================
 
 .. image:: https://github.com/FEniCS/ffcx/actions/workflows/pythonapp.yml/badge.svg
    :target: https://github.com/FEniCS/ffcx/actions/workflows/pythonapp.yml
 .. image:: https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg?branch=main
    :target: https://coveralls.io/github/FEniCS/ffcx?branch=main
 
-FFC-X is a new version of the FEniCS Form Compiler. It is being actively
-developed and is compatible with DOLFIN-X.
+FFCx is a new version of the FEniCS Form Compiler. It is being actively
+developed and is compatible with DOLFINx.
 
-FFC-X is a compiler for finite element variational forms. From a
+FFCx is a compiler for finite element variational forms. From a
 high-level description of the form in the Unified Form Language (UFL),
 it generates efficient low-level C code that can be used to assemble the
 corresponding discrete operator (tensor). In particular, a bilinear form
 may be assembled into a matrix and a linear form may be assembled into a
-vector.  FFC-X may be used either from the command line (by invoking the
+vector.  FFCx may be used either from the command line (by invoking the
 ``ffcx`` command) or as a Python module (``import ffcx``).
 
-FFC-X is part of the FEniCS Project. For more information, visit
+FFCx is part of the FEniCS Project. For more information, visit
 https://www.fenicsproject.org
 
 

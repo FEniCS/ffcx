@@ -10,54 +10,11 @@
 
 import logging
 
-import numpy
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
-from ffcx.codegeneration.utils import (apply_transformations_to_data)
 
 logger = logging.getLogger("ffcx")
 index_type = "int"
-
-
-def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix=""):
-    max_num_derivatives = tdim**max_degree
-    combinations = L.Symbol("combinations" + suffix)
-
-    # This precomputes the combinations for each order and stores in code as table
-    # Python equivalent precomputed for each valid order:
-    combinations_shape = (max_degree, max_num_derivatives, max_degree)
-    all_combinations = numpy.zeros(combinations_shape, dtype=int)
-    for q in range(1, max_degree + 1):
-        for row in range(1, max_num_derivatives):
-            for num in range(0, row):
-                for col in range(q - 1, -1, -1):
-                    if all_combinations[q - 1][row][col] > tdim - 2:
-                        all_combinations[q - 1][row][col] = 0
-                    else:
-                        all_combinations[q - 1][row][col] += 1
-                        break
-    code = [
-        L.Comment("Precomputed combinations"),
-        L.ArrayDecl(
-            "const " + index_type, combinations, combinations_shape, values=all_combinations),
-    ]
-    # Select the right order for further access
-    combinations = combinations[order - 1]
-
-    return code, combinations
-
-
-def apply_dof_transformation(L, ir, parameters, inverse=False, transpose=False, dtype="double"):
-    """Write function that applies the DOF transformations to some data."""
-    data = L.Symbol("data")
-    block = L.Symbol("block")
-    block_size = L.Symbol("dim")
-
-    apply_transformations = apply_transformations_to_data(
-        L, ir.base_transformations, ir.cell_shape, data, inverse=inverse, transpose=transpose,
-        indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)],
-        dtype=dtype)
-    return apply_transformations + [L.Return(0)]
 
 
 def generator(ir, parameters):
@@ -105,15 +62,6 @@ def generator(ir, parameters):
     else:
         d["reference_value_shape"] = "NULL"
         d["reference_value_shape_init"] = ""
-
-    d["apply_dof_transformation"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters))
-    d["apply_dof_transformation_to_scalar"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, dtype="ufc_scalar_t"))
-    d["apply_inverse_transpose_dof_transformation"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, inverse=True, transpose=True))
-    d["apply_inverse_transpose_dof_transformation_to_scalar"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, dtype="ufc_scalar_t", inverse=True, transpose=True))
 
     if len(ir.sub_elements) > 0:
         d["sub_elements"] = f"sub_elements_{ir.name}"
