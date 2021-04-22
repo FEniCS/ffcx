@@ -51,12 +51,6 @@ Topic :: Software Development :: Code Generators
 """
 
 
-def tarball():
-    if "dev" in VERSION:
-        return None
-    return URL + "downloads/fenics-ffcx-{}.tar.gz".format(VERSION)
-
-
 def get_git_commit_hash():
     """Return git commit hash of currently checked out revision or "unknown"."""
     try:
@@ -114,7 +108,6 @@ def run_install():
         author_email="fenics-dev@googlegroups.com",
         maintainer_email="fenics-dev@googlegroups.com",
         url=URL,
-        download_url=tarball(),
         platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
         packages=[
             "ffcx",
