@@ -10,8 +10,7 @@ if sys.version_info < (3, 6):
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-VERSION = "2019.2.0.dev0"
-RESTRICT_REQUIREMENTS = ">=2019.2.0.dev0,<2019.3"
+VERSION = "0.1.0"
 
 if on_rtd:
     REQUIREMENTS = []
@@ -19,8 +18,8 @@ else:
     REQUIREMENTS = [
         "numpy",
         "cffi",
-        "fenics-basix",
-        "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
+        "fenics-basix>=0.0.1",
+        "fenics-ufl>=2021.1.0",
     ]
 
 URL = "https://github.com/FEniCS/ffcx/"
