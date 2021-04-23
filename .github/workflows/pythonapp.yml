@@ -45,6 +45,7 @@ jobs:
           cmake --build build-dir
           sudo cmake --install build-dir
           pip install ./basix/python
+          rm -rf basix
           pip install pygraphviz
           pip install git+https://github.com/FEniCS/ufl.git --user
 
