@@ -26,12 +26,6 @@ URL = "https://github.com/FEniCS/ffcx/"
 
 ENTRY_POINTS = {'console_scripts': ['ffcx = ffcx.__main__:main', 'ffcx-3 = ffcx.__main__:main']}
 
-AUTHORS = """\
-Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,
-Martin Sandve Alnæs, Hans Petter Langtangen, Kent-Andre Mardal,
-Ola Skavhaug, et al.
-"""
-
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
@@ -43,8 +37,10 @@ Operating System :: MacOS :: MacOS X
 Operating System :: Microsoft :: Windows
 Programming Language :: Python
 Programming Language :: Python :: 3
-Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
+Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
+Programming Language :: Python :: 3.9
 Topic :: Scientific/Engineering :: Mathematics
 Topic :: Software Development :: Libraries :: Python Modules
 Topic :: Software Development :: Code Generators
@@ -102,13 +98,13 @@ def run_install():
         name="fenics-ffcx",
         description="The FEniCS Form Compiler",
         version=VERSION,
-        author=AUTHORS,
+        author="FEniCS Project Team",
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         license="LGPL version 3 or later",
         author_email="fenics-dev@googlegroups.com",
         maintainer_email="fenics-dev@googlegroups.com",
         url=URL,
-        platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+        platforms=["Windows", "Linux", "Mac OS-X", "Unix"],
         packages=[
             "ffcx",
             "ffcx.codegeneration",
