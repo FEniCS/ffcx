@@ -9,10 +9,10 @@
 
 #pragma once
 
-#define UFC_VERSION_MAJOR 2018
+#define UFC_VERSION_MAJOR 2021
 #define UFC_VERSION_MINOR 1
 #define UFC_VERSION_MAINTENANCE 0
-#define UFC_VERSION_RELEASE 0
+#define UFC_VERSION_RELEASE 1
 
 #if UFC_VERSION_RELEASE
 #define UFC_VERSION                                                            \
