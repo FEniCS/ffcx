@@ -1,7 +1,7 @@
 // This file provides utility functions for computing geometric quantities.
 // This code is released into the public domain.
 //
-// The FEniCS Project (http://www.fenicsproject.org/) 2013-2018.
+// The FEniCS Project (http://www.fenicsproject.org/) 2013-2021.
 
 #pragma once
 

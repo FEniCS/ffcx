@@ -583,8 +583,11 @@ def optimize_element_tables(tables,
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = len(ufl_element.sub_elements())
 
-        dofrange, dofmap, tbl = strip_table_zeros(
-            tbl, block_size, rtol=rtol, atol=atol)
+        # dofrange, dofmap, tbl = strip_table_zeros(
+        #    tbl, block_size, rtol=rtol, atol=atol)
+
+        dofmap = list(range(tbl.shape[-1]))
+        dofrange = (0, dofmap[-1])
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
