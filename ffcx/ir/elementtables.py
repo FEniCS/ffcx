@@ -9,6 +9,7 @@ import collections
 import logging
 
 import numpy
+from numpy.core.fromnumeric import nonzero
 
 import ufl
 import ufl.utils.derivativetuples
@@ -74,9 +75,10 @@ def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
     sh = table.shape
 
     # Find nonzero columns
-    z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
+    z = numpy.zeros(sh[:-1]) + -10  # Correctly shaped zero table
     dofmap = tuple(
         i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
+
     if dofmap:
         # Find first nonzero column
         begin = dofmap[0]
@@ -86,6 +88,7 @@ def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
         begin = 0
         end = 0
 
+    print(dofmap, block_size)
     for i in dofmap:
         if i % block_size != dofmap[0] % block_size:
             # If dofs are not all in the same block component, don't remove intermediate zeros
@@ -98,6 +101,28 @@ def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
     # Make subtable by dropping zero columns
     stripped_table = table[..., dofmap]
     dofrange = (begin, end)
+    return dofrange, dofmap, stripped_table
+
+
+def strip_blocks(table, block_size, rtol=default_rtol, atol=default_atol):
+    """Strip zero columns from table. Returns column range (begin, end) and the new compact table."""
+    # Get shape of table and number of columns, defined as the last axis
+
+    table = numpy.asarray(table)
+    sh = table.shape
+
+    # Find nonzero columns
+    z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
+    dofmap = tuple(i for i in range(sh[-1]))
+    nonzeros = tuple(
+        i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
+
+    print(dofmap, block_size)
+    block = nonzeros[0] % block_size
+    dofmap = tuple(range(block, dofmap[-1] + 1, block_size))
+    dofrange = (dofmap[0], dofmap[-1] + 1)
+    stripped_table = table[..., dofmap]
+    print(dofmap, block_size)
     return dofrange, dofmap, stripped_table
 
 
@@ -584,10 +609,9 @@ def optimize_element_tables(tables,
             block_size = len(ufl_element.sub_elements())
 
         # dofrange, dofmap, tbl = strip_table_zeros(
-        #    tbl, block_size, rtol=rtol, atol=atol)
+        #     tbl, block_size, rtol=rtol, atol=atol)
 
-        dofmap = list(range(tbl.shape[-1]))
-        dofrange = (0, dofmap[-1])
+        dofrange, dofmap, tbl = strip_blocks(tbl, block_size, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
