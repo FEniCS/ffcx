@@ -88,7 +88,6 @@ def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
         begin = 0
         end = 0
 
-    print(dofmap, block_size)
     for i in dofmap:
         if i % block_size != dofmap[0] % block_size:
             # If dofs are not all in the same block component, don't remove intermediate zeros
@@ -117,12 +116,10 @@ def strip_blocks(table, block_size, rtol=default_rtol, atol=default_atol):
     nonzeros = tuple(
         i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
 
-    print(dofmap, block_size)
     block = nonzeros[0] % block_size
     dofmap = tuple(range(block, dofmap[-1] + 1, block_size))
     dofrange = (dofmap[0], dofmap[-1] + 1)
     stripped_table = table[..., dofmap]
-    print(dofmap, block_size)
     return dofrange, dofmap, stripped_table
 
 
