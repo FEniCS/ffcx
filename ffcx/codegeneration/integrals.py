@@ -256,7 +256,7 @@ class IntegralGenerator(object):
             ufl.geometry.ReferenceNormal,
             ufl.geometry.FacetOrientation,
         ]
-        all = {t: [] for t in geometry}
+        cells = {t: set() for t in geometry}
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
@@ -264,7 +264,7 @@ class IntegralGenerator(object):
                 if mt is not None:
                     t = type(mt.terminal)
                     if t in geometry:
-                        all[t].append(attr)
+                        cells[t].add(mt.terminal.ufl_domain().ufl_cell().cellname())
 
         parts = []
 
@@ -274,10 +274,6 @@ class IntegralGenerator(object):
             return (len(ls), ) + get_shape(ls[0])
 
         # CellFacetJacobian
-        cells = set()
-        for i in all[ufl.geometry.CellFacetJacobian]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         facet_jacobian = {
             "triangle": [[[-1.0], [1.0]], [[0.0], [1.0]], [[1.0], [0.0]]],
@@ -295,7 +291,7 @@ class IntegralGenerator(object):
                            [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]]]
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.CellFacetJacobian]:
             parts += [
                 L.ArrayDecl(
                     "static const double", f"{c}_reference_facet_jacobian",
@@ -303,10 +299,6 @@ class IntegralGenerator(object):
             ]
 
         # ReferenceNormal
-        cells = set()
-        for i in all[ufl.geometry.ReferenceNormal]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         facet_normals = {
             "interval": [[-1.0], [1.0]],
@@ -318,7 +310,7 @@ class IntegralGenerator(object):
                            [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.ReferenceNormal]:
             parts += [
                 L.ArrayDecl(
                     "static const double", f"{c}_reference_facet_normals",
@@ -326,44 +318,32 @@ class IntegralGenerator(object):
             ]
 
         # ReferenceFacetVolume
-        cells = set()
-        for i in all[ufl.geometry.ReferenceFacetVolume]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         facet_volume = {
             "interval": 1.0, "triangle": 1.0, "tetrahedron": 0.5,
             "quadrilateral": 1.0, "hexahedron": 1.0
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.ReferenceFacetVolume]:
             parts += [
                 L.VariableDecl(
                     "static const double", f"{c}_reference_facet_volume", facet_volume[c])
             ]
 
         # ReferenceCellVolume
-        cells = set()
-        for i in all[ufl.geometry.ReferenceCellVolume]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         cell_volume = {
             "interval": 1.0, "triangle": 0.5, "tetrahedron": 1 / 6,
             "quadrilateral": 1.0, "hexahedron": 1.0
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.ReferenceCellVolume]:
             parts += [
                 L.VariableDecl(
                     "static const double", f"{c}_reference_cell_volume", cell_volume[c])
             ]
 
         # ReferenceCellEdgeVectors
-        cells = set()
-        for i in all[ufl.geometry.ReferenceCellEdgeVectors]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         edge_vectors = {
             "triangle": [[-1.0, 1.0], [0.0, 1.0], [1.0, 0.0]],
@@ -375,7 +355,7 @@ class IntegralGenerator(object):
                            [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.ReferenceCellEdgeVectors]:
             parts += [
                 L.ArrayDecl(
                     "static const double", f"{c}_reference_edge_vectors",
@@ -383,10 +363,6 @@ class IntegralGenerator(object):
             ]
 
         # ReferenceFacetEdgeVectors
-        cells = set()
-        for i in all[ufl.geometry.ReferenceFacetEdgeVectors]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         edge_vectors = {
             "tetrahedron": [[[0.0, -1.0, 1.0], [-1.0, 0.0, 1.0], [-1.0, 1.0, 0.0]],
@@ -401,7 +377,7 @@ class IntegralGenerator(object):
                            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]]
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.ReferenceFacetEdgeVectors]:
             parts += [
                 L.ArrayDecl(
                     "static const double", f"{c}_facet_reference_edge_vectors",
@@ -409,10 +385,6 @@ class IntegralGenerator(object):
             ]
 
         # FacetEdgeVectors
-        cells = set()
-        for i in all[ufl.geometry.FacetEdgeVectors]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         edge_vertices = {
             "tetrahedron": [[[2, 3], [1, 3], [1, 2]], [[2, 3], [0, 3], [0, 2]],
@@ -422,7 +394,7 @@ class IntegralGenerator(object):
                            [[2, 3], [2, 6], [3, 6], [3, 7]], [[4, 5], [4, 6], [5, 7], [6, 7]]]
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.FacetEdgeVectors]:
             parts += [
                 L.ArrayDecl(
                     "static const unsigned int", f"{c}_facet_edge_vertices",
@@ -430,10 +402,6 @@ class IntegralGenerator(object):
             ]
 
         # FacetOrientation
-        cells = set()
-        for i in all[ufl.geometry.ReferenceFacetEdgeVectors]:
-            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
-
         # TODO: get from Basix
         facet_orientation = {
             "interval": [-1, 1],
@@ -443,7 +411,7 @@ class IntegralGenerator(object):
             "hexahedron": [-1, 1, -1, 1, -1, 1]
         }
 
-        for c in cells:
+        for c in cells[ufl.geometry.ReferenceFacetEdgeVectors]:
             parts += [
                 L.ArrayDecl(
                     "static const double", f"{c}_facet_orientation",
