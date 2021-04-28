@@ -123,27 +123,48 @@ def facet_reference_edge_vectors(L, tablename, cellname):
     return L.ArrayDecl("static const double", f"{cellname}_{tablename}", out.shape, out)
 
 
+def _make_normals(cellname):
+    celltype = getattr(basix.CellType, cellname)
+    topology = basix.topology(celltype)
+    geometry = basix.geometry(celltype)
+    tdim = len(topology) - 1
+
+    midpoint = sum(geometry) / len(geometry)
+
+    if tdim == 1:
+        # Interval
+        return [numpy.array([1.]), numpy.array([1.])], [-1, 1]
+
+    normals = []
+    orientations = []
+    for facet in topology[-2]:
+        if tdim == 2:
+            # Facets are edges
+            edge = geometry[facet[1]] - geometry[facet[0]]
+            n = numpy.array([-edge[1], edge[0]])
+        elif tdim == 3:
+            # Facets are faces
+            edge0 = geometry[facet[1]] - geometry[facet[0]]
+            edge1 = geometry[facet[2]] - geometry[facet[0]]
+            n = numpy.cross(edge0, edge1)
+        else:
+            raise ValueError("Normals not supported for this celltype.")
+        n /= numpy.linalg.norm(n)
+        normals.append(n)
+        if numpy.dot(n, geometry[facet[0]] - midpoint) > 0:
+            orientations.append(1)
+        else:
+            orientations.append(-1)
+    return normals, orientations
+
+
 def reference_facet_normals(L, tablename, cellname):
-    facet_normals = {
-        "interval": [[-1.0], [1.0]],
-        "triangle": [[0.7071067811865476, 0.7071067811865476], [-1.0, 0.0], [0.0, -1.0]],
-        "tetrahedron": [[0.5773502691896258, 0.5773502691896258, 0.5773502691896258],
-                        [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]],
-        "quadrilateral": [[0.0, -1.0], [-1.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
-        "hexahedron": [[0.0, 0.0, -1.0], [0.0, -1.0, 0.0], [-1.0, 0.0, 0.0],
-                       [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-    }
-    out = numpy.array(facet_normals[cellname])
+    normals, orientations = _make_normals(cellname)
+
+    out = numpy.array([i * j for i, j in zip(normals, orientations)])
     return L.ArrayDecl("static const double", f"{cellname}_{tablename}", out.shape, out)
 
 
 def facet_orientation(L, tablename, cellname):
-    facet_orientation = {
-        "interval": [-1., 1.],
-        "triangle": [1., -1., 1.],
-        "tetrahedron": [1., -1., 1., -1.],
-        "quadrilateral": [-1., 1., -1., 1.],
-        "hexahedron": [-1., 1., -1., 1., -1., 1.]
-    }
-    out = numpy.array(facet_orientation[cellname])
+    out = numpy.array(_make_normals(cellname)[1])
     return L.ArrayDecl("static const double", f"{cellname}_{tablename}", out.shape, out)
