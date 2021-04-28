@@ -203,7 +203,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
             if qd_metadata != qd_default:
                 qd = qd_metadata
             else:
-                qd = pd_estimated + 1
+                qd = pd_estimated
 
                 # The quadrature degree from UFL can be very high for some
                 # integrals.  Print warning if number of quadrature points
