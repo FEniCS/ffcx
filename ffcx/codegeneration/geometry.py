@@ -1,3 +1,4 @@
+import basix
 import numpy
 
 
@@ -22,34 +23,51 @@ def write_table(L, tablename, cellname):
 
 
 def facet_edge_vertices(L, tablename, cellname):
-    edge_vertices = {
-        "tetrahedron": [[[2, 3], [1, 3], [1, 2]], [[2, 3], [0, 3], [0, 2]],
-                        [[1, 3], [0, 3], [0, 1]], [[1, 2], [0, 2], [0, 1]]],
-        "hexahedron": [[[0, 1], [0, 2], [1, 3], [2, 3]], [[0, 1], [0, 4], [1, 5], [4, 5]],
-                       [[0, 2], [0, 4], [2, 6], [4, 6]], [[1, 3], [1, 5], [3, 7], [5, 7]],
-                       [[2, 3], [2, 6], [3, 6], [3, 7]], [[4, 5], [4, 6], [5, 7], [6, 7]]]
-    }
-    out = numpy.array(edge_vertices[cellname], dtype=int)
+    celltype = getattr(basix.CellType, cellname)
+    topology = basix.topology(celltype)
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
+
+    if len(topology) != 4:
+        raise ValueError("Can only get facet edges for 3D cells.")
+
+    edge_vertices = []
+    for face in topology[2]:
+        if len(face) == 3:
+            edge_vertices += [[face[i] for i in edge] for edge in triangle_edges]
+        elif len(face) == 4:
+            edge_vertices += [[face[i] for i in edge] for edge in quadrilateral_edges]
+        else:
+            raise ValueError("Only triangular and quadrilateral faces supported.")
+
+    out = numpy.array(edge_vertices, dtype=int)
     return L.ArrayDecl("static const unsigned int", f"{cellname}_{tablename}", out.shape, out)
 
 
 def reference_facet_jacobian(L, tablename, cellname):
-    facet_jacobian = {
-        "triangle": [[[-1.0], [1.0]], [[0.0], [1.0]], [[1.0], [0.0]]],
-        "tetrahedron": [[[-1.0, -1.0], [1.0, 0.0], [0.0, 1.0]],
-                        [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
-                        [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]],
-                        [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]]],
-        "quadrilateral": [[[1.0], [0.0]], [[0.0], [1.0]],
-                          [[0.0], [1.0]], [[1.0], [0.0]]],
-        "hexahedron": [[[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]],
-                       [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]],
-                       [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
-                       [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
-                       [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]],
-                       [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]]]
-    }
-    out = numpy.array(facet_jacobian[cellname])
+    celltype = getattr(basix.CellType, cellname)
+    topology = basix.topology(celltype)
+    geometry = basix.geometry(celltype)
+
+    tdim = len(topology) - 1
+
+    if tdim < 2:
+        raise ValueError("Can only get facet jacobians for 2D and 3D cells.")
+
+    facet_jacobian = []
+    if tdim == 2:
+        for facet in topology[-2]:
+            edge = geometry[facet[1]] - geometry[facet[0]]
+            facet_jacobian.append(list(zip(edge)))
+
+    else:
+        assert tdim == 3
+        for facet in topology[-2]:
+            edge0 = geometry[facet[1]] - geometry[facet[0]]
+            edge1 = geometry[facet[2]] - geometry[facet[0]]
+            facet_jacobian.append(list(zip(edge0, edge1)))
+
+    out = numpy.array(facet_jacobian)
     return L.ArrayDecl("static const double", f"{cellname}_{tablename}", out.shape, out)
 
 
