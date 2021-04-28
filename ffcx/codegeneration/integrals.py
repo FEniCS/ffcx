@@ -186,6 +186,10 @@ class IntegralGenerator(object):
         # blocks
         parts += self.generate_element_tables()
 
+        # Generate the tables of basis function values and preintegrated
+        # blocks
+        parts += self.generate_geometry_tables()
+
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
         # quadloops
@@ -236,6 +240,216 @@ class IntegralGenerator(object):
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
+        return parts
+
+    def generate_geometry_tables(self):
+        """Generate static tables of geometry data."""
+        L = self.backend.language
+
+        geometry = [
+            ufl.geometry.FacetEdgeVectors,
+            ufl.geometry.CellFacetJacobian,
+            ufl.geometry.ReferenceCellVolume,
+            ufl.geometry.ReferenceFacetVolume,
+            ufl.geometry.ReferenceCellEdgeVectors,
+            ufl.geometry.ReferenceFacetEdgeVectors,
+            ufl.geometry.ReferenceNormal,
+            ufl.geometry.FacetOrientation,
+        ]
+        all = {t: [] for t in geometry}
+
+        for integrand in self.ir.integrand.values():
+            for attr in integrand["factorization"].nodes.values():
+                mt = attr.get("mt")
+                if mt is not None:
+                    t = type(mt.terminal)
+                    if t in geometry:
+                        all[t].append(attr)
+
+        parts = []
+
+        def get_shape(ls):
+            if not isinstance(ls, (list, tuple)):
+                return tuple()
+            return (len(ls), ) + get_shape(ls[0])
+
+        # CellFacetJacobian
+        cells = set()
+        for i in all[ufl.geometry.CellFacetJacobian]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        facet_jacobian = {
+            "triangle": [[[-1.0], [1.0]], [[0.0], [1.0]], [[1.0], [0.0]]],
+            "tetrahedron": [[[-1.0, -1.0], [1.0, 0.0], [0.0, 1.0]],
+                            [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+                            [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]],
+                            [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]]],
+            "quadrilateral": [[[1.0], [0.0]], [[0.0], [1.0]],
+                              [[0.0], [1.0]], [[1.0], [0.0]]],
+            "hexahedron": [[[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]],
+                           [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]],
+                           [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+                           [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+                           [[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]],
+                           [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]]]
+        }
+
+        for c in cells:
+            parts += [
+                L.ArrayDecl(
+                    "static const double", f"{c}_reference_facet_jacobian",
+                    get_shape(facet_jacobian[c]), facet_jacobian[c])
+            ]
+
+        # ReferenceNormal
+        cells = set()
+        for i in all[ufl.geometry.ReferenceNormal]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        facet_normals = {
+            "interval": [[-1.0], [1.0]],
+            "triangle": [[0.7071067811865476, 0.7071067811865476], [-1.0, 0.0], [0.0, -1.0]],
+            "tetrahedron": [[0.5773502691896258, 0.5773502691896258, 0.5773502691896258],
+                            [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]],
+            "quadrilateral": [[0.0, -1.0], [-1.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+            "hexahedron": [[0.0, 0.0, -1.0], [0.0, -1.0, 0.0], [-1.0, 0.0, 0.0],
+                           [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        }
+
+        for c in cells:
+            parts += [
+                L.ArrayDecl(
+                    "static const double", f"{c}_reference_facet_normals",
+                    get_shape(facet_normals[c]), facet_normals[c])
+            ]
+
+        # ReferenceFacetVolume
+        cells = set()
+        for i in all[ufl.geometry.ReferenceFacetVolume]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        facet_volume = {
+            "interval": 1.0, "triangle": 1.0, "tetrahedron": 0.5,
+            "quadrilateral": 1.0, "hexahedron": 1.0
+        }
+
+        for c in cells:
+            parts += [
+                L.VariableDecl(
+                    "static const double", f"{c}_reference_facet_volume", facet_volume[c])
+            ]
+
+        # ReferenceCellVolume
+        cells = set()
+        for i in all[ufl.geometry.ReferenceCellVolume]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        cell_volume = {
+            "interval": 1.0, "triangle": 0.5, "tetrahedron": 1 / 6,
+            "quadrilateral": 1.0, "hexahedron": 1.0
+        }
+
+        for c in cells:
+            parts += [
+                L.VariableDecl(
+                    "static const double", f"{c}_reference_cell_volume", cell_volume[c])
+            ]
+
+        # ReferenceCellEdgeVectors
+        cells = set()
+        for i in all[ufl.geometry.ReferenceCellEdgeVectors]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        edge_vectors = {
+            "triangle": [[-1.0, 1.0], [0.0, 1.0], [1.0, 0.0]],
+            "tetrahedron": [[0.0, -1.0, 1.0], [-1.0, 0.0, 1.0], [-1.0, 1.0, 0.0],
+                            [0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
+            "quadrilateral": [[1.0, 0.0], [0.0, 1.0], [0.0, 1.0], [1.0, 0.0]],
+            "hexahedron": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0],
+                           [0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0],
+                           [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]
+        }
+
+        for c in cells:
+            parts += [
+                L.ArrayDecl(
+                    "static const double", f"{c}_reference_edge_vectors",
+                    get_shape(edge_vectors[c]), edge_vectors[c])
+            ]
+
+        # ReferenceFacetEdgeVectors
+        cells = set()
+        for i in all[ufl.geometry.ReferenceFacetEdgeVectors]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        edge_vectors = {
+            "tetrahedron": [[[0.0, -1.0, 1.0], [-1.0, 0.0, 1.0], [-1.0, 1.0, 0.0]],
+                            [[0.0, -1.0, 1.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
+                            [[-1.0, 0.0, 1.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
+                            [[-1.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]],
+            "hexahedron": [[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
+                           [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
+                           [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
+                           [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
+                           [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
+                           [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]]
+        }
+
+        for c in cells:
+            parts += [
+                L.ArrayDecl(
+                    "static const double", f"{c}_facet_reference_edge_vectors",
+                    get_shape(edge_vectors[c]), edge_vectors[c])
+            ]
+
+        # FacetEdgeVectors
+        cells = set()
+        for i in all[ufl.geometry.FacetEdgeVectors]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        edge_vertices = {
+            "tetrahedron": [[[2, 3], [1, 3], [1, 2]], [[2, 3], [0, 3], [0, 2]],
+                            [[1, 3], [0, 3], [0, 1]], [[1, 2], [0, 2], [0, 1]]],
+            "hexahedron": [[[0, 1], [0, 2], [1, 3], [2, 3]], [[0, 1], [0, 4], [1, 5], [4, 5]],
+                           [[0, 2], [0, 4], [2, 6], [4, 6]], [[1, 3], [1, 5], [3, 7], [5, 7]],
+                           [[2, 3], [2, 6], [3, 6], [3, 7]], [[4, 5], [4, 6], [5, 7], [6, 7]]]
+        }
+
+        for c in cells:
+            parts += [
+                L.ArrayDecl(
+                    "static const unsigned int", f"{c}_facet_edge_vertices",
+                    get_shape(edge_vertices[c]), edge_vertices[c])
+            ]
+
+        # FacetOrientation
+        cells = set()
+        for i in all[ufl.geometry.ReferenceFacetEdgeVectors]:
+            cells.add(i["mt"].terminal.ufl_domain().ufl_cell().cellname())
+
+        # TODO: get from Basix
+        facet_orientation = {
+            "interval": [-1, 1],
+            "triangle": [1, -1, 1],
+            "tetrahedron": [1, -1, 1, -1],
+            "quadrilateral": [-1, 1, -1, 1],
+            "hexahedron": [-1, 1, -1, 1, -1, 1]
+        }
+
+        for c in cells:
+            parts += [
+                L.ArrayDecl(
+                    "static const double", f"{c}_facet_orientation",
+                    get_shape(facet_orientation[c]), facet_orientation[c])
+            ]
+
         return parts
 
     def generate_element_tables(self):
@@ -328,6 +542,7 @@ class IntegralGenerator(object):
         parts = self.generate_partition(arraysymbol, F, "piecewise", None)
         parts = L.commented_code_list(
             parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
+
         return parts
 
     def generate_varying_partition(self, quadrature_rule):
