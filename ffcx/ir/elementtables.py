@@ -116,9 +116,18 @@ def strip_blocks(table, block_size, rtol=default_rtol, atol=default_atol):
     nonzeros = tuple(
         i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
 
-    block = nonzeros[0] % block_size
-    dofmap = tuple(range(block, dofmap[-1] + 1, block_size))
-    dofrange = (dofmap[0], dofmap[-1] + 1)
+    if nonzeros:
+        # Find first nonzero column
+        begin = nonzeros[0]
+        block = begin % block_size
+        dofmap = tuple(range(block, dofmap[-1] + 1, block_size))
+        dofrange = (dofmap[0], dofmap[-1] + 1)
+    else:
+        begin = 0
+        end = 0
+        dofmap = tuple(range(begin, end))
+        dofrange = (begin, end)
+
     stripped_table = table[..., dofmap]
     return dofrange, dofmap, stripped_table
 
