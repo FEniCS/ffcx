@@ -32,11 +32,11 @@ def facet_edge_vertices(L, tablename, cellname):
         raise ValueError("Can only get facet edges for 3D cells.")
 
     edge_vertices = []
-    for face in topology[2]:
-        if len(face) == 3:
-            edge_vertices += [[face[i] for i in edge] for edge in triangle_edges]
-        elif len(face) == 4:
-            edge_vertices += [[face[i] for i in edge] for edge in quadrilateral_edges]
+    for facet in topology[-2]:
+        if len(facet) == 3:
+            edge_vertices += [[facet[i] for i in edge] for edge in triangle_edges]
+        elif len(facet) == 4:
+            edge_vertices += [[facet[i] for i in edge] for edge in quadrilateral_edges]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
@@ -82,7 +82,7 @@ def reference_cell_volume(L, tablename, cellname):
 
 def reference_facet_volume(L, tablename, cellname):
     facet_volume = {
-        "interval": 1.0, "triangle": 1.0, "tetrahedron": 0.5,
+        "triangle": 1.0, "tetrahedron": 0.5,
         "quadrilateral": 1.0, "hexahedron": 1.0
     }
     out = facet_volume[cellname]
@@ -90,33 +90,36 @@ def reference_facet_volume(L, tablename, cellname):
 
 
 def reference_edge_vectors(L, tablename, cellname):
-    edge_vectors = {
-        "triangle": [[-1.0, 1.0], [0.0, 1.0], [1.0, 0.0]],
-        "tetrahedron": [[0.0, -1.0, 1.0], [-1.0, 0.0, 1.0], [-1.0, 1.0, 0.0],
-                        [0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
-        "quadrilateral": [[1.0, 0.0], [0.0, 1.0], [0.0, 1.0], [1.0, 0.0]],
-        "hexahedron": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0],
-                       [0.0, 0.0, 1.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0],
-                       [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]
-    }
+    celltype = getattr(basix.CellType, cellname)
+    topology = basix.topology(celltype)
+    geometry = basix.geometry(celltype)
+
+    edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
+
     out = numpy.array(edge_vectors[cellname])
     return L.ArrayDecl("static const double", f"{cellname}_{tablename}", out.shape, out)
 
 
 def facet_reference_edge_vectors(L, tablename, cellname):
-    edge_vectors = {
-        "tetrahedron": [[[0.0, -1.0, 1.0], [-1.0, 0.0, 1.0], [-1.0, 1.0, 0.0]],
-                        [[0.0, -1.0, 1.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
-                        [[-1.0, 0.0, 1.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
-                        [[-1.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]],
-        "hexahedron": [[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]],
-                       [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
-                       [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
-                       [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]],
-                       [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]],
-                       [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]]
-    }
-    out = numpy.array(edge_vectors[cellname])
+    celltype = getattr(basix.CellType, cellname)
+    topology = basix.topology(celltype)
+    geometry = basix.geometry(celltype)
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
+
+    if len(topology) != 4:
+        raise ValueError("Can only get facet edges for 3D cells.")
+
+    edge_vectors = []
+    for facet in topology[-2]:
+        if len(facet) == 3:
+            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
+        elif len(facet) == 4:
+            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_edges]
+        else:
+            raise ValueError("Only triangular and quadrilateral faces supported.")
+
+    out = numpy.array(edge_vectors)
     return L.ArrayDecl("static const double", f"{cellname}_{tablename}", out.shape, out)
 
 
