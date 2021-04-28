@@ -46,13 +46,12 @@ class QuadratureRule:
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
 
-    # from IPython import embed; embed()
     if integral_type == "cell":
-        return create_quadrature(cell.cellname(), degree + 1, rule)
+        return create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
-        return create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree + 1, rule)
+        return create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree, rule)
     elif integral_type in ufl.measure.point_integral_types:
-        return create_quadrature("vertex", degree + 1, rule)
+        return create_quadrature("vertex", degree, rule)
     elif integral_type == "expression":
         return (None, None)
 
