@@ -85,9 +85,8 @@ def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
         
     if dofmap:
         block_dm = tuple(range(dofmap[0], sh[-1], block_size))
-        for i in dofmap:
-            if i not in block_dm:
-                raise ValueError("Irregular block dofmap in strip_tables")
+        if not all([i in block_dm for i in dofmap]):
+            raise ValueError("Irregular block dofmap in strip_tables")
         dofmap = block_dm
         begin = dofmap[0]
         end = dofmap[-1] + 1
@@ -538,6 +537,7 @@ def build_element_tables(quadrature_rule,
 
 def optimize_element_tables(tables,
                             table_origins,
+                            strip,
                             rtol=default_rtol,
                             atol=default_atol):
     """Optimize tables and make unique set.
@@ -583,7 +583,7 @@ def optimize_element_tables(tables,
             block_size = len(ufl_element.sub_elements())
 
         dofrange, dofmap, tbl = strip_table_zeros(
-            tbl, block_size, rtol=rtol, atol=atol)
+            tbl, block_size, strip, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
@@ -700,7 +700,8 @@ def build_optimized_tables(quadrature_rule,
                            modified_terminals,
                            existing_tables,
                            rtol=default_rtol,
-                           atol=default_atol):
+                           atol=default_atol,
+                           strip=True):
 
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = build_element_tables(
@@ -715,7 +716,7 @@ def build_optimized_tables(quadrature_rule,
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
         table_original_num_dofs = optimize_element_tables(
-            tables, table_origins, rtol=rtol, atol=atol)
+            tables, table_origins, strip, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
     unique_table_num_dofs = {uname: tbl.shape[-1]
