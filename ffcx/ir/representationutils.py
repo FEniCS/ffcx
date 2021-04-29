@@ -1,6 +1,6 @@
 # Copyright (C) 2012-2017 Marie Rognes
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utility functions for some code shared between representations."""
