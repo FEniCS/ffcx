@@ -73,29 +73,28 @@ def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
     table = numpy.asarray(table)
     sh = table.shape
 
+    # Do nothing if bs=1
+    if (block_size == 1):
+        dofmap = tuple(range(sh[-1]))
+        return (0, len(dofmap)), dofmap, table
+
     # Find nonzero columns
     z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
     dofmap = tuple(
         i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
+        
     if dofmap:
-        # Find first nonzero column
+        block_dm = tuple(range(dofmap[0], sh[-1], block_size))
+        for i in dofmap:
+            if i not in block_dm:
+                raise ValueError("Irregular block dofmap in strip_tables")
+        dofmap = block_dm
         begin = dofmap[0]
-        # Find (one beyond) last nonzero column
         end = dofmap[-1] + 1
     else:
         begin = 0
         end = 0
-
-    for i in dofmap:
-        if i % block_size != dofmap[0] % block_size:
-            # If dofs are not all in the same block component, don't remove intermediate zeros
-            dofmap = tuple(range(begin, end))
-            break
-    else:
-        # If dofs are all in the same block component, keep only that block component
-        dofmap = tuple(range(begin, end, block_size))
-
-    # Make subtable by dropping zero columns
+    
     stripped_table = table[..., dofmap]
     dofrange = (begin, end)
     return dofrange, dofmap, stripped_table
