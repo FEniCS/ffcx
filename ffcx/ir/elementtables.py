@@ -601,8 +601,6 @@ def optimize_element_tables(tables,
     table_permuted = {}
     table_original_num_dofs = {}
 
-    print('keep full tables=', full_tables)
-
     for name in used_names:
         tbl = tables[name]
 
