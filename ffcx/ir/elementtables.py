@@ -67,6 +67,38 @@ def clamp_table_small_numbers(table,
     return table
 
 
+def strip_table_blocks(table, block_size, rtol, atol):
+    """Strip zero columns from table, but only when block_size > 1"""
+    # Get shape of table and number of columns, defined as the last axis
+    table = numpy.asarray(table)
+    sh = table.shape
+
+    # Do nothing if bs=1
+    if (block_size == 1):
+        dofmap = tuple(range(sh[-1]))
+        return (0, len(dofmap)), dofmap, table
+
+    # Find nonzero columns
+    z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
+    dofmap = tuple(
+        i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
+        
+    if dofmap:
+        block_dm = tuple(range(dofmap[0], sh[-1], block_size))
+        if not all([i in block_dm for i in dofmap]):
+            raise ValueError("Irregular block dofmap in strip_tables")
+        dofmap = block_dm
+        begin = dofmap[0]
+        end = dofmap[-1] + 1
+    else:
+        begin = 0
+        end = 0
+    
+    stripped_table = table[..., dofmap]
+    dofrange = (begin, end)
+    return dofrange, dofmap, stripped_table
+
+
 def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
     """Strip zero columns from table. Returns column range (begin, end) and the new compact table."""
     # Get shape of table and number of columns, defined as the last axis
