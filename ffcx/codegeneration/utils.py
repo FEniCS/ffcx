@@ -1,7 +1,7 @@
 # Copyright (C) 2015-2017 Martin Sandve Alnæs
 # Modified by Matthew Scroggs, 2020-2021
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
