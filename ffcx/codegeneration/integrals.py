@@ -187,8 +187,7 @@ class IntegralGenerator(object):
         # blocks
         parts += self.generate_element_tables()
 
-        # Generate the tables of basis function values and preintegrated
-        # blocks
+        # Generate the tables of geometry data that are needed
         parts += self.generate_geometry_tables()
 
         # Loop generation code will produce parts to go before

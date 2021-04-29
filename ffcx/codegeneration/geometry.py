@@ -1,3 +1,9 @@
+# Copyright (C) 2021 Matthew Scroggs
+#
+# This file is part of FFCX.(https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
+
 import basix
 import numpy
 
@@ -51,7 +57,7 @@ def reference_facet_jacobian(L, tablename, cellname):
 
     tdim = len(topology) - 1
 
-    if tdim < 2:
+    if tdim not in [2, 3]:
         raise ValueError("Can only get facet jacobians for 2D and 3D cells.")
 
     facet_jacobian = []
@@ -61,7 +67,6 @@ def reference_facet_jacobian(L, tablename, cellname):
             facet_jacobian.append(list(zip(edge)))
 
     else:
-        assert tdim == 3
         for facet in topology[-2]:
             edge0 = geometry[facet[1]] - geometry[facet[0]]
             edge1 = geometry[facet[2]] - geometry[facet[0]]
