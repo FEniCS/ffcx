@@ -1,6 +1,6 @@
 # Copyright (C) 2004-2020 Anders Logg, Garth N. Wells and Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Command-line interface to FFCX.

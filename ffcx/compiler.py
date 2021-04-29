@@ -1,6 +1,6 @@
 # Copyright (C) 2007-2020 Anders Logg and Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Main interface for compilation of forms.
