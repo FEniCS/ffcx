@@ -82,7 +82,7 @@ def strip_table_blocks(table, block_size, rtol, atol):
     z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
     dofmap = tuple(
         i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
-        
+
     if dofmap:
         block_dm = tuple(range(dofmap[0], sh[-1], block_size))
         if not all([i in block_dm for i in dofmap]):
@@ -93,7 +93,7 @@ def strip_table_blocks(table, block_size, rtol, atol):
     else:
         begin = 0
         end = 0
-    
+
     stripped_table = table[..., dofmap]
     dofrange = (begin, end)
     return dofrange, dofmap, stripped_table
@@ -621,11 +621,11 @@ def optimize_element_tables(tables,
         if full_tables:
             # Keep full tables, only strip tables if they have a block size
             dofrange, dofmap, tbl = strip_table_blocks(
-                    tbl, block_size, rtol=rtol, atol=atol)
+                tbl, block_size, rtol=rtol, atol=atol)
         else:
             # Original ffc implementation
             dofrange, dofmap, tbl = strip_table_zeros(
-                    tbl, block_size, rtol=rtol, atol=atol)
+                tbl, block_size, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
         table_ranges[name] = dofrange
