@@ -68,7 +68,7 @@ def clamp_table_small_numbers(table,
 
 
 def strip_table_blocks(table, block_size, rtol, atol):
-    """Strip zero columns from table, but only when block_size > 1"""
+    """Strip zero columns from table, but only when block_size > 1."""
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
     sh = table.shape
