@@ -33,7 +33,9 @@ FFCX_DEFAULT_PARAMETERS = {
     "padlen":
         (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value."),
     "verbosity":
-        (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.")
+        (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc."),
+    "full_tables":
+        (False, "Keep full tables, including any zeros. Optimisation option."),
 }
 
 

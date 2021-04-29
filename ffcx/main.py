@@ -43,6 +43,7 @@ def main(args=None):
 
     # Parse all other parameters
     priority_parameters = {k: v for k, v in xargs.__dict__.items() if v is not None}
+    print(priority_parameters)
     parameters = get_parameters(priority_parameters)
 
     # Call parser and compiler for each file

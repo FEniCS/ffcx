@@ -571,7 +571,7 @@ def build_element_tables(quadrature_rule,
 
 def optimize_element_tables(tables,
                             table_origins,
-                            strip_blocks_only,
+                            full_tables,
                             rtol=default_rtol,
                             atol=default_atol):
     """Optimize tables and make unique set.
@@ -601,6 +601,8 @@ def optimize_element_tables(tables,
     table_permuted = {}
     table_original_num_dofs = {}
 
+    print('keep full tables=', full_tables)
+
     for name in used_names:
         tbl = tables[name]
 
@@ -616,8 +618,8 @@ def optimize_element_tables(tables,
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = len(ufl_element.sub_elements())
 
-        if strip_blocks_only:
-            # Only strip tables if they have a block size
+        if full_tables:
+            # Keep full tables, only strip tables if they have a block size
             dofrange, dofmap, tbl = strip_table_blocks(
                     tbl, block_size, rtol=rtol, atol=atol)
         else:
@@ -741,7 +743,7 @@ def build_optimized_tables(quadrature_rule,
                            existing_tables,
                            rtol=default_rtol,
                            atol=default_atol,
-                           strip=True):
+                           full_tables=False):
 
     # Build tables needed by all modified terminals
     tables, mt_table_names, table_origins = build_element_tables(
@@ -756,7 +758,7 @@ def build_optimized_tables(quadrature_rule,
     # Optimize tables and get table name and dofrange for each modified terminal
     unique_tables, unique_table_origins, table_unames, table_ranges, table_dofmaps, table_permuted, \
         table_original_num_dofs = optimize_element_tables(
-            tables, table_origins, strip, rtol=rtol, atol=atol)
+            tables, table_origins, full_tables, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
     unique_table_num_dofs = {uname: tbl.shape[-1]
