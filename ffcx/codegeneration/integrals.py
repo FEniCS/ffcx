@@ -37,7 +37,7 @@ def generator(ir, parameters):
     backend = FFCXBackend(ir, parameters)
 
     # Configure kernel generator
-    ig = IntegralGenerator(ir, backend)
+    ig = IntegralGenerator(ir, backend, parameters)
 
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
@@ -82,7 +82,7 @@ def generator(ir, parameters):
 
 
 class IntegralGenerator(object):
-    def __init__(self, ir, backend):
+    def __init__(self, ir, backend, parameters):
         # Store ir
         self.ir = ir
 
@@ -105,6 +105,8 @@ class IntegralGenerator(object):
 
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
+
+        self.fuse_loops = parameters.get("fuse_loops", False)
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -475,20 +477,33 @@ class IntegralGenerator(object):
                   for blockmap, contributions in sorted(block_contributions.items())
                   for blockdata in contributions]
 
-        block_groups = collections.defaultdict(list)
-        for blockmap, blockdata in blocks:
-            block_groups[blockmap].append(blockdata)
+        if self.fuse_loops:
+            block_groups = collections.defaultdict(list)
+            for blockmap, blockdata in blocks:
+                block_groups[blockmap].append(blockdata)
 
-        for blockmap in block_groups:
-            # Define code for block depending on mode
-            block_preparts, block_quadparts = \
-                self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
+            for blockmap in block_groups:
+                # Define code for block depending on mode
+                block_preparts, block_quadparts = \
+                    self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
 
-            # Add definitions
-            preparts.extend(block_preparts)
+                # Add definitions
+                preparts.extend(block_preparts)
 
-            # Add computations
-            quadparts.extend(block_quadparts)
+                # Add computations
+                quadparts.extend(block_quadparts)
+
+        else:
+            for blockmap, blockdata in blocks:
+                # Define code for block depending on mode
+                block_preparts, block_quadparts = \
+                    self.generate_block_parts(quadrature_rule, blockmap, [blockdata])
+
+                # Add definitions
+                preparts.extend(block_preparts)
+
+                # Add computations
+                quadparts.extend(block_quadparts)
 
         return preparts, quadparts
 
