@@ -4,25 +4,20 @@ import subprocess
 import string
 import setuptools
 
-if sys.version_info < (3, 6):
-    print("Python 3.6 or higher required, please upgrade.")
+if sys.version_info < (3, 7):
+    print("Python 3.7 or higher required, please upgrade.")
     sys.exit(1)
-
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 VERSION = "0.1.0"
 
-if on_rtd:
-    REQUIREMENTS = []
-else:
-    REQUIREMENTS = [
-        "numpy",
-        "cffi",
-        "fenics-basix>=0.0.1,<0.2.0",
-        "fenics-ufl>=2021.1.0,<2021.2.0",
-    ]
-
 URL = "https://github.com/FEniCS/ffcx/"
+
+REQUIREMENTS = [
+    "numpy",
+    "cffi",
+    "fenics-basix",
+    "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
+]
 
 ENTRY_POINTS = {'console_scripts': ['ffcx = ffcx.__main__:main', 'ffcx-3 = ffcx.__main__:main']}
 
@@ -34,10 +29,8 @@ License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3
 Operating System :: POSIX
 Operating System :: POSIX :: Linux
 Operating System :: MacOS :: MacOS X
-Operating System :: Microsoft :: Windows
 Programming Language :: Python
 Programming Language :: Python :: 3
-Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
 Programming Language :: Python :: 3.8
 Programming Language :: Python :: 3.9
@@ -104,7 +97,7 @@ def run_install():
         author_email="fenics-dev@googlegroups.com",
         maintainer_email="fenics-dev@googlegroups.com",
         url=URL,
-        platforms=["Windows", "Linux", "Mac OS-X", "Unix"],
+        platforms=["Linux", "Mac OS-X", "Unix"],
         packages=[
             "ffcx",
             "ffcx.codegeneration",
@@ -114,7 +107,6 @@ def run_install():
         ],
         package_dir={"ffcx": "ffcx"},
         package_data={"ffcx": [os.path.join('codegeneration', '*.h')]},
-        # scripts=scripts,  # Using entry_points instead
         entry_points=entry_points,
         install_requires=REQUIREMENTS,
         zip_safe=False)
