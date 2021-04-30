@@ -117,12 +117,9 @@ jobs:
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' }}
         run: |
           cd docs
-          git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}/cpp
-          git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}/python
-          mkdir -p ffcx/${{ env.VERSION_NAME }}/cpp
-          mkdir -p ffcx/${{ env.VERSION_NAME }}/python
-          cp -r ../cpp/doc/html/* ffcx/${{ env.VERSION_NAME }}/cpp
-          cp -r ../python/doc/build/html/* ffcx/${{ env.VERSION_NAME }}/python
+          git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}
+          mkdir -p ffcx/${{ env.VERSION_NAME }}
+          cp -r ../python/doc/build/html/* ffcx/${{ env.VERSION_NAME }}
       - name: Commit and push documentation to FEniCS/docs
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' }}
         run: |
@@ -130,5 +127,5 @@ jobs:
           git config --global user.email "fenics@github.com"
           git config --global user.name "FEniCS GitHub Actions"
           git add --all
-          git commit --allow-empty -m "C++ FEniCS/ffcx@${{ github.sha }}"
+          git commit --allow-empty -m "Python FEniCS/ffcx@${{ github.sha }}"
           git push
