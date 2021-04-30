@@ -2,7 +2,7 @@
 
 name: DOLFINx integration
 
-on: pull_request
+on: push
 
 jobs:
   build:
