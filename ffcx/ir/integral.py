@@ -1,6 +1,6 @@
 # Copyright (C) 2013-2020 Martin Sandve Alnæs and Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Main algorithm for building the integral intermediate representation."""

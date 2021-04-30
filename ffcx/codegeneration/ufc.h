@@ -24,7 +24,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <ufc_geometry.h>
 
 #ifdef __cplusplus
 extern "C"

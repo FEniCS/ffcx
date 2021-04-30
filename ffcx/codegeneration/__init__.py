@@ -19,9 +19,8 @@ def get_include_path():
 def _compute_signature():
     # Compute signature of ufc header files
     h = hashlib.sha1()
-    for fn in ("ufc.h", "ufc_geometry.h"):
-        with open(os.path.join(get_include_path(), fn)) as f:
-            h.update(f.read().encode("utf-8"))
+    with open(os.path.join(get_include_path(), "ufc.h")) as f:
+        h.update(f.read().encode("utf-8"))
     return h.hexdigest()
 
 
@@ -29,7 +28,7 @@ _signature = _compute_signature()
 
 
 def get_signature():
-    """Return SHA-1 hash of the contents of ufc.h and ufc_geometry.h.
+    """Return SHA-1 hash of the contents of ufc.h.
 
     In this implementation, the value is computed on import.
     """

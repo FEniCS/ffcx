@@ -1,9 +1,9 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFCXX/UFC specific variable access."""
+"""FFCx/UFC specific variable access."""
 
 import logging
 import warnings

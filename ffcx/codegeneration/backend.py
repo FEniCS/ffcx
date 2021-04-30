@@ -1,9 +1,9 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Collection of FFCX specific pieces for the code generation phase."""
+"""Collection of FFCx specific pieces for the code generation phase."""
 
 import ffcx.codegeneration.C.cnodes
 from ffcx.codegeneration.access import FFCXBackendAccess
