@@ -20,11 +20,9 @@
 #
 # Compile this form with FFC: ffcx Poisson.ufl
 
-element = FiniteElement("Lagrange", triangle, 1)
+element = FiniteElement("N1curl", tetrahedron, 1)
 
 u = TrialFunction(element)
 v = TestFunction(element)
-f = Coefficient(element)
 
-a = inner(grad(u), grad(v))*dx
-L = f*v*dx
+a = inner(curl(u), curl(v))*dx

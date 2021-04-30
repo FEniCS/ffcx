@@ -306,8 +306,6 @@ class IntegralGenerator(object):
             self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
 
-        print(L.StatementList(body))
-
         # Wrap body in loop or scope
         if not body:
             # Could happen for integral with everything zero and
@@ -444,22 +442,13 @@ class IntegralGenerator(object):
                   for blockdata in contributions]
 
         block_groups = collections.defaultdict(list)
-        for i, (blockmap, blockdata) in enumerate(blocks):
-            block_groups[blockmap].append(i)
-
-        print()
-        print('c=', block_groups)
-        print()
-
         for blockmap, blockdata in blocks:
-            print()
-            print(blockmap)
-            print()
+            block_groups[blockmap].append(blockdata)
+
+        for blockmap in block_groups:
             # Define code for block depending on mode
             block_preparts, block_quadparts = \
-                self.generate_block_parts(quadrature_rule, blockmap, blockdata)
-
-            print(block_preparts, L.StatementList(block_quadparts))
+                self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -534,7 +523,7 @@ class IntegralGenerator(object):
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule, blockmap, blockdata):
+    def generate_block_parts(self, quadrature_rule, blockmap, blocklist):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after
@@ -551,7 +540,8 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
-        ttypes = blockdata.ttypes
+        
+        ttypes = blocklist[0].ttypes
         if "zeros" in ttypes:
             raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
@@ -567,75 +557,49 @@ class IntegralGenerator(object):
 
         # Get factor expression
         F = self.ir.integrand[quadrature_rule]["factorization"]
+        body = []
 
-        if len(blockdata.factor_indices_comp_indices) > 1:
-            raise RuntimeError("Code generation for non-scalar integrals unsupported")
+        for blockdata in blocklist:
+            if len(blockdata.factor_indices_comp_indices) > 1:
+                raise RuntimeError("Code generation for non-scalar integrals unsupported")
 
-        # We have scalar integrand here, take just the factor index
-        factor_index = blockdata.factor_indices_comp_indices[0][0]
+            # We have scalar integrand here, take just the factor index
+            factor_index = blockdata.factor_indices_comp_indices[0][0]
 
-        v = F.nodes[factor_index]['expression']
-        f = self.get_var(quadrature_rule, v)
-        print(f)
+            v = F.nodes[factor_index]['expression']
+            f = self.get_var(quadrature_rule, v)
 
-        # Quadrature weight was removed in representation, add it back now
-        if self.ir.integral_type in ufl.custom_integral_types:
-            weights = self.backend.symbols.custom_weights_table()
-            weight = weights[iq]
-        else:
-            weights = self.backend.symbols.weights_table(quadrature_rule)
-            weight = weights[iq]
-
-        # Define fw = f * weight
-        assert not blockdata.transposed, "Not handled yet"
-
-        fw_rhs = L.float_product([f, weight])
-        if not isinstance(fw_rhs, L.Product):
-            fw = fw_rhs
-        else:
-            # Define and cache scalar temp variable
-            key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
-            fw, defined = self.get_temp_symbol("fw", key)
-            if not defined:
-                quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
-
-        # Naively accumulate integrand for this block in the innermost
-        # loop
-        assert not blockdata.transposed
-        A_shape = self.ir.tensor_shape
-
-        Asym = self.backend.symbols.element_tensor()
-        A = L.FlattenedArray(Asym, dims=A_shape)
-
-        # Check if DOFs in dofrange are equally spaced
-        expand_loop = False
-        for i, bm in enumerate(blockmap):
-            for a, b in zip(bm[1:-1], bm[2:]):
-                if b - a != bm[1] - bm[0]:
-                    expand_loop = True
-                    break
+            # Quadrature weight was removed in representation, add it back now
+            if self.ir.integral_type in ufl.custom_integral_types:
+                weights = self.backend.symbols.custom_weights_table()
+                weight = weights[iq]
             else:
-                continue
-            break
+                weights = self.backend.symbols.weights_table(quadrature_rule)
+                weight = weights[iq]
 
-        if expand_loop:
-            # If DOFs in dofrange are not equally spaced, then expand
-            # out the for loop
-            for A_indices, B_indices in zip(itertools.product(*blockmap),
-                                            itertools.product(*[range(len(b)) for b in blockmap])):
-                quadparts += [
-                    L.AssignAdd(
-                        A[A_indices],
-                        L.float_product([fw] + self.get_arg_factors(
-                            blockdata, block_rank,
-                            quadrature_rule, iq, B_indices)
-                        )
-                    )
-                ]
-        else:
+            # Define fw = f * weight
+            assert not blockdata.transposed, "Not handled yet"
+
+            fw_rhs = L.float_product([f, weight])
+            if not isinstance(fw_rhs, L.Product):
+                fw = fw_rhs
+            else:
+                # Define and cache scalar temp variable
+                key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
+                fw, defined = self.get_temp_symbol("fw", key)
+                if not defined:
+                    quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
+
+            # Naively accumulate integrand for this block in the innermost
+            # loop
+            assert not blockdata.transposed
+            A_shape = self.ir.tensor_shape
+
+            Asym = self.backend.symbols.element_tensor()
+            A = L.FlattenedArray(Asym, dims=A_shape)
+
             # Fetch code to access modified arguments
             arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
-            print('arg_factors=', [str(a) for a in arg_factors])
             B_rhs = L.float_product([fw] + arg_factors)
             A_indices = []
 
@@ -648,10 +612,10 @@ class IntegralGenerator(object):
                     block_size = bm[1] - bm[0]
                     A_indices.append(block_size * index + offset)
 
-            body = L.AssignAdd(A[A_indices], B_rhs)
+            body.append(L.AssignAdd(A[A_indices], B_rhs))
 
-            for i in reversed(range(block_rank)):
-                body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-            quadparts += [body]
+        for i in reversed(range(block_rank)):
+            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+        quadparts += [body]
 
         return preparts, quadparts

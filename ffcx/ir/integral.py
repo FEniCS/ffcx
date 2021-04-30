@@ -224,7 +224,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                                      all_factors_piecewise, block_unames,
                                      block_restrictions, block_is_transposed,
                                      block_is_uniform, None, tuple(ma_data), None, block_is_permuted)
-            print(blockdata)
 
             # Insert in expr_ir for this quadrature loop
             block_contributions[blockmap].append(blockdata)
@@ -242,8 +241,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             for blockdata in contributions:
                 for mad in blockdata.ma_data:
                     active_table_names.add(mad.tabledata.name)
-
-        print(active_table_names)
 
         # Record all table types before dropping tables
         ir["unique_table_types"].update(unique_table_types)
@@ -279,7 +276,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         ir["integrand"][quadrature_rule] = {"factorization": F,
                                             "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
                                             "block_contributions": block_contributions}
-        print(ir['integrand'][quadrature_rule])
     return ir
 
 
