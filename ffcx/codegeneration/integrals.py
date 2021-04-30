@@ -292,7 +292,7 @@ class IntegralGenerator(object):
         return out
 
     def generate_quadrature_loop(self, quadrature_rule):
-        """Generate quadrature loop with for this num_points."""
+        """Generate quadrature loop for this num_points."""
         L = self.backend.language
 
         # Generate varying partition
@@ -305,6 +305,8 @@ class IntegralGenerator(object):
         preparts, quadparts = \
             self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
+
+        print(L.StatementList(body))
 
         # Wrap body in loop or scope
         if not body:
@@ -433,6 +435,7 @@ class IntegralGenerator(object):
         return parts
 
     def generate_dofblock_partition(self, quadrature_rule):
+        L = self.backend.language
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
         preparts = []
         quadparts = []
@@ -440,11 +443,23 @@ class IntegralGenerator(object):
                   for blockmap, contributions in sorted(block_contributions.items())
                   for blockdata in contributions]
 
-        for blockmap, blockdata in blocks:
+        block_groups = collections.defaultdict(list)
+        for i, (blockmap, blockdata) in enumerate(blocks):
+            block_groups[blockmap].append(i)
 
+        print()
+        print('c=', block_groups)
+        print()
+
+        for blockmap, blockdata in blocks:
+            print()
+            print(blockmap)
+            print()
             # Define code for block depending on mode
             block_preparts, block_quadparts = \
                 self.generate_block_parts(quadrature_rule, blockmap, blockdata)
+
+            print(block_preparts, L.StatementList(block_quadparts))
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -561,6 +576,7 @@ class IntegralGenerator(object):
 
         v = F.nodes[factor_index]['expression']
         f = self.get_var(quadrature_rule, v)
+        print(f)
 
         # Quadrature weight was removed in representation, add it back now
         if self.ir.integral_type in ufl.custom_integral_types:
@@ -619,7 +635,7 @@ class IntegralGenerator(object):
         else:
             # Fetch code to access modified arguments
             arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
-
+            print('arg_factors=', [str(a) for a in arg_factors])
             B_rhs = L.float_product([fw] + arg_factors)
             A_indices = []
 
