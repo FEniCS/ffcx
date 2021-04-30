@@ -52,7 +52,7 @@ def visualise_graph(Gx, filename):
         elif stat == 'inactive':
             G.get_node(nd).attr['color'] = '#808080'
             G.get_node(nd).attr['penwidth'] = 5
-       
+
         t = v.get('target')
         if t:
             G.get_node(nd).attr['label'] += ':' + str(t)

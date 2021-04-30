@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import collections
-import itertools
 import logging
 
 import ufl
@@ -433,7 +432,6 @@ class IntegralGenerator(object):
         return parts
 
     def generate_dofblock_partition(self, quadrature_rule):
-        L = self.backend.language
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
         preparts = []
         quadparts = []
@@ -540,7 +538,6 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
-        
         ttypes = blocklist[0].ttypes
         if "zeros" in ttypes:
             raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
