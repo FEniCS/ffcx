@@ -50,7 +50,7 @@ def visualise_graph(Gx, filename):
             G.get_node(nd).attr['color'] = 'red'
             G.get_node(nd).attr['penwidth'] = 5
         elif stat == 'inactive':
-            G.get_node(nd).attr['color'] = '#808080'
+            G.get_node(nd).attr['color'] = 'dimgray'
             G.get_node(nd).attr['penwidth'] = 5
 
         t = v.get('target')
