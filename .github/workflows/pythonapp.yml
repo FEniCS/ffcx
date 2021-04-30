@@ -4,7 +4,16 @@
 
 name: FFCx CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "*.*.*.*"
+      - "*.*.*"
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
