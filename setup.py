@@ -101,7 +101,7 @@ def run_install():
         license="LGPL version 3 or later",
         author_email="fenics-dev@googlegroups.com",
         maintainer_email="fenics-dev@googlegroups.com",
-        url="https://github.com/fenics/ffcx",
+        url="https://github.com/FEniCS/ffcx",
         platforms=["Linux", "Mac OS-X", "Unix"],
         packages=[
             "ffcx",
