@@ -1,7 +1,7 @@
 # Copyright (C) 2007-2020 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 #                         Michal Habera and others
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 1: Analysis.
