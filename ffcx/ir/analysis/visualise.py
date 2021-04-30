@@ -42,6 +42,17 @@ def visualise_graph(Gx, filename):
         if isinstance(arg, Argument):
             G.get_node(nd).attr['shape'] = 'box'
 
+        stat = v.get('status')
+        if stat == 'piecewise':
+            G.get_node(nd).attr['color'] = 'blue'
+            G.get_node(nd).attr['penwidth'] = 5
+        elif stat == 'varying':
+            G.get_node(nd).attr['color'] = 'red'
+            G.get_node(nd).attr['penwidth'] = 5
+        elif stat == 'inactive':
+            G.get_node(nd).attr['color'] = '#808080'
+            G.get_node(nd).attr['penwidth'] = 5
+       
         t = v.get('target')
         if t:
             G.get_node(nd).attr['label'] += ':' + str(t)

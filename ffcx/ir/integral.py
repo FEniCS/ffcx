@@ -162,10 +162,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             argkeys = argkeys | set(w)
         argkeys = list(argkeys)
 
-        # Output diagnostic graph as pdf
-        if visualise:
-            visualise_graph(F, 'F.pdf')
-
         # Build set of modified_terminals for each mt factorized vertex in F
         # and attach tables, if appropriate
         for i, v in F.nodes.items():
@@ -179,6 +175,10 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
 
         # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
         analyse_dependencies(F, mt_unique_table_reference)
+
+        # Output diagnostic graph as pdf
+        if visualise:
+            visualise_graph(F, 'F.pdf')
 
         # Loop over factorization terms
         block_contributions = collections.defaultdict(list)
