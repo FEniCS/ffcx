@@ -1,6 +1,6 @@
 # Copyright (C) 2015-2020 Martin Sandve Alnæs and Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -9,6 +9,7 @@ import itertools
 import logging
 
 import ufl
+from ffcx.codegeneration import geometry
 from ffcx.codegeneration import integrals_template as ufc_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
@@ -186,6 +187,9 @@ class IntegralGenerator(object):
         # blocks
         parts += self.generate_element_tables()
 
+        # Generate the tables of geometry data that are needed
+        parts += self.generate_geometry_tables()
+
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
         # quadloops
@@ -236,6 +240,37 @@ class IntegralGenerator(object):
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
+        return parts
+
+    def generate_geometry_tables(self):
+        """Generate static tables of geometry data."""
+        L = self.backend.language
+
+        ufl_geometry = {
+            ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
+            ufl.geometry.CellFacetJacobian: "reference_facet_jacobian",
+            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
+            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
+            ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
+            ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
+            ufl.geometry.ReferenceNormal: "reference_facet_normals",
+            ufl.geometry.FacetOrientation: "facet_orientation"
+        }
+        cells = {t: set() for t in ufl_geometry.keys()}
+
+        for integrand in self.ir.integrand.values():
+            for attr in integrand["factorization"].nodes.values():
+                mt = attr.get("mt")
+                if mt is not None:
+                    t = type(mt.terminal)
+                    if t in ufl_geometry:
+                        cells[t].add(mt.terminal.ufl_domain().ufl_cell().cellname())
+
+        parts = []
+        for i, cell_list in cells.items():
+            for c in cell_list:
+                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+
         return parts
 
     def generate_element_tables(self):
@@ -328,6 +363,7 @@ class IntegralGenerator(object):
         parts = self.generate_partition(arraysymbol, F, "piecewise", None)
         parts = L.commented_code_list(
             parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
+
         return parts
 
     def generate_varying_partition(self, quadrature_rule):
