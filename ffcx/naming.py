@@ -66,14 +66,14 @@ def compute_signature(ufl_objects, tag):
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
-def integral_name(integral_type, original_form, form_id, subdomain_id):
-    sig = compute_signature([original_form], str(form_id))
-    return "integral_{}_{}_{!s}".format(integral_type, subdomain_id, sig)
+def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
+    sig = compute_signature([original_form], prefix)
+    return "integral_type{}_subdomain{}_formid{}_{!s}".format(integral_type, subdomain_id, form_id, sig)
 
 
-def form_name(original_form, form_id):
-    sig = compute_signature([original_form], str(form_id))
-    return "form_{!s}".format(sig)
+def form_name(original_form, form_id, prefix):
+    sig = compute_signature([original_form], prefix)
+    return "form_id{}_{!s}".format(form_id, sig)
 
 
 def finite_element_name(ufl_element, prefix):

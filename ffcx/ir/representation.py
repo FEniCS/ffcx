@@ -34,10 +34,10 @@ from ufl.sorting import sorted_expr_sum
 logger = logging.getLogger("ffcx")
 
 ir_form = namedtuple('ir_form', [
-    'id', 'prefix', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
+    'id', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
     'name_from_uflfile', 'function_spaces', 'original_coefficient_position',
     'coefficient_names', 'constant_names', 'finite_elements',
-    'dofmaps', 'classnames', 'subdomain_ids'])
+    'dofmaps', 'integral_names', 'subdomain_ids'])
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
@@ -80,10 +80,12 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     finite_element_names = {e: naming.finite_element_name(e, prefix) for e in analysis.unique_elements}
     dofmap_names = {e: naming.dofmap_name(e, prefix) for e in analysis.unique_elements}
     integral_names = {}
+    form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
+        form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)
         for itg_index, itg_data in enumerate(fd.integral_data):
-            integral_names[(fd_index, itg_index)] = naming.integral_name(itg_data.integral_type, fd.original_form,
-                                                                         fd_index, itg_data.subdomain_id)
+            integral_names[(fd_index, itg_index)] = naming.integral_name(fd.original_form, itg_data.integral_type,
+                                                                         fd_index, itg_data.subdomain_id, prefix)
 
     ir_elements = [
         _compute_element_ir(e, analysis.element_numbers, finite_element_names, parameters["epsilon"])
@@ -95,13 +97,13 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     ]
 
     irs = [
-        _compute_integral_ir(fd, i, prefix, analysis.element_numbers, integral_names, parameters, visualise)
+        _compute_integral_ir(fd, i, analysis.element_numbers, integral_names, parameters, visualise)
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
 
     ir_forms = [
-        _compute_form_ir(fd, i, prefix, analysis.element_numbers, finite_element_names,
+        _compute_form_ir(fd, i, prefix, form_names, integral_names, analysis.element_numbers, finite_element_names,
                          dofmap_names, object_names)
         for (i, fd) in enumerate(analysis.form_data)
     ]
@@ -218,7 +220,7 @@ def cell_midpoint(cell):
     return _midpoints[cell.cellname()]
 
 
-def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integral_names,
+def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                          parameters, visualise):
     """Compute intermediate represention for form integrals."""
 
@@ -389,7 +391,7 @@ def _compute_integral_ir(form_data, form_index, prefix, element_numbers, integra
     return irs
 
 
-def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element_names,
+def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, element_numbers, finite_element_names,
                      dofmap_names, object_names):
     """Compute intermediate representation of form."""
 
@@ -398,12 +400,8 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     # Store id
     ir = {"id": form_id}
 
-    # Storing prefix here for reconstruction of classnames on code
-    # generation side
-    ir["prefix"] = prefix
-
     # Compute common data
-    ir["name"] = naming.form_name(form_data.original_form, form_id)
+    ir["name"] = form_names[form_id]
 
     ir["signature"] = form_data.original_form.signature()
 
@@ -441,20 +439,38 @@ def _compute_form_ir(form_data, form_id, prefix, element_numbers, finite_element
     ir["function_spaces"] = fs
     ir["name_from_uflfile"] = f"form_{prefix}_{form_name}"
 
-    # Create integral ids and names using form prefix (integrals are
-    # always generated as part of form so don't get their own prefix)
-    ir["classnames"] = {}
+    # Store names of integrals and subdomain_ids for this form, grouped by integral types
+    # Since form points to all integrals it contains, it has to know their names
+    # for codegen phase
+    ir["integral_names"] = {}
     ir["subdomain_ids"] = {}
     ufc_integral_types = ("cell", "exterior_facet", "interior_facet")
     for integral_type in ufc_integral_types:
-        subdomain_ids, classnames = _create_foo_integral(form_id, integral_type, form_data)
-        ir["classnames"][integral_type] = classnames
-        ir["subdomain_ids"][integral_type] = subdomain_ids
+        ir["subdomain_ids"][integral_type] = []
+        ir["integral_names"][integral_type] = []
+
+        # List of integral data for default integrals for this type
+        default_itg_data = [itg_data for itg_data in form_data.integral_data
+                            if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")]
+
+        if len(default_itg_data) > 1:
+            raise RuntimeError("Expecting at most one default integral of each type.")
+        elif len(default_itg_data) == 1:
+            ir["subdomain_ids"][integral_type] = [-1]
+            ir["integral_names"][integral_type] = [integral_names[(form_id, 0)]]
+
+        for itg_index, itg_data in enumerate(form_data.integral_data):
+            if isinstance(itg_data.subdomain_id, int):
+                if itg_data.subdomain_id < 0:
+                    raise ValueError(f"Integral subdomain ID must be non-negative, not {itg_data.subdomain_id}")
+                if (itg_data.integral_type == integral_type):
+                    ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
+                    ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
 
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
+def _compute_expression_ir(expression, index, analysis, parameters, visualise):
 
     logger.info(f"Computing IR for expression {index}")
 
@@ -548,29 +564,3 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     ir.update(expression_ir)
 
     return ir_expression(**ir)
-
-
-def _create_foo_integral(form_id, integral_type, form_data):
-    """Compute intermediate representation of create_foo_integral."""
-    subdomain_ids = []
-    classnames = []
-    itg_data = [itg_data for itg_data in form_data.integral_data
-                if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")]
-
-    if len(itg_data) > 1:
-        raise RuntimeError("Expecting at most one default integral of each type.")
-    elif len(itg_data) == 1:
-        subdomain_ids += [-1]
-        classnames += [naming.integral_name(integral_type, form_data.original_form,
-                                            form_id, "otherwise")]
-
-    for itg_data in form_data.integral_data:
-        if isinstance(itg_data.subdomain_id, int):
-            if itg_data.subdomain_id < 0:
-                raise ValueError(f"Integral subdomain ID must be non-negative, not {itg_data.subdomain_id}")
-            if (itg_data.integral_type == integral_type):
-                subdomain_ids += [itg_data.subdomain_id]
-                classnames += [naming.integral_name(integral_type, form_data.original_form,
-                                                    form_id, itg_data.subdomain_id)]
-
-    return subdomain_ids, classnames
