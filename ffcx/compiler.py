@@ -64,7 +64,6 @@ Compiler stages:
 """
 
 import logging
-import os
 import typing
 from time import time
 

@@ -68,12 +68,12 @@ def compute_signature(ufl_objects, tag):
 
 def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
     sig = compute_signature([original_form], prefix)
-    return "integral_type{}_subdomain{}_formid{}_{!s}".format(integral_type, subdomain_id, form_id, sig)
+    return "integral_{}_{}_{}_{!s}".format(integral_type, subdomain_id, form_id, sig)
 
 
 def form_name(original_form, form_id, prefix):
     sig = compute_signature([original_form], prefix)
-    return "form_id{}_{!s}".format(form_id, sig)
+    return "form_{}_{!s}".format(form_id, sig)
 
 
 def finite_element_name(ufl_element, prefix):
