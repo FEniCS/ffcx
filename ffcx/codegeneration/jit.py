@@ -188,10 +188,10 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     """
     p = ffcx.parameters.get_parameters(parameters)
 
-    # Get a signature for these forms
-    module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, "")
-    expr_names = ["expression_{!s}".format(ffcx.naming.compute_signature([expression], ""))
-                  for expression in expressions]
+    module_name = 'libffcx_expressions_' + \
+        ffcx.naming.compute_signature(expressions, _compute_parameter_signature(p)
+                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+    expr_names = [ffcx.naming.expression_name(expression, module_name) for expression in expressions]
 
     if cache_dir is not None:
         cache_dir = Path(cache_dir)

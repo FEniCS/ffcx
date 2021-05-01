@@ -67,22 +67,28 @@ def compute_signature(ufl_objects, tag):
 
 
 def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
-    sig = compute_signature([original_form], prefix)
-    return "integral_{}_{}_{}_{!s}".format(integral_type, subdomain_id, form_id, sig)
+    sig = compute_signature([original_form], str((prefix, integral_type, form_id, subdomain_id)))
+    return f"integral_{sig}"
 
 
 def form_name(original_form, form_id, prefix):
-    sig = compute_signature([original_form], prefix)
-    return "form_{}_{!s}".format(form_id, sig)
+    sig = compute_signature([original_form], str((prefix, form_id)))
+    return f"form_{sig}"
 
 
 def finite_element_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
-    return "element_{!s}".format(sig)
+    return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
-    return "dofmap_{!s}".format(sig)
+    return f"dofmap_{sig}"
+
+
+def expression_name(expression, prefix):
+    assert isinstance(expression[0], ufl.core.expr.Expr)
+    sig = compute_signature([expression], prefix)
+    return f"expression_{sig}"

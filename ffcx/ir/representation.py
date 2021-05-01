@@ -470,7 +470,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, index, analysis, parameters, visualise):
+def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
 
     logger.info(f"Computing IR for expression {index}")
 
@@ -478,8 +478,8 @@ def _compute_expression_ir(expression, index, analysis, parameters, visualise):
     ir = {}
 
     original_expression = (expression[2], expression[1])
-    sig = naming.compute_signature([original_expression], "")
-    ir["name"] = "expression_{!s}".format(sig)
+
+    ir["name"] = naming.expression_name(original_expression, prefix)
 
     original_expression = expression[2]
     points = expression[1]
