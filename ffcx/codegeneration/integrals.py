@@ -328,7 +328,7 @@ class IntegralGenerator(object):
         return out
 
     def generate_quadrature_loop(self, quadrature_rule):
-        """Generate quadrature loop for this num_points."""
+        """Generate quadrature loop for this quadrature_rule."""
         L = self.backend.language
 
         # Generate varying partition
@@ -576,9 +576,9 @@ class IntegralGenerator(object):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after
-        the quadrature loop identified by num_points.
+        the quadrature loop identified by quadrature_rule.
 
-        Should be called with num_points=None for quadloop-independent blocks.
+        Should be called with quadrature_rule=None for quadloop-independent blocks.
         """
         L = self.backend.language
 
@@ -588,10 +588,6 @@ class IntegralGenerator(object):
 
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
-
-        ttypes = blocklist[0].ttypes
-        if "zeros" in ttypes:
-            raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
         iq = self.backend.symbols.quadrature_loop_index()
 
@@ -610,6 +606,10 @@ class IntegralGenerator(object):
         for blockdata in blocklist:
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
+
+            ttypes = blockdata.ttypes
+            if "zeros" in ttypes:
+                raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
             # We have scalar integrand here, take just the factor index
             factor_index = blockdata.factor_indices_comp_indices[0][0]
@@ -638,8 +638,7 @@ class IntegralGenerator(object):
                 if not defined:
                     quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
-            # Naively accumulate integrand for this block in the innermost
-            # loop
+            # Naively accumulate integrand for this block in the innermost loop
             assert not blockdata.transposed
             A_shape = self.ir.tensor_shape
 

@@ -24,5 +24,7 @@ element = FiniteElement("Lagrange", triangle, 1)
 
 u = TrialFunction(element)
 v = TestFunction(element)
+f = Coefficient(element)
 
-a = inner(curl(u), curl(v))*dx
+a = inner(grad(u), grad(v))*dx
+L = f*v*dx
