@@ -1,6 +1,6 @@
 # Copyright (C) 2009-2018 Anders Logg and Garth N. Wells
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 5: Code formatting.

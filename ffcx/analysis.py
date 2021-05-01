@@ -1,7 +1,7 @@
 # Copyright (C) 2007-2020 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 #                         Michal Habera and others
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 1: Analysis.
@@ -199,12 +199,11 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         for i, integral in enumerate(integral_data.integrals):
             # Extract quadrature degree
             qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
-            qd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
-
+            pd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
             if qd_metadata != qd_default:
                 qd = qd_metadata
             else:
-                qd = qd_estimated
+                qd = pd_estimated
 
                 # The quadrature degree from UFL can be very high for some
                 # integrals.  Print warning if number of quadrature points
