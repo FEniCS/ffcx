@@ -199,12 +199,11 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         for i, integral in enumerate(integral_data.integrals):
             # Extract quadrature degree
             qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
-            qd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
-
+            pd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
             if qd_metadata != qd_default:
                 qd = qd_metadata
             else:
-                qd = qd_estimated
+                qd = pd_estimated
 
                 # The quadrature degree from UFL can be very high for some
                 # integrals.  Print warning if number of quadrature points
