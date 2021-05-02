@@ -449,23 +449,19 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         ir["subdomain_ids"][integral_type] = []
         ir["integral_names"][integral_type] = []
 
-        # List of integral data for default integrals for this type
-        default_itg_data = [itg_data for itg_data in form_data.integral_data
-                            if (itg_data.integral_type == integral_type and itg_data.subdomain_id == "otherwise")]
-
-        if len(default_itg_data) > 1:
-            raise RuntimeError("Expecting at most one default integral of each type.")
-        elif len(default_itg_data) == 1:
-            ir["subdomain_ids"][integral_type] = [-1]
-            ir["integral_names"][integral_type] = [integral_names[(form_id, 0)]]
-
         for itg_index, itg_data in enumerate(form_data.integral_data):
-            if isinstance(itg_data.subdomain_id, int):
-                if itg_data.subdomain_id < 0:
-                    raise ValueError(f"Integral subdomain ID must be non-negative, not {itg_data.subdomain_id}")
-                if (itg_data.integral_type == integral_type):
-                    ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
-                    ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
+            if (itg_data.integral_type == integral_type):
+                # UFL is using "otherwise" for default integrals (over whole mesh)
+                # but FFCx needs integers, so otherwise = -1
+                if itg_data.subdomain_id == "otherwise":
+                    subdomain_id = -1
+                elif itg_data.subdomain_id < 0:
+                    raise ValueError("Integral subdomain ID must be non-negative.")
+                else:
+                    assert isinstance(itg_data.subdomain_id, int)
+                    subdomain_id = itg_data.subdomain_id
+                ir["subdomain_ids"][integral_type] += [subdomain_id]
+                ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
 
     return ir_form(**ir)
 
