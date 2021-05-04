@@ -28,16 +28,15 @@ parser.add_argument(
     "--version", action='version', version=f"%(prog)s (version {FFCX_VERSION})")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
-# parser.add_argument("--full_tables", action="store_true",
-#                     help="Keep full tables, including any zeros. Optimisation option.")
-
-# parser.add_argument("--fuse_loops", action="store_true",
-#                     help="Fuse loops with same range. Optimisation option.")
+parser.add_argument("--full_tables", action="store_true",
+                    help="Keep full tables, including any zeros. Optimisation option.")
+parser.add_argument("--fuse_loops", action="store_true",
+                    help="Fuse loops with same range. Optimisation option.")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 
 # Add all parameters from FFC parameter system
-# FFCX_DEFAULT_PARAMETERS.pop("full_tables")
-# FFCX_DEFAULT_PARAMETERS.pop("fuse_loops")
+FFCX_DEFAULT_PARAMETERS.pop("full_tables")
+FFCX_DEFAULT_PARAMETERS.pop("fuse_loops")
 for param_name, (param_val, param_desc) in FFCX_DEFAULT_PARAMETERS.items():
     parser.add_argument(f"--{param_name}",
                         type=type(param_val), help=f"{param_desc} (default={param_val})")
