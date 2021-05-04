@@ -97,9 +97,9 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
 
     names = []
     for e in elements:
-        name = ffcx.naming.finite_element_name(e, "JIT")
+        name = ffcx.naming.finite_element_name(e, module_name)
         names.append(name)
-        name = ffcx.naming.dofmap_name(e, "JIT")
+        name = ffcx.naming.dofmap_name(e, module_name)
         names.append(name)
 
     if cache_dir is not None:
@@ -145,7 +145,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         ffcx.naming.compute_signature(forms, _compute_parameter_signature(p)
                                       + str(cffi_extra_compile_args) + str(cffi_debug))
 
-    form_names = [ffcx.naming.form_name(form, i) for i, form in enumerate(forms)]
+    form_names = [ffcx.naming.form_name(form, i, module_name) for i, form in enumerate(forms)]
 
     if cache_dir is not None:
         cache_dir = Path(cache_dir)
@@ -188,10 +188,10 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     """
     p = ffcx.parameters.get_parameters(parameters)
 
-    # Get a signature for these forms
-    module_name = 'libffcx_expressions_' + ffcx.naming.compute_signature(expressions, "")
-    expr_names = ["expression_{!s}".format(ffcx.naming.compute_signature([expression], ""))
-                  for expression in expressions]
+    module_name = 'libffcx_expressions_' + \
+        ffcx.naming.compute_signature(expressions, _compute_parameter_signature(p)
+                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+    expr_names = [ffcx.naming.expression_name(expression, module_name) for expression in expressions]
 
     if cache_dir is not None:
         cache_dir = Path(cache_dir)
@@ -227,7 +227,9 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     import ffcx.compiler
 
-    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix="JIT", parameters=parameters)
+    # JIT uses module_name as prefix, which is needed to make names of all struct/function
+    # unique across modules
+    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, parameters=parameters)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffcx.codegeneration.get_include_path()],

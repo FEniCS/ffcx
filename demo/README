@@ -7,7 +7,7 @@ for example
   ffcx Poisson.ufl
 
 To run these demos from within the source tree without needing to
-install FFC system-wide, update your paths according to
+install FFCx system-wide, update your paths according to
 
   export PATH="../scripts:$PATH"
   export PYTHONPATH="..:$PYTHONPATH"

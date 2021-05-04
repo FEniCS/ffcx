@@ -1,23 +1,23 @@
 # Copyright (C) 2007-2017 Anders Logg and Garth N. Wells
 #
-# This file is part of FFCX.
+# This file is part of FFCx.
 #
-# FFC is free software: you can redistribute it and/or modify
+# FFCx is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFC is distributed in the hope that it will be useful,
+# FFCx is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2010
 # Modified by Lizao Li, 2016
-"Unit tests for FFCX"
+"Unit tests for FFCx"
 
 
 import numpy
