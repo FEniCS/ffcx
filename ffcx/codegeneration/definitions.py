@@ -1,6 +1,6 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCx.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFCx/UFC specific variable definitions."""
@@ -14,7 +14,7 @@ logger = logging.getLogger("ffcx")
 
 
 class FFCXBackendDefinitions(object):
-    """FFCX specific code definitions."""
+    """FFCx specific code definitions."""
 
     def __init__(self, ir, language, symbols, parameters):
         # Store ir and parameters

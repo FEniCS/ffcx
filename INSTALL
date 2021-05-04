@@ -1,8 +1,8 @@
-To install FFCX, type
+To install FFCx, type
 
     pip install --prefix=/path/to/install/ .
 
-This will install FFCX in the default Python path of your system,
+This will install FFCx in the default Python path of your system,
 something like /path/to/install/lib/python3.6/site-packages/.
 
 To specify C++ compiler and/or compiler flags used for compiling UFC
@@ -13,6 +13,6 @@ The installation script requires the Python module distutils, which
 for Debian users is available with the python-dev package.  Other
 dependencies are listed in the file README.
 
-For detailed installation instructions, see the FFCX user manual which
+For detailed installation instructions, see the FFCx user manual which
 is available on http://fenicsproject.org/ and also in the subdirectory
 doc/manual/ of this source tree.

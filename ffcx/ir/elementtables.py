@@ -1,6 +1,6 @@
 # Copyright (C) 2013-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCx.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for precomputed tables of terminal values."""
@@ -163,7 +163,7 @@ def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
 
 def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
                           derivative_counts, flat_component):
-    """Extract values from ffcx element table.
+    """Extract values from FFCx element table.
 
     Returns a 3D numpy array with axes
     (entity number, quadrature point number, dof number)
@@ -176,7 +176,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         assert not avg
 
     if integral_type == "expression":
-        # FFCX tables for expression are generated as interior cell points
+        # FFCx tables for expression are generated as interior cell points
         integral_type = "cell"
 
     if avg in ("cell", "facet"):
@@ -500,7 +500,7 @@ def build_element_tables(quadrature_rule,
                                               integral_type, element, avg, entitytype,
                                               local_derivatives, flat_component)])
                 elif tdim == 2:
-                    # Extract the values of the table from ffc table format
+                    # Extract the values of the table from FFCx table format
                     new_table = []
                     for ref in range(2):
                         new_table.append(get_ffcx_table_values(
@@ -512,7 +512,7 @@ def build_element_tables(quadrature_rule,
                 elif tdim == 3:
                     cell_type = cell.cellname()
                     if cell_type == "tetrahedron":
-                        # Extract the values of the table from ffc table format
+                        # Extract the values of the table from FFCx table format
                         new_table = []
                         for rot in range(3):
                             for ref in range(2):
@@ -523,7 +523,7 @@ def build_element_tables(quadrature_rule,
 
                         tables[name] = numpy.array(new_table)
                     elif cell_type == "hexahedron":
-                        # Extract the values of the table from ffc table format
+                        # Extract the values of the table from FFCx table format
                         new_table = []
                         for rot in range(4):
                             for ref in range(2):
@@ -534,7 +534,7 @@ def build_element_tables(quadrature_rule,
 
                         tables[name] = numpy.array(new_table)
             else:
-                # Extract the values of the table from ffc table format
+                # Extract the values of the table from FFCx table format
                 tables[name] = numpy.array([get_ffcx_table_values(quadrature_rule.points, cell,
                                                                   integral_type, element, avg, entitytype,
                                                                   local_derivatives, flat_component)])

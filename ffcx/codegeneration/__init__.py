@@ -1,7 +1,7 @@
 import os
 import hashlib
 
-# Version of FFC header files
+# Version of FFCx header files
 __author__ = "FEniCS Project"
 __license__ = "This code is released into the public domain"
 __version__ = "2018.2.0.dev0"

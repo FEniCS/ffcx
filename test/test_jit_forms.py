@@ -1,6 +1,6 @@
 # Copyright (C) 2018-2020 Garth N. Wells & Matthew Scroggs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 

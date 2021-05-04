@@ -1,6 +1,6 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCx.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFCx/UFC specific variable access."""
@@ -16,7 +16,7 @@ logger = logging.getLogger("ffcx")
 
 
 class FFCXBackendAccess(object):
-    """FFCX specific cpp formatter class."""
+    """FFCx specific cpp formatter class."""
 
     def __init__(self, ir, language, symbols, parameters):
 

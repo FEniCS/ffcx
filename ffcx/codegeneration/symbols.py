@@ -1,9 +1,9 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCx.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFCX/UFC specific symbol naming."""
+"""FFCx/UFC specific symbol naming."""
 
 import logging
 
@@ -54,7 +54,7 @@ def format_mt_name(basename, mt):
 
 
 class FFCXBackendSymbols(object):
-    """FFCX specific symbol definitions. Provides non-ufl symbols."""
+    """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
     def __init__(self, language, coefficient_numbering, coefficient_offsets,
                  original_constant_offsets):
