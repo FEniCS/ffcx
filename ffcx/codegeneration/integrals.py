@@ -602,6 +602,8 @@ class IntegralGenerator(object):
         # Get factor expression
         F = self.ir.integrand[quadrature_rule]["factorization"]
         body = []
+        acc = self.new_temp_symbol("acc")
+        body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
 
         for blockdata in blocklist:
             if len(blockdata.factor_indices_comp_indices) > 1:
@@ -659,8 +661,9 @@ class IntegralGenerator(object):
                     block_size = bm[1] - bm[0]
                     A_indices.append(block_size * index + offset)
 
-            body.append(L.AssignAdd(A[A_indices], B_rhs))
+            body.append(L.AssignAdd(acc, B_rhs))
 
+        body.append(L.AssignAdd(A[A_indices], acc))
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
         quadparts += [body]
