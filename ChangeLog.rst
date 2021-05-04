@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.1.0
+-----
+Alpha release of ffcx
+
 2018.2.0.dev0
 -------------
 

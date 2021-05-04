@@ -4,34 +4,22 @@ import subprocess
 import string
 import setuptools
 
-if sys.version_info < (3, 6):
-    print("Python 3.6 or higher required, please upgrade.")
+if sys.version_info < (3, 7):
+    print("Python 3.7 or higher required, please upgrade.")
     sys.exit(1)
 
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
-
-VERSION = "2019.2.0.dev0"
-RESTRICT_REQUIREMENTS = ">=2019.2.0.dev0"
-
-if on_rtd:
-    REQUIREMENTS = []
-else:
-    REQUIREMENTS = [
-        "numpy",
-        "cffi",
-        "fenics-basix",
-        "fenics-ufl{}".format(RESTRICT_REQUIREMENTS),
-    ]
+VERSION = "0.1.0"
 
 URL = "https://github.com/FEniCS/ffcx/"
 
-ENTRY_POINTS = {'console_scripts': ['ffcx = ffcx.__main__:main', 'ffcx-3 = ffcx.__main__:main']}
+REQUIREMENTS = [
+    "numpy",
+    "cffi",
+    "fenics-basix>=0.1.0",
+    "fenics-ufl>=2021.1.0",
+]
 
-AUTHORS = """\
-Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,
-Martin Sandve Alnæs, Hans Petter Langtangen, Kent-Andre Mardal,
-Ola Skavhaug, et al.
-"""
+ENTRY_POINTS = {'console_scripts': ['ffcx = ffcx.__main__:main', 'ffcx-3 = ffcx.__main__:main']}
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
@@ -41,21 +29,15 @@ License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3
 Operating System :: POSIX
 Operating System :: POSIX :: Linux
 Operating System :: MacOS :: MacOS X
-Operating System :: Microsoft :: Windows
 Programming Language :: Python
 Programming Language :: Python :: 3
-Programming Language :: Python :: 3.5
-Programming Language :: Python :: 3.6
+Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
+Programming Language :: Python :: 3.9
 Topic :: Scientific/Engineering :: Mathematics
 Topic :: Software Development :: Libraries :: Python Modules
 Topic :: Software Development :: Code Generators
 """
-
-
-def tarball():
-    if "dev" in VERSION:
-        return None
-    return URL + "downloads/fenics-ffcx-{}.tar.gz".format(VERSION)
 
 
 def get_git_commit_hash():
@@ -109,14 +91,13 @@ def run_install():
         name="fenics-ffcx",
         description="The FEniCS Form Compiler",
         version=VERSION,
-        author=AUTHORS,
+        author="FEniCS Project Team",
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         license="LGPL version 3 or later",
         author_email="fenics-dev@googlegroups.com",
         maintainer_email="fenics-dev@googlegroups.com",
         url=URL,
-        download_url=tarball(),
-        platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+        platforms=["Linux", "Mac OS-X", "Unix"],
         packages=[
             "ffcx",
             "ffcx.codegeneration",
@@ -126,7 +107,6 @@ def run_install():
         ],
         package_dir={"ffcx": "ffcx"},
         package_data={"ffcx": [os.path.join('codegeneration', '*.h')]},
-        # scripts=scripts,  # Using entry_points instead
         entry_points=entry_points,
         install_requires=REQUIREMENTS,
         zip_safe=False)
