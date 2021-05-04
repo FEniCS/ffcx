@@ -35,9 +35,9 @@ FFCX_DEFAULT_PARAMETERS = {
     "verbosity":
         (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc."),
     "full_tables":
-        (False, "Keep full tables, including any zeros. Optimisation option."),
+        (True, "Keep full tables, including any zeros. Optimisation option."),
     "fuse_loops":
-        (False, "Fuse loops with same range. Optimisation option."),
+        (True, "Fuse loops with same range. Optimisation option."),
 }
 
 
