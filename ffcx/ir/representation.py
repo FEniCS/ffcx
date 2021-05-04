@@ -1,7 +1,7 @@
 # Copyright (C) 2009-2020 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
 # Kristian B. Oelgaard, Matthew W. Scroggs, Chris Richardson, and others
 #
-# This file is part of FFCx.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 2: Code representation.
@@ -180,7 +180,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["name"] = dofmap_names[ufl_element]
 
     # Compute data for each function
-    ir["signature"] = "FFCX dofmap for " + repr(ufl_element)
+    ir["signature"] = "FFCx dofmap for " + repr(ufl_element)
     ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
