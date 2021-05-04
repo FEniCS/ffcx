@@ -1,6 +1,6 @@
 # Copyright (C) 2015-2020 Martin Sandve Alnæs and Michal Habera
 #
-# This file is part of FFCx.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -34,7 +34,7 @@ def generator(ir, parameters):
     else:
         declaration = ufc_integrals.declaration.format(factory_name=factory_name)
 
-    # Create FFCX C backend
+    # Create FFCx C backend
     backend = FFCXBackend(ir, parameters)
 
     # Configure kernel generator
@@ -46,7 +46,7 @@ def generator(ir, parameters):
     # Format code as string
     body = format_indented_lines(parts.cs_format(ir.precision), 1)
 
-    # Generate generic ffcx code snippets and add specific parts
+    # Generate generic FFCx code snippets and add specific parts
     code = {}
     code["class_type"] = ir.integral_type + "_integral"
     code["name"] = ir.name

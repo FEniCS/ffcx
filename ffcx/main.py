@@ -3,7 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Command-line interface to FFCX.
+"""Command-line interface to FFCx.
 
 Parse command-line arguments and generate code from input UFL form files.
 """
@@ -23,14 +23,14 @@ from ffcx.parameters import FFCX_DEFAULT_PARAMETERS, get_parameters
 logger = logging.getLogger("ffcx")
 
 parser = argparse.ArgumentParser(
-    description="FEniCS Form Compiler (FFCX, https://fenicsproject.org)")
+    description="FEniCS Form Compiler (FFCx, https://fenicsproject.org)")
 parser.add_argument(
     "--version", action='version', version=f"%(prog)s (version {FFCX_VERSION})")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 
-# Add all parameters from FFC parameter system
+# Add all parameters from FFCx parameter system
 for param_name, (param_val, param_desc) in FFCX_DEFAULT_PARAMETERS.items():
     parser.add_argument(f"--{param_name}",
                         type=type(param_val), help=f"{param_desc} (default={param_val})")
