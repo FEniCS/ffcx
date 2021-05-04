@@ -128,7 +128,7 @@ jobs:
           cd docs
           git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}
           mkdir -p ffcx/${{ env.VERSION_NAME }}
-          cp -r ../python/doc/build/html/* ffcx/${{ env.VERSION_NAME }}
+          cp -r ../doc/build/html/* ffcx/${{ env.VERSION_NAME }}
       - name: Commit and push documentation to FEniCS/docs
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' }}
         run: |
