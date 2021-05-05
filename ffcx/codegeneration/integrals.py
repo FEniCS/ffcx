@@ -107,6 +107,7 @@ class IntegralGenerator(object):
         self.symbol_counters = collections.defaultdict(int)
 
         self.fuse_loops = parameters.get("fuse_loops", False)
+        self.hoist_code = parameters.get("code_hoisting", False)
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -663,33 +664,37 @@ class IntegralGenerator(object):
 
             body.append(L.AssignAdd(acc, B_rhs))
 
-        hoist_lhs = collections.defaultdict(list)
-        hoist_rhs = collections.defaultdict(list)
-        keep = []
-
         body.append(L.AssignAdd(A[A_indices], acc))
-        for i in reversed(range(block_rank)):
-            hoist = []
-            if i == block_rank - 1:
-                for statement in body:
-                    if isinstance(statement, L.AssignAdd):
-                        if isinstance(statement.rhs, L.Product):
-                            hoist_rhs[statement.rhs.args[-1]].append(statement.rhs.args[0:-1])
-                            hoist_lhs[statement.rhs.args[-1]] = (statement.lhs)
+
+        if self.hoist_code:
+            hoist_lhs = collections.defaultdict(list)
+            hoist_rhs = collections.defaultdict(list)
+            keep = []
+            for i in reversed(range(block_rank)):
+                hoist = []
+                if i == block_rank - 1:
+                    for statement in body:
+                        if isinstance(statement, L.AssignAdd):
+                            if isinstance(statement.rhs, L.Product):
+                                hoist_rhs[statement.rhs.args[-1]].append(statement.rhs.args[0:-1])
+                                hoist_lhs[statement.rhs.args[-1]] = (statement.lhs)
+                            else:
+                                keep.append(statement)
                         else:
                             keep.append(statement)
-                    else:
-                        keep.append(statement)
-                for statement in hoist_rhs:
-                    t = self.new_temp_symbol("t")
-                    sum = 0
-                    for rhs in hoist_rhs[statement]:
-                        sum = L.Add(sum, L.float_product(rhs))
-                    hoist.append(L.VariableDecl("const ufc_scalar_t", t, sum))
-                    keep.insert(-1, L.AssignAdd(hoist_lhs[statement], L.float_product([statement, t])))
-                body = keep
-            body = L.ForRange(B_indices[i], 0, blockdims[i], body=[body])
-            body = [hoist, body]
+                    for statement in hoist_rhs:
+                        t = self.new_temp_symbol("t")
+                        sum = 0
+                        for rhs in hoist_rhs[statement]:
+                            sum = L.Add(sum, L.float_product(rhs))
+                        hoist.append(L.VariableDecl("const ufc_scalar_t", t, sum))
+                        keep.insert(-1, L.AssignAdd(hoist_lhs[statement], L.float_product([statement, t])))
+                    body = keep
+                body = L.ForRange(B_indices[i], 0, blockdims[i], body=[body])
+                body = [hoist, body]
+        else:
+            for i in reversed(range(block_rank)):
+                body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
 
         quadparts += [body]
 

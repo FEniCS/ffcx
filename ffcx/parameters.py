@@ -38,6 +38,8 @@ FFCX_DEFAULT_PARAMETERS = {
         (False, "Keep full tables, including any zeros. Optimisation option."),
     "fuse_loops":
         (False, "Fuse loops with same range. Optimisation option."),
+    "code_hoisting":
+        (False, "Hoist loop invariant code."),
 }
 
 
