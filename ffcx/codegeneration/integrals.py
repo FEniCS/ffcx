@@ -6,6 +6,7 @@
 
 import collections
 import logging
+from IPython import embed_kernel
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -107,6 +108,7 @@ class IntegralGenerator(object):
         self.symbol_counters = collections.defaultdict(int)
 
         self.fuse_loops = parameters.get("fuse_loops", False)
+        self.full_tables = parameters.get("full_tables", False)
         self.hoist_code = parameters.get("code_hoisting", False)
 
     def init_scopes(self):
@@ -666,7 +668,45 @@ class IntegralGenerator(object):
 
         body.append(L.AssignAdd(A[A_indices], acc))
 
-        if self.hoist_code:
+        if self.hoist_code and self.full_tables:
+            # Try to hoist code and generate perfectly nested loops
+            # need to add extra temporary arrays
+            hoist_lhs = collections.defaultdict(list)
+            hoist_rhs = collections.defaultdict(list)
+            keep = []
+            pre_loop = []
+            hoist = []
+            for i in reversed(range(block_rank)):
+                if i == block_rank - 1:
+                    for statement in body:
+                        if isinstance(statement, L.AssignAdd):
+                            if isinstance(statement.rhs, L.Product):
+                                if len(statement.rhs.args) <= 2:
+                                    keep.append(statement)
+                                else:
+                                    hoist_rhs[statement.rhs.args[-1]].append(statement.rhs.args[0:-1])
+                                    hoist_lhs[statement.rhs.args[-1]] = (statement.lhs)
+                            else:
+                                keep.append(statement)
+                        else:
+                            keep.append(statement)
+                    for statement in hoist_rhs:
+                        t = self.new_temp_symbol("t")
+                        sum = []
+                        for rhs in hoist_rhs[statement]:
+                            sum.append(L.float_product(rhs))
+                        sum = L.Sum(sum)
+                        pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[i]))
+                        hoist.append(L.Assign(t[B_indices[i - 1]], sum))
+                        keep.insert(-1, L.AssignAdd(hoist_lhs[statement],
+                                    L.float_product([statement, t[B_indices[i - 1]]])))
+                    hoist = L.ForRange(B_indices[i - 1], 0, blockdims[i - 1], body=[hoist]) if block_rank == 2 else []
+                    body = keep
+                body = L.ForRange(B_indices[i], 0, blockdims[i], body=[body])
+            body = [pre_loop, hoist, body]
+        
+        elif self.hoist_code:
+            # Try to hoist code, no temporary arrays are created
             hoist_lhs = collections.defaultdict(list)
             hoist_rhs = collections.defaultdict(list)
             keep = []
@@ -692,7 +732,9 @@ class IntegralGenerator(object):
                     body = keep
                 body = L.ForRange(B_indices[i], 0, blockdims[i], body=[body])
                 body = [hoist, body]
+      
         else:
+            # Keep the loops as they were generated originally by ffcx
             for i in reversed(range(block_rank)):
                 body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
 
