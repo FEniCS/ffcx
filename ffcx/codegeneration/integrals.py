@@ -6,7 +6,6 @@
 
 import collections
 import logging
-from IPython import embed_kernel
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -704,7 +703,7 @@ class IntegralGenerator(object):
                     body = keep
                 body = L.ForRange(B_indices[i], 0, blockdims[i], body=[body])
             body = [pre_loop, hoist, body]
-        
+
         elif self.hoist_code:
             # Try to hoist code, no temporary arrays are created
             hoist_lhs = collections.defaultdict(list)
@@ -716,8 +715,11 @@ class IntegralGenerator(object):
                     for statement in body:
                         if isinstance(statement, L.AssignAdd):
                             if isinstance(statement.rhs, L.Product):
-                                hoist_rhs[statement.rhs.args[-1]].append(statement.rhs.args[0:-1])
-                                hoist_lhs[statement.rhs.args[-1]] = (statement.lhs)
+                                if len(statement.rhs.args) <= 2:
+                                    keep.append(statement)
+                                else:
+                                    hoist_rhs[statement.rhs.args[-1]].append(statement.rhs.args[0:-1])
+                                    hoist_lhs[statement.rhs.args[-1]] = (statement.lhs)
                             else:
                                 keep.append(statement)
                         else:
@@ -732,7 +734,7 @@ class IntegralGenerator(object):
                     body = keep
                 body = L.ForRange(B_indices[i], 0, blockdims[i], body=[body])
                 body = [hoist, body]
-      
+
         else:
             # Keep the loops as they were generated originally by ffcx
             for i in reversed(range(block_rank)):
