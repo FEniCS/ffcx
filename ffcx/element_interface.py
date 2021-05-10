@@ -128,7 +128,7 @@ class BaseElement:
 
     @property
     def is_blocked(self):
-        return False
+        raise NotImplementedError
 
 
 class BasixElement(BaseElement):
@@ -199,6 +199,10 @@ class BasixElement(BaseElement):
     @property
     def reference_geometry(self):
         return basix.geometry(self.element.cell_type)
+
+    @property
+    def is_blocked(self):
+        return False
 
 
 class MixedElement(BaseElement):
@@ -311,6 +315,10 @@ class MixedElement(BaseElement):
     @property
     def reference_geometry(self):
         return self.sub_elements[0].reference_geometry
+
+    @property
+    def is_blocked(self):
+        return False
 
 
 class BlockedElement(BaseElement):
@@ -520,3 +528,7 @@ class QuadratureElement(BaseElement):
     @property
     def num_reference_components(self):
         return {"affine": self.value_size}
+
+    @property
+    def is_blocked(self):
+        return False
