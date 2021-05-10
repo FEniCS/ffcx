@@ -265,8 +265,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             else:
                 tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
 
-            # tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
-
             padded_tbl[slice(*ir), slice(*cr)] = tab
 
             component_tables.append(padded_tbl[:, flat_component, :])
