@@ -126,6 +126,10 @@ class BaseElement:
     def reference_geometry(self):
         raise NotImplementedError
 
+    @property
+    def is_blocked(self):
+        return False
+
 
 class BasixElement(BaseElement):
     def __init__(self, element):
@@ -331,6 +335,10 @@ class BlockedElement(BaseElement):
                 new_table[:, col: col + table.shape[1] * self.block_size**2: self.block_size**2] = table
             output.append(new_table)
         return output
+
+    @property
+    def is_blocked(self):
+        return True
 
     @property
     def base_transformations(self):
