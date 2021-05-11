@@ -58,7 +58,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: mscroggs/mixed-elements
+          ref: main
       - name: Clone and install DOLFINx
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
