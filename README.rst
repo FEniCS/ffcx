@@ -1,6 +1,6 @@
-==============================
-FFCx: The FEniCS Form Compiler
-==============================
+===============================
+FFCx: The FEniCSx Form Compiler
+===============================
 
 .. image:: https://github.com/FEniCS/ffcx/actions/workflows/pythonapp.yml/badge.svg
    :target: https://github.com/FEniCS/ffcx/actions/workflows/pythonapp.yml
