@@ -819,6 +819,9 @@ class ArrayAccess(CExprOperator):
         return (isinstance(other, type(self)) and self.array == other.array
                 and self.indices == other.indices)
 
+    def __hash__(self):
+        return hash(self.ce_format())
+
 
 class Conditional(CExprOperator):
     __slots__ = ("condition", "true", "false")

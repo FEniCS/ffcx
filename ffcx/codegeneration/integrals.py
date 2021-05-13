@@ -1,4 +1,4 @@
-# Copyright (C) 2015-2020 Martin Sandve Alnæs and Michal Habera
+# Copyright (C) 2015-2021 Martin Sandve Alnæs, Michal Habera, Igor Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -654,8 +654,39 @@ class IntegralGenerator(object):
                 block_size = bm[1] - bm[0]
                 A_indices.append(block_size * index + offset)
 
-        # Create temporary accumulator variable if the number of statements in
-        # the loop is greater than 1.
+        hoist_rhs = collections.defaultdict(list)
+        keep = []
+        ind = B_indices[-1]
+
+        # Indetify loop invariant code to hoist
+        for rhs in rhs_list:
+            if len(rhs.args) <= 2:
+                keep.append(rhs)
+            else:
+                varying = next(x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices))
+                invariant = [x for x in rhs.args if x is not varying]
+                hoist_rhs[varying].append(invariant)
+
+        pre_loop = []
+        hoist = []
+
+        # Perform algebraic manipulations to reduce number of floint point
+        # operations, factorize expressions around
+        for statement in hoist_rhs:
+            t = self.new_temp_symbol("t")
+            pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[0]))
+            sum = []
+            for rhs in hoist_rhs[statement]:
+                sum.append(L.float_product(rhs))
+            sum = L.Sum(sum)
+            hoist.append(L.Assign(t[B_indices[i - 1]], sum))
+            keep.append(L.float_product([statement, t[B_indices[0]]]))
+
+        hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
+        rhs_list = keep
+
+        # Create temporary accumulator if the number of statements in
+        # this loop is greater than 1.
         if len(rhs_list) == 1:
             body.append(L.AssignAdd(A[A_indices], rhs_list[0]))
         else:
@@ -667,6 +698,7 @@ class IntegralGenerator(object):
 
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-        quadparts += [body]
+
+        quadparts += [pre_loop, hoist, body]
 
         return preparts, quadparts
