@@ -628,8 +628,6 @@ class IntegralGenerator(object):
                 if not defined:
                     quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
-            # Naively accumulate integrand for this block in the innermost
-            # loop
             assert not blockdata.transposed
             A_shape = self.ir.tensor_shape
 
@@ -656,34 +654,38 @@ class IntegralGenerator(object):
 
         hoist_rhs = collections.defaultdict(list)
         keep = []
-        ind = B_indices[-1]
-
-        # Indetify loop invariant code to hoist
-        for rhs in rhs_list:
-            if len(rhs.args) <= 2:
-                keep.append(rhs)
-            else:
-                varying = next(x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices))
-                invariant = [x for x in rhs.args if x is not varying]
-                hoist_rhs[varying].append(invariant)
-
+        # List of temporary array declarations
         pre_loop = []
+        # List of loop invariant expressions to hoist
         hoist = []
 
-        # Perform algebraic manipulations to reduce number of floint point
-        # operations, factorize expressions around
-        for statement in hoist_rhs:
-            t = self.new_temp_symbol("t")
-            pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[0]))
-            sum = []
-            for rhs in hoist_rhs[statement]:
-                sum.append(L.float_product(rhs))
-            sum = L.Sum(sum)
-            hoist.append(L.Assign(t[B_indices[i - 1]], sum))
-            keep.append(L.float_product([statement, t[B_indices[0]]]))
+        if block_rank == 2:
+            ind = B_indices[-1]
+            # Indetify loop invariant code to hoist
+            for rhs in rhs_list:
+                if len(rhs.args) <= 2:
+                    keep.append(rhs)
+                else:
+                    varying = next(x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices))
+                    invariant = [x for x in rhs.args if x is not varying]
+                    hoist_rhs[varying].append(invariant)
 
-        hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
-        rhs_list = keep
+
+
+            # Perform algebraic manipulations to reduce number of floating point
+            # operations (factorize expressions by grouping)
+            for statement in hoist_rhs:
+                t = self.new_temp_symbol("t")
+                pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[0]))
+                sum = []
+                for rhs in hoist_rhs[statement]:
+                    sum.append(L.float_product(rhs))
+                sum = L.Sum(sum)
+                hoist.append(L.Assign(t[B_indices[i - 1]], sum))
+                keep.append(L.float_product([statement, t[B_indices[0]]]))
+
+            hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
+            rhs_list = keep
 
         # Create temporary accumulator if the number of statements in
         # this loop is greater than 1.
