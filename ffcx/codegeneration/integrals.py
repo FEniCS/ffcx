@@ -489,11 +489,11 @@ class IntegralGenerator(object):
             block_preparts, block_quadparts = \
                 self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
 
-        # Add definitions
-        preparts.extend(block_preparts)
+            # Add definitions
+            preparts.extend(block_preparts)
 
-        # Add computations
-        quadparts.extend(block_quadparts)
+            # Add computations
+            quadparts.extend(block_quadparts)
 
         return preparts, quadparts
 
@@ -578,6 +578,16 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
+        iq = self.backend.symbols.quadrature_loop_index()
+
+        # Override dof index with quadrature loop index for arguments
+        # with quadrature element, to index B like B[iq*num_dofs + iq]
+        arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
+        B_indices = []
+        for i in range(block_rank):
+            B_indices.append(arg_indices[i])
+        B_indices = list(B_indices)
+
         body = []
         acc = self.new_temp_symbol("acc")
         body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
@@ -586,24 +596,14 @@ class IntegralGenerator(object):
             if "zeros" in ttypes:
                 raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
-            iq = self.backend.symbols.quadrature_loop_index()
-
-            # Override dof index with quadrature loop index for arguments
-            # with quadrature element, to index B like B[iq*num_dofs + iq]
-            arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
-            B_indices = []
-            for i in range(block_rank):
-                B_indices.append(arg_indices[i])
-            B_indices = list(B_indices)
-
-            # Get factor expression
-            F = self.ir.integrand[quadrature_rule]["factorization"]
-
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
 
             # We have scalar integrand here, take just the factor index
             factor_index = blockdata.factor_indices_comp_indices[0][0]
+
+            # Get factor expression
+            F = self.ir.integrand[quadrature_rule]["factorization"]
 
             v = F.nodes[factor_index]['expression']
             f = self.get_var(quadrature_rule, v)
@@ -641,21 +641,26 @@ class IntegralGenerator(object):
             arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
 
             B_rhs = L.float_product([fw] + arg_factors)
-            A_indices = []
 
-            for bm, index in zip(blockmap, arg_indices):
-                # TODO: switch order here? (optionally)
-                offset = bm[0]
-                if len(bm) == 1:
-                    A_indices.append(index + offset)
-                else:
-                    block_size = bm[1] - bm[0]
-                    A_indices.append(block_size * index + offset)
+            # Accumulate RHS on temporary scalar
             body.append(L.AssignAdd(acc, B_rhs))
-        
+
+        A_indices = []
+        for bm, index in zip(blockmap, arg_indices):
+            # TODO: switch order here? (optionally)
+            offset = bm[0]
+            if len(bm) == 1:
+                A_indices.append(index + offset)
+            else:
+                block_size = bm[1] - bm[0]
+                A_indices.append(block_size * index + offset)
+
         body.append(L.AssignAdd(A[A_indices], acc))
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-        quadparts += [body]
+        quadparts+=[body]
+
+        for i in quadparts:
+            print(i)
 
         return preparts, quadparts
