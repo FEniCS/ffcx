@@ -660,7 +660,4 @@ class IntegralGenerator(object):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
         quadparts += [body]
 
-        for i in quadparts:
-            print(i)
-
         return preparts, quadparts
