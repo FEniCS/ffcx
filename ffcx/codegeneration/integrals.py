@@ -589,8 +589,7 @@ class IntegralGenerator(object):
         B_indices = list(B_indices)
 
         body = []
-        acc = self.new_temp_symbol("acc")
-        body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
+        rhs_list = []
         for blockdata in blocklist:
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
@@ -643,7 +642,7 @@ class IntegralGenerator(object):
             B_rhs = L.float_product([fw] + arg_factors)
 
             # Accumulate RHS on temporary scalar
-            body.append(L.AssignAdd(acc, B_rhs))
+            rhs_list.append(B_rhs)
 
         A_indices = []
         for bm, index in zip(blockmap, arg_indices):
@@ -655,7 +654,17 @@ class IntegralGenerator(object):
                 block_size = bm[1] - bm[0]
                 A_indices.append(block_size * index + offset)
 
-        body.append(L.AssignAdd(A[A_indices], acc))
+        # Create temporary accumulator variable if the number of statements in 
+        # the loop is greater than 1.
+        if len(rhs_list) == 1:
+            body.append(L.AssignAdd(A[A_indices], rhs_list[0]))
+        else:
+            acc = self.new_temp_symbol("acc")
+            body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
+            for rhs in rhs_list:
+                body.append(L.AssignAdd(acc, B_rhs))
+            body.append(L.AssignAdd(A[A_indices], acc))
+        
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
         quadparts += [body]
