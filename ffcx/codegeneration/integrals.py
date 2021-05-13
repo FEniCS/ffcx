@@ -658,7 +658,7 @@ class IntegralGenerator(object):
         body.append(L.AssignAdd(A[A_indices], acc))
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-        quadparts+=[body]
+        quadparts += [body]
 
         for i in quadparts:
             print(i)
