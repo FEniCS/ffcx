@@ -670,8 +670,6 @@ class IntegralGenerator(object):
                     invariant = [x for x in rhs.args if x is not varying]
                     hoist_rhs[varying].append(invariant)
 
-
-
             # Perform algebraic manipulations to reduce number of floating point
             # operations (factorize expressions by grouping)
             for statement in hoist_rhs:
