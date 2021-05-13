@@ -654,7 +654,7 @@ class IntegralGenerator(object):
                 block_size = bm[1] - bm[0]
                 A_indices.append(block_size * index + offset)
 
-        # Create temporary accumulator variable if the number of statements in 
+        # Create temporary accumulator variable if the number of statements in
         # the loop is greater than 1.
         if len(rhs_list) == 1:
             body.append(L.AssignAdd(A[A_indices], rhs_list[0]))
@@ -664,7 +664,7 @@ class IntegralGenerator(object):
             for rhs in rhs_list:
                 body.append(L.AssignAdd(acc, B_rhs))
             body.append(L.AssignAdd(A[A_indices], acc))
-        
+
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
         quadparts += [body]
