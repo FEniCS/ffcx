@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import collections
-import itertools
 import logging
 from typing import Tuple, List
 
@@ -580,8 +579,9 @@ class IntegralGenerator(object):
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
         body = []
+        acc = self.new_temp_symbol("acc")
+        body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
         for blockdata in blocklist:
-            
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
                 raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
@@ -651,9 +651,9 @@ class IntegralGenerator(object):
                 else:
                     block_size = bm[1] - bm[0]
                     A_indices.append(block_size * index + offset)
-
-            body.append(L.AssignAdd(A[A_indices], B_rhs))
-
+            body.append(L.AssignAdd(acc, B_rhs))
+        
+        body.append(L.AssignAdd(A[A_indices], acc))
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
         quadparts += [body]
