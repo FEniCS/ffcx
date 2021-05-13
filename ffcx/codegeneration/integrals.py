@@ -662,7 +662,7 @@ class IntegralGenerator(object):
             acc = self.new_temp_symbol("acc")
             body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
             for rhs in rhs_list:
-                body.append(L.AssignAdd(acc, B_rhs))
+                body.append(L.AssignAdd(acc, rhs))
             body.append(L.AssignAdd(A[A_indices], acc))
 
         for i in reversed(range(block_rank)):
