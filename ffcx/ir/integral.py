@@ -96,7 +96,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             atol=p["table_atol"])
         unique_tables = {v.name: v.values for v in mt_unique_table_reference.values()}
         unique_table_types = {v.name: v.ttype for v in mt_unique_table_reference.values()}
-      
+
         for td in mt_unique_table_reference.values():
             ir["table_needs_transformation_data"][td.name] = td.needs_transformation_data
             if td.needs_transformation_data:

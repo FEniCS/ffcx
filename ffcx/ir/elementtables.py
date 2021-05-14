@@ -107,23 +107,17 @@ def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
     unique = []
     mapping = {}
 
-    if isinstance(tables, list):
-        keys = list(range(len(tables)))
-    elif isinstance(tables, dict):
-        keys = sorted(tables.keys())
-
-    for k in keys:
-        t = tables[k]
-        found = -1
+    for k, t in tables.items():
+        found = False
         for i, u in enumerate(unique):
             if equal_tables(u, t, rtol=rtol, atol=atol):
-                found = i
+                found = True
+                mapping[k] = i
                 break
-        if found == -1:
-            i = len(unique)
+        if not found:
+            mapping[k] = len(unique)
             unique.append(t)
-        mapping[k] = i
-
+     
     return unique, mapping
 
 
@@ -625,7 +619,7 @@ def optimize_element_tables(tables,
 
 
 def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
-    return (ufl.utils.sequences.product(table.shape) == 0
+    return (numpy.product(table.shape) == 0
             or numpy.allclose(table, numpy.zeros(table.shape), rtol=rtol, atol=atol))
 
 
@@ -652,6 +646,13 @@ def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
         numpy.allclose(table[0, :, 0, :],
                        table[0, :, i, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[2]))
+
+
+def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
+    return all(
+        numpy.allclose(table[0, 0, :, :],
+                       table[0, i, :, :], rtol=rtol, atol=atol)
+        for i in range(1, table.shape[1]))
 
 
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
@@ -685,20 +686,6 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
     return ttype
 
 
-def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
-    return all(
-        numpy.allclose(table[0, 0, :, :],
-                       table[0, i, :, :], rtol=rtol, atol=atol)
-        for i in range(1, table.shape[1]))
-
-
-def analyse_table_types(unique_tables, rtol=default_rtol, atol=default_atol):
-    return {
-        uname: analyse_table_type(table, rtol=rtol, atol=atol)
-        for uname, table in unique_tables.items()
-    }
-
-
 def build_optimized_tables(quadrature_rule,
                            cell,
                            integral_type,
@@ -727,9 +714,8 @@ def build_optimized_tables(quadrature_rule,
     # unique_table_num_dofs = {uname: tbl.shape[-1]
     #                         for uname, tbl in unique_tables.items()}
 
-    # Analyze tables for properties useful for optimization
-    unique_table_ttypes = analyse_table_types(
-        unique_tables, rtol=rtol, atol=atol)
+    unique_table_ttypes = {uname: analyse_table_type(table, rtol=rtol, atol=atol)
+                           for uname, table in unique_tables.items()}
 
     # Compress tables that are constant along num_entities or num_points
     for uname, tabletype in unique_table_ttypes.items():
@@ -746,12 +732,12 @@ def build_optimized_tables(quadrature_rule,
     # Delete tables not referenced by modified terminals
     used_unames = set(table_unames[name] for name in mt_table_names.values())
     unused_unames = set(unique_tables.keys()) - used_unames
+    print('unused = ',unused_unames)
     for uname in unused_unames:
         del unique_table_ttypes[uname]
         del unique_tables[uname]
 
-    # Change tables to point to existing optimized tables
-    # (i.e. tables from other contexts that have been compressed to look the same)
+    # Change tables to point to existing tables
     name_map = {}
     existing_names = sorted(existing_tables)
     for uname in sorted(unique_tables):
@@ -764,6 +750,7 @@ def build_optimized_tables(quadrature_rule,
                 # Don't visit this table again (just to avoid the processing)
                 existing_names.pop(i)
                 break
+    print("name_map = ", name_map)
 
     # Replace unique table names
     for uname, ename in name_map.items():
