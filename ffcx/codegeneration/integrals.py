@@ -1,12 +1,12 @@
-# Copyright (C) 2015-2020 Martin Sandve Alnæs and Michal Habera
+# Copyright (C) 2015-2021 Martin Sandve Alnæs, Michal Habera, Igor Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import collections
-import itertools
 import logging
+from typing import Tuple, List
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -15,6 +15,8 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.utils import apply_transformations_to_data
 from ffcx.ir.elementtables import piecewise_ttypes
+from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.integral import block_data_t
 
 logger = logging.getLogger("ffcx")
 
@@ -326,8 +328,8 @@ class IntegralGenerator(object):
             out += ["{"] + apply_transformations + ["}"]
         return out
 
-    def generate_quadrature_loop(self, quadrature_rule):
-        """Generate quadrature loop with for this num_points."""
+    def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
+        """Generate quadrature loop with for this quadrature_rule."""
         L = self.backend.language
 
         # Generate varying partition
@@ -468,7 +470,7 @@ class IntegralGenerator(object):
             parts += intermediates
         return parts
 
-    def generate_dofblock_partition(self, quadrature_rule):
+    def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
         preparts = []
         quadparts = []
@@ -476,11 +478,16 @@ class IntegralGenerator(object):
                   for blockmap, contributions in sorted(block_contributions.items())
                   for blockdata in contributions]
 
-        for blockmap, blockdata in blocks:
+        block_groups = collections.defaultdict(list)
 
-            # Define code for block depending on mode
+        # Group loops by blockmap, in Vector elements each component has
+        # a different blockmap
+        for blockmap, blockdata in blocks:
+            block_groups[blockmap].append(blockdata)
+
+        for blockmap in block_groups:
             block_preparts, block_quadparts = \
-                self.generate_block_parts(quadrature_rule, blockmap, blockdata)
+                self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -555,13 +562,12 @@ class IntegralGenerator(object):
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule, blockmap, blockdata):
+    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[block_data_t]):
         """Generate and return code parts for a given block.
 
-        Returns parts occuring before, inside, and after
-        the quadrature loop identified by num_points.
+        Returns parts occuring before, inside, and after the quadrature loop identified by the quadrature rule.
 
-        Should be called with num_points=None for quadloop-independent blocks.
+        Should be called with quadrature_rule=None for quadloop-independent blocks.
         """
         L = self.backend.language
 
@@ -571,10 +577,6 @@ class IntegralGenerator(object):
 
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
-
-        ttypes = blockdata.ttypes
-        if "zeros" in ttypes:
-            raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
         iq = self.backend.symbols.quadrature_loop_index()
 
@@ -586,92 +588,122 @@ class IntegralGenerator(object):
             B_indices.append(arg_indices[i])
         B_indices = list(B_indices)
 
-        # Get factor expression
-        F = self.ir.integrand[quadrature_rule]["factorization"]
+        body = []
+        rhs_list = []
+        for blockdata in blocklist:
+            ttypes = blockdata.ttypes
+            if "zeros" in ttypes:
+                raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
-        if len(blockdata.factor_indices_comp_indices) > 1:
-            raise RuntimeError("Code generation for non-scalar integrals unsupported")
+            if len(blockdata.factor_indices_comp_indices) > 1:
+                raise RuntimeError("Code generation for non-scalar integrals unsupported")
 
-        # We have scalar integrand here, take just the factor index
-        factor_index = blockdata.factor_indices_comp_indices[0][0]
+            # We have scalar integrand here, take just the factor index
+            factor_index = blockdata.factor_indices_comp_indices[0][0]
 
-        v = F.nodes[factor_index]['expression']
-        f = self.get_var(quadrature_rule, v)
+            # Get factor expression
+            F = self.ir.integrand[quadrature_rule]["factorization"]
 
-        # Quadrature weight was removed in representation, add it back now
-        if self.ir.integral_type in ufl.custom_integral_types:
-            weights = self.backend.symbols.custom_weights_table()
-            weight = weights[iq]
-        else:
-            weights = self.backend.symbols.weights_table(quadrature_rule)
-            weight = weights[iq]
+            v = F.nodes[factor_index]['expression']
+            f = self.get_var(quadrature_rule, v)
 
-        # Define fw = f * weight
-        assert not blockdata.transposed, "Not handled yet"
-
-        fw_rhs = L.float_product([f, weight])
-        if not isinstance(fw_rhs, L.Product):
-            fw = fw_rhs
-        else:
-            # Define and cache scalar temp variable
-            key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
-            fw, defined = self.get_temp_symbol("fw", key)
-            if not defined:
-                quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
-
-        # Naively accumulate integrand for this block in the innermost
-        # loop
-        assert not blockdata.transposed
-        A_shape = self.ir.tensor_shape
-
-        Asym = self.backend.symbols.element_tensor()
-        A = L.FlattenedArray(Asym, dims=A_shape)
-
-        # Check if DOFs in dofrange are equally spaced
-        expand_loop = False
-        for i, bm in enumerate(blockmap):
-            for a, b in zip(bm[1:-1], bm[2:]):
-                if b - a != bm[1] - bm[0]:
-                    expand_loop = True
-                    break
+            # Quadrature weight was removed in representation, add it back now
+            if self.ir.integral_type in ufl.custom_integral_types:
+                weights = self.backend.symbols.custom_weights_table()
+                weight = weights[iq]
             else:
-                continue
-            break
+                weights = self.backend.symbols.weights_table(quadrature_rule)
+                weight = weights[iq]
 
-        if expand_loop:
-            # If DOFs in dofrange are not equally spaced, then expand
-            # out the for loop
-            for A_indices, B_indices in zip(itertools.product(*blockmap),
-                                            itertools.product(*[range(len(b)) for b in blockmap])):
-                quadparts += [
-                    L.AssignAdd(
-                        A[A_indices],
-                        L.float_product([fw] + self.get_arg_factors(
-                            blockdata, block_rank,
-                            quadrature_rule, iq, B_indices)
-                        )
-                    )
-                ]
-        else:
+            # Define fw = f * weight
+            assert not blockdata.transposed, "Not handled yet"
+
+            fw_rhs = L.float_product([f, weight])
+            if not isinstance(fw_rhs, L.Product):
+                fw = fw_rhs
+            else:
+                # Define and cache scalar temp variable
+                key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
+                fw, defined = self.get_temp_symbol("fw", key)
+                if not defined:
+                    quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
+
+            assert not blockdata.transposed
+            A_shape = self.ir.tensor_shape
+
+            Asym = self.backend.symbols.element_tensor()
+            A = L.FlattenedArray(Asym, dims=A_shape)
+
             # Fetch code to access modified arguments
             arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
 
             B_rhs = L.float_product([fw] + arg_factors)
-            A_indices = []
 
-            for bm, index in zip(blockmap, arg_indices):
-                # TODO: switch order here? (optionally)
-                offset = bm[0]
-                if len(bm) == 1:
-                    A_indices.append(index + offset)
+            # Accumulate RHS on temporary scalar
+            rhs_list.append(B_rhs)
+
+        A_indices = []
+        for bm, index in zip(blockmap, arg_indices):
+            # TODO: switch order here? (optionally)
+            offset = bm[0]
+            if len(bm) == 1:
+                A_indices.append(index + offset)
+            else:
+                block_size = bm[1] - bm[0]
+                A_indices.append(block_size * index + offset)
+
+        hoist_rhs = collections.defaultdict(list)
+        # List of statements to keep in the inner loop
+        keep = []
+        # List of temporary array declarations
+        pre_loop = []
+        # List of loop invariant expressions to hoist
+        hoist = []
+
+        # Hoist loop invariant code and group array access (each table should only be read one
+        # time in the inner loop).
+        if block_rank == 2:
+            ind = B_indices[-1]
+            # Identify loop invariant code to hoist
+            for rhs in rhs_list:
+                if len(rhs.args) <= 2:
+                    keep.append(rhs)
                 else:
-                    block_size = bm[1] - bm[0]
-                    A_indices.append(block_size * index + offset)
+                    varying = next(x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices))
+                    invariant = [x for x in rhs.args if x is not varying]
+                    hoist_rhs[varying].append(invariant)
 
-            body = L.AssignAdd(A[A_indices], B_rhs)
+            # Perform algebraic manipulations to reduce number of floating point
+            # operations (factorize expressions by grouping)
+            for statement in hoist_rhs:
+                t = self.new_temp_symbol("t")
+                pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[0]))
+                sum = []
+                for rhs in hoist_rhs[statement]:
+                    sum.append(L.float_product(rhs))
+                sum = L.Sum(sum)
+                hoist.append(L.Assign(t[B_indices[i - 1]], sum))
+                keep.append(L.float_product([statement, t[B_indices[0]]]))
 
-            for i in reversed(range(block_rank)):
-                body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
-            quadparts += [body]
+            hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
+            rhs_list = keep
+
+        # Create temporary accumulator if the number of statements in
+        # this loop is greater than 1.
+        if len(rhs_list) == 1:
+            body.append(L.AssignAdd(A[A_indices], rhs_list[0]))
+        else:
+            acc = self.new_temp_symbol("acc")
+            body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
+            for rhs in rhs_list:
+                body.append(L.AssignAdd(acc, rhs))
+            body.append(L.AssignAdd(A[A_indices], acc))
+
+        for i in reversed(range(block_rank)):
+            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+
+        # TODO: Check if the compiler can optimize out the allocation of temporaries
+        #  arrays in pre_loop
+        quadparts += [pre_loop, hoist, body]
 
         return preparts, quadparts
