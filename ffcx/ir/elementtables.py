@@ -724,8 +724,8 @@ def build_optimized_tables(quadrature_rule,
             tables, table_origins, rtol=rtol, atol=atol)
 
     # Get num_dofs for all tables before they can be deleted later
-    unique_table_num_dofs = {uname: tbl.shape[-1]
-                             for uname, tbl in unique_tables.items()}
+    # unique_table_num_dofs = {uname: tbl.shape[-1]
+    #                         for uname, tbl in unique_tables.items()}
 
     # Analyze tables for properties useful for optimization
     unique_table_ttypes = analyse_table_types(
@@ -740,7 +740,7 @@ def build_optimized_tables(quadrature_rule,
             # Reduce table to dimension 1 along num_entities axis in generated code
             unique_tables[uname] = unique_tables[uname][:, :1, :, :]
         if not table_permuted[uname]:
-            # Reduce table to dimenstion 2 along num_perms axis in generated code
+            # Reduce table to dimension 2 along num_perms axis in generated code
             unique_tables[uname] = unique_tables[uname][:1, :, :, :]
 
     # Delete tables not referenced by modified terminals
@@ -821,5 +821,4 @@ def build_optimized_tables(quadrature_rule,
             ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted, base_transformations,
             needs_transformation_data)
 
-    return (unique_tables, unique_table_ttypes, unique_table_num_dofs,
-            mt_unique_table_reference)
+    return mt_unique_table_reference

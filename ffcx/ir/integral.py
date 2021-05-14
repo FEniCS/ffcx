@@ -85,8 +85,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                              for i, v in S.nodes.items()
                              if is_modified_terminal(v['expression'])}
 
-        (unique_tables, unique_table_types, unique_table_num_dofs,
-         mt_unique_table_reference) = build_optimized_tables(
+        mt_unique_table_reference = build_optimized_tables(
             quadrature_rule,
             cell,
             integral_type,
@@ -95,7 +94,9 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             ir["unique_tables"],
             rtol=p["table_rtol"],
             atol=p["table_atol"])
-
+        unique_tables = {v.name: v.values for v in mt_unique_table_reference.values()}
+        unique_table_types = {v.name: v.ttype for v in mt_unique_table_reference.values()}
+      
         for td in mt_unique_table_reference.values():
             ir["table_needs_transformation_data"][td.name] = td.needs_transformation_data
             if td.needs_transformation_data:
