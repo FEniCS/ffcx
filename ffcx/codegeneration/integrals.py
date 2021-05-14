@@ -669,7 +669,7 @@ class IntegralGenerator(object):
                 if len(rhs.args) <= 2:
                     keep.append(rhs)
                 else:
-                    varying = next(x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices))
+                    varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
                     invariant = [x for x in rhs.args if x is not varying]
                     hoist_rhs[varying].append(invariant)
 
@@ -683,7 +683,11 @@ class IntegralGenerator(object):
                     sum.append(L.float_product(rhs))
                 sum = L.Sum(sum)
                 hoist.append(L.Assign(t[B_indices[i - 1]], sum))
-                keep.append(L.float_product([statement, t[B_indices[0]]]))
+                if statement is None:
+                    # If there is no "varying" statement then accumulate temporary directly
+                    keep.append(t[B_indices[0]])
+                else:
+                    keep.append(L.float_product([statement, t[B_indices[0]]]))
 
             hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
             rhs_list = keep
