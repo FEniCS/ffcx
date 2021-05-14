@@ -699,6 +699,8 @@ class IntegralGenerator(object):
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
 
+        # TODO: Check if compiler can optimize out the allocation of temporaies
+        #  arrays in pre_loop
         quadparts += [pre_loop, hoist, body]
 
         return preparts, quadparts
