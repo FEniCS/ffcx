@@ -653,12 +653,15 @@ class IntegralGenerator(object):
                 A_indices.append(block_size * index + offset)
 
         hoist_rhs = collections.defaultdict(list)
+        # List of statements to keep in the inner loop
         keep = []
         # List of temporary array declarations
         pre_loop = []
         # List of loop invariant expressions to hoist
         hoist = []
 
+        # Hoist loop invariant code and group array access (each table should only be read one
+        # time in the inner loop).
         if block_rank == 2:
             ind = B_indices[-1]
             # Indetify loop invariant code to hoist
