@@ -117,7 +117,7 @@ def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
         if not found:
             mapping[k] = len(unique)
             unique.append(t)
-     
+
     return unique, mapping
 
 
