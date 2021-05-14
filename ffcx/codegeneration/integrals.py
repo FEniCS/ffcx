@@ -664,7 +664,7 @@ class IntegralGenerator(object):
         # time in the inner loop).
         if block_rank == 2:
             ind = B_indices[-1]
-            # Indetify loop invariant code to hoist
+            # Identify loop invariant code to hoist
             for rhs in rhs_list:
                 if len(rhs.args) <= 2:
                     keep.append(rhs)
