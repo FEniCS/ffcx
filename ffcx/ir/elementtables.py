@@ -729,14 +729,6 @@ def build_optimized_tables(quadrature_rule,
             # Reduce table to dimension 2 along num_perms axis in generated code
             unique_tables[uname] = unique_tables[uname][:1, :, :, :]
 
-    # Delete tables not referenced by modified terminals
-    used_unames = set(table_unames[name] for name in mt_table_names.values())
-    unused_unames = set(unique_tables.keys()) - used_unames
-    print('unused = ',unused_unames)
-    for uname in unused_unames:
-        del unique_table_ttypes[uname]
-        del unique_tables[uname]
-
     # Change tables to point to existing tables
     name_map = {}
     existing_names = sorted(existing_tables)
@@ -750,7 +742,6 @@ def build_optimized_tables(quadrature_rule,
                 # Don't visit this table again (just to avoid the processing)
                 existing_names.pop(i)
                 break
-    print("name_map = ", name_map)
 
     # Replace unique table names
     for uname, ename in name_map.items():
