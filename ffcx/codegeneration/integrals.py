@@ -670,8 +670,11 @@ class IntegralGenerator(object):
                     keep.append(rhs)
                 else:
                     varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
-                    invariant = [x for x in rhs.args if x is not varying]
-                    hoist_rhs[varying].append(invariant)
+                    if varying:
+                        invariant = [x for x in rhs.args if x is not varying]
+                        hoist_rhs[varying].append(invariant)
+                    else:
+                        keep.append(rhs)
 
             # Perform algebraic manipulations to reduce number of floating point
             # operations (factorize expressions by grouping)
@@ -683,11 +686,7 @@ class IntegralGenerator(object):
                     sum.append(L.float_product(rhs))
                 sum = L.Sum(sum)
                 hoist.append(L.Assign(t[B_indices[i - 1]], sum))
-                if statement is None:
-                    # If there is no "varying" statement then accumulate temporary directly
-                    keep.append(t[B_indices[0]])
-                else:
-                    keep.append(L.float_product([statement, t[B_indices[0]]]))
+                keep.append(L.float_product([statement, t[B_indices[0]]]))
 
             hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
             rhs_list = keep
