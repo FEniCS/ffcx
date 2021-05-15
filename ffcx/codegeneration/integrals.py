@@ -669,9 +669,12 @@ class IntegralGenerator(object):
                 if len(rhs.args) <= 2:
                     keep.append(rhs)
                 else:
-                    varying = next(x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices))
-                    invariant = [x for x in rhs.args if x is not varying]
-                    hoist_rhs[varying].append(invariant)
+                    varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
+                    if varying:
+                        invariant = [x for x in rhs.args if x is not varying]
+                        hoist_rhs[varying].append(invariant)
+                    else:
+                        keep.append(rhs)
 
             # Perform algebraic manipulations to reduce number of floating point
             # operations (factorize expressions by grouping)
