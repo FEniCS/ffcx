@@ -97,17 +97,6 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
-    def entity_rotations(self, L, i, cell_shape):
-        """Returns the bool that says whether or not an entity has been reflected."""
-        cell_info = self.S("cell_permutation")
-        if cell_shape == "tetrahedron":
-            face_bitsize = 3
-        if cell_shape == "hexahedron":
-            face_bitsize = 3
-        if i[0] == 2:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1] + 1), 3)
-        return L.LiteralBool(False)
-
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
         return self.S("ic")
