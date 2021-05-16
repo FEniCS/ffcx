@@ -97,44 +97,6 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
 
-    def entity_permutation(self, L, i, cell_shape):
-        """Returns the int that gives the permutation of the entity."""
-        cell_info = self.S("cell_permutation")
-        if cell_shape in ["triangle", "quadrilateral"]:
-            num_faces = 0
-            face_bitsize = 1
-            assert i[0] == 1
-        if cell_shape == "tetrahedron":
-            num_faces = 4
-            face_bitsize = 3
-        if cell_shape == "hexahedron":
-            num_faces = 6
-            face_bitsize = 3
-        if i[0] == 1:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
-        elif i[0] == 2:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 7)
-        return L.LiteralInt(0)
-
-    def entity_reflection(self, L, i, cell_shape):
-        """Returns the bool that says whether or not an entity has been reflected."""
-        cell_info = self.S("cell_permutation")
-        if cell_shape in ["triangle", "quadrilateral"]:
-            num_faces = 0
-            face_bitsize = 1
-            assert i[0] == 1
-        if cell_shape == "tetrahedron":
-            num_faces = 4
-            face_bitsize = 3
-        if cell_shape == "hexahedron":
-            num_faces = 6
-            face_bitsize = 3
-        if i[0] == 1:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
-        elif i[0] == 2:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 1)
-        return L.LiteralBool(False)
-
     def entity_rotations(self, L, i, cell_shape):
         """Returns the bool that says whether or not an entity has been reflected."""
         cell_info = self.S("cell_permutation")
@@ -157,18 +119,6 @@ class FFCXBackendSymbols(object):
     def quadrature_permutation(self, index):
         """Quadrature permutation, as input to the function."""
         return self.S("quadrature_permutation")[index]
-
-    def num_custom_quadrature_points(self):
-        """Number of quadrature points, argument to custom integrals."""
-        return self.S("num_quadrature_points")
-
-    def custom_quadrature_weights(self):
-        """Quadrature weights including cell measure scaling, argument to custom integrals."""
-        return self.S("quadrature_weights")
-
-    def custom_quadrature_points(self):
-        """Physical quadrature points, argument to custom integrals."""
-        return self.S("quadrature_points")
 
     def custom_weights_table(self):
         """Table for chunk of custom quadrature weights (including cell measure scaling)."""
@@ -256,7 +206,3 @@ class FFCXBackendSymbols(object):
 
         # Return direct access to element table
         return self.named_table(tabledata.name)[qp][entity][iq]
-
-    def expr_component_index(self):
-        """Symbol for indexing the expression's ufl shape."""
-        return self.S("ec")
