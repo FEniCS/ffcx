@@ -265,11 +265,11 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         ir["unique_tables"].update(unique_tables)
 
         # Analyse active terminals to check what we'll need to generate code for
-        active_mts = []
-        for i, v in F.nodes.items():
-            mt = v.get('mt', False)
-            if mt and F.nodes[i]['status'] != 'inactive':
-                active_mts.append(mt)
+        # active_mts = []
+        # for i, v in F.nodes.items():
+        #     mt = v.get('mt', False)
+        #     if mt and F.nodes[i]['status'] != 'inactive':
+        #         active_mts.append(mt)
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
