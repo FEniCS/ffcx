@@ -230,9 +230,8 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                         tab[basis_i, value_i] = tbl[value_i * tab.shape[0] + basis_i]
             else:
                 tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
-
           
-            print(padded_shape, tab.shape)
+            print(padded_shape, tab.shape, slice(*cr), flat_component)
             padded_tbl[:, slice(*cr), :] = tab
             print(flat_component, 'offset=', offset, 'stride=', stride)
             component_tables.append(padded_tbl[:, flat_component, :])
