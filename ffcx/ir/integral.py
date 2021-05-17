@@ -8,6 +8,7 @@
 import collections
 import itertools
 import logging
+import IPython
 
 import numpy
 
@@ -262,7 +263,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             if tbl is not None and not numpy.allclose(
                     tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
                 raise RuntimeError("Table values mismatch with same name.")
-        ir["unique_tables"].update(unique_tables)
+
+        ir["unique_tables"] = unique_tables
 
         # Analyse active terminals to check what we'll need to generate code for
         # active_mts = []
