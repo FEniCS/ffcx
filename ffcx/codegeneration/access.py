@@ -77,7 +77,7 @@ class FFCXBackendAccess(object):
             return self.symbols.coefficient_dof_access(mt.terminal, idof)
         else:
             # Return symbol, see definitions for computation
-            return self.symbols.coefficient_value(mt)  # , num_points)
+            return self.symbols.coefficient_value(mt)
 
     def constant(self, e, mt, tabledata, num_points):
         """Access to a constant is handled trivially, directly through constants symbol."""

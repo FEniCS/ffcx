@@ -6,6 +6,7 @@
 """FFCx/UFC specific symbol naming."""
 
 import logging
+import ufl.utils.derivativetuples
 
 logger = logging.getLogger("ffcx")
 
@@ -42,7 +43,10 @@ def format_mt_name(basename, mt):
 
     # Format local derivatives
     if mt.local_derivatives:
-        der = f"_d{''.join(map(str, mt.local_derivatives))}"
+        # Convert "listing" derivative multindex into "counting" representation
+        gdim = mt.terminal.ufl_domain().geometric_dimension()
+        ld_counting = ufl.utils.derivativetuples.derivative_listing_to_counts(mt.local_derivatives, gdim)
+        der = f"_d{''.join(map(str, ld_counting))}"
         access += der
 
     # Add flattened component to name

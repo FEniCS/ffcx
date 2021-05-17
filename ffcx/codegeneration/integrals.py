@@ -81,6 +81,8 @@ def generator(ir, parameters):
         tabulate_tensor=code["tabulate_tensor"],
         needs_transformation_data=ir.needs_transformation_data)
 
+    print(implementation)
+
     return declaration, implementation
 
 
@@ -383,7 +385,7 @@ class IntegralGenerator(object):
     def generate_partition(self, symbol, F, mode, quadrature_rule):
         L = self.backend.language
 
-        definitions = []
+        definitions = dict()
         intermediates = []
 
         use_symbol_array = True
@@ -411,7 +413,7 @@ class IntegralGenerator(object):
 
                     # Store definitions of terminals in list
                     assert isinstance(vdef, list)
-                    definitions.extend(vdef)
+                    definitions[str(vaccess)] = vdef
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
@@ -462,7 +464,8 @@ class IntegralGenerator(object):
         # and intermediate computations
         parts = []
         if definitions:
-            parts += definitions
+            for vaccess, definition in definitions.items():
+                parts += definition
         if intermediates:
             if use_symbol_array:
                 padlen = self.ir.params["padlen"]
