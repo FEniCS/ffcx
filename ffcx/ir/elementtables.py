@@ -20,8 +20,8 @@ from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
 logger = logging.getLogger("ffcx")
 
 # Using same defaults as numpy.allclose
-default_rtol = 1e-5
-default_atol = 1e-8
+default_rtol = 1e-6
+default_atol = 1e-9
 
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
@@ -44,7 +44,7 @@ def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
 def clamp_table_small_numbers(table,
                               rtol=default_rtol,
                               atol=default_atol,
-                              numbers=(-1.0, -0.5, 0.0, 0.5, 1.0)):
+                              numbers=(-1.0, 0.0, 1.0)):
     """Clamp almost 0,1,-1 values to integers. Returns new table."""
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
