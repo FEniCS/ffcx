@@ -8,7 +8,6 @@
 import collections
 import itertools
 import logging
-import IPython
 
 import numpy
 
