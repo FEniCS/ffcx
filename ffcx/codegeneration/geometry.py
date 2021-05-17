@@ -52,27 +52,7 @@ def facet_edge_vertices(L, tablename, cellname):
 
 def reference_facet_jacobian(L, tablename, cellname):
     celltype = getattr(basix.CellType, cellname)
-    topology = basix.topology(celltype)
-    geometry = basix.geometry(celltype)
-
-    tdim = len(topology) - 1
-
-    if tdim not in [2, 3]:
-        raise ValueError("Can only get facet jacobians for 2D and 3D cells.")
-
-    facet_jacobian = []
-    if tdim == 2:
-        for facet in topology[-2]:
-            edge = geometry[facet[1]] - geometry[facet[0]]
-            facet_jacobian.append(list(zip(edge)))
-
-    else:
-        for facet in topology[-2]:
-            edge0 = geometry[facet[1]] - geometry[facet[0]]
-            edge1 = geometry[facet[2]] - geometry[facet[0]]
-            facet_jacobian.append(list(zip(edge0, edge1)))
-
-    out = numpy.array(facet_jacobian)
+    out = basix.cell.facet_jacobians(celltype)
     return L.ArrayDecl("static const double", f"{cellname}_{tablename}", out.shape, out)
 
 
@@ -86,7 +66,7 @@ def reference_facet_volume(L, tablename, cellname):
     celltype = getattr(basix.CellType, cellname)
     volumes = basix.cell.facet_reference_volumes(celltype)
     for i in volumes[1:]:
-        if not np.isclose(i, volumes[0]):
+        if not numpy.isclose(i, volumes[0]):
             raise ValueError("Reference facet volume not supported for this cell type.")
     return L.VariableDecl("static const double", f"{cellname}_{tablename}", volumes[0])
 
