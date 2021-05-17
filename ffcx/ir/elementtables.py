@@ -450,7 +450,7 @@ def build_element_tables(quadrature_rule,
                             permute_quadrature_interval(
                                 quadrature_rule.points, ref),
                             cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
-                    table_values = numpy.array([td['array'] for td in new_table])
+                    table_values = numpy.array([td['array'][0] for td in new_table])
                     t = new_table[0]
                     t['array'] = table_values 
                 elif tdim == 3:
@@ -464,7 +464,7 @@ def build_element_tables(quadrature_rule,
                                         quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
-                        table_values = numpy.array([td['array'] for td in new_table])
+                        table_values = numpy.array([td['array'][0] for td in new_table])
                         t = new_table[0]
                         t['array'] = table_values 
                     elif cell_type == "hexahedron":
@@ -476,7 +476,7 @@ def build_element_tables(quadrature_rule,
                                         quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
-                        table_values = numpy.array([td['array'] for td in new_table])
+                        table_values = numpy.array([td['array'][0] for td in new_table])
                         t = new_table[0]
                         t['array'] = table_values 
             else:
