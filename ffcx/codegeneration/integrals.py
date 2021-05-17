@@ -500,46 +500,6 @@ class IntegralGenerator(object):
 
         return preparts, quadparts
 
-    def get_entities(self, blockdata):
-        L = self.backend.language
-
-        if self.ir.integral_type == "interior_facet":
-            # Get the facet entities
-            entities = []
-            for r in blockdata.restrictions:
-                if r is None:
-                    entities.append(0)
-                else:
-                    entities.append(self.backend.symbols.entity(self.ir.entitytype, r))
-            if blockdata.transposed:
-                return (entities[1], entities[0])
-            else:
-                return tuple(entities)
-        else:
-            # Get the current cell or facet entity
-            if blockdata.is_uniform:
-                # uniform, i.e. constant across facets
-                entity = L.LiteralInt(0)
-            else:
-                entity = self.backend.symbols.entity(self.ir.entitytype, None)
-            return (entity, )
-
-    def get_permutations(self, blockdata):
-        """Get the quadrature permutations for facets."""
-        perms = []
-        for r in blockdata.restrictions:
-            if blockdata.is_permuted:
-                qp = self.backend.symbols.quadrature_permutation(0)
-                if r == "-":
-                    qp = self.backend.symbols.quadrature_permutation(1)
-            else:
-                qp = 0
-            perms.append(qp)
-        if blockdata.transposed:
-            return (perms[1], perms[0])
-        else:
-            return tuple(perms)
-
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
         arg_factors = []
         for i in range(block_rank):

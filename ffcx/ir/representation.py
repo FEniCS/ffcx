@@ -53,9 +53,6 @@ ir_integral = namedtuple('ir_integral', [
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
     'table_dofmaps', 'table_dof_base_transformations', 'integrand', 'name', 'precision',
     'table_needs_transformation_data', 'needs_transformation_data'])
-ir_evaluate_dof = namedtuple('ir_evaluate_dof', [
-    'mappings', 'reference_value_size', 'physical_value_size', 'geometric_dimension',
-    'topological_dimension', 'dofs', 'cell_shape'])
 ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'table_dof_base_transformations', 'coefficient_numbering', 'coefficient_offsets',
@@ -88,7 +85,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
                                                                          fd_index, itg_data.subdomain_id, prefix)
 
     ir_elements = [
-        _compute_element_ir(e, analysis.element_numbers, finite_element_names, parameters["epsilon"])
+        _compute_element_ir(e, analysis.element_numbers, finite_element_names)
         for e in analysis.unique_elements
     ]
 
@@ -116,7 +113,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
                    expressions=ir_expressions)
 
 
-def _compute_element_ir(ufl_element, element_numbers, finite_element_names, epsilon):
+def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     """Compute intermediate representation of element."""
 
     logger.info(f"Computing IR for element {ufl_element}")
@@ -204,20 +201,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["num_element_support_dofs"] = basix_element.dim - ir["num_global_support_dofs"]
 
     return ir_dofmap(**ir)
-
-
-_midpoints = {
-    "interval": (0.5, ),
-    "triangle": (1.0 / 3.0, 1.0 / 3.0),
-    "tetrahedron": (0.25, 0.25, 0.25),
-    "quadrilateral": (0.5, 0.5),
-    "hexahedron": (0.5, 0.5, 0.5),
-}
-
-
-def cell_midpoint(cell):
-    # TODO: Is this defined somewhere more central where we can get it from?
-    return _midpoints[cell.cellname()]
 
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,

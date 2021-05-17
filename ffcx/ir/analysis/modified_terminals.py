@@ -279,7 +279,7 @@ def analyse_modified_terminal(expr):
         raise RuntimeError("Component indices %s are outside value shape %s" % (component, base_shape))
 
     # Flatten component
-    vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)
+    vi2si, _ = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
 
     return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,

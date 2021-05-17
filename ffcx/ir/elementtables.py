@@ -23,14 +23,8 @@ logger = logging.getLogger("ffcx")
 default_rtol = 1e-5
 default_atol = 1e-8
 
-table_origin_t = collections.namedtuple(
-    "table_origin", ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
-
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
-
-valid_ttypes = set(("quadrature", )) | set(
-    piecewise_ttypes) | set(uniform_ttypes)
 
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
@@ -630,7 +624,7 @@ def is_ones_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
-    num_transformations, num_entities, num_points, num_dofs = table.shape
+    _, num_entities, num_points, num_dofs = table.shape
     Id = numpy.eye(num_points)
     return (num_points == num_dofs and all(
         numpy.allclose(table[0, i, :, :], Id, rtol=rtol, atol=atol) for i in range(num_entities)))
@@ -651,7 +645,6 @@ def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
-    num_transformations, num_entities, num_points, num_dofs = table.shape
     if is_zeros_table(table, rtol=rtol, atol=atol):
         # Table is empty or all values are 0.0
         ttype = "zeros"

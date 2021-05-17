@@ -10,41 +10,6 @@ import numpy
 index_type = "int"
 
 
-def generate_return_literal_switch(L,
-                                   i,
-                                   values,
-                                   default,
-                                   literal_type,
-                                   typename=None):
-    # TODO: UFC functions of this type could be replaced with return vector<T>{values}.
-
-    if isinstance(i, str):
-        i = L.Symbol(i)
-    return_default = L.Return(literal_type(default))
-
-    if values and typename is not None:
-        # Store values in static table and return from there
-        V = L.Symbol("return_values")
-        decl = L.ArrayDecl("static const %s" % typename, V, len(values),
-                           [literal_type(k) for k in values])
-        return L.StatementList(
-            [decl,
-             L.If(L.GE(i, len(values)), return_default),
-             L.Return(V[i])])
-    elif values:
-        # Need typename to create static array, fallback to switch
-        cases = [(j, L.Return(literal_type(k))) for j, k in enumerate(values)]
-        return L.Switch(i, cases, default=return_default)
-    else:
-        # No values, just return default
-        return return_default
-
-
-def generate_return_int_switch(L, i, values, default):
-    return generate_return_literal_switch(L, i, values, default, L.LiteralInt,
-                                          "int")
-
-
 def make_transformation_data(L, base_transformations, cell_shape, inverse=False, transpose=False):
     if cell_shape == "interval":
         entities = {}
