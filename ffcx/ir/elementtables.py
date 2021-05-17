@@ -219,17 +219,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     for entity in range(num_entities):
         res[:, entity, :, :] = numpy.transpose(component_tables[entity])
 
-    # Clean up table
-    tbl = clamp_table_small_numbers(res, rtol=default_rtol, atol=default_atol)
-    tabletype = analyse_table_type(tbl)
-    if tabletype in piecewise_ttypes:
-        # Reduce table to dimension 1 along num_points axis in generated code
-        tbl = tbl[:, :, :1, :]
-    if tabletype in uniform_ttypes:
-        # Reduce table to dimension 1 along num_entities axis in generated code
-        tbl = tbl[:, :1, :, :]
-
-    return {'array': tbl, 'ttype': tabletype, 'offset': offset, 'stride': stride}
+    return {'array': res, 'offset': offset, 'stride': stride}
 
 
 def generate_psi_table_name(quadrature_rule, element_counter, averaged, entitytype, derivative_counts,
@@ -469,15 +459,27 @@ def build_element_tables(quadrature_rule,
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
                                           local_derivatives, flat_component)
-            t['is_permuted'] = is_permuted_table(t['array'])
+
+            # Clean up table
+            tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
+            tabletype = analyse_table_type(tbl)
+            t['ttype'] = tabletype
+            if tabletype in piecewise_ttypes:
+                # Reduce table to dimension 1 along num_points axis in generated code
+                tbl = tbl[:, :, :1, :]
+            if tabletype in uniform_ttypes:
+                # Reduce table to dimension 1 along num_entities axis in generated code
+                tbl = tbl[:, :1, :, :]
+
+            t['is_permuted'] = is_permuted_table(tbl)
             if not t['is_permuted']:
                 # Reduce table along num_perms axis
-                t['array'] = t['array'][:1, :, :, :]
+                tbl = tbl[:1, :, :, :]
 
             # Check for existing identical table
             xname_found = False
             for xname in tables:
-                if equal_tables(t['array'], tables[xname]):
+                if equal_tables(tbl, tables[xname]):
                     xname_found = True
                     break
 
@@ -488,6 +490,7 @@ def build_element_tables(quadrature_rule,
                 t['array'] = tables[name]
             else:
                 # Store new table
+                t['array'] = tbl
                 tables[name] = t['array']
 
             cell_offset = 0
