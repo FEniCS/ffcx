@@ -315,7 +315,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
                     raise RuntimeError("Invalid ttype %s" % (ttype, ))
 
         elif not is_cellwise_constant(v['expression']):
-            raise RuntimeError("Error")
+            raise RuntimeError("Error " + str(tr))
             # Keeping this check to be on the safe side,
             # not sure which cases this will cover (if any)
             # varying_indices.append(i)
