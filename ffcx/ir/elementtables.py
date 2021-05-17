@@ -38,8 +38,6 @@ unique_table_reference_t = collections.namedtuple(
      "is_permuted", "dof_base_transformations", "needs_transformation_data"])
 
 
-
-
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
     a = numpy.asarray(a)
     b = numpy.asarray(b)
@@ -493,7 +491,7 @@ def build_element_tables(quadrature_rule,
             else:
                 # Store new table
                 tables[name] = t['array']
- 
+
             cell_offset = 0
             basix_element = create_element(element)
 
