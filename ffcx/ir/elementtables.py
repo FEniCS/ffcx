@@ -418,7 +418,11 @@ def build_element_tables(quadrature_rule,
         element_number = element_numbers[element]
         name = generate_psi_table_name(quadrature_rule, element_number, avg, entitytype,
                                        local_derivatives, flat_component)
-        if name in tables:
+
+        # FIXME - currently skip this, and just recalculate the tables every time,
+        # only reusing them if they match numerically. mt_tables can only be reused if the
+        # metadata (e.g. dofmap etc.) is also known to be the same.
+        if False:
             # Find existing entry in mt_tables
             for k in mt_tables:
                 if mt_tables[k]['name'] == name:
