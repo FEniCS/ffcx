@@ -81,8 +81,6 @@ def generator(ir, parameters):
         tabulate_tensor=code["tabulate_tensor"],
         needs_transformation_data=ir.needs_transformation_data)
 
-    print(implementation)
-
     return declaration, implementation
 
 
