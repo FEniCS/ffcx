@@ -463,14 +463,12 @@ def build_optimized_tables(quadrature_rule,
             # Clean up table
             tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
             tabletype = analyse_table_type(tbl)
-            t['ttype'] = tabletype
             if tabletype in piecewise_ttypes:
                 # Reduce table to dimension 1 along num_points axis in generated code
                 tbl = tbl[:, :, :1, :]
             if tabletype in uniform_ttypes:
                 # Reduce table to dimension 1 along num_entities axis in generated code
                 tbl = tbl[:, :1, :, :]
-
             is_permuted = is_permuted_table(tbl)
             if not is_permuted:
                 # Reduce table along num_perms axis
@@ -487,11 +485,10 @@ def build_optimized_tables(quadrature_rule,
                 # print('found existing table equiv to ', name, ' at ', xname)
                 name = xname
                 # Retrieve existing table
-                t['array'] = tables[name]
+                tbl = tables[name]
             else:
                 # Store new table
-                t['array'] = tbl
-                tables[name] = t['array']
+                tables[name] = tbl
 
             cell_offset = 0
             basix_element = create_element(element)
@@ -500,7 +497,7 @@ def build_optimized_tables(quadrature_rule,
                 # offset = 0 or number of element dofs, if restricted to "-"
                 cell_offset = basix_element.dim
 
-            num_dofs = t['array'].shape[3]
+            num_dofs = tbl.shape[3]
             dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
 
             base_transformations = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
@@ -510,7 +507,7 @@ def build_optimized_tables(quadrature_rule,
 
             # tables is just np.arrays, mt_tables hold metadata too
             mt_tables[mt] = unique_table_reference_t(
-                name, t['array'], tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
+                name, tbl, tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
                 tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
                 base_transformations, needs_transformation_data)
 
