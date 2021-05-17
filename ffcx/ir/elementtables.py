@@ -610,8 +610,8 @@ def build_optimized_tables(quadrature_rule,
         is_permuted = table_data['is_permuted']
 
         needs_transformation_data = False
-        if is_permuted:
-            needs_transformation_data = True
+        # if is_permuted:
+        #    needs_transformation_data = True
 
         base_transformations = table_data['base_transformations']
         for p in base_transformations:
