@@ -87,7 +87,6 @@ class ExpressionGenerator:
         self.backend = backend
         self.scope = {}
         self._ufl_names = set()
-        self.finalization_blocks = collections.defaultdict(list)
         self.symbol_counters = collections.defaultdict(int)
         self.shared_symbols = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]

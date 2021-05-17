@@ -90,7 +90,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     """
     parameters = {}
 
-    for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
+    for param, (value, _) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
     # NOTE: _load_parameters uses functools.lru_cache
