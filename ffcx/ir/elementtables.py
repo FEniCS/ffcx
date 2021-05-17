@@ -352,14 +352,14 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_element_tables(quadrature_rule,
-                         cell,
-                         integral_type,
-                         entitytype,
-                         modified_terminals,
-                         existing_tables,
-                         rtol=default_rtol,
-                         atol=default_atol):
+def build_optimized_tables(quadrature_rule,
+                           cell,
+                           integral_type,
+                           entitytype,
+                           modified_terminals,
+                           existing_tables,
+                           rtol=default_rtol,
+                           atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -471,8 +471,8 @@ def build_element_tables(quadrature_rule,
                 # Reduce table to dimension 1 along num_entities axis in generated code
                 tbl = tbl[:, :1, :, :]
 
-            t['is_permuted'] = is_permuted_table(tbl)
-            if not t['is_permuted']:
+            is_permuted = is_permuted_table(tbl)
+            if not is_permuted:
                 # Reduce table along num_perms axis
                 tbl = tbl[:1, :, :, :]
 
@@ -500,19 +500,19 @@ def build_element_tables(quadrature_rule,
                 # offset = 0 or number of element dofs, if restricted to "-"
                 cell_offset = basix_element.dim
 
-            t['name'] = name
-            t['is_piecewise'] = t['ttype'] in piecewise_ttypes
-            t['is_uniform'] = t['ttype'] in uniform_ttypes
             num_dofs = t['array'].shape[3]
             dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
-            t['dofmap'] = dofmap
 
-            t['base_transformations'] = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
-                                         for i in dofmap]
-                                         for p in basix_element.base_transformations]
+            base_transformations = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
+                                    for i in dofmap]
+                                    for p in basix_element.base_transformations]
+            needs_transformation_data = not all(numpy.allclose(p, numpy.identity(len(p))) for p in base_transformations)
 
             # tables is just np.arrays, mt_tables hold metadata too
-            mt_tables[mt] = t
+            mt_tables[mt] = unique_table_reference_t(
+                name, t['array'], tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
+                tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
+                base_transformations, needs_transformation_data)
 
     return mt_tables
 
@@ -582,50 +582,3 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
             # Varying over points and entities
             ttype = "varying"
     return ttype
-
-
-def build_optimized_tables(quadrature_rule,
-                           cell,
-                           integral_type,
-                           entitytype,
-                           modified_terminals,
-                           existing_tables,
-                           rtol=default_rtol,
-                           atol=default_atol):
-
-    # Build tables needed by all modified terminals
-    mt_tables = build_element_tables(
-        quadrature_rule,
-        cell,
-        integral_type,
-        entitytype,
-        modified_terminals,
-        existing_tables,
-        rtol=rtol,
-        atol=atol)
-
-    mt_unique_table_reference = {}
-    for mt, table_data in mt_tables.items():
-
-        # FIXME: Use offset and stride instead of dofmap and dofrange
-        dofmap = table_data['dofmap']
-        dofrange = (dofmap[0], dofmap[-1] + 1)
-        is_permuted = table_data['is_permuted']
-
-        needs_transformation_data = False
-        # if is_permuted:
-        #    needs_transformation_data = True
-
-        base_transformations = table_data['base_transformations']
-        for p in base_transformations:
-            if not numpy.allclose(p, numpy.identity(len(p))):
-                needs_transformation_data = True
-
-        ttype = table_data['ttype']
-        # Store reference to unique table for this mt
-        mt_unique_table_reference[mt] = unique_table_reference_t(
-            table_data['name'], table_data['array'], dofrange, dofmap, ttype,
-            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted, base_transformations,
-            needs_transformation_data)
-
-    return mt_unique_table_reference
