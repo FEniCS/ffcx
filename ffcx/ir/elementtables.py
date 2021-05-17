@@ -177,8 +177,8 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
             stride = block_size
 
-        offset = ir[0]    
-        
+        offset = ir[0]
+
         def slice_size(r):
             if len(r) == 1:
                 return r[0]
@@ -208,7 +208,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                         tab[basis_i, value_i] = tbl[value_i * tab.shape[0] + basis_i]
             else:
                 tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
-          
+
             #  print(padded_shape, tab.shape, slice(*cr), flat_component)
             #   padded_tbl[:, slice(*cr), :] = tab
             c = flat_component - cr[0]
@@ -399,7 +399,6 @@ def build_element_tables(quadrature_rule,
 
     """
 
-
     # Add to element tables
     analysis = {}
     for mt in modified_terminals:
@@ -425,7 +424,7 @@ def build_element_tables(quadrature_rule,
         element, avg, local_derivatives, flat_component = res
 
         # Generate table and store table name with modified terminal
-       
+
         # Build name for this particular table
         element_number = element_numbers[element]
         name = generate_psi_table_name(quadrature_rule, element_number, avg, entitytype,
@@ -435,7 +434,7 @@ def build_element_tables(quadrature_rule,
             for k in mt_tables:
                 if mt_tables[k]['name'] == name:
                     mt_tables[mt] = mt_tables[k]
-                    break 
+                    break
         else:
             tdim = cell.topological_dimension()
             if entitytype == "facet":
@@ -452,7 +451,7 @@ def build_element_tables(quadrature_rule,
                             cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
                     table_values = numpy.array([td['array'][0] for td in new_table])
                     t = new_table[0]
-                    t['array'] = table_values 
+                    t['array'] = table_values
                 elif tdim == 3:
                     cell_type = cell.cellname()
                     if cell_type == "tetrahedron":
@@ -466,7 +465,7 @@ def build_element_tables(quadrature_rule,
 
                         table_values = numpy.array([td['array'][0] for td in new_table])
                         t = new_table[0]
-                        t['array'] = table_values 
+                        t['array'] = table_values
                     elif cell_type == "hexahedron":
                         new_table = []
                         for rot in range(4):
@@ -478,19 +477,19 @@ def build_element_tables(quadrature_rule,
 
                         table_values = numpy.array([td['array'][0] for td in new_table])
                         t = new_table[0]
-                        t['array'] = table_values 
+                        t['array'] = table_values
             else:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
                                           local_derivatives, flat_component)
-                
+
             # Check for existing identical table
             xname_found = False
             for xname in tables:
                 if equal_tables(t['array'], tables[xname]):
                     xname_found = True
                     break
-                
+
             if xname_found:
                 print('found existing table equiv to ', name, ' at ', xname)
                 name = xname
@@ -499,17 +498,22 @@ def build_element_tables(quadrature_rule,
             else:
                 # Store new table
                 tables[name] = t['array']
-            
+
             t['name'] = name
             t['is_permuted'] = is_permuted_table(t['array'])
             t['is_piecewise'] = t['ttype'] in piecewise_ttypes
             t['is_uniform'] = t['ttype'] in uniform_ttypes
             num_dofs = t['array'].shape[3]
-            t['dofmap'] = tuple(t['offset'] + i*t['stride'] for i in range(num_dofs))
-                
+            dofmap = tuple(t['offset'] + i * t['stride'] for i in range(num_dofs))
+            t['dofmap'] = dofmap
+
+            cell_offset = 0
+            t['base_transformations'] = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
+                                         for i in dofmap]
+                                         for p in create_element(element).base_transformations]
+
             # tables is just np.arrays, mt_tables hold metadata too
             mt_tables[mt] = t
-
 
     return mt_tables
 
@@ -602,29 +606,24 @@ def build_optimized_tables(quadrature_rule,
         atol=atol)
 
     needs_transformation_data = False
-   
+
     mt_unique_table_reference = {}
     for mt, table_data in mt_tables.items():
         # Get metadata for the original table (name is not the unique name!)
         dofmap = table_data['dofmap']
         dofrange = (dofmap[0], dofmap[-1])
-       # original_dim = table_data['original_num_dofs']
+        # original_dim = table_data['original_num_dofs']
         is_permuted = table_data['is_permuted']
         if is_permuted:
             needs_transformation_data = True
 
         ttype = table_data['ttype']
-        
-        # offset = 0
-        # base_transformations = [
-        #     [[p[i - offset][j - offset] for j in dofmap] for i in dofmap]
-        #     for p in create_element(table_origins[name][0]).base_transformations]
-        base_transformations=None
 
+        base_transformations = table_data['base_transformations']
         needs_transformation_data = False
-        # for p in base_transformations:
-        #     if not numpy.allclose(p, numpy.identity(len(p))):
-        #         needs_transformation_data = True
+        for p in base_transformations:
+            if not numpy.allclose(p, numpy.identity(len(p))):
+                needs_transformation_data = True
 
         # Store reference to unique table for this mt
         mt_unique_table_reference[mt] = unique_table_reference_t(
