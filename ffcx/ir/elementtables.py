@@ -242,9 +242,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     if tabletype in uniform_ttypes:
         # Reduce table to dimension 1 along num_entities axis in generated code
         tbl = tbl[:, :1, :, :]
-    if not is_permuted_table(tbl):
-        # Reduce table to dimension 2 along num_perms axis in generated code
-        tbl = tbl[:1, :, :, :]
 
     return {'array': tbl, 'ttype': tabletype, 'offset': offset, 'stride': stride}
 
@@ -483,6 +480,10 @@ def build_element_tables(quadrature_rule,
                                           integral_type, element, avg, entitytype,
                                           local_derivatives, flat_component)
 
+            if not is_permuted_table(t['array']):
+                # Reduce table to dimension 2 along num_perms axis in generated code
+                t['array'] = t['array'][:1, :, :, :]
+
             # Check for existing identical table
             xname_found = False
             for xname in tables:
@@ -605,26 +606,23 @@ def build_optimized_tables(quadrature_rule,
         rtol=rtol,
         atol=atol)
 
-    needs_transformation_data = False
-
     mt_unique_table_reference = {}
     for mt, table_data in mt_tables.items():
         # Get metadata for the original table (name is not the unique name!)
         dofmap = table_data['dofmap']
-        dofrange = (dofmap[0], dofmap[-1])
-        # original_dim = table_data['original_num_dofs']
+        dofrange = (dofmap[0], dofmap[-1] + 1)
         is_permuted = table_data['is_permuted']
+
+        needs_transformation_data = False
         if is_permuted:
             needs_transformation_data = True
 
-        ttype = table_data['ttype']
-
         base_transformations = table_data['base_transformations']
-        needs_transformation_data = False
         for p in base_transformations:
             if not numpy.allclose(p, numpy.identity(len(p))):
                 needs_transformation_data = True
 
+        ttype = table_data['ttype']
         # Store reference to unique table for this mt
         mt_unique_table_reference[mt] = unique_table_reference_t(
             table_data['name'], table_data['array'], dofrange, dofmap, ttype,
