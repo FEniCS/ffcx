@@ -471,8 +471,8 @@ def build_element_tables(quadrature_rule,
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
                                           local_derivatives, flat_component)
-
-            if not is_permuted_table(t['array']):
+            t['is_permuted'] = is_permuted_table(t['array'])
+            if not t['is_permuted']:
                 # Reduce table along num_perms axis
                 t['array'] = t['array'][:1, :, :, :]
 
@@ -484,7 +484,7 @@ def build_element_tables(quadrature_rule,
                     break
 
             if xname_found:
-                print('found existing table equiv to ', name, ' at ', xname)
+                # print('found existing table equiv to ', name, ' at ', xname)
                 name = xname
                 # Retrieve existing table
                 t['array'] = tables[name]
@@ -500,7 +500,6 @@ def build_element_tables(quadrature_rule,
                 cell_offset = basix_element.dim
 
             t['name'] = name
-            t['is_permuted'] = is_permuted_table(t['array'])
             t['is_piecewise'] = t['ttype'] in piecewise_ttypes
             t['is_uniform'] = t['ttype'] in uniform_ttypes
             num_dofs = t['array'].shape[3]
@@ -607,7 +606,8 @@ def build_optimized_tables(quadrature_rule,
 
     mt_unique_table_reference = {}
     for mt, table_data in mt_tables.items():
-        # Get metadata for the original table (name is not the unique name!)
+
+        # FIXME: Use offset and stride instead of dofmap and dofrange
         dofmap = table_data['dofmap']
         dofrange = (dofmap[0], dofmap[-1] + 1)
         is_permuted = table_data['is_permuted']
