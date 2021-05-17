@@ -38,12 +38,6 @@ unique_table_reference_t = collections.namedtuple(
      "is_permuted", "dof_base_transformations", "needs_transformation_data"])
 
 
-# TODO: Get restriction postfix from somewhere central
-def ufc_restriction_offset(restriction, length):
-    if restriction == "-":
-        return length
-    else:
-        return 0
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -381,6 +375,7 @@ def build_element_tables(quadrature_rule,
                          integral_type,
                          entitytype,
                          modified_terminals,
+                         existing_tables,
                          rtol=default_rtol,
                          atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
@@ -391,8 +386,7 @@ def build_element_tables(quadrature_rule,
       FIXME: Document
 
     Output:
-      tables - dict(name: table)
-      mt_table_names - dict(ModifiedTerminal: name)
+      mt_tables - dict(ModifiedTerminal: table data)
 
     """
 
@@ -411,7 +405,7 @@ def build_element_tables(quadrature_rule,
         ufl.algorithms.analysis.extract_sub_elements(all_elements))
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    tables = {}
+    tables = existing_tables
     mt_tables = {}
 
     for mt in modified_terminals:
@@ -481,7 +475,7 @@ def build_element_tables(quadrature_rule,
                                           local_derivatives, flat_component)
 
             if not is_permuted_table(t['array']):
-                # Reduce table to dimension 2 along num_perms axis in generated code
+                # Reduce table along num_perms axis
                 t['array'] = t['array'][:1, :, :, :]
 
             # Check for existing identical table
@@ -499,19 +493,25 @@ def build_element_tables(quadrature_rule,
             else:
                 # Store new table
                 tables[name] = t['array']
+ 
+            cell_offset = 0
+            basix_element = create_element(element)
+
+            if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
+                # offset = 0 or number of element dofs, if restricted to "-"
+                cell_offset = basix_element.dim
 
             t['name'] = name
             t['is_permuted'] = is_permuted_table(t['array'])
             t['is_piecewise'] = t['ttype'] in piecewise_ttypes
             t['is_uniform'] = t['ttype'] in uniform_ttypes
             num_dofs = t['array'].shape[3]
-            dofmap = tuple(t['offset'] + i * t['stride'] for i in range(num_dofs))
+            dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
             t['dofmap'] = dofmap
 
-            cell_offset = 0
             t['base_transformations'] = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
                                          for i in dofmap]
-                                         for p in create_element(element).base_transformations]
+                                         for p in basix_element.base_transformations]
 
             # tables is just np.arrays, mt_tables hold metadata too
             mt_tables[mt] = t
@@ -603,6 +603,7 @@ def build_optimized_tables(quadrature_rule,
         integral_type,
         entitytype,
         modified_terminals,
+        existing_tables,
         rtol=rtol,
         atol=atol)
 
