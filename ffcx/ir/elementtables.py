@@ -100,42 +100,35 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     numpy.set_printoptions(suppress=True, precision=2)
     basix_element = create_element(ufl_element)
 
-    offset = 0
-    stride = 1
-
     # Extract arrays for the right scalar component
     component_tables = []
-
     sh = tuple(basix_element.value_shape)
-
     assert len(sh) > 0
-
     component_element, offset, stride = basix_element.get_component_element(flat_component)
 
     for entity in range(num_entities):
         entity_points = map_integral_points(points, integral_type, cell, entity)
-
         tbl = component_element.tabulate(deriv_order, entity_points)
-        tbl = tbl[basix_index(*derivative_counts)].transpose()
+        tbl = tbl[basix_index(*derivative_counts)]
         component_tables.append(tbl)
 
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table
         wsum = sum(weights)
         for entity, tbl in enumerate(component_tables):
-            num_dofs = tbl.shape[0]
+            num_dofs = tbl.shape[1]
             tbl = numpy.dot(tbl, weights) / wsum
-            tbl = numpy.reshape(tbl, (num_dofs, 1))
+            tbl = numpy.reshape(tbl, (1, num_dofs))
             component_tables[entity] = tbl
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
     # Reorder axes as (points, dofs) instead of (dofs, points)
     assert len(component_tables) == num_entities
-    num_dofs, num_points = component_tables[0].shape
+    num_points, num_dofs = component_tables[0].shape
     shape = (1, num_entities, num_points, num_dofs)
     res = numpy.zeros(shape)
     for entity in range(num_entities):
-        res[:, entity, :, :] = numpy.transpose(component_tables[entity])
+        res[:, entity, :, :] = component_tables[entity]
 
     return {'array': res, 'offset': offset, 'stride': stride}
 
