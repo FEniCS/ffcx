@@ -74,6 +74,9 @@ class BaseElement:
     def tabulate(self, nderivs, points):
         raise NotImplementedError
 
+    def get_component_element(self, flat_component):
+        raise NotImplementedError
+
     @property
     def base_transformations(self):
         raise NotImplementedError
@@ -137,6 +140,9 @@ class BasixElement(BaseElement):
 
     def tabulate(self, nderivs, points):
         return self.element.tabulate(nderivs, points)
+
+    def get_component_element(self, flat_component):
+        return self
 
     @property
     def base_transformations(self):
@@ -222,6 +228,19 @@ class MixedElement(BaseElement):
                     start += self.value_size
             tables.append(new_table)
         return tables
+
+    def get_component_element(self, flat_component):
+        sub_dims = [0] + [e.dim for e in self.sub_elements]
+        sub_cmps = [0] + [e.value_size for e in self.sub_elements]
+
+        irange = numpy.cumsum(sub_dims)
+        crange = numpy.cumsum(sub_cmps)
+
+        # Find index of sub element which corresponds to the current flat component
+        component_element_index = numpy.where(
+            crange <= flat_component)[0].shape[0] - 1
+
+        return self.sub_elements[component_element_index]
 
     @property
     def base_transformations(self):
@@ -344,6 +363,9 @@ class BlockedElement(BaseElement):
             output.append(new_table)
         return output
 
+    def get_component_element(self, flat_component):
+        return ComponentElement(self.sub_element, flat_component, self.block_size, self.block_shape)
+
     @property
     def is_blocked(self):
         return True
@@ -432,6 +454,102 @@ class BlockedElement(BaseElement):
         return self.sub_element.num_reference_components
 
 
+class ComponentElement(BaseElement):
+    def __init__(self, sub_element, block, block_size, block_shape):
+        assert block_size > 0
+        self.block = block
+        self.sub_element = sub_element
+        self.block_size = block_size
+        self.block_shape = block_shape
+
+    def tabulate(self, nderivs, points):
+        return self.sub_element.tabulate(nderivs, points)
+        assert len(self.block_shape) == 1  # TODO: block shape
+        assert self.value_size == self.block_size  # TODO: remove this assumption
+
+        output = []
+        for table in self.sub_element.tabulate(nderivs, points):
+            new_table = numpy.zeros((table.shape[0], table.shape[1] * self.block_size**2))
+            col = self.block * (self.block_size + 1)
+            new_table[:, col: col + table.shape[1] * self.block_size**2: self.block_size**2] = table
+            output.append(new_table)
+        return output
+
+    def get_component_element(self, flat_component):
+        raise NotImplementedError
+
+    @property
+    def is_blocked(self):
+        return True
+
+    @property
+    def base_transformations(self):
+        raise NotImplementedError
+
+    @property
+    def interpolation_matrix(self):
+        raise NotImplementedError
+
+    @property
+    def points(self):
+        return self.sub_element.points
+
+    @property
+    def dim(self):
+        return self.sub_element.dim * self.block_size
+
+    @property
+    def sub_elements(self):
+        return [self.sub_element] * self.block_size
+
+    @property
+    def value_size(self):
+        return self.block_size * self.sub_element.value_size
+
+    @property
+    def value_shape(self):
+        return (self.value_size, )
+
+    @property
+    def entity_dofs(self):
+        return [[j * self.block_size for j in i] for i in self.sub_element.entity_dofs]
+
+    @property
+    def entity_dof_numbers(self):
+        # TODO: should this return this, or should it take blocks into account?
+        return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
+                 for j in i] for i in self.sub_element.entity_dof_numbers]
+
+    @property
+    def coeffs(self):
+        # TODO: should this return this, or should it take blocks into account?
+        return self.sub_element.coeffs
+
+    @property
+    def num_global_support_dofs(self):
+        return self.sub_element.num_global_support_dofs * self.block_size
+
+    @property
+    def family_name(self):
+        return self.sub_element.family_name
+
+    @property
+    def reference_topology(self):
+        return self.sub_element.reference_topology
+
+    @property
+    def reference_geometry(self):
+        return self.sub_element.reference_geometry
+
+    @property
+    def dof_mappings(self):
+        return self.sub_element.dof_mappings * self.block_size
+
+    @property
+    def num_reference_components(self):
+        return self.sub_element.num_reference_components
+
+
 class QuadratureElement(BaseElement):
     def __init__(self, ufl_element):
         self._points, _ = create_quadrature(ufl_element.cell().cellname(),
@@ -446,6 +564,9 @@ class QuadratureElement(BaseElement):
             raise ValueError("Mismatch of tabulation points and element points.")
         tables = [numpy.eye(points.shape[0], points.shape[0])]
         return tables
+
+    def get_component_element(self, flat_component):
+        return self
 
     @property
     def base_transformations(self):
