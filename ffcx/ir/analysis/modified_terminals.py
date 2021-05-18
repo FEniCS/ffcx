@@ -1,6 +1,6 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -239,11 +239,6 @@ def analyse_modified_terminal(expr):
     global_derivatives = tuple(sorted(global_derivatives))
     local_derivatives = tuple(sorted(local_derivatives))
 
-    # TODO: Temporarily letting local_derivatives imply reference_value,
-    #       but this was not intended to be the case
-    # if local_derivatives:
-    #    reference_value = True
-
     # Make reference_value true or false
     reference_value = reference_value or False
 
@@ -284,9 +279,8 @@ def analyse_modified_terminal(expr):
         raise RuntimeError("Component indices %s are outside value shape %s" % (component, base_shape))
 
     # Flatten component
-    vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)
+    vi2si, _ = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
-    # num_flat_components = len(si2vi)
 
     return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,
                             flat_component, global_derivatives, local_derivatives, averaged,

@@ -1,6 +1,6 @@
 # Copyright (C) 2019 Chris Richardson
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -42,14 +42,13 @@ def test_additive_facet_integral(mode, compile_args):
         assert compiled_f.rank == len(f.arguments())
 
     ffi = cffi.FFI()
-    form0 = compiled_forms[0][0]
+    form0 = compiled_forms[0]
 
-    assert form0.num_exterior_facet_integrals == 1
-    ids = np.zeros(form0.num_exterior_facet_integrals, dtype=np.int32)
-    form0.get_exterior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert form0.num_integrals(module.lib.exterior_facet) == 1
+    ids = form0.integral_ids(module.lib.exterior_facet)
     assert ids[0] == -1
 
-    default_integral = form0.create_exterior_facet_integral(ids[0])
+    default_integral = form0.integrals(module.lib.exterior_facet)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -87,14 +86,13 @@ def test_additive_cell_integral(mode, compile_args):
         assert compiled_f.rank == len(f.arguments())
 
     ffi = cffi.FFI()
-    form0 = compiled_forms[0][0]
+    form0 = compiled_forms[0]
 
-    assert form0.num_cell_integrals == 1
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.int32)
-    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert form0.num_integrals(module.lib.cell) == 1
+    ids = form0.integral_ids(module.lib.cell)
     assert ids[0] == -1
 
-    default_integral = form0.create_cell_integral(ids[0])
+    default_integral = form0.integrals(0)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)

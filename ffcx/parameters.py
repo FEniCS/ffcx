@@ -1,6 +1,6 @@
 # Copyright (C) 2005-2020 Anders Logg, Michal Habera, Jack S. Hale
 #
-# This file is part of FFCX. (https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -92,7 +92,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     """
     parameters = {}
 
-    for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
+    for param, (value, _) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
     # NOTE: _load_parameters uses functools.lru_cache

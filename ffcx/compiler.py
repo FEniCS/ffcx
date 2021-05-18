@@ -1,6 +1,6 @@
 # Copyright (C) 2007-2020 Anders Logg and Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Main interface for compilation of forms.
@@ -64,7 +64,6 @@ Compiler stages:
 """
 
 import logging
-import os
 import typing
 from time import time
 
@@ -94,9 +93,6 @@ def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
 
     """
-    if prefix != os.path.basename(prefix):
-        raise RuntimeError("Invalid prefix, looks like a full path? prefix='{}'.".format(prefix))
-
     # Stage 1: analysis
     cpu_time = time()
     analysis = analyze_ufl_objects(ufl_objects, parameters)

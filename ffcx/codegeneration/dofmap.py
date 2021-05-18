@@ -1,6 +1,6 @@
 # Copyright (C) 2009-2018 Anders Logg, Martin Sandve Alnæs and Garth N. Wells
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 #
@@ -9,7 +9,6 @@
 
 import logging
 import ffcx.codegeneration.dofmap_template as ufc_dofmap
-from ffcx.codegeneration.utils import generate_return_new_switch
 
 logger = logging.getLogger("ffcx")
 
@@ -54,19 +53,6 @@ def tabulate_entity_dofs(L, ir):
         return L.NoOp()
 
 
-def create_sub_dofmap(L, ir):
-    classnames = ir.create_sub_dofmap
-    return generate_return_new_switch(L, "i", classnames)
-
-
-def sub_dofmap_declaration(L, ir):
-    classnames = set(ir.create_sub_dofmap)
-    code = ""
-    for name in classnames:
-        code += f"ufc_dofmap* create_{name}(void);\n"
-    return code
-
-
 def generator(ir, parameters):
     """Generate UFC code for a dofmap."""
 
@@ -89,8 +75,15 @@ def generator(ir, parameters):
 
     # Functions
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
-    d["sub_dofmap_declaration"] = sub_dofmap_declaration(L, ir)
-    d["create_sub_dofmap"] = create_sub_dofmap(L, ir)
+
+    if len(ir.sub_dofmaps) > 0:
+        d["sub_dofmaps_initialization"] = L.ArrayDecl(
+            "ufc_dofmap*", f"sub_dofmaps_{ir.name}",
+            values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.sub_dofmaps], sizes=len(ir.sub_dofmaps))
+        d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
+    else:
+        d["sub_dofmaps_initialization"] = ""
+        d["sub_dofmaps"] = "NULL"
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

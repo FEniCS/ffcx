@@ -13,18 +13,21 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-
+import datetime
+import ffcx
 
 # -- Project information -----------------------------------------------------
 
 project = 'FEniCS Form Compiler X'
-copyright = '2018, FEniCS Project'
+now = datetime.datetime.now()
+date = now.date()
+copyright = f'{date.year}, FEniCS Project'
 author = 'FEniCS Project'
 
 # The short X.Y version
-version = ''
+version = ffcx.__version__
 # The full version, including alpha/beta/rc tags
-release = ''
+release = ffcx.__version__
 
 
 # -- General configuration ---------------------------------------------------

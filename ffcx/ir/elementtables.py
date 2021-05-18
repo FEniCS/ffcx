@@ -1,6 +1,6 @@
 # Copyright (C) 2013-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for precomputed tables of terminal values."""
@@ -12,7 +12,7 @@ import numpy
 
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.basix_interface import create_basix_element, basix_index
+from ffcx.element_interface import create_element, basix_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -23,14 +23,8 @@ logger = logging.getLogger("ffcx")
 default_rtol = 1e-5
 default_atol = 1e-8
 
-table_origin_t = collections.namedtuple(
-    "table_origin", ["element", "avg", "derivatives", "flat_component", "dofrange", "dofmap"])
-
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
-
-valid_ttypes = set(("quadrature", )) | set(
-    piecewise_ttypes) | set(uniform_ttypes)
 
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
@@ -67,35 +61,33 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def strip_table_zeros(table, block_size, rtol=default_rtol, atol=default_atol):
-    """Strip zero columns from table. Returns column range (begin, end) and the new compact table."""
+def strip_table_blocks(table, block_size, rtol, atol):
+    """Strip zero columns from table, but only when block_size > 1."""
     # Get shape of table and number of columns, defined as the last axis
     table = numpy.asarray(table)
     sh = table.shape
+
+    # Do nothing if bs=1
+    if (block_size == 1):
+        dofmap = tuple(range(sh[-1]))
+        return (0, len(dofmap)), dofmap, table
 
     # Find nonzero columns
     z = numpy.zeros(sh[:-1])  # Correctly shaped zero table
     dofmap = tuple(
         i for i in range(sh[-1]) if not numpy.allclose(z, table[..., i], rtol=rtol, atol=atol))
+
     if dofmap:
-        # Find first nonzero column
+        block_dm = tuple(range(dofmap[0], sh[-1], block_size))
+        if not all([i in block_dm for i in dofmap]):
+            raise ValueError("Irregular block dofmap in strip_tables")
+        dofmap = block_dm
         begin = dofmap[0]
-        # Find (one beyond) last nonzero column
         end = dofmap[-1] + 1
     else:
         begin = 0
         end = 0
 
-    for i in dofmap:
-        if i % block_size != dofmap[0] % block_size:
-            # If dofs are not all in the same block component, don't remove intermediate zeros
-            dofmap = tuple(range(begin, end))
-            break
-    else:
-        # If dofs are all in the same block component, keep only that block component
-        dofmap = tuple(range(begin, end, block_size))
-
-    # Make subtable by dropping zero columns
     stripped_table = table[..., dofmap]
     dofrange = (begin, end)
     return dofrange, dofmap, stripped_table
@@ -131,7 +123,7 @@ def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
 
 def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
                           derivative_counts, flat_component):
-    """Extract values from ffcx element table.
+    """Extract values from FFCx element table.
 
     Returns a 3D numpy array with axes
     (entity number, quadrature point number, dof number)
@@ -144,7 +136,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         assert not avg
 
     if integral_type == "expression":
-        # FFCX tables for expression are generated as interior cell points
+        # FFCx tables for expression are generated as interior cell points
         integral_type = "cell"
 
     if avg in ("cell", "facet"):
@@ -174,7 +166,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
     numpy.set_printoptions(suppress=True, precision=2)
-    basix_element = create_basix_element(ufl_element)
+    basix_element = create_element(ufl_element)
 
     # Extract arrays for the right scalar component
     component_tables = []
@@ -257,7 +249,13 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             padded_shape = (basix_element.dim,) + basix_element.value_shape + (len(entity_points), )
             padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
 
-            tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+            if basix_element.family_name == "mixed element" and not component_element.is_blocked:
+                tab = numpy.zeros_like(tbl.reshape(slice_size(ir), slice_size(cr), -1))
+                for basis_i in range(tab.shape[0]):
+                    for value_i in range(tab.shape[1]):
+                        tab[basis_i, value_i] = tbl[value_i * tab.shape[0] + basis_i]
+            else:
+                tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
 
             padded_tbl[slice(*ir), slice(*cr)] = tab
 
@@ -365,13 +363,9 @@ def get_modified_terminal_element(mt):
     assert not (mt.averaged and (ld or gd))
 
     # Change derivatives format for table lookup
-    # gdim = mt.terminal.ufl_domain().geometric_dimension()
-    # global_derivatives = derivative_listing_to_counts(gd, gdim)
-
-    # Change derivatives format for table lookup
-    tdim = mt.terminal.ufl_domain().topological_dimension()
+    gdim = mt.terminal.ufl_domain().geometric_dimension()
     local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
-        ld, tdim)
+        ld, gdim)
 
     return element, mt.averaged, local_derivatives, fc
 
@@ -468,7 +462,7 @@ def build_element_tables(quadrature_rule,
                                               integral_type, element, avg, entitytype,
                                               local_derivatives, flat_component)])
                 elif tdim == 2:
-                    # Extract the values of the table from ffc table format
+                    # Extract the values of the table from FFCx table format
                     new_table = []
                     for ref in range(2):
                         new_table.append(get_ffcx_table_values(
@@ -480,7 +474,7 @@ def build_element_tables(quadrature_rule,
                 elif tdim == 3:
                     cell_type = cell.cellname()
                     if cell_type == "tetrahedron":
-                        # Extract the values of the table from ffc table format
+                        # Extract the values of the table from FFCx table format
                         new_table = []
                         for rot in range(3):
                             for ref in range(2):
@@ -491,7 +485,7 @@ def build_element_tables(quadrature_rule,
 
                         tables[name] = numpy.array(new_table)
                     elif cell_type == "hexahedron":
-                        # Extract the values of the table from ffc table format
+                        # Extract the values of the table from FFCx table format
                         new_table = []
                         for rot in range(4):
                             for ref in range(2):
@@ -502,7 +496,7 @@ def build_element_tables(quadrature_rule,
 
                         tables[name] = numpy.array(new_table)
             else:
-                # Extract the values of the table from ffc table format
+                # Extract the values of the table from FFCx table format
                 tables[name] = numpy.array([get_ffcx_table_values(quadrature_rule.points, cell,
                                                                   integral_type, element, avg, entitytype,
                                                                   local_derivatives, flat_component)])
@@ -583,7 +577,8 @@ def optimize_element_tables(tables,
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = len(ufl_element.sub_elements())
 
-        dofrange, dofmap, tbl = strip_table_zeros(
+        # Keep full tables, only strip tables if they have a block size
+        dofrange, dofmap, tbl = strip_table_blocks(
             tbl, block_size, rtol=rtol, atol=atol)
 
         compressed_tables[name] = tbl
@@ -629,7 +624,7 @@ def is_ones_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
-    num_transformations, num_entities, num_points, num_dofs = table.shape
+    _, num_entities, num_points, num_dofs = table.shape
     Id = numpy.eye(num_points)
     return (num_points == num_dofs and all(
         numpy.allclose(table[0, i, :, :], Id, rtol=rtol, atol=atol) for i in range(num_entities)))
@@ -650,7 +645,6 @@ def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
-    num_transformations, num_entities, num_points, num_dofs = table.shape
     if is_zeros_table(table, rtol=rtol, atol=atol):
         # Table is empty or all values are 0.0
         ttype = "zeros"
@@ -803,7 +797,7 @@ def build_optimized_tables(quadrature_rule,
 
         base_transformations = [
             [[p[i - offset][j - offset] for j in dofmap] for i in dofmap]
-            for p in create_basix_element(table_origins[name][0]).base_transformations]
+            for p in create_element(table_origins[name][0]).base_transformations]
 
         needs_transformation_data = False
         for p in base_transformations:

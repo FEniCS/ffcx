@@ -1,6 +1,6 @@
 # Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -8,181 +8,9 @@
 # old implementation in FFC
 import logging
 
-from ffcx.codegeneration import form_template as ufc_form
-from ffcx.codegeneration.utils import (generate_return_new,
-                                       generate_return_new_switch)
-from ffcx.ir.representation import ufc_integral_types
-
-# These are the method names in ufc_form that are specialized for each
-# integral type
-integral_name_templates = ("get_{}_integral_ids", "create_{}_integral")
+from ffcx.codegeneration import form_template
 
 logger = logging.getLogger("ffcx")
-
-
-def create_delegate(integral_type, declname, impl):
-    def _delegate(self, L, ir, parameters):
-        return impl(self, L, ir, parameters, integral_type, declname)
-
-    _delegate.__doc__ = impl.__doc__ % {"declname": declname, "integral_type": integral_type}
-    return _delegate
-
-
-def add_ufc_form_integral_methods(cls):
-    """Generate methods on the class decorated by this function.
-    One for each integral name template and for each integral type.
-
-    This allows implementing e.g. create_###_integrals once in the
-    decorated class as '_create_foo_integrals', and this function will
-    expand that implementation into 'create_cell_integrals',
-    'create_exterior_facet_integrals', etc.
-
-    Name templates are taken from 'integral_name_templates' and
-    'ufc_integral_types'.
-
-    """
-    # The dummy name "foo" is chosen for familiarity for ffcx developers
-    dummy_integral_type = "foo"
-
-    for template in integral_name_templates:
-        implname = "_" + (template.format(dummy_integral_type))
-        impl = getattr(cls, implname)
-        for integral_type in ufc_integral_types:
-            declname = template.format(integral_type)
-            _delegate = create_delegate(integral_type, declname, impl)
-            setattr(cls, declname, _delegate)
-    return cls
-
-
-@add_ufc_form_integral_methods
-class UFCForm:
-    """Each function maps to a keyword in the template.
-
-    The exceptions are functions on the form
-
-        def _*_foo_*(self, L, ir, parameters, integral_type, declname)
-
-    which add_ufc_form_integral_methods will duplicate for foo = each integral type.
-    """
-
-    def original_coefficient_position(self, L, ir):
-        i = L.Symbol("i")
-        positions = ir.original_coefficient_position
-
-        # Check argument
-        msg = "Invalid original coefficient index."
-        if positions:
-            code = [L.If(L.GE(i, len(positions)), [L.Comment(msg), L.Return(-1)])]
-            position = L.Symbol("position")
-            code += [
-                L.ArrayDecl("static const int", position, len(positions), positions),
-                L.Return(position[i]),
-            ]
-            return code
-        else:
-            code = [L.Comment(msg), L.Return(-1)]
-        return code
-
-    def generate_coefficient_position_to_name_map(self, L, ir):
-        """Generate code that maps name to number."""
-        cnames = ir.coefficient_names
-        assert ir.num_coefficients == len(cnames)
-        names = L.Symbol("names")
-        if (len(cnames) == 0):
-            code = [L.Return(L.Null())]
-        else:
-            code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
-            code += [L.Return(names)]
-        return L.StatementList(code)
-
-    def generate_constant_original_position_to_name_map(self, L, ir):
-        """Generate code that maps original position of a constant to its name."""
-        cnames = ir.constant_names
-        names = L.Symbol("names")
-        if (len(cnames) == 0):
-            code = [L.Return(L.Null())]
-        else:
-            code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
-            code += [L.Return(names)]
-        return L.StatementList(code)
-
-    def create_coordinate_mapping(self, L, ir):
-        classnames = ir.create_coordinate_mapping
-        # list of length 1 until we support multiple domains
-        assert len(classnames) == 1
-        return generate_return_new(L, classnames[0])
-
-    def coordinate_mapping_declaration(self, L, ir):
-        classname = ir.create_coordinate_mapping
-        code = f"ufc_coordinate_mapping* create_{classname[0]}(void);\n"
-        return code
-
-    def create_finite_element(self, L, ir):
-        i = L.Symbol("i")
-        classnames = ir.create_finite_element
-        return generate_return_new_switch(L, i, classnames)
-
-    def finite_element_declaration(self, L, ir):
-        classnames = set(ir.create_finite_element)
-        code = ""
-        for name in classnames:
-            code += f"ufc_finite_element* create_{name}(void);\n"
-        return code
-
-    def create_dofmap(self, L, ir):
-        i = L.Symbol("i")
-        classnames = ir.create_dofmap
-        return generate_return_new_switch(L, i, classnames)
-
-    def dofmap_declaration(self, L, ir):
-        classnames = set(ir.create_dofmap)
-        code = ""
-        for name in classnames:
-            code += f"ufc_dofmap* create_{name}(void);\n"
-        return code
-
-    def create_functionspace(self, L, ir):
-        code = []
-        function_name = L.Symbol("function_name")
-
-        i = 0
-        for (name, (element, dofmap, cmap)) in ir.function_spaces.items():
-            body = "ufc_function_space* space = (ufc_function_space*)malloc(sizeof(*space));\n"
-            body += f"space->create_element = create_{element};\n"
-            body += f"space->create_dofmap = create_{dofmap};\n"
-            body += f"space->create_coordinate_mapping = create_{cmap};\n"
-            body += "return space;"
-
-            condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
-            if i == 0:
-                code += [L.If(condition, body)]
-            else:
-                code += [L.ElseIf(condition, body)]
-
-            i += 1
-
-        code += ["return NULL;\n"]
-
-        return L.StatementList(code)
-
-    # This group of functions are repeated for each foo_integral by
-    # add_ufc_form_integral_methods:
-
-    def _get_foo_integral_ids(self, L, ir, parameters, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s()."""
-        code = []
-        ids = L.Symbol("ids")
-        for i, v in enumerate(getattr(ir, declname)[0]):
-            code += [L.Assign(ids[i], v)]
-        code += [L.Return()]
-        return L.StatementList(code)
-
-    def _create_foo_integral(self, L, ir, parameters, integral_type, declname):
-        """Return implementation of ufc::form::%(declname)s()."""
-        # e.g. subdomain_ids, classnames = ir.create_cell_integral
-        subdomain_ids, classnames = getattr(ir, declname)
-        subdomain_id = L.Symbol("subdomain_id")
-        return generate_return_new_switch(L, subdomain_id, classnames, subdomain_ids)
 
 
 def generator(ir, parameters):
@@ -192,6 +20,8 @@ def generator(ir, parameters):
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
 
+    import ffcx.codegeneration.C.cnodes as L
+
     d = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
@@ -200,55 +30,117 @@ def generator(ir, parameters):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    d["num_cell_integrals"] = len(ir.create_cell_integral[0])
-    d["num_exterior_facet_integrals"] = len(ir.create_exterior_facet_integral[0])
-    d["num_interior_facet_integrals"] = len(ir.create_interior_facet_integral[0])
-    d["num_vertex_integrals"] = len(ir.create_vertex_integral[0])
-    d["num_custom_integrals"] = len(ir.create_custom_integral[0])
+    code = []
+    cases = []
+    for itg_type in ("cell", "interior_facet", "exterior_facet"):
+        cases += [(L.Symbol(itg_type), L.Return(len(ir.subdomain_ids[itg_type])))]
+    code += [L.Switch("integral_type", cases, default=L.Return(0))]
+    d["num_integrals"] = L.StatementList(code)
 
-    import ffcx.codegeneration.C.cnodes as L
-    generator = UFCForm()
+    if len(ir.original_coefficient_position) > 0:
+        d["original_coefficient_position_init"] = L.ArrayDecl(
+            "int", f"original_coefficient_position_{ir.name}",
+            values=ir.original_coefficient_position, sizes=len(ir.original_coefficient_position))
+        d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
+    else:
+        d["original_coefficient_position_init"] = ""
+        d["original_coefficient_position"] = L.Null()
 
-    statements = generator.original_coefficient_position(L, ir)
-    d["original_coefficient_position"] = L.StatementList(statements)
+    cnames = ir.coefficient_names
+    assert ir.num_coefficients == len(cnames)
+    names = L.Symbol("names")
+    if (len(cnames) == 0):
+        code = [L.Return(L.Null())]
+    else:
+        code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
+        code += [L.Return(names)]
+    d["coefficient_name_map"] = L.StatementList(code)
 
-    d["coefficient_name_map"] = generator.generate_coefficient_position_to_name_map(L, ir)
-    d["constant_name_map"] = generator.generate_constant_original_position_to_name_map(L, ir)
+    cstnames = ir.constant_names
+    names = L.Symbol("names")
+    if len(cstnames) == 0:
+        code = [L.Return(L.Null())]
+    else:
+        code = [L.ArrayDecl("static const char*", names, len(cstnames), cstnames)]
+        code += [L.Return(names)]
+    d["constant_name_map"] = L.StatementList(code)
 
-    d["create_coordinate_mapping"] = generator.create_coordinate_mapping(L, ir)
-    d["coordinate_mapping_declaration"] = generator.coordinate_mapping_declaration(L, ir)
-    d["create_finite_element"] = generator.create_finite_element(L, ir)
-    d["finite_element_declaration"] = generator.finite_element_declaration(L, ir)
-    d["create_dofmap"] = generator.create_dofmap(L, ir)
-    d["dofmap_declaration"] = generator.dofmap_declaration(L, ir)
+    if len(ir.finite_elements) > 0:
+        d["finite_elements"] = f"finite_elements_{ir.name}"
+        d["finite_elements_init"] = L.ArrayDecl("ufc_finite_element*", f"finite_elements_{ir.name}", values=[
+                                                L.AddressOf(L.Symbol(el)) for el in ir.finite_elements],
+                                                sizes=len(ir.finite_elements))
+    else:
+        d["finite_elements"] = L.Null()
+        d["finite_elements_init"] = ""
 
-    d["create_functionspace"] = generator.create_functionspace(L, ir)
+    if len(ir.dofmaps) > 0:
+        d["dofmaps"] = f"dofmaps_{ir.name}"
+        d["dofmaps_init"] = L.ArrayDecl("ufc_dofmap*", f"dofmaps_{ir.name}", values=[
+            L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.dofmaps], sizes=len(ir.dofmaps))
+    else:
+        d["dofmaps"] = L.Null()
+        d["dofmaps_init"] = ""
 
-    d["get_cell_integral_ids"] = generator.get_cell_integral_ids(L, ir, parameters)
-    d["get_exterior_facet_integral_ids"] = generator.get_exterior_facet_integral_ids(L, ir, parameters)
-    d["get_interior_facet_integral_ids"] = generator.get_interior_facet_integral_ids(L, ir, parameters)
-    d["get_vertex_integral_ids"] = generator.get_vertex_integral_ids(L, ir, parameters)
-    d["get_custom_integral_ids"] = generator.get_custom_integral_ids(L, ir, parameters)
+    code = []
+    cases = []
+    code_ids = []
+    cases_ids = []
+    for itg_type in ("cell", "interior_facet", "exterior_facet"):
+        if len(ir.integral_names[itg_type]) > 0:
+            code += [L.ArrayDecl(
+                "static ufc_integral*", f"integrals_{itg_type}_{ir.name}",
+                values=[L.AddressOf(L.Symbol(itg)) for itg in ir.integral_names[itg_type]],
+                sizes=len(ir.integral_names[itg_type]))]
+            cases.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}"))))
 
-    d["create_cell_integral"] = generator.create_cell_integral(L, ir, parameters)
-    d["create_interior_facet_integral"] = generator.create_interior_facet_integral(
-        L, ir, parameters)
-    d["create_exterior_facet_integral"] = generator.create_exterior_facet_integral(
-        L, ir, parameters)
-    d["create_vertex_integral"] = generator.create_vertex_integral(L, ir, parameters)
-    d["create_custom_integral"] = generator.create_custom_integral(L, ir, parameters)
+            code_ids += [L.ArrayDecl(
+                "static int", f"integral_ids_{itg_type}_{ir.name}",
+                values=ir.subdomain_ids[itg_type], sizes=len(ir.subdomain_ids[itg_type]))]
+            cases_ids.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integral_ids_{itg_type}_{ir.name}"))))
+
+    code += [L.Switch("integral_type", cases, default=L.Return(L.Null()))]
+    code_ids += [L.Switch("integral_type", cases_ids, default=L.Return(L.Null()))]
+    d["integrals"] = L.StatementList(code)
+
+    d["integral_ids"] = L.StatementList(code_ids)
+
+    code = []
+    function_name = L.Symbol("function_name")
+
+    # FIXME: Should be handled differently, revise how
+    # ufc_function_space is generated
+    for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
+        code += [f"static ufc_function_space functionspace_{name} ="]
+        code += ["{"]
+        code += [f".finite_element = &{element},"]
+        code += [f".dofmap = &{dofmap},"]
+        code += [f".geometry_family = \"{cmap_family}\","]
+        code += [f".geometry_degree = {cmap_degree}"]
+        code += ["};"]
+
+    for i, (name, (element, dofmap, cmap_family, cmap_degree)) in enumerate(ir.function_spaces.items()):
+        condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
+        if i == 0:
+            code += [L.If(condition, L.Return(L.Symbol(f"&functionspace_{name}")))]
+        else:
+            code += [L.ElseIf(condition, L.Return(L.Symbol(f"&functionspace_{name}")))]
+
+    code += ["return NULL;\n"]
+
+    d["functionspace"] = L.StatementList(code)
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-    fields = [fname for _, fname, _, _ in Formatter().parse(ufc_form.factory) if fname]
+    fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
     assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
-    implementation = ufc_form.factory.format_map(d)
+    implementation = form_template.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_form.declaration.format(factory_name=d["factory_name"],
-                                              name_from_uflfile=d["name_from_uflfile"])
+    declaration = form_template.declaration.format(factory_name=d["factory_name"],
+                                                   name_from_uflfile=d["name_from_uflfile"])
 
     # Define space dimension for the form
     if parameters.get("sycl_defines", False):

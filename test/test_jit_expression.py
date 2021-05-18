@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2019 Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -49,7 +49,7 @@ def test_matvec(compile_args):
     obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
-    kernel = obj[0][0]
+    expression = obj[0]
 
     c_type, np_type = float_to_type("double")
 
@@ -62,7 +62,7 @@ def test_matvec(compile_args):
 
     # Coords storage XYXYXY
     coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
-    kernel.tabulate_expression(
+    expression.tabulate_expression(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
@@ -72,13 +72,14 @@ def test_matvec(compile_args):
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
 
     # Prepare NumPy array of points attached to the expression
-    length = kernel.num_points * kernel.topological_dimension
-    points_kernel = np.frombuffer(ffi.buffer(kernel.points, length * ffi.sizeof("double")), np.double)
+    length = expression.num_points * expression.topological_dimension
+    points_kernel = np.frombuffer(ffi.buffer(expression.points, length * ffi.sizeof("double")), np.double)
     points_kernel = points_kernel.reshape(points.shape)
     assert np.allclose(points, points_kernel)
 
     # Check the value shape attached to the expression
-    value_shape = np.frombuffer(ffi.buffer(kernel.value_shape, kernel.num_components * ffi.sizeof("int")), np.intc)
+    value_shape = np.frombuffer(ffi.buffer(expression.value_shape,
+                                           expression.num_components * ffi.sizeof("int")), np.intc)
     assert np.allclose(expr.ufl_shape, value_shape)
 
 
@@ -101,7 +102,7 @@ def test_rank1(compile_args):
     obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
-    kernel = obj[0][0]
+    expression = obj[0]
 
     c_type, np_type = float_to_type("double")
 
@@ -116,7 +117,7 @@ def test_rank1(compile_args):
 
     # Coords storage XYXYXY
     coords = np.array(points.flatten(), dtype=np.float64)
-    kernel.tabulate_expression(
+    expression.tabulate_expression(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),

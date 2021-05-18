@@ -1,6 +1,6 @@
 # Copyright (C) 2013-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -819,6 +819,9 @@ class ArrayAccess(CExprOperator):
         return (isinstance(other, type(self)) and self.array == other.array
                 and self.indices == other.indices)
 
+    def __hash__(self):
+        return hash(self.ce_format())
+
 
 class Conditional(CExprOperator):
     __slots__ = ("condition", "true", "false")
@@ -1312,7 +1315,7 @@ class ArrayDecl(CStatement):
 
     def cs_format(self, precision=None):
         if not all(self.sizes):
-            raise RuntimeError("Detected an array dimension of zero. This is not valid in C.")
+            raise RuntimeError(f"Detected an array {self.symbol} dimension of zero. This is not valid in C.")
 
         # Pad innermost array dimension
         sizes = pad_innermost_dim(self.sizes, self.padlen)
@@ -1339,6 +1342,10 @@ class ArrayDecl(CStatement):
                 formatter = format_float
             elif self.values.dtype.kind == "i":
                 formatter = format_int
+            elif self.values.dtype == numpy.bool_:
+                def format_bool(x, precision=None):
+                    return "true" if x is True else "false"
+                formatter = format_bool
             else:
                 formatter = format_value
             initializer_lists = build_initializer_lists(

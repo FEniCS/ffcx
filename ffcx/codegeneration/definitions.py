@@ -1,25 +1,20 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFCX/UFC specific variable definitions."""
+"""FFCx/UFC specific variable definitions."""
 
 import logging
 
 import ufl
-from ffcx.basix_interface import create_basix_element
+from ffcx.element_interface import create_element
 
 logger = logging.getLogger("ffcx")
 
 
-def num_coordinate_component_dofs(coordinate_element):
-    """Get the number of dofs for a coordinate component for this degree."""
-    return create_basix_element(coordinate_element).sub_element.dim
-
-
 class FFCXBackendDefinitions(object):
-    """FFCX specific code definitions."""
+    """FFCx specific code definitions."""
 
     def __init__(self, ir, language, symbols, parameters):
         # Store ir and parameters
@@ -122,7 +117,7 @@ class FFCXBackendDefinitions(object):
         domain = mt.terminal.ufl_domain()
         gdim = domain.geometric_dimension()
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = num_coordinate_component_dofs(coordinate_element)
+        num_scalar_dofs = create_element(coordinate_element).sub_element.dim
 
         # Reference coordinates are known, no coordinate field, so we compute
         # this component as linear combination of coordinate_dofs "dofs" and table
