@@ -105,6 +105,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
     # Extract arrays for the right scalar component
     component_tables = []
+
     sh = tuple(basix_element.value_shape)
 
     assert len(sh) > 0
@@ -136,17 +137,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     for entity in range(num_entities):
         res[:, entity, :, :] = numpy.transpose(component_tables[entity])
 
-    # Clean up table
-    tbl = clamp_table_small_numbers(res, rtol=default_rtol, atol=default_atol)
-    tabletype = analyse_table_type(tbl)
-    if tabletype in piecewise_ttypes:
-        # Reduce table to dimension 1 along num_points axis in generated code
-        tbl = tbl[:, :, :1, :]
-    if tabletype in uniform_ttypes:
-        # Reduce table to dimension 1 along num_entities axis in generated code
-        tbl = tbl[:, :1, :, :]
-
-    return {'array': tbl, 'ttype': tabletype, 'offset': offset, 'stride': stride}
+    return {'array': res, 'offset': offset, 'stride': stride}
 
 
 def generate_psi_table_name(quadrature_rule, element_counter, averaged, entitytype, derivative_counts,
@@ -231,13 +222,9 @@ def get_modified_terminal_element(mt):
     assert not (mt.averaged and (ld or gd))
 
     # Change derivatives format for table lookup
-    # gdim = mt.terminal.ufl_domain().geometric_dimension()
-    # global_derivatives = derivative_listing_to_counts(gd, gdim)
-
-    # Change derivatives format for table lookup
-    tdim = mt.terminal.ufl_domain().topological_dimension()
+    gdim = mt.terminal.ufl_domain().geometric_dimension()
     local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
-        ld, tdim)
+        ld, gdim)
 
     return element, mt.averaged, local_derivatives, fc
 
@@ -279,14 +266,14 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_element_tables(quadrature_rule,
-                         cell,
-                         integral_type,
-                         entitytype,
-                         modified_terminals,
-                         existing_tables,
-                         rtol=default_rtol,
-                         atol=default_atol):
+def build_optimized_tables(quadrature_rule,
+                           cell,
+                           integral_type,
+                           entitytype,
+                           modified_terminals,
+                           existing_tables,
+                           rtol=default_rtol,
+                           atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -386,15 +373,25 @@ def build_element_tables(quadrature_rule,
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
                                           local_derivatives, flat_component)
-            t['is_permuted'] = is_permuted_table(t['array'])
-            if not t['is_permuted']:
+
+            # Clean up table
+            tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
+            tabletype = analyse_table_type(tbl)
+            if tabletype in piecewise_ttypes:
+                # Reduce table to dimension 1 along num_points axis in generated code
+                tbl = tbl[:, :, :1, :]
+            if tabletype in uniform_ttypes:
+                # Reduce table to dimension 1 along num_entities axis in generated code
+                tbl = tbl[:, :1, :, :]
+            is_permuted = is_permuted_table(tbl)
+            if not is_permuted:
                 # Reduce table along num_perms axis
-                t['array'] = t['array'][:1, :, :, :]
+                tbl = tbl[:1, :, :, :]
 
             # Check for existing identical table
             xname_found = False
             for xname in tables:
-                if equal_tables(t['array'], tables[xname]):
+                if equal_tables(tbl, tables[xname]):
                     xname_found = True
                     break
 
@@ -402,10 +399,10 @@ def build_element_tables(quadrature_rule,
                 # print('found existing table equiv to ', name, ' at ', xname)
                 name = xname
                 # Retrieve existing table
-                t['array'] = tables[name]
+                tbl = tables[name]
             else:
                 # Store new table
-                tables[name] = t['array']
+                tables[name] = tbl
 
             cell_offset = 0
             basix_element = create_element(element)
@@ -414,19 +411,19 @@ def build_element_tables(quadrature_rule,
                 # offset = 0 or number of element dofs, if restricted to "-"
                 cell_offset = basix_element.dim
 
-            t['name'] = name
-            t['is_piecewise'] = t['ttype'] in piecewise_ttypes
-            t['is_uniform'] = t['ttype'] in uniform_ttypes
-            num_dofs = t['array'].shape[3]
+            num_dofs = tbl.shape[3]
             dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
-            t['dofmap'] = dofmap
 
-            t['base_transformations'] = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
-                                         for i in dofmap]
-                                         for p in basix_element.base_transformations]
+            base_transformations = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
+                                    for i in dofmap]
+                                    for p in basix_element.base_transformations]
+            needs_transformation_data = not all(numpy.allclose(p, numpy.identity(len(p))) for p in base_transformations)
 
             # tables is just np.arrays, mt_tables hold metadata too
-            mt_tables[mt] = t
+            mt_tables[mt] = unique_table_reference_t(
+                name, tbl, tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
+                tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
+                base_transformations, needs_transformation_data)
 
     return mt_tables
 
@@ -496,50 +493,3 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
             # Varying over points and entities
             ttype = "varying"
     return ttype
-
-
-def build_optimized_tables(quadrature_rule,
-                           cell,
-                           integral_type,
-                           entitytype,
-                           modified_terminals,
-                           existing_tables,
-                           rtol=default_rtol,
-                           atol=default_atol):
-
-    # Build tables needed by all modified terminals
-    mt_tables = build_element_tables(
-        quadrature_rule,
-        cell,
-        integral_type,
-        entitytype,
-        modified_terminals,
-        existing_tables,
-        rtol=rtol,
-        atol=atol)
-
-    mt_unique_table_reference = {}
-    for mt, table_data in mt_tables.items():
-
-        # FIXME: Use offset and stride instead of dofmap and dofrange
-        dofmap = table_data['dofmap']
-        dofrange = (dofmap[0], dofmap[-1] + 1)
-        is_permuted = table_data['is_permuted']
-
-        needs_transformation_data = False
-        if is_permuted:
-            needs_transformation_data = True
-
-        base_transformations = table_data['base_transformations']
-        for p in base_transformations:
-            if not numpy.allclose(p, numpy.identity(len(p))):
-                needs_transformation_data = True
-
-        ttype = table_data['ttype']
-        # Store reference to unique table for this mt
-        mt_unique_table_reference[mt] = unique_table_reference_t(
-            table_data['name'], table_data['array'], dofrange, dofmap, ttype,
-            ttype in piecewise_ttypes, ttype in uniform_ttypes, is_permuted, base_transformations,
-            needs_transformation_data)
-
-    return mt_unique_table_reference

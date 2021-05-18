@@ -239,11 +239,6 @@ def analyse_modified_terminal(expr):
     global_derivatives = tuple(sorted(global_derivatives))
     local_derivatives = tuple(sorted(local_derivatives))
 
-    # TODO: Temporarily letting local_derivatives imply reference_value,
-    #       but this was not intended to be the case
-    # if local_derivatives:
-    #    reference_value = True
-
     # Make reference_value true or false
     reference_value = reference_value or False
 
@@ -286,7 +281,6 @@ def analyse_modified_terminal(expr):
     # Flatten component
     vi2si, _ = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
-    # num_flat_components = len(si2vi)
 
     return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,
                             flat_component, global_derivatives, local_derivatives, averaged,
