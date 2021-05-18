@@ -96,7 +96,7 @@ jobs:
         # when there are test failures
         if: always()
 
-       - name: Build documentation
+      - name: Build documentation
         run: |
           pip install sphinx sphinx_rtd_theme
           cd doc
