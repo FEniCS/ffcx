@@ -78,7 +78,7 @@ jobs:
 
       - name: Runs demos
         run: |
-          python${{ matrix.python-version }} -m pytest --cov=ffcx/ --junitxml=junit/demo-results-${{ matrix.os }}-${{ matrix.python-version }}.xml demo/test_demos.py
+          pytest -n auto --cov=ffcx/ --cov-append --junitxml=junit/demo-results-${{ matrix.os }}-${{ matrix.python-version }}.xml demo/test_demos.py
 
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
