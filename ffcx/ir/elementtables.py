@@ -309,6 +309,8 @@ def build_optimized_tables(quadrature_rule,
 
         if name in tables:
             tbl = tables[name]
+            tabletype = analyse_table_type(tbl)
+            is_permuted = is_permuted_table(tbl)
         else:
             tdim = cell.topological_dimension()
             if entitytype == "facet":
@@ -365,8 +367,7 @@ def build_optimized_tables(quadrature_rule,
             xtable_found = False
             for xname in tables:
                 if equal_tables(tbl, tables[xname]):
-                    print("Found equiv to ", name, " at ", xname)
-                    xtable_found = False
+                    xtable_found = True
                     break
 
             if xtable_found:
@@ -399,7 +400,6 @@ def build_optimized_tables(quadrature_rule,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
             base_transformations, needs_transformation_data)
 
-    print(mt_tables)
     return mt_tables
 
 
