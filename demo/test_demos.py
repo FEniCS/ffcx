@@ -1,7 +1,6 @@
 import os
 import sys
 import pytest
-from ffcx.main import main
 
 demo_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -24,10 +23,7 @@ def test_demo(file):
         # Skip demos that use elements not yet implemented in basix
         pytest.skip()
 
-    os.chdir(f"{demo_dir}")
-    main([f"{file}.ufl"])
-#    assert os.system(f"cd {demo_dir} && ffcx {file}.ufl") == 0
-
+    assert os.system(f"cd {demo_dir} && ffcx {file}.ufl") == 0
     assert os.system(f"cd {demo_dir} && "
                      "CPATH=../ffcx/codegeneration/ "
                      f"gcc -I/usr/include/python{sys.version_info.major}.{sys.version_info.minor} -fPIC "
