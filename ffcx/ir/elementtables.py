@@ -142,18 +142,25 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
                     "Cannot tabulate tensor valued element with rank > 2")
     else:
         # Vector-valued or mixed element
-        sub_dims = [0] + [e.dim for e in basix_element.sub_elements]
-        sub_cmps = [0] + [e.value_size for e in basix_element.sub_elements]
 
-        irange = numpy.cumsum(sub_dims)
-        crange = numpy.cumsum(sub_cmps)
+        # Number of dofs per subelement
+        sub_dims = [e.dim for e in basix_element.sub_elements]
+        # Value size of each subelement
+        sub_vs = [e.value_size for e in basix_element.sub_elements]
+
+        # Offsets for each element
+        irange = numpy.cumsum([0] + sub_dims)
+        crange = numpy.cumsum([0] + sub_vs)
 
         # Find index of sub element which corresponds to the current flat component
-        component_element_index = numpy.where(
-            crange <= flat_component)[0].shape[0] - 1
+        component_element_index = numpy.searchsorted(crange, flat_component, side='right') - 1
+
+        # Value size and offset of selected component
+        component_vs = sub_vs[component_element_index]
+        component_offset = crange[component_element_index]
 
         ir = irange[component_element_index:component_element_index + 2]
-        cr = crange[component_element_index:component_element_index + 2]
+        slice_size_ir = sub_dims[component_element_index]
 
         component_element = basix_element.sub_elements[component_element_index]
 
@@ -161,17 +168,10 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
             block_size = basix_element.block_size
             ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
+            slice_size_ir = 1 + (ir[1] - ir[0] - 1) // block_size
             stride = block_size
 
         offset = ir[0]
-
-        def slice_size(r):
-            if len(r) == 1:
-                return r[0]
-            if len(r) == 2:
-                return r[1] - r[0]
-            if len(r) == 3:
-                return 1 + (r[1] - r[0] - 1) // r[2]
 
         for entity in range(num_entities):
             entity_points = map_integral_points(
@@ -185,13 +185,13 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
             if basix_element.family_name == "mixed element":
                 if component_element.is_blocked:
-                    tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+                    tab = tbl.reshape(slice_size_ir, component_vs, -1)
                 else:
-                    tab = numpy.zeros_like(tbl.reshape(slice_size(ir), slice_size(cr), -1))
+                    tab = numpy.zeros_like(tbl.reshape(slice_size_ir, component_vs, -1))
                     for basis_i in range(tab.shape[0]):
                         for value_i in range(tab.shape[1]):
                             tab[basis_i, value_i] = tbl[value_i * tab.shape[0] + basis_i]
-                c = flat_component - cr[0]
+                c = flat_component - component_offset
                 tbl = tab[:, c, :]
 
             component_tables.append(tbl)
