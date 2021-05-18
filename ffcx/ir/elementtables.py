@@ -105,74 +105,19 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
     # Extract arrays for the right scalar component
     component_tables = []
-    sh = ufl_element.value_shape()
+    sh = tuple(basix_element.value_shape)
 
-    component_element = basix_element.get_component_element(flat_component)
+    assert len(sh) > 0
 
-    if sh == ():
-        t_comp = ()
-        offset = 0
-    elif len(sh) > 0 and ufl_element.num_sub_elements() == 0:
-        (_, f2t) = ufl.permutation.build_component_numbering(
-            sh, ufl_element.symmetry())
-        t_comp = f2t[flat_component]
-        offset = 0
-    else:
-        sub_dims = [0] + [e.dim for e in basix_element.sub_elements]
-        sub_cmps = [0] + [e.value_size for e in basix_element.sub_elements]
-
-        irange = numpy.cumsum(sub_dims)
-        crange = numpy.cumsum(sub_cmps)
-
-        # Find index of sub element which corresponds to the current flat component
-        component_element_index = numpy.where(
-            crange <= flat_component)[0].shape[0] - 1
-
-        ir = irange[component_element_index:component_element_index + 2]
-        cr = crange[component_element_index:component_element_index + 2]
-
-        def slice_size(r):
-            if len(r) == 1:
-                return r[0]
-            if len(r) == 2:
-                return r[1] - r[0]
-            if len(r) == 3:
-                return 1 + (r[1] - r[0] - 1) // r[2]
-
-        if isinstance(ufl_element, ufl.VectorElement) or isinstance(ufl_element, ufl.TensorElement):
-            block_size = basix_element.block_size
-            ir = [ir[0] * block_size // irange[-1], irange[-1], block_size]
-            stride = block_size
-
-        t_comp = ()
-        offset = ir[0]
+    component_element, offset, stride = basix_element.get_component_element(flat_component)
 
     for entity in range(num_entities):
         entity_points = map_integral_points(points, integral_type, cell, entity)
 
         tbl = component_element.tabulate(deriv_order, entity_points)
+        tbl = tbl[basix_index(*derivative_counts)].transpose()
+        component_tables.append(tbl)
 
-        tbl = tbl[basix_index(*derivative_counts)]
-        if len(sh) > 0 and ufl_element.num_sub_elements() == 0:
-            tbl = tbl.reshape((tbl.shape[0],) + sh + (tbl.shape[1] // sum(sh),))
-        tbl = tbl.transpose()
-
-        if (
-            len(sh) > 0 and ufl_element.num_sub_elements() != 0
-            and basix_element.family_name == "mixed element" and not component_element.is_blocked
-        ):
-            tbl = tbl.reshape(slice_size(cr), slice_size(ir), -1).transpose([1, 0, 2])
-            t_comp = (flat_component - cr[0],)
-
-        if len(t_comp) == 0:
-            component_tables.append(tbl)
-        elif len(t_comp) == 1:
-            component_tables.append(tbl[:, t_comp[0], :])
-        elif len(t_comp) == 2:
-            component_tables.append(tbl[:, t_comp[0], t_comp[1], :])
-        else:
-            raise RuntimeError(
-                "Cannot tabulate tensor valued element with rank > 2")
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table
         wsum = sum(weights)
@@ -582,8 +527,8 @@ def build_optimized_tables(quadrature_rule,
         is_permuted = table_data['is_permuted']
 
         needs_transformation_data = False
-        # if is_permuted:
-        #    needs_transformation_data = True
+        if is_permuted:
+           needs_transformation_data = True
 
         base_transformations = table_data['base_transformations']
         for p in base_transformations:
