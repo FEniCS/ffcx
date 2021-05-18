@@ -82,14 +82,6 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def interpolation_matrix(self):
-        raise NotImplementedError
-
-    @property
-    def points(self):
-        raise NotImplementedError
-
-    @property
     def dim(self):
         raise NotImplementedError
 
@@ -110,10 +102,6 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def coeffs(self):
-        raise NotImplementedError
-
-    @property
     def num_global_support_dofs(self):
         raise NotImplementedError
 
@@ -127,10 +115,6 @@ class BaseElement:
 
     @property
     def reference_geometry(self):
-        raise NotImplementedError
-
-    @property
-    def is_blocked(self):
         raise NotImplementedError
 
 
@@ -148,14 +132,6 @@ class BasixElement(BaseElement):
     @property
     def base_transformations(self):
         return self.element.base_transformations()
-
-    @property
-    def interpolation_matrix(self):
-        return self.element.interpolation_matrix
-
-    @property
-    def points(self):
-        return self.element.points
 
     @property
     def dim(self):
@@ -187,10 +163,6 @@ class BasixElement(BaseElement):
         return entity_dofs
 
     @property
-    def coeffs(self):
-        return self.element.coeffs
-
-    @property
     def num_global_support_dofs(self):
         # TODO
         return 0
@@ -206,10 +178,6 @@ class BasixElement(BaseElement):
     @property
     def reference_geometry(self):
         return basix.geometry(self.element.cell_type)
-
-    @property
-    def is_blocked(self):
-        return False
 
 
 class ComponentElement(BaseElement):
@@ -237,10 +205,6 @@ class ComponentElement(BaseElement):
         if flat_component == 0:
             return self, 0, 1
         raise NotImplementedError
-
-    @property
-    def is_blocked(self):
-        return False
 
 
 class MixedElement(BaseElement):
@@ -300,28 +264,6 @@ class MixedElement(BaseElement):
         return output
 
     @property
-    def interpolation_matrix(self):
-        try:
-            matrix = numpy.zeros((self.dim, len(self.points) * self.value_size))
-            start_row = 0
-            start_col = 0
-            for e in self.sub_elements:
-                m = e.interpolation_matrix
-                matrix[start_row: start_row + m.shape[0], start_col: start_col + m.shape[1]] = m
-                start_row += m.shape[0]
-                start_col += m.shape[1]
-            return matrix
-        except ValueError:
-            return numpy.zeros((0, 0))
-
-    @property
-    def points(self):
-        try:
-            return numpy.vstack([e.points for e in self.sub_elements])
-        except ValueError:
-            return numpy.zeros(0)
-
-    @property
     def dim(self):
         return sum(e.dim for e in self.sub_elements)
 
@@ -351,11 +293,6 @@ class MixedElement(BaseElement):
         return dofs
 
     @property
-    def coeffs(self):
-        # Return empty matrix to disable interpolation into mixed elements
-        return numpy.zeros(0, 0)
-
-    @property
     def num_global_support_dofs(self):
         return sum(e.num_global_support_dofs for e in self.sub_elements)
 
@@ -370,10 +307,6 @@ class MixedElement(BaseElement):
     @property
     def reference_geometry(self):
         return self.sub_elements[0].reference_geometry
-
-    @property
-    def is_blocked(self):
-        return False
 
 
 class BlockedElement(BaseElement):
@@ -403,10 +336,6 @@ class BlockedElement(BaseElement):
         return self.sub_element, flat_component, self.block_size
 
     @property
-    def is_blocked(self):
-        return True
-
-    @property
     def base_transformations(self):
         assert len(self.block_shape) == 1  # TODO: block shape
 
@@ -418,21 +347,6 @@ class BlockedElement(BaseElement):
                 new_transformation[i::self.block_size, i::self.block_size] = transformation
             output.append(new_transformation)
         return output
-
-    @property
-    def interpolation_matrix(self):
-        sub_mat = self.sub_element.interpolation_matrix
-        assert self.value_size == self.block_size  # TODO: remove this assumption
-        mat = numpy.zeros((sub_mat.shape[0] * self.block_size, sub_mat.shape[1] * self.value_size))
-        for i, row in enumerate(sub_mat):
-            for j, entry in enumerate(row):
-                mat[i * self.block_size: (i + 1) * self.block_size,
-                    j::sub_mat.shape[1]] = entry * numpy.identity(self.block_size)
-        return mat
-
-    @property
-    def points(self):
-        return self.sub_element.points
 
     @property
     def dim(self):
@@ -459,11 +373,6 @@ class BlockedElement(BaseElement):
         # TODO: should this return this, or should it take blocks into account?
         return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
                  for j in i] for i in self.sub_element.entity_dof_numbers]
-
-    @property
-    def coeffs(self):
-        # TODO: should this return this, or should it take blocks into account?
-        return self.sub_element.coeffs
 
     @property
     def num_global_support_dofs(self):
@@ -500,7 +409,7 @@ class QuadratureElement(BaseElement):
         if nderivs > 0:
             raise ValueError("Cannot take derivatives of Quadrature element.")
 
-        if points.shape != self.points.shape:
+        if points.shape != self._points.shape:
             raise ValueError("Mismatch of tabulation points and element points.")
         tables = [numpy.eye(points.shape[0], points.shape[0])]
         return tables
@@ -520,16 +429,8 @@ class QuadratureElement(BaseElement):
         return [numpy.identity(self.dim) for i in range(perm_count)]
 
     @property
-    def interpolation_matrix(self):
-        return numpy.eye(self.points.shape[0], self.points.shape[1])
-
-    @property
-    def points(self):
-        return self._points
-
-    @property
     def dim(self):
-        return self.points.shape[0]
+        return self._points.shape[0]
 
     @property
     def value_size(self):
@@ -570,10 +471,6 @@ class QuadratureElement(BaseElement):
         return entity_dofs
 
     @property
-    def coeffs(self):
-        raise NotImplementedError
-
-    @property
     def num_global_support_dofs(self):
         return 0
 
@@ -589,7 +486,3 @@ class QuadratureElement(BaseElement):
     @property
     def num_reference_components(self):
         return {"affine": self.value_size}
-
-    @property
-    def is_blocked(self):
-        return False

@@ -42,7 +42,7 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'sub_elements',
-    'entity_dofs', 'needs_transformation_data', 'interpolation_is_identity'])
+    'entity_dofs', 'needs_transformation_data'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
@@ -147,12 +147,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
         basix_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
-
-    im = basix_element.interpolation_matrix
-    if im.shape[0] == im.shape[1] and numpy.allclose(im, numpy.identity(im.shape[0])):
-        ir["interpolation_is_identity"] = 1
-    else:
-        ir["interpolation_is_identity"] = 0
 
     ir["needs_transformation_data"] = 0
     for p in basix_element.base_transformations:

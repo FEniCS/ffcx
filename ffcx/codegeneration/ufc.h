@@ -116,13 +116,6 @@ extern "C"
     /// functions
     bool needs_transformation_data;
 
-    /// If true, the interpolation matrix is the identity
-    /// Interpolation matrix maps point-wise values at set of points into values
-    /// of degrees-of-freedom, dof_i = A_{ij} u(x_j). If this is the identity,
-    /// then the space is defined by a series of point evaluations, and so the
-    /// interpolation points are the DOF coordinates.
-    bool interpolation_is_identity;
-
     /// Get a finite element for sub element i (for a mixed
     /// element).
     ufc_finite_element** sub_elements;
