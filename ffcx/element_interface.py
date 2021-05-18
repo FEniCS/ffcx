@@ -195,7 +195,7 @@ class ComponentElement(BaseElement):
                 output.append(tbl[:, self.component, :])
             elif len(self.element.value_shape) == 2:
                 # TODO: Something different may need doing here if tensor is symmetric
-                vs0 = self.element.value_size[0]
+                vs0 = self.element.value_shape[0]
                 output.append(tbl[:, self.component // vs0, self.component % vs0, :])
             else:
                 raise NotImplementedError
