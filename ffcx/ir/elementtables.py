@@ -183,23 +183,18 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
             index = basix_index(*derivative_counts)
             tbl = tbl[index].transpose()
 
-            # Prepare a padded table with zeros
-            # padded_shape = (slice_size(ir),) + basix_element.value_shape + (len(entity_points), )
-            # padded_tbl = numpy.zeros(padded_shape, dtype=tbl.dtype)
+            if basix_element.family_name == "mixed element":
+                if component_element.is_blocked:
+                    tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
+                else:
+                    tab = numpy.zeros_like(tbl.reshape(slice_size(ir), slice_size(cr), -1))
+                    for basis_i in range(tab.shape[0]):
+                        for value_i in range(tab.shape[1]):
+                            tab[basis_i, value_i] = tbl[value_i * tab.shape[0] + basis_i]
+                c = flat_component - cr[0]
+                tbl = tab[:, c, :]
 
-            if basix_element.family_name == "mixed element" and not component_element.is_blocked:
-                tab = numpy.zeros_like(tbl.reshape(slice_size(ir), slice_size(cr), -1))
-                for basis_i in range(tab.shape[0]):
-                    for value_i in range(tab.shape[1]):
-                        tab[basis_i, value_i] = tbl[value_i * tab.shape[0] + basis_i]
-            else:
-                tab = tbl.reshape(slice_size(ir), slice_size(cr), -1)
-
-            #  print(padded_shape, tab.shape, slice(*cr), flat_component)
-            #   padded_tbl[:, slice(*cr), :] = tab
-            c = flat_component - cr[0]
-            # print(flat_component, 'offset=', offset, 'stride=', stride)
-            component_tables.append(tab[:, c, :])
+            component_tables.append(tbl)
 
     if avg in ("cell", "facet"):
         # Compute numeric integral of the each component table
