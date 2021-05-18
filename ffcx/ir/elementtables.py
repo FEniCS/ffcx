@@ -304,13 +304,9 @@ def get_modified_terminal_element(mt):
     assert not (mt.averaged and (ld or gd))
 
     # Change derivatives format for table lookup
-    # gdim = mt.terminal.ufl_domain().geometric_dimension()
-    # global_derivatives = derivative_listing_to_counts(gd, gdim)
-
-    # Change derivatives format for table lookup
-    tdim = mt.terminal.ufl_domain().topological_dimension()
+    gdim = mt.terminal.ufl_domain().geometric_dimension()
     local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
-        ld, tdim)
+        ld, gdim)
 
     return element, mt.averaged, local_derivatives, fc
 
