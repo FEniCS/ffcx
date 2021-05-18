@@ -333,9 +333,9 @@ def build_optimized_tables(quadrature_rule,
                             permute_quadrature_interval(
                                 quadrature_rule.points, ref),
                             cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
-                    table_values = numpy.array([td['array'][0] for td in new_table])
+
                     t = new_table[0]
-                    t['array'] = table_values
+                    t['array'] = numpy.vstack([td['array'] for td in new_table])
                 elif tdim == 3:
                     cell_type = cell.cellname()
                     if cell_type == "tetrahedron":
@@ -347,9 +347,8 @@ def build_optimized_tables(quadrature_rule,
                                         quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
-                        table_values = numpy.array([td['array'][0] for td in new_table])
                         t = new_table[0]
-                        t['array'] = table_values
+                        t['array'] = numpy.vstack([td['array'] for td in new_table])
                     elif cell_type == "hexahedron":
                         new_table = []
                         for rot in range(4):
@@ -359,9 +358,8 @@ def build_optimized_tables(quadrature_rule,
                                         quadrature_rule.points, ref, rot),
                                     cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
-                        table_values = numpy.array([td['array'][0] for td in new_table])
                         t = new_table[0]
-                        t['array'] = table_values
+                        t['array'] = numpy.vstack([td['array'] for td in new_table])
             else:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
