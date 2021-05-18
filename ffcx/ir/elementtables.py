@@ -65,32 +65,32 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg,
     if integral_type in ufl.custom_integral_types:
         # Use quadrature points on cell for analysis in custom integral types
         integral_type = "cell"
-        assert not avg
+#        assert not avg
 
     if integral_type == "expression":
         # FFCx tables for expression are generated as interior cell points
         integral_type = "cell"
 
-    if avg in ("cell", "facet"):
-        # Redefine points to compute average tables
+    # if avg in ("cell", "facet"):
+    #     # Redefine points to compute average tables
 
-        # Make sure this is not called with points, that doesn't make sense
-        # assert points is None
+    #     # Make sure this is not called with points, that doesn't make sense
+    #     # assert points is None
 
-        # Not expecting derivatives of averages
-        assert not any(derivative_counts)
-        assert deriv_order == 0
+    #     # Not expecting derivatives of averages
+    #     assert not any(derivative_counts)
+    #     assert deriv_order == 0
 
-        # Doesn't matter if it's exterior or interior facet integral,
-        # just need a valid integral type to create quadrature rule
-        if avg == "cell":
-            integral_type = "cell"
-        elif avg == "facet":
-            integral_type = "exterior_facet"
+    #     # Doesn't matter if it's exterior or interior facet integral,
+    #     # just need a valid integral type to create quadrature rule
+    #     if avg == "cell":
+    #         integral_type = "cell"
+    #     elif avg == "facet":
+    #         integral_type = "exterior_facet"
 
-        # Make quadrature rule and get points and weights
-        points, weights = create_quadrature_points_and_weights(integral_type, cell,
-                                                               ufl_element.degree(), "default")
+    #     # Make quadrature rule and get points and weights
+    #     points, weights = create_quadrature_points_and_weights(integral_type, cell,
+    #                                                            ufl_element.degree(), "default")
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension()
@@ -110,14 +110,14 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg,
         tbl = tbl[basix_index(*derivative_counts)]
         component_tables.append(tbl)
 
-    if avg in ("cell", "facet"):
-        # Compute numeric integral of the each component table
-        wsum = sum(weights)
-        for entity, tbl in enumerate(component_tables):
-            num_dofs = tbl.shape[1]
-            tbl = numpy.dot(tbl, weights) / wsum
-            tbl = numpy.reshape(tbl, (1, num_dofs))
-            component_tables[entity] = tbl
+    # if avg in ("cell", "facet"):
+    #     # Compute numeric integral of the each component table
+    #     wsum = sum(weights)
+    #     for entity, tbl in enumerate(component_tables):
+    #         num_dofs = tbl.shape[1]
+    #         tbl = numpy.dot(tbl, weights) / wsum
+    #         tbl = numpy.reshape(tbl, (1, num_dofs))
+    #         component_tables[entity] = tbl
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
     # Reorder axes as (points, dofs) instead of (dofs, points)
@@ -162,7 +162,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged, entityty
         name += "_C%d" % flat_component
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
-    name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
+#    name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
     name += {"cell": "", "facet": "_F", "vertex": "_V"}[entitytype]
     name += f"_Q{quadrature_rule.id()}"
     return name
@@ -300,7 +300,7 @@ def build_optimized_tables(quadrature_rule,
             continue
         element, avg, local_derivatives, flat_component = res
 
-        # Generate table and store table name with modified terminal
+        # Generate and store table data for each modified terminal
 
         # Build name for this particular table
         element_number = element_numbers[element]
@@ -308,12 +308,13 @@ def build_optimized_tables(quadrature_rule,
                                        local_derivatives, flat_component)
 
         if name in tables:
+            # Retrieve table with same name
             tbl = tables[name]
             tabletype = analyse_table_type(tbl)
             is_permuted = is_permuted_table(tbl)
         else:
-            tdim = cell.topological_dimension()
             if entitytype == "facet":
+                tdim = cell.topological_dimension()
                 if tdim == 1:
                     tbl = get_ffcx_table_values(quadrature_rule.points, cell,
                                                 integral_type, element, avg,
@@ -328,23 +329,20 @@ def build_optimized_tables(quadrature_rule,
                 elif tdim == 3:
                     cell_type = cell.cellname()
                     if cell_type == "tetrahedron":
-                        new_table = []
-                        for rot in range(3):
-                            for ref in range(2):
-                                new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_triangle(
-                                        quadrature_rule.points, ref, rot),
-                                    cell, integral_type, element, avg, local_derivatives, flat_component))
-                        tbl = numpy.vstack(new_table)
+                        nrot = 3
+                        permute = permute_quadrature_triangle
                     elif cell_type == "hexahedron":
-                        new_table = []
-                        for rot in range(4):
-                            for ref in range(2):
-                                new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_quadrilateral(
-                                        quadrature_rule.points, ref, rot),
-                                    cell, integral_type, element, avg, local_derivatives, flat_component))
-                        tbl = numpy.vstack(new_table)
+                        nrot = 4
+                        permute = permute_quadrature_quadrilateral
+                    else:
+                        raise RuntimeError("Invalid cell type: " + cell_type)
+                    new_table = []
+                    for rot in range(nrot):
+                        for ref in range(2):
+                            new_table.append(get_ffcx_table_values(
+                                permute(quadrature_rule.points, ref, rot),
+                                cell, integral_type, element, avg, local_derivatives, flat_component))
+                    tbl = numpy.vstack(new_table)
             else:
                 tbl = get_ffcx_table_values(quadrature_rule.points, cell,
                                             integral_type, element, avg,
