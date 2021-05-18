@@ -71,7 +71,7 @@ jobs:
         run: |
           pip install .
 
-      - name: Run units tests
+      - name: Run unit tests
         run: |
           pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
@@ -94,7 +94,7 @@ jobs:
 
       - name: Runs demos
         run: |
-          python${{ matrix.python-version }} -m pytest demo/test_demos.py
+          python${{ matrix.python-version }} -m pytest --cov=ffcx/ --junitxml=junit/demo-results-${{ matrix.os }}-${{ matrix.python-version }}.xml demo/test_demos.py
 
       - name: Build documentation
         run: |
