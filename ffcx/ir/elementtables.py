@@ -310,111 +310,102 @@ def build_optimized_tables(quadrature_rule,
         name = generate_psi_table_name(quadrature_rule, element_number, avg, entitytype,
                                        local_derivatives, flat_component)
 
-        # FIXME - currently skip this, and just recalculate the tables every time,
-        # only reusing them if they match numerically. mt_tables can only be reused if the
-        # metadata (e.g. dofmap etc.) is also known to be the same.
-        if False:
-            # Find existing entry in mt_tables
-            for k in mt_tables:
-                if mt_tables[k]['name'] == name:
-                    mt_tables[mt] = mt_tables[k]
-                    break
-        else:
-            tdim = cell.topological_dimension()
-            if entitytype == "facet":
-                if tdim == 1:
-                    t = get_ffcx_table_values(quadrature_rule.points, cell,
-                                              integral_type, element, avg, entitytype,
-                                              local_derivatives, flat_component)
-                elif tdim == 2:
-                    new_table = []
-                    for ref in range(2):
-                        new_table.append(get_ffcx_table_values(
-                            permute_quadrature_interval(
-                                quadrature_rule.points, ref),
-                            cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+        # FIXME - currently just recalculate the tables every time,
+        # only reusing them if they match numerically.
+        # It should be possible to reuse the cached tables by name, but
+        # the dofmap offset may differ due to restriction.
 
-                    t = new_table[0]
-                    t['array'] = numpy.vstack([td['array'] for td in new_table])
-                elif tdim == 3:
-                    cell_type = cell.cellname()
-                    if cell_type == "tetrahedron":
-                        new_table = []
-                        for rot in range(3):
-                            for ref in range(2):
-                                new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_triangle(
-                                        quadrature_rule.points, ref, rot),
-                                    cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
-
-                        t = new_table[0]
-                        t['array'] = numpy.vstack([td['array'] for td in new_table])
-                    elif cell_type == "hexahedron":
-                        new_table = []
-                        for rot in range(4):
-                            for ref in range(2):
-                                new_table.append(get_ffcx_table_values(
-                                    permute_quadrature_quadrilateral(
-                                        quadrature_rule.points, ref, rot),
-                                    cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
-
-                        t = new_table[0]
-                        t['array'] = numpy.vstack([td['array'] for td in new_table])
-            else:
+        tdim = cell.topological_dimension()
+        if entitytype == "facet":
+            if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
                                           local_derivatives, flat_component)
+            elif tdim == 2:
+                new_table = []
+                for ref in range(2):
+                    new_table.append(get_ffcx_table_values(
+                        permute_quadrature_interval(
+                            quadrature_rule.points, ref),
+                        cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
-            # Clean up table
-            tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
-            tabletype = analyse_table_type(tbl)
-            if tabletype in piecewise_ttypes:
-                # Reduce table to dimension 1 along num_points axis in generated code
-                tbl = tbl[:, :, :1, :]
-            if tabletype in uniform_ttypes:
-                # Reduce table to dimension 1 along num_entities axis in generated code
-                tbl = tbl[:, :1, :, :]
-            is_permuted = is_permuted_table(tbl)
-            if not is_permuted:
-                # Reduce table along num_perms axis
-                tbl = tbl[:1, :, :, :]
+                t = new_table[0]
+                t['array'] = numpy.vstack([td['array'] for td in new_table])
+            elif tdim == 3:
+                cell_type = cell.cellname()
+                if cell_type == "tetrahedron":
+                    new_table = []
+                    for rot in range(3):
+                        for ref in range(2):
+                            new_table.append(get_ffcx_table_values(
+                                permute_quadrature_triangle(
+                                    quadrature_rule.points, ref, rot),
+                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                    t = new_table[0]
+                    t['array'] = numpy.vstack([td['array'] for td in new_table])
+                elif cell_type == "hexahedron":
+                    new_table = []
+                    for rot in range(4):
+                        for ref in range(2):
+                            new_table.append(get_ffcx_table_values(
+                                permute_quadrature_quadrilateral(
+                                    quadrature_rule.points, ref, rot),
+                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                    t = new_table[0]
+                    t['array'] = numpy.vstack([td['array'] for td in new_table])
+        else:
+            t = get_ffcx_table_values(quadrature_rule.points, cell,
+                                      integral_type, element, avg, entitytype,
+                                      local_derivatives, flat_component)
+        # Clean up table
+        tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
+        tabletype = analyse_table_type(tbl)
+        if tabletype in piecewise_ttypes:
+            # Reduce table to dimension 1 along num_points axis in generated code
+            tbl = tbl[:, :, :1, :]
+        if tabletype in uniform_ttypes:
+            # Reduce table to dimension 1 along num_entities axis in generated code
+            tbl = tbl[:, :1, :, :]
+        is_permuted = is_permuted_table(tbl)
+        if not is_permuted:
+            # Reduce table along num_perms axis
+            tbl = tbl[:1, :, :, :]
 
-            # Check for existing identical table
-            xname_found = False
-            for xname in tables:
-                if equal_tables(tbl, tables[xname]):
-                    xname_found = True
-                    break
+        # Check for existing identical table
+        xname_found = False
+        for xname in tables:
+            if equal_tables(tbl, tables[xname]):
+                xname_found = True
+                break
 
-            if xname_found:
-                # print('found existing table equiv to ', name, ' at ', xname)
-                name = xname
-                # Retrieve existing table
-                tbl = tables[name]
-            else:
-                # Store new table
-                tables[name] = tbl
+        if xname_found:
+            name = xname
+            # Retrieve existing table
+            tbl = tables[name]
+        else:
+            # Store new table
+            tables[name] = tbl
 
-            cell_offset = 0
-            basix_element = create_element(element)
+        cell_offset = 0
+        basix_element = create_element(element)
 
-            if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
-                # offset = 0 or number of element dofs, if restricted to "-"
-                cell_offset = basix_element.dim
+        if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
+            # offset = 0 or number of element dofs, if restricted to "-"
+            cell_offset = basix_element.dim
 
-            num_dofs = tbl.shape[3]
-            dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
+        num_dofs = tbl.shape[3]
+        dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
 
-            base_transformations = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
-                                    for i in dofmap]
-                                    for p in basix_element.base_transformations]
-            needs_transformation_data = not all(numpy.allclose(p, numpy.identity(len(p))) for p in base_transformations)
+        base_transformations = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
+                                for i in dofmap]
+                                for p in basix_element.base_transformations]
+        needs_transformation_data = not all(numpy.allclose(p, numpy.identity(len(p))) for p in base_transformations)
 
-            # tables is just np.arrays, mt_tables hold metadata too
-            mt_tables[mt] = unique_table_reference_t(
-                name, tbl, tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
-                tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
-                base_transformations, needs_transformation_data)
+        # tables is just np.arrays, mt_tables hold metadata too
+        mt_tables[mt] = unique_table_reference_t(
+            name, tbl, tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
+            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
+            base_transformations, needs_transformation_data)
 
     return mt_tables
 
