@@ -24,6 +24,7 @@ ufl_to_basix_names = {
 
 
 def create_element(ufl_element):
+    """Create an element from a UFL element."""
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
 
@@ -49,20 +50,24 @@ def create_element(ufl_element):
 
 
 def basix_index(*args):
+    """Get the Basix index of a derivative."""
     return basix.index(*args)
 
 
 def create_quadrature(cellname, degree, rule):
+    """Create a quadrature rule."""
     if cellname == "vertex":
         return [[]], [1]
     return basix.make_quadrature(rule, basix_cells[cellname], degree)
 
 
 def reference_cell_vertices(cellname):
+    """Get the vertices of a reference cell."""
     return basix.geometry(basix_cells[cellname])
 
 
 def map_facet_points(points, facet, cellname):
+    """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix_cells[cellname])
     facet_vertices = [geom[i] for i in basix.topology(basix_cells[cellname])[-2][facet]]
 
@@ -71,86 +76,149 @@ def map_facet_points(points, facet, cellname):
 
 
 class BaseElement:
+    """An abstract element class."""
+
     def tabulate(self, nderivs, points):
+        """Tabulate the basis functions of the element.
+
+        Parameters
+        ----------
+        nderivs : int
+            The number of derivatives to tabulate.
+        points : np.array
+            The points to tabulate at
+        """
         raise NotImplementedError
 
     def get_component_element(self, flat_component):
+        """Get an element that represents a component of the element, and the offset and stride of the component.
+
+        For example, for a MixedElement, this will return the sub-element that represents the given component,
+        the offset of that sub-element, and a stride of 1. For a BlockedElement, this will return the sub-element,
+        an offset equal to the component number, and a stride equal to the block size. For vector-valued element
+        (eg H(curl) and H(div) elements), this returns a ComponentElement (and as offset of 0 and a stride of 1).
+        When tabulate is called on the ComponentElement, only the part of the table for the given component is
+        returned.
+
+        Parameters
+        ----------
+        flat_component : int
+            The component
+        """
         raise NotImplementedError
 
     @property
     def base_transformations(self):
+        """Get the base transformations of the element."""
         raise NotImplementedError
 
     @property
     def dim(self):
+        """Get the number of DOFs the element has."""
         raise NotImplementedError
 
     @property
     def value_size(self):
+        """Get the value size of the element."""
         raise NotImplementedError
 
     @property
     def value_shape(self):
+        """Get the value shape of the element."""
         raise NotImplementedError
 
     @property
     def entity_dofs(self):
+        """Get the number of DOFs associated with each entity."""
         raise NotImplementedError
 
     @property
     def entity_dof_numbers(self):
+        """Get the DOF numbers associated with each entity."""
         raise NotImplementedError
 
     @property
     def num_global_support_dofs(self):
+        """Get the number of globally supported DOFs."""
         raise NotImplementedError
 
     @property
     def family_name(self):
+        """Get the family name of the element."""
         raise NotImplementedError
 
     @property
     def reference_topology(self):
+        """Get the topology of the reference element."""
         raise NotImplementedError
 
     @property
     def reference_geometry(self):
+        """Get the geometry of the reference element."""
         raise NotImplementedError
 
 
 class BasixElement(BaseElement):
+    """An element defined by Basix."""
+
     def __init__(self, element):
         self.element = element
 
     def tabulate(self, nderivs, points):
+        """Tabulate the basis functions of the element.
+
+        Parameters
+        ----------
+        nderivs : int
+            The number of derivatives to tabulate.
+        points : np.array
+            The points to tabulate at
+        """
         return self.element.tabulate(nderivs, points)
 
     def get_component_element(self, flat_component):
+        """Get an element that represents a component of the element, and the offset and stride of the component.
+
+        For vector-valued elements (eg H(curl) and H(div) elements), this returns a ComponentElement (and an
+        offset of 0 and a stride of 1). When tabulate is called on the ComponentElement, only the part of the
+        table for the given component is returned.
+
+        Parameters
+        ----------
+        flat_component : int
+            The component
+        """
         assert flat_component < self.value_size
         return ComponentElement(self, flat_component), 0, 1
 
     @property
     def base_transformations(self):
+        """Get the base transformations of the element."""
         return self.element.base_transformations()
 
     @property
     def dim(self):
+        """Get the number of DOFs the element has."""
         return self.element.dim
 
     @property
     def value_size(self):
+        """Get the value size of the element."""
         return self.element.value_size
 
     @property
     def value_shape(self):
+        """Get the value shape of the element."""
         return self.element.value_shape
 
     @property
     def entity_dofs(self):
+        """Get the number of DOFs associated with each entity."""
         return self.element.entity_dofs
 
     @property
     def entity_dof_numbers(self):
+        """Get the DOF numbers associated with each entity."""
         # TODO: move this to basix, then remove this wrapper class
         start_dof = 0
         entity_dofs = []
@@ -164,28 +232,43 @@ class BasixElement(BaseElement):
 
     @property
     def num_global_support_dofs(self):
+        """Get the number of globally supported DOFs."""
         # TODO
         return 0
 
     @property
     def family_name(self):
+        """Get the family name of the element."""
         return basix.family_to_str(self.element.family)
 
     @property
     def reference_topology(self):
+        """Get the topology of the reference element."""
         return basix.topology(self.element.cell_type)
 
     @property
     def reference_geometry(self):
+        """Get the geometry of the reference element."""
         return basix.geometry(self.element.cell_type)
 
 
 class ComponentElement(BaseElement):
+    """An element representing one component of a BasixElement."""
+
     def __init__(self, element, component):
         self.element = element
         self.component = component
 
     def tabulate(self, nderivs, points):
+        """Tabulate the basis functions of the element.
+
+        Parameters
+        ----------
+        nderivs : int
+            The number of derivatives to tabulate.
+        points : np.array
+            The points to tabulate at
+        """
         tables = self.element.tabulate(nderivs, points)
         output = []
         for tbl in tables:
@@ -202,17 +285,35 @@ class ComponentElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
+        """Get an element that represents a component of the element, and the offset and stride of the component.
+
+        Parameters
+        ----------
+        flat_component : int
+            The component
+        """
         if flat_component == 0:
             return self, 0, 1
         raise NotImplementedError
 
 
 class MixedElement(BaseElement):
+    """A mixed element that combines two or more elements."""
+
     def __init__(self, sub_elements):
         assert len(sub_elements) > 0
         self.sub_elements = sub_elements
 
     def tabulate(self, nderivs, points):
+        """Tabulate the basis functions of the element.
+
+        Parameters
+        ----------
+        nderivs : int
+            The number of derivatives to tabulate.
+        points : np.array
+            The points to tabulate at
+        """
         tables = []
         results = [e.tabulate(nderivs, points) for e in self.sub_elements]
         for deriv_tables in zip(*results):
@@ -226,6 +327,16 @@ class MixedElement(BaseElement):
         return tables
 
     def get_component_element(self, flat_component):
+        """Get an element that represents a component of the element, and the offset and stride of the component.
+
+        For a MixedElement, this will return the sub-element that represents the given component,
+        the offset of that sub-element, and a stride of 1.
+
+        Parameters
+        ----------
+        flat_component : int
+            The component
+        """
         sub_dims = [0] + [e.dim for e in self.sub_elements]
         sub_cmps = [0] + [e.value_size for e in self.sub_elements]
 
@@ -244,6 +355,7 @@ class MixedElement(BaseElement):
 
     @property
     def base_transformations(self):
+        """Get the base transformations of the element."""
         for e in self.sub_elements[1:]:
             assert len(e.base_transformations) == len(self.sub_elements[0].base_transformations)
         transformations = [[] for i in self.sub_elements[0].base_transformations]
@@ -265,24 +377,29 @@ class MixedElement(BaseElement):
 
     @property
     def dim(self):
+        """Get the number of DOFs the element has."""
         return sum(e.dim for e in self.sub_elements)
 
     @property
     def value_size(self):
+        """Get the value size of the element."""
         return sum(e.value_size for e in self.sub_elements)
 
     @property
     def value_shape(self):
+        """Get the value shape of the element."""
         return (sum(e.value_size for e in self.sub_elements), )
 
     @property
     def entity_dofs(self):
+        """Get the number of DOFs associated with each entity."""
         data = [e.entity_dofs for e in self.sub_elements]
         return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
                 for tdim, entities in enumerate(data[0])]
 
     @property
     def entity_dof_numbers(self):
+        """Get the DOF numbers associated with each entity."""
         dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dof_numbers]
         start_dof = 0
         for e in self.sub_elements:
@@ -294,22 +411,28 @@ class MixedElement(BaseElement):
 
     @property
     def num_global_support_dofs(self):
+        """Get the number of globally supported DOFs."""
         return sum(e.num_global_support_dofs for e in self.sub_elements)
 
     @property
     def family_name(self):
+        """Get the family name of the element."""
         return "mixed element"
 
     @property
     def reference_topology(self):
+        """Get the topology of the reference element."""
         return self.sub_elements[0].reference_topology
 
     @property
     def reference_geometry(self):
+        """Get the geometry of the reference element."""
         return self.sub_elements[0].reference_geometry
 
 
 class BlockedElement(BaseElement):
+    """An element with a block size that contains multiple copies of a sub element."""
+
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
         self.sub_element = sub_element
@@ -320,6 +443,15 @@ class BlockedElement(BaseElement):
             self.block_shape = block_shape
 
     def tabulate(self, nderivs, points):
+        """Tabulate the basis functions of the element.
+
+        Parameters
+        ----------
+        nderivs : int
+            The number of derivatives to tabulate.
+        points : np.array
+            The points to tabulate at
+        """
         assert len(self.block_shape) == 1  # TODO: block shape
         assert self.value_size == self.block_size  # TODO: remove this assumption
 
@@ -333,10 +465,21 @@ class BlockedElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
+        """Get an element that represents a component of the element, and the offset and stride of the component.
+
+        For a BlockedElement, this will return the sub-element, an offset equal to the component number, and a
+        stride equal to the block size.
+
+        Parameters
+        ----------
+        flat_component : int
+            The component
+        """
         return self.sub_element, flat_component, self.block_size
 
     @property
     def base_transformations(self):
+        """Get the base transformations of the element."""
         assert len(self.block_shape) == 1  # TODO: block shape
 
         output = []
@@ -350,62 +493,70 @@ class BlockedElement(BaseElement):
 
     @property
     def dim(self):
+        """Get the number of DOFs the element has."""
         return self.sub_element.dim * self.block_size
 
     @property
-    def sub_elements(self):
-        return [self.sub_element] * self.block_size
-
-    @property
     def value_size(self):
+        """Get the value size of the element."""
         return self.block_size * self.sub_element.value_size
 
     @property
     def value_shape(self):
+        """Get the value shape of the element."""
         return (self.value_size, )
 
     @property
     def entity_dofs(self):
+        """Get the number of DOFs associated with each entity."""
         return [[j * self.block_size for j in i] for i in self.sub_element.entity_dofs]
 
     @property
     def entity_dof_numbers(self):
+        """Get the DOF numbers associated with each entity."""
         # TODO: should this return this, or should it take blocks into account?
         return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
                  for j in i] for i in self.sub_element.entity_dof_numbers]
 
     @property
     def num_global_support_dofs(self):
+        """Get the number of globally supported DOFs."""
         return self.sub_element.num_global_support_dofs * self.block_size
 
     @property
     def family_name(self):
+        """Get the family name of the element."""
         return self.sub_element.family_name
 
     @property
     def reference_topology(self):
+        """Get the topology of the reference element."""
         return self.sub_element.reference_topology
 
     @property
     def reference_geometry(self):
+        """Get the geometry of the reference element."""
         return self.sub_element.reference_geometry
-
-    @property
-    def dof_mappings(self):
-        return self.sub_element.dof_mappings * self.block_size
-
-    @property
-    def num_reference_components(self):
-        return self.sub_element.num_reference_components
 
 
 class QuadratureElement(BaseElement):
+    """A quadrature element."""
+
     def __init__(self, ufl_element):
         self._points, _ = create_quadrature(ufl_element.cell().cellname(),
                                             ufl_element.degree(), ufl_element.quadrature_scheme())
         self._ufl_element = ufl_element
 
     def tabulate(self, nderivs, points):
+        """Tabulate the basis functions of the element.
+
+        Parameters
+        ----------
+        nderivs : int
+            The number of derivatives to tabulate.
+        points : np.array
+            The points to tabulate at
+        """
         if nderivs > 0:
             raise ValueError("Cannot take derivatives of Quadrature element.")
 
@@ -415,10 +566,18 @@ class QuadratureElement(BaseElement):
         return tables
 
     def get_component_element(self, flat_component):
+        """Get an element that represents a component of the element, and the offset and stride of the component.
+
+        Parameters
+        ----------
+        flat_component : int
+            The component
+        """
         return self, 0, 1
 
     @property
     def base_transformations(self):
+        """Get the base transformations of the element."""
         perm_count = 0
         for i in range(1, self._ufl_element.cell().topological_dimension()):
             if i == 1:
@@ -430,18 +589,22 @@ class QuadratureElement(BaseElement):
 
     @property
     def dim(self):
+        """Get the number of DOFs the element has."""
         return self._points.shape[0]
 
     @property
     def value_size(self):
+        """Get the value size of the element."""
         return 1
 
     @property
     def value_shape(self):
+        """Get the value shape of the element."""
         return [1]
 
     @property
     def entity_dofs(self):
+        """Get the number of DOFs associated with each entity."""
         dofs = []
         tdim = self._ufl_element.cell().topological_dimension()
 
@@ -459,6 +622,7 @@ class QuadratureElement(BaseElement):
 
     @property
     def entity_dof_numbers(self):
+        """Get the DOF numbers associated with each entity."""
         # TODO: move this to basix, then remove this wrapper class
         start_dof = 0
         entity_dofs = []
@@ -472,17 +636,10 @@ class QuadratureElement(BaseElement):
 
     @property
     def num_global_support_dofs(self):
+        """Get the number of globally supported DOFs."""
         return 0
 
     @property
     def family_name(self):
+        """Get the family name of the element."""
         return self._ufl_element.family()
-
-    @property
-    def dof_mappings(self):
-        assert self._ufl_element.mapping() == "identity"
-        return ["affine"] * self.dim
-
-    @property
-    def num_reference_components(self):
-        return {"affine": self.value_size}
