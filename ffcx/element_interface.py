@@ -104,6 +104,15 @@ class BaseElement:
         ----------
         flat_component : int
             The component
+
+        Returns
+        -------
+        BaseElement
+            The component element
+        int
+            The offset of the component
+        int
+            The stride of the component
         """
         raise NotImplementedError
 
@@ -187,6 +196,15 @@ class BasixElement(BaseElement):
         ----------
         flat_component : int
             The component
+
+        Returns
+        -------
+        BaseElement
+            The component element
+        int
+            The offset of the component
+        int
+            The stride of the component
         """
         assert flat_component < self.value_size
         return ComponentElement(self, flat_component), 0, 1
@@ -291,6 +309,15 @@ class ComponentElement(BaseElement):
         ----------
         flat_component : int
             The component
+
+        Returns
+        -------
+        BaseElement
+            The component element
+        int
+            The offset of the component
+        int
+            The stride of the component
         """
         if flat_component == 0:
             return self, 0, 1
@@ -336,6 +363,15 @@ class MixedElement(BaseElement):
         ----------
         flat_component : int
             The component
+
+        Returns
+        -------
+        BaseElement
+            The component element
+        int
+            The offset of the component
+        int
+            The stride of the component
         """
         sub_dims = [0] + [e.dim for e in self.sub_elements]
         sub_cmps = [0] + [e.value_size for e in self.sub_elements]
@@ -474,6 +510,15 @@ class BlockedElement(BaseElement):
         ----------
         flat_component : int
             The component
+
+        Returns
+        -------
+        BaseElement
+            The component element
+        int
+            The offset of the component
+        int
+            The stride of the component
         """
         return self.sub_element, flat_component, self.block_size
 
@@ -572,6 +617,15 @@ class QuadratureElement(BaseElement):
         ----------
         flat_component : int
             The component
+
+        Returns
+        -------
+        BaseElement
+            The component element
+        int
+            The offset of the component
+        int
+            The stride of the component
         """
         return self, 0, 1
 
