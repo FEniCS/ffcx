@@ -802,7 +802,7 @@ class ArrayAccess(CExprOperator):
                 raise ValueError("Index value >= array dimension.")
 
     def __getitem__(self, indices):
-        """Handling nested expr[i][j]."""
+        """Handle nested expr[i][j]."""
         if isinstance(indices, list):
             indices = tuple(indices)
         elif not isinstance(indices, tuple):
@@ -1118,7 +1118,7 @@ def NoOp():
 
 
 def commented_code_list(code, comments):
-    """Convenience wrapper for adding comment to code list if the list is not empty."""
+    """Add comment to code list if the list is not empty."""
     if isinstance(code, CNode):
         code = [code]
     assert isinstance(code, list)

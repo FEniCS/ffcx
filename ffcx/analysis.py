@@ -146,7 +146,6 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     (in case of quadrature degree)
 
     """
-
     if form.empty():
         raise RuntimeError(f"Form ({form}) seems to be zero: cannot compile it.")
     if _has_custom_integrals(form):

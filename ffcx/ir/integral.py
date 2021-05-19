@@ -330,7 +330,6 @@ def analyse_dependencies(F, mt_unique_table_reference):
 
 def replace_quadratureweight(expression):
     """Remove any QuadratureWeight terminals and replace with 1.0."""
-
     r = []
     for node in ufl.corealg.traversal.unique_pre_traversal(expression):
         if is_modified_terminal(node) and isinstance(node, QuadratureWeight):

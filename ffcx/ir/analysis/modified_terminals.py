@@ -16,6 +16,7 @@ logger = logging.getLogger("ffcx")
 
 class ModifiedTerminal(object):
     """A modified terminal expression is an object of a Terminal subtype.
+
     It is wrapped in terminal modifier types.
 
     The variables of this class are:
@@ -37,7 +38,6 @@ class ModifiedTerminal(object):
         - global_component
         - reference_component
         - flat_component
-
     """
 
     def __init__(self, expr, terminal, reference_value, base_shape, base_symmetry, component,
@@ -91,8 +91,10 @@ class ModifiedTerminal(object):
 
     def argument_ordering_key(self):
         """Return a key for deterministic sorting of argument vertex indices.
+
         The key is based on the properties of the modified terminal.
-        Used in factorization but moved here for closeness with ModifiedTerminal attributes."""
+        Used in factorization but moved here for closeness with ModifiedTerminal attributes.
+        """
         t = self.terminal
         assert isinstance(t, Argument)
         n = t.number()

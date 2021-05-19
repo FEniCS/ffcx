@@ -18,7 +18,6 @@ logger = logging.getLogger("ffcx")
 
 def generator(ir, parameters):
     """Generate UFC code for an expression."""
-
     logger.info("Generating code for expression:")
     logger.info(f"--- points: {ir.points}")
     logger.info(f"--- name: {ir.name}")

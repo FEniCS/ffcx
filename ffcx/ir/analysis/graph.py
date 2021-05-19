@@ -19,8 +19,10 @@ logger = logging.getLogger("ffcx")
 
 class ExpressionGraph(object):
     """A directed multi-edge graph.
+
     ExpressionGraph allows multiple edges between the same nodes,
-    and respects the insertion order of nodes and edges."""
+    and respects the insertion order of nodes and edges.
+    """
 
     def __init__(self):
 
@@ -71,7 +73,6 @@ def build_graph_vertices(expressions, skip_terminal_modifiers=False):
 
 def build_scalar_graph(expression):
     """Build list representation of expression graph covering the given expressions."""
-
     # Populate with vertices
     G = build_graph_vertices([expression], skip_terminal_modifiers=False)
 
@@ -113,7 +114,6 @@ def rebuild_with_scalar_subexpressions(G):
     - NV   - Array with reverse mapping from index to expression
     - nvs  - Tuple of ne2i indices corresponding to the last vertex of G.V
     """
-
     # Compute symbols over graph and rebuild scalar expression
     #
     # New expression which represents usually an algebraic operation
@@ -199,8 +199,10 @@ def rebuild_with_scalar_subexpressions(G):
 
 
 def _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers=False):
-    """Yields o for each node o in expr, child before parent.
-    Never visits a node twice."""
+    """Yield o for each node o in expr, child before parent.
+
+    Never visits a node twice.
+    """
 
     def getops(e):
         """Get a modifiable list of operands of e, optionally treating modified terminals as a unit."""

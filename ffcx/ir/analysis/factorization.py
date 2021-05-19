@@ -20,7 +20,6 @@ logger = logging.getLogger("ffcx")
 
 def build_argument_indices(S):
     """Build ordered list of indices to modified arguments."""
-
     arg_indices = []
     for i, v in S.nodes.items():
         arg = strip_modified_terminal(v['expression'])
@@ -30,7 +29,9 @@ def build_argument_indices(S):
     # Make a canonical ordering of vertex indices for modified arguments
     def arg_ordering_key(i):
         """Return a key for sorting argument vertex indices.
-        Key is based on the properties of the modified terminal."""
+
+        Key is based on the properties of the modified terminal.
+        """
         mt = analyse_modified_terminal(S.nodes[i]['expression'])
         return mt.argument_ordering_key()
 
