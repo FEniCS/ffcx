@@ -15,7 +15,6 @@ logger = logging.getLogger("ffcx")
 
 def generator(ir, parameters):
     """Generate UFC code for a form."""
-
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")

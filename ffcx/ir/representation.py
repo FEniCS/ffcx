@@ -63,10 +63,7 @@ ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'e
 
 
 def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise):
-    """Compute intermediate representation.
-
-    """
-
+    """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
     logger.info(79 * "*")
@@ -115,7 +112,6 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
 
 def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     """Compute intermediate representation of element."""
-
     logger.info(f"Computing IR for element {ufl_element}")
 
     # Create basix elements
@@ -166,7 +162,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
 def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     """Compute intermediate representation of dofmap."""
-
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
     # Create basix elements
@@ -206,7 +201,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                          parameters, visualise):
     """Compute intermediate represention for form integrals."""
-
     _entity_types = {
         "cell": "cell",
         "exterior_facet": "facet",
@@ -377,7 +371,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
 def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, element_numbers, finite_element_names,
                      dofmap_names, object_names):
     """Compute intermediate representation of form."""
-
     logger.info(f"Computing IR for form {form_id}")
 
     # Store id
@@ -455,7 +448,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
 
 
 def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
-
+    """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
 
     # Compute representation

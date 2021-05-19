@@ -97,7 +97,8 @@ def build_unique_tables(tables, rtol=default_rtol, atol=default_atol):
     """Return list of unique tables.
 
     Given a list or dict of tables, return a list of unique tables
-    and a dict of unique table indices for each input table key."""
+    and a dict of unique table indices for each input table key.
+    """
     unique = []
     mapping = {}
 
