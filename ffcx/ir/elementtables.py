@@ -52,7 +52,7 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def get_ffcx_table_values(points, cell, integral_type, ufl_element, 
+def get_ffcx_table_values(points, cell, integral_type, ufl_element,
                           derivative_counts, flat_component):
     """Extract values from FFCx element table.
 
