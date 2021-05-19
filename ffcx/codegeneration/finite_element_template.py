@@ -32,7 +32,6 @@ ufc_finite_element {factory_name} =
   .block_size = {block_size},
 
   .needs_transformation_data = {needs_transformation_data},
-  .interpolation_is_identity = {interpolation_is_identity},
 
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}

@@ -41,7 +41,6 @@ def generator(ir, parameters):
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
     d["needs_transformation_data"] = ir.needs_transformation_data
-    d["interpolation_is_identity"] = ir.interpolation_is_identity
 
     import ffcx.codegeneration.C.cnodes as L
 
