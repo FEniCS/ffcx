@@ -32,7 +32,7 @@ class QuadratureRule:
         return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
 
     def id(self):
-        """Returns unique deterministic identifier.
+        """Return unique deterministic identifier.
 
         Note
         ----
@@ -45,7 +45,6 @@ class QuadratureRule:
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
-
     if integral_type == "cell":
         return create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
@@ -61,7 +60,6 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
 
 def integral_type_to_entity_dim(integral_type, tdim):
     """Given integral_type and domain tdim, return the tdim of the integration entity."""
-
     if integral_type == "cell":
         entity_dim = tdim
     elif integral_type in ufl.measure.facet_integral_types:

@@ -169,12 +169,12 @@ class FFCXBackendDefinitions(object):
         return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
 
     def _expect_table(self, e, mt, tabledata, num_points, access):
-        """These quantities refer to constant tables defined in ufc_geometry.h."""
+        """Return quantities referring to constant tables defined in the generated code."""
         # TODO: Inject const static table here instead?
         return []
 
     def _expect_physical_coords(self, e, mt, tabledata, num_points, access):
-        """These quantities refer to coordinate_dofs."""
+        """Return quantities referring to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
         return []

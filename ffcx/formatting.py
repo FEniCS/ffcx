@@ -61,7 +61,6 @@ c_extern_post = """
 
 def format_code(code: namedtuple, parameters):
     """Format given code in UFC format. Returns two strings with header and source file contents."""
-
     logger.info(79 * "*")
     logger.info("Compiler stage 5: Formatting code")
     logger.info(79 * "*")
@@ -116,7 +115,6 @@ def _write_file(output, prefix, postfix, output_dir):
 
 def _generate_comment(parameters):
     """Generate code for comment on top of file."""
-
     # Generate top level comment
     comment = FORMAT_TEMPLATE["ufc comment"].format(ffcx_version=FFCX_VERSION, ufc_version=UFC_VERSION)
 

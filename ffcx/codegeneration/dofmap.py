@@ -55,7 +55,6 @@ def tabulate_entity_dofs(L, ir):
 
 def generator(ir, parameters):
     """Generate UFC code for a dofmap."""
-
     logger.info("Generating code for dofmap:")
     logger.info(f"--- num element support dofs: {ir.num_element_support_dofs}")
     logger.info(f"--- name: {ir.name}")

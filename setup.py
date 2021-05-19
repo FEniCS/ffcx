@@ -76,7 +76,6 @@ def generate_git_hash_file(GIT_COMMIT_HASH):
 
 def run_install():
     """Run installation."""
-
     # Get common variables
     GIT_COMMIT_HASH = get_git_commit_hash()
 

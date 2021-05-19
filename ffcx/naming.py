@@ -12,11 +12,10 @@ import ufl
 
 def compute_signature(ufl_objects, tag):
     """Compute the signature hash.
+
     Based on the UFL type of the objects and an additional optional
     'tag'.
-
     """
-
     object_signature = ""
     for ufl_object in ufl_objects:
         # Get signature from ufl object
