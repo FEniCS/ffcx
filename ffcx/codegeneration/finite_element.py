@@ -19,7 +19,6 @@ index_type = "int"
 
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
-
     logger.info("Generating code for finite element:")
     logger.info(f"--- family: {ir.family}")
     logger.info(f"--- degree: {ir.degree}")

@@ -115,7 +115,7 @@ def apply_transformations_to_data(L, base_transformations, cell_shape, data, inv
 
 
 def entity_reflection(L, i, cell_shape):
-    """Returns the bool that says whether or not an entity has been reflected."""
+    """Return the bool that says whether or not an entity has been reflected."""
     cell_info = L.Symbol("cell_permutation")
     if cell_shape in ["triangle", "quadrilateral"]:
         num_faces = 0
@@ -135,7 +135,7 @@ def entity_reflection(L, i, cell_shape):
 
 
 def entity_rotations(L, i, cell_shape):
-    """Returns number of times an entity has been rotated."""
+    """Return number of times an entity has been rotated."""
     cell_info = L.Symbol("cell_permutation")
     assert cell_shape in ["tetrahedron", "hexahedron"]
     assert i[0] == 2

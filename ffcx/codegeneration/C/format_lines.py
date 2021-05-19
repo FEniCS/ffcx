@@ -57,5 +57,4 @@ def iter_indented_lines(snippets, level=0):
 
 def format_indented_lines(snippets, level=0):
     """Format recursive sequences of indented lines as one string."""
-
     return "\n".join(iter_indented_lines(snippets, level))

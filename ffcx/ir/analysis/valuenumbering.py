@@ -20,7 +20,8 @@ class ValueNumberer(object):
 
     An algorithm to map the scalar components of an expression node to unique value numbers,
     with fallthrough for types that can be mapped to the value numbers
-    of their operands."""
+    of their operands.
+    """
 
     def __init__(self, G):
         self.symbol_count = 0
@@ -41,14 +42,14 @@ class ValueNumberer(object):
                             ufl.classes.Variable: self.variable}
 
     def new_symbols(self, n):
-        """Generator for new symbols with a running counter."""
+        """Generate new symbols with a running counter."""
         begin = self.symbol_count
         end = begin + n
         self.symbol_count = end
         return list(range(begin, end))
 
     def new_symbol(self):
-        """Generator for new symbols with a running counter."""
+        """Generate new symbol with a running counter."""
         begin = self.symbol_count
         self.symbol_count += 1
         return begin
