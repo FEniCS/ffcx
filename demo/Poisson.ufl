@@ -20,7 +20,7 @@
 #
 # Compile this form with FFCx: ffcx Poisson.ufl
 
-element = FiniteElement("Lagrange", prism, 1)
+element = FiniteElement("Lagrange", triangle, 1)
 
 u = TrialFunction(element)
 v = TestFunction(element)
