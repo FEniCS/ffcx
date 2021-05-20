@@ -41,7 +41,7 @@ FFCX_DEFAULT_PARAMETERS = {
 
 @functools.lru_cache(maxsize=None)
 def _load_parameters():
-    """Loads parameters from JSON files."""
+    """Load parameters from JSON files."""
     user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
     try:
         with open(user_config_file) as f:

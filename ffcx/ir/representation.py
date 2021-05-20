@@ -42,7 +42,7 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'sub_elements',
-    'entity_dofs', 'needs_transformation_data', 'interpolation_is_identity'])
+    'entity_dofs', 'needs_transformation_data'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
@@ -63,10 +63,7 @@ ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'e
 
 
 def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise):
-    """Compute intermediate representation.
-
-    """
-
+    """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
     logger.info(79 * "*")
@@ -115,7 +112,6 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
 
 def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     """Compute intermediate representation of element."""
-
     logger.info(f"Computing IR for element {ufl_element}")
 
     # Create basix elements
@@ -148,12 +144,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     else:
         ir["block_size"] = 1
 
-    im = basix_element.interpolation_matrix
-    if im.shape[0] == im.shape[1] and numpy.allclose(im, numpy.identity(im.shape[0])):
-        ir["interpolation_is_identity"] = 1
-    else:
-        ir["interpolation_is_identity"] = 0
-
     ir["needs_transformation_data"] = 0
     for p in basix_element.base_transformations:
         if not numpy.allclose(p, numpy.identity(len(p))):
@@ -166,7 +156,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
 def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     """Compute intermediate representation of dofmap."""
-
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
     # Create basix elements
@@ -206,7 +195,6 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                          parameters, visualise):
     """Compute intermediate represention for form integrals."""
-
     _entity_types = {
         "cell": "cell",
         "exterior_facet": "facet",
@@ -377,7 +365,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
 def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, element_numbers, finite_element_names,
                      dofmap_names, object_names):
     """Compute intermediate representation of form."""
-
     logger.info(f"Computing IR for form {form_id}")
 
     # Store id
@@ -455,7 +442,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
 
 
 def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
-
+    """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
 
     # Compute representation

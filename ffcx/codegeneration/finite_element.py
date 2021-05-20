@@ -19,7 +19,6 @@ index_type = "int"
 
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
-
     logger.info("Generating code for finite element:")
     logger.info(f"--- family: {ir.family}")
     logger.info(f"--- degree: {ir.degree}")
@@ -42,7 +41,6 @@ def generator(ir, parameters):
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
     d["needs_transformation_data"] = ir.needs_transformation_data
-    d["interpolation_is_identity"] = ir.interpolation_is_identity
 
     import ffcx.codegeneration.C.cnodes as L
 

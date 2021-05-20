@@ -85,8 +85,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                              for i, v in S.nodes.items()
                              if is_modified_terminal(v['expression'])}
 
-        (unique_tables, unique_table_types, unique_table_num_dofs,
-         mt_unique_table_reference) = build_optimized_tables(
+        mt_unique_table_reference = build_optimized_tables(
             quadrature_rule,
             cell,
             integral_type,
@@ -95,6 +94,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             ir["unique_tables"],
             rtol=p["table_rtol"],
             atol=p["table_atol"])
+        unique_tables = {v.name: v.values for v in mt_unique_table_reference.values()}
+        unique_table_types = {v.name: v.ttype for v in mt_unique_table_reference.values()}
 
         for td in mt_unique_table_reference.values():
             ir["table_needs_transformation_data"][td.name] = td.needs_transformation_data
@@ -261,14 +262,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             if tbl is not None and not numpy.allclose(
                     tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
                 raise RuntimeError("Table values mismatch with same name.")
-        ir["unique_tables"].update(unique_tables)
 
-        # Analyse active terminals to check what we'll need to generate code for
-        active_mts = []
-        for i, v in F.nodes.items():
-            mt = v.get('mt', False)
-            if mt and F.nodes[i]['status'] != 'inactive':
-                active_mts.append(mt)
+        ir["unique_tables"] = unique_tables
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
@@ -314,7 +309,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
                     raise RuntimeError("Invalid ttype %s" % (ttype, ))
 
         elif not is_cellwise_constant(v['expression']):
-            raise RuntimeError("Error")
+            raise RuntimeError("Error " + str(tr))
             # Keeping this check to be on the safe side,
             # not sure which cases this will cover (if any)
             # varying_indices.append(i)
@@ -335,7 +330,6 @@ def analyse_dependencies(F, mt_unique_table_reference):
 
 def replace_quadratureweight(expression):
     """Remove any QuadratureWeight terminals and replace with 1.0."""
-
     r = []
     for node in ufl.corealg.traversal.unique_pre_traversal(expression):
         if is_modified_terminal(node) and isinstance(node, QuadratureWeight):

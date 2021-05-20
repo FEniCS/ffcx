@@ -28,7 +28,6 @@ code_blocks = namedtuple("code_blocks", ["elements", "dofmaps", "integrals", "fo
 
 def generate_code(ir, parameters):
     """Generate code blocks from intermediate representation."""
-
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
