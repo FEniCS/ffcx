@@ -55,7 +55,7 @@ jobs:
           pip install ./basix/python
           rm -rf basix
           pip install pygraphviz
-          pip install git+https://github.com/FEniCS/ufl.git --user
+          pip install git+https://github.com/FEniCS/ufl.git@chris/prism --user
 
       - name: Lint with flake8
         run: |
