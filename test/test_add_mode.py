@@ -101,7 +101,9 @@ def test_additive_cell_integral(mode, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
-    coords = np.array([0.0, 2.0, np.sqrt(3.0), -1.0, -np.sqrt(3.0), -1.0], dtype=np.float64)
+    coords = np.array([0.0, 2.0, 0.0,
+                       np.sqrt(3.0), -1.0, 0.0,
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
 
     default_integral.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),

@@ -69,7 +69,6 @@ class FFCXBackendSymbols(object):
 
         self.original_constant_offsets = original_constant_offsets
 
-
     def element_tensor(self):
         """Symbol for the element tensor itself."""
         return self.S("A")
