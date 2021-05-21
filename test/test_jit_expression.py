@@ -61,7 +61,9 @@ def test_matvec(compile_args):
     c = np.array([0.5], dtype=np_type)
 
     # Coords storage XYXYXY
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    coords = np.array([0.0, 0.0, 0, 0,
+                       1.0, 0.0, 0.0,
+                       0.0, 1.0, 0.0], dtype=np.float64)
     expression.tabulate_expression(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
@@ -98,7 +100,7 @@ def test_rank1(compile_args):
 
     expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
-    points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
+    points = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
     obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
