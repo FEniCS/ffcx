@@ -67,7 +67,6 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
     c = np.array(kappa_value.flatten(), dtype=np_type)
 
-
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
@@ -513,7 +512,6 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     c_type, np_type = float_to_type(mode)
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
     w = np.array([], dtype=np_type)
-
 
     coords = np.array([[1.0, 0.0, 0.0],
                        [2.0, 0.0, 0.0],

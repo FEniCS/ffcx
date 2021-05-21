@@ -60,7 +60,6 @@ def test_matvec(compile_args):
     w = np.array(f_mat.T.flatten(), dtype=np_type)
     c = np.array([0.5], dtype=np_type)
 
-
     # Coords storage XYZXYZXYZ
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
