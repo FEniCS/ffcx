@@ -142,10 +142,10 @@ class FFCXBackendSymbols(object):
         # FIXME: Add domain number or offset!
         offset = 0
         if restriction == "-":
-            offset = num_scalar_dofs * gdim
+            offset = num_scalar_dofs * 3
         vc = self.S("coordinate_dofs")
         if self.interleaved_components:
-            return vc[gdim * dof + component + offset]
+            return vc[3 * dof + component + offset]
         else:
             return vc[num_scalar_dofs * component + dof + offset]
 
