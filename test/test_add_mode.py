@@ -57,7 +57,9 @@ def test_additive_facet_integral(mode, compile_args):
     facets = np.array([0], dtype=np.int32)
     perm = np.array([0], dtype=np.uint8)
 
-    coords = np.array([0.0, 2.0, np.sqrt(3.0), -1.0, -np.sqrt(3.0), -1.0], dtype=np.float64)
+    coords = np.array([0.0, 2.0, 0.0,
+                       np.sqrt(3.0), -1.0, 0.0,
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
 
     for i in range(3):
         facets[0] = i
