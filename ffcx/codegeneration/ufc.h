@@ -102,8 +102,8 @@ extern "C"
     /// function space
     int degree;
 
-    /// Return the block size for a VectorElement.
-    /// For a TensorElement, this is the product of the tensor's dimensions
+    /// Return the block size for a VectorElement. For a TensorElement,
+    /// this is the product of the tensor's dimensions
     int block_size;
 
     /// Return the family of the finite element function space
@@ -112,8 +112,8 @@ extern "C"
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
-    /// Indicates whether transformation data needs to be passed into various
-    /// functions
+    /// Indicates whether transformation data needs to be passed into
+    /// various functions
     bool needs_transformation_data;
 
     /// Get a finite element for sub element i (for a mixed
@@ -131,15 +131,14 @@ extern "C"
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
 
-    /// Dimension of the local finite element function space
-    /// for a cell (not including global support dofs)
+    /// Dimension of the local finite element function space for a cell
+    /// (not including global support dofs)
     int num_element_support_dofs;
 
     /// Return the block size for a VectorElement or TensorElement
     int block_size;
 
-    /// Number of dofs associated with each cell entity of
-    /// dimension d
+    /// Number of dofs associated with each cell entity of dimension d
     int num_entity_dofs[4];
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
@@ -148,8 +147,7 @@ extern "C"
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
 
-    /// Get a dofmap for sub dofmap i (for a mixed
-    /// element).
+    /// Get a dofmap for sub dofmap i (for a mixed element)
     ufc_dofmap** sub_dofmaps;
 
   } ufc_dofmap;
@@ -158,48 +156,43 @@ extern "C"
   ///
   /// @param[out] A
   /// @param[in] w Coefficients attached to the form to which the
-  ///         tabulated integral belongs.
+  /// tabulated integral belongs.
   ///
-  ///         Dimensions: w[coefficient][restriction][dof].
+  /// Dimensions: w[coefficient][restriction][dof].
   ///
-  ///         Restriction dimension
-  ///         applies to interior facet integrals, where coefficients
-  ///         restricted to both cells sharing the facet must be
-  ///         provided.
+  /// Restriction dimension
+  /// applies to interior facet integrals, where coefficients restricted
+  /// to both cells sharing the facet must be provided.
   /// @param[in] c Constants attached to the form to which the tabulated
-  ///         integral belongs. Dimensions: c[constant][dim].
+  /// integral belongs. Dimensions: c[constant][dim].
   /// @param[in] coordinate_dofs Values of degrees of freedom of
-  ///         coordinate element. Defines the geometry of the cell.
-  ///         Dimensions: coordinate_dofs[restriction][num_dofs][gdim].
-  ///         Restriction dimension applies to interior facet integrals,
-  ///         where cell geometries for both cells sharing the facet
-  ///         must be provided.
+  /// coordinate element. Defines the geometry of the cell. Dimensions:
+  /// coordinate_dofs[restriction][num_dofs][3]. Restriction
+  /// dimension applies to interior facet integrals, where cell
+  /// geometries for both cells sharing the facet must be provided.
   /// @param[in] entity_local_index Local index of mesh entity on which
-  ///         to tabulate. This applies to facet integrals.
+  /// to tabulate. This applies to facet integrals.
   /// @param[in] quadrature_permutation For facet integrals, numbers to
-  ///         indicate the permutation to be applied to each side of the
-  ///         facet to make the orientations of the faces matched up
-  ///         should be passed in. If an integer of value N is passed
-  ///         in, then:
+  /// indicate the permutation to be applied to each side of the facet
+  /// to make the orientations of the faces matched up should be passed
+  /// in. If an integer of value N is passed in, then:
   ///
-  ///          - floor(N / 2) gives the number of rotations to apply to the
-  ///          facet
-  ///          - N % 2 gives the number of reflections to apply to the facet
+  ///  - floor(N / 2) gives the number of rotations to apply to the
+  ///  facet
+  ///  - N % 2 gives the number of reflections to apply to the facet
   ///
-  ///         For integrals not on facets, this argument has not effect
-  ///         and a null pointer can be passed. For
-  ///         interior facets the array will have size 2 (one permutation
-  ///         for each cell adjacent to the facet). For exterior facets,
-  ///         this will have size 1.
-  /// @param[in] cell_permutations An integer that says how each entity of the
-  ///         cell of dimension < tdim has been permuted relative to a
-  ///         low-to-high ordering of the cell. This bits of this integer
-  ///         represent (from least to most significant bits):
+  ///  For integrals not on facets, this argument has not effect and a
+  ///  null pointer can be passed. For interior facets the array will
+  ///  have size 2 (one permutation for each cell adjacent to the
+  ///  facet). For exterior facets, this will have size 1.
+  ///  @param[in] cell_permutations An integer that says how each entity
+  ///  of the cell of dimension < tdim has been permuted relative to a
+  ///  low-to-high ordering of the cell. This bits of this integer
+  ///  represent (from least to most significant bits):
   ///
-  ///          - Faces (3 bits each). Reflections are least significant bit,
-  ///          then next two bits give number of rotations.
-  ///          - Edges (1 bit each). The bit is 1 if the edge is reflected.
-  ///
+  ///  - Faces (3 bits each). Reflections are least significant bit,
+  ///  then next two bits give number of rotations.
+  ///  - Edges (1 bit each). The bit is 1 if the edge is reflected.
   typedef void(ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
       const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
@@ -235,20 +228,17 @@ extern "C"
   typedef struct ufc_expression
   {
 
-    /// Evaluate expression into tensor A with compiled evaluation points
+    /// Evaluate expression into tensor A with compiled evaluation
+    /// points
     ///
     /// @param[out] A
-    /// @param[in] w
-    ///         Coefficients attached to the expression.
-    ///         Dimensions: w[coefficient][dof].
-    /// @param[in] c
-    ///         Constants attached to the expression.
-    ///         Dimensions: c[constant][dim].
-    /// @param[in] coordinate_dofs
-    ///         Values of degrees of freedom of coordinate element.
-    ///         Defines the geometry of the cell.
-    ///         Dimensions: coordinate_dofs[num_dofs][gdim].
-    ///
+    /// @param[in] w Coefficients attached to the expression.
+    /// Dimensions: w[coefficient][dof].
+    /// @param[in] c Constants attached to the expression. Dimensions:
+    /// c[constant][dim].
+    /// @param[in] coordinate_dofs Values of degrees of freedom of
+    /// coordinate element. Defines the geometry of the cell.
+    /// Dimensions: coordinate_dofs[num_dofs][3].
     void (*tabulate_expression)(ufc_scalar_t* restrict A,
                                 const ufc_scalar_t* restrict w,
                                 const ufc_scalar_t* restrict c,
@@ -267,12 +257,12 @@ extern "C"
     /// reference cell
     int topological_dimension;
 
-    /// Coordinates of evaluations points.
-    /// Dimensions: points[num_points][topological_dimension].
+    /// Coordinates of evaluations points. Dimensions:
+    /// points[num_points][topological_dimension]
     const double* points;
 
-    /// Return shape of expression
-    /// Dimension: value_shape[num_components].
+    /// Return shape of expression. Dimension:
+    /// value_shape[num_components]
     const int* value_shape;
 
     /// Number of components of return_shape
@@ -316,22 +306,19 @@ extern "C"
     /// Return list of names of constants
     const char** (*constant_name_map)(void);
 
-    /// Get a finite element for the i-th argument function,
-    /// where 0 <= i < r+n.
+    /// Get a finite element for the i-th argument function, where 0 <=
+    /// i < r + n.
     ///
-    /// @param i
-    ///        Argument number if 0 <= i < r
-    ///        Coefficient number j=i-r if r+j <= i < r+n
-    ///
+    /// @param i Argument number if 0 <= i < r Coefficient number j = i
+    /// - r if r + j <= i < r + n
     ufc_finite_element** finite_elements;
 
-    /// Get a dofmap for the i-th argument function, where 0 <=
-    /// i < r+n.
+    /// Get a dofmap for the i-th argument function, where 0 <= i < r +
+    /// n.
     ///
     /// @param i
     ///        Argument number if 0 <= i < r
     ///        Coefficient number j=i-r if r+j <= i < r+n
-    ///
     ufc_dofmap** dofmaps;
 
     /// All ids for integrals
@@ -340,12 +327,12 @@ extern "C"
     /// Number of integrals
     int (*num_integrals)(ufc_integral_type);
 
-    /// Get an integral on sub domain subdomain_id.
+    /// Get an integral on sub domain subdomain_id
     ufc_integral** (*integrals)(ufc_integral_type);
 
   } ufc_form;
 
-  // FIXME: Formalise a UFC 'function space'.
+  // FIXME: Formalise a UFC 'function space'
   typedef struct ufc_function_space
   {
     ufc_finite_element* finite_element;
