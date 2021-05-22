@@ -45,7 +45,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
 
     a = ufl.tr(kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -111,7 +111,7 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     a = ufl.inner(u, v) * ufl.dx
     L = ufl.conj(v) * ufl.dx
     forms = [a, L]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -164,7 +164,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
 
     a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(k * u, v)) * ufl.dx
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -207,7 +207,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -241,7 +241,7 @@ def test_form_coefficient(compile_args):
     g = ufl.Coefficient(element)
     a = g * ufl.inner(u, v) * ufl.dx
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -276,7 +276,7 @@ def test_subdomains(compile_args):
     a2 = ufl.inner(u, v) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx(1)
     a3 = ufl.inner(u, v) * ufl.ds(210) + ufl.inner(u, v) * ufl.ds(0)
     forms = [a0, a1, a2, a3]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': 'double'}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -308,7 +308,7 @@ def test_interior_facet_integral(mode, compile_args):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a0 = ufl.inner(ufl.jump(ufl.grad(u)), ufl.jump(ufl.grad(v))) * ufl.dS
     forms = [a0]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -357,7 +357,7 @@ def test_conditional(mode, compile_args):
 
     forms = [a, b]
 
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     form0 = compiled_forms[0].integrals(module.lib.cell)[0]
@@ -409,7 +409,7 @@ def test_custom_quadrature(compile_args):
                                  "quadrature_points": points, "quadrature_weights": weights})
 
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     form = compiled_forms[0]
@@ -436,7 +436,7 @@ def test_curl_curl(compile_args):
     a = ufl.inner(ufl.curl(u), ufl.curl(v)) * ufl.dx
 
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
 
 
 def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lambda i: i):
@@ -486,7 +486,7 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
 
     a = ufl_fun(v) * ufl.dx
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
@@ -586,7 +586,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
 
     a = ufl_fun(v) * ufl.dx
     forms = [a]
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()

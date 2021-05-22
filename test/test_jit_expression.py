@@ -46,7 +46,8 @@ def test_matvec(compile_args):
     expr = ufl.Constant(mesh) * ufl.dot(a, f)
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
+    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     expression = obj[0]
@@ -99,7 +100,8 @@ def test_rank1(compile_args):
     expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
+    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     expression = obj[0]

@@ -18,14 +18,14 @@ def test_cache_modes(compile_args):
     forms = [a]
 
     # Load form from /tmp
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
     tmpname = module.__name__
     tmpfile = module.__file__
     print(tmpname, tmpfile)
     del sys.modules[tmpname]
 
     # Load form from cache
-    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, cache_dir="./compile-cache", cffi_extra_compile_args=compile_args)
     newname = module.__name__
     newfile = module.__file__
