@@ -122,7 +122,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
             decl += dofmap_template.format(name=names[i * 2 + 1])
 
         impl = _compile_objects(decl, elements, names, module_name, p, cache_dir,
-                                  cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
