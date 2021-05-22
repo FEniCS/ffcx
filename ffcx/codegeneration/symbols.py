@@ -69,14 +69,6 @@ class FFCXBackendSymbols(object):
 
         self.original_constant_offsets = original_constant_offsets
 
-        # Used for padding variable names based on restriction
-#        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
-
-        # TODO: Make this configurable for easy experimentation with dolfinx!
-        # Coordinate dofs for each component are interleaved? Must match dolfinx.
-        # True = XYZXYZXYZXYZ, False = XXXXYYYYZZZZ
-        self.interleaved_components = True
-
     def element_tensor(self):
         """Symbol for the element tensor itself."""
         return self.S("A")
@@ -142,12 +134,9 @@ class FFCXBackendSymbols(object):
         # FIXME: Add domain number or offset!
         offset = 0
         if restriction == "-":
-            offset = num_scalar_dofs * gdim
+            offset = num_scalar_dofs * 3
         vc = self.S("coordinate_dofs")
-        if self.interleaved_components:
-            return vc[gdim * dof + component + offset]
-        else:
-            return vc[num_scalar_dofs * component + dof + offset]
+        return vc[3 * dof + component + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
