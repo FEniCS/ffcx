@@ -108,7 +108,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
         if obj is not None:
             # Pair up elements with dofmaps
             obj = list(zip(obj[::2], obj[1::2]))
-            return obj, mod
+            return obj, mod, (None, None)
     else:
         cache_dir = Path(tempfile.mkdtemp())
 
@@ -121,8 +121,8 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
             decl += element_template.format(name=names[i * 2])
             decl += dofmap_template.format(name=names[i * 2 + 1])
 
-        _compile_objects(decl, elements, names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
+        impl = _compile_objects(decl, elements, names, module_name, p, cache_dir,
+                                  cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
@@ -132,7 +132,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     objects, module = _load_objects(cache_dir, module_name, names)
     # Pair up elements with dofmaps
     objects = list(zip(objects[::2], objects[1::2]))
-    return objects, module
+    return objects, module, (decl, impl)
 
 
 def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
@@ -151,7 +151,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, form_names, cache_dir, timeout)
         if obj is not None:
-            return obj, mod
+            return obj, mod, (None, None)
     else:
         cache_dir = Path(tempfile.mkdtemp())
 
@@ -164,8 +164,8 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         for name in form_names:
             decl += form_template.format(name=name)
 
-        _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
+        impl = _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
@@ -173,7 +173,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         raise
 
     obj, module = _load_objects(cache_dir, module_name, form_names)
-    return obj, module
+    return obj, module, (decl, impl)
 
 
 def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
@@ -197,7 +197,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, expr_names, cache_dir, timeout)
         if obj is not None:
-            return obj, mod
+            return obj, mod, (None, None)
     else:
         cache_dir = Path(tempfile.mkdtemp())
 
@@ -210,8 +210,8 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         for name in expr_names:
             decl += expression_template.format(name=name)
 
-        _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
-                         cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
+        impl = _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception:
         # remove c file so that it will not timeout next time
         c_filename = cache_dir.joinpath(module_name + ".c")
@@ -219,7 +219,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         raise
 
     obj, module = _load_objects(cache_dir, module_name, expr_names)
-    return obj, module
+    return obj, module, (decl, impl)
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
@@ -262,6 +262,8 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
     fd = open(ready_name, "x")
     fd.write(s)
     fd.close()
+
+    return code_body
 
 
 def _load_objects(cache_dir, module_name, object_names):
