@@ -679,7 +679,7 @@ def test_prism(compile_args):
 
     L = v * ufl.dx
     forms = [L]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': 'double'}, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
