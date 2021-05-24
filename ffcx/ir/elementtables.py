@@ -236,7 +236,6 @@ def build_optimized_tables(quadrature_rule,
       mt_tables - dict(ModifiedTerminal: table data)
 
     """
-
     # Add to element tables
     analysis = {}
     for mt in modified_terminals:
