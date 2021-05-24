@@ -45,7 +45,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
 
     a = ufl.tr(kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -67,7 +67,9 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
     c = np.array(kappa_value.flatten(), dtype=np_type)
 
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
     default_integral.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
@@ -111,7 +113,7 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     a = ufl.inner(u, v) * ufl.dx
     L = ufl.conj(v) * ufl.dx
     forms = [a, L]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -126,7 +128,9 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     c = np.array([], dtype=np_type)
 
     ffi = cffi.FFI()
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
@@ -164,7 +168,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
 
     a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(k * u, v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -178,7 +182,9 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
     c = np.array([], dtype=np_type)
 
     ffi = cffi.FFI()
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
@@ -207,7 +213,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -241,7 +247,7 @@ def test_form_coefficient(compile_args):
     g = ufl.Coefficient(element)
     a = g * ufl.inner(u, v) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -253,7 +259,9 @@ def test_form_coefficient(compile_args):
     perm = np.array([0], dtype=np.uint8)
 
     ffi = cffi.FFI()
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('double  *', A.ctypes.data),
         ffi.cast('double  *', w.ctypes.data),
@@ -276,7 +284,7 @@ def test_subdomains(compile_args):
     a2 = ufl.inner(u, v) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx(1)
     a3 = ufl.inner(u, v) * ufl.ds(210) + ufl.inner(u, v) * ufl.ds(0)
     forms = [a0, a1, a2, a3]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': 'double'}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -308,7 +316,7 @@ def test_interior_facet_integral(mode, compile_args):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a0 = ufl.inner(ufl.jump(ufl.grad(u)), ufl.jump(ufl.grad(v))) * ufl.dS
     forms = [a0]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
@@ -329,8 +337,12 @@ def test_interior_facet_integral(mode, compile_args):
     facets = np.array([0, 2], dtype=np.intc)
     perms = np.array([0, 1], dtype=np.uint8)
 
-    coords = np.array([[0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
-                       [1.0, 0.0, 0.0, 1.0, 1.0, 1.0]], dtype=np.float64)
+    coords = np.array([[0.0, 0.0, 0.0,
+                        1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0],
+                       [1.0, 0.0, 0.0,
+                       0.0, 1.0, 0.0,
+                       1.0, 1.0, 0.0]], dtype=np.float64)
 
     integral0.tabulate_tensor(
         ffi.cast('{}  *'.format(c_type), A.ctypes.data),
@@ -357,7 +369,7 @@ def test_conditional(mode, compile_args):
 
     forms = [a, b]
 
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     form0 = compiled_forms[0].integrals(module.lib.cell)[0]
@@ -370,8 +382,9 @@ def test_conditional(mode, compile_args):
     w1 = np.array([1.0, 1.0, 1.0], dtype=np_type)
     c = np.array([], dtype=np.float64)
 
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
-
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
     form0.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A1.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w1.ctypes.data),
@@ -383,7 +396,6 @@ def test_conditional(mode, compile_args):
 
     A2 = np.zeros(3, dtype=np_type)
     w2 = np.array([1.0, 1.0, 1.0], dtype=np_type)
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
 
     form1.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A2.ctypes.data),
@@ -409,7 +421,7 @@ def test_custom_quadrature(compile_args):
                                  "quadrature_points": points, "quadrature_weights": weights})
 
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     form = compiled_forms[0]
@@ -419,7 +431,9 @@ def test_custom_quadrature(compile_args):
     w = np.array([], dtype=np.float64)
     c = np.array([], dtype=np.float64)
 
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
     default_integral.tabulate_tensor(
         ffi.cast("double *", A.ctypes.data),
         ffi.cast("double *", w.ctypes.data),
@@ -436,7 +450,7 @@ def test_curl_curl(compile_args):
     a = ufl.inner(ufl.curl(u), ufl.curl(v)) * ufl.dx
 
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cffi_extra_compile_args=compile_args)
 
 
 def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lambda i: i):
@@ -486,7 +500,7 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
 
     a = ufl_fun(v) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
@@ -499,7 +513,10 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
     w = np.array([], dtype=np_type)
 
-    coords = np.array([1.0, 0.0, 2.0, 0.0, 0.0, 1.0], dtype=np.float64)
+    coords = np.array([[1.0, 0.0, 0.0],
+                       [2.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
+
     default_integral.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), b.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
@@ -586,7 +603,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
 
     a = ufl_fun(v) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
@@ -636,7 +653,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     for rots in range(3):
         for refs in range(2):
             perm = (rots * 2 + refs)  # << 6
-            new_coords = [1., 0., 0.]
+            new_coords = [1.0, 0.0, 0.0]
             points = [[2.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
             new_coords += points[rots]
             if refs:
