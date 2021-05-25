@@ -670,3 +670,34 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
                 ffi.NULL,
                 ffi.cast('double *', new_coords.ctypes.data), ffi.NULL, ffi.NULL, perm)
             assert np.allclose(b[start:end], perm_b[start:end])
+
+
+def test_prism(compile_args):
+    cell = ufl.prism
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    v = ufl.TestFunction(element)
+
+    L = v * ufl.dx
+    forms = [L]
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': 'double'}, cffi_extra_compile_args=compile_args)
+
+    ffi = cffi.FFI()
+    form0 = compiled_forms[0]
+    assert form0.num_integrals(module.lib.cell) == 1
+
+    default_integral = form0.integrals(module.lib.cell)[0]
+    b = np.zeros(6, dtype=np.float64)
+    coords = np.array([1.0, 0.0, 0.0,
+                       0.0, 1.0, 0.0,
+                       0.0, 0.0, 0.0,
+                       1.0, 0.0, 1.0,
+                       0.0, 1.0, 1.0,
+                       0.0, 0.0, 1.0], dtype=np.float64)
+    default_integral.tabulate_tensor(
+        ffi.cast('double *', b.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL, 0)
+
+    assert np.isclose(sum(b), 0.5)

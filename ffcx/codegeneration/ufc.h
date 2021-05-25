@@ -48,6 +48,8 @@ extern "C"
     tetrahedron = 40,
     hexahedron = 50,
     vertex = 60,
+    prism = 70,
+    pyramid = 80
   } ufc_shape;
 
   typedef enum

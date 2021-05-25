@@ -7,6 +7,8 @@ basix_cells = {
     "interval": basix.CellType.interval,
     "triangle": basix.CellType.triangle,
     "tetrahedron": basix.CellType.tetrahedron,
+    "prism": basix.CellType.prism,
+    "pyramid": basix.CellType.pyramid,
     "quadrilateral": basix.CellType.quadrilateral,
     "hexahedron": basix.CellType.hexahedron
 }
