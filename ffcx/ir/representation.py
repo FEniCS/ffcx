@@ -42,7 +42,7 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'sub_elements',
-    'entity_dofs', 'needs_transformation_data'])
+    'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
@@ -51,11 +51,11 @@ ir_integral = namedtuple('ir_integral', [
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
     'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
-    'table_dofmaps', 'table_dof_base_transformations', 'integrand', 'name', 'precision',
+    'table_dofmaps', 'integrand', 'name', 'precision',
     'table_needs_transformation_data', 'needs_transformation_data'])
 ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
-    'table_dofmaps', 'table_dof_base_transformations', 'coefficient_numbering', 'coefficient_offsets',
+    'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
     'original_coefficient_positions', 'points', 'table_needs_transformation_data', 'needs_transformation_data'])
 
@@ -143,11 +143,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
         basix_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
-
-    ir["needs_transformation_data"] = 0
-    for p in basix_element.base_transformations:
-        if not numpy.allclose(p, numpy.identity(len(p))):
-            ir["needs_transformation_data"] = 1
 
     ir["entity_dofs"] = basix_element.entity_dof_numbers
 

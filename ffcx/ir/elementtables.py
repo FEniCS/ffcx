@@ -29,7 +29,7 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
     ["name", "values", "dofrange", "dofmap", "ttype", "is_piecewise", "is_uniform",
-     "is_permuted", "dof_base_transformations", "needs_transformation_data"])
+     "is_permuted", "needs_transformation_data"])
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -394,16 +394,11 @@ def build_optimized_tables(quadrature_rule,
         num_dofs = tbl.shape[3]
         dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
 
-        base_transformations = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
-                                for i in dofmap]
-                                for p in basix_element.base_transformations]
-        needs_transformation_data = not all(numpy.allclose(p, numpy.identity(len(p))) for p in base_transformations)
-
         # tables is just np.arrays, mt_tables hold metadata too
         mt_tables[mt] = unique_table_reference_t(
             name, tbl, tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
-            base_transformations, needs_transformation_data)
+            basix_element.needs_transformation_data)
 
     return mt_tables
 
