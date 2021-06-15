@@ -120,7 +120,7 @@ class BaseElement:
 
     @property
     def needs_transformation_data(self):
-        """Indicates whether or not the element needs DOF transformations."""
+        """Indicate whether or not the element needs DOF transformations."""
         raise NotImplementedError
 
     @property
@@ -393,7 +393,7 @@ class MixedElement(BaseElement):
 
     @property
     def needs_transformation_data(self):
-        """Indicates whether or not the element needs DOF transformations."""
+        """Indicate whether or not the element needs DOF transformations."""
         for e in self.sub_elements:
             if e.needs_transformation_data:
                 return True
@@ -512,7 +512,7 @@ class BlockedElement(BaseElement):
 
     @property
     def needs_transformation_data(self):
-        """Indicates whether or not the element needs DOF transformations."""
+        """Indicate whether or not the element needs DOF transformations."""
         return self.sub_element.needs_transformation_data
 
     @property
@@ -610,7 +610,7 @@ class QuadratureElement(BaseElement):
 
     @property
     def needs_transformation_data(self):
-        """Indicates whether or not the element needs DOF transformations."""
+        """Indicate whether or not the element needs DOF transformations."""
         return False
 
     @property
