@@ -187,20 +187,11 @@ extern "C"
   ///  null pointer can be passed. For interior facets the array will
   ///  have size 2 (one permutation for each cell adjacent to the
   ///  facet). For exterior facets, this will have size 1.
-  ///  @param[in] cell_permutations An integer that says how each entity
-  ///  of the cell of dimension < tdim has been permuted relative to a
-  ///  low-to-high ordering of the cell. This bits of this integer
-  ///  represent (from least to most significant bits):
-  ///
-  ///  - Faces (3 bits each). Reflections are least significant bit,
-  ///  then next two bits give number of rotations.
-  ///  - Edges (1 bit each). The bit is 1 if the edge is reflected.
   typedef void(ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
       const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation,
-      uint32_t cell_permutation);
+      const uint8_t* restrict quadrature_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
