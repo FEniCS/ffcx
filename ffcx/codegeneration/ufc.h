@@ -114,10 +114,6 @@ extern "C"
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
-    /// Indicates whether transformation data needs to be passed into
-    /// various functions
-    bool needs_transformation_data;
-
     /// Get a finite element for sub element i (for a mixed
     /// element).
     ufc_finite_element** sub_elements;
