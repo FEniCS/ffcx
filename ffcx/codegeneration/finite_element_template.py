@@ -31,8 +31,6 @@ ufc_finite_element {factory_name} =
   .family = {family},
   .block_size = {block_size},
 
-  .needs_transformation_data = {needs_transformation_data},
-
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};

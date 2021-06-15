@@ -40,7 +40,6 @@ def generator(ir, parameters):
     d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
-    d["needs_transformation_data"] = ir.needs_transformation_data
 
     import ffcx.codegeneration.C.cnodes as L
 
