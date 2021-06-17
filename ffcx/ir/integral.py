@@ -58,8 +58,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     ir["integrand"] = {}
 
     ir["table_dofmaps"] = {}
-    ir["needs_transformation_data"] = 0
-    ir["table_needs_transformation_data"] = {}
 
     for quadrature_rule, integrand in integrands.items():
 
@@ -95,12 +93,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             atol=p["table_atol"])
         unique_tables = {v.name: v.values for v in mt_unique_table_reference.values()}
         unique_table_types = {v.name: v.ttype for v in mt_unique_table_reference.values()}
-
-        for td in mt_unique_table_reference.values():
-            ir["table_needs_transformation_data"][td.name] = td.needs_transformation_data
-            if td.needs_transformation_data:
-                ir["needs_transformation_data"] = 1
-            ir["table_dofmaps"][td.name] = td.dofmap
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
 
