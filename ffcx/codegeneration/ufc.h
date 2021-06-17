@@ -204,14 +204,12 @@ extern "C"
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor* tabulate_tensor;
-    bool needs_transformation_data;
   } ufc_integral;
 
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor_custom* tabulate_tensor;
-    bool needs_transformation_data;
   } ufc_custom_integral;
 
   typedef struct ufc_expression

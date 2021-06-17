@@ -51,13 +51,12 @@ ir_integral = namedtuple('ir_integral', [
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
     'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
-    'table_dofmaps', 'integrand', 'name', 'precision',
-    'table_needs_transformation_data', 'needs_transformation_data'])
+    'table_dofmaps', 'integrand', 'name', 'precision'])
 ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
-    'original_coefficient_positions', 'points', 'table_needs_transformation_data', 'needs_transformation_data'])
+    'original_coefficient_positions', 'points'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 

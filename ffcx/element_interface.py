@@ -119,11 +119,6 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def needs_transformation_data(self):
-        """Indicate whether or not the element needs DOF transformations."""
-        raise NotImplementedError
-
-    @property
     def dim(self):
         """Get the number of DOFs the element has."""
         raise NotImplementedError
@@ -210,11 +205,6 @@ class BasixElement(BaseElement):
         """
         assert flat_component < self.value_size
         return ComponentElement(self, flat_component), 0, 1
-
-    @property
-    def needs_transformation_data(self):
-        """Indicate whether or not the element needs DOF transformations."""
-        return not self.element.dof_transformations_are_identity
 
     @property
     def dim(self):
@@ -392,14 +382,6 @@ class MixedElement(BaseElement):
         return e, irange[component_element_index] + offset, stride
 
     @property
-    def needs_transformation_data(self):
-        """Indicate whether or not the element needs DOF transformations."""
-        for e in self.sub_elements:
-            if e.needs_transformation_data:
-                return True
-        return False
-
-    @property
     def dim(self):
         """Get the number of DOFs the element has."""
         return sum(e.dim for e in self.sub_elements)
@@ -511,11 +493,6 @@ class BlockedElement(BaseElement):
         return self.sub_element, flat_component, self.block_size
 
     @property
-    def needs_transformation_data(self):
-        """Indicate whether or not the element needs DOF transformations."""
-        return self.sub_element.needs_transformation_data
-
-    @property
     def dim(self):
         """Get the number of DOFs the element has."""
         return self.sub_element.dim * self.block_size
@@ -607,11 +584,6 @@ class QuadratureElement(BaseElement):
             The stride of the component
         """
         return self, 0, 1
-
-    @property
-    def needs_transformation_data(self):
-        """Indicate whether or not the element needs DOF transformations."""
-        return False
 
     @property
     def dim(self):
