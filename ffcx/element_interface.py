@@ -119,6 +119,11 @@ class BaseElement:
         raise NotImplementedError
 
     @property
+    def element_type(self):
+        """Get the element type."""
+        raise NotImplementedError
+
+    @property
     def dim(self):
         """Get the number of DOFs the element has."""
         raise NotImplementedError
@@ -205,6 +210,11 @@ class BasixElement(BaseElement):
         """
         assert flat_component < self.value_size
         return ComponentElement(self, flat_component), 0, 1
+
+    @property
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_basix_element"
 
     @property
     def dim(self):
@@ -382,6 +392,11 @@ class MixedElement(BaseElement):
         return e, irange[component_element_index] + offset, stride
 
     @property
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_mixed_element"
+
+    @property
     def dim(self):
         """Get the number of DOFs the element has."""
         return sum(e.dim for e in self.sub_elements)
@@ -493,6 +508,11 @@ class BlockedElement(BaseElement):
         return self.sub_element, flat_component, self.block_size
 
     @property
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_blocked_element"
+
+    @property
     def dim(self):
         """Get the number of DOFs the element has."""
         return self.sub_element.dim * self.block_size
@@ -584,6 +604,11 @@ class QuadratureElement(BaseElement):
             The stride of the component
         """
         return self, 0, 1
+
+    @property
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_quadrature_element"
 
     @property
     def dim(self):

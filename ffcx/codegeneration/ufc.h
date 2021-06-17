@@ -59,6 +59,15 @@ extern "C"
     interior_facet = 2
   } ufc_integral_type;
 
+  typedef enum
+  {
+    ufc_basix_element = 0,
+    ufc_mixed_element = 1,
+    ufc_blocked_element = 2,
+    ufc_quadrature_element = 3,
+    ufc_custom_element = 3
+  } ufc_element_type;
+
   /// Forward declarations
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
@@ -72,6 +81,9 @@ extern "C"
 
     /// Return the cell shape
     ufc_shape cell_shape;
+
+    /// Return the element type
+    ufc_element_type element_type;
 
     /// Return the topological dimension of the cell shape
     int topological_dimension;
