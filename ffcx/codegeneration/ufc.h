@@ -59,6 +59,15 @@ extern "C"
     interior_facet = 2
   } ufc_integral_type;
 
+  typedef enum
+  {
+    ufc_basix_element = 0,
+    ufc_mixed_element = 1,
+    ufc_blocked_element = 2,
+    ufc_quadrature_element = 3,
+    ufc_custom_element = 4
+  } ufc_element_type;
+
   /// Forward declarations
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
@@ -72,6 +81,9 @@ extern "C"
 
     /// Return the cell shape
     ufc_shape cell_shape;
+
+    /// Return the element type
+    ufc_element_type element_type;
 
     /// Return the topological dimension of the cell shape
     int topological_dimension;
@@ -113,10 +125,6 @@ extern "C"
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
-
-    /// Indicates whether transformation data needs to be passed into
-    /// various functions
-    bool needs_transformation_data;
 
     /// Get a finite element for sub element i (for a mixed
     /// element).
@@ -187,20 +195,11 @@ extern "C"
   ///  null pointer can be passed. For interior facets the array will
   ///  have size 2 (one permutation for each cell adjacent to the
   ///  facet). For exterior facets, this will have size 1.
-  ///  @param[in] cell_permutations An integer that says how each entity
-  ///  of the cell of dimension < tdim has been permuted relative to a
-  ///  low-to-high ordering of the cell. This bits of this integer
-  ///  represent (from least to most significant bits):
-  ///
-  ///  - Faces (3 bits each). Reflections are least significant bit,
-  ///  then next two bits give number of rotations.
-  ///  - Edges (1 bit each). The bit is 1 if the edge is reflected.
   typedef void(ufc_tabulate_tensor)(
       ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
       const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation,
-      uint32_t cell_permutation);
+      const uint8_t* restrict quadrature_permutation);
 
   /// Tabulate integral into tensor A with runtime quadrature rule
   ///
@@ -217,14 +216,12 @@ extern "C"
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor* tabulate_tensor;
-    bool needs_transformation_data;
   } ufc_integral;
 
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor_custom* tabulate_tensor;
-    bool needs_transformation_data;
   } ufc_custom_integral;
 
   typedef struct ufc_expression

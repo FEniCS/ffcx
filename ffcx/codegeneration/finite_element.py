@@ -31,6 +31,7 @@ def generator(ir, parameters):
     d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
+    d["element_type"] = ir.element_type
     d["space_dimension"] = ir.space_dimension
     d["value_rank"] = len(ir.value_shape)
     d["value_size"] = ufl.product(ir.value_shape)
@@ -40,7 +41,6 @@ def generator(ir, parameters):
     d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
-    d["needs_transformation_data"] = ir.needs_transformation_data
 
     import ffcx.codegeneration.C.cnodes as L
 

@@ -119,8 +119,8 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
+    def element_type(self):
+        """Get the element type."""
         raise NotImplementedError
 
     @property
@@ -212,9 +212,9 @@ class BasixElement(BaseElement):
         return ComponentElement(self, flat_component), 0, 1
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        return self.element.base_transformations()
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_basix_element"
 
     @property
     def dim(self):
@@ -392,26 +392,9 @@ class MixedElement(BaseElement):
         return e, irange[component_element_index] + offset, stride
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        for e in self.sub_elements[1:]:
-            assert len(e.base_transformations) == len(self.sub_elements[0].base_transformations)
-        transformations = [[] for i in self.sub_elements[0].base_transformations]
-        for e in self.sub_elements:
-            for i, b in enumerate(e.base_transformations):
-                transformations[i].append(b)
-
-        output = []
-        for p in transformations:
-            new_transformation = numpy.zeros((sum(i.shape[0] for i in p), sum(i.shape[1] for i in p)))
-            row_start = 0
-            col_start = 0
-            for i in p:
-                new_transformation[row_start: row_start + i.shape[0], col_start: col_start + i.shape[1]] = i
-                row_start += i.shape[0]
-                col_start += i.shape[1]
-            output.append(new_transformation)
-        return output
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_mixed_element"
 
     @property
     def dim(self):
@@ -525,18 +508,9 @@ class BlockedElement(BaseElement):
         return self.sub_element, flat_component, self.block_size
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        assert len(self.block_shape) == 1  # TODO: block shape
-
-        output = []
-        for transformation in self.sub_element.base_transformations:
-            new_transformation = numpy.zeros((transformation.shape[0] * self.block_size,
-                                              transformation.shape[1] * self.block_size))
-            for i in range(self.block_size):
-                new_transformation[i::self.block_size, i::self.block_size] = transformation
-            output.append(new_transformation)
-        return output
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_blocked_element"
 
     @property
     def dim(self):
@@ -632,16 +606,9 @@ class QuadratureElement(BaseElement):
         return self, 0, 1
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        perm_count = 0
-        for i in range(1, self._ufl_element.cell().topological_dimension()):
-            if i == 1:
-                perm_count += self._ufl_element.cell().num_edges()
-            if i == 2:
-                perm_count += self._ufl_element.cell().num_facets() * 2
-
-        return [numpy.identity(self.dim) for i in range(perm_count)]
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_quadrature_element"
 
     @property
     def dim(self):
