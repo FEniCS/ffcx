@@ -40,7 +40,7 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: mscroggs/entity-dofs
+          ref: mscroggs/entity_dofs
 
       - name: Install Basix
         run: |
