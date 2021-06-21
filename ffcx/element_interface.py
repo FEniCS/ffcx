@@ -139,7 +139,7 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
         raise NotImplementedError
 
@@ -227,7 +227,7 @@ class BasixElement(BaseElement):
         return self.element.value_shape
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
         return self.element.entity_dofs
 
@@ -393,12 +393,12 @@ class MixedElement(BaseElement):
         return (sum(e.value_size for e in self.sub_elements), )
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
-        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dof_numbers]
+        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dofs]
         start_dof = 0
         for e in self.sub_elements:
-            for tdim, entities in enumerate(e.entity_dof_numbers):
+            for tdim, entities in enumerate(e.entity_dofs):
                 for entity_n, entity_dofs in enumerate(entities):
                     dofs[tdim][entity_n] += [start_dof + i for i in entity_dofs]
             start_dof += e.dim
@@ -502,11 +502,11 @@ class BlockedElement(BaseElement):
         return (self.value_size, )
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
         # TODO: should this return this, or should it take blocks into account?
         return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
-                 for j in i] for i in self.sub_element.entity_dof_numbers]
+                 for j in i] for i in self.sub_element.entity_dofs]
 
     @property
     def num_global_support_dofs(self):
@@ -595,7 +595,7 @@ class QuadratureElement(BaseElement):
         return [1]
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
         # TODO: move this to basix, then remove this wrapper class
         start_dof = 0
