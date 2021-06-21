@@ -171,14 +171,14 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
         ir["block_size"] = 1
 
     # Precompute repeatedly used items
-    for i in basix_element.entity_dof_counts:
+    for i in basix_element.num_entity_dofs:
         # FIXME: this assumes the same number of DOFs on each entity of the same dim: this
         # assumption will not be true for prisms and pyramids
         if max(i) != min(i):
             raise RuntimeError("Elements with different numbers of DOFs on subentities of the same dimension"
                                " are not yet supported in FFCx.")
 
-    num_dofs_per_entity = [i[0] for i in basix_element.entity_dof_counts]
+    num_dofs_per_entity = [i[0] for i in basix_element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_entity_dofs"] = (basix_element.entity_dofs, num_dofs_per_entity)
 

@@ -139,7 +139,7 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def entity_dof_counts(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
         raise NotImplementedError
 
@@ -232,9 +232,9 @@ class BasixElement(BaseElement):
         return self.element.value_shape
 
     @property
-    def entity_dof_counts(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
-        return self.element.entity_dof_counts
+        return self.element.num_entity_dofs
 
     @property
     def entity_dofs(self):
@@ -404,9 +404,9 @@ class MixedElement(BaseElement):
         return (sum(e.value_size for e in self.sub_elements), )
 
     @property
-    def entity_dof_counts(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
-        data = [e.entity_dof_counts for e in self.sub_elements]
+        data = [e.num_entity_dofs for e in self.sub_elements]
         return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
                 for tdim, entities in enumerate(data[0])]
 
@@ -520,9 +520,9 @@ class BlockedElement(BaseElement):
         return (self.value_size, )
 
     @property
-    def entity_dof_counts(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
-        return [[j * self.block_size for j in i] for i in self.sub_element.entity_dof_counts]
+        return [[j * self.block_size for j in i] for i in self.sub_element.num_entity_dofs]
 
     @property
     def entity_dofs(self):
@@ -618,7 +618,7 @@ class QuadratureElement(BaseElement):
         return [1]
 
     @property
-    def entity_dof_counts(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
         dofs = []
         tdim = self._ufl_element.cell().topological_dimension()
