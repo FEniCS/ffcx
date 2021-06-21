@@ -139,11 +139,6 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def entity_dof_counts(self):
-        """Get the number of DOFs associated with each entity."""
-        raise NotImplementedError
-
-    @property
     def entity_dof_numbers(self):
         """Get the DOF numbers associated with each entity."""
         raise NotImplementedError
@@ -232,14 +227,8 @@ class BasixElement(BaseElement):
         return self.element.value_shape
 
     @property
-    def entity_dof_counts(self):
-        """Get the number of DOFs associated with each entity."""
-        return self.element.entity_dof_counts
-
-    @property
     def entity_dof_numbers(self):
         """Get the DOF numbers associated with each entity."""
-        # TODO: move this to basix, then remove this wrapper class
         return self.element.entity_dofs
 
     @property
@@ -404,13 +393,6 @@ class MixedElement(BaseElement):
         return (sum(e.value_size for e in self.sub_elements), )
 
     @property
-    def entity_dof_counts(self):
-        """Get the number of DOFs associated with each entity."""
-        data = [e.entity_dof_counts for e in self.sub_elements]
-        return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
-                for tdim, entities in enumerate(data[0])]
-
-    @property
     def entity_dof_numbers(self):
         """Get the DOF numbers associated with each entity."""
         dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dof_numbers]
@@ -520,11 +502,6 @@ class BlockedElement(BaseElement):
         return (self.value_size, )
 
     @property
-    def entity_dof_counts(self):
-        """Get the number of DOFs associated with each entity."""
-        return [[j * self.block_size for j in i] for i in self.sub_element.entity_dof_counts]
-
-    @property
     def entity_dof_numbers(self):
         """Get the DOF numbers associated with each entity."""
         # TODO: should this return this, or should it take blocks into account?
@@ -616,24 +593,6 @@ class QuadratureElement(BaseElement):
     def value_shape(self):
         """Get the value shape of the element."""
         return [1]
-
-    @property
-    def entity_dof_counts(self):
-        """Get the number of DOFs associated with each entity."""
-        dofs = []
-        tdim = self._ufl_element.cell().topological_dimension()
-
-        if tdim >= 1:
-            dofs += [[0] * self._ufl_element.cell().num_vertices()]
-
-        if tdim >= 2:
-            dofs += [[0] * self._ufl_element.cell().num_edges()]
-
-        if tdim >= 3:
-            dofs += [[0] * self._ufl_element.cell().num_facets()]
-
-        dofs += [[self.dim]]
-        return dofs
 
     @property
     def entity_dof_numbers(self):
