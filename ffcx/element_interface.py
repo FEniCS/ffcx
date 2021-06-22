@@ -239,7 +239,6 @@ class BasixElement(BaseElement):
     @property
     def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
-        # TODO: move this to basix, then remove this wrapper class
         return self.element.entity_dofs
 
     @property
@@ -638,10 +637,9 @@ class QuadratureElement(BaseElement):
     @property
     def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
-        # TODO: move this to basix, then remove this wrapper class
         start_dof = 0
         entity_dofs = []
-        for i in self.entity_dofs:
+        for i in self.num_entity_dofs:
             dofs_list = []
             for j in i:
                 dofs_list.append([start_dof + k for k in range(j)])
