@@ -14,6 +14,16 @@ factory = """
 {reference_value_shape_init}
 {sub_elements_init}
 
+void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
+{{
+{tabulate_entity_dofs}
+}}
+
+void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int i)
+{{
+{tabulate_entity_closure_dofs}
+}}
+
 ufc_finite_element {factory_name} =
 {{
   .signature = {signature},
@@ -31,7 +41,16 @@ ufc_finite_element {factory_name} =
   .degree = {degree},
   .family = {family},
   .block_size = {block_size},
-
+  .tabulate_entity_dofs = tabulate_entity_dofs_{factory_name},
+  .num_entity_dofs[0] = {num_entity_dofs[0]},
+  .num_entity_dofs[1] = {num_entity_dofs[1]},
+  .num_entity_dofs[2] = {num_entity_dofs[2]},
+  .num_entity_dofs[3] = {num_entity_dofs[3]},
+  .tabulate_entity_closure_dofs = tabulate_entity_closure_dofs_{factory_name},
+  .num_entity_closure_dofs[0] = {num_entity_closure_dofs[0]},
+  .num_entity_closure_dofs[1] = {num_entity_closure_dofs[1]},
+  .num_entity_closure_dofs[2] = {num_entity_closure_dofs[2]},
+  .num_entity_closure_dofs[3] = {num_entity_closure_dofs[3]},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};

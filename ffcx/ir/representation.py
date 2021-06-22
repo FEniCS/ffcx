@@ -41,7 +41,8 @@ ir_form = namedtuple('ir_form', [
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
-    'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs'])
+    'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs',
+    'tabulate_entity_dofs', 'num_entity_dofs', 'tabulate_entity_closure_dofs', 'num_entity_closure_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
@@ -135,6 +136,19 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
+
+    if basix_element.element_type == "ufc_quadrature_element":
+        num_dofs_per_entity = [i[0] for i in basix_element.num_entity_dofs]
+        ir["num_entity_dofs"] = num_dofs_per_entity
+        ir["tabulate_entity_dofs"] = (basix_element.entity_dofs, num_dofs_per_entity)
+        num_dofs_per_entity_closure = [i[0] for i in basix_element.num_entity_closure_dofs]
+        ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
+        ir["tabulate_entity_closure_dofs"] = (basix_element.entity_closure_dofs, num_dofs_per_entity_closure)
+    else:
+        ir["num_entity_dofs"] = None
+        ir["tabulate_entity_dofs"] = None
+        ir["num_entity_closure_dofs"] = None
+        ir["tabulate_entity_closure_dofs"] = None
 
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size

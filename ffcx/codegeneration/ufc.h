@@ -126,6 +126,22 @@ extern "C"
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
+    /// Number of dofs associated with each cell entity of dimension d.
+    /// This will only be set for quadrature elements and custom elements.
+    int num_entity_dofs[4];
+
+    /// Tabulate the local-to-local mapping of dofs on entity (d, i).
+    /// This will only be set for quadrature elements and custom elements.
+    void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
+
+    /// Number of dofs associated with the closure of each cell entity of dimension d.
+    /// This will only be set for quadrature elements and custom elements.
+    int num_entity_closure_dofs[4];
+
+    /// Tabulate the local-to-local mapping of dofs on the closure of entity (d, i).
+    /// This will only be set for quadrature elements and custom elements.
+    void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
+
     /// Get a finite element for sub element i (for a mixed
     /// element).
     ufc_finite_element** sub_elements;
@@ -134,9 +150,11 @@ extern "C"
 
   typedef struct ufc_dofmap
   {
-
     /// Return a string identifying the dofmap
     const char* signature;
+
+    /// Return the block size for a VectorElement or TensorElement
+    int block_size;
 
     /// Number of dofs with global support (i.e. global constants)
     int num_global_support_dofs;
@@ -144,15 +162,6 @@ extern "C"
     /// Dimension of the local finite element function space for a cell
     /// (not including global support dofs)
     int num_element_support_dofs;
-
-    /// Return the block size for a VectorElement or TensorElement
-    int block_size;
-
-    /// Number of dofs associated with each cell entity of dimension d
-    int num_entity_dofs[4];
-
-    /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-    void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
 
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
