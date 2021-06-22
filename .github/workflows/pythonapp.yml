@@ -77,7 +77,7 @@ jobs:
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
-        if: ${{ github.repository == 'FEniCS/ffcx' && github.event_name == 'push' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && github.event_name == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: |
