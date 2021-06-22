@@ -58,7 +58,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: mscrogs/entity_dofs
+          ref: mscroggs/get_entity_dofs_from_basix
       - name: Clone and install DOLFINx
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
