@@ -31,15 +31,6 @@ def test_finite_element(compile_args):
     assert ufc_dofmap.num_global_support_dofs == 0
     assert ufc_dofmap.num_global_support_dofs == 0
     assert ufc_dofmap.num_element_support_dofs == 3
-    assert ufc_dofmap.num_entity_dofs[0] == 1
-    assert ufc_dofmap.num_entity_dofs[1] == 0
-    assert ufc_dofmap.num_entity_dofs[2] == 0
-    assert ufc_dofmap.num_entity_dofs[3] == 0
-    for v in range(3):
-        vals = np.zeros(1, dtype=np.int32)
-        vals_ptr = module.ffi.cast("int *", module.ffi.from_buffer(vals))
-        ufc_dofmap.tabulate_entity_dofs(vals_ptr, 0, v)
-        assert vals[0] == v
     assert ufc_dofmap.num_sub_dofmaps == 0
 
 
@@ -65,15 +56,6 @@ def test_vector_element(compile_args):
     assert ufc_dofmap.num_global_support_dofs == 0
     assert ufc_dofmap.num_global_support_dofs == 0
     assert ufc_dofmap.num_element_support_dofs == 3
-    assert ufc_dofmap.num_entity_dofs[0] == 1
-    assert ufc_dofmap.num_entity_dofs[1] == 0
-    assert ufc_dofmap.num_entity_dofs[2] == 0
-    assert ufc_dofmap.num_entity_dofs[3] == 0
-    for v in range(3):
-        vals = np.zeros(1, dtype=np.int32)
-        vals_ptr = module.ffi.cast("int *", module.ffi.from_buffer(vals))
-        ufc_dofmap.tabulate_entity_dofs(vals_ptr, 0, v)
-        assert vals[0] == v
     assert ufc_dofmap.num_sub_dofmaps == 2
 
 
@@ -101,13 +83,4 @@ def test_tensor_element(compile_args):
     assert ufc_dofmap.num_global_support_dofs == 0
     assert ufc_dofmap.num_global_support_dofs == 0
     assert ufc_dofmap.num_element_support_dofs == 3
-    assert ufc_dofmap.num_entity_dofs[0] == 1
-    assert ufc_dofmap.num_entity_dofs[1] == 0
-    assert ufc_dofmap.num_entity_dofs[2] == 0
-    assert ufc_dofmap.num_entity_dofs[3] == 0
-    for v in range(3):
-        vals = np.zeros(1, dtype=np.int32)
-        vals_ptr = module.ffi.cast("int *", module.ffi.from_buffer(vals))
-        ufc_dofmap.tabulate_entity_dofs(vals_ptr, 0, v)
-        assert vals[0] == v
     assert ufc_dofmap.num_sub_dofmaps == 4
