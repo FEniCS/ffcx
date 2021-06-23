@@ -44,7 +44,7 @@ ir_element = namedtuple('ir_element', [
     'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
-    'tabulate_entity_dofs', 'num_entity_closure_dofs','tabulate_entity_closure_dofs', 'num_sub_dofmaps',
+    'tabulate_entity_dofs', 'num_entity_closure_dofs', 'tabulate_entity_closure_dofs', 'num_sub_dofmaps',
     'sub_dofmaps', 'block_size'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
