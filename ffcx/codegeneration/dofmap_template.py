@@ -17,6 +17,11 @@ void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 {tabulate_entity_dofs}
 }}
 
+void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int i)
+{{
+{tabulate_entity_closure_dofs}
+}}
+
 ufc_dofmap {factory_name} =
 {{
   .signature = {signature},
@@ -28,6 +33,11 @@ ufc_dofmap {factory_name} =
   .num_entity_dofs[2] = {num_entity_dofs[2]},
   .num_entity_dofs[3] = {num_entity_dofs[3]},
   .tabulate_entity_dofs = tabulate_entity_dofs_{factory_name},
+  .num_entity_closure_dofs[0] = {num_entity_closure_dofs[0]},
+  .num_entity_closure_dofs[1] = {num_entity_closure_dofs[1]},
+  .num_entity_closure_dofs[2] = {num_entity_closure_dofs[2]},
+  .num_entity_closure_dofs[3] = {num_entity_closure_dofs[3]},
+  .tabulate_entity_closure_dofs = tabulate_entity_closure_dofs_{factory_name},
   .num_sub_dofmaps = {num_sub_dofmaps},
   .sub_dofmaps = {sub_dofmaps}
 }};

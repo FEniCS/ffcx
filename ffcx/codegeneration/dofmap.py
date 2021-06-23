@@ -13,9 +13,7 @@ import ffcx.codegeneration.dofmap_template as ufc_dofmap
 logger = logging.getLogger("ffcx")
 
 
-def tabulate_entity_dofs(L, ir):
-    entity_dofs, num_dofs_per_entity = ir.tabulate_entity_dofs
-
+def tabulate_entity_dofs(L, entity_dofs, num_dofs_per_entity):
     # Output argument array
     dofs = L.Symbol("dofs")
 
@@ -68,12 +66,14 @@ def generator(ir, parameters):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
     d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
+    d["num_entity_closure_dofs"] = ir.num_entity_closure_dofs + [0, 0, 0, 0]
     d["block_size"] = ir.block_size
 
     import ffcx.codegeneration.C.cnodes as L
 
     # Functions
-    d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
+    d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, *ir.tabulate_entity_dofs)
+    d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(L, *ir.tabulate_entity_closure_dofs)
 
     if len(ir.sub_dofmaps) > 0:
         d["sub_dofmaps_initialization"] = L.ArrayDecl(

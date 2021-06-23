@@ -44,7 +44,8 @@ ir_element = namedtuple('ir_element', [
     'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
-    'tabulate_entity_dofs', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
+    'tabulate_entity_dofs', 'num_entity_closure_dofs','tabulate_entity_closure_dofs', 'num_sub_dofmaps',
+    'sub_dofmaps', 'block_size'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
@@ -181,6 +182,10 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     num_dofs_per_entity = [i[0] for i in basix_element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
     ir["tabulate_entity_dofs"] = (basix_element.entity_dofs, num_dofs_per_entity)
+
+    num_dofs_per_entity_closure = [i[0] for i in basix_element.num_entity_closure_dofs]
+    ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
+    ir["tabulate_entity_closure_dofs"] = (basix_element.entity_closure_dofs, num_dofs_per_entity_closure)
 
     ir["num_global_support_dofs"] = basix_element.num_global_support_dofs
     ir["num_element_support_dofs"] = basix_element.dim - ir["num_global_support_dofs"]
