@@ -35,7 +35,7 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: mscroggs/wrap-num-entity-closure-dofs
+          ref: main
     
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
