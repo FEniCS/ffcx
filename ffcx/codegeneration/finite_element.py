@@ -84,10 +84,4 @@ def generator(ir, parameters):
     # Format declaration
     declaration = ufc_finite_element.declaration.format(factory_name=ir.name)
 
-    # Define space dimension for the element
-    if parameters.get("sycl_defines", False):
-        elm_defininiton = "space_dimension_" + ir.name
-        define_dimension = "\n#define " + elm_defininiton + " " + str(ir.space_dimension) + "\n"
-        implementation = define_dimension + implementation
-
     return declaration, implementation
