@@ -20,9 +20,9 @@ void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 ufc_dofmap {factory_name} =
 {{
   .signature = {signature},
-  .block_size = {block_size},
   .num_global_support_dofs = {num_global_support_dofs},
   .num_element_support_dofs = {num_element_support_dofs},
+  .block_size = {block_size},
   .num_entity_dofs[0] = {num_entity_dofs[0]},
   .num_entity_dofs[1] = {num_entity_dofs[1]},
   .num_entity_dofs[2] = {num_entity_dofs[2]},
