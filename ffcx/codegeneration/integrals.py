@@ -79,11 +79,17 @@ def generator(ir, parameters):
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"])
 
+    # Define name of kernel and compile time known dimension of local tensor
     if parameters.get("sycl_defines", False):
         integral_name = "tabulate_tensor_" + factory_name
         int_type = "a" if ir.rank == 2 else "L"
         sycl_function_name = "tabulate_" + ir.integral_type + "_" + int_type
         sycl_defines = "#define " + sycl_function_name + " " + integral_name + "\n"
+
+        dimension_name = "dim_" + ir.integral_type + "_" + int_type
+        for i in range(len(ir.tensor_shape)):
+            sycl_defines += "#define " + dimension_name + str(i) + " " + str(ir.tensor_shape[i]) + "\n"
+
         implementation = sycl_defines + implementation
 
     return declaration, implementation
