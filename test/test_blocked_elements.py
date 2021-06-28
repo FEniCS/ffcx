@@ -13,7 +13,7 @@ import ufl
 
 def test_finite_element(compile_args):
     ufl_element = ufl.FiniteElement("Lagrange", ufl.triangle, 1)
-    jit_compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
+    jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
         [ufl_element], cffi_extra_compile_args=compile_args)
     ufc_element, ufc_dofmap = jit_compiled_elements[0]
 
@@ -45,7 +45,7 @@ def test_finite_element(compile_args):
 
 def test_vector_element(compile_args):
     ufl_element = ufl.VectorElement("Lagrange", ufl.triangle, 1)
-    jit_compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
+    jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
         [ufl_element], cffi_extra_compile_args=compile_args)
     ufc_element, ufc_dofmap = jit_compiled_elements[0]
 
@@ -79,7 +79,7 @@ def test_vector_element(compile_args):
 
 def test_tensor_element(compile_args):
     ufl_element = ufl.TensorElement("Lagrange", ufl.triangle, 1)
-    jit_compiled_elements, module = ffcx.codegeneration.jit.compile_elements(
+    jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
         [ufl_element], cffi_extra_compile_args=compile_args)
     ufc_element, ufc_dofmap = jit_compiled_elements[0]
 
