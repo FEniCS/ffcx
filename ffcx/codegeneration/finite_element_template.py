@@ -29,8 +29,8 @@ ufc_finite_element {factory_name} =
   .reference_value_shape = {reference_value_shape},
   .reference_value_size = {reference_value_size},
   .degree = {degree},
-  .family = {family},
   .block_size = {block_size},
+  .family = {family},
 
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
