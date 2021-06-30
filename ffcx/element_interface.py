@@ -7,6 +7,8 @@ basix_cells = {
     "interval": basix.CellType.interval,
     "triangle": basix.CellType.triangle,
     "tetrahedron": basix.CellType.tetrahedron,
+    "prism": basix.CellType.prism,
+    "pyramid": basix.CellType.pyramid,
     "quadrilateral": basix.CellType.quadrilateral,
     "hexahedron": basix.CellType.hexahedron
 }
@@ -117,8 +119,8 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
+    def element_type(self):
+        """Get the element type."""
         raise NotImplementedError
 
     @property
@@ -137,12 +139,12 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def entity_dofs(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
         raise NotImplementedError
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
         raise NotImplementedError
 
@@ -210,9 +212,9 @@ class BasixElement(BaseElement):
         return ComponentElement(self, flat_component), 0, 1
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        return self.element.base_transformations()
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_basix_element"
 
     @property
     def dim(self):
@@ -230,23 +232,14 @@ class BasixElement(BaseElement):
         return self.element.value_shape
 
     @property
-    def entity_dofs(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
-        return self.element.entity_dofs
+        return self.element.num_entity_dofs
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
-        # TODO: move this to basix, then remove this wrapper class
-        start_dof = 0
-        entity_dofs = []
-        for i in self.entity_dofs:
-            dofs_list = []
-            for j in i:
-                dofs_list.append([start_dof + k for k in range(j)])
-                start_dof += j
-            entity_dofs.append(dofs_list)
-        return entity_dofs
+        return self.element.entity_dofs
 
     @property
     def num_global_support_dofs(self):
@@ -390,26 +383,9 @@ class MixedElement(BaseElement):
         return e, irange[component_element_index] + offset, stride
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        for e in self.sub_elements[1:]:
-            assert len(e.base_transformations) == len(self.sub_elements[0].base_transformations)
-        transformations = [[] for i in self.sub_elements[0].base_transformations]
-        for e in self.sub_elements:
-            for i, b in enumerate(e.base_transformations):
-                transformations[i].append(b)
-
-        output = []
-        for p in transformations:
-            new_transformation = numpy.zeros((sum(i.shape[0] for i in p), sum(i.shape[1] for i in p)))
-            row_start = 0
-            col_start = 0
-            for i in p:
-                new_transformation[row_start: row_start + i.shape[0], col_start: col_start + i.shape[1]] = i
-                row_start += i.shape[0]
-                col_start += i.shape[1]
-            output.append(new_transformation)
-        return output
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_mixed_element"
 
     @property
     def dim(self):
@@ -427,19 +403,19 @@ class MixedElement(BaseElement):
         return (sum(e.value_size for e in self.sub_elements), )
 
     @property
-    def entity_dofs(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
-        data = [e.entity_dofs for e in self.sub_elements]
+        data = [e.num_entity_dofs for e in self.sub_elements]
         return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
                 for tdim, entities in enumerate(data[0])]
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
-        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dof_numbers]
+        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dofs]
         start_dof = 0
         for e in self.sub_elements:
-            for tdim, entities in enumerate(e.entity_dof_numbers):
+            for tdim, entities in enumerate(e.entity_dofs):
                 for entity_n, entity_dofs in enumerate(entities):
                     dofs[tdim][entity_n] += [start_dof + i for i in entity_dofs]
             start_dof += e.dim
@@ -523,18 +499,9 @@ class BlockedElement(BaseElement):
         return self.sub_element, flat_component, self.block_size
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        assert len(self.block_shape) == 1  # TODO: block shape
-
-        output = []
-        for transformation in self.sub_element.base_transformations:
-            new_transformation = numpy.zeros((transformation.shape[0] * self.block_size,
-                                              transformation.shape[1] * self.block_size))
-            for i in range(self.block_size):
-                new_transformation[i::self.block_size, i::self.block_size] = transformation
-            output.append(new_transformation)
-        return output
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_blocked_element"
 
     @property
     def dim(self):
@@ -552,16 +519,16 @@ class BlockedElement(BaseElement):
         return (self.value_size, )
 
     @property
-    def entity_dofs(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
-        return [[j * self.block_size for j in i] for i in self.sub_element.entity_dofs]
+        return [[j * self.block_size for j in i] for i in self.sub_element.num_entity_dofs]
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
         # TODO: should this return this, or should it take blocks into account?
         return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
-                 for j in i] for i in self.sub_element.entity_dof_numbers]
+                 for j in i] for i in self.sub_element.entity_dofs]
 
     @property
     def num_global_support_dofs(self):
@@ -630,16 +597,9 @@ class QuadratureElement(BaseElement):
         return self, 0, 1
 
     @property
-    def base_transformations(self):
-        """Get the base transformations of the element."""
-        perm_count = 0
-        for i in range(1, self._ufl_element.cell().topological_dimension()):
-            if i == 1:
-                perm_count += self._ufl_element.cell().num_edges()
-            if i == 2:
-                perm_count += self._ufl_element.cell().num_facets() * 2
-
-        return [numpy.identity(self.dim) for i in range(perm_count)]
+    def element_type(self):
+        """Get the element type."""
+        return "ufc_quadrature_element"
 
     @property
     def dim(self):
@@ -657,7 +617,7 @@ class QuadratureElement(BaseElement):
         return [1]
 
     @property
-    def entity_dofs(self):
+    def num_entity_dofs(self):
         """Get the number of DOFs associated with each entity."""
         dofs = []
         tdim = self._ufl_element.cell().topological_dimension()
@@ -675,12 +635,11 @@ class QuadratureElement(BaseElement):
         return dofs
 
     @property
-    def entity_dof_numbers(self):
+    def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
-        # TODO: move this to basix, then remove this wrapper class
         start_dof = 0
         entity_dofs = []
-        for i in self.entity_dofs:
+        for i in self.num_entity_dofs:
             dofs_list = []
             for j in i:
                 dofs_list.append([start_dof + k for k in range(j)])

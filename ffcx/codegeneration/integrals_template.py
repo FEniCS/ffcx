@@ -15,8 +15,7 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
                                     const ufc_scalar_t* restrict c,
                                     const double* restrict coordinate_dofs,
                                     const int* restrict entity_local_index,
-                                    const uint8_t* restrict quadrature_permutation,
-                                    const uint32_t cell_permutation)
+                                    const uint8_t* restrict quadrature_permutation)
 {{
 {tabulate_tensor}
 }}
@@ -27,7 +26,6 @@ ufc_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
   .tabulate_tensor = tabulate_tensor_{factory_name},
-  .needs_transformation_data = {needs_transformation_data}
 }};
 
 // End of code for integral {factory_name}

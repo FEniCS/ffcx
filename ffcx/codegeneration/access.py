@@ -262,7 +262,7 @@ class FFCXBackendAccess(object):
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
         basix_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
+        vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
         num_scalar_dofs = basix_scalar_element.dim
 
         # Get dof and component
@@ -293,7 +293,7 @@ class FFCXBackendAccess(object):
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
         basix_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
+        vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
         num_scalar_dofs = basix_scalar_element.dim
 
         # Get edge vertices
