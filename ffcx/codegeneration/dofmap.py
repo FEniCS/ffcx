@@ -78,8 +78,6 @@ def generator(ir, parameters):
 
     d["block_size"] = ir.block_size
 
-    import ffcx.codegeneration.C.cnodes as L
-
     # Functions
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir)
 
