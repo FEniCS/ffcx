@@ -149,7 +149,7 @@ extern "C"
     int block_size;
 
     /// Number of dofs associated with each cell entity of dimension d
-    int num_entity_dofs[4];
+    int *num_entity_dofs;
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
