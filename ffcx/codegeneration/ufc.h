@@ -155,7 +155,7 @@ extern "C"
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
 
     /// Number of dofs associated with the closure of each cell entity of dimension d
-    int num_entity_closure_dofs[4];
+    int *num_entity_closure_dofs;
 
     /// Tabulate the local-to-local mapping of dofs on the closure of entity (d, i)
     void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
