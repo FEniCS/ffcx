@@ -65,11 +65,19 @@ def generator(ir, parameters):
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
-    d["num_entity_dofs"] = ir.num_entity_dofs + [0, 0, 0, 0]
-    d["num_entity_closure_dofs"] = ir.num_entity_closure_dofs + [0, 0, 0, 0]
-    d["block_size"] = ir.block_size
 
     import ffcx.codegeneration.C.cnodes as L
+
+    num_entity_dofs = ir.num_entity_dofs + [0, 0, 0, 0]
+    num_entity_dofs = num_entity_dofs[:4]
+    d["num_entity_dofs"] = f"num_entity_dofs_{ir.name}"
+    d["num_entity_dofs_init"] = L.ArrayDecl("int", f"num_entity_dofs_{ir.name}",
+                                            values=num_entity_dofs, sizes=4)
+    d["num_entity_closure_dofs"] = f"num_entity_closure_dofs_{ir.name}"
+    d["num_entity_closure_dofs_init"] = L.ArrayDecl("int", f"num_entity_closure_dofs_{ir.name}",
+                                            values=num_entity_closure_dofs, sizes=4)
+
+    d["block_size"] = ir.block_size
 
     # Functions
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, *ir.tabulate_entity_dofs)
