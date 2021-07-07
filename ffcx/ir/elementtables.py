@@ -207,8 +207,7 @@ def get_modified_terminal_element(mt):
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
-
-        ld = tuple(sorted((d, ) + gd + ld))
+        ld = tuple(sorted((d, ) + ld))
     else:
         return None
 
