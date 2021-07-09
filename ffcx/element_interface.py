@@ -149,6 +149,16 @@ class BaseElement:
         raise NotImplementedError
 
     @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        raise NotImplementedError
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        raise NotImplementedError
+
+    @property
     def num_global_support_dofs(self):
         """Get the number of globally supported DOFs."""
         raise NotImplementedError
@@ -240,6 +250,16 @@ class BasixElement(BaseElement):
     def entity_dofs(self):
         """Get the DOF numbers associated with each entity."""
         return self.element.entity_dofs
+
+    @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        return self.element.num_entity_closure_dofs
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        return self.element.entity_closure_dofs
 
     @property
     def num_global_support_dofs(self):
@@ -422,6 +442,25 @@ class MixedElement(BaseElement):
         return dofs
 
     @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        data = [e.num_entity_closure_dofs for e in self.sub_elements]
+        return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
+                for tdim, entities in enumerate(data[0])]
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_closure_dofs]
+        start_dof = 0
+        for e in self.sub_elements:
+            for tdim, entities in enumerate(e.entity_closure_dofs):
+                for entity_n, entity_dofs in enumerate(entities):
+                    dofs[tdim][entity_n] += [start_dof + i for i in entity_dofs]
+            start_dof += e.dim
+        return dofs
+
+    @property
     def num_global_support_dofs(self):
         """Get the number of globally supported DOFs."""
         return sum(e.num_global_support_dofs for e in self.sub_elements)
@@ -529,6 +568,18 @@ class BlockedElement(BaseElement):
         # TODO: should this return this, or should it take blocks into account?
         return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
                  for j in i] for i in self.sub_element.entity_dofs]
+
+    @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        return [[j * self.block_size for j in i] for i in self.sub_element.num_entity_closure_dofs]
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        # TODO: should this return this, or should it take blocks into account?
+        return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
+                 for j in i] for i in self.sub_element.entity_closure_dofs]
 
     @property
     def num_global_support_dofs(self):
@@ -646,6 +697,16 @@ class QuadratureElement(BaseElement):
                 start_dof += j
             entity_dofs.append(dofs_list)
         return entity_dofs
+
+    @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        return self.num_entity_dofs
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        return self.entity_dofs
 
     @property
     def num_global_support_dofs(self):

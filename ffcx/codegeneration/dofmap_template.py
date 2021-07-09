@@ -17,7 +17,14 @@ void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
 {tabulate_entity_dofs}
 }}
 
+void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int i)
+{{
+{tabulate_entity_closure_dofs}
+}}
+
 {num_entity_dofs_init}
+
+{num_entity_closure_dofs_init}
 
 ufc_dofmap {factory_name} =
 {{
@@ -27,6 +34,8 @@ ufc_dofmap {factory_name} =
   .block_size = {block_size},
   .num_entity_dofs = {num_entity_dofs},
   .tabulate_entity_dofs = tabulate_entity_dofs_{factory_name},
+  .num_entity_closure_dofs = {num_entity_closure_dofs},
+  .tabulate_entity_closure_dofs = tabulate_entity_closure_dofs_{factory_name},
   .num_sub_dofmaps = {num_sub_dofmaps},
   .sub_dofmaps = {sub_dofmaps}
 }};
