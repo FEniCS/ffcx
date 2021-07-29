@@ -43,7 +43,7 @@ block_data_t = collections.namedtuple("block_data_t",
 
 
 def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_shape,
-                        p, visualise):
+                        p, visualise, finite_element_args):
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -89,6 +89,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             entitytype,
             initial_terminals.values(),
             ir["unique_tables"],
+            finite_element_args,
             rtol=p["table_rtol"],
             atol=p["table_atol"])
         unique_tables = {v.name: v.values for v in mt_unique_table_reference.values()}

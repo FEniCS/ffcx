@@ -25,30 +25,37 @@ ufl_to_basix_names = {
 }
 
 
-def create_element(ufl_element):
+def create_element(ufl_element, *args):
     """Create an element from a UFL element."""
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
+    # TODO: Allow different args for different parts of mixed element
 
     if isinstance(ufl_element, ufl.VectorElement):
-        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
+        return BlockedElement(create_element(ufl_element.sub_elements()[0], *args),
                               ufl_element.num_sub_elements())
     if isinstance(ufl_element, ufl.TensorElement):
-        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
+        return BlockedElement(create_element(ufl_element.sub_elements()[0], *args),
                               ufl_element.num_sub_elements(), None)  # TODO: block shape
 
     if isinstance(ufl_element, ufl.MixedElement):
-        return MixedElement([create_element(e) for e in ufl_element.sub_elements()])
-
-    if ufl_element.family() in ufl_to_basix_names:
-        return BasixElement(basix.create_element(
-            ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
+        return MixedElement([create_element(e, *args) for e in ufl_element.sub_elements()])
 
     if ufl_element.family() == "Quadrature":
         return QuadratureElement(ufl_element)
 
+    parsed_args = []
+    for i in args:
+        if hasattr(basix.LatticeType, i):
+            parsed_args.append(getattr(basix.LatticeType, i))
+
+    if ufl_element.family() in ufl_to_basix_names:
+        return BasixElement(basix.create_element(
+            ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree(),
+            *parsed_args))
+
     return BasixElement(basix.create_element(
-        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
+        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(), *parsed_args))
 
 
 def basix_index(*args):

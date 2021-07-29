@@ -54,7 +54,7 @@ def clamp_table_small_numbers(table,
 
 
 def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
-                          derivative_counts, flat_component):
+                          derivative_counts, flat_component, finite_element_args):
     """Extract values from FFCx element table.
 
     Returns a 3D numpy array with axes
@@ -98,7 +98,10 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
     numpy.set_printoptions(suppress=True, precision=2)
-    basix_element = create_element(ufl_element)
+    if ufl_element in finite_element_args:
+        basix_element = create_element(ufl_element, *finite_element_args[ufl_element])
+    else:
+        basix_element = create_element(ufl_element, "equispaced")
 
     # Extract arrays for the right scalar component
     component_tables = []
@@ -258,14 +261,10 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_optimized_tables(quadrature_rule,
-                           cell,
-                           integral_type,
-                           entitytype,
-                           modified_terminals,
-                           existing_tables,
-                           rtol=default_rtol,
-                           atol=default_atol):
+def build_optimized_tables(
+    quadrature_rule, cell, integral_type, entitytype, modified_terminals, existing_tables,
+    finite_element_args, rtol=default_rtol, atol=default_atol
+):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -317,14 +316,14 @@ def build_optimized_tables(quadrature_rule,
             if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
-                                          local_derivatives, flat_component)
+                                          local_derivatives, flat_component, finite_element_args)
             elif tdim == 2:
                 new_table = []
                 for ref in range(2):
                     new_table.append(get_ffcx_table_values(
-                        permute_quadrature_interval(
-                            quadrature_rule.points, ref),
-                        cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                        permute_quadrature_interval(quadrature_rule.points, ref), cell,
+                        integral_type, element, avg, entitytype, local_derivatives, flat_component,
+                        finite_element_args))
 
                 t = new_table[0]
                 t['array'] = numpy.vstack([td['array'] for td in new_table])
@@ -337,7 +336,8 @@ def build_optimized_tables(quadrature_rule,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_triangle(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                                cell, integral_type, element, avg, entitytype, local_derivatives,
+                                flat_component, finite_element_args))
                     t = new_table[0]
                     t['array'] = numpy.vstack([td['array'] for td in new_table])
                 elif cell_type == "hexahedron":
@@ -347,13 +347,14 @@ def build_optimized_tables(quadrature_rule,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_quadrilateral(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component,
+                                finite_element_args))
                     t = new_table[0]
                     t['array'] = numpy.vstack([td['array'] for td in new_table])
         else:
             t = get_ffcx_table_values(quadrature_rule.points, cell,
                                       integral_type, element, avg, entitytype,
-                                      local_derivatives, flat_component)
+                                      local_derivatives, flat_component, finite_element_args)
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
@@ -384,7 +385,10 @@ def build_optimized_tables(quadrature_rule,
             tables[name] = tbl
 
         cell_offset = 0
-        basix_element = create_element(element)
+        if element in finite_element_args:
+            basix_element = create_element(element, *finite_element_args[element])
+        else:
+            basix_element = create_element(element, "equispaced")
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"

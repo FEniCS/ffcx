@@ -117,7 +117,7 @@ class FFCXBackendDefinitions(object):
         domain = mt.terminal.ufl_domain()
         gdim = domain.geometric_dimension()
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = create_element(coordinate_element).sub_element.dim
+        num_scalar_dofs = create_element(coordinate_element, "equispaced").sub_element.dim
 
         # Reference coordinates are known, no coordinate field, so we compute
         # this component as linear combination of coordinate_dofs "dofs" and table

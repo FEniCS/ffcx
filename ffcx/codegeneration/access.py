@@ -261,7 +261,7 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        basix_scalar_element = create_element(ufl_scalar_element)
+        basix_scalar_element = create_element(ufl_scalar_element, "equispaced")
         vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
         num_scalar_dofs = basix_scalar_element.dim
 
@@ -292,7 +292,7 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        basix_scalar_element = create_element(ufl_scalar_element)
+        basix_scalar_element = create_element(ufl_scalar_element, "equispaced")
         vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
         num_scalar_dofs = basix_scalar_element.dim
 
@@ -334,7 +334,7 @@ class FFCXBackendAccess(object):
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
-        basix_scalar_element = create_element(ufl_scalar_element)
+        basix_scalar_element = create_element(ufl_scalar_element, "equispaced")
         num_scalar_dofs = basix_scalar_element.dim
 
         # Get edge vertices
