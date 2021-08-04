@@ -72,9 +72,6 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     # within each IR computation would be expensive due to UFL signature computations
     finite_element_names = {e: naming.finite_element_name(e, prefix) for e in analysis.unique_elements}
     dofmap_names = {e: naming.dofmap_name(e, prefix) for e in analysis.unique_elements}
-    finite_element_args = {e: [] for e in analysis.unique_elements}
-    for e in analysis.unique_coordinate_elements:
-        finite_element_args[e].append("equispaced")
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
@@ -84,18 +81,17 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
                                                                          fd_index, itg_data.subdomain_id, prefix)
 
     ir_elements = [
-        _compute_element_ir(e, analysis.element_numbers, finite_element_names, finite_element_args)
+        _compute_element_ir(e, analysis.element_numbers, finite_element_names)
         for e in analysis.unique_elements
     ]
 
     ir_dofmaps = [
-        _compute_dofmap_ir(e, analysis.element_numbers, dofmap_names, finite_element_args)
+        _compute_dofmap_ir(e, analysis.element_numbers, dofmap_names)
         for e in analysis.unique_elements
     ]
 
     irs = [
-        _compute_integral_ir(fd, i, analysis.element_numbers, integral_names, parameters, visualise,
-                             finite_element_args)
+        _compute_integral_ir(fd, i, analysis.element_numbers, integral_names, parameters, visualise)
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
@@ -106,7 +102,7 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise, finite_element_args)
+    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise)
                       for i, expr in enumerate(analysis.expressions)]
 
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
@@ -114,12 +110,12 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
                    expressions=ir_expressions)
 
 
-def _compute_element_ir(ufl_element, element_numbers, finite_element_names, finite_element_args):
+def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     """Compute intermediate representation of element."""
     logger.info(f"Computing IR for element {ufl_element}")
 
     # Create basix elements
-    basix_element = create_element(ufl_element, *finite_element_args[ufl_element])
+    basix_element = create_element(ufl_element)
     cell = ufl_element.cell()
     cellname = cell.cellname()
 
@@ -145,7 +141,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, fini
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
-        basix_element = create_element(ufl_element, *finite_element_args[ufl_element])
+        basix_element = create_element(ufl_element)
     else:
         ir["block_size"] = 1
 
@@ -154,12 +150,12 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names, fini
     return ir_element(**ir)
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names, finite_element_args):
+def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     """Compute intermediate representation of dofmap."""
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
     # Create basix elements
-    basix_element = create_element(ufl_element, *finite_element_args[ufl_element])
+    basix_element = create_element(ufl_element)
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -199,7 +195,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names, finite_elemen
 
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
-                         parameters, visualise, finite_element_args):
+                         parameters, visualise):
     """Compute intermediate represention for form integrals."""
     _entity_types = {
         "cell": "cell",
@@ -356,7 +352,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         # Build more specific intermediate representation
         integral_ir = compute_integral_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
                                           ir["entitytype"], integrands, ir["tensor_shape"],
-                                          parameters, visualise, finite_element_args)
+                                          parameters, visualise)
 
         ir.update(integral_ir)
 
@@ -447,7 +443,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, finite_element_args):
+def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
     """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
 
@@ -536,7 +532,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
         assert len(ir["original_coefficient_positions"]) == 0 and len(ir["original_constant_offsets"]) == 0
 
     expression_ir = compute_integral_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
-                                        parameters, visualise, finite_element_args)
+                                        parameters, visualise)
 
     ir.update(expression_ir)
 

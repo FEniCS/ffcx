@@ -1,61 +1,39 @@
 import numpy
 import ufl
 import basix
+from basix.finite_element import string_to_cell
 
 
-basix_cells = {
-    "interval": basix.CellType.interval,
-    "triangle": basix.CellType.triangle,
-    "tetrahedron": basix.CellType.tetrahedron,
-    "prism": basix.CellType.prism,
-    "pyramid": basix.CellType.pyramid,
-    "quadrilateral": basix.CellType.quadrilateral,
-    "hexahedron": basix.CellType.hexahedron
-}
-
-# This dictionary can be used to map ufl element names to basix element names.
-# Currently all the names agree but this will not necessarily remian true.
-ufl_to_basix_names = {
-    "Q": "Lagrange",
-    "DQ": "Discontinuous Lagrange",
-    "RTCE": "Nedelec 1st kind H(curl)",
-    "NCE": "Nedelec 1st kind H(curl)",
-    "RTCF": "Raviart-Thomas",
-    "NCF": "Raviart-Thomas",
-}
-
-
-def create_element(ufl_element, *args):
+def create_element(ufl_element):
     """Create an element from a UFL element."""
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
     # TODO: Allow different args for different parts of mixed element
 
     if isinstance(ufl_element, ufl.VectorElement):
-        return BlockedElement(create_element(ufl_element.sub_elements()[0], *args),
+        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements())
     if isinstance(ufl_element, ufl.TensorElement):
-        return BlockedElement(create_element(ufl_element.sub_elements()[0], *args),
+        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
                               ufl_element.num_sub_elements(), None)  # TODO: block shape
 
     if isinstance(ufl_element, ufl.MixedElement):
-        return MixedElement([create_element(e, *args) for e in ufl_element.sub_elements()])
+        return MixedElement([create_element(e) for e in ufl_element.sub_elements()])
 
     if ufl_element.family() == "Quadrature":
         return QuadratureElement(ufl_element)
 
-    parsed_args = []
-    for i in args:
-        if hasattr(basix.LatticeType, i):
-            parsed_args.append(getattr(basix.LatticeType, i))
-
-    if ufl_element.family() in ufl_to_basix_names:
-        return BasixElement(basix.create_element(
-            ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree(),
-            *parsed_args))
-
+    if ufl_element.family() in ["Lagrange", "Q"]:
+        if ufl_element.variant() is None:
+            return BasixElement(basix.create_element(
+                ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(),
+                lattice_type="gll_warped"))
+        else:
+            return BasixElement(basix.create_element(
+                ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(),
+                lattice_type=ufl_element.variant()))
     return BasixElement(basix.create_element(
-        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(), *parsed_args))
+        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
 
 
 def basix_index(*args):
@@ -67,18 +45,18 @@ def create_quadrature(cellname, degree, rule):
     """Create a quadrature rule."""
     if cellname == "vertex":
         return [[]], [1]
-    return basix.make_quadrature(rule, basix_cells[cellname], degree)
+    return basix.make_quadrature(rule, string_to_cell(cellname), degree)
 
 
 def reference_cell_vertices(cellname):
     """Get the vertices of a reference cell."""
-    return basix.geometry(basix_cells[cellname])
+    return basix.geometry(string_to_cell(cellname))
 
 
 def map_facet_points(points, facet, cellname):
     """Map points from a reference facet to a physical facet."""
-    geom = basix.geometry(basix_cells[cellname])
-    facet_vertices = [geom[i] for i in basix.topology(basix_cells[cellname])[-2][facet]]
+    geom = basix.geometry(string_to_cell(cellname))
+    facet_vertices = [geom[i] for i in basix.topology(string_to_cell(cellname))[-2][facet]]
 
     return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
             for p in points]
