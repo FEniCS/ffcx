@@ -123,6 +123,13 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
+    /// Set to true if Basix's create_element function for this element
+    /// needs to be given a lattice type
+    bool needs_lattice_type;
+
+    /// The lattice type to be passed to Basix's create_element function
+    const char* lattice_type;
+
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 

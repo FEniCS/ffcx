@@ -23,17 +23,16 @@ def create_element(ufl_element):
     if ufl_element.family() == "Quadrature":
         return QuadratureElement(ufl_element)
 
+    kwargs = {}
+
     if ufl_element.family() in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
-            return BasixElement(basix.create_element(
-                ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(),
-                lattice_type="gll_warped"))
+            kwargs["lattice_type"] = "equispaced"
         else:
-            return BasixElement(basix.create_element(
-                ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(),
-                lattice_type=ufl_element.variant()))
+            kwargs["lattice_type"] = ufl_element.variant()
+
     return BasixElement(basix.create_element(
-        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
+        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(), **kwargs), kwargs)
 
 
 def basix_index(*args):
@@ -163,12 +162,18 @@ class BaseElement:
         """Get the geometry of the reference element."""
         raise NotImplementedError
 
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        raise NotImplementedError
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, element):
+    def __init__(self, element, kwargs):
         self.element = element
+        self._kwargs = kwargs
 
     def tabulate(self, nderivs, points):
         """Tabulate the basis functions of the element.
@@ -267,6 +272,13 @@ class BasixElement(BaseElement):
         """Get the geometry of the reference element."""
         return basix.geometry(self.element.cell_type)
 
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        if "lattice_type" in self._kwargs:
+            return self._kwargs["lattice_type"]
+        return None
+
 
 class ComponentElement(BaseElement):
     """An element representing one component of a BasixElement."""
@@ -320,6 +332,11 @@ class ComponentElement(BaseElement):
         if flat_component == 0:
             return self, 0, 1
         raise NotImplementedError
+
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        return self.element.lattice_type
 
 
 class MixedElement(BaseElement):
@@ -465,6 +482,11 @@ class MixedElement(BaseElement):
         """Get the geometry of the reference element."""
         return self.sub_elements[0].reference_geometry
 
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        raise NotImplementedError
+
 
 class BlockedElement(BaseElement):
     """An element with a block size that contains multiple copies of a sub element."""
@@ -586,6 +608,11 @@ class BlockedElement(BaseElement):
         """Get the geometry of the reference element."""
         return self.sub_element.reference_geometry
 
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        return self.element.lattice_type
+
 
 class QuadratureElement(BaseElement):
     """A quadrature element."""
@@ -702,3 +729,8 @@ class QuadratureElement(BaseElement):
     def family_name(self):
         """Get the family name of the element."""
         return self._ufl_element.family()
+
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        return None

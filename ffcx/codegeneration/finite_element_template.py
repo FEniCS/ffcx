@@ -31,7 +31,8 @@ ufc_finite_element {factory_name} =
   .degree = {degree},
   .block_size = {block_size},
   .family = {family},
-
+  .needs_lattice_type = {needs_lattice_type},
+  .lattice_type = {lattice_type},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};

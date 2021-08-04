@@ -41,7 +41,8 @@ ir_form = namedtuple('ir_form', [
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
-    'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs'])
+    'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs',
+    'lattice_type'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_entity_closure_dofs', 'tabulate_entity_closure_dofs', 'num_sub_dofmaps',
@@ -130,6 +131,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = basix_element.dim
     ir["element_type"] = basix_element.element_type
+    ir["lattice_type"] = basix_element.lattice_type
     ir["degree"] = ufl_element.degree()
     ir["family"] = basix_element.family_name
     ir["value_shape"] = ufl_element.value_shape()
@@ -137,6 +139,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
+
+
 
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size
