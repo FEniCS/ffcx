@@ -485,7 +485,7 @@ class MixedElement(BaseElement):
     @property
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
-        raise NotImplementedError
+        return None
 
 
 class BlockedElement(BaseElement):
@@ -611,7 +611,7 @@ class BlockedElement(BaseElement):
     @property
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
-        return self.element.lattice_type
+        return self.sub_element.lattice_type
 
 
 class QuadratureElement(BaseElement):
