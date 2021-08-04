@@ -140,8 +140,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-
-
     if hasattr(basix_element, "block_size"):
         ir["block_size"] = basix_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
