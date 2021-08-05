@@ -44,10 +44,10 @@ def generator(ir, parameters):
 
     if ir.lattice_type is None:
         d["needs_lattice_type"] = 0
-        d["lattice_type"] = "NULL"
+        d["lattice_type"] = -1
     else:
         d["needs_lattice_type"] = 1
-        d["lattice_type"] = f"\"{ir.lattice_type}\""
+        d["lattice_type"] = ir.lattice_type
 
     import ffcx.codegeneration.C.cnodes as L
 

@@ -276,7 +276,7 @@ class BasixElement(BaseElement):
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
         if "lattice_type" in self._kwargs:
-            return self._kwargs["lattice_type"]
+            return getattr(basix.LatticeType, self._kwargs["lattice_type"]).value
         return None
 
 

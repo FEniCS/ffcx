@@ -128,7 +128,7 @@ extern "C"
     bool needs_lattice_type;
 
     /// The lattice type to be passed to Basix's create_element function
-    const char* lattice_type;
+    int lattice_type;
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
