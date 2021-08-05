@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.2.0
+-----
+Alpha release of ffcx
+
 0.1.0
 -----
 Alpha release of ffcx
