@@ -34,7 +34,7 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: v0.2.0
+          ref: main
 
       - name: Checkout UFL
         uses: actions/checkout@v2
