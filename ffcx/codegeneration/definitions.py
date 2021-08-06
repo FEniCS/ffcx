@@ -138,15 +138,7 @@ class FFCXBackendDefinitions(object):
         # Inlined version (we know this is bounded by a small number)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
 
-        if tabledata.is_piecewise:
-            terms = []
-            for i, idof in enumerate(tabledata.dofmap):
-                basis_value = tabledata.values[0][0][0][i]
-                if basis_value:
-                    terms.append(dof_access[idof] * basis_value)
-            value = L.Sum(terms)
-        else:
-            value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
+        value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
         code = [L.VariableDecl("const double", access, value)]
 
         return code
