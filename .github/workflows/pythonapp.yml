@@ -29,14 +29,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Get Basix
+      - name: Checkout Basix
         uses: actions/checkout@v2
         with:
           path: ./basix
           repository: FEniCS/basix
           ref: v0.2.0
 
-      - name: Get UFL
+      - name: Checkout UFL
         uses: actions/checkout@v2
         with:
           path: ./ufl
