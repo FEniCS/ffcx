@@ -29,11 +29,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Get Basix and install
+      - name: Get Basix
         uses: actions/checkout@v2
         with:
           path: ./basix
           repository: FEniCS/basix
+          ref: v0.2.0
+
+      - name: Get UFL
+        uses: actions/checkout@v2
+        with:
+          path: ./ufl
+          repository: FEniCS/ufl
           ref: main
 
       - name: Install dependencies (non-Python, Linux)
@@ -47,32 +54,32 @@ jobs:
 
       - name: Install dependencies (Python)
         run: |
-          pip install --upgrade pip
+          python3 -m pip install --upgrade pip
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
           cmake --build build-dir
           sudo cmake --install build-dir
-          pip install ./basix/python
+          python3 -m pip install ./basix/python
           rm -rf basix
-          pip install pygraphviz
-          pip install git+https://github.com/FEniCS/ufl.git --user
+          python3 -m pip install pygraphviz
+          python3 -m pip install ./ufl
 
       - name: Lint with flake8
         run: |
-          pip install flake8
+          python3 -m pip install flake8
           flake8 --statistics ffcx/ test/
 
       - name: Check documentation style
         run: |
-          pip install pydocstyle
+          python3 -m pip install pydocstyle
           pydocstyle .
 
       - name: Install ffcx
         run: |
-          pip install .
+          python3 -m pip install .
 
       - name: Run units tests
         run: |
-          pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
+          python3 -m pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
@@ -97,7 +104,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          pip install sphinx sphinx_rtd_theme
+          python3 -m pip install sphinx sphinx_rtd_theme
           cd doc
           make html
 
