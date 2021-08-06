@@ -22,18 +22,18 @@ def create_element(ufl_element):
     if ufl_element.family() == "Quadrature":
         return QuadratureElement(ufl_element)
 
-    kwargs = {}
+    args = []
 
     if ufl_element.family() in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
-            kwargs["lattice_type"] = basix.lattice.string_to_type("equispaced")
+            args.append(basix.lattice.string_to_type("equispaced"))
         else:
-            kwargs["lattice_type"] = basix.lattice.string_to_type(ufl_element.variant())
+            args.append(basix.lattice.string_to_type(ufl_element.variant()))
 
     family_type = basix.finite_element.string_to_family(ufl_element.family(), ufl_element.cell().cellname())
     cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
 
-    return BasixElement(family_type, cell_type, ufl_element.degree(), **kwargs)
+    return BasixElement(family_type, cell_type, ufl_element.degree(), *args)
 
 
 def basix_index(*args):
@@ -182,11 +182,11 @@ class BaseElement:
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, family_type, cell_type, degree, **kwargs):
-        self.element = basix.create_element(family_type, cell_type, degree, **kwargs)
+    def __init__(self, family_type, cell_type, degree, *args):
+        self.element = basix.create_element(family_type, cell_type, degree, *args)
         self._family = family_type
         self._cell = cell_type
-        self._kwargs = kwargs
+        self._args = args
 
     def tabulate(self, nderivs, points):
         """Tabulate the basis functions of the element.
@@ -288,8 +288,9 @@ class BasixElement(BaseElement):
     @property
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
-        if "lattice_type" in self._kwargs:
-            return self._kwargs["lattice_type"]
+        for a in self._args:
+            if isinstance(a, basix.LatticeType):
+                return a
         return None
 
     @property
