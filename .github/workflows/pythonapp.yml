@@ -9,8 +9,7 @@ on:
     branches:
       - "**"
     tags:
-      - "*.*.*.*"
-      - "*.*.*"
+      - "v*"
   pull_request:
     branches:
       - main
@@ -30,13 +29,20 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Get Basix and install
+      - name: Checkout Basix
         uses: actions/checkout@v2
         with:
           path: ./basix
           repository: FEniCS/basix
+          ref: v0.2.0
+
+      - name: Checkout UFL
+        uses: actions/checkout@v2
+        with:
+          path: ./ufl
+          repository: FEniCS/ufl
           ref: main
-    
+
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
@@ -48,32 +54,32 @@ jobs:
 
       - name: Install dependencies (Python)
         run: |
-          pip install --upgrade pip
+          python3 -m pip install --upgrade pip
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
           cmake --build build-dir
           sudo cmake --install build-dir
-          pip install ./basix/python
+          python3 -m pip install ./basix/python
           rm -rf basix
-          pip install pygraphviz
-          pip install git+https://github.com/FEniCS/ufl.git --user
+          python3 -m pip install pygraphviz
+          python3 -m pip install ./ufl
 
       - name: Lint with flake8
         run: |
-          pip install flake8
+          python3 -m pip install flake8
           flake8 --statistics ffcx/ test/
 
       - name: Check documentation style
         run: |
-          pip install pydocstyle
+          python3 -m pip install pydocstyle
           pydocstyle .
 
       - name: Install ffcx
         run: |
-          pip install .
+          python3 -m pip install .
 
       - name: Run units tests
         run: |
-          pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
+          python3 -m pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
@@ -98,7 +104,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          pip install sphinx sphinx_rtd_theme
+          python3 -m pip install sphinx sphinx_rtd_theme
           cd doc
           make html
 
@@ -111,25 +117,25 @@ jobs:
           if-no-files-found: error
 
       - name: Checkout FEniCS/docs
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
         uses: actions/checkout@v2
         with:
           repository: "FEniCS/docs"
           path: "docs"
           ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
       - name: Set version name
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
         run: |
           echo "VERSION_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Copy documentation into repository
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
         run: |
           cd docs
           git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}
           mkdir -p ffcx/${{ env.VERSION_NAME }}
           cp -r ../doc/build/html/* ffcx/${{ env.VERSION_NAME }}
       - name: Commit and push documentation to FEniCS/docs
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
         run: |
           cd docs
           git config --global user.email "fenics@github.com"

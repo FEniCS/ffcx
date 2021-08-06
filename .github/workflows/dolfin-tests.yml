@@ -31,9 +31,16 @@ jobs:
       - name: Install dependencies (Python)
         run: |
           python3 -m pip install --upgrade pip
+
+      - name: Clone UFL
+        uses: actions/checkout@v2
+        with:
+          path: ./ufl
+          repository: FEniCS/ufl
+          ref: main
       - name: Install UFL
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git
+          python3 -m pip install ./ufl
 
       - name: Clone Basix
         uses: actions/checkout@v2
@@ -47,11 +54,11 @@ jobs:
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
           cmake --build build-dir
           cmake --install build-dir
-          pip3 install ./basix/python
+          python3 -m pip3 install ./basix/python
 
       - name: Install FFCx
         run: |
-          pip3 install .
+          python3 -m pip3 install .
 
       - name: Clone DOLFINx
         uses: actions/checkout@v2
@@ -64,7 +71,7 @@ jobs:
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
           cmake --build build
           cmake --install build
-          pip3 -v install --global-option build --global-option --debug dolfinx/python/
+          python3 -m pip3 -v install --global-option build --global-option --debug dolfinx/python/
 
       - name: Run DOLFINx unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
