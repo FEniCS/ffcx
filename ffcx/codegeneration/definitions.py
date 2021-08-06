@@ -65,6 +65,8 @@ class FFCXBackendDefinitions(object):
         """Return definition code for coefficients."""
         L = self.language
 
+        padlen = self.parameters["padlen"]
+
         ttype = tabledata.ttype
         begin, end = tabledata.dofrange
         dofrange_size = end - begin
@@ -82,7 +84,7 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
-        unroll = len(tabledata.dofmap) != end - begin
+        unroll = len(tabledata.dofmap) != dofrange_size
         # unroll = True
         if unroll:
             # TODO: Could also use a generated constant dofmap here like in block code
@@ -97,10 +99,12 @@ class FFCXBackendDefinitions(object):
             # Loop to accumulate linear combination of dofs and tables
             ic = self.symbols.coefficient_dof_sum_index()
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic + begin)
+            loop_range = dofrange_size + (padlen - dofrange_size % padlen) % padlen
             code = [
                 L.VariableDecl("ufc_scalar_t", access, 0.0),
-                L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
+                L.ForRange(ic, 0, loop_range, body=[L.AssignAdd(access, dof_access * FE[ic])])
             ]
+
         return code
 
     def constant(self, t, mt, tabledata, num_points, access):

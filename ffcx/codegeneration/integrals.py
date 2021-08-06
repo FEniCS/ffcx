@@ -314,13 +314,13 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         L = self.backend.language
+        padlen = self.ir.params["padlen"]
 
         # Generate varying partition
         body = self.generate_varying_partition(quadrature_rule)
+
         body = L.commented_code_list(
             body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
-
-        padlen = self.ir.params["padlen"]
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
@@ -367,12 +367,12 @@ class IntegralGenerator(object):
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
         L = self.backend.language
+        padlen = self.ir.params["padlen"]
 
         definitions = dict()
         intermediates = []
 
         use_symbol_array = True
-
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
@@ -393,7 +393,6 @@ class IntegralGenerator(object):
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
                     vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
-
                     # Store definitions of terminals in list
                     assert isinstance(vdef, list)
                     definitions[str(vaccess)] = vdef
@@ -451,9 +450,9 @@ class IntegralGenerator(object):
                 parts += definition
         if intermediates:
             if use_symbol_array:
-                padlen = self.ir.params["padlen"]
                 parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), padlen=padlen)]
             parts += intermediates
+
         return parts
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule, padlen: int):
