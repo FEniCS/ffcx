@@ -1,7 +1,6 @@
 import numpy
 import ufl
 import basix
-from basix.finite_element import string_to_cell
 
 
 def create_element(ufl_element):
@@ -27,12 +26,15 @@ def create_element(ufl_element):
 
     if ufl_element.family() in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
-            kwargs["lattice_type"] = "equispaced"
+            kwargs["lattice_type"] = basix.lattice.string_to_type("equispaced")
         else:
-            kwargs["lattice_type"] = ufl_element.variant()
+            kwargs["lattice_type"] = basix.lattice.string_to_type(ufl_element.variant())
+
+    family_type = basix.finite_element.string_to_family(ufl_element.family(), ufl_element.cell().cellname())
+    cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
 
     return BasixElement(basix.create_element(
-        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree(), **kwargs), kwargs)
+        family_type, cell_type, ufl_element.degree(), **kwargs), kwargs)
 
 
 def basix_index(*args):
@@ -44,18 +46,18 @@ def create_quadrature(cellname, degree, rule):
     """Create a quadrature rule."""
     if cellname == "vertex":
         return [[]], [1]
-    return basix.make_quadrature(rule, string_to_cell(cellname), degree)
+    return basix.make_quadrature(rule, basix.cell.string_to_type(cellname), degree)
 
 
 def reference_cell_vertices(cellname):
     """Get the vertices of a reference cell."""
-    return basix.geometry(string_to_cell(cellname))
+    return basix.geometry(basix.cell.string_to_type(cellname))
 
 
 def map_facet_points(points, facet, cellname):
     """Map points from a reference facet to a physical facet."""
-    geom = basix.geometry(string_to_cell(cellname))
-    facet_vertices = [geom[i] for i in basix.topology(string_to_cell(cellname))[-2][facet]]
+    geom = basix.geometry(basix.cell.string_to_type(cellname))
+    facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
 
     return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
             for p in points]
@@ -260,7 +262,7 @@ class BasixElement(BaseElement):
     @property
     def family_name(self):
         """Get the family name of the element."""
-        return basix.family_to_str(self.element.family)
+        return self.element.family.name
 
     @property
     def reference_topology(self):
@@ -276,7 +278,7 @@ class BasixElement(BaseElement):
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
         if "lattice_type" in self._kwargs:
-            return int(getattr(basix.LatticeType, self._kwargs["lattice_type"]))
+            return int(self._kwargs["lattice_type"])
         return None
 
 
