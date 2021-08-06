@@ -357,6 +357,7 @@ def build_optimized_tables(quadrature_rule,
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
+
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             tbl = tbl[:, :, :1, :]
@@ -465,4 +466,5 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
         else:
             # Varying over points and entities
             ttype = "varying"
+
     return ttype

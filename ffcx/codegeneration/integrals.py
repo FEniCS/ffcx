@@ -224,8 +224,6 @@ class IntegralGenerator(object):
         if self.ir.integral_type in skip:
             return parts
 
-        padlen = self.ir.params["padlen"]
-
         # Loop over quadrature rules
         for quadrature_rule, integrand in self.ir.integrand.items():
 
@@ -235,7 +233,7 @@ class IntegralGenerator(object):
             parts += [
                 L.ArrayDecl(
                     "static const double", wsym, num_points,
-                    quadrature_rule.weights, padlen=padlen)
+                    quadrature_rule.weights, padlen=1)
             ]
 
         # Add leading comment if there are any tables
@@ -322,10 +320,12 @@ class IntegralGenerator(object):
         body = L.commented_code_list(
             body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
+        padlen = self.ir.params["padlen"]
+
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
         preparts, quadparts = \
-            self.generate_dofblock_partition(quadrature_rule)
+            self.generate_dofblock_partition(quadrature_rule, padlen)
         body += quadparts
 
         # Wrap body in loop or scope
@@ -456,7 +456,7 @@ class IntegralGenerator(object):
             parts += intermediates
         return parts
 
-    def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
+    def generate_dofblock_partition(self, quadrature_rule: QuadratureRule, padlen: int):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
         preparts = []
         quadparts = []
@@ -473,7 +473,7 @@ class IntegralGenerator(object):
 
         for blockmap in block_groups:
             block_preparts, block_quadparts = \
-                self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
+                self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap], padlen)
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -508,7 +508,7 @@ class IntegralGenerator(object):
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[block_data_t]):
+    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[block_data_t], padlen: int):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after the quadrature loop identified by the quadrature rule.
@@ -522,7 +522,10 @@ class IntegralGenerator(object):
         quadparts = []
 
         block_rank = len(blockmap)
-        blockdims = tuple(len(dofmap) for dofmap in blockmap)
+        blockdims = list(len(dofmap) for dofmap in blockmap)
+
+        for i in range(len(blockdims)):
+            blockdims[i] =  blockdims[i] + blockdims[i] % padlen
 
         iq = self.backend.symbols.quadrature_loop_index()
 
@@ -651,8 +654,6 @@ class IntegralGenerator(object):
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
 
-        # TODO: Check if the compiler can optimize out the allocation of temporaries
-        #  arrays in pre_loop
         quadparts += [pre_loop, hoist, body]
 
         return preparts, quadparts
