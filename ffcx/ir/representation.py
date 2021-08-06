@@ -42,7 +42,7 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs',
-    'lattice_type'])
+    'lattice_type', 'basix_family', 'basix_cell'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_entity_closure_dofs', 'tabulate_entity_closure_dofs', 'num_sub_dofmaps',
@@ -132,6 +132,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["space_dimension"] = basix_element.dim
     ir["element_type"] = basix_element.element_type
     ir["lattice_type"] = basix_element.lattice_type
+    ir["basix_family"] = basix_element.element_family
+    ir["basix_cell"] = basix_element.cell_type
     ir["degree"] = ufl_element.degree()
     ir["family"] = basix_element.family_name
     ir["value_shape"] = ufl_element.value_shape()

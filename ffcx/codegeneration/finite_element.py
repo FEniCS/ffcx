@@ -47,7 +47,16 @@ def generator(ir, parameters):
         d["lattice_type"] = -1
     else:
         d["needs_lattice_type"] = 1
-        d["lattice_type"] = ir.lattice_type
+        d["lattice_type"] = int(ir.lattice_type)
+
+    if ir.basix_family is None:
+        d["basix_family"] = -1
+    else:
+        d["basix_family"] = int(ir.basix_family)
+    if ir.basix_cell is None:
+        d["basix_cell"] = -1
+    else:
+        d["basix_cell"] = int(ir.basix_cell)
 
     import ffcx.codegeneration.C.cnodes as L
 

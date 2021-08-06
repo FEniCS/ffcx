@@ -33,8 +33,7 @@ def create_element(ufl_element):
     family_type = basix.finite_element.string_to_family(ufl_element.family(), ufl_element.cell().cellname())
     cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
 
-    return BasixElement(basix.create_element(
-        family_type, cell_type, ufl_element.degree(), **kwargs), kwargs)
+    return BasixElement(family_type, cell_type, ufl_element.degree(), **kwargs)
 
 
 def basix_index(*args):
@@ -169,12 +168,24 @@ class BaseElement:
         """Get the lattice type used to initialise the element."""
         raise NotImplementedError
 
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        raise NotImplementedError
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        raise NotImplementedError
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, element, kwargs):
-        self.element = element
+    def __init__(self, family_type, cell_type, degree, **kwargs):
+        self.element = basix.create_element(family_type, cell_type, degree, **kwargs)
+        self._family = family_type
+        self._cell = cell_type
         self._kwargs = kwargs
 
     def tabulate(self, nderivs, points):
@@ -278,8 +289,18 @@ class BasixElement(BaseElement):
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
         if "lattice_type" in self._kwargs:
-            return int(self._kwargs["lattice_type"])
+            return self._kwargs["lattice_type"]
         return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self._family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self._cell
 
 
 class ComponentElement(BaseElement):
@@ -339,6 +360,16 @@ class ComponentElement(BaseElement):
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
         return self.element.lattice_type
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self.element.element_family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self.element.cell_type
 
 
 class MixedElement(BaseElement):
@@ -489,6 +520,16 @@ class MixedElement(BaseElement):
         """Get the lattice type used to initialise the element."""
         return None
 
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return None
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return None
+
 
 class BlockedElement(BaseElement):
     """An element with a block size that contains multiple copies of a sub element."""
@@ -615,6 +656,16 @@ class BlockedElement(BaseElement):
         """Get the lattice type used to initialise the element."""
         return self.sub_element.lattice_type
 
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self.sub_element.element_family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self.sub_element.cell_type
+
 
 class QuadratureElement(BaseElement):
     """A quadrature element."""
@@ -735,4 +786,14 @@ class QuadratureElement(BaseElement):
     @property
     def lattice_type(self):
         """Get the lattice type used to initialise the element."""
+        return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return None
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
         return None

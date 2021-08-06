@@ -123,6 +123,12 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
+    /// Return the Basix identifier of the family of the finite element function space
+    int basix_family;
+
+    /// Return the Basix identifier of the cell shape
+    int basix_cell;
+
     /// Set to true if Basix's create_element function for this element
     /// needs to be given a lattice type
     bool needs_lattice_type;
