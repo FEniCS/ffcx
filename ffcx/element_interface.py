@@ -26,7 +26,7 @@ def create_element(ufl_element):
 
     if ufl_element.family() in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
-            args.append(basix.lattice.string_to_type("equispaced"))
+            args.append(basix.LatticeType.equispaced)
         else:
             args.append(basix.lattice.string_to_type(ufl_element.variant()))
 
