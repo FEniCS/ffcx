@@ -135,7 +135,7 @@ class FFCXBackendDefinitions(object):
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
 
         if tabledata.is_piecewise:
-            terms = []       
+            terms = []
             for i, idof in enumerate(tabledata.dofmap):
                 basis_value = tabledata.values[0][0][0][i]
                 if basis_value:

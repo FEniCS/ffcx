@@ -508,7 +508,8 @@ class IntegralGenerator(object):
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[block_data_t], padlen: int):
+    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple,
+                             blocklist: List[block_data_t], padlen: int):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after the quadrature loop identified by the quadrature rule.
