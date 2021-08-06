@@ -525,7 +525,7 @@ class IntegralGenerator(object):
         blockdims = list(len(dofmap) for dofmap in blockmap)
 
         for i in range(len(blockdims)):
-            blockdims[i] =  blockdims[i] + blockdims[i] % padlen
+            blockdims[i] = blockdims[i] + (padlen - blockdims[i] % padlen) % padlen
 
         iq = self.backend.symbols.quadrature_loop_index()
 
