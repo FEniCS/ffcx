@@ -129,10 +129,6 @@ extern "C"
     /// Return the Basix identifier of the cell shape
     int basix_cell;
 
-    /// Set to true if Basix's create_element function for this element
-    /// needs to be given a lattice type
-    bool needs_lattice_type;
-
     /// The lattice type to be passed to Basix's create_element function
     int lattice_type;
 

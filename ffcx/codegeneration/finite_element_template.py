@@ -33,7 +33,6 @@ ufc_finite_element {factory_name} =
   .family = {family},
   .basix_family = {basix_family},
   .basix_cell = {basix_cell},
-  .needs_lattice_type = {needs_lattice_type},
   .lattice_type = {lattice_type},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
