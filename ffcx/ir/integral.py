@@ -295,7 +295,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
             if ttype in varying_ttypes:
                 varying_indices.append(i)
             else:
-                if ttype not in ("fixed", "piecewise", "ones", "zeros"):
+                if ttype not in ("fixed", "piecewise", "ones", "zeros", "diagonal"):
                     raise RuntimeError("Invalid ttype %s" % (ttype, ))
 
         elif not is_cellwise_constant(v['expression']):

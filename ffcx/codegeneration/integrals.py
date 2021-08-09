@@ -639,17 +639,17 @@ class IntegralGenerator(object):
 
         # Create temporary accumulator if the number of statements in
         # this loop is greater than 1.
-        if len(rhs_list) == 1:
-            body.append(L.AssignAdd(A[A_indices], rhs_list[0]))
-        else:
-            acc = self.new_temp_symbol("acc")
-            body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
-            for rhs in rhs_list:
-                body.append(L.AssignAdd(acc, rhs))
-            body.append(L.AssignAdd(A[A_indices], acc))
+        # if len(rhs_list) == 1:
+        #     body.append(L.AssignAdd(A[A_indices], rhs_list[0]))
+        # else:
+        #     acc = self.new_temp_symbol("acc")
+        #     body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
+        #     for rhs in rhs_list:
+        #         body.append(L.AssignAdd(acc, rhs))
+        #     body.append(L.AssignAdd(A[A_indices], acc))
 
-        for i in reversed(range(block_rank)):
-            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+        # for i in reversed(range(block_rank)):
+        #     body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
 
         # TODO: Check if the compiler can optimize out the allocation of temporaries
         #  arrays in pre_loop
