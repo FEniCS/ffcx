@@ -464,8 +464,14 @@ def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lamb
     for e in [(1, 2), (0, 2), (0, 1)]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
-        eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order) for a, b in zip(p0, p1))
-                        for i in range(1, order)]
+        if order > 3:
+            raise NotImplementedError
+        elif order == 3:
+            eval_points += [tuple(S(a) + (b - a) * i for a, b in zip(p0, p1))
+                            for i in [(1 - 1 / sympy.sqrt(5)) / 2, (1 + 1 / sympy.sqrt(5)) / 2]]
+        else:
+            eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order) for a, b in zip(p0, p1))
+                            for i in range(1, order)]
     # face
     for f in [(0, 1, 2)]:
         p0 = corners[f[0]]
@@ -491,11 +497,11 @@ def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lamb
     (lambda i: i, lambda i: i),
     (lambda i: i.diff("x"), lambda i: ufl.grad(i)[0]),
     (lambda i: i.diff("y"), lambda i: ufl.grad(i)[1])])
-@pytest.mark.parametrize("order", [1, 2, 3, 4, 5])
+@pytest.mark.parametrize("order", [1, 2, 3])
 def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_triangle_symbolic(order, fun=sym_fun)
     cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, order)
+    element = ufl.FiniteElement("Lagrange", cell, order, variant="gll")
     v = ufl.TestFunction(element)
 
     a = ufl_fun(v) * ufl.dx
@@ -541,8 +547,14 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
     for e in [(2, 3), (1, 3), (1, 2), (0, 3), (0, 2), (0, 1)]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
-        eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order) for a, b in zip(p0, p1))
-                        for i in range(1, order)]
+        if order > 3:
+            raise NotImplementedError
+        elif order == 3:
+            eval_points += [tuple(S(a) + (b - a) * i for a, b in zip(p0, p1))
+                            for i in [(1 - 1 / sympy.sqrt(5)) / 2, (1 + 1 / sympy.sqrt(5)) / 2]]
+        else:
+            eval_points += [tuple(S(a) + sympy.Rational((b - a) * i, order) for a, b in zip(p0, p1))
+                            for i in range(1, order)]
     # face
     for f in [(1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2)]:
         p0 = corners[f[0]]
@@ -577,11 +589,11 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
     (lambda i: i, lambda i: i),
     (lambda i: i.diff("x"), lambda i: ufl.grad(i)[0]),
     (lambda i: i.diff("y"), lambda i: ufl.grad(i)[1])])
-@pytest.mark.parametrize("order", [1, 2, 3, 4])
+@pytest.mark.parametrize("order", [1, 2, 3])
 def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_tetrahedron_symbolic(order, fun=sym_fun)
     cell = ufl.tetrahedron
-    element = ufl.FiniteElement("Lagrange", cell, order)
+    element = ufl.FiniteElement("Lagrange", cell, order, variant="gll")
     v = ufl.TestFunction(element)
 
     a = ufl_fun(v) * ufl.dx
