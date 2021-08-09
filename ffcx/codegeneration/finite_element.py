@@ -43,10 +43,8 @@ def generator(ir, parameters):
     d["block_size"] = ir.block_size
 
     if ir.lattice_type is None:
-        d["needs_lattice_type"] = 0
         d["lattice_type"] = -1
     else:
-        d["needs_lattice_type"] = 1
         d["lattice_type"] = int(ir.lattice_type)
 
     if ir.basix_family is None:
