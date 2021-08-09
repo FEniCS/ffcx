@@ -258,14 +258,10 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_optimized_tables(quadrature_rule,
-                           cell,
-                           integral_type,
-                           entitytype,
-                           modified_terminals,
-                           existing_tables,
-                           rtol=default_rtol,
-                           atol=default_atol):
+def build_optimized_tables(
+    quadrature_rule, cell, integral_type, entitytype, modified_terminals, existing_tables,
+    rtol=default_rtol, atol=default_atol
+):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -322,9 +318,8 @@ def build_optimized_tables(quadrature_rule,
                 new_table = []
                 for ref in range(2):
                     new_table.append(get_ffcx_table_values(
-                        permute_quadrature_interval(
-                            quadrature_rule.points, ref),
-                        cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                        permute_quadrature_interval(quadrature_rule.points, ref), cell,
+                        integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                 t = new_table[0]
                 t['array'] = numpy.vstack([td['array'] for td in new_table])
@@ -337,7 +332,8 @@ def build_optimized_tables(quadrature_rule,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_triangle(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                                cell, integral_type, element, avg, entitytype, local_derivatives,
+                                flat_component))
                     t = new_table[0]
                     t['array'] = numpy.vstack([td['array'] for td in new_table])
                 elif cell_type == "hexahedron":

@@ -3,32 +3,11 @@ import ufl
 import basix
 
 
-basix_cells = {
-    "interval": basix.CellType.interval,
-    "triangle": basix.CellType.triangle,
-    "tetrahedron": basix.CellType.tetrahedron,
-    "prism": basix.CellType.prism,
-    "pyramid": basix.CellType.pyramid,
-    "quadrilateral": basix.CellType.quadrilateral,
-    "hexahedron": basix.CellType.hexahedron
-}
-
-# This dictionary can be used to map ufl element names to basix element names.
-# Currently all the names agree but this will not necessarily remian true.
-ufl_to_basix_names = {
-    "Q": "Lagrange",
-    "DQ": "Discontinuous Lagrange",
-    "RTCE": "Nedelec 1st kind H(curl)",
-    "NCE": "Nedelec 1st kind H(curl)",
-    "RTCF": "Raviart-Thomas",
-    "NCF": "Raviart-Thomas",
-}
-
-
 def create_element(ufl_element):
     """Create an element from a UFL element."""
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
+    # TODO: Allow different args for different parts of mixed element
 
     if isinstance(ufl_element, ufl.VectorElement):
         return BlockedElement(create_element(ufl_element.sub_elements()[0]),
@@ -40,15 +19,21 @@ def create_element(ufl_element):
     if isinstance(ufl_element, ufl.MixedElement):
         return MixedElement([create_element(e) for e in ufl_element.sub_elements()])
 
-    if ufl_element.family() in ufl_to_basix_names:
-        return BasixElement(basix.create_element(
-            ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
-
     if ufl_element.family() == "Quadrature":
         return QuadratureElement(ufl_element)
 
-    return BasixElement(basix.create_element(
-        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
+    variant_info = []
+
+    if ufl_element.family() in ["Lagrange", "Q"]:
+        if ufl_element.variant() is None:
+            variant_info.append(basix.LatticeType.equispaced)
+        else:
+            variant_info.append(basix.lattice.string_to_type(ufl_element.variant()))
+
+    family_type = basix.finite_element.string_to_family(ufl_element.family(), ufl_element.cell().cellname())
+    cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
+
+    return BasixElement(family_type, cell_type, ufl_element.degree(), variant_info)
 
 
 def basix_index(*args):
@@ -60,18 +45,18 @@ def create_quadrature(cellname, degree, rule):
     """Create a quadrature rule."""
     if cellname == "vertex":
         return [[]], [1]
-    return basix.make_quadrature(rule, basix_cells[cellname], degree)
+    return basix.make_quadrature(rule, basix.cell.string_to_type(cellname), degree)
 
 
 def reference_cell_vertices(cellname):
     """Get the vertices of a reference cell."""
-    return basix.geometry(basix_cells[cellname])
+    return basix.geometry(basix.cell.string_to_type(cellname))
 
 
 def map_facet_points(points, facet, cellname):
     """Map points from a reference facet to a physical facet."""
-    geom = basix.geometry(basix_cells[cellname])
-    facet_vertices = [geom[i] for i in basix.topology(basix_cells[cellname])[-2][facet]]
+    geom = basix.geometry(basix.cell.string_to_type(cellname))
+    facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
 
     return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
             for p in points]
@@ -178,12 +163,30 @@ class BaseElement:
         """Get the geometry of the reference element."""
         raise NotImplementedError
 
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        raise NotImplementedError
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        raise NotImplementedError
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        raise NotImplementedError
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, element):
-        self.element = element
+    def __init__(self, family_type, cell_type, degree, variant_info):
+        self.element = basix.create_element(family_type, cell_type, degree, *variant_info)
+        self._family = family_type
+        self._cell = cell_type
+        self._variant_info = variant_info
 
     def tabulate(self, nderivs, points):
         """Tabulate the basis functions of the element.
@@ -270,7 +273,7 @@ class BasixElement(BaseElement):
     @property
     def family_name(self):
         """Get the family name of the element."""
-        return basix.family_to_str(self.element.family)
+        return self.element.family.name
 
     @property
     def reference_topology(self):
@@ -281,6 +284,24 @@ class BasixElement(BaseElement):
     def reference_geometry(self):
         """Get the geometry of the reference element."""
         return basix.geometry(self.element.cell_type)
+
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        for a in self._variant_info:
+            if isinstance(a, basix.LatticeType):
+                return a
+        return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self._family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self._cell
 
 
 class ComponentElement(BaseElement):
@@ -335,6 +356,21 @@ class ComponentElement(BaseElement):
         if flat_component == 0:
             return self, 0, 1
         raise NotImplementedError
+
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        return self.element.lattice_type
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self.element.element_family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self.element.cell_type
 
 
 class MixedElement(BaseElement):
@@ -480,6 +516,21 @@ class MixedElement(BaseElement):
         """Get the geometry of the reference element."""
         return self.sub_elements[0].reference_geometry
 
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return None
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return None
+
 
 class BlockedElement(BaseElement):
     """An element with a block size that contains multiple copies of a sub element."""
@@ -601,6 +652,21 @@ class BlockedElement(BaseElement):
         """Get the geometry of the reference element."""
         return self.sub_element.reference_geometry
 
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        return self.sub_element.lattice_type
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self.sub_element.element_family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self.sub_element.cell_type
+
 
 class QuadratureElement(BaseElement):
     """A quadrature element."""
@@ -717,3 +783,18 @@ class QuadratureElement(BaseElement):
     def family_name(self):
         """Get the family name of the element."""
         return self._ufl_element.family()
+
+    @property
+    def lattice_type(self):
+        """Get the lattice type used to initialise the element."""
+        return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return None
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return None

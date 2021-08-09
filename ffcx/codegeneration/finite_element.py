@@ -42,6 +42,20 @@ def generator(ir, parameters):
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
 
+    if ir.lattice_type is None:
+        d["lattice_type"] = -1
+    else:
+        d["lattice_type"] = int(ir.lattice_type)
+
+    if ir.basix_family is None:
+        d["basix_family"] = -1
+    else:
+        d["basix_family"] = int(ir.basix_family)
+    if ir.basix_cell is None:
+        d["basix_cell"] = -1
+    else:
+        d["basix_cell"] = int(ir.basix_cell)
+
     import ffcx.codegeneration.C.cnodes as L
 
     if len(ir.value_shape) > 0:

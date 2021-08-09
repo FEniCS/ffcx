@@ -11,7 +11,7 @@ jobs:
   build:
     name: Run DOLFINx tests
     runs-on: ubuntu-latest
-    container: fenicsproject/test-env:openmpi
+    container: fenicsproject/test-env:latest-openmpi
 
     env:
       CC: clang-10
@@ -58,7 +58,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: main
+          ref: mscroggs/lagrange_gll
       - name: Clone and install DOLFINx
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
