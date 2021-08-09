@@ -35,8 +35,8 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: mscroggs/lagrange_gll
-    
+          ref: main
+
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
