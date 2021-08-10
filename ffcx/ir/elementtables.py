@@ -427,7 +427,7 @@ def is_diagonal_table(table, rtol=default_rtol, atol=default_atol):
         if numpy.allclose(icount, 1) and numpy.allclose(jcount, 1):
             if numpy.allclose(table[0, 0, i, j], 1.0):
                 status = True
-    
+
     return status
 
 
