@@ -1,6 +1,6 @@
 # Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -10,82 +10,15 @@
 
 import logging
 
-import numpy
 import ffcx.codegeneration.finite_element_template as ufc_finite_element
 import ufl
-from ffcx.codegeneration.utils import (generate_return_int_switch,
-                                       generate_return_new_switch,
-                                       apply_transformations_to_data)
 
 logger = logging.getLogger("ffcx")
 index_type = "int"
 
 
-def _generate_combinations(L, tdim, max_degree, order, num_derivatives, suffix=""):
-    max_num_derivatives = tdim**max_degree
-    combinations = L.Symbol("combinations" + suffix)
-
-    # This precomputes the combinations for each order and stores in code as table
-    # Python equivalent precomputed for each valid order:
-    combinations_shape = (max_degree, max_num_derivatives, max_degree)
-    all_combinations = numpy.zeros(combinations_shape, dtype=int)
-    for q in range(1, max_degree + 1):
-        for row in range(1, max_num_derivatives):
-            for num in range(0, row):
-                for col in range(q - 1, -1, -1):
-                    if all_combinations[q - 1][row][col] > tdim - 2:
-                        all_combinations[q - 1][row][col] = 0
-                    else:
-                        all_combinations[q - 1][row][col] += 1
-                        break
-    code = [
-        L.Comment("Precomputed combinations"),
-        L.ArrayDecl(
-            "const " + index_type, combinations, combinations_shape, values=all_combinations),
-    ]
-    # Select the right order for further access
-    combinations = combinations[order - 1]
-
-    return code, combinations
-
-
-def value_dimension(L, value_shape):
-    return generate_return_int_switch(L, "i", value_shape, 1)
-
-
-def reference_value_dimension(L, reference_value_shape):
-    return generate_return_int_switch(L, "i", reference_value_shape, 1)
-
-
-def sub_element_declaration(L, ir):
-    classnames = set(ir.create_sub_element)
-    code = ""
-    for name in classnames:
-        code += f"ufc_finite_element* create_{name}(void);\n"
-    return code
-
-
-def create_sub_element(L, ir):
-    classnames = ir.create_sub_element
-    return generate_return_new_switch(L, "i", classnames)
-
-
-def apply_dof_transformation(L, ir, parameters, inverse=False, transpose=False, dtype="double"):
-    """Write function that applies the DOF transformations to some data."""
-    data = L.Symbol("data")
-    block = L.Symbol("block")
-    block_size = L.Symbol("dim")
-
-    apply_transformations = apply_transformations_to_data(
-        L, ir.base_transformations, ir.cell_shape, data, inverse=inverse, transpose=transpose,
-        indices=lambda dof: dof * block_size + block, ranges=[(block, 0, block_size)],
-        dtype=dtype)
-    return apply_transformations + [L.Return(0)]
-
-
 def generator(ir, parameters):
     """Generate UFC code for a finite element."""
-
     logger.info("Generating code for finite element:")
     logger.info(f"--- family: {ir.family}")
     logger.info(f"--- degree: {ir.degree}")
@@ -108,25 +41,34 @@ def generator(ir, parameters):
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
     d["needs_transformation_data"] = ir.needs_transformation_data
-    d["interpolation_is_identity"] = ir.interpolation_is_identity
 
     import ffcx.codegeneration.C.cnodes as L
 
-    d["value_dimension"] = value_dimension(L, ir.value_shape)
-    d["reference_value_dimension"] = reference_value_dimension(L, ir.reference_value_shape)
+    if len(ir.value_shape) > 0:
+        d["value_shape"] = f"value_shape_{ir.name}"
+        d["value_shape_init"] = L.ArrayDecl(
+            "int", f"value_shape_{ir.name}", values=ir.value_shape, sizes=len(ir.value_shape))
+    else:
+        d["value_shape"] = "NULL"
+        d["value_shape_init"] = ""
 
-    d["apply_dof_transformation"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters))
-    d["apply_dof_transformation_to_scalar"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, dtype="ufc_scalar_t"))
-    d["apply_inverse_transpose_dof_transformation"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, inverse=True, transpose=True))
-    d["apply_inverse_transpose_dof_transformation_to_scalar"] = L.StatementList(
-        apply_dof_transformation(L, ir, parameters, dtype="ufc_scalar_t", inverse=True, transpose=True))
+    if len(ir.value_shape) > 0:
+        d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
+        d["reference_value_shape_init"] = L.ArrayDecl(
+            "int", f"reference_value_shape_{ir.name}",
+            values=ir.reference_value_shape, sizes=len(ir.reference_value_shape))
+    else:
+        d["reference_value_shape"] = "NULL"
+        d["reference_value_shape_init"] = ""
 
-    statements = create_sub_element(L, ir)
-    d["sub_element_declaration"] = sub_element_declaration(L, ir)
-    d["create_sub_element"] = statements
+    if len(ir.sub_elements) > 0:
+        d["sub_elements"] = f"sub_elements_{ir.name}"
+        d["sub_elements_init"] = L.ArrayDecl(
+            "ufc_finite_element*", f"sub_elements_{ir.name}",
+            values=[L.AddressOf(L.Symbol(el)) for el in ir.sub_elements], sizes=len(ir.sub_elements))
+    else:
+        d["sub_elements"] = "NULL"
+        d["sub_elements_init"] = ""
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

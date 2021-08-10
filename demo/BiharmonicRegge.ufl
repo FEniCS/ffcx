@@ -1,24 +1,24 @@
 # Copyright (C) 2016 Lizao Li
 #
-# This file is part of FFCX.
+# This file is part of FFCx.
 #
-# FFC is free software: you can redistribute it and/or modify
+# FFCx is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFC is distributed in the hope that it will be useful,
+# FFCx is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # Biharmonic equation in Regge formulation.
 #
-# Compile this form with FFC: ffcx BiharmonicRegge.ufl
+# Compile this form with FFCx: ffcx BiharmonicRegge.ufl
 
 REG = FiniteElement('Regge', tetrahedron, 1)
 CG =  FiniteElement('Lagrange', tetrahedron, 2)

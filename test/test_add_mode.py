@@ -1,6 +1,6 @@
 # Copyright (C) 2019 Chris Richardson
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -35,21 +35,20 @@ def test_additive_facet_integral(mode, compile_args):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.ds
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
     ffi = cffi.FFI()
-    form0 = compiled_forms[0][0]
+    form0 = compiled_forms[0]
 
-    assert form0.num_exterior_facet_integrals == 1
-    ids = np.zeros(form0.num_exterior_facet_integrals, dtype=np.int32)
-    form0.get_exterior_facet_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert form0.num_integrals(module.lib.exterior_facet) == 1
+    ids = form0.integral_ids(module.lib.exterior_facet)
     assert ids[0] == -1
 
-    default_integral = form0.create_exterior_facet_integral(ids[0])
+    default_integral = form0.integrals(module.lib.exterior_facet)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -58,7 +57,9 @@ def test_additive_facet_integral(mode, compile_args):
     facets = np.array([0], dtype=np.int32)
     perm = np.array([0], dtype=np.uint8)
 
-    coords = np.array([0.0, 2.0, np.sqrt(3.0), -1.0, -np.sqrt(3.0), -1.0], dtype=np.float64)
+    coords = np.array([0.0, 2.0, 0.0,
+                       np.sqrt(3.0), -1.0, 0.0,
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
 
     for i in range(3):
         facets[0] = i
@@ -80,28 +81,29 @@ def test_additive_cell_integral(mode, compile_args):
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
-    compiled_forms, module = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
     ffi = cffi.FFI()
-    form0 = compiled_forms[0][0]
+    form0 = compiled_forms[0]
 
-    assert form0.num_cell_integrals == 1
-    ids = np.zeros(form0.num_cell_integrals, dtype=np.int32)
-    form0.get_cell_integral_ids(ffi.cast('int *', ids.ctypes.data))
+    assert form0.num_integrals(module.lib.cell) == 1
+    ids = form0.integral_ids(module.lib.cell)
     assert ids[0] == -1
 
-    default_integral = form0.create_cell_integral(ids[0])
+    default_integral = form0.integrals(0)[0]
 
     c_type, np_type = float_to_type(mode)
     A = np.zeros((3, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
-    coords = np.array([0.0, 2.0, np.sqrt(3.0), -1.0, -np.sqrt(3.0), -1.0], dtype=np.float64)
+    coords = np.array([0.0, 2.0, 0.0,
+                       np.sqrt(3.0), -1.0, 0.0,
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
 
     default_integral.tabulate_tensor(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),

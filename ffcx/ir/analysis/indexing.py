@@ -1,6 +1,6 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Algorithms for working with multiindices."""
@@ -15,8 +15,8 @@ def map_indexed_arg_components(indexed):
     """Build a map from flattened components to subexpression.
 
     Builds integer list mapping between flattened components
-    of indexed expression and its underlying tensor-valued subexpression."""
-
+    of indexed expression and its underlying tensor-valued subexpression.
+    """
     assert isinstance(indexed, Indexed)
 
     # AKA indexed = tensor[multiindex]
@@ -88,8 +88,8 @@ def map_component_tensor_arg_components(tensor):
     """Build a map from flattened components to subexpression.
 
     Builds integer list mapping between flattended components
-    of tensor and its underlying indexed subexpression."""
-
+    of tensor and its underlying indexed subexpression.
+    """
     assert isinstance(tensor, ComponentTensor)
 
     # AKA tensor = as_tensor(indexed, multiindex)

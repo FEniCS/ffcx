@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2019 Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -46,10 +46,11 @@ def test_matvec(compile_args):
     expr = ufl.Constant(mesh) * ufl.dot(a, f)
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
+    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
-    kernel = obj[0][0]
+    expression = obj[0]
 
     c_type, np_type = float_to_type("double")
 
@@ -62,9 +63,11 @@ def test_matvec(compile_args):
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
-    # Coords storage XYXYXY
-    coords = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 1.0], dtype=np.float64)
-    kernel.tabulate_expression(
+    # Coords storage XYZXYZXYZ
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
+    expression.tabulate_expression(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
@@ -77,13 +80,14 @@ def test_matvec(compile_args):
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
 
     # Prepare NumPy array of points attached to the expression
-    length = kernel.num_points * kernel.topological_dimension
-    points_kernel = np.frombuffer(ffi.buffer(kernel.points, length * ffi.sizeof("double")), np.double)
+    length = expression.num_points * expression.topological_dimension
+    points_kernel = np.frombuffer(ffi.buffer(expression.points, length * ffi.sizeof("double")), np.double)
     points_kernel = points_kernel.reshape(points.shape)
     assert np.allclose(points, points_kernel)
 
     # Check the value shape attached to the expression
-    value_shape = np.frombuffer(ffi.buffer(kernel.value_shape, kernel.num_components * ffi.sizeof("int")), np.intc)
+    value_shape = np.frombuffer(ffi.buffer(expression.value_shape,
+                                           expression.num_components * ffi.sizeof("int")), np.intc)
     assert np.allclose(expr.ufl_shape, value_shape)
 
 
@@ -103,10 +107,11 @@ def test_rank1(compile_args):
     expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module = ffcx.codegeneration.jit.compile_expressions([(expr, points)], cffi_extra_compile_args=compile_args)
+    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
-    kernel = obj[0][0]
+    expression = obj[0]
 
     c_type, np_type = float_to_type("double")
 
@@ -121,9 +126,10 @@ def test_rank1(compile_args):
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
-    # Coords storage XYXYXY
-    coords = np.array(points.flatten(), dtype=np.float64)
-    kernel.tabulate_expression(
+    # Coords storage XYZXYZXYZ
+    coords = np.zeros((points.shape[0], 3), dtype=np.float64)
+    coords[:, :2] = points
+    expression.tabulate_expression(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),

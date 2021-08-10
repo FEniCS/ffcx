@@ -1,6 +1,6 @@
 # Copyright (C) 2005-2020 Anders Logg, Michal Habera, Jack S. Hale
 #
-# This file is part of FFCX. (https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -39,7 +39,7 @@ FFCX_DEFAULT_PARAMETERS = {
 
 @functools.lru_cache(maxsize=None)
 def _load_parameters():
-    """Loads parameters from JSON files."""
+    """Load parameters from JSON files."""
     user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
     try:
         with open(user_config_file) as f:
@@ -90,7 +90,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     """
     parameters = {}
 
-    for param, (value, desc) in FFCX_DEFAULT_PARAMETERS.items():
+    for param, (value, _) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
 
     # NOTE: _load_parameters uses functools.lru_cache

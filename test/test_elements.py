@@ -1,29 +1,29 @@
 # Copyright (C) 2007-2017 Anders Logg and Garth N. Wells
 #
-# This file is part of FFCX.
+# This file is part of FFCx.
 #
-# FFC is free software: you can redistribute it and/or modify
+# FFCx is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFC is distributed in the hope that it will be useful,
+# FFCx is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2010
 # Modified by Lizao Li, 2016
-"Unit tests for FFCX"
+"Unit tests for FFCx"
 
 
 import numpy
 import pytest
 
-from ffcx.basix_interface import create_basix_element
+from ffcx.element_interface import create_element
 from ufl import FiniteElement
 
 
@@ -50,28 +50,28 @@ def random_point(shape):
 @pytest.mark.parametrize("degree, expected_dim", [(1, 3), (2, 6), (3, 10)])
 def test_continuous_lagrange(degree, expected_dim):
     "Test space dimensions of continuous Lagrange elements."
-    P = create_basix_element(FiniteElement("Lagrange", "triangle", degree))
+    P = create_element(FiniteElement("Lagrange", "triangle", degree))
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = create_basix_element(FiniteElement("Lagrange", "quadrilateral", degree))
+    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree))
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral_spectral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = create_basix_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
+    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."
-    P = create_basix_element(FiniteElement("DG", "triangle", degree))
+    P = create_element(FiniteElement("DG", "triangle", degree))
     assert P.dim == expected_dim
 
 
@@ -79,7 +79,7 @@ def test_discontinuous_lagrange(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
-    P = create_basix_element(FiniteElement("Regge", "triangle", degree))
+    P = create_element(FiniteElement("Regge", "triangle", degree))
     assert P.dim == expected_dim
 
 
@@ -87,7 +87,7 @@ def test_regge(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def xtest_hhj(degree, expected_dim):
     "Test space dimensions of Hellan-Herrmann-Johnson element."
-    P = create_basix_element(FiniteElement("HHJ", "triangle", degree))
+    P = create_element(FiniteElement("HHJ", "triangle", degree))
     assert P.dim == expected_dim
 
 
@@ -183,7 +183,7 @@ supported (non-mixed) for low degrees"""
     @pytest.mark.parametrize("family, cell, degree, reference", tests)
     def test_values(self, family, cell, degree, reference):
         # Create element
-        element = create_basix_element(FiniteElement(family, cell, degree))
+        element = create_element(FiniteElement(family, cell, degree))
 
         # Get some points and check basis function values at points
         points = [random_point(element_coords(cell)) for i in range(5)]

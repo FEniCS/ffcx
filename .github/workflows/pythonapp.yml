@@ -4,7 +4,16 @@
 
 name: FFCx CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "*.*.*.*"
+      - "*.*.*"
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -31,12 +40,11 @@ jobs:
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libeigen3-dev
+          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
 
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
-        run: brew install graphviz ninja pkg-config eigen
+        run: brew install graphviz ninja pkg-config
 
       - name: Install dependencies (Python)
         run: |
@@ -45,6 +53,7 @@ jobs:
           cmake --build build-dir
           sudo cmake --install build-dir
           pip install ./basix/python
+          rm -rf basix
           pip install pygraphviz
           pip install git+https://github.com/FEniCS/ufl.git@michal/expressions --user
 
@@ -100,21 +109,31 @@ jobs:
           path: doc/build/html/
           retention-days: 2
           if-no-files-found: error
+
       - name: Checkout FEniCS/docs
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
         uses: actions/checkout@v2
         with:
           repository: "FEniCS/docs"
           path: "docs"
           ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
-      - name: Push documentation to repository FEniCS/docs
-        if: ${{ github.repository == 'FEniCS/ffcx' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
+      - name: Set version name
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        run: |
+          echo "VERSION_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Copy documentation into repository
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        run: |
+          cd docs
+          git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}
+          mkdir -p ffcx/${{ env.VERSION_NAME }}
+          cp -r ../doc/build/html/* ffcx/${{ env.VERSION_NAME }}
+      - name: Commit and push documentation to FEniCS/docs
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
         run: |
           cd docs
           git config --global user.email "fenics@github.com"
           git config --global user.name "FEniCS GitHub Actions"
-          git rm -r ffcx/main/*
-          mkdir -p ffcx/main
-          cp -r ../doc/build/html/* ffcx/main
           git add --all
           git commit --allow-empty -m "Python FEniCS/ffcx@${{ github.sha }}"
           git push

@@ -1,6 +1,6 @@
 # Copyright (C) 2019 Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 import collections
@@ -18,7 +18,6 @@ logger = logging.getLogger("ffcx")
 
 def generator(ir, parameters):
     """Generate UFC code for an expression."""
-
     logger.info("Generating code for expression:")
     logger.info(f"--- points: {ir.points}")
     logger.info(f"--- name: {ir.name}")
@@ -29,45 +28,50 @@ def generator(ir, parameters):
     declaration = expressions_template.declaration.format(factory_name=factory_name)
 
     backend = FFCXBackend(ir, parameters)
+    L = backend.language
     eg = ExpressionGenerator(ir, backend)
 
-    code = {}
-    code["name"] = f"{ir.name}_expression"
+    d = {}
+    d["factory_name"] = ir.name
     parts = eg.generate()
 
     body = format_indented_lines(parts.cs_format(), 1)
-    code["tabulate_expression"] = body
+    d["tabulate_expression"] = body
 
-    code["original_coefficient_positions"] = format_indented_lines(
-        eg.generate_original_coefficient_positions().cs_format(), 1)
+    if len(ir.original_coefficient_positions) > 0:
+        d["original_coefficient_positions"] = f"original_coefficient_positions_{ir.name}"
+        d["original_coefficient_positions_init"] = L.ArrayDecl(
+            "static int", f"original_coefficient_positions_{ir.name}",
+            values=ir.original_coefficient_positions, sizes=len(ir.original_coefficient_positions))
+    else:
+        d["original_coefficient_positions"] = L.Null()
+        d["original_coefficient_positions_init"] = ""
 
-    code["coefficient_names"] = format_indented_lines(
-        eg.generate_coefficient_names().cs_format(), 1)
+    d["points_init"] = L.ArrayDecl(
+        "static double", f"points_{ir.name}", values=ir.points.flatten(), sizes=ir.points.size)
+    d["points"] = L.Symbol(f"points_{ir.name}")
 
-    code["constant_names"] = format_indented_lines(
-        eg.generate_constant_names().cs_format(), 1)
+    if len(ir.expression_shape) > 0:
+        d["value_shape_init"] = L.ArrayDecl(
+            "static int", f"value_shape_{ir.name}", values=ir.expression_shape, sizes=len(ir.expression_shape))
+        d["value_shape"] = f"value_shape_{ir.name}"
+    else:
+        d["value_shape_init"] = ""
+        d["value_shape"] = L.Null()
 
-    code["points"] = format_indented_lines(eg.generate_points().cs_format(), 1)
-    code["value_shape"] = format_indented_lines(eg.generate_value_shape().cs_format(), 1)
-    code["num_argument_dofs"] = format_indented_lines(eg.generate_num_argument_dofs().cs_format(), 1)
+    d["num_components"] = len(ir.expression_shape)
+    d["num_coefficients"] = len(ir.coefficient_numbering)
+    d["num_points"] = ir.points.shape[0]
+    d["topological_dimension"] = ir.points.shape[1]
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
+
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
-    implementation = expressions_template.factory.format(
-        signature=f"\"{ir.signature}\"",
-        factory_name=factory_name,
-        tabulate_expression=code["tabulate_expression"],
-        original_coefficient_positions=code["original_coefficient_positions"],
-        coefficient_names=code["coefficient_names"],
-        constant_names=code["constant_names"],
-        num_coefficients=len(ir.coefficient_numbering),
-        num_constants=len(ir.constant_names),
-        num_points=ir.points.shape[0],
-        topological_dimension=ir.points.shape[1],
-        num_components=len(ir.expression_shape),
-        points=code["points"],
-        value_shape=code["value_shape"],
-        num_arguments=len(ir.tensor_shape),
-        num_argument_dofs=code["num_argument_dofs"])
+    implementation = expressions_template.factory.format_map(d)
 
     return declaration, implementation
 
@@ -82,7 +86,6 @@ class ExpressionGenerator:
         self.backend = backend
         self.scope = {}
         self._ufl_names = set()
-        self.finalization_blocks = collections.defaultdict(list)
         self.symbol_counters = collections.defaultdict(int)
         self.shared_symbols = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
@@ -427,73 +430,4 @@ class ExpressionGenerator:
             if use_symbol_array:
                 parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates))]
             parts += intermediates
-        return parts
-
-    def generate_original_coefficient_positions(self):
-        """Generate original coefficient positions.
-
-        Maps coefficient position index in processed expression
-        to coefficient position index in original, non-processed expression.
-
-        """
-        L = self.backend.language
-        num_coeffs = len(self.ir.original_coefficient_positions)
-        orig_pos = L.Symbol("original_coefficient_positions")
-        if num_coeffs > 0:
-            parts = [L.ArrayDecl("static const int", orig_pos,
-                                 values=self.ir.original_coefficient_positions,
-                                 sizes=(num_coeffs, ))]
-            parts += [L.Assign("expression->original_coefficient_positions", orig_pos)]
-        else:
-            parts = []
-        return L.StatementList(parts)
-
-    def generate_coefficient_names(self):
-        L = self.backend.language
-        num_coeffs = len(self.ir.original_coefficient_positions)
-        names = L.Symbol("coefficient_names")
-        cnames = self.ir.coefficient_names
-        if num_coeffs > 0:
-            parts = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
-            parts += [L.Assign("expression->coefficient_names", names)]
-        else:
-            parts = []
-        return L.StatementList(parts)
-
-    def generate_constant_names(self):
-        """Generate code that maps original position of a constant to its name."""
-        L = self.backend.language
-        cnames = self.ir.constant_names
-        names = L.Symbol("names")
-        if (len(cnames) == 0):
-            parts = []
-        else:
-            parts = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
-            parts += [L.Assign("expression->constant_names", names)]
-        return L.StatementList(parts)
-
-    def generate_points(self):
-        """Generate and store compile-time known reference points at which the expression was evaluated."""
-        L = self.backend.language
-        parts = L.ArrayDecl("static const double", "points", values=self.ir.points,
-                            sizes=self.ir.points.shape)
-        return parts
-
-    def generate_value_shape(self):
-        """Generate the array holding the expression's shape, which is to be exposed to the user.
-
-        This is only concerned with the array itself. Its length has to be exposed separately.
-
-        """
-        L = self.backend.language
-        # C doesn't allow for empty array declaration -> create a dummy zero array in this case
-        shape = self.ir.expression_shape if len(self.ir.expression_shape) > 0 else [0]
-        parts = L.ArrayDecl("static const int", "value_shape", values=shape, sizes=len(shape))
-        return parts
-
-    def generate_num_argument_dofs(self):
-        L = self.backend.language
-        # C doesn't allow for empty array declaration -> create a dummy zero array in this case
-        num_arg_dofs = self.ir.tensor_shape if len(self.ir.tensor_shape) > 0 else [0]
-        parts = L.ArrayDecl("static const int", "num_argument_dofs", values=num_arg_dofs, sizes=len(num_arg_dofs))
         return parts

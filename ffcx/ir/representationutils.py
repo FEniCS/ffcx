@@ -1,6 +1,6 @@
 # Copyright (C) 2012-2017 Marie Rognes
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utility functions for some code shared between representations."""
@@ -9,7 +9,7 @@ import hashlib
 import logging
 
 import numpy
-from ffcx.basix_interface import create_quadrature, reference_cell_vertices, map_facet_points
+from ffcx.element_interface import create_quadrature, reference_cell_vertices, map_facet_points
 
 import ufl
 
@@ -32,7 +32,7 @@ class QuadratureRule:
         return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
 
     def id(self):
-        """Returns unique deterministic identifier.
+        """Return unique deterministic identifier.
 
         Note
         ----
@@ -45,14 +45,12 @@ class QuadratureRule:
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
-
-    # from IPython import embed; embed()
     if integral_type == "cell":
-        return create_quadrature(cell.cellname(), degree + 1, rule)
+        return create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
-        return create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree + 1, rule)
+        return create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree, rule)
     elif integral_type in ufl.measure.point_integral_types:
-        return create_quadrature("vertex", degree + 1, rule)
+        return create_quadrature("vertex", degree, rule)
     elif integral_type == "expression":
         return (None, None)
 
@@ -62,7 +60,6 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
 
 def integral_type_to_entity_dim(integral_type, tdim):
     """Given integral_type and domain tdim, return the tdim of the integration entity."""
-
     if integral_type == "cell":
         entity_dim = tdim
     elif integral_type in ufl.measure.facet_integral_types:

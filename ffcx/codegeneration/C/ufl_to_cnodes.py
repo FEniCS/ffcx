@@ -1,6 +1,6 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for C/C++ expression formatting."""
@@ -188,7 +188,7 @@ class UFL2CNodesTranslatorCpp(object):
             raise RuntimeError(f"Missing C formatting rule for expr type {otype}.")
 
     def expr(self, o, *args):
-        """Generic fallback with error message for missing rules."""
+        """Raise generic fallback with error message for missing rules."""
         raise RuntimeError(f"Missing C formatting rule for expr type {o._ufl_class_}.")
 
     # === Formatting rules for scalar literals ===

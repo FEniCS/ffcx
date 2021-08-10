@@ -1,6 +1,6 @@
 # Copyright (C) 2009-2020 Anders Logg and Michal Habera
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -10,34 +10,18 @@ import ffcx
 import ufl
 
 
-def compute_signature(ufl_objects, tag, coordinate_mapping=False):
+def compute_signature(ufl_objects, tag):
     """Compute the signature hash.
+
     Based on the UFL type of the objects and an additional optional
     'tag'.
-
-    Note
-    ----
-    The parameter `coordinate_mapping` is used to force compilation of
-    finite element as a coordinate mapping element. There is no way to
-    find this information just by looking at type of `ufl_object`
-    passed.
-
     """
-
     object_signature = ""
     for ufl_object in ufl_objects:
         # Get signature from ufl object
         if isinstance(ufl_object, ufl.Form):
             kind = "form"
             object_signature += ufl_object.signature()
-        elif isinstance(ufl_object, ufl.Mesh):
-            # When coordinate mapping is represented by a Mesh, just getting
-            # its coordinate element
-            object_signature += repr(ufl_object.ufl_coordinate_element())
-            kind = "coordinate_mapping"
-        elif coordinate_mapping and isinstance(ufl_object, ufl.FiniteElementBase):
-            object_signature += repr(ufl_object)
-            kind = "coordinate_mapping"
         elif isinstance(ufl_object, ufl.FiniteElementBase):
             object_signature += repr(ufl_object)
             kind = "element"
@@ -81,29 +65,29 @@ def compute_signature(ufl_objects, tag, coordinate_mapping=False):
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
-def integral_name(integral_type, original_form, form_id, subdomain_id):
-    sig = compute_signature([original_form], str(form_id))
-    return "integral_{}_{}_{!s}".format(integral_type, subdomain_id, sig)
+def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
+    sig = compute_signature([original_form], str((prefix, integral_type, form_id, subdomain_id)))
+    return f"integral_{sig}"
 
 
-def form_name(original_form, form_id):
-    sig = compute_signature([original_form], str(form_id))
-    return "form_{!s}".format(sig)
+def form_name(original_form, form_id, prefix):
+    sig = compute_signature([original_form], str((prefix, form_id)))
+    return f"form_{sig}"
 
 
 def finite_element_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
-    return "element_{!s}".format(sig)
+    return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
-    return "dofmap_{!s}".format(sig)
+    return f"dofmap_{sig}"
 
 
-def coordinate_map_name(ufl_element, prefix):
-    assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], prefix, coordinate_mapping=True)
-    return "coordinate_mapping_{!s}".format(sig)
+def expression_name(expression, prefix):
+    assert isinstance(expression[0], ufl.core.expr.Expr)
+    sig = compute_signature([expression], prefix)
+    return f"expression_{sig}"

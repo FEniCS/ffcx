@@ -1,11 +1,12 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFCX/UFC specific symbol naming."""
+"""FFCx/UFC specific symbol naming."""
 
 import logging
+import ufl.utils.derivativetuples
 
 logger = logging.getLogger("ffcx")
 
@@ -42,7 +43,10 @@ def format_mt_name(basename, mt):
 
     # Format local derivatives
     if mt.local_derivatives:
-        der = f"_d{''.join(map(str, mt.local_derivatives))}"
+        # Convert "listing" derivative multindex into "counting" representation
+        gdim = mt.terminal.ufl_domain().geometric_dimension()
+        ld_counting = ufl.utils.derivativetuples.derivative_listing_to_counts(mt.local_derivatives, gdim)
+        der = f"_d{''.join(map(str, ld_counting))}"
         access += der
 
     # Add flattened component to name
@@ -54,7 +58,7 @@ def format_mt_name(basename, mt):
 
 
 class FFCXBackendSymbols(object):
-    """FFCX specific symbol definitions. Provides non-ufl symbols."""
+    """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
     def __init__(self, language, coefficient_numbering, coefficient_offsets,
                  original_constant_offsets):
@@ -64,14 +68,6 @@ class FFCXBackendSymbols(object):
         self.coefficient_offsets = coefficient_offsets
 
         self.original_constant_offsets = original_constant_offsets
-
-        # Used for padding variable names based on restriction
-#        self.restriction_postfix = {r: ufc_restriction_postfix(r) for r in ("+", "-", None)}
-
-        # TODO: Make this configurable for easy experimentation with dolfinx!
-        # Coordinate dofs for each component are interleaved? Must match dolfinx.
-        # True = XYZXYZXYZXYZ, False = XXXXYYYYZZZZ
-        self.interleaved_components = True
 
     def element_tensor(self):
         """Symbol for the element tensor itself."""
@@ -86,9 +82,9 @@ class FFCXBackendSymbols(object):
             postfix = "[0]"
             if restriction == "-":
                 postfix = "[1]"
-            return self.S("facet" + postfix)
+            return self.S("entity_local_index" + postfix)
         elif entitytype == "vertex":
-            return self.S("vertex[0]")
+            return self.S("entity_local_index[0]")
         else:
             logging.exception(f"Unknown entitytype {entitytype}")
 
@@ -96,55 +92,6 @@ class FFCXBackendSymbols(object):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
-
-    def entity_permutation(self, L, i, cell_shape):
-        """Returns the int that gives the permutation of the entity."""
-        cell_info = self.S("cell_permutation")
-        if cell_shape in ["triangle", "quadrilateral"]:
-            num_faces = 0
-            face_bitsize = 1
-            assert i[0] == 1
-        if cell_shape == "tetrahedron":
-            num_faces = 4
-            face_bitsize = 3
-        if cell_shape == "hexahedron":
-            num_faces = 6
-            face_bitsize = 3
-        if i[0] == 1:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
-        elif i[0] == 2:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 7)
-        return L.LiteralInt(0)
-
-    def entity_reflection(self, L, i, cell_shape):
-        """Returns the bool that says whether or not an entity has been reflected."""
-        cell_info = self.S("cell_permutation")
-        if cell_shape in ["triangle", "quadrilateral"]:
-            num_faces = 0
-            face_bitsize = 1
-            assert i[0] == 1
-        if cell_shape == "tetrahedron":
-            num_faces = 4
-            face_bitsize = 3
-        if cell_shape == "hexahedron":
-            num_faces = 6
-            face_bitsize = 3
-        if i[0] == 1:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * num_faces + i[1]), 1)
-        elif i[0] == 2:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1]), 1)
-        return L.LiteralBool(False)
-
-    def entity_rotations(self, L, i, cell_shape):
-        """Returns the bool that says whether or not an entity has been reflected."""
-        cell_info = self.S("cell_permutation")
-        if cell_shape == "tetrahedron":
-            face_bitsize = 3
-        if cell_shape == "hexahedron":
-            face_bitsize = 3
-        if i[0] == 2:
-            return L.BitwiseAnd(L.BitShiftR(cell_info, face_bitsize * i[1] + 1), 3)
-        return L.LiteralBool(False)
 
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
@@ -157,18 +104,6 @@ class FFCXBackendSymbols(object):
     def quadrature_permutation(self, index):
         """Quadrature permutation, as input to the function."""
         return self.S("quadrature_permutation")[index]
-
-    def num_custom_quadrature_points(self):
-        """Number of quadrature points, argument to custom integrals."""
-        return self.S("num_quadrature_points")
-
-    def custom_quadrature_weights(self):
-        """Quadrature weights including cell measure scaling, argument to custom integrals."""
-        return self.S("quadrature_weights")
-
-    def custom_quadrature_points(self):
-        """Physical quadrature points, argument to custom integrals."""
-        return self.S("quadrature_points")
 
     def custom_weights_table(self):
         """Table for chunk of custom quadrature weights (including cell measure scaling)."""
@@ -199,12 +134,9 @@ class FFCXBackendSymbols(object):
         # FIXME: Add domain number or offset!
         offset = 0
         if restriction == "-":
-            offset = num_scalar_dofs * gdim
+            offset = num_scalar_dofs * 3
         vc = self.S("coordinate_dofs")
-        if self.interleaved_components:
-            return vc[gdim * dof + component + offset]
-        else:
-            return vc[num_scalar_dofs * component + dof + offset]
+        return vc[3 * dof + component + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
@@ -221,7 +153,6 @@ class FFCXBackendSymbols(object):
 
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
-
         c = self.coefficient_numbering[mt.terminal]
         return self.S(format_mt_name("w%d" % (c, ), mt))
 
@@ -256,7 +187,3 @@ class FFCXBackendSymbols(object):
 
         # Return direct access to element table
         return self.named_table(tabledata.name)[qp][entity][iq]
-
-    def expr_component_index(self):
-        """Symbol for indexing the expression's ufl shape."""
-        return self.S("ec")

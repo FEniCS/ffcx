@@ -1,6 +1,6 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
 #
-# This file is part of FFCX.(https://www.fenicsproject.org)
+# This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
@@ -16,6 +16,7 @@ logger = logging.getLogger("ffcx")
 
 class ModifiedTerminal(object):
     """A modified terminal expression is an object of a Terminal subtype.
+
     It is wrapped in terminal modifier types.
 
     The variables of this class are:
@@ -37,7 +38,6 @@ class ModifiedTerminal(object):
         - global_component
         - reference_component
         - flat_component
-
     """
 
     def __init__(self, expr, terminal, reference_value, base_shape, base_symmetry, component,
@@ -91,8 +91,10 @@ class ModifiedTerminal(object):
 
     def argument_ordering_key(self):
         """Return a key for deterministic sorting of argument vertex indices.
+
         The key is based on the properties of the modified terminal.
-        Used in factorization but moved here for closeness with ModifiedTerminal attributes."""
+        Used in factorization but moved here for closeness with ModifiedTerminal attributes.
+        """
         t = self.terminal
         assert isinstance(t, Argument)
         n = t.number()
@@ -239,11 +241,6 @@ def analyse_modified_terminal(expr):
     global_derivatives = tuple(sorted(global_derivatives))
     local_derivatives = tuple(sorted(local_derivatives))
 
-    # TODO: Temporarily letting local_derivatives imply reference_value,
-    #       but this was not intended to be the case
-    # if local_derivatives:
-    #    reference_value = True
-
     # Make reference_value true or false
     reference_value = reference_value or False
 
@@ -284,9 +281,8 @@ def analyse_modified_terminal(expr):
         raise RuntimeError("Component indices %s are outside value shape %s" % (component, base_shape))
 
     # Flatten component
-    vi2si, si2vi = build_component_numbering(base_shape, base_symmetry)
+    vi2si, _ = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
-    # num_flat_components = len(si2vi)
 
     return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,
                             flat_component, global_derivatives, local_derivatives, averaged,
