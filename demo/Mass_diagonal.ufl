@@ -1,0 +1,8 @@
+element = FiniteElement("Lagrange", quadrilateral, 3, variant="gll")
+
+u = TrialFunction(element)
+v = TestFunction(element)
+f = Coefficient(element)
+
+a = inner(f, v) * dx(metadata={"quadrature_rule": "GLL",
+                               "quadrature_degree": 4})

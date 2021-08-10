@@ -29,7 +29,7 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
     ["name", "values", "dofrange", "dofmap", "ttype", "is_piecewise", "is_uniform",
-     "is_permuted"])
+     "is_permuted", "is_diagonal"])
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -353,7 +353,8 @@ def build_optimized_tables(
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
-        if tabletype == "diagonal":
+        is_diagonal = is_diagonal_table(tbl)
+        if is_diagonal:
             tbl = numpy.ones((1, 1, 1, tbl.shape[-1]))
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
@@ -394,7 +395,7 @@ def build_optimized_tables(
         # tables is just np.arrays, mt_tables hold metadata too
         mt_tables[mt] = unique_table_reference_t(
             name, tbl, tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
-            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted)
+            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted, is_diagonal)
 
     return mt_tables
 
@@ -462,7 +463,7 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
         # Identity matrix mapping points to dofs (separately on each entity)
         ttype = "quadrature"
     elif is_diagonal_table(table, rtol=rtol, atol=atol):
-        ttype = "diagonal"
+        ttype = "varying"
     else:
         # Equal for all points on a given entity
         piecewise = is_piecewise_table(table, rtol=rtol, atol=atol)
