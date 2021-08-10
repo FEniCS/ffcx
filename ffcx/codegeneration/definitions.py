@@ -66,15 +66,16 @@ class FFCXBackendDefinitions(object):
         L = self.language
 
         ttype = tabledata.ttype
-        begin, end = tabledata.dofrange
-        dofrange_size = end - begin
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
+        end = begin + tabledata.block_size * (num_dofs - 1) + 1
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
             return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
-        if ttype == "ones" and dofrange_size == 1:
+        if ttype == "ones" and (end - begin == 1):
             return []
 
         assert begin < end
@@ -82,14 +83,15 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
-        unroll = len(tabledata.dofmap) != end - begin
+        dofmap = tuple(begin + i * tabledata.block_size for i in range(num_dofs))
+        unroll = num_dofs != end - begin
         # unroll = True
         if unroll:
             # TODO: Could also use a generated constant dofmap here like in block code
             # Unrolled loop to accumulate linear combination of dofs and tables
             values = [
                 self.symbols.coefficient_dof_access(mt.terminal, idof) * FE[i]
-                for i, idof in enumerate(tabledata.dofmap)
+                for i, idof in enumerate(dofmap)
             ]
             value = L.Sum(values)
             code = [L.VariableDecl("const ufc_scalar_t", access, value)]
@@ -125,15 +127,19 @@ class FFCXBackendDefinitions(object):
         # Find table name
         ttype = tabledata.ttype
 
-        assert len(tabledata.dofmap) <= num_scalar_dofs
+        # assert len(tabledata.dofmap) <= num_scalar_dofs
         assert ttype != "zeros"
         assert ttype != "ones"
+
+        begin = tabledata.offset
+        num_dofs = tabledata.values.shape[3]
+        dofmap = tuple(begin + i * tabledata.block_size for i in range(num_dofs))
 
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         # Inlined version (we know this is bounded by a small number)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-        value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(tabledata.dofmap)])
+        value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(dofmap)])
         code = [L.VariableDecl("const double", access, value)]
 
         return code
