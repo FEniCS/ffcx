@@ -354,8 +354,8 @@ def build_optimized_tables(
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
         is_diagonal = is_diagonal_table(tbl)
-        if is_diagonal:
-            tbl = numpy.ones((1, 1, 1, tbl.shape[-1]))
+        # if is_diagonal:
+        #     tbl = numpy.ones((1, 1, 1, tbl.shape[-1]))
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             tbl = tbl[:, :, :1, :]
