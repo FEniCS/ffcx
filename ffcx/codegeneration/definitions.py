@@ -92,7 +92,7 @@ class FFCXBackendDefinitions(object):
             return code
 
         unroll = len(tabledata.dofmap) != end - begin
-        #  unroll = False
+        unroll = False
         if unroll:
             # TODO: Could also use a generated constant dofmap here like in block code
             # Unrolled loop to accumulate linear combination of dofs and tables
