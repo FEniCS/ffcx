@@ -87,7 +87,7 @@ class FFCXBackendDefinitions(object):
             iq = self.symbols.quadrature_loop_index()
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, iq + begin)
             code = [
-                L.VariableDecl("ufc_scalar_t", access, dof_access * FE[0])
+                L.VariableDecl("ufc_scalar_t", access, dof_access)
             ]
             return code
 
