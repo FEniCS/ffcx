@@ -82,8 +82,17 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
+        if ttype == "varying" and tabledata.is_diagonal:
+            # Loop to accumulate linear combination of dofs and tables
+            iq = self.symbols.quadrature_loop_index()
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, iq + begin)
+            code = [
+                L.VariableDecl("ufc_scalar_t", access, dof_access * FE[0])
+            ]
+            return code
+
         unroll = len(tabledata.dofmap) != end - begin
-        unroll = False
+        #  unroll = False
         if unroll:
             # TODO: Could also use a generated constant dofmap here like in block code
             # Unrolled loop to accumulate linear combination of dofs and tables
