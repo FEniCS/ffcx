@@ -386,8 +386,6 @@ def build_optimized_tables(
             # offset = 0 or number of element dofs, if restricted to "-"
             cell_offset = basix_element.dim
 
-        # dofmap = tuple(offset + i * block_size for i in range(tbl.shape[3]))
-
         offset = cell_offset + t['offset']
         block_size = t['stride']
 

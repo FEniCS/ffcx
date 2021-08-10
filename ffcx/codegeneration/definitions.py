@@ -44,7 +44,7 @@ class FFCXBackendDefinitions(object):
                             ufl.geometry.FacetOrientation: self._expect_table,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
-    def get(self, t, mt, tabledata, num_points, access):
+    def get(self, t, mt, tabledata, quadrature_rule, access):
         # Call appropriate handler, depending on the type of t
         ttype = type(t)
         handler = self.call_lookup.get(ttype, False)
@@ -57,11 +57,11 @@ class FFCXBackendDefinitions(object):
                     break
 
         if handler:
-            return handler(t, mt, tabledata, num_points, access)
+            return handler(t, mt, tabledata, quadrature_rule, access)
         else:
             raise RuntimeError("Not handled: %s", ttype)
 
-    def coefficient(self, t, mt, tabledata, num_points, access):
+    def coefficient(self, t, mt, tabledata, quadrature_rule, access):
         """Return definition code for coefficients."""
         L = self.language
 
@@ -83,35 +83,24 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
-        dofmap = tuple(begin + i * tabledata.block_size for i in range(num_dofs))
-        unroll = num_dofs != end - begin
-        # unroll = True
-        if unroll:
-            # TODO: Could also use a generated constant dofmap here like in block code
-            # Unrolled loop to accumulate linear combination of dofs and tables
-            values = [
-                self.symbols.coefficient_dof_access(mt.terminal, idof) * FE[i]
-                for i, idof in enumerate(dofmap)
-            ]
-            value = L.Sum(values)
-            code = [L.VariableDecl("const ufc_scalar_t", access, value)]
-        else:
-            # Loop to accumulate linear combination of dofs and tables
-            ic = self.symbols.coefficient_dof_sum_index()
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic + begin)
-            code = [
-                L.VariableDecl("ufc_scalar_t", access, 0.0),
-                L.ForRange(ic, 0, end - begin, body=[L.AssignAdd(access, dof_access * FE[ic])])
-            ]
+        bs = tabledata.block_size
+        ic = self.symbols.coefficient_dof_sum_index()
+        dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
+
+        code = [
+            L.VariableDecl("ufc_scalar_t", access, 0.0),
+            L.ForRange(ic, 0, num_dofs, body=[L.AssignAdd(access, dof_access * FE[ic])])
+        ]
+
         return code
 
-    def constant(self, t, mt, tabledata, num_points, access):
+    def constant(self, t, mt, tabledata, quadrature_rule, access):
         # Constants are not defined within the kernel.
         # No definition is needed because access to them is directly
         # via symbol c[], i.e. as passed into the kernel.
         return []
 
-    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, num_points, access):
+    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         L = self.language
 
@@ -144,7 +133,7 @@ class FFCXBackendDefinitions(object):
 
         return code
 
-    def spatial_coordinate(self, e, mt, tabledata, num_points, access):
+    def spatial_coordinate(self, e, mt, tabledata, quadrature_rule, access):
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -162,24 +151,24 @@ class FFCXBackendDefinitions(object):
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         elif self.integral_type == "expression":
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
+            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
         else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
+            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
 
-    def jacobian(self, e, mt, tabledata, num_points, access):
+    def jacobian(self, e, mt, tabledata, quadrature_rule, access):
         """Return definition code for the Jacobian of x(X).
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
         # TODO: Jacobian may need adjustment for custom_integral_types
-        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, num_points, access)
+        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
 
-    def _expect_table(self, e, mt, tabledata, num_points, access):
+    def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""
         # TODO: Inject const static table here instead?
         return []
 
-    def _expect_physical_coords(self, e, mt, tabledata, num_points, access):
+    def _expect_physical_coords(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
