@@ -353,6 +353,8 @@ def build_optimized_tables(
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
+        if tabletype == "diagonal":
+            tbl = numpy.ones((1, 1, 1, tbl.shape[-1]))
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             tbl = tbl[:, :, :1, :]
@@ -413,6 +415,21 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
         numpy.allclose(table[0, i, :, :], Id, rtol=rtol, atol=atol) for i in range(num_entities)))
 
 
+def is_diagonal_table(table, rtol=default_rtol, atol=default_atol):
+    _, num_entities, num_points, num_dofs = table.shape
+    i, j = numpy.nonzero(table[0, 0, :, :])
+    _, icount = numpy.unique(i, return_counts=True)
+    _, jcount = numpy.unique(j, return_counts=True)
+
+    status = False
+    if len(i) == table.shape[2]:
+        if numpy.allclose(icount, 1) and numpy.allclose(jcount, 1):
+            if numpy.allclose(table[0, 0, i, j], 1.0):
+                status = True
+    
+    return status
+
+
 def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
     return not all(
         numpy.allclose(table[0, :, :, :],
@@ -444,6 +461,8 @@ def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
     elif is_quadrature_table(table, rtol=rtol, atol=atol):
         # Identity matrix mapping points to dofs (separately on each entity)
         ttype = "quadrature"
+    elif is_diagonal_table(table, rtol=rtol, atol=atol):
+        ttype = "diagonal"
     else:
         # Equal for all points on a given entity
         piecewise = is_piecewise_table(table, rtol=rtol, atol=atol)
