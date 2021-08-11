@@ -117,19 +117,17 @@ class FFCXBackendDefinitions(object):
         # Find table name
         ttype = tabledata.ttype
 
-        # assert len(tabledata.dofmap) <= num_scalar_dofs
         assert ttype != "zeros"
         assert ttype != "ones"
 
         begin = tabledata.offset
         num_dofs = tabledata.values.shape[3]
-        dofmap = tuple(begin + i * tabledata.block_size for i in range(num_dofs))
-
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+        bs = tabledata.block_size
 
         # Inlined version (we know this is bounded by a small number)
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-        value = L.Sum([dof_access[idof] * FE[i] for i, idof in enumerate(dofmap)])
+        value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
         code = [L.VariableDecl("const double", access, value)]
 
         return code
