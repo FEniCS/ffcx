@@ -67,8 +67,9 @@ class FFCXBackendDefinitions(object):
 
         ttype = tabledata.ttype
         num_dofs = tabledata.values.shape[3]
+        bs = tabledata.block_size
         begin = tabledata.offset
-        end = begin + tabledata.block_size * (num_dofs - 1) + 1
+        end = begin + bs * (num_dofs - 1) + 1
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
@@ -83,14 +84,14 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
-        bs = tabledata.block_size
         ic = self.symbols.coefficient_dof_sum_index()
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
-
-        code = [
-            L.VariableDecl("ufc_scalar_t", access, 0.0),
-            L.ForRange(ic, 0, num_dofs, body=[L.AssignAdd(access, dof_access * FE[ic])])
-        ]
+        code = []
+        
+        body = [L.AssignAdd(access, dof_access * FE[ic])]
+        
+        code += [L.VariableDecl("ufc_scalar_t", access, 0.0)]
+        code += [L.ForRange(ic, 0, num_dofs, body)]
 
         return code
 
