@@ -87,9 +87,9 @@ class FFCXBackendDefinitions(object):
         ic = self.symbols.coefficient_dof_sum_index()
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
         code = []
-        
+
         body = [L.AssignAdd(access, dof_access * FE[ic])]
-        
+
         code += [L.VariableDecl("ufc_scalar_t", access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
