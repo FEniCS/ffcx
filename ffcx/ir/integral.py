@@ -25,6 +25,7 @@ from ufl.classes import QuadratureWeight
 
 logger = logging.getLogger("ffcx")
 
+# FIXME: What's ma?
 ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
 block_data_t = collections.namedtuple("block_data_t",
