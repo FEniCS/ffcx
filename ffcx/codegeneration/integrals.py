@@ -656,8 +656,8 @@ class IntegralGenerator(object):
 
         body = []
 
-        for indices in rhs_expressions:
-            sum = L.Sum(rhs_expressions[indices])
+        for indices in keep:
+            sum = L.Sum(keep[indices])
             body.append(L.AssignAdd(A[indices], sum))
 
         for i in reversed(range(block_rank)):
