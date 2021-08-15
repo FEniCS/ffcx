@@ -469,14 +469,14 @@ class IntegralGenerator(object):
         # Group loops by blockmap, in Vector elements each component has
         # a different blockmap
         for blockmap, blockdata in blocks:
-            new_blockmap = []
+            scalar_blockmap = []
             assert len(blockdata.ma_data) == len(blockmap)
             for i, b in enumerate(blockmap):
                 bs = blockdata.ma_data[i].tabledata.block_size
                 offset = blockdata.ma_data[i].tabledata.offset
                 b = tuple([(idx - offset) // bs for idx in b])
-                new_blockmap.append(b)
-            block_groups[tuple(new_blockmap)].append(blockdata)
+                scalar_blockmap.append(b)
+            block_groups[tuple(scalar_blockmap)].append(blockdata)
 
         for blockmap in block_groups:
             block_preparts, block_quadparts = \
