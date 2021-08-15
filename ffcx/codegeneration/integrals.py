@@ -570,8 +570,6 @@ class IntegralGenerator(object):
                 weight = weights[iq]
 
             # Define fw = f * weight
-            assert not blockdata.transposed, "Not handled yet"
-
             fw_rhs = L.float_product([f, weight])
             if not isinstance(fw_rhs, L.Product):
                 fw = fw_rhs
@@ -582,7 +580,7 @@ class IntegralGenerator(object):
                 if not defined:
                     quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
-            assert not blockdata.transposed
+            assert not blockdata.transposed, "Not handled yet"
             A_shape = self.ir.tensor_shape
 
             Asym = self.backend.symbols.element_tensor()
@@ -594,14 +592,14 @@ class IntegralGenerator(object):
             B_rhs = L.float_product([fw] + arg_factors)
 
             A_indices = []
-            for bm, index in zip(blockmap, arg_indices):
-                offset = blockdata.ma_data[0].tabledata.offset
-                if len(bm) == 1:
+            for i in range(block_rank):
+                offset = blockdata.ma_data[i].tabledata.offset
+                index = arg_indices[i]
+                if len(blockmap[i]) == 1:
                     A_indices.append(index + offset)
                 else:
-                    block_size = blockdata.ma_data[0].tabledata.block_size
+                    block_size = blockdata.ma_data[i].tabledata.block_size
                     A_indices.append(block_size * index + offset)
-
             rhs_expressions[tuple(A_indices)].append(B_rhs)
 
         # List of statements to keep in the inner loop
