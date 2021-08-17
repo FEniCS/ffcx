@@ -269,6 +269,10 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         ir["integrand"][quadrature_rule] = {"factorization": F,
                                             "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
                                             "block_contributions": block_contributions}
+
+        restrictions = [i.restriction for i in initial_terminals.values()]
+        ir["needs_facet_permutations"] = "+" in restrictions and "-" in restrictions
+
     return ir
 
 
