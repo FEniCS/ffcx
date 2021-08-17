@@ -77,7 +77,8 @@ def generator(ir, parameters):
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
-        tabulate_tensor=code["tabulate_tensor"])
+        tabulate_tensor=code["tabulate_tensor"],
+        needs_facet_permutations=1 if ir.needs_facet_permutations else 0)
 
     return declaration, implementation
 

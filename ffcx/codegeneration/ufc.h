@@ -231,12 +231,14 @@ extern "C"
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor* tabulate_tensor;
+    bool needs_facet_permutations;
   } ufc_integral;
 
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor_custom* tabulate_tensor;
+    bool needs_facet_permutations;
   } ufc_custom_integral;
 
   typedef struct ufc_expression
