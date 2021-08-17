@@ -76,7 +76,7 @@ class FFCXBackendDefinitions(object):
             return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
-        if ttype == "ones" and (end - begin == 1):
+        if ttype == "ones" and end - begin == 1:
             return []
 
         assert begin < end

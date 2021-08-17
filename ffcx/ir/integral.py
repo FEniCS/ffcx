@@ -184,7 +184,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             assert not any(tt == "zeros" for tt in ttypes)
 
             blockmap = []
-
             for tr in trs:
                 begin = tr.offset
                 num_dofs = tr.values.shape[3]
