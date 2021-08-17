@@ -273,6 +273,9 @@ extern "C"
     /// reference cell
     int topological_dimension;
 
+    /// Indicates whether facet permutations are needed
+    bool needs_facet_permutations;
+
     /// Coordinates of evaluations points. Dimensions:
     /// points[num_points][topological_dimension]
     const double* points;
