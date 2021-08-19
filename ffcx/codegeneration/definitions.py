@@ -83,8 +83,6 @@ class FFCXBackendDefinitions(object):
         if ttype == "ones" and end - begin == 1:
             return []
 
-        assert begin < end
-
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
