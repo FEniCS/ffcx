@@ -73,6 +73,8 @@ class FFCXBackendDefinitions(object):
         begin = tabledata.offset
         end = begin + bs * (num_dofs - 1) + 1
 
+        num_dofs_padded = num_dofs + (padlen - num_dofs % padlen) % padlen
+
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
             return []
@@ -91,9 +93,8 @@ class FFCXBackendDefinitions(object):
         code = []
 
         body = [L.AssignAdd(access, dof_access * FE[ic])]
-
         code += [L.VariableDecl("ufc_scalar_t", access, 0.0)]
-        code += [L.ForRange(ic, 0, num_dofs, body)]
+        code += [L.ForRange(ic, 0, num_dofs_padded, body)]
 
         return code
 
