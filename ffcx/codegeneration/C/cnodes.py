@@ -383,6 +383,9 @@ class Symbol(CExprTerminal):
     def __eq__(self, other):
         return isinstance(other, Symbol) and self.name == other.name
 
+    def __hash__(self):
+        return hash(self.ce_format())
+
 
 # CExprOperator base classes
 
@@ -452,6 +455,9 @@ class BinOp(CExprOperator):
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.lhs == other.lhs and self.rhs == other.rhs)
+
+    def __hash__(self):
+        return hash(self.ce_format())
 
 
 class NaryOp(CExprOperator):

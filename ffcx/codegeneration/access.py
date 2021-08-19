@@ -67,7 +67,9 @@ class FFCXBackendAccess(object):
         ttype = tabledata.ttype
         assert ttype != "zeros"
 
-        begin, end = tabledata.dofrange
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
+        end = begin + tabledata.block_size * (num_dofs - 1) + 1
 
         if ttype == "ones" and (end - begin) == 1:
             # f = 1.0 * f_{begin}, just return direct reference to dof

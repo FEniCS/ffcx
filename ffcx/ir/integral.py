@@ -25,6 +25,7 @@ from ufl.classes import QuadratureWeight
 
 logger = logging.getLogger("ffcx")
 
+# FIXME: What's ma?
 ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
 block_data_t = collections.namedtuple("block_data_t",
@@ -182,7 +183,14 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             ttypes = tuple(tr.ttype for tr in trs)
             assert not any(tt == "zeros" for tt in ttypes)
 
-            blockmap = tuple(tr.dofmap for tr in trs)
+            blockmap = []
+            for tr in trs:
+                begin = tr.offset
+                num_dofs = tr.values.shape[3]
+                dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
+                blockmap.append(dofmap)
+
+            blockmap = tuple(blockmap)
             block_is_uniform = all(tr.is_uniform for tr in trs)
 
             # Collect relevant restrictions to identify blocks correctly
@@ -260,6 +268,10 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         ir["integrand"][quadrature_rule] = {"factorization": F,
                                             "modified_arguments": [F.nodes[i]['mt'] for i in argkeys],
                                             "block_contributions": block_contributions}
+
+        restrictions = [i.restriction for i in initial_terminals.values()]
+        ir["needs_facet_permutations"] = "+" in restrictions and "-" in restrictions
+
     return ir
 
 

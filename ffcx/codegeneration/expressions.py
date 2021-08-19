@@ -63,6 +63,7 @@ def generator(ir, parameters):
     d["num_coefficients"] = len(ir.coefficient_numbering)
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
+    d["needs_facet_permutations"] = 1 if ir.needs_facet_permutations else 0
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
