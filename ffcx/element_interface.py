@@ -1,6 +1,7 @@
 import numpy
 import ufl
 import basix
+import warnings
 
 
 def create_element(ufl_element):
@@ -45,7 +46,19 @@ def create_quadrature(cellname, degree, rule):
     """Create a quadrature rule."""
     if cellname == "vertex":
         return [[]], [1]
-    return basix.make_quadrature(rule, basix.cell.string_to_type(cellname), degree)
+
+    quadrature = basix.make_quadrature(rule, basix.cell.string_to_type(cellname), degree)
+
+    # The quadrature degree from UFL can be very high for some
+    # integrals.  Print warning if number of quadrature points
+    # exceeds 100.
+    num_points = quadrature[1].size
+    if num_points >= 100:
+        warnings.warn(
+            f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
+            "to reduce number.")
+
+    return quadrature
 
 
 def reference_cell_vertices(cellname):
