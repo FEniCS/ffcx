@@ -8,7 +8,7 @@ if sys.version_info < (3, 7):
     print("Python 3.7 or higher required, please upgrade.")
     sys.exit(1)
 
-VERSION = "0.1.1.dev0"
+VERSION = "0.3.0"
 
 URL = "https://github.com/FEniCS/ffcx/"
 
