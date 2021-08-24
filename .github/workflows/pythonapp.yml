@@ -35,7 +35,7 @@ jobs:
         with:
           path: ./basix
           repository: FEniCS/basix
-          ref: main
+          ref: version-0.3.0
 
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'

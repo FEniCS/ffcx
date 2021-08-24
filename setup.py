@@ -15,7 +15,7 @@ URL = "https://github.com/FEniCS/ffcx/"
 REQUIREMENTS = [
     "numpy",
     "cffi",
-    "fenics-basix>=0.1.0",
+    "fenics-basix>=" + VERSION,
     "fenics-ufl>=2021.1.0",
 ]
 
