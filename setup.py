@@ -8,14 +8,14 @@ if sys.version_info < (3, 7):
     print("Python 3.7 or higher required, please upgrade.")
     sys.exit(1)
 
-VERSION = "0.3.0"
+VERSION = "0.3.1.dev0"
 
 URL = "https://github.com/FEniCS/ffcx/"
 
 REQUIREMENTS = [
     "numpy",
     "cffi",
-    "fenics-basix>=" + VERSION,
+    "fenics-basix>=0.3.0",
     "fenics-ufl>=2021.1.0",
 ]
 
