@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies (Python)
         run: |
           python3 -m pip install --upgrade pip
-      - name: Install UFL
+      - name: Install UFL and Basix
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
           python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/discontinuous_elements
