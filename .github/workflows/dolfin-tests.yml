@@ -34,20 +34,7 @@ jobs:
       - name: Install UFL
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-
-      - name: Clone Basix
-        uses: actions/checkout@v2
-        with:
-          path: ./basix
-          repository: FEniCS/basix
-          ref: mscroggs/discontinuous_elements
-
-      - name: Install Basix
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
-          cmake --build build-dir
-          cmake --install build-dir
-          pip3 install ./basix/python
+          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/discontinuous_elements
 
       - name: Install FFCx
         run: |
