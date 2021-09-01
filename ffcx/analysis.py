@@ -13,7 +13,6 @@ representation type.
 
 import logging
 import typing
-import warnings
 from collections import namedtuple
 
 import numpy
@@ -203,16 +202,6 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 qd = qd_metadata
             else:
                 qd = pd_estimated
-
-                # The quadrature degree from UFL can be very high for some
-                # integrals.  Print warning if number of quadrature points
-                # exceeds 100.
-                tdim = integral_data.domain.topological_dimension()
-                num_points = ((qd + 1 + 1) // 2)**tdim
-                if num_points >= 100:
-                    warnings.warn(
-                        f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
-                        "to reduce number.")
 
             # Extract quadrature rule
             qr = integral.metadata().get("quadrature_rule", qr_default)
