@@ -25,16 +25,28 @@ def create_element(ufl_element):
 
     variant_info = []
 
-    if ufl_element.family() in ["Lagrange", "Q"]:
+    family_name = ufl_element.family()
+    discontinuous = False
+    if family_name.startswith("Discontinuous "):
+        family_name = family_name[14:]
+        discontinuous = True
+    if family_name == "DP":
+        family_name = "P"
+        discontinuous = True
+    if family_name == "DQ":
+        family_name = "Q"
+        discontinuous = True
+
+    if family_name in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
             variant_info.append(basix.LatticeType.equispaced)
         else:
             variant_info.append(basix.lattice.string_to_type(ufl_element.variant()))
 
-    family_type = basix.finite_element.string_to_family(ufl_element.family(), ufl_element.cell().cellname())
+    family_type = basix.finite_element.string_to_family(family_name, ufl_element.cell().cellname())
     cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
 
-    return BasixElement(family_type, cell_type, ufl_element.degree(), variant_info)
+    return BasixElement(family_type, cell_type, ufl_element.degree(), variant_info, discontinuous)
 
 
 def basix_index(*args):
@@ -191,15 +203,22 @@ class BaseElement:
         """Get the Basix cell type used to initialise the element."""
         raise NotImplementedError
 
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        raise NotImplementedError
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, family_type, cell_type, degree, variant_info):
-        self.element = basix.create_element(family_type, cell_type, degree, *variant_info)
+    def __init__(self, family_type, cell_type, degree, variant_info, discontinuous):
+        self.element = basix.create_element(family_type, cell_type, degree, *variant_info,
+                                            discontinuous)
         self._family = family_type
         self._cell = cell_type
         self._variant_info = variant_info
+        self._discontinuous = discontinuous
 
     def tabulate(self, nderivs, points):
         """Tabulate the basis functions of the element.
@@ -316,6 +335,11 @@ class BasixElement(BaseElement):
         """Get the Basix cell type used to initialise the element."""
         return self._cell
 
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return self._discontinuous
+
 
 class ComponentElement(BaseElement):
     """An element representing one component of a BasixElement."""
@@ -384,6 +408,11 @@ class ComponentElement(BaseElement):
     def cell_type(self):
         """Get the Basix cell type used to initialise the element."""
         return self.element.cell_type
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return self.element.discontinuous
 
 
 class MixedElement(BaseElement):
@@ -544,6 +573,11 @@ class MixedElement(BaseElement):
         """Get the Basix cell type used to initialise the element."""
         return None
 
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return False
+
 
 class BlockedElement(BaseElement):
     """An element with a block size that contains multiple copies of a sub element."""
@@ -680,6 +714,11 @@ class BlockedElement(BaseElement):
         """Get the Basix cell type used to initialise the element."""
         return self.sub_element.cell_type
 
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return self.sub_element.discontinuous
+
 
 class QuadratureElement(BaseElement):
     """A quadrature element."""
@@ -811,3 +850,8 @@ class QuadratureElement(BaseElement):
     def cell_type(self):
         """Get the Basix cell type used to initialise the element."""
         return None
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return False

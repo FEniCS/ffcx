@@ -132,6 +132,9 @@ extern "C"
     /// The lattice type to be passed to Basix's create_element function
     int lattice_type;
 
+    /// Indicates whether or not this is the discontinuous version of the element
+    bool discontinuous;
+
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 

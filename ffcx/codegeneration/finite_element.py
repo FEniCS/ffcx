@@ -41,6 +41,7 @@ def generator(ir, parameters):
     d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
+    d["discontinuous"] = "true" if ir.discontinuous else "false"
 
     if ir.lattice_type is None:
         d["lattice_type"] = -1
