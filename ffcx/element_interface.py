@@ -204,8 +204,8 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def discontinuous(self):
-        """Get a bool indicating whether the discontinuous version of the element is used."""
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
         raise NotImplementedError
 
 
@@ -336,8 +336,8 @@ class BasixElement(BaseElement):
         return self._cell
 
     @property
-    def discontinuous(self):
-        """Get a bool indicating whether the discontinuous version of the element is used."""
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
         return self._discontinuous
 
 
@@ -410,8 +410,8 @@ class ComponentElement(BaseElement):
         return self.element.cell_type
 
     @property
-    def discontinuous(self):
-        """Get a bool indicating whether the discontinuous version of the element is used."""
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
         return self.element.discontinuous
 
 
@@ -574,8 +574,8 @@ class MixedElement(BaseElement):
         return None
 
     @property
-    def discontinuous(self):
-        """Get a bool indicating whether the discontinuous version of the element is used."""
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
         return False
 
 
@@ -715,8 +715,8 @@ class BlockedElement(BaseElement):
         return self.sub_element.cell_type
 
     @property
-    def discontinuous(self):
-        """Get a bool indicating whether the discontinuous version of the element is used."""
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
         return self.sub_element.discontinuous
 
 
@@ -852,6 +852,6 @@ class QuadratureElement(BaseElement):
         return None
 
     @property
-    def discontinuous(self):
-        """Get a bool indicating whether the discontinuous version of the element is used."""
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
         return False
