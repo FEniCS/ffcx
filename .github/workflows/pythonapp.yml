@@ -44,7 +44,7 @@ jobs:
           pip install --upgrade pip
           pip install pygraphviz
           pip install git+https://github.com/FEniCS/ufl.git --user
-          pip install git+https://github.com/FEniCS/basix.git@mscroggs/discontinuous_elements --user
+          pip install git+https://github.com/FEniCS/basix.git --user
 
       - name: Lint with flake8
         run: |
