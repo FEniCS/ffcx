@@ -39,9 +39,9 @@ def create_element(ufl_element):
 
     if family_name in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
-            variant_info.append(basix.LatticeType.equispaced)
+            variant_info.append(basix.LagrangeVariant.equispaced)
         else:
-            variant_info.append(basix.lattice.string_to_type(ufl_element.variant()))
+            variant_info.append(basix.variants.string_to_lagrange_variant(ufl_element.variant()))
 
     family_type = basix.finite_element.string_to_family(family_name, ufl_element.cell().cellname())
     cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
@@ -189,8 +189,8 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def lattice_type(self):
-        """Get the lattice type used to initialise the element."""
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
         raise NotImplementedError
 
     @property
@@ -318,10 +318,10 @@ class BasixElement(BaseElement):
         return basix.geometry(self.element.cell_type)
 
     @property
-    def lattice_type(self):
-        """Get the lattice type used to initialise the element."""
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
         for a in self._variant_info:
-            if isinstance(a, basix.LatticeType):
+            if isinstance(a, basix.LagrangeVariant):
                 return a
         return None
 
@@ -395,9 +395,9 @@ class ComponentElement(BaseElement):
         raise NotImplementedError
 
     @property
-    def lattice_type(self):
-        """Get the lattice type used to initialise the element."""
-        return self.element.lattice_type
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        return self.element.lagrange_variant
 
     @property
     def element_family(self):
@@ -559,8 +559,8 @@ class MixedElement(BaseElement):
         return self.sub_elements[0].reference_geometry
 
     @property
-    def lattice_type(self):
-        """Get the lattice type used to initialise the element."""
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
         return None
 
     @property
@@ -700,9 +700,9 @@ class BlockedElement(BaseElement):
         return self.sub_element.reference_geometry
 
     @property
-    def lattice_type(self):
-        """Get the lattice type used to initialise the element."""
-        return self.sub_element.lattice_type
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        return self.sub_element.lagrange_variant
 
     @property
     def element_family(self):
@@ -837,8 +837,8 @@ class QuadratureElement(BaseElement):
         return self._ufl_element.family()
 
     @property
-    def lattice_type(self):
-        """Get the lattice type used to initialise the element."""
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
         return None
 
     @property

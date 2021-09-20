@@ -34,7 +34,7 @@ ufc_finite_element {factory_name} =
   .basix_family = {basix_family},
   .basix_cell = {basix_cell},
   .discontinuous = {discontinuous},
-  .lattice_type = {lattice_type},
+  .lagrange_variant = {lagrange_variant},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};
