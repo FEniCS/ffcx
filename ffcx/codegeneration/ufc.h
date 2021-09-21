@@ -129,8 +129,8 @@ extern "C"
     /// Return the Basix identifier of the cell shape
     int basix_cell;
 
-    /// The lattice type to be passed to Basix's create_element function
-    int lattice_type;
+    /// The Lagrange variant to be passed to Basix's create_element function
+    int lagrange_variant;
 
     /// Indicates whether or not this is the discontinuous version of the element
     bool discontinuous;

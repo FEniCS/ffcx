@@ -43,10 +43,10 @@ def generator(ir, parameters):
     d["block_size"] = ir.block_size
     d["discontinuous"] = "true" if ir.discontinuous else "false"
 
-    if ir.lattice_type is None:
-        d["lattice_type"] = -1
+    if ir.lagrange_variant is None:
+        d["lagrange_variant"] = -1
     else:
-        d["lattice_type"] = int(ir.lattice_type)
+        d["lagrange_variant"] = int(ir.lagrange_variant)
 
     if ir.basix_family is None:
         d["basix_family"] = -1
