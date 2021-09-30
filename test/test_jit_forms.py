@@ -655,3 +655,47 @@ def test_prism(compile_args):
         ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.isclose(sum(b), 0.5)
+
+
+@pytest.mark.parametrize("mode,expected_result", [
+    ("double", np.array([[0, np.sqrt(2) / 3, np.sqrt(2) / 6],
+                         [0, np.sqrt(2) / 6, np.sqrt(2) / 3]], dtype=np.float64))])
+def test_cell_facet_form(mode, expected_result, compile_args):
+    # TODO Test 3D and non-simplex
+    domain_cell = ufl.triangle
+    V_fe = ufl.FiniteElement("Lagrange", domain_cell, 1)
+    Vbar_fe = ufl.FiniteElement("Lagrange", ufl.Cell("interval", 2), 1)
+    u = ufl.TrialFunction(V_fe)
+    vbar = ufl.TestFunction(Vbar_fe)
+
+    ds = ufl.Measure("ds", domain=domain_cell)
+    
+    forms = [ufl.inner(u, vbar) * ds]
+
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+
+    ffi = cffi.FFI()
+    form0 = compiled_forms[0]
+
+    integral0 = form0.integrals(module.lib.exterior_facet)[0]
+
+    c_type, np_type = "double", np.float64
+    A = np.zeros((2, 3), dtype=np_type)
+    w = np.array([], dtype=np_type)
+    c = np.array([], dtype=np_type)
+    facet = np.array([0], dtype=np.intc)
+    perm = np.array([0], dtype=np.uint8)
+
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
+    integral0.tabulate_tensor(
+        ffi.cast('{}  *'.format(c_type), A.ctypes.data),
+        ffi.cast('{}  *'.format(c_type), w.ctypes.data),
+        ffi.cast('{}  *'.format(c_type), c.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast('int *', facet.ctypes.data),
+        ffi.cast('uint8_t *', perm.ctypes.data))
+    
+    assert np.allclose(A, expected_result)
