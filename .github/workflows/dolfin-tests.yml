@@ -33,7 +33,7 @@ jobs:
           python3 -m pip install --upgrade pip
       - name: Install UFL and Basix
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git
+          python3 -m pip install git+https://github.com/FEniCS/ufl.git@jpdean/meshview
           python3 -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install FFCx
