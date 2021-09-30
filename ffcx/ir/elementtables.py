@@ -107,7 +107,13 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     component_element, offset, stride = basix_element.get_component_element(flat_component)
 
     for entity in range(num_entities):
-        entity_points = map_integral_points(points, integral_type, cell, entity)
+        if cell.facet_cell() == ufl_element.cell() and \
+                integral_type == "exterior_facet":
+            entity_points = map_integral_points(points, "cell",
+                                                ufl_element.cell(), 0)
+        else:
+            entity_points = map_integral_points(points, integral_type,
+                                                cell, entity)
         tbl = component_element.tabulate(deriv_order, entity_points)
         tbl = tbl[basix_index(*derivative_counts)]
         component_tables.append(tbl)
