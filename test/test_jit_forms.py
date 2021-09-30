@@ -669,7 +669,7 @@ def test_cell_facet_form(mode, expected_result, compile_args):
     vbar = ufl.TestFunction(Vbar_fe)
 
     ds = ufl.Measure("ds", domain=domain_cell)
-    
+
     forms = [ufl.inner(u, vbar) * ds]
 
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
@@ -697,5 +697,5 @@ def test_cell_facet_form(mode, expected_result, compile_args):
         ffi.cast('double *', coords.ctypes.data),
         ffi.cast('int *', facet.ctypes.data),
         ffi.cast('uint8_t *', perm.ctypes.data))
-    
+
     assert np.allclose(A, expected_result)
