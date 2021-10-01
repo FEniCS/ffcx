@@ -680,7 +680,7 @@ def test_cell_facet_form(mode, expected_result, compile_args):
 
     integral0 = form0.integrals(module.lib.exterior_facet)[0]
 
-    c_type, np_type = "double", np.float64
+    c_type, np_type = float_to_type(mode)
     A = np.zeros((2, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
