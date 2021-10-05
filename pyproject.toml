@@ -1,18 +1,4 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "pybind11>=2.6.4", "cmake>=3.16", "scikit-build>=0.12"]
+requires = ["setuptools>=42", "wheel"]
 
 build-backend = "setuptools.build_meta"
-
-[tool.cibuildwheel]
-build = ["cp{37,38,39}-manylinux_x86_64", "cp{37,38,39}-macosx_x86_64"]
-
-test-command = "cmake -DPython3_EXECUTABLE=$(which python) -G Ninja -B build -S {project}/test/test_cmake && cmake --build build/ && build/a.out && python -m pytest -v -n 2 --durations 20 {project}/test/"
-test-requires = ["pytest", "pytest-xdist", "numpy", "sympy", "numba", "scipy"]
-
-manylinux-x86_64-image = "manylinux2014"
-
-[tool.cibuildwheel.linux]
-before-build = "yum -y update && yum install -y openblas-devel ninja-build"
-
-[tool.cibuildwheel.macos]
-before-build = "export HOMEBREW_AUTO_UPDATING=0 && brew update && brew install ninja"
