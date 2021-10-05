@@ -15,8 +15,8 @@ URL = "https://github.com/FEniCS/ffcx/"
 REQUIREMENTS = [
     "numpy",
     "cffi",
-    "fenics-basix>=0.3.1.dev0",
-    "fenics-ufl>=2021.1.0",
+    "fenics-basix>=0.3.1.dev0,<0.4.0",
+    "fenics-ufl>=2021.1.0,<2021.2.0",
 ]
 
 ENTRY_POINTS = {'console_scripts': ['ffcx = ffcx.__main__:main', 'ffcx-3 = ffcx.__main__:main']}
