@@ -41,6 +41,21 @@ def generator(ir, parameters):
     d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
+    d["discontinuous"] = "true" if ir.discontinuous else "false"
+
+    if ir.lagrange_variant is None:
+        d["lagrange_variant"] = -1
+    else:
+        d["lagrange_variant"] = int(ir.lagrange_variant)
+
+    if ir.basix_family is None:
+        d["basix_family"] = -1
+    else:
+        d["basix_family"] = int(ir.basix_family)
+    if ir.basix_cell is None:
+        d["basix_cell"] = -1
+    else:
+        d["basix_cell"] = int(ir.basix_cell)
 
     import ffcx.codegeneration.C.cnodes as L
 

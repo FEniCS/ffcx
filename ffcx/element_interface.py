@@ -1,34 +1,14 @@
 import numpy
 import ufl
 import basix
-
-
-basix_cells = {
-    "interval": basix.CellType.interval,
-    "triangle": basix.CellType.triangle,
-    "tetrahedron": basix.CellType.tetrahedron,
-    "prism": basix.CellType.prism,
-    "pyramid": basix.CellType.pyramid,
-    "quadrilateral": basix.CellType.quadrilateral,
-    "hexahedron": basix.CellType.hexahedron
-}
-
-# This dictionary can be used to map ufl element names to basix element names.
-# Currently all the names agree but this will not necessarily remian true.
-ufl_to_basix_names = {
-    "Q": "Lagrange",
-    "DQ": "Discontinuous Lagrange",
-    "RTCE": "Nedelec 1st kind H(curl)",
-    "NCE": "Nedelec 1st kind H(curl)",
-    "RTCF": "Raviart-Thomas",
-    "NCF": "Raviart-Thomas",
-}
+import warnings
 
 
 def create_element(ufl_element):
     """Create an element from a UFL element."""
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
+    # TODO: Allow different args for different parts of mixed element
 
     if isinstance(ufl_element, ufl.VectorElement):
         return BlockedElement(create_element(ufl_element.sub_elements()[0]),
@@ -40,15 +20,33 @@ def create_element(ufl_element):
     if isinstance(ufl_element, ufl.MixedElement):
         return MixedElement([create_element(e) for e in ufl_element.sub_elements()])
 
-    if ufl_element.family() in ufl_to_basix_names:
-        return BasixElement(basix.create_element(
-            ufl_to_basix_names[ufl_element.family()], ufl_element.cell().cellname(), ufl_element.degree()))
-
     if ufl_element.family() == "Quadrature":
         return QuadratureElement(ufl_element)
 
-    return BasixElement(basix.create_element(
-        ufl_element.family(), ufl_element.cell().cellname(), ufl_element.degree()))
+    variant_info = []
+
+    family_name = ufl_element.family()
+    discontinuous = False
+    if family_name.startswith("Discontinuous "):
+        family_name = family_name[14:]
+        discontinuous = True
+    if family_name == "DP":
+        family_name = "P"
+        discontinuous = True
+    if family_name == "DQ":
+        family_name = "Q"
+        discontinuous = True
+
+    if family_name in ["Lagrange", "Q"]:
+        if ufl_element.variant() is None:
+            variant_info.append(basix.LagrangeVariant.equispaced)
+        else:
+            variant_info.append(basix.variants.string_to_lagrange_variant(ufl_element.variant()))
+
+    family_type = basix.finite_element.string_to_family(family_name, ufl_element.cell().cellname())
+    cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
+
+    return BasixElement(family_type, cell_type, ufl_element.degree(), variant_info, discontinuous)
 
 
 def basix_index(*args):
@@ -60,18 +58,30 @@ def create_quadrature(cellname, degree, rule):
     """Create a quadrature rule."""
     if cellname == "vertex":
         return [[]], [1]
-    return basix.make_quadrature(rule, basix_cells[cellname], degree)
+
+    quadrature = basix.make_quadrature(rule, basix.cell.string_to_type(cellname), degree)
+
+    # The quadrature degree from UFL can be very high for some
+    # integrals.  Print warning if number of quadrature points
+    # exceeds 100.
+    num_points = quadrature[1].size
+    if num_points >= 100:
+        warnings.warn(
+            f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
+            "to reduce number.")
+
+    return quadrature
 
 
 def reference_cell_vertices(cellname):
     """Get the vertices of a reference cell."""
-    return basix.geometry(basix_cells[cellname])
+    return basix.geometry(basix.cell.string_to_type(cellname))
 
 
 def map_facet_points(points, facet, cellname):
     """Map points from a reference facet to a physical facet."""
-    geom = basix.geometry(basix_cells[cellname])
-    facet_vertices = [geom[i] for i in basix.topology(basix_cells[cellname])[-2][facet]]
+    geom = basix.geometry(basix.cell.string_to_type(cellname))
+    facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
 
     return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
             for p in points]
@@ -149,6 +159,16 @@ class BaseElement:
         raise NotImplementedError
 
     @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        raise NotImplementedError
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        raise NotImplementedError
+
+    @property
     def num_global_support_dofs(self):
         """Get the number of globally supported DOFs."""
         raise NotImplementedError
@@ -168,12 +188,37 @@ class BaseElement:
         """Get the geometry of the reference element."""
         raise NotImplementedError
 
+    @property
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        raise NotImplementedError
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        raise NotImplementedError
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        raise NotImplementedError
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        raise NotImplementedError
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, element):
-        self.element = element
+    def __init__(self, family_type, cell_type, degree, variant_info, discontinuous):
+        self.element = basix.create_element(family_type, cell_type, degree, *variant_info,
+                                            discontinuous)
+        self._family = family_type
+        self._cell = cell_type
+        self._variant_info = variant_info
+        self._discontinuous = discontinuous
 
     def tabulate(self, nderivs, points):
         """Tabulate the basis functions of the element.
@@ -242,6 +287,16 @@ class BasixElement(BaseElement):
         return self.element.entity_dofs
 
     @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        return self.element.num_entity_closure_dofs
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        return self.element.entity_closure_dofs
+
+    @property
     def num_global_support_dofs(self):
         """Get the number of globally supported DOFs."""
         # TODO
@@ -250,7 +305,7 @@ class BasixElement(BaseElement):
     @property
     def family_name(self):
         """Get the family name of the element."""
-        return basix.family_to_str(self.element.family)
+        return self.element.family.name
 
     @property
     def reference_topology(self):
@@ -261,6 +316,29 @@ class BasixElement(BaseElement):
     def reference_geometry(self):
         """Get the geometry of the reference element."""
         return basix.geometry(self.element.cell_type)
+
+    @property
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        for a in self._variant_info:
+            if isinstance(a, basix.LagrangeVariant):
+                return a
+        return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self._family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self._cell
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return self._discontinuous
 
 
 class ComponentElement(BaseElement):
@@ -315,6 +393,26 @@ class ComponentElement(BaseElement):
         if flat_component == 0:
             return self, 0, 1
         raise NotImplementedError
+
+    @property
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        return self.element.lagrange_variant
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self.element.element_family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self.element.cell_type
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return self.element.discontinuous
 
 
 class MixedElement(BaseElement):
@@ -422,6 +520,25 @@ class MixedElement(BaseElement):
         return dofs
 
     @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        data = [e.num_entity_closure_dofs for e in self.sub_elements]
+        return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
+                for tdim, entities in enumerate(data[0])]
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_closure_dofs]
+        start_dof = 0
+        for e in self.sub_elements:
+            for tdim, entities in enumerate(e.entity_closure_dofs):
+                for entity_n, entity_dofs in enumerate(entities):
+                    dofs[tdim][entity_n] += [start_dof + i for i in entity_dofs]
+            start_dof += e.dim
+        return dofs
+
+    @property
     def num_global_support_dofs(self):
         """Get the number of globally supported DOFs."""
         return sum(e.num_global_support_dofs for e in self.sub_elements)
@@ -440,6 +557,26 @@ class MixedElement(BaseElement):
     def reference_geometry(self):
         """Get the geometry of the reference element."""
         return self.sub_elements[0].reference_geometry
+
+    @property
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return None
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return None
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return False
 
 
 class BlockedElement(BaseElement):
@@ -531,6 +668,18 @@ class BlockedElement(BaseElement):
                  for j in i] for i in self.sub_element.entity_dofs]
 
     @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        return [[j * self.block_size for j in i] for i in self.sub_element.num_entity_closure_dofs]
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        # TODO: should this return this, or should it take blocks into account?
+        return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
+                 for j in i] for i in self.sub_element.entity_closure_dofs]
+
+    @property
     def num_global_support_dofs(self):
         """Get the number of globally supported DOFs."""
         return self.sub_element.num_global_support_dofs * self.block_size
@@ -549,6 +698,26 @@ class BlockedElement(BaseElement):
     def reference_geometry(self):
         """Get the geometry of the reference element."""
         return self.sub_element.reference_geometry
+
+    @property
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        return self.sub_element.lagrange_variant
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return self.sub_element.element_family
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return self.sub_element.cell_type
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return self.sub_element.discontinuous
 
 
 class QuadratureElement(BaseElement):
@@ -648,6 +817,16 @@ class QuadratureElement(BaseElement):
         return entity_dofs
 
     @property
+    def num_entity_closure_dofs(self):
+        """Get the number of DOFs associated with the closure of each entity."""
+        return self.num_entity_dofs
+
+    @property
+    def entity_closure_dofs(self):
+        """Get the DOF numbers associated with the closure of each entity."""
+        return self.entity_dofs
+
+    @property
     def num_global_support_dofs(self):
         """Get the number of globally supported DOFs."""
         return 0
@@ -656,3 +835,23 @@ class QuadratureElement(BaseElement):
     def family_name(self):
         """Get the family name of the element."""
         return self._ufl_element.family()
+
+    @property
+    def lagrange_variant(self):
+        """Get the Lagrange variant used to initialise the element."""
+        return None
+
+    @property
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
+        return None
+
+    @property
+    def cell_type(self):
+        """Get the Basix cell type used to initialise the element."""
+        return None
+
+    @property
+    def discontinuous(self) -> bool:
+        """Indicate whether the discontinuous version of the element is used."""
+        return False

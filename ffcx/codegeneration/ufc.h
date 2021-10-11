@@ -123,6 +123,18 @@ extern "C"
     /// Return the family of the finite element function space
     const char* family;
 
+    /// Return the Basix identifier of the family of the finite element function space
+    int basix_family;
+
+    /// Return the Basix identifier of the cell shape
+    int basix_cell;
+
+    /// The Lagrange variant to be passed to Basix's create_element function
+    int lagrange_variant;
+
+    /// Indicates whether or not this is the discontinuous version of the element
+    bool discontinuous;
+
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
 
@@ -149,10 +161,16 @@ extern "C"
     int block_size;
 
     /// Number of dofs associated with each cell entity of dimension d
-    int num_entity_dofs[4];
+    int *num_entity_dofs;
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
+
+    /// Number of dofs associated with the closure of each cell entity of dimension d
+    int *num_entity_closure_dofs;
+
+    /// Tabulate the local-to-local mapping of dofs on the closure of entity (d, i)
+    void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
 
     /// Return the number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
@@ -216,12 +234,14 @@ extern "C"
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor* tabulate_tensor;
+    bool needs_facet_permutations;
   } ufc_integral;
 
   typedef struct ufc_custom_integral
   {
     const bool* enabled_coefficients;
     ufc_tabulate_tensor_custom* tabulate_tensor;
+    bool needs_facet_permutations;
   } ufc_custom_integral;
 
   typedef struct ufc_expression
@@ -255,6 +275,9 @@ extern "C"
     /// Dimension of evaluation point, i.e. topological dimension of
     /// reference cell
     int topological_dimension;
+
+    /// Indicates whether facet permutations are needed
+    bool needs_facet_permutations;
 
     /// Coordinates of evaluations points. Dimensions:
     /// points[num_points][topological_dimension]

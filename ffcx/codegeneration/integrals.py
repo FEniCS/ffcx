@@ -77,7 +77,8 @@ def generator(ir, parameters):
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
-        tabulate_tensor=code["tabulate_tensor"])
+        tabulate_tensor=code["tabulate_tensor"],
+        needs_facet_permutations="true" if ir.needs_facet_permutations else "false")
 
     # Define name of kernel and compile time known dimension of local tensor
     if parameters.get("sycl_defines", False):
@@ -482,7 +483,14 @@ class IntegralGenerator(object):
         # Group loops by blockmap, in Vector elements each component has
         # a different blockmap
         for blockmap, blockdata in blocks:
-            block_groups[blockmap].append(blockdata)
+            scalar_blockmap = []
+            assert len(blockdata.ma_data) == len(blockmap)
+            for i, b in enumerate(blockmap):
+                bs = blockdata.ma_data[i].tabledata.block_size
+                offset = blockdata.ma_data[i].tabledata.offset
+                b = tuple([(idx - offset) // bs for idx in b])
+                scalar_blockmap.append(b)
+            block_groups[tuple(scalar_blockmap)].append(blockdata)
 
         for blockmap in block_groups:
             block_preparts, block_quadparts = \
@@ -534,6 +542,9 @@ class IntegralGenerator(object):
         preparts = []
         quadparts = []
 
+        # RHS expressiong grouped by LHS "dofmap"
+        rhs_expressions = collections.defaultdict(list)
+
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
@@ -547,8 +558,6 @@ class IntegralGenerator(object):
             B_indices.append(arg_indices[i])
         B_indices = list(B_indices)
 
-        body = []
-        rhs_list = []
         for blockdata in blocklist:
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
@@ -575,8 +584,6 @@ class IntegralGenerator(object):
                 weight = weights[iq]
 
             # Define fw = f * weight
-            assert not blockdata.transposed, "Not handled yet"
-
             fw_rhs = L.float_product([f, weight])
             if not isinstance(fw_rhs, L.Product):
                 fw = fw_rhs
@@ -587,7 +594,7 @@ class IntegralGenerator(object):
                 if not defined:
                     quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
 
-            assert not blockdata.transposed
+            assert not blockdata.transposed, "Not handled yet"
             A_shape = self.ir.tensor_shape
 
             Asym = self.backend.symbols.element_tensor()
@@ -598,74 +605,76 @@ class IntegralGenerator(object):
 
             B_rhs = L.float_product([fw] + arg_factors)
 
-            # Accumulate RHS on temporary scalar
-            rhs_list.append(B_rhs)
+            A_indices = []
+            for i in range(block_rank):
+                offset = blockdata.ma_data[i].tabledata.offset
+                index = arg_indices[i]
+                if len(blockmap[i]) == 1:
+                    A_indices.append(index + offset)
+                else:
+                    block_size = blockdata.ma_data[i].tabledata.block_size
+                    A_indices.append(block_size * index + offset)
+            rhs_expressions[tuple(A_indices)].append(B_rhs)
 
-        A_indices = []
-        for bm, index in zip(blockmap, arg_indices):
-            # TODO: switch order here? (optionally)
-            offset = bm[0]
-            if len(bm) == 1:
-                A_indices.append(index + offset)
-            else:
-                block_size = bm[1] - bm[0]
-                A_indices.append(block_size * index + offset)
-
-        hoist_rhs = collections.defaultdict(list)
         # List of statements to keep in the inner loop
-        keep = []
+        keep = collections.defaultdict(list)
         # List of temporary array declarations
         pre_loop = []
         # List of loop invariant expressions to hoist
         hoist = []
 
-        # Hoist loop invariant code and group array access (each table should only be read one
-        # time in the inner loop).
-        if block_rank == 2:
-            ind = B_indices[-1]
-            # Identify loop invariant code to hoist
-            for rhs in rhs_list:
-                if len(rhs.args) <= 2:
-                    keep.append(rhs)
-                else:
-                    varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
-                    if varying:
-                        invariant = [x for x in rhs.args if x is not varying]
-                        hoist_rhs[varying].append(invariant)
+        for indices in rhs_expressions:
+            hoist_rhs = collections.defaultdict(list)
+
+            # Hoist loop invariant code and group array access (each table should only be read one
+            # time in the inner loop).
+            if block_rank == 2:
+                ind = B_indices[-1]
+                for rhs in rhs_expressions[indices]:
+                    if len(rhs.args) <= 2:
+                        keep[indices].append(rhs)
                     else:
-                        keep.append(rhs)
+                        varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
+                        if varying:
+                            invariant = [x for x in rhs.args if x is not varying]
+                            hoist_rhs[varying].append(invariant)
+                        else:
+                            keep[indices].append(rhs)
 
-            # Perform algebraic manipulations to reduce number of floating point
-            # operations (factorize expressions by grouping)
-            for statement in hoist_rhs:
-                t = self.new_temp_symbol("t")
-                pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[0]))
-                sum = []
-                for rhs in hoist_rhs[statement]:
-                    sum.append(L.float_product(rhs))
-                sum = L.Sum(sum)
-                hoist.append(L.Assign(t[B_indices[i - 1]], sum))
-                keep.append(L.float_product([statement, t[B_indices[0]]]))
+                # Perform algebraic manipulations to reduce number of floating point
+                # operations (factorize expressions by grouping)
+                for statement in hoist_rhs:
+                    sum = []
+                    for rhs in hoist_rhs[statement]:
+                        sum.append(L.float_product(rhs))
+                    sum = L.Sum(sum)
 
-            hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
-            rhs_list = keep
+                    lhs = None
+                    for h in hoist:
+                        if (h.rhs == sum):
+                            lhs = h.lhs
+                            break
+                    if lhs:
+                        keep[indices].append(L.float_product([statement, lhs]))
+                    else:
+                        t = self.new_temp_symbol("t")
+                        pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[0]))
+                        keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
+                        hoist.append(L.Assign(t[B_indices[i - 1]], sum))
+            else:
+                keep[indices] = rhs_expressions[indices]
 
-        # Create temporary accumulator if the number of statements in
-        # this loop is greater than 1.
-        if len(rhs_list) == 1:
-            body.append(L.AssignAdd(A[A_indices], rhs_list[0]))
-        else:
-            acc = self.new_temp_symbol("acc")
-            body.append(L.VariableDecl("ufc_scalar_t", acc, 0))
-            for rhs in rhs_list:
-                body.append(L.AssignAdd(acc, rhs))
-            body.append(L.AssignAdd(A[A_indices], acc))
+        hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
+
+        body = []
+
+        for indices in keep:
+            sum = L.Sum(keep[indices])
+            body.append(L.AssignAdd(A[indices], sum))
 
         for i in reversed(range(block_rank)):
             body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
 
-        # TODO: Check if the compiler can optimize out the allocation of temporaries
-        #  arrays in pre_loop
         quadparts += [pre_loop, hoist, body]
 
         return preparts, quadparts

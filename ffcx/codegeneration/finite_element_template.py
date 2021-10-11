@@ -31,7 +31,10 @@ ufc_finite_element {factory_name} =
   .degree = {degree},
   .block_size = {block_size},
   .family = {family},
-
+  .basix_family = {basix_family},
+  .basix_cell = {basix_cell},
+  .discontinuous = {discontinuous},
+  .lagrange_variant = {lagrange_variant},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};

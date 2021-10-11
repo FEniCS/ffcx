@@ -26,6 +26,7 @@ ufc_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
   .tabulate_tensor = tabulate_tensor_{factory_name},
+  .needs_facet_permutations = {needs_facet_permutations},
 }};
 
 // End of code for integral {factory_name}
