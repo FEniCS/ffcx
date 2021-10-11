@@ -175,9 +175,10 @@ class IntegralGenerator(object):
 
         alignment = self.ir.params['assume_aligned']
         if alignment != -1:
-            parts += [L.VerbatimStatement(f"A = (ufc_scalar_t*)__builtin_assume_aligned(A, {alignment});"),
-                      L.VerbatimStatement(f"w = (const ufc_scalar_t*)__builtin_assume_aligned(w, {alignment});"),
-                      L.VerbatimStatement(f"c = (const ufc_scalar_t*)__builtin_assume_aligned(c, {alignment});"),
+            scalar_type = self.backend.access.parameters["scalar_type"]
+            parts += [L.VerbatimStatement(f"A = ({scalar_type}*)__builtin_assume_aligned(A, {alignment});"),
+                      L.VerbatimStatement(f"w = (const {scalar_type}*)__builtin_assume_aligned(w, {alignment});"),
+                      L.VerbatimStatement(f"c = (const {scalar_type}*)__builtin_assume_aligned(c, {alignment});"),
                       L.VerbatimStatement(
                           f"coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]
 
@@ -438,8 +439,9 @@ class IntegralGenerator(object):
                             vaccess = symbol[j]
                             intermediates.append(L.Assign(vaccess, vexpr))
                         else:
+                            scalar_type = self.backend.access.parameters["scalar_type"]
                             vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                            intermediates.append(L.VariableDecl("const ufc_scalar_t", vaccess, vexpr))
+                            intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
@@ -453,7 +455,8 @@ class IntegralGenerator(object):
         if intermediates:
             if use_symbol_array:
                 padlen = self.ir.params["padlen"]
-                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates), padlen=padlen)]
+                parts += [L.ArrayDecl(self.backend.access.parameters["scalar_type"],
+                                      symbol, len(intermediates), padlen=padlen)]
             parts += intermediates
         return parts
 
@@ -579,7 +582,8 @@ class IntegralGenerator(object):
                 key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
-                    quadparts.append(L.VariableDecl("const ufc_scalar_t", fw, fw_rhs))
+                    scalar_type = self.backend.access.parameters["scalar_type"]
+                    quadparts.append(L.VariableDecl(f"const {scalar_type}", fw, fw_rhs))
 
             assert not blockdata.transposed, "Not handled yet"
             A_shape = self.ir.tensor_shape
@@ -645,7 +649,8 @@ class IntegralGenerator(object):
                         keep[indices].append(L.float_product([statement, lhs]))
                     else:
                         t = self.new_temp_symbol("t")
-                        pre_loop.append(L.ArrayDecl("ufc_scalar_t", t, blockdims[0]))
+                        scalar_type = self.backend.access.parameters["scalar_type"]
+                        pre_loop.append(L.ArrayDecl(scalar_type, t, blockdims[0]))
                         keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
                         hoist.append(L.Assign(t[B_indices[i - 1]], sum))
             else:

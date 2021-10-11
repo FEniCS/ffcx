@@ -73,11 +73,6 @@ def format_code(code: namedtuple, parameters):
     code_h_pre += FORMAT_TEMPLATE["header_h"]
     code_c_pre += FORMAT_TEMPLATE["header_c"]
 
-    # Define ufc_scalar before including ufc.h
-    scalar_type = _define_scalar(parameters)
-    code_h_pre += scalar_type
-    code_c_pre += scalar_type
-
     # Generate includes and add to preamble
     includes_h, includes_c = _generate_includes(parameters)
     code_h_pre += includes_h
@@ -150,25 +145,3 @@ def _generate_includes(parameters):
     includes_c = "\n".join(sorted(s_c)) + "\n" if s_c else ""
 
     return includes_h, includes_c
-
-
-def _define_scalar(parameters):
-    # Define the ufc_scalar type before including  the ufc header
-    # By default use double scalars
-    scalar_type = parameters.get("scalar_type")
-    if "complex" in scalar_type:
-        base_type = scalar_type.replace("complex", "")
-        scalar = """
-#if defined(__cplusplus)
- #include <complex>
- typedef std::complex<{0}> ufc_scalar_t;
-#else
- #include <complex.h>
- typedef {0} _Complex ufc_scalar_t;
-#endif
-
-""".format(base_type)
-    else:
-        scalar = "typedef " + scalar_type + " ufc_scalar_t;" + "\n"
-
-    return scalar

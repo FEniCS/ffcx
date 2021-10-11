@@ -90,7 +90,7 @@ class FFCXBackendDefinitions(object):
 
         body = [L.AssignAdd(access, dof_access * FE[ic])]
 
-        code += [L.VariableDecl("ufc_scalar_t", access, 0.0)]
+        code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
         return code

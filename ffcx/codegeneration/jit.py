@@ -25,20 +25,20 @@ file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/ufc.h", "r") as f:
     ufc_h = ''.join(f.readlines())
 
-UFC_HEADER_DECL = "typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */\n"
 header = ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
-UFC_HEADER_DECL += header + "\n"
+UFC_HEADER_DECL = header + "\n"
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
 UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
 UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufc_form.*?ufc_form;', ufc_h, re.DOTALL))
 
-UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor\).*?\);', ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_custom\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_single\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_double\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_csingle\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_cdouble\).*?\);', ufc_h, re.DOTALL))
+
 UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_integral.*?ufc_integral;',
-                                          ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?ufc_custom_integral;',
                                           ufc_h, re.DOTALL))
 UFC_EXPRESSION_DECL = '\n'.join(re.findall('typedef struct ufc_expression.*?ufc_expression;', ufc_h, re.DOTALL))
 

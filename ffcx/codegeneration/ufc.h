@@ -213,36 +213,51 @@ extern "C"
   ///  null pointer can be passed. For interior facets the array will
   ///  have size 2 (one permutation for each cell adjacent to the
   ///  facet). For exterior facets, this will have size 1.
-  typedef void(ufc_tabulate_tensor)(
-      ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
-      const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
+  typedef void(ufc_tabulate_tensor_single)(
+      float* restrict A, const float* restrict w,
+      const float* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
-  /// Tabulate integral into tensor A with runtime quadrature rule
+  /// Tabulate integral into tensor A with compiled
+  /// quadrature rule and double precision
   ///
-  /// @see ufc_tabulate_tensor
+  /// @see ufc_tabulate_tensor_single
   ///
-  typedef void(ufc_tabulate_tensor_custom)(
-      ufc_scalar_t* restrict A, const ufc_scalar_t* restrict w,
-      const ufc_scalar_t* restrict c, const double* restrict coordinate_dofs,
-      int num_quadrature_points, const double* restrict quadrature_points,
-      const double* restrict quadrature_weights,
-      const double* restrict facet_normals);
+  typedef void(ufc_tabulate_tensor_double)(
+      double* restrict A, const double* restrict w,
+      const double* restrict c, const double* restrict coordinate_dofs,
+      const int* restrict entity_local_index,
+      const uint8_t* restrict quadrature_permutation);
+
+  /// Tabulate integral into tensor A with compiled
+  /// quadrature rule and complex single precision
+  ///
+  /// @see ufc_tabulate_tensor_single
+  ///
+  typedef void(ufc_tabulate_tensor_csingle)(
+      float _Complex* restrict A, const float _Complex* restrict w,
+      const float _Complex* restrict c, const double* restrict coordinate_dofs,
+      const int* restrict entity_local_index,
+      const uint8_t* restrict quadrature_permutation);
+
+  /// Tabulate integral into tensor A with compiled
+  /// quadrature rule and complex double precision
+  ///
+  /// @see ufc_tabulate_tensor_single
+  ///
+  typedef void(ufc_tabulate_tensor_cdouble)(
+      double _Complex* restrict A, const double _Complex* restrict w,
+      const double _Complex* restrict c, const double* restrict coordinate_dofs,
+      const int* restrict entity_local_index,
+      const uint8_t* restrict quadrature_permutation);
 
   typedef struct ufc_integral
   {
     const bool* enabled_coefficients;
-    ufc_tabulate_tensor* tabulate_tensor;
+    void* tabulate_tensor;
     bool needs_facet_permutations;
   } ufc_integral;
-
-  typedef struct ufc_custom_integral
-  {
-    const bool* enabled_coefficients;
-    ufc_tabulate_tensor_custom* tabulate_tensor;
-    bool needs_facet_permutations;
-  } ufc_custom_integral;
 
   typedef struct ufc_expression
   {
@@ -258,9 +273,9 @@ extern "C"
     /// @param[in] coordinate_dofs Values of degrees of freedom of
     /// coordinate element. Defines the geometry of the cell.
     /// Dimensions: coordinate_dofs[num_dofs][3].
-    void (*tabulate_expression)(ufc_scalar_t* restrict A,
-                                const ufc_scalar_t* restrict w,
-                                const ufc_scalar_t* restrict c,
+    void (*tabulate_expression)(double* restrict A,
+                                const double* restrict w,
+                                const double* restrict c,
                                 const double* restrict coordinate_dofs);
 
     /// Positions of coefficients in original expression
