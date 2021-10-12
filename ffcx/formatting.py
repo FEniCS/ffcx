@@ -132,11 +132,13 @@ def _generate_includes(parameters):
     default_c_includes = [
         "#include <math.h>",  # This should really be set by the backend
         "#include <stdalign.h>",  # This should really be set by the backend
-        "#include <stdbool.h>",  # This should really be set by the backend
         "#include <stdlib.h>",  # This should really be set by the backend
         "#include <string.h>",  # This should really be set by the backend
-        "#include <ufc.h>",
+        "#include <ufc.h>"
     ]
+
+    if "_Complex" in parameters["scalar_type"]:
+        default_c_includes += ["#include <complex.h>"]
 
     s_h = set(default_h_includes)
     s_c = set(default_c_includes)

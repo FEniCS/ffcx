@@ -213,7 +213,7 @@ extern "C"
   ///  null pointer can be passed. For interior facets the array will
   ///  have size 2 (one permutation for each cell adjacent to the
   ///  facet). For exterior facets, this will have size 1.
-  typedef void(ufc_tabulate_tensor_single)(
+  typedef void(ufc_tabulate_tensor_float32)(
       float* restrict A, const float* restrict w,
       const float* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
@@ -224,9 +224,20 @@ extern "C"
   ///
   /// @see ufc_tabulate_tensor_single
   ///
-  typedef void(ufc_tabulate_tensor_double)(
+  typedef void(ufc_tabulate_tensor_float64)(
       double* restrict A, const double* restrict w,
       const double* restrict c, const double* restrict coordinate_dofs,
+      const int* restrict entity_local_index,
+      const uint8_t* restrict quadrature_permutation);
+
+  /// Tabulate integral into tensor A with compiled
+  /// quadrature rule and extended double precision
+  ///
+  /// @see ufc_tabulate_tensor_single
+  ///
+  typedef void(ufc_tabulate_tensor_longdouble)(
+      long double* restrict A, const long double* restrict w,
+      const long double* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -235,7 +246,7 @@ extern "C"
   ///
   /// @see ufc_tabulate_tensor_single
   ///
-  typedef void(ufc_tabulate_tensor_csingle)(
+  typedef void(ufc_tabulate_tensor_complex64)(
       float _Complex* restrict A, const float _Complex* restrict w,
       const float _Complex* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
@@ -246,7 +257,7 @@ extern "C"
   ///
   /// @see ufc_tabulate_tensor_single
   ///
-  typedef void(ufc_tabulate_tensor_cdouble)(
+  typedef void(ufc_tabulate_tensor_complex128)(
       double _Complex* restrict A, const double _Complex* restrict w,
       const double _Complex* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,

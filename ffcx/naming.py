@@ -91,3 +91,19 @@ def expression_name(expression, prefix):
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)
     return f"expression_{sig}"
+
+
+def cdtype_to_numpy(cdtype):
+    """Map a C data type string NumPy datatype string"""
+    if cdtype == "double":
+        return "float64"
+    elif cdtype == "double _Complex":
+        return "complex128"
+    elif cdtype == "float":
+        return "float32"
+    elif cdtype == "float _Complex":
+        return "complex64"
+    elif cdtype == "long double":
+        return "longdouble"
+    else:
+        raise RuntimeError(f"Unknown NumPy type for: {cdtype}")

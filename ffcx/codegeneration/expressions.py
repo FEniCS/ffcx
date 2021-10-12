@@ -64,6 +64,7 @@ def generator(ir, parameters):
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
     d["needs_facet_permutations"] = "true" if ir.needs_facet_permutations else "false"
+    d["scalar_type"] = parameters["scalar_type"]
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

@@ -30,10 +30,7 @@ def generator(ir, parameters):
     integral_type = ir.integral_type
 
     # Format declaration
-    if integral_type == "custom":
-        declaration = ufc_integrals.custom_declaration.format(factory_name=factory_name)
-    else:
-        declaration = ufc_integrals.declaration.format(factory_name=factory_name)
+    declaration = ufc_integrals.declaration.format(factory_name=factory_name)
 
     # Create FFCx C backend
     backend = FFCXBackend(ir, parameters)
@@ -78,7 +75,8 @@ def generator(ir, parameters):
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
-        needs_facet_permutations="true" if ir.needs_facet_permutations else "false")
+        needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
+        scalar_type=parameters["scalar_type"])
 
     return declaration, implementation
 
