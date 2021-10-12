@@ -4,7 +4,6 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import cffi
 import numpy as np
 import pytest
 
@@ -253,13 +252,12 @@ def test_form_coefficient(compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_float64 *", form0.tabulate_tensor)
-
+    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", form0.tabulate_tensor)
     kernel(ffi.cast('double  *', A.ctypes.data),
-        ffi.cast('double  *', w.ctypes.data),
-        ffi.cast('double  *', c.ctypes.data),
-        ffi.cast('double  *', coords.ctypes.data), ffi.NULL,
-        ffi.cast('uint8_t *', perm.ctypes.data))
+           ffi.cast('double  *', w.ctypes.data),
+           ffi.cast('double  *', c.ctypes.data),
+           ffi.cast('double  *', coords.ctypes.data), ffi.NULL,
+           ffi.cast('uint8_t *', perm.ctypes.data))
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
     A_diff = (A - A_analytic)
@@ -428,7 +426,7 @@ def test_custom_quadrature(compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_float64 *", default_integral.tabulate_tensor)
+    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", default_integral.tabulate_tensor)
     kernel(ffi.cast("double *", A.ctypes.data),
            ffi.cast("double *", w.ctypes.data),
            ffi.cast("double *", c.ctypes.data),
@@ -644,7 +642,7 @@ def test_prism(compile_args):
                        0.0, 1.0, 1.0,
                        0.0, 0.0, 1.0], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_float64 *", default_integral.tabulate_tensor)
+    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", default_integral.tabulate_tensor)
     kernel(ffi.cast('double *', b.ctypes.data),
            ffi.NULL,
            ffi.NULL,

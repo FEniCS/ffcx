@@ -27,7 +27,6 @@ def generator(ir, parameters):
 
     """Generate code for an integral."""
     factory_name = ir.name
-    integral_type = ir.integral_type
 
     # Format declaration
     declaration = ufc_integrals.declaration.format(factory_name=factory_name)
