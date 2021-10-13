@@ -426,7 +426,7 @@ def test_custom_quadrature(compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", getattr(default_integral, f"tabulate_tensor_float64"))
+    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", getattr(default_integral, "tabulate_tensor_float64"))
     kernel(ffi.cast("double *", A.ctypes.data),
            ffi.cast("double *", w.ctypes.data),
            ffi.cast("double *", c.ctypes.data),
