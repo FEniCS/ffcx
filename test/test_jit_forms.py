@@ -55,7 +55,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(default_integral, f"tabulate_tensor_{np_type}"))
+    kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
@@ -172,7 +172,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
+    kernel = getattr(form0, f"tabulate_tensor_{np_type}")
 
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
@@ -220,7 +220,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
                        0.0, 1.0, 0.0,
                        0.0, 0.0, 1.0], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
+    kernel = getattr(form0, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
@@ -252,7 +252,7 @@ def test_form_coefficient(compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", getattr(form0, "tabulate_tensor_float64"))
+    kernel = getattr(form0, "tabulate_tensor_float64")
     kernel(ffi.cast('double  *', A.ctypes.data),
            ffi.cast('double  *', w.ctypes.data),
            ffi.cast('double  *', c.ctypes.data),
@@ -334,7 +334,7 @@ def test_interior_facet_integral(mode, compile_args):
                        0.0, 1.0, 0.0,
                        1.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(integral0, f"tabulate_tensor_{np_type}"))
+    kernel = getattr(integral0, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast(f'{mode}  *', A.ctypes.data),
            ffi.cast(f'{mode}  *', w.ctypes.data),
            ffi.cast(f'{mode}  *', c.ctypes.data),
@@ -426,7 +426,7 @@ def test_custom_quadrature(compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", getattr(default_integral, "tabulate_tensor_float64"))
+    kernel = getattr(default_integral, "tabulate_tensor_float64")
     kernel(ffi.cast("double *", A.ctypes.data),
            ffi.cast("double *", w.ctypes.data),
            ffi.cast("double *", c.ctypes.data),
@@ -515,7 +515,7 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
                        [2.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(default_integral, f"tabulate_tensor_{np_type}"))
+    kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.NULL,
@@ -609,7 +609,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
                        0.0, 1.0, 0.0,
                        0.0, 0.0, 1.0], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(default_integral, f"tabulate_tensor_{np_type}"))
+    kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.NULL,
@@ -642,7 +642,7 @@ def test_prism(compile_args):
                        0.0, 1.0, 1.0,
                        0.0, 0.0, 1.0], dtype=np.float64)
 
-    kernel = ffi.cast("ufc_tabulate_tensor_float64 *", getattr(default_integral, "tabulate_tensor_float64"))
+    kernel = getattr(default_integral, "tabulate_tensor_float64")
     kernel(ffi.cast('double *', b.ctypes.data),
            ffi.NULL,
            ffi.NULL,
