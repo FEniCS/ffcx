@@ -266,7 +266,11 @@ extern "C"
   typedef struct ufc_integral
   {
     const bool* enabled_coefficients;
-    void* tabulate_tensor;
+    ufc_tabulate_tensor_float32* tabulate_tensor_float32;
+    ufc_tabulate_tensor_float64* tabulate_tensor_float64;
+    ufc_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
+    ufc_tabulate_tensor_complex64* tabulate_tensor_complex64;
+    ufc_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
   } ufc_integral;
 

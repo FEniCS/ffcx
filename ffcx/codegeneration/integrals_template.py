@@ -25,7 +25,7 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 ufc_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
-  .tabulate_tensor = tabulate_tensor_{factory_name},
+  .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
   .needs_facet_permutations = {needs_facet_permutations},
 }};
 

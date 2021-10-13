@@ -16,6 +16,7 @@ from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.integral import block_data_t
+from ffcx.naming import cdtype_to_numpy
 
 logger = logging.getLogger("ffcx")
 
@@ -75,7 +76,8 @@ def generator(ir, parameters):
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
-        scalar_type=parameters["scalar_type"])
+        scalar_type=parameters["scalar_type"],
+        np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]))
 
     return declaration, implementation
 

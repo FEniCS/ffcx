@@ -45,7 +45,7 @@ def test_additive_facet_integral(mode, compile_args):
                        np.sqrt(3.0), -1.0, 0.0,
                        -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", default_integral.tabulate_tensor)
+    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(default_integral, f"tabulate_tensor_{np_type}"))
 
     for i in range(3):
         facets[0] = i
@@ -90,7 +90,7 @@ def test_additive_cell_integral(mode, compile_args):
                        np.sqrt(3.0), -1.0, 0.0,
                        -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
 
-    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", default_integral.tabulate_tensor)
+    kernel = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(default_integral, f"tabulate_tensor_{np_type}"))
 
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
