@@ -129,11 +129,11 @@ extern "C"
     /// Return the Basix identifier of the cell shape
     int basix_cell;
 
-    /// The Lagrange variant to be passed to Basix's create_element function
-    int lagrange_variant;
-
     /// Indicates whether or not this is the discontinuous version of the element
     bool discontinuous;
+
+    /// The Lagrange variant to be passed to Basix's create_element function
+    int lagrange_variant;
 
     /// Return the number of sub elements (for a mixed element)
     int num_sub_elements;
