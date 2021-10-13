@@ -94,7 +94,7 @@ def expression_name(expression, prefix):
 
 
 def cdtype_to_numpy(cdtype):
-    """Map a C data type string NumPy datatype string"""
+    """Map a C data type string NumPy datatype string."""
     if cdtype == "double":
         return "float64"
     elif cdtype == "double _Complex":
