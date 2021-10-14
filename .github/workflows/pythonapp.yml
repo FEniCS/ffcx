@@ -9,8 +9,8 @@ on:
     branches:
       - "**"
     tags:
-      - "*.*.*.*"
-      - "*.*.*"
+      - "v*.*.*.*"
+      - "v*.*.*"
   pull_request:
     branches:
       - main
@@ -49,7 +49,7 @@ jobs:
           python -m pip install git+https://github.com/FEniCS/ufl.git
           python -m pip install git+https://github.com/FEniCS/basix.git
 
-      - name: Install ffcx
+      - name: Install FFCx
         run: |
           python -m pip install sphinx sphinx_rtd_theme flake8 pydocstyle[toml] pygraphviz pytest sympy coverage pytest-cov pytest-xdist
           python -m pip install .[ci] # [ci] works locally but does not work on CI system
@@ -74,7 +74,7 @@ jobs:
           python -m coveralls
         continue-on-error: true
 
-      - name: Upload pytest test results
+      - name: Upload pytest results
         uses: actions/upload-artifact@main
         with:
           name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
