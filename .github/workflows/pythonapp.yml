@@ -58,8 +58,8 @@ jobs:
       - name: Install FEniCS dependencies (Python)
         run: |
           pip install --upgrade pip
-          pip install ufl/
-          pip install basix/
+          cd ufl && pip install . && cd ../
+          cd basix && pip install . && cd ../
 
       - name: Install ffcx
         run: |
