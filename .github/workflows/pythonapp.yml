@@ -28,7 +28,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: main
-          path: ffcx
 
       - name: Set up Python
         uses: actions/setup-python@v2
