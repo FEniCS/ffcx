@@ -24,7 +24,23 @@ jobs:
         python-version: [3.7, 3.8, 3.9]
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout FFCx
+        uses: actions/checkout@v2
+        with:
+          ref: main
+
+      - name: Checkout Basix
+        uses: actions/checkout@v2
+        with:
+          ref: main
+          path: basix
+
+      - name: Checkout UFL
+        uses: actions/checkout@v2
+        with:
+          ref: main
+          path: ufl
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -39,30 +55,26 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install graphviz ninja pkg-config
 
-      - name: Install dependencies (Python)
+      - name: Install FEniCS dependencies (Python)
         run: |
           pip install --upgrade pip
-          pip install pygraphviz
-          pip install git+https://github.com/FEniCS/ufl.git --user
-          pip install git+https://github.com/FEniCS/basix.git --user
+          pip install basix/
+          pip install ufl/
+
+      - name: Install ffcx
+        run: |
+          pip install .[ci,docs,lint,optional,test]
 
       - name: Lint with flake8
         run: |
-          pip install flake8
           flake8 --statistics ffcx/ test/
 
       - name: Check documentation style
         run: |
-          pip install pydocstyle
           pydocstyle .
-
-      - name: Install ffcx
-        run: |
-          pip install .
 
       - name: Run units tests
         run: |
-          pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
           pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
@@ -88,7 +100,6 @@ jobs:
 
       - name: Build documentation
         run: |
-          pip install sphinx sphinx_rtd_theme
           cd doc
           make html
 
