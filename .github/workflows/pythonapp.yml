@@ -45,32 +45,32 @@ jobs:
 
       - name: Install FEniCS dependencies (Python)
         run: |
-          pip install --upgrade pip setuptools
-          pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git
+          python -m pip install --upgrade pip setuptools
+          python -m pip install git+https://github.com/FEniCS/ufl.git
+          python -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install ffcx
         run: |
-          pip install .[ci]
+          python -m pip install .[ci]
 
       - name: Lint with flake8
         run: |
-          flake8 --statistics ffcx/ test/
+          python -m flake8 --statistics ffcx/ test/
 
       - name: Check documentation style
         run: |
-          pydocstyle .
+          python -m pydocstyle .
 
       - name: Run units tests
         run: |
-          pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+          python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: |
-          coveralls
+          python -m coveralls
         continue-on-error: true
 
       - name: Upload pytest test results
@@ -84,7 +84,7 @@ jobs:
 
       - name: Runs demos
         run: |
-          python${{ matrix.python-version }} -m pytest demo/test_demos.py
+          python -m pytest demo/test_demos.py
 
       - name: Build documentation
         run: |
