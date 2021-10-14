@@ -51,7 +51,7 @@ jobs:
 
       - name: Install ffcx
         run: |
-          pip install .[ci,docs,lint,optional,test]
+          pip install .[ci]
 
       - name: Lint with flake8
         run: |
