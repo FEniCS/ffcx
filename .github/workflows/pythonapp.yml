@@ -51,7 +51,7 @@ jobs:
 
       - name: Install ffcx
         run: |
-          python -m pip install sphinx sphinx_rtd_theme flake8 pygraphviz pytest sympy coverage pytest-cov pytest-xdist
+          python -m pip install sphinx sphinx_rtd_theme flake8 pydocstyle[toml] pygraphviz pytest sympy coverage pytest-cov pytest-xdist
           python -m pip install .[ci] # [ci] works locally but does not work on CI system
 
       - name: Lint with flake8
@@ -64,7 +64,7 @@ jobs:
 
       - name: Run units tests
         run: |
-          python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+          python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
 
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
