@@ -45,7 +45,7 @@ jobs:
           ref: ${{ input.ffcx_ref }}
 
       - name: Build wheel
-        run: python -m pip bdist_wheel
+        run: python setup.py bdist_wheel
 
       - name: Build sdist
         run: python setup.py sdist --formats=bztar,gztar
