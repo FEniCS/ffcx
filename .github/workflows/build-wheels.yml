@@ -35,8 +35,8 @@ on:
         type: boolean
 
 jobs:
-  build_sdist:
-    name: Build source distribution
+  build:
+    name: Build wheels and source distributions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -53,7 +53,7 @@ jobs:
 
   upload_pypi:
     name: Upload to PyPI (optional)
-    needs: [build_wheels, build_sdist]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v2
