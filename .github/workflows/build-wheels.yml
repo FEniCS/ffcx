@@ -42,7 +42,7 @@ jobs:
       - name: Checkout FFCx
         uses: actions/checkout@v2
         with:
-          ref: ${{ input.ffcx_ref }}
+          ref: ${{ inputs.ffcx_ref }}
 
       - name: Build wheel
         run: python setup.py bdist_wheel
