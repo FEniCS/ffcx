@@ -42,7 +42,10 @@ jobs:
       - name: Checkout FFCx
         uses: actions/checkout@v2
         with:
-          ref: ${{ input.ffcx_ref }}
+          ref: ${{ inputs.ffcx_ref }}
+
+      - name: Upgrade pip and setuptools
+        run: python -m pip install setuptools pip --upgrade
 
       - name: Build wheel
         run: python setup.py bdist_wheel
