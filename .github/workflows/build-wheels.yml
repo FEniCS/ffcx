@@ -44,6 +44,9 @@ jobs:
         with:
           ref: ${{ inputs.ffcx_ref }}
 
+      - name: Upgrade pip and setuptools
+        run: python -m pip install setuptools pip --upgrade
+
       - name: Build wheel
         run: python setup.py bdist_wheel
 
