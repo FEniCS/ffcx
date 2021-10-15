@@ -6,6 +6,7 @@ include ChangeLog.uflacs
 include INSTALL
 include LICENSE
 include requirements.txt
+include ffcx/codegeneration/ufc.h
 recursive-include demo *
 recursive-include doc *
 recursive-include ffcx *.in

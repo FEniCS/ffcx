@@ -1,0 +1,79 @@
+name: Build wheels
+
+# By default this action does not push to test or production PyPI.  The wheels
+# are available as an artifact that can be downloaded and tested locally.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ffcx_ref:
+        description: "FFCx git ref to checkout"
+        default: "main"
+        type: string
+      test_pypi_publish:
+        description: "Publish to Test PyPi (true | false)"
+        default: false
+        type: boolean
+      pypi_publish:
+        description: "Publish to PyPi (true | false)"
+        default: false
+        type: boolean
+
+  workflow_call:
+    inputs:
+      ffcx_ref:
+        description: "FFCx git ref to checkout"
+        default: "main"
+        type: string
+      test_pypi_publish:
+        description: "Publish to Test PyPi (true | false)"
+        default: false
+        type: boolean
+      pypi_publish:
+        description: "Publish to PyPi (true | false))"
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    name: Build wheels and source distributions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout FFCx
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ input.ffcx_ref }}
+
+      - name: Build wheel
+        run: python setup.py bdist_wheel
+
+      - name: Build sdist
+        run: python setup.py sdist --formats=bztar,gztar
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: dist/*
+
+  upload_pypi:
+    name: Upload to PyPI (optional)
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        if: ${{ inputs.test_pypi_publish }}
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
+          repository_url: https://pypi.org/legacy/
+
+      - uses: pypa/gh-action-pypi-publish@v1.4.2
+        if: ${{ inputs.pypi_publish }}
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TEST_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
