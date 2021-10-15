@@ -6,7 +6,7 @@ name: Build wheels
 on:
   workflow_dispatch:
     inputs:
-      basix_ref:
+      ffcx_ref:
         description: "FFCx git ref to checkout"
         default: "main"
         type: string
@@ -21,7 +21,7 @@ on:
 
   workflow_call:
     inputs:
-      basix_ref:
+      ffcx_ref:
         description: "FFCx git ref to checkout"
         default: "main"
         type: string
@@ -39,7 +39,10 @@ jobs:
     name: Build wheels and source distributions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout FFCx
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ input.ffcx_ref }}
 
       - name: Build wheel
         run: python -m pip bdist_wheel
