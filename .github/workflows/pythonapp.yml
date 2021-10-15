@@ -48,8 +48,7 @@ jobs:
 
       - name: Install FFCx
         run: |
-          python -m pip install sphinx sphinx_rtd_theme flake8 pydocstyle[toml] pygraphviz pytest sympy coverage pytest-cov pytest-xdist
-          python -m pip install .[ci] # [ci] works locally but does not work on CI system
+          python -m pip install .[ci]
 
       - name: Lint with flake8
         run: |
