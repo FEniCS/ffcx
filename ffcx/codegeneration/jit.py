@@ -25,20 +25,21 @@ file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/ufc.h", "r") as f:
     ufc_h = ''.join(f.readlines())
 
-UFC_HEADER_DECL = "typedef {} ufc_scalar_t;  /* Hack to deal with scalar type */\n"
 header = ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
-UFC_HEADER_DECL += header + "\n"
+UFC_HEADER_DECL = header + "\n"
 
 UFC_ELEMENT_DECL = '\n'.join(re.findall('typedef struct ufc_finite_element.*?ufc_finite_element;', ufc_h, re.DOTALL))
 UFC_DOFMAP_DECL = '\n'.join(re.findall('typedef struct ufc_dofmap.*?ufc_dofmap;', ufc_h, re.DOTALL))
 UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufc_form.*?ufc_form;', ufc_h, re.DOTALL))
 
-UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor\).*?\);', ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_custom\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_float32\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_float64\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_complex64\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_complex128\).*?\);', ufc_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufc_tabulate_tensor_longdouble\).*?\);', ufc_h, re.DOTALL))
+
 UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_integral.*?ufc_integral;',
-                                          ufc_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufc_custom_integral.*?ufc_custom_integral;',
                                           ufc_h, re.DOTALL))
 UFC_EXPRESSION_DECL = '\n'.join(re.findall('typedef struct ufc_expression.*?ufc_expression;', ufc_h, re.DOTALL))
 
@@ -113,8 +114,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        scalar_type = p["scalar_type"].replace("complex", "_Complex")
-        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
+        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
         element_template = "extern ufc_finite_element {name};\n"
         dofmap_template = "extern ufc_dofmap {name};\n"
         for i in range(len(elements)):
@@ -156,8 +156,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        scalar_type = p["scalar_type"].replace("complex", "_Complex")
-        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
         form_template = "extern ufc_form {name};\n"
@@ -202,8 +201,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        scalar_type = p["scalar_type"].replace("complex", "_Complex")
-        decl = UFC_HEADER_DECL.format(scalar_type) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_INTEGRAL_DECL + UFC_FORM_DECL + UFC_EXPRESSION_DECL
 
         expression_template = "extern ufc_expression {name};\n"

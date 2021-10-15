@@ -10,9 +10,9 @@ extern ufc_integral {factory_name};
 factory = """
 // Code for integral {factory_name}
 
-void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
-                                    const ufc_scalar_t* restrict w,
-                                    const ufc_scalar_t* restrict c,
+void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
+                                    const {scalar_type}* restrict w,
+                                    const {scalar_type}* restrict c,
                                     const double* restrict coordinate_dofs,
                                     const int* restrict entity_local_index,
                                     const uint8_t* restrict quadrature_permutation)
@@ -25,7 +25,7 @@ void tabulate_tensor_{factory_name}(ufc_scalar_t* restrict A,
 ufc_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
-  .tabulate_tensor = tabulate_tensor_{factory_name},
+  .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
   .needs_facet_permutations = {needs_facet_permutations},
 }};
 
