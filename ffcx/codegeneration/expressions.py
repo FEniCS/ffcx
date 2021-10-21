@@ -64,6 +64,7 @@ def generator(ir, parameters):
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
     d["needs_facet_permutations"] = "true" if ir.needs_facet_permutations else "false"
+    d["scalar_type"] = parameters["scalar_type"]
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
@@ -122,10 +123,12 @@ class ExpressionGenerator:
         padlen = self.ir.params["padlen"]
         table_names = sorted(tables)
 
+        scalar_type = self.backend.access.parameters["scalar_type"]
+
         for name in table_names:
             table = tables[name]
             decl = L.ArrayDecl(
-                "static const ufc_scalar_t", name, table.shape, table, padlen=padlen)
+                f"static const {scalar_type}", name, table.shape, table, padlen=padlen)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -416,8 +419,9 @@ class ExpressionGenerator:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
+                        scalar_type = self.backend.access.parameters["scalar_type"]
                         vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                        intermediates.append(L.VariableDecl("const ufc_scalar_t", vaccess, vexpr))
+                        intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
             # Store access node for future reference
             self.scope[v] = vaccess
@@ -429,6 +433,7 @@ class ExpressionGenerator:
             parts += definitions
         if intermediates:
             if use_symbol_array:
-                parts += [L.ArrayDecl("ufc_scalar_t", symbol, len(intermediates))]
+                scalar_type = self.backend.access.parameters["scalar_type"]
+                parts += [L.ArrayDecl(scalar_type, symbol, len(intermediates))]
             parts += intermediates
         return parts
