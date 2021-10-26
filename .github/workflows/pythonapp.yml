@@ -44,7 +44,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools
           python -m pip install git+https://github.com/FEniCS/ufl.git
-          python -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/remove_duplicate_tabulate
+          python -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/remove-duplicate-tabulate
 
       - name: Install FFCx
         run: |

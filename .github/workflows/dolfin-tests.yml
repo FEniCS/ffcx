@@ -34,7 +34,7 @@ jobs:
       - name: Install UFL and Basix
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/remove_duplicate_tabulate
+          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/remove-duplicate-tabulate
 
       - name: Install FFCx
         run: |
