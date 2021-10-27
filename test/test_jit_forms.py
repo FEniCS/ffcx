@@ -669,12 +669,12 @@ def test_cell_facet_form(mode, expected_result, compile_args):
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
-    ffi = cffi.FFI()
+    ffi = module.ffi
     form0 = compiled_forms[0]
 
     integral0 = form0.integrals(module.lib.exterior_facet)[0]
 
-    c_type, np_type = float_to_type(mode)
+    np_type = cdtype_to_numpy(mode)
     A = np.zeros((2, 3), dtype=np_type)
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
@@ -684,12 +684,13 @@ def test_cell_facet_form(mode, expected_result, compile_args):
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
-    integral0.tabulate_tensor(
-        ffi.cast('{}  *'.format(c_type), A.ctypes.data),
-        ffi.cast('{}  *'.format(c_type), w.ctypes.data),
-        ffi.cast('{}  *'.format(c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data),
-        ffi.cast('int *', facet.ctypes.data),
-        ffi.cast('uint8_t *', perm.ctypes.data))
+    
+    kernel = getattr(integral0, f"tabulate_tensor_{np_type}")
+    kernel(ffi.cast(f'{mode}  *', A.ctypes.data),
+           ffi.cast(f'{mode}  *', w.ctypes.data),
+           ffi.cast(f'{mode}  *', c.ctypes.data),
+           ffi.cast('double *', coords.ctypes.data),
+           ffi.cast('int *', facet.ctypes.data),
+           ffi.cast('uint8_t *', perm.ctypes.data))
 
     assert np.allclose(A, expected_result)
