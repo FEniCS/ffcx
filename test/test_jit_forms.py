@@ -684,7 +684,7 @@ def test_cell_facet_form(mode, expected_result, compile_args):
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
-    
+
     kernel = getattr(integral0, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast(f'{mode}  *', A.ctypes.data),
            ffi.cast(f'{mode}  *', w.ctypes.data),
