@@ -230,7 +230,8 @@ class BasixElement(BaseElement):
         points : np.array
             The points to tabulate at
         """
-        return self.element.tabulate(nderivs, points)
+        tab = self.element.tabulate(nderivs, points)
+        return tab.transpose((0, 1, 3, 2)).reshape((tab.shape[0], tab.shape[1], -1))
 
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.
