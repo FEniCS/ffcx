@@ -261,7 +261,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                     tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
                 raise RuntimeError("Table values mismatch with same name.")
 
-        ir["unique_tables"] = unique_tables
+        ir["unique_tables"].update(unique_tables)
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
