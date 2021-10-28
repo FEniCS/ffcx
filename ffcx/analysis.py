@@ -153,7 +153,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        if element._sub_element._variant is None:
+        if element._sub_element._variant is None and element.degree() > 2:
             equi_element = ufl.VectorElement(
                 element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
                 variant="equispaced")

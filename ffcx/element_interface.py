@@ -39,6 +39,7 @@ def create_element(ufl_element):
 
     if family_name in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
+            print("GLL!")
             variant_info.append(basix.LagrangeVariant.gll_warped)
         else:
             variant_info.append(basix.variants.string_to_lagrange_variant(ufl_element.variant()))
