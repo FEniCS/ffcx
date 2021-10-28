@@ -359,6 +359,9 @@ extern "C"
     /// - r if r + j <= i < r + n
     ufc_finite_element** finite_elements;
 
+    /// Get the coordinate element associated with the geometry of the mesh.
+    ufc_finite_element* coordinate_element;
+
     /// Get a dofmap for the i-th argument function, where 0 <= i < r +
     /// n.
     ///

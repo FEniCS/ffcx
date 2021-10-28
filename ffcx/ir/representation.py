@@ -36,7 +36,7 @@ logger = logging.getLogger("ffcx")
 ir_form = namedtuple('ir_form', [
     'id', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
     'name_from_uflfile', 'function_spaces', 'original_coefficient_position',
-    'coefficient_names', 'constant_names', 'finite_elements',
+    'coefficient_names', 'constant_names', 'finite_elements', 'coordinate_element',
     'dofmaps', 'integral_names', 'subdomain_ids'])
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
@@ -398,6 +398,10 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         finite_element_names[e]
         for e in form_data.argument_elements + form_data.coefficient_elements
     ]
+
+    assert len(form_data.coordinate_elements) == 1
+    ir["coordinate_element"] = finite_element_names[form_data.coordinate_elements[0]]
+
     ir["dofmaps"] = [
         dofmap_names[e] for e in form_data.argument_elements + form_data.coefficient_elements
     ]

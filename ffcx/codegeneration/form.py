@@ -73,6 +73,11 @@ def generator(ir, parameters):
         d["finite_elements"] = L.Null()
         d["finite_elements_init"] = ""
 
+    if ir.coordinate_element is None:
+        d["coordinate_element"] = L.Null()
+    else:
+        d["coordinate_element"] = L.AddressOf(L.Symbol(ir.coordinate_element))
+
     if len(ir.dofmaps) > 0:
         d["dofmaps"] = f"dofmaps_{ir.name}"
         d["dofmaps_init"] = L.ArrayDecl("ufc_dofmap*", f"dofmaps_{ir.name}", values=[

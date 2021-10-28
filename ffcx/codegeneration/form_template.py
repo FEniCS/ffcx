@@ -65,6 +65,7 @@ ufc_form {factory_name} =
   .constant_name_map = constant_name_{factory_name},
 
   .finite_elements = {finite_elements},
+  .coordinate_element = {coordinate_element},
   .dofmaps = {dofmaps},
 
   .integral_ids = integral_ids_{factory_name},
