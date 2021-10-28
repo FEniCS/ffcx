@@ -150,6 +150,15 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     if _has_custom_integrals(form):
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
+    # Set default spacing for coordinate elements to be equispaced
+    for n, i in enumerate(form._integrals):
+        element = i._ufl_domain._ufl_coordinate_element
+        if element._sub_element._variant is None:
+            equi_element = ufl.VectorElement(
+                element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
+                variant="equispaced")
+            form._integrals[0]._ufl_domain._ufl_coordinate_element = equi_element
+
     # Check for complex mode
     complex_mode = "_Complex" in parameters["scalar_type"]
 
