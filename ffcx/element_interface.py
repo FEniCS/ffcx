@@ -59,7 +59,8 @@ def create_quadrature(cellname, degree, rule):
     if cellname == "vertex":
         return [[]], [1]
 
-    quadrature = basix.make_quadrature(rule, basix.cell.string_to_type(cellname), degree)
+    quadrature = basix.make_quadrature(
+        basix.quadrature.string_to_type(rule), basix.cell.string_to_type(cellname), degree)
 
     # The quadrature degree from UFL can be very high for some
     # integrals.  Print warning if number of quadrature points
