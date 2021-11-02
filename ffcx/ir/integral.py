@@ -9,8 +9,6 @@ import collections
 import itertools
 import logging
 
-import numpy
-
 import ufl
 from ffcx.ir.analysis.factorization import \
     compute_argument_factorization
@@ -83,7 +81,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                              for i, v in S.nodes.items()
                              if is_modified_terminal(v['expression'])}
 
-        mt_unique_table_reference = build_optimized_tables(
+        mt_table_reference = build_optimized_tables(
             quadrature_rule,
             cell,
             integral_type,
@@ -92,18 +90,20 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             ir["unique_tables"],
             rtol=p["table_rtol"],
             atol=p["table_atol"])
-        unique_tables = {v.name: v.values for v in mt_unique_table_reference.values()}
-        unique_table_types = {v.name: v.ttype for v in mt_unique_table_reference.values()}
+
+        # Fetch unique tables for this quadrature rule
+        table_types = {v.name: v.ttype for v in mt_table_reference.values()}
+        tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
 
-        if 'zeros' in unique_table_types.values() and len(S_targets) == 1:
+        if 'zeros' in table_types.values() and len(S_targets) == 1:
             # If there are any 'zero' tables, replace symbolically and rebuild graph
             #
             # TODO: Implement zero table elimination for non-scalar graphs
             for i, mt in initial_terminals.items():
                 # Set modified terminals with zero tables to zero
-                tr = mt_unique_table_reference.get(mt)
+                tr = mt_table_reference.get(mt)
                 if tr is not None and tr.ttype == "zeros":
                     S.nodes[i]['expression'] = ufl.as_ufl(0.0)
 
@@ -161,12 +161,12 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             if is_modified_terminal(expr):
                 mt = analyse_modified_terminal(expr)
                 F.nodes[i]['mt'] = mt
-                tr = mt_unique_table_reference.get(mt)
+                tr = mt_table_reference.get(mt)
                 if tr is not None:
                     F.nodes[i]['tr'] = tr
 
         # Attach 'status' to each node: 'inactive', 'piecewise' or 'varying'
-        analyse_dependencies(F, mt_unique_table_reference)
+        analyse_dependencies(F, mt_table_reference)
 
         # Output diagnostic graph as pdf
         if visualise:
@@ -208,8 +208,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             # Check if each *each* factor corresponding to this argument is piecewise
             all_factors_piecewise = all(F.nodes[ifi[0]]["status"] == 'piecewise' for ifi in fi_ci)
             block_is_permuted = False
-            for n in unames:
-                if unique_tables[n].shape[0] > 1:
+            for name in unames:
+                if tables[name].shape[0] > 1:
                     block_is_permuted = True
             ma_data = []
             for i, ma in enumerate(ma_indices):
@@ -240,28 +240,18 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 for mad in blockdata.ma_data:
                     active_table_names.add(mad.tabledata.name)
 
-        # Record all table types before dropping tables
-        ir["unique_table_types"].update(unique_table_types)
-
-        # Drop tables not referenced from modified terminals
-        # and tables of zeros and ones
-        unused_ttypes = ("zeros", "ones")
-        keep_table_names = set()
         for name in active_table_names:
-            ttype = ir["unique_table_types"][name]
-            if ttype not in unused_ttypes:
-                if name in unique_tables:
-                    keep_table_names.add(name)
-        unique_tables = {name: unique_tables[name] for name in keep_table_names}
+            # Drop tables not referenced from modified terminals
+            if name not in tables.keys():
+                del tables[name]
+            # Drop tables which are inlined
+            if table_types[name] in ("zeros", "ones"):
+                del tables[name]
+                del table_types[name]
 
-        # Add to global set of all tables
-        for name, table in unique_tables.items():
-            tbl = ir["unique_tables"].get(name)
-            if tbl is not None and not numpy.allclose(
-                    tbl, table, rtol=p["table_rtol"], atol=p["table_atol"]):
-                raise RuntimeError("Table values mismatch with same name.")
-
-        ir["unique_tables"].update(unique_tables)
+        # Add tables and types for this quadrature rule to global tables dict
+        ir["unique_tables"].update(tables)
+        ir["unique_table_types"].update(table_types)
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
