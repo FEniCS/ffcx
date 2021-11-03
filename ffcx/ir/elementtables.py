@@ -97,7 +97,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
-    numpy.set_printoptions(suppress=True, precision=2)
     basix_element = create_element(ufl_element)
 
     # Extract arrays for the right scalar component
