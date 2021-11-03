@@ -240,18 +240,18 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 for mad in blockdata.ma_data:
                     active_table_names.add(mad.tabledata.name)
 
+        active_tables = {}
+        active_table_types = {}
+
         for name in active_table_names:
             # Drop tables not referenced from modified terminals
-            if name not in tables.keys():
-                del tables[name]
-            # Drop tables which are inlined
-            if table_types[name] in ("zeros", "ones"):
-                del tables[name]
-                del table_types[name]
+            if table_types[name] not in ("zeros", "ones"):
+                active_tables[name] = tables[name]
+                active_table_types[name] = table_types[name]
 
         # Add tables and types for this quadrature rule to global tables dict
-        ir["unique_tables"].update(tables)
-        ir["unique_table_types"].update(table_types)
+        ir["unique_tables"].update(active_tables)
+        ir["unique_table_types"].update(active_table_types)
 
         # Build IR dict for the given expressions
         # Store final ir for this num_points
