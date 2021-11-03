@@ -287,7 +287,6 @@ def build_optimized_tables(
         ufl.algorithms.analysis.extract_sub_elements(all_elements))
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    tables = existing_tables
     mt_tables = {}
 
     for mt in modified_terminals:
@@ -365,19 +364,11 @@ def build_optimized_tables(
             tbl = tbl[:1, :, :, :]
 
         # Check for existing identical table
-        xname_found = False
-        for xname in tables:
-            if equal_tables(tbl, tables[xname]):
-                xname_found = True
+        for table_name in existing_tables:
+            if equal_tables(tbl, existing_tables[table_name]):
+                name = table_name
+                tbl = existing_tables[name]
                 break
-
-        if xname_found:
-            name = xname
-            # Retrieve existing table
-            tbl = tables[name]
-        else:
-            # Store new table
-            tables[name] = tbl
 
         cell_offset = 0
         basix_element = create_element(element)
