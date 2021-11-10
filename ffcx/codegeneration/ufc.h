@@ -267,6 +267,9 @@ extern "C"
     ufc_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufc_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
+
+    /// Get the coordinate element associated with the geometry of the mesh.
+    ufc_finite_element* coordinate_element;
   } ufc_integral;
 
   typedef struct ufc_expression
@@ -358,9 +361,6 @@ extern "C"
     /// @param i Argument number if 0 <= i < r Coefficient number j = i
     /// - r if r + j <= i < r + n
     ufc_finite_element** finite_elements;
-
-    /// Get the coordinate element associated with the geometry of the mesh.
-    ufc_finite_element* coordinate_element;
 
     /// Get a dofmap for the i-th argument function, where 0 <= i < r +
     /// n.
