@@ -286,6 +286,8 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
     mt_tables = {}
 
+    _existing_tables = existing_tables.copy()
+
     for mt in modified_terminals:
         res = analysis.get(mt)
         if not res:
@@ -349,7 +351,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
-        
+
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             tbl = tbl[:, :, :1, :]
@@ -363,15 +365,15 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         # Check for existing identical table
         new_table = True
-        for table_name in existing_tables:
-            if equal_tables(tbl, existing_tables[table_name]):
+        for table_name in _existing_tables:
+            if equal_tables(tbl, _existing_tables[table_name]):
                 name = table_name
-                tbl = existing_tables[name]
+                tbl = _existing_tables[name]
                 new_table = False
                 break
 
-        if new_table and tabletype not in ("zeros", "ones"):
-            existing_tables[name] = tbl
+        if new_table:
+            _existing_tables[name] = tbl
 
         cell_offset = 0
         basix_element = create_element(element)
