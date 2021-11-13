@@ -52,7 +52,7 @@ ir_integral = namedtuple('ir_integral', [
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
     'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
-    'table_dofmaps', 'integrand', 'name', 'precision', 'needs_facet_permutations'])
+    'table_dofmaps', 'integrand', 'name', 'precision', 'needs_facet_permutations', 'coordinate_element'])
 ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
@@ -92,7 +92,8 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     ]
 
     irs = [
-        _compute_integral_ir(fd, i, analysis.element_numbers, integral_names, parameters, visualise)
+        _compute_integral_ir(fd, i, analysis.element_numbers, integral_names, finite_element_names,
+                             parameters, visualise)
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
@@ -200,7 +201,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
-                         parameters, visualise):
+                         finite_element_names, parameters, visualise):
     """Compute intermediate represention for form integrals."""
     _entity_types = {
         "cell": "cell",
@@ -233,7 +234,8 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             "num_facets": cell.num_facets(),
             "num_vertices": cell.num_vertices(),
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "cell_shape": cellname
+            "cell_shape": cellname,
+            "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()]
         }
 
         # Get element space dimensions
@@ -398,6 +400,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         finite_element_names[e]
         for e in form_data.argument_elements + form_data.coefficient_elements
     ]
+
     ir["dofmaps"] = [
         dofmap_names[e] for e in form_data.argument_elements + form_data.coefficient_elements
     ]

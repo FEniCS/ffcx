@@ -267,6 +267,9 @@ extern "C"
     ufc_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufc_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
+
+    /// Get the coordinate element associated with the geometry of the mesh.
+    ufc_finite_element* coordinate_element;
   } ufc_integral;
 
   typedef struct ufc_expression

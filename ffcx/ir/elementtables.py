@@ -257,10 +257,9 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_optimized_tables(
-    quadrature_rule, cell, integral_type, entitytype, modified_terminals, existing_tables,
-    rtol=default_rtol, atol=default_atol
-):
+def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
+                           modified_terminals, existing_tables,
+                           rtol=default_rtol, atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -285,8 +284,9 @@ def build_optimized_tables(
     unique_elements = ufl.algorithms.sort_elements(
         ufl.algorithms.analysis.extract_sub_elements(all_elements))
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
-
     mt_tables = {}
+
+    _existing_tables = existing_tables.copy()
 
     for mt in modified_terminals:
         res = analysis.get(mt)
@@ -351,6 +351,7 @@ def build_optimized_tables(
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
+
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             tbl = tbl[:, :, :1, :]
@@ -363,11 +364,16 @@ def build_optimized_tables(
             tbl = tbl[:1, :, :, :]
 
         # Check for existing identical table
-        for table_name in existing_tables:
-            if equal_tables(tbl, existing_tables[table_name]):
+        new_table = True
+        for table_name in _existing_tables:
+            if equal_tables(tbl, _existing_tables[table_name]):
                 name = table_name
-                tbl = existing_tables[name]
+                tbl = _existing_tables[name]
+                new_table = False
                 break
+
+        if new_table:
+            _existing_tables[name] = tbl
 
         cell_offset = 0
         basix_element = create_element(element)

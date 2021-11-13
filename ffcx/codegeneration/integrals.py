@@ -77,7 +77,8 @@ def generator(ir, parameters):
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=parameters["scalar_type"],
-        np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]))
+        np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]),
+        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
 
     return declaration, implementation
 
