@@ -39,7 +39,7 @@ def create_element(ufl_element):
 
     if family_name in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.equispaced)
+            variant_info.append(basix.LagrangeVariant.gll_warped)
         else:
             variant_info.append(basix.variants.string_to_lagrange_variant(ufl_element.variant()))
 
@@ -59,7 +59,8 @@ def create_quadrature(cellname, degree, rule):
     if cellname == "vertex":
         return [[]], [1]
 
-    quadrature = basix.make_quadrature(rule, basix.cell.string_to_type(cellname), degree)
+    quadrature = basix.make_quadrature(
+        basix.quadrature.string_to_type(rule), basix.cell.string_to_type(cellname), degree)
 
     # The quadrature degree from UFL can be very high for some
     # integrals.  Print warning if number of quadrature points
@@ -230,7 +231,8 @@ class BasixElement(BaseElement):
         points : np.array
             The points to tabulate at
         """
-        return self.element.tabulate(nderivs, points)
+        tab = self.element.tabulate(nderivs, points)
+        return tab.transpose((0, 1, 3, 2)).reshape((tab.shape[0], tab.shape[1], -1))
 
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.

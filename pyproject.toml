@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=58", "wheel"]
+
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra"
+testpaths = [
+    "tests"
+]
+norecursedirs = [
+    "libs",
+    "docs"
+]
+log_cli = true
+
+[tool.pydocstyle]
+convention = "numpy"
+# TODO: Work on removing these ignores
+add-ignore = [
+    "D100",  # Missing docstrings in modules
+    "D101",  # Missing docstrings in classes
+    "D102",  # Missing docstrings in methods
+    "D103",  # Missing docstrings in functions
+    "D104",  # Missing docstrings in packages
+    "D105"   # Missing docstrings in magic methods
+]
+
