@@ -41,24 +41,23 @@ ir_form = namedtuple('ir_form', [
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
-    'family', 'num_sub_elements', 'block_size', 'sub_elements',
-    'entity_dofs', 'needs_transformation_data'])
+    'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs',
+    'lagrange_variant', 'basix_family', 'basix_cell', 'discontinuous'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
-    'tabulate_entity_dofs', 'num_sub_dofmaps', 'sub_dofmaps', 'block_size'])
+    'tabulate_entity_dofs', 'num_entity_closure_dofs', 'tabulate_entity_closure_dofs', 'num_sub_dofmaps',
+    'sub_dofmaps', 'block_size'])
 ir_integral = namedtuple('ir_integral', [
     'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
     'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
-    'table_dofmaps', 'table_dof_base_transformations', 'integrand', 'name', 'precision',
-    'table_needs_transformation_data', 'needs_transformation_data'])
+    'table_dofmaps', 'integrand', 'name', 'precision', 'needs_facet_permutations'])
 ir_expression = namedtuple('ir_expression', [
-    'name', 'signature', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
-    'table_dofmaps', 'table_dof_base_transformations', 'coefficient_numbering', 'coefficient_offsets',
+    'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
+    'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
-    'original_coefficient_positions', 'points', 'table_needs_transformation_data',
-    'needs_transformation_data', 'coefficient_names', 'constant_names'])
+    'original_coefficient_positions', 'points', 'needs_facet_permutations', 'coefficient_names', 'constant_names'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
@@ -88,7 +87,8 @@ def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise
     ]
 
     ir_dofmaps = [
-        _compute_dofmap_ir(e, analysis.element_numbers, dofmap_names) for e in analysis.unique_elements
+        _compute_dofmap_ir(e, analysis.element_numbers, dofmap_names)
+        for e in analysis.unique_elements
     ]
 
     irs = [
@@ -130,8 +130,13 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = basix_element.dim
+    ir["element_type"] = basix_element.element_type
+    ir["lagrange_variant"] = basix_element.lagrange_variant
+    ir["basix_family"] = basix_element.element_family
+    ir["basix_cell"] = basix_element.cell_type
+    ir["discontinuous"] = basix_element.discontinuous
     ir["degree"] = ufl_element.degree()
-    ir["family"] = basix_element.family_name
+    ir["family"] = ufl_element.family()
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
 
@@ -145,12 +150,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     else:
         ir["block_size"] = 1
 
-    ir["needs_transformation_data"] = 0
-    for p in basix_element.base_transformations:
-        if not numpy.allclose(p, numpy.identity(len(p))):
-            ir["needs_transformation_data"] = 1
-
-    ir["entity_dofs"] = basix_element.entity_dof_numbers
+    ir["entity_dofs"] = basix_element.entity_dofs
 
     return ir_element(**ir)
 
@@ -178,14 +178,20 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
         ir["block_size"] = 1
 
     # Precompute repeatedly used items
-    for i in basix_element.entity_dofs:
+    for i in basix_element.num_entity_dofs:
+        # FIXME: this assumes the same number of DOFs on each entity of the same dim: this
+        # assumption will not be true for prisms and pyramids
         if max(i) != min(i):
             raise RuntimeError("Elements with different numbers of DOFs on subentities of the same dimension"
                                " are not yet supported in FFCx.")
-    num_dofs_per_entity = [i[0] for i in basix_element.entity_dofs]
 
+    num_dofs_per_entity = [i[0] for i in basix_element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_entity_dofs"] = (basix_element.entity_dof_numbers, num_dofs_per_entity)
+    ir["tabulate_entity_dofs"] = (basix_element.entity_dofs, num_dofs_per_entity)
+
+    num_dofs_per_entity_closure = [i[0] for i in basix_element.num_entity_closure_dofs]
+    ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
+    ir["tabulate_entity_closure_dofs"] = (basix_element.entity_closure_dofs, num_dofs_per_entity_closure)
 
     ir["num_global_support_dofs"] = basix_element.num_global_support_dofs
     ir["num_element_support_dofs"] = basix_element.dim - ir["num_global_support_dofs"]
@@ -442,7 +448,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
+def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, object_names):
     """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
 

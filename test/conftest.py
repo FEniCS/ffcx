@@ -9,4 +9,4 @@ import pytest
 
 @pytest.fixture(scope="module")
 def compile_args():
-    return ["-O0", "-Wall", "-Werror"]
+    return ["-O1", "-Wall", "-Werror"]

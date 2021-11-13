@@ -11,11 +11,11 @@ jobs:
   build:
     name: Run DOLFINx tests
     runs-on: ubuntu-latest
-    container: fenicsproject/test-env:openmpi
+    container: fenicsproject/test-env:latest-openmpi
 
     env:
-      CC: clang-10
-      CXX: clang++-10
+      CC: clang
+      CXX: clang++
 
       PETSC_ARCH: linux-gnu-complex-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
@@ -31,23 +31,10 @@ jobs:
       - name: Install dependencies (Python)
         run: |
           python3 -m pip install --upgrade pip
-      - name: Install UFL
+      - name: Install UFL and Basix
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git@michal/expressions
-
-      - name: Clone Basix
-        uses: actions/checkout@v2
-        with:
-          path: ./basix
-          repository: FEniCS/basix
-          ref: michal/ufc-expressions
-
-      - name: Install Basix
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
-          cmake --build build-dir
-          cmake --install build-dir
-          pip3 install ./basix/python
+          python3 -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install FFCx
         run: |

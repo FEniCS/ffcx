@@ -9,8 +9,7 @@ on:
     branches:
       - "**"
     tags:
-      - "*.*.*.*"
-      - "*.*.*"
+      - "v*"
   pull_request:
     branches:
       - main
@@ -24,18 +23,13 @@ jobs:
         python-version: [3.7, 3.8, 3.9]
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout FFCx
+        uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Get Basix and install
-        uses: actions/checkout@v2
-        with:
-          path: ./basix
-          repository: FEniCS/basix
-          ref: main
 
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
@@ -46,44 +40,37 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install graphviz ninja pkg-config
 
-      - name: Install dependencies (Python)
+      - name: Install FEniCS dependencies (Python)
         run: |
-          pip install --upgrade pip
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dir -S ./basix
-          cmake --build build-dir
-          sudo cmake --install build-dir
-          pip install ./basix/python
-          rm -rf basix
-          pip install pygraphviz
-          pip install git+https://github.com/FEniCS/ufl.git@michal/expressions --user
+          python -m pip install --upgrade pip setuptools
+          python -m pip install git+https://github.com/FEniCS/ufl.git@michal/expressions
+          python -m pip install git+https://github.com/FEniCS/basix.git
+
+      - name: Install FFCx
+        run: |
+          python -m pip install .[ci]
 
       - name: Lint with flake8
         run: |
-          pip install flake8
-          flake8 --statistics ffcx/ test/
+          python -m flake8 --statistics ffcx/ test/
 
       - name: Check documentation style
         run: |
-          pip install pydocstyle
-          pydocstyle .
-
-      - name: Install ffcx
-        run: |
-          pip install .
+          python -m pydocstyle .
 
       - name: Run units tests
         run: |
-          pip install coveralls coverage pytest pytest-cov pytest-xdist sympy
-          pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+          python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: |
-          coveralls
+          python -m coveralls
+        continue-on-error: true
 
-      - name: Upload pytest test results
+      - name: Upload pytest results
         uses: actions/upload-artifact@main
         with:
           name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
@@ -94,11 +81,10 @@ jobs:
 
       - name: Runs demos
         run: |
-          python${{ matrix.python-version }} -m pytest demo/test_demos.py
+          python -m pytest demo/test_demos.py
 
       - name: Build documentation
         run: |
-          pip install sphinx sphinx_rtd_theme
           cd doc
           make html
 

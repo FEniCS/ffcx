@@ -28,8 +28,8 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 unique_table_reference_t = collections.namedtuple(
     "unique_table_reference",
-    ["name", "values", "dofrange", "dofmap", "ttype", "is_piecewise", "is_uniform",
-     "is_permuted", "dof_base_transformations", "needs_transformation_data"])
+    ["name", "values", "offset", "block_size", "ttype",
+     "is_piecewise", "is_uniform", "is_permuted"])
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -97,7 +97,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
-    numpy.set_printoptions(suppress=True, precision=2)
     basix_element = create_element(ufl_element)
 
     # Extract arrays for the right scalar component
@@ -201,14 +200,13 @@ def get_modified_terminal_element(mt):
     elif isinstance(mt.terminal, ufl.classes.Jacobian):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of J.")
-
+        if gd:
+            raise RuntimeError("Not expecting global derivatives of J.")
         element = mt.terminal.ufl_domain().ufl_coordinate_element()
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
-
-        # Grad(Jacobian(...)) should be a local derivative
-        ld = tuple(sorted((d, ) + gd + ld))
+        ld = tuple(sorted((d, ) + ld))
     else:
         return None
 
@@ -259,14 +257,10 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_optimized_tables(quadrature_rule,
-                           cell,
-                           integral_type,
-                           entitytype,
-                           modified_terminals,
-                           existing_tables,
-                           rtol=default_rtol,
-                           atol=default_atol):
+def build_optimized_tables(
+    quadrature_rule, cell, integral_type, entitytype, modified_terminals, existing_tables,
+    rtol=default_rtol, atol=default_atol
+):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -292,7 +286,6 @@ def build_optimized_tables(quadrature_rule,
         ufl.algorithms.analysis.extract_sub_elements(all_elements))
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    tables = existing_tables
     mt_tables = {}
 
     for mt in modified_terminals:
@@ -323,9 +316,8 @@ def build_optimized_tables(quadrature_rule,
                 new_table = []
                 for ref in range(2):
                     new_table.append(get_ffcx_table_values(
-                        permute_quadrature_interval(
-                            quadrature_rule.points, ref),
-                        cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                        permute_quadrature_interval(quadrature_rule.points, ref), cell,
+                        integral_type, element, avg, entitytype, local_derivatives, flat_component))
 
                 t = new_table[0]
                 t['array'] = numpy.vstack([td['array'] for td in new_table])
@@ -338,7 +330,8 @@ def build_optimized_tables(quadrature_rule,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_triangle(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                                cell, integral_type, element, avg, entitytype, local_derivatives,
+                                flat_component))
                     t = new_table[0]
                     t['array'] = numpy.vstack([td['array'] for td in new_table])
                 elif cell_type == "hexahedron":
@@ -370,19 +363,11 @@ def build_optimized_tables(quadrature_rule,
             tbl = tbl[:1, :, :, :]
 
         # Check for existing identical table
-        xname_found = False
-        for xname in tables:
-            if equal_tables(tbl, tables[xname]):
-                xname_found = True
+        for table_name in existing_tables:
+            if equal_tables(tbl, existing_tables[table_name]):
+                name = table_name
+                tbl = existing_tables[name]
                 break
-
-        if xname_found:
-            name = xname
-            # Retrieve existing table
-            tbl = tables[name]
-        else:
-            # Store new table
-            tables[name] = tbl
 
         cell_offset = 0
         basix_element = create_element(element)
@@ -391,19 +376,13 @@ def build_optimized_tables(quadrature_rule,
             # offset = 0 or number of element dofs, if restricted to "-"
             cell_offset = basix_element.dim
 
-        num_dofs = tbl.shape[3]
-        dofmap = tuple(cell_offset + t['offset'] + i * t['stride'] for i in range(num_dofs))
-
-        base_transformations = [[[p[i - cell_offset][j - cell_offset] for j in dofmap]
-                                for i in dofmap]
-                                for p in basix_element.base_transformations]
-        needs_transformation_data = not all(numpy.allclose(p, numpy.identity(len(p))) for p in base_transformations)
+        offset = cell_offset + t['offset']
+        block_size = t['stride']
 
         # tables is just np.arrays, mt_tables hold metadata too
         mt_tables[mt] = unique_table_reference_t(
-            name, tbl, tuple((dofmap[0], dofmap[-1] + 1)), dofmap, tabletype,
-            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
-            base_transformations, needs_transformation_data)
+            name, tbl, offset, block_size, tabletype,
+            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted)
 
     return mt_tables
 

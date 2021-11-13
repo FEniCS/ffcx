@@ -18,6 +18,7 @@ ufc_finite_element {factory_name} =
 {{
   .signature = {signature},
   .cell_shape = {cell_shape},
+  .element_type = {element_type},
   .topological_dimension = {topological_dimension},
   .geometric_dimension = {geometric_dimension},
   .space_dimension = {space_dimension},
@@ -28,11 +29,12 @@ ufc_finite_element {factory_name} =
   .reference_value_shape = {reference_value_shape},
   .reference_value_size = {reference_value_size},
   .degree = {degree},
-  .family = {family},
   .block_size = {block_size},
-
-  .needs_transformation_data = {needs_transformation_data},
-
+  .family = {family},
+  .basix_family = {basix_family},
+  .basix_cell = {basix_cell},
+  .discontinuous = {discontinuous},
+  .lagrange_variant = {lagrange_variant},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};

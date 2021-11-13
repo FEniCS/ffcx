@@ -19,7 +19,8 @@ FFCX_DEFAULT_PARAMETERS = {
     "epsilon":
         (1e-14, "Machine precision, used for dropping zero terms in tables"),
     "scalar_type":
-        ("double", "Scalar type used in generated code. Any of real or complex C floating-point types."),
+        ("double", """Scalar type used in generated code. Any of real or complex C floating-point types, e.g.
+                      float, double, float _Complex, double _Complex, ..."""),
     "tabulate_tensor_void":
         (False, "True to generate empty tabulation kernels."),
     "table_rtol":

@@ -67,7 +67,9 @@ class FFCXBackendAccess(object):
         ttype = tabledata.ttype
         assert ttype != "zeros"
 
-        begin, end = tabledata.dofrange
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
+        end = begin + tabledata.block_size * (num_dofs - 1) + 1
 
         if ttype == "ones" and (end - begin) == 1:
             # f = 1.0 * f_{begin}, just return direct reference to dof
@@ -262,7 +264,7 @@ class FFCXBackendAccess(object):
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
         basix_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
+        vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
         num_scalar_dofs = basix_scalar_element.dim
 
         # Get dof and component
@@ -293,7 +295,7 @@ class FFCXBackendAccess(object):
         assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
 
         basix_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = basix_scalar_element.entity_dof_numbers[0]
+        vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
         num_scalar_dofs = basix_scalar_element.dim
 
         # Get edge vertices

@@ -13,7 +13,6 @@ representation type.
 
 import logging
 import typing
-import warnings
 from collections import namedtuple
 
 import numpy
@@ -123,7 +122,7 @@ def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
 
-    complex_mode = "complex" in parameters.get("scalar_type", "double")
+    complex_mode = "_Complex" in parameters["scalar_type"]
     if not complex_mode:
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
 
@@ -154,8 +153,18 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     if _has_custom_integrals(form):
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
+    # Set default spacing for coordinate elements to be equispaced
+    for n, i in enumerate(form._integrals):
+        element = i._ufl_domain._ufl_coordinate_element
+        if element._sub_element._variant is None and element.degree() > 2:
+            sub_element = ufl.FiniteElement(
+                element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
+                variant="equispaced")
+            equi_element = ufl.VectorElement(sub_element)
+            form._integrals[0]._ufl_domain._ufl_coordinate_element = equi_element
+
     # Check for complex mode
-    complex_mode = "complex" in parameters.get("scalar_type", "double")
+    complex_mode = "_Complex" in parameters["scalar_type"]
 
     # Compute form metadata
     form_data = ufl.algorithms.compute_form_data(
@@ -163,7 +172,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
         do_apply_geometry_lowering=True,
-        preserve_geometry_types=(ufl.classes.Jacobian, ),
+        preserve_geometry_types=(ufl.classes.Jacobian,),
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
@@ -206,16 +215,6 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 qd = qd_metadata
             else:
                 qd = pd_estimated
-
-                # The quadrature degree from UFL can be very high for some
-                # integrals.  Print warning if number of quadrature points
-                # exceeds 100.
-                tdim = integral_data.domain.topological_dimension()
-                num_points = ((qd + 1 + 1) // 2)**tdim
-                if num_points >= 100:
-                    warnings.warn(
-                        f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
-                        "to reduce number.")
 
             # Extract quadrature rule
             qr = integral.metadata().get("quadrature_rule", qr_default)

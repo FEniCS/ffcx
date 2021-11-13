@@ -67,14 +67,13 @@ def test_matvec(compile_args):
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
-    expression.tabulate_expression(
+    expression.tabulate_tensor_float64(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data),
         ffi.cast('int *', entity_index.ctypes.data),
-        ffi.cast('uint8_t *', quad_perm.ctypes.data),
-        ffi.cast('uint32_t', 0))
+        ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
     # Check the computation against correct NumPy value
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
@@ -129,14 +128,13 @@ def test_rank1(compile_args):
     # Coords storage XYZXYZXYZ
     coords = np.zeros((points.shape[0], 3), dtype=np.float64)
     coords[:, :2] = points
-    expression.tabulate_expression(
+    expression.tabulate_tensor_float64(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
         ffi.cast('double *', coords.ctypes.data),
         ffi.cast('int *', entity_index.ctypes.data),
-        ffi.cast('uint8_t *', quad_perm.ctypes.data),
-        ffi.cast('uint32_t', 0))
+        ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
     f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
 
