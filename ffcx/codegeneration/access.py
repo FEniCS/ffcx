@@ -75,7 +75,6 @@ class FFCXBackendAccess(object):
             # f = 1.0 * f_{begin}, just return direct reference to dof
             # array at dof begin (if mt is restricted, begin contains
             # cell offset)
-            idof = begin
             access = self.symbols.coefficient_dof_access(mt.terminal, 0, 1, begin, num_dofs)[0]
             return access
         else:
