@@ -371,6 +371,7 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         definitions = dict()
+        pre_definitions = dict()
         intermediates = []
 
         use_symbol_array = True
@@ -394,7 +395,14 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
-                    vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                    if isinstance(mt.terminal, ufl.Coefficient):
+                        vdef, predef = self.backend.definitions.get(
+                            mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                        assert isinstance(predef, list)
+                        if predef:
+                            pre_definitions[str(predef[0].symbol.name)] = predef
+                    else:
+                        vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
 
                     # Store definitions of terminals in list
                     assert isinstance(vdef, list)
@@ -449,9 +457,13 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
         parts = []
-        if definitions:
-            for vaccess, definition in definitions.items():
-                parts += definition
+
+        for vaccess, definition in pre_definitions.items():
+            parts += definition
+
+        for vaccess, definition in definitions.items():
+            parts += definition
+
         if intermediates:
             if use_symbol_array:
                 padlen = self.ir.params["padlen"]

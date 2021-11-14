@@ -85,15 +85,21 @@ class FFCXBackendDefinitions(object):
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
+        dof_access_unit, dof_access_map = self.symbols.coefficient_dof_access(mt.terminal, ic, bs, begin, num_dofs)
+
+        # Code that goes outside quadrature loop
+        pre_code = []
+        if dof_access_map:
+            pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access_unit.array, num_dofs)]
+            pre_body = L.Assign(dof_access_unit, dof_access_map)
+            pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
+
         code = []
-
-        body = [L.AssignAdd(access, dof_access * FE[ic])]
-
+        body = [L.AssignAdd(access, dof_access_unit * FE[ic])]
         code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
-        return code
+        return code, pre_code
 
     def constant(self, t, mt, tabledata, quadrature_rule, access):
         # Constants are not defined within the kernel.
