@@ -464,11 +464,8 @@ class IntegralGenerator(object):
         parts = []
         preparts = []
 
-        for vaccess, definition in pre_definitions.items():
-            preparts += definition
-
-        for vaccess, definition in definitions.items():
-            parts += definition
+        preparts += self.fuse_loops(pre_definitions)
+        parts += self.fuse_loops(definitions)
 
         if intermediates:
             if use_symbol_array:
@@ -688,3 +685,23 @@ class IntegralGenerator(object):
         quadparts += [pre_loop, hoist, body]
 
         return preparts, quadparts
+
+    def fuse_loops(self, definitions):
+        L = self.backend.language
+
+        loops = collections.defaultdict(list)
+        pre_loop = []
+        for access, definition in definitions.items():
+            for d in definition:
+                if isinstance(d, L.ForRange):
+                    loops[(d.begin, d.end)] += [d.body]
+                else:
+                    pre_loop += [d]
+        fused = []
+        for ranges, body in loops.items():
+            fused += [L.ForRange("ic", ranges[0], ranges[1], body)]
+
+        code = []
+        code += pre_loop
+        code += fused
+        return code
