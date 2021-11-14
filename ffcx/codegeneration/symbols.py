@@ -151,7 +151,7 @@ class FFCXBackendSymbols(object):
         # Unit strided access pattern
         if block_size == 1:
             w = self.S("w")
-            return w[coeff_offset + index * block_size + dof_offset], None
+            return w[coeff_offset + index + dof_offset], None
         # Linear stride access pattern
         else:
             w = self.S("w")

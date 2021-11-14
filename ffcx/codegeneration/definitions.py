@@ -73,11 +73,11 @@ class FFCXBackendDefinitions(object):
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
-            return []
+            return [], []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
         if ttype == "ones" and end - begin == 1:
-            return []
+            return [], []
 
         assert begin < end
 
