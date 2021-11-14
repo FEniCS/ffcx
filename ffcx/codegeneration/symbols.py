@@ -155,7 +155,7 @@ class FFCXBackendSymbols(object):
         coeff_offset = self.coefficient_offsets[coefficient]
         w = self.S("w")
         _w = self.S(f"_w_{coeff_offset}_{dof_offset}")
-        unit_stride_access = _w[coeff_offset + index + dof_offset * num_dofs]
+        unit_stride_access = _w[index]
         original_access = w[coeff_offset + index * block_size + dof_offset]
         return unit_stride_access, original_access
 
