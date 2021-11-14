@@ -357,6 +357,7 @@ class ExpressionGenerator:
         L = self.backend.language
 
         definitions = []
+        pre_definitions = dict()
         intermediates = []
 
         use_symbol_array = True
@@ -376,7 +377,14 @@ class ExpressionGenerator:
 
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt.terminal, mt, tabledata, 0)
-                vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+
+                if isinstance(mt.terminal, ufl.Coefficient):
+                    vdef, predef = self.backend.definitions.get(
+                        mt.terminal, mt, tabledata, 0, vaccess)
+                    if predef:
+                        pre_definitions[str(predef[0].symbol.name)] = predef
+                else:
+                    vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)
@@ -429,8 +437,13 @@ class ExpressionGenerator:
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
         parts = []
+
+        for _, definition in pre_definitions.items():
+            parts += definition
+
         if definitions:
             parts += definitions
+
         if intermediates:
             if use_symbol_array:
                 scalar_type = self.backend.access.parameters["scalar_type"]

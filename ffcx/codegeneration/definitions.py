@@ -85,17 +85,23 @@ class FFCXBackendDefinitions(object):
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
 
         ic = self.symbols.coefficient_dof_sum_index()
-        dof_access_unit, dof_access_map = self.symbols.coefficient_dof_access(mt.terminal, ic, bs, begin, num_dofs)
 
-        # Code that goes outside quadrature loop
         pre_code = []
-        if dof_access_map:
-            pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access_unit.array, num_dofs)]
-            pre_body = L.Assign(dof_access_unit, dof_access_map)
-            pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
+
+        if bs > 1:
+            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(
+                mt.terminal, ic, bs, begin, num_dofs)
+
+            # Code that goes outside quadrature loop
+            if dof_access_map:
+                pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
+                pre_body = L.Assign(dof_access, dof_access_map)
+                pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
+        else:
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
 
         code = []
-        body = [L.AssignAdd(access, dof_access_unit * FE[ic])]
+        body = [L.AssignAdd(access, dof_access * FE[ic])]
         code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
