@@ -289,6 +289,9 @@ class LiteralFloat(CExprLiteral):
     def __float__(self):
         return float(self.value)
 
+    def flops(self):
+        return 0
+
 
 class LiteralInt(CExprLiteral):
     """An integer literal value."""
@@ -1235,7 +1238,10 @@ class VariableDecl(CStatement):
                 and self.symbol == other.symbol and self.value == other.value)
 
     def flops(self):
-        return self.value.flops()
+        if self.value is not None:
+            return self.value.flops()
+        else:
+            return 0
 
 
 def leftover(size, padlen):
@@ -1470,9 +1476,6 @@ class If(CStatement):
         return (isinstance(other, type(self)) and self.condition == other.condition
                 and self.body == other.body)
 
-    def flops(self):
-        return self.body.flops()
-
 
 class ElseIf(CStatement):
     __slots__ = ("condition", "body")
@@ -1494,9 +1497,6 @@ class ElseIf(CStatement):
         return (isinstance(other, type(self)) and self.condition == other.condition
                 and self.body == other.body)
 
-    def flops(self):
-        return self.body.flops()
-
 
 class Else(CStatement):
     __slots__ = ("body", )
@@ -1515,9 +1515,6 @@ class Else(CStatement):
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.body == other.body)
-
-    def flops(self):
-        return self.body.flops()
 
 
 def is_simple_inner_loop(code):
