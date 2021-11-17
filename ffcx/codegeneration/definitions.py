@@ -83,16 +83,20 @@ class FFCXBackendDefinitions(object):
 
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-
         ic = self.symbols.coefficient_dof_sum_index()
 
+        code = []
         pre_code = []
 
         if bs > 1:
-            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(
-                mt.terminal, ic, bs, begin, num_dofs)
+            # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
+            # When memory access patterns are non-sequential, the number of cache misses increases.
+            # In turn, it results in noticeably reduced performance.
+            # In this case, we create temp arrays outside the quadrature to store the coefficients and
+            # have a sequential access pattern.
+            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
 
-            # Code that goes outside quadrature loop
+            # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
                 pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
                 pre_body = L.Assign(dof_access, dof_access_map)
@@ -100,7 +104,6 @@ class FFCXBackendDefinitions(object):
         else:
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
 
-        code = []
         body = [L.AssignAdd(access, dof_access * FE[ic])]
         code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]

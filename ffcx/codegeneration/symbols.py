@@ -151,7 +151,7 @@ class FFCXBackendSymbols(object):
         return w[offset + dof_index]
 
     def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
-                                       block_size, dof_offset, num_dofs):
+                                       block_size, dof_offset):
         coeff_offset = self.coefficient_offsets[coefficient]
         w = self.S("w")
         _w = self.S(f"_w_{coeff_offset}_{dof_offset}")
