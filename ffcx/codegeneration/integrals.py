@@ -405,7 +405,10 @@ class IntegralGenerator(object):
                             mt.terminal, mt, tabledata, quadrature_rule, vaccess)
                         assert isinstance(predef, list)
                         if predef:
-                            pre_definitions[str(predef[0].symbol.name)] = predef
+                            access = predef[0].symbol.name
+                            predef = L.commented_code_list(
+                                predef, "Auxiliary array to enable unit-stride access in coefficient computations.")
+                            pre_definitions[str(access)] = predef
                     else:
                         vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
 

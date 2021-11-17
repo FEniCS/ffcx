@@ -94,8 +94,7 @@ class FFCXBackendDefinitions(object):
             # In turn, it results in noticeably reduced performance.
             # In this case, we create temp arrays outside the quadrature to store the coefficients and
             # have a sequential access pattern.
-            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(
-                mt.terminal, ic, bs, begin, num_dofs)
+            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
 
             # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
