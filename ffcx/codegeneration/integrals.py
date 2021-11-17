@@ -693,7 +693,7 @@ class IntegralGenerator(object):
         """
         Merge a sequence of loops with the same iteration space into a single loop.
         Loop fusion improves data locality, cache reuse and decreases the loop control overhead.
-        NOTE: Loop fusion might increase the pressure on register allocation. 
+        NOTE: Loop fusion might increase the pressure on register allocation.
         Ideally, we should define a cost function to determine how many loops should fuse at a time.
         """
         L = self.backend.language
