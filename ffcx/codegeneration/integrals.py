@@ -704,12 +704,14 @@ class IntegralGenerator(object):
         for access, definition in definitions.items():
             for d in definition:
                 if isinstance(d, L.ForRange):
-                    loops[(d.begin, d.end)] += [d.body]
+                    loops[(d.index, d.begin, d.end)] += [d.body]
                 else:
                     pre_loop += [d]
         fused = []
-        for ranges, body in loops.items():
-            fused += [L.ForRange("ic", ranges[0], ranges[1], body)]
+
+        for info, body in loops.items():
+            index, begin, end = info
+            fused += [L.ForRange(index, begin, end, body)]
 
         code = []
         code += pre_loop
