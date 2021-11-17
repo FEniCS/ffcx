@@ -77,7 +77,8 @@ def generator(ir, parameters):
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=parameters["scalar_type"],
-        np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]))
+        np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]),
+        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
 
     return declaration, implementation
 
@@ -317,16 +318,19 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         L = self.backend.language
-
+        preparts = []
         # Generate varying partition
-        body = self.generate_varying_partition(quadrature_rule)
+        prepart, body = self.generate_varying_partition(quadrature_rule)
+        preparts += prepart
+
         body = L.commented_code_list(
             body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
-        preparts, quadparts = \
+        prepart, quadparts = \
             self.generate_dofblock_partition(quadrature_rule)
+        preparts += prepart
         body += quadparts
 
         # Wrap body in loop or scope
@@ -348,7 +352,8 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}")
-        parts = self.generate_partition(arraysymbol, F, "piecewise", None)
+        preparts, parts = self.generate_partition(arraysymbol, F, "piecewise", None)
+        parts = preparts + parts
         parts = L.commented_code_list(
             parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
 
@@ -361,15 +366,17 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}")
-        parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
+        preparts, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
         parts = L.commented_code_list(
             parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
-        return parts
+
+        return preparts, parts
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
         L = self.backend.language
 
         definitions = dict()
+        pre_definitions = dict()
         intermediates = []
 
         use_symbol_array = True
@@ -393,7 +400,17 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
-                    vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                    if isinstance(mt.terminal, ufl.Coefficient):
+                        vdef, predef = self.backend.definitions.get(
+                            mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                        assert isinstance(predef, list)
+                        if predef:
+                            access = predef[0].symbol.name
+                            predef = L.commented_code_list(
+                                predef, "Auxiliary array to enable unit-stride access in coefficient computations.")
+                            pre_definitions[str(access)] = predef
+                    else:
+                        vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
 
                     # Store definitions of terminals in list
                     assert isinstance(vdef, list)
@@ -448,16 +465,21 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
         parts = []
-        if definitions:
-            for vaccess, definition in definitions.items():
-                parts += definition
+        preparts = []
+
+        for vaccess, definition in pre_definitions.items():
+            preparts += definition
+
+        for vaccess, definition in definitions.items():
+            parts += definition
+
         if intermediates:
             if use_symbol_array:
                 padlen = self.ir.params["padlen"]
                 parts += [L.ArrayDecl(self.backend.access.parameters["scalar_type"],
                                       symbol, len(intermediates), padlen=padlen)]
             parts += intermediates
-        return parts
+        return preparts, parts
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]

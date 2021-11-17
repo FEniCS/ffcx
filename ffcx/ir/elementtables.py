@@ -97,7 +97,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
-    numpy.set_printoptions(suppress=True, precision=2)
     basix_element = create_element(ufl_element)
 
     # Extract arrays for the right scalar component
@@ -271,10 +270,9 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
-def build_optimized_tables(
-    quadrature_rule, cell, integral_type, entitytype, modified_terminals, existing_tables,
-    rtol=default_rtol, atol=default_atol
-):
+def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
+                           modified_terminals, existing_tables,
+                           rtol=default_rtol, atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
@@ -299,9 +297,9 @@ def build_optimized_tables(
     unique_elements = ufl.algorithms.sort_elements(
         ufl.algorithms.analysis.extract_sub_elements(all_elements))
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
-
-    tables = existing_tables
     mt_tables = {}
+
+    _existing_tables = existing_tables.copy()
 
     for mt in modified_terminals:
         res = analysis.get(mt)
@@ -366,6 +364,7 @@ def build_optimized_tables(
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)
+
         if tabletype in piecewise_ttypes:
             # Reduce table to dimension 1 along num_points axis in generated code
             tbl = tbl[:, :, :1, :]
@@ -378,19 +377,16 @@ def build_optimized_tables(
             tbl = tbl[:1, :, :, :]
 
         # Check for existing identical table
-        xname_found = False
-        for xname in tables:
-            if equal_tables(tbl, tables[xname]):
-                xname_found = True
+        new_table = True
+        for table_name in _existing_tables:
+            if equal_tables(tbl, _existing_tables[table_name]):
+                name = table_name
+                tbl = _existing_tables[name]
+                new_table = False
                 break
 
-        if xname_found:
-            name = xname
-            # Retrieve existing table
-            tbl = tables[name]
-        else:
-            # Store new table
-            tables[name] = tbl
+        if new_table:
+            _existing_tables[name] = tbl
 
         cell_offset = 0
         basix_element = create_element(element)
