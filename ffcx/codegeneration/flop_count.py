@@ -9,9 +9,13 @@ from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integrals import IntegralGenerator
 from ffcx.ir.representation import compute_ir
+from typing import Optional
 
 
-def count_flops(form: ufl.Form, parameters={}):
+def count_flops(form: ufl.Form, parameters: Optional[dict] = {}):
+    """Return a list with the estimated number of floating point operations
+    for each kernel in the ufl.Form.
+    """
     parameters = ffcx.parameters.get_parameters(parameters)
     assert(isinstance(form, ufl.Form))
     analysis = analyze_ufl_objects([form], parameters)
