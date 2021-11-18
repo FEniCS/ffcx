@@ -306,6 +306,9 @@ class LiteralInt(CExprLiteral):
     def ce_format(self, precision=None):
         return str(self.value)
 
+    def flops(self):
+        return 0
+
     def __eq__(self, other):
         return isinstance(other, LiteralInt) and self.value == other.value
 
@@ -320,8 +323,8 @@ class LiteralInt(CExprLiteral):
     def __float__(self):
         return float(self.value)
 
-    def flops(self):
-        return 0
+    def __hash__(self):
+        return hash(self.ce_format())
 
 
 class LiteralBool(CExprLiteral):
@@ -377,14 +380,15 @@ class Symbol(CExprTerminal):
     def ce_format(self, precision=None):
         return self.name
 
+    def flops(self):
+        return 0
+
     def __eq__(self, other):
         return isinstance(other, Symbol) and self.name == other.name
 
     def __hash__(self):
         return hash(self.ce_format())
 
-    def flops(self):
-        return 0
 
 
 # CExprOperator base classes
