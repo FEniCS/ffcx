@@ -391,7 +391,6 @@ class Symbol(CExprTerminal):
 
 # CExprOperator base classes
 
-
 class UnaryOp(CExprOperator):
     """Base class for unary operators."""
 
