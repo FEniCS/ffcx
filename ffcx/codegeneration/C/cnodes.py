@@ -8,7 +8,6 @@ import logging
 import numbers
 
 import numpy
-
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
 from ffcx.codegeneration.C.format_value import (format_float, format_int,
                                                 format_value)
@@ -388,7 +387,6 @@ class Symbol(CExprTerminal):
 
     def __hash__(self):
         return hash(self.ce_format())
-
 
 
 # CExprOperator base classes

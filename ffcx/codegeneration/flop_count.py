@@ -3,12 +3,12 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import ffcx.parameters
 import ufl
 from ffcx.analysis import analyze_ufl_objects
-from ffcx.ir.representation import compute_ir
-from ffcx.codegeneration.integrals import IntegralGenerator
 from ffcx.codegeneration.backend import FFCXBackend
-import ffcx.parameters
+from ffcx.codegeneration.integrals import IntegralGenerator
+from ffcx.ir.representation import compute_ir
 
 
 def count_flops(form: ufl.Form, parameters={}):
