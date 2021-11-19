@@ -326,6 +326,9 @@ class LiteralInt(CExprLiteral):
     def __float__(self):
         return float(self.value)
 
+    def __hash__(self):
+        return hash(self.ce_format())
+
 
 class LiteralBool(CExprLiteral):
     """A boolean literal value."""
