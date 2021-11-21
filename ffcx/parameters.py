@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import os.path
-import pathlib
+from pathlib import Path
 import pprint
 from typing import Optional
 
@@ -41,14 +41,15 @@ FFCX_DEFAULT_PARAMETERS = {
 @functools.lru_cache(maxsize=None)
 def _load_parameters():
     """Load parameters from JSON files."""
-    user_config_file = os.path.join(pathlib.Path.home(), ".config", "ffcx", "ffcx_parameters.json")
+    user_config_file = os.getenv("XDG_CONFIG_HOME", default=Path.home().joinpath(".config")) \
+        / Path("ffcx", "ffcx_parameters.json")
     try:
         with open(user_config_file) as f:
             user_parameters = json.load(f)
     except FileNotFoundError:
         user_parameters = {}
 
-    pwd_config_file = os.path.join(os.getcwd(), "ffcx_parameters.json")
+    pwd_config_file = Path.cwd().joinpath("ffcx_parameters.json")
     try:
         with open(pwd_config_file) as f:
             pwd_parameters = json.load(f)
@@ -75,16 +76,17 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     This function sets the log level from the merged parameter values prior to
     returning.
 
-    The ffcx_parameters.json files are cached on the first call. Subsequent
+    The `ffcx_parameters.json` files are cached on the first call. Subsequent
     calls to this function use this cache.
 
     Priority ordering of parameters from highest to lowest is:
-      priority_parameters (API and command line parameters)
-      $(pwd)/ffcx_parameters.json (local parameters)
-      ~/.config/ffcx/ffcx_parameters.json (user parameters)
-      FFCX_DEFAULT_PARAMETERS in ffcx.parameters
 
-    Example ffcx_parameters.json file:
+    -  **priority_parameters** (API and command line parameters)
+    -  **$PWD/ffcx_parameters.json** (local parameters)
+    -  **$XDG_CONFIG_HOME/ffcx/ffcx_parameters.json** (user parameters)
+    -  **FFCX_DEFAULT_PARAMETERS** in `ffcx.parameters`
+
+    Example `ffcx_parameters.json` file:
 
       { "assume_aligned": 32, "epsilon": 1e-7 }
 
