@@ -85,6 +85,8 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     -  **$PWD/ffcx_parameters.json** (local parameters)
     -  **$XDG_CONFIG_HOME/ffcx/ffcx_parameters.json** (user parameters)
     -  **FFCX_DEFAULT_PARAMETERS** in `ffcx.parameters`
+    
+    `XDG_CONFIG_HOME` is `~/.config/` if the environment variable is not set.
 
     Example `ffcx_parameters.json` file:
 
