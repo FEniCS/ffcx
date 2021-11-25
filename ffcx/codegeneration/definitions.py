@@ -88,7 +88,7 @@ class FFCXBackendDefinitions(object):
         code = []
         pre_code = []
 
-        if bs > 1:
+        if bs > 1 and not tabledata.is_piecewise:
             # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
             # When memory access patterns are non-sequential, the number of cache misses increases.
             # In turn, it results in noticeably reduced performance.

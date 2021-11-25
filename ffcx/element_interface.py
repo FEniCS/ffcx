@@ -36,6 +36,8 @@ def create_element(ufl_element):
     if family_name == "DQ":
         family_name = "Q"
         discontinuous = True
+    if family_name == "DPC":
+        discontinuous = True
 
     if family_name in ["Lagrange", "Q"]:
         if ufl_element.variant() is None:
