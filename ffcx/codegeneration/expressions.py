@@ -67,6 +67,15 @@ def generator(ir, parameters):
     d["needs_facet_permutations"] = "true" if ir.needs_facet_permutations else "false"
     d["scalar_type"] = parameters["scalar_type"]
     d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
+    d["num_arguments"] = len(ir.tensor_shape)
+
+    if len(ir.tensor_shape) > 0:
+        d["num_argument_dofs_init"] = L.ArrayDecl(
+            "static int", f"num_argument_dofs_{ir.name}", values=ir.tensor_shape, sizes=len(ir.tensor_shape))
+        d["num_argument_dofs"] = f"num_argument_dofs_{ir.name}"
+    else:
+        d["num_argument_dofs_init"] = ""
+        d["num_argument_dofs"] = L.Null()
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

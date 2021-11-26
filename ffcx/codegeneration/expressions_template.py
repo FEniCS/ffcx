@@ -24,6 +24,7 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {points_init}
 {value_shape_init}
 {original_coefficient_positions_init}
+{num_argument_dofs_init}
 
 ufc_expression {factory_name} =
 {{
@@ -35,7 +36,9 @@ ufc_expression {factory_name} =
   .points = {points},
   .value_shape = {value_shape},
   .num_components = {num_components},
-  .original_coefficient_positions = {original_coefficient_positions}
+  .original_coefficient_positions = {original_coefficient_positions},
+  .num_arguments = {num_arguments},
+  .num_argument_dofs = {num_argument_dofs}
 }};
 
 // End of code for expression {factory_name}
