@@ -675,7 +675,7 @@ class IntegralGenerator(object):
             else:
                 keep[indices] = rhs_expressions[indices]
 
-        hoist_code = L.ForRange(B_indices[0], 0, blockdims[0], body=hoist) if hoist else []
+        hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist) if hoist else []]
 
         body: List[CNode] = []
 
@@ -684,7 +684,7 @@ class IntegralGenerator(object):
             body.append(L.AssignAdd(A[indices], sum))
 
         for i in reversed(range(block_rank)):
-            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+            body = [L.ForRange(B_indices[i], 0, blockdims[i], body=body)]
 
         quadparts += pre_loop
         quadparts += hoist_code

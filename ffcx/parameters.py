@@ -11,7 +11,7 @@ import os
 import os.path
 from pathlib import Path
 import pprint
-from typing import Optional
+from typing import Optional, Dict, Any
 
 logger = logging.getLogger("ffcx")
 
@@ -93,7 +93,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
       { "assume_aligned": 32, "epsilon": 1e-7 }
 
     """
-    parameters = {}
+    parameters: Dict[str, Any] = {}
 
     for param, (value, _) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value
@@ -106,7 +106,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     if priority_parameters is not None:
         parameters.update(priority_parameters)
 
-    logger.setLevel(str(parameters["verbosity"]))
+    logger.setLevel(parameters["verbosity"])
 
     logger.info("Final parameter values")
     logger.info(pprint.pformat(parameters))
