@@ -17,7 +17,6 @@ import logging
 import os
 import pprint
 import textwrap
-from collections import namedtuple
 
 from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
