@@ -27,7 +27,7 @@ piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 unique_table_reference_t = collections.namedtuple(
-    "unique_table_reference",
+    "unique_table_reference_t",
     ["name", "values", "offset", "block_size", "ttype",
      "is_piecewise", "is_uniform", "is_permuted"])
 

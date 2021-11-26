@@ -52,7 +52,6 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    form_data = ()
     unique_elements = set()
     unique_coordinate_elements = set()
     expressions = []
@@ -71,14 +70,17 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
         for data in form_data:
             unique_coordinate_elements.update(data.coordinate_elements)
     elif isinstance(ufl_objects[0], ufl.FiniteElementBase):
+        form_data = ()
         # Extract unique (sub)elements
         elements = ufl_objects
         unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
     elif isinstance(ufl_objects[0], ufl.Mesh):
+        form_data = ()
         # Extract unique (sub)elements
         meshes = ufl_objects
-        unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
+        unique_coordinate_elements = set(mesh.ufl_coordinate_element() for mesh in meshes)
     elif isinstance(ufl_objects[0], tuple) and isinstance(ufl_objects[0][0], ufl.core.expr.Expr):
+        form_data = ()
         for expression in ufl_objects:
             original_expression = expression[0]
             points = expression[1]
@@ -97,14 +99,14 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
 
     # Sort elements so sub-elements come before mixed elements
     unique_elements = ufl.algorithms.sort_elements(unique_elements)
-    unique_coordinate_elements = sorted(unique_coordinate_elements, key=lambda x: repr(x))
+    unique_coordinate_element_list = sorted(unique_coordinate_elements, key=lambda x: repr(x))
 
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
     return ufl_data(form_data=form_data, unique_elements=unique_elements,
                     element_numbers=element_numbers,
-                    unique_coordinate_elements=unique_coordinate_elements,
+                    unique_coordinate_elements=unique_coordinate_element_list,
                     expressions=expressions)
 
 

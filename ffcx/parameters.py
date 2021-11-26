@@ -106,7 +106,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
     if priority_parameters is not None:
         parameters.update(priority_parameters)
 
-    logger.setLevel(parameters["verbosity"])
+    logger.setLevel(str(parameters["verbosity"]))
 
     logger.info("Final parameter values")
     logger.info(pprint.pformat(parameters))

@@ -59,7 +59,7 @@ c_extern_post = """
 """
 
 
-def format_code(code: namedtuple, parameters):
+def format_code(code, parameters):
     """Format given code in UFC format. Returns two strings with header and source file contents."""
     logger.info(79 * "*")
     logger.info("Compiler stage 5: Formatting code")
