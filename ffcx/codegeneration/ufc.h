@@ -208,10 +208,9 @@ extern "C"
   ///  facet
   ///  - N % 2 gives the number of reflections to apply to the facet
   ///
-  ///  For integrals not on facets, this argument has not effect and a
-  ///  null pointer can be passed. For interior facets the array will
-  ///  have size 2 (one permutation for each cell adjacent to the
-  ///  facet). For exterior facets, this will have size 1.
+  /// For integrals not on interior facets, this argument has no effect and a
+  /// null pointer can be passed. For interior facets the array will have size 2
+  /// (one permutation for each cell adjacent to the facet).
   typedef void(ufc_tabulate_tensor_float32)(
       float* restrict A, const float* restrict w,
       const float* restrict c, const double* restrict coordinate_dofs,
