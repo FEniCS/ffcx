@@ -675,7 +675,7 @@ class IntegralGenerator(object):
             else:
                 keep[indices] = rhs_expressions[indices]
 
-        hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist) if hoist else []]
+        hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
 
         body: List[CNode] = []
 
