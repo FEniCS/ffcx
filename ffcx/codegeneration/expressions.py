@@ -67,7 +67,7 @@ def generator(ir, parameters):
     d["needs_facet_permutations"] = "true" if ir.needs_facet_permutations else "false"
     d["scalar_type"] = parameters["scalar_type"]
     d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
-    d["num_arguments"] = len(ir.tensor_shape)
+    d["rank"] = len(ir.tensor_shape)
 
     if len(ir.tensor_shape) > 0:
         d["num_argument_dofs_init"] = L.ArrayDecl(

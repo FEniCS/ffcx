@@ -326,10 +326,10 @@ extern "C"
     int num_components;
 
     /// Rank, i.e. number of arguments
-    int num_arguments;
+    int rank;
 
     /// Number of dofs for Arguments
-    /// Dimensions: num_argument_dofs[num_arguments].
+    /// Dimensions: num_argument_dofs[rank].
     const int* num_argument_dofs;
 
   } ufc_expression;

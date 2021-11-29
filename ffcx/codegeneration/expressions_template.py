@@ -37,7 +37,7 @@ ufc_expression {factory_name} =
   .value_shape = {value_shape},
   .num_components = {num_components},
   .original_coefficient_positions = {original_coefficient_positions},
-  .num_arguments = {num_arguments},
+  .rank = {rank},
   .num_argument_dofs = {num_argument_dofs}
 }};
 
