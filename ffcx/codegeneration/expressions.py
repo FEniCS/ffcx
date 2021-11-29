@@ -3,9 +3,10 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+
 import collections
-from itertools import product
 import logging
+from itertools import product
 
 import ufl
 from ffcx.codegeneration import expressions_template

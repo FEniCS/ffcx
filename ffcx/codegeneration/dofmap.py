@@ -8,6 +8,7 @@
 # old implementation in FFC
 
 import logging
+
 import ffcx.codegeneration.dofmap_template as ufc_dofmap
 
 logger = logging.getLogger("ffcx")
