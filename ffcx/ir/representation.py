@@ -505,10 +505,10 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
 
-    ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
+    ir["coefficient_names"] = [object_names.get(id(obj), f"w{j}")
                                for j, obj in enumerate(coefficients)]
 
-    ir["constant_names"] = [object_names.get(id(obj), "c%d" % j)
+    ir["constant_names"] = [object_names.get(id(obj), f"c{j}")
                             for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))]
 
     ir["original_coefficient_positions"] = original_coefficient_positions
