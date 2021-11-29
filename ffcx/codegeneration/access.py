@@ -9,8 +9,8 @@ import logging
 import warnings
 
 import ufl
-from ufl.finiteelement import MixedElement
 from ffcx.element_interface import create_element
+from ufl.finiteelement import MixedElement
 
 logger = logging.getLogger("ffcx")
 

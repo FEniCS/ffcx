@@ -4,7 +4,6 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-from contextlib import redirect_stdout
 import importlib
 import io
 import logging
@@ -12,6 +11,7 @@ import os
 import re
 import tempfile
 import time
+from contextlib import redirect_stdout
 from pathlib import Path
 
 import cffi

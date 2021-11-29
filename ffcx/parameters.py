@@ -9,8 +9,8 @@ import json
 import logging
 import os
 import os.path
-from pathlib import Path
 import pprint
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger("ffcx")
