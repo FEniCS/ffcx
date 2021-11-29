@@ -113,8 +113,7 @@ class BaseElement:
         raise NotImplementedError
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element,
-        and the offset and stride of the component.
+        """Get an element that represents a component of the element, and the offset and stride of the component.
 
         For example, for a MixedElement, this will return the
         sub-element that represents the given component, the offset of
@@ -174,14 +173,12 @@ class BaseElement:
 
     @property
     def num_entity_closure_dofs(self):
-        """Get the number of DOFs associated with the closure of each
-        entity."""
+        """Get the number of DOFs associated with the closure of each entity."""
         raise NotImplementedError
 
     @property
     def entity_closure_dofs(self):
-        """Get the DOF numbers associated with the closure of each
-        entity."""
+        """Get the DOF numbers associated with the closure of each entity."""
         raise NotImplementedError
 
     @property
@@ -221,8 +218,7 @@ class BaseElement:
 
     @property
     def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is
-        used."""
+        """Indicate whether the discontinuous version of the element is used."""
         raise NotImplementedError
 
 
@@ -251,8 +247,7 @@ class BasixElement(BaseElement):
         return tab.transpose((0, 1, 3, 2)).reshape((tab.shape[0], tab.shape[1], -1))
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element,
-        and the offset and stride of the component.
+        """Get an element that represents a component of the element, and the offset and stride of the component.
 
         For vector-valued elements (eg H(curl) and H(div) elements),
         this returns a ComponentElement (and an offset of 0 and a stride
@@ -308,14 +303,12 @@ class BasixElement(BaseElement):
 
     @property
     def num_entity_closure_dofs(self):
-        """Get the number of DOFs associated with the closure of each
-        entity."""
+        """Get the number of DOFs associated with the closure of each entity."""
         return self.element.num_entity_closure_dofs
 
     @property
     def entity_closure_dofs(self):
-        """Get the DOF numbers associated with the closure of each
-        entity."""
+        """Get the DOF numbers associated with the closure of each entity."""
         return self.element.entity_closure_dofs
 
     @property
@@ -359,8 +352,7 @@ class BasixElement(BaseElement):
 
     @property
     def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is
-        used."""
+        """Indicate whether the discontinuous version of the element is used."""
         return self._discontinuous
 
 
@@ -397,8 +389,7 @@ class ComponentElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element,
-        and the offset and stride of the component.
+        """Get an element that represents a component of the element, and the offset and stride of the component.
 
         Parameters
         ----------
@@ -435,8 +426,7 @@ class ComponentElement(BaseElement):
 
     @property
     def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is
-        used."""
+        """Indicate whether the discontinuous version of the element is used."""
         return self.element.discontinuous
 
 
@@ -470,8 +460,7 @@ class MixedElement(BaseElement):
         return tables
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element,
-        and the offset and stride of the component.
+        """Get an element that represents a component of the element, and the offset and stride of the component.
 
         For a MixedElement, this will return the sub-element that
         represents the given component, the offset of that sub-element,
@@ -608,8 +597,7 @@ class MixedElement(BaseElement):
 
 
 class BlockedElement(BaseElement):
-    """An element with a block size that contains multiple copies of a
-    sub element."""
+    """An element with a block size that contains multiple copies of a sub element."""
 
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
@@ -643,8 +631,7 @@ class BlockedElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element,
-        and the offset and stride of the component.
+        """Get an element that represents a component of the element and the offset and stride of the component.
 
         For a BlockedElement, this will return the sub-element, an
         offset equal to the component number, and a stride equal to the
@@ -700,8 +687,7 @@ class BlockedElement(BaseElement):
 
     @property
     def num_entity_closure_dofs(self):
-        """Get the number of DOFs associated with the closure of each
-        entity."""
+        """Get the number of DOFs associated with the closure of each entity."""
         return [[j * self.block_size for j in i] for i in self.sub_element.num_entity_closure_dofs]
 
     @property
@@ -779,8 +765,7 @@ class QuadratureElement(BaseElement):
         return tables
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element,
-        and the offset and stride of the component.
+        """Get an element that represents a component of the element, and the offset and stride of the component.
 
         Parameters
         ----------
