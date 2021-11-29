@@ -6,6 +6,7 @@
 """FFCx/UFC specific symbol naming."""
 
 import logging
+
 import ufl.utils.derivativetuples
 
 logger = logging.getLogger("ffcx")

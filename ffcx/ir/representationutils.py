@@ -9,9 +9,9 @@ import hashlib
 import logging
 
 import numpy
-from ffcx.element_interface import create_quadrature, reference_cell_vertices, map_facet_points
-
 import ufl
+from ffcx.element_interface import (create_quadrature, map_facet_points,
+                                    reference_cell_vertices)
 
 logger = logging.getLogger("ffcx")
 

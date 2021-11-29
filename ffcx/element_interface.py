@@ -1,7 +1,14 @@
+# Copyright (C) 2021 Matthew W. Scroggs and Chris Richardson
+#
+# This file is part of FFCx.(https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
+
+import warnings
+
+import basix
 import numpy
 import ufl
-import basix
-import warnings
 
 
 def create_element(ufl_element):
@@ -108,12 +115,15 @@ class BaseElement:
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.
 
-        For example, for a MixedElement, this will return the sub-element that represents the given component,
-        the offset of that sub-element, and a stride of 1. For a BlockedElement, this will return the sub-element,
-        an offset equal to the component number, and a stride equal to the block size. For vector-valued element
-        (eg H(curl) and H(div) elements), this returns a ComponentElement (and as offset of 0 and a stride of 1).
-        When tabulate is called on the ComponentElement, only the part of the table for the given component is
-        returned.
+        For example, for a MixedElement, this will return the
+        sub-element that represents the given component, the offset of
+        that sub-element, and a stride of 1. For a BlockedElement, this
+        will return the sub-element, an offset equal to the component
+        number, and a stride equal to the block size. For vector-valued
+        element (eg H(curl) and H(div) elements), this returns a
+        ComponentElement (and as offset of 0 and a stride of 1). When
+        tabulate is called on the ComponentElement, only the part of the
+        table for the given component is returned.
 
         Parameters
         ----------
@@ -239,9 +249,10 @@ class BasixElement(BaseElement):
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.
 
-        For vector-valued elements (eg H(curl) and H(div) elements), this returns a ComponentElement (and an
-        offset of 0 and a stride of 1). When tabulate is called on the ComponentElement, only the part of the
-        table for the given component is returned.
+        For vector-valued elements (eg H(curl) and H(div) elements),
+        this returns a ComponentElement (and an offset of 0 and a stride
+        of 1). When tabulate is called on the ComponentElement, only the
+        part of the table for the given component is returned.
 
         Parameters
         ----------
@@ -451,8 +462,9 @@ class MixedElement(BaseElement):
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.
 
-        For a MixedElement, this will return the sub-element that represents the given component,
-        the offset of that sub-element, and a stride of 1.
+        For a MixedElement, this will return the sub-element that
+        represents the given component, the offset of that sub-element,
+        and a stride of 1.
 
         Parameters
         ----------
@@ -474,7 +486,8 @@ class MixedElement(BaseElement):
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
 
-        # Find index of sub element which corresponds to the current flat component
+        # Find index of sub element which corresponds to the current
+        # flat component
         component_element_index = numpy.where(
             crange <= flat_component)[0].shape[0] - 1
 
@@ -624,10 +637,11 @@ class BlockedElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and the offset and stride of the component.
+        """Get an element that represents a component of the element and the offset and stride of the component.
 
-        For a BlockedElement, this will return the sub-element, an offset equal to the component number, and a
-        stride equal to the block size.
+        For a BlockedElement, this will return the sub-element, an
+        offset equal to the component number, and a stride equal to the
+        block size.
 
         Parameters
         ----------
@@ -648,7 +662,7 @@ class BlockedElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_blocked_element"
+        return self.sub_element.element_type
 
     @property
     def dim(self):

@@ -6,8 +6,9 @@
 
 import hashlib
 
-import ffcx
 import ufl
+
+import ffcx
 
 
 def compute_signature(ufl_objects, tag):

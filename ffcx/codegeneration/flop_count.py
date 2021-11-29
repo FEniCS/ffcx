@@ -3,13 +3,14 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+from typing import Optional
+
 import ffcx.parameters
 import ufl
 from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integrals import IntegralGenerator
 from ffcx.ir.representation import compute_ir
-from typing import Optional
 
 
 def count_flops(form: ufl.Form, parameters: Optional[dict] = {}):
