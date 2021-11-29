@@ -656,7 +656,7 @@ class BlockedElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_basix_element"
+        return self.sub_element.element_type
 
     @property
     def dim(self):
