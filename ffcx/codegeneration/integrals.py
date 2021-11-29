@@ -6,7 +6,7 @@
 
 import collections
 import logging
-from typing import Tuple, List
+from typing import List, Tuple
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -15,8 +15,8 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode, BinOp
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.integral import block_data_t
+from ffcx.ir.representationutils import QuadratureRule
 from ffcx.naming import cdtype_to_numpy
 
 logger = logging.getLogger("ffcx")
