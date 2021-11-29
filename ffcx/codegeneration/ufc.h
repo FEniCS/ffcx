@@ -63,9 +63,8 @@ extern "C"
   {
     ufc_basix_element = 0,
     ufc_mixed_element = 1,
-    ufc_blocked_element = 2,
-    ufc_quadrature_element = 3,
-    ufc_custom_element = 4
+    ufc_quadrature_element = 2,
+    ufc_custom_element = 3
   } ufc_element_type;
 
   /// Forward declarations
