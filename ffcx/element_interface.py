@@ -601,6 +601,12 @@ class BlockedElement(BaseElement):
 
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
+
+        if sub_element.value_size != 1:
+            raise ValueError("Blocked elements (VectorElement and TensorElement) of "
+                             "non-scalar elements are not supported. Try using MixedElement "
+                             "instead.")
+
         self.sub_element = sub_element
         self.block_size = block_size
         if block_shape is None:
