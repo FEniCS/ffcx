@@ -6,6 +6,7 @@
 """FFCx/UFC specific symbol naming."""
 
 import logging
+
 import ufl.utils.derivativetuples
 
 logger = logging.getLogger("ffcx")
@@ -145,11 +146,19 @@ class FFCXBackendSymbols(object):
             for dof in range(num_scalar_dofs) for component in range(gdim)
         ]
 
-    def coefficient_dof_access(self, coefficient, dof_number):
-        # TODO: Add domain number?
+    def coefficient_dof_access(self, coefficient, dof_index):
         offset = self.coefficient_offsets[coefficient]
         w = self.S("w")
-        return w[offset + dof_number]
+        return w[offset + dof_index]
+
+    def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
+                                       block_size, dof_offset):
+        coeff_offset = self.coefficient_offsets[coefficient]
+        w = self.S("w")
+        _w = self.S(f"_w_{coeff_offset}_{dof_offset}")
+        unit_stride_access = _w[index]
+        original_access = w[coeff_offset + index * block_size + dof_offset]
+        return unit_stride_access, original_access
 
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""

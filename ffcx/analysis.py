@@ -16,7 +16,6 @@ import typing
 from collections import namedtuple
 
 import numpy
-
 import ufl
 
 logger = logging.getLogger("ffcx")

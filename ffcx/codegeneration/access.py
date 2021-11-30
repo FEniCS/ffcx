@@ -9,8 +9,8 @@ import logging
 import warnings
 
 import ufl
-from ufl.finiteelement import MixedElement
 from ffcx.element_interface import create_element
+from ufl.finiteelement import MixedElement
 
 logger = logging.getLogger("ffcx")
 
@@ -75,8 +75,7 @@ class FFCXBackendAccess(object):
             # f = 1.0 * f_{begin}, just return direct reference to dof
             # array at dof begin (if mt is restricted, begin contains
             # cell offset)
-            idof = begin
-            return self.symbols.coefficient_dof_access(mt.terminal, idof)
+            return self.symbols.coefficient_dof_access(mt.terminal, begin)
         else:
             # Return symbol, see definitions for computation
             return self.symbols.coefficient_value(mt)
