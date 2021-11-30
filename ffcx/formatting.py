@@ -17,7 +17,6 @@ import logging
 import os
 import pprint
 import textwrap
-from collections import namedtuple
 
 from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
@@ -59,7 +58,7 @@ c_extern_post = """
 """
 
 
-def format_code(code: namedtuple, parameters):
+def format_code(code, parameters):
     """Format given code in UFC format. Returns two strings with header and source file contents."""
     logger.info(79 * "*")
     logger.info("Compiler stage 5: Formatting code")

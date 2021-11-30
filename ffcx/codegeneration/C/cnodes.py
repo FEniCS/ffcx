@@ -76,9 +76,6 @@ class CNode(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-
-CNode.debug = False
-
 # CExpr base classes
 
 
@@ -98,10 +95,6 @@ class CExpr(CNode):
         try:
             s = self.ce_format()
         except Exception:
-            if CNode.debug:
-                logger.error("Error in CExpr string formatting. Inspect self.")
-                import IPython
-                IPython.embed()
             raise
 
         return s
@@ -1017,10 +1010,7 @@ class CStatement(CNode):
         try:
             s = self.cs_format()
         except Exception:
-            if CNode.debug:
-                logger.error("Error in CStatement string formatting. Inspect self.")
-                import IPython
-                IPython.embed()
+            logger.error("Error in CStatement string formatting.")
             raise
         return format_indented_lines(s)
 
