@@ -30,4 +30,5 @@ u = TrialFunction(V)
 f = Coefficient(V)
 c = Constant(mesh)
 
-expressions = [(c * f * grad(u), [[0.0, 0.1], [0.2, 0.3]])]
+expressions = [(c * f * grad(u), [[0.0, 0.1], [0.2, 0.3]]),
+               (c * f * u, [[0.0, 1.0], [1.0, 0.0]])]

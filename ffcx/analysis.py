@@ -78,8 +78,9 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
         meshes = ufl_objects
         unique_coordinate_elements = [mesh.ufl_coordinate_element() for mesh in meshes]
     elif isinstance(ufl_objects[0], tuple) and isinstance(ufl_objects[0][0], ufl.core.expr.Expr):
-        if len(ufl_objects) > 1:
-            raise RuntimeError("Cannot compile multiple expressions in one pass.")
+
+        if not all(isinstance(expression[0], ufl.core.expr.Expr) for expression in ufl_objects):
+            raise RuntimeError("All objects in the list must be UFL Expressions")
 
         for expression in ufl_objects:
             original_expression = expression[0]
