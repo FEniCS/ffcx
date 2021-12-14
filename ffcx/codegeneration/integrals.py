@@ -13,6 +13,7 @@ from ffcx.codegeneration import geometry
 from ffcx.codegeneration import integrals_template as ufc_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.codegeneration.C.cnodes import CNode, BinOp
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import block_data_t
 from ffcx.ir.representationutils import QuadratureRule
@@ -547,8 +548,8 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # The parts to return
-        preparts = []
-        quadparts = []
+        preparts: List[CNode] = []
+        quadparts: List[CNode] = []
 
         # RHS expressiong grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
@@ -628,9 +629,9 @@ class IntegralGenerator(object):
         # List of statements to keep in the inner loop
         keep = collections.defaultdict(list)
         # List of temporary array declarations
-        pre_loop = []
+        pre_loop: List[CNode] = []
         # List of loop invariant expressions to hoist
-        hoist = []
+        hoist: List[BinOp] = []
 
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
@@ -674,18 +675,20 @@ class IntegralGenerator(object):
             else:
                 keep[indices] = rhs_expressions[indices]
 
-        hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
+        hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
 
-        body = []
+        body: List[CNode] = []
 
         for indices in keep:
             sum = L.Sum(keep[indices])
             body.append(L.AssignAdd(A[indices], sum))
 
         for i in reversed(range(block_rank)):
-            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+            body = [L.ForRange(B_indices[i], 0, blockdims[i], body=body)]
 
-        quadparts += [pre_loop, hoist, body]
+        quadparts += pre_loop
+        quadparts += hoist_code
+        quadparts += body
 
         return preparts, quadparts
 

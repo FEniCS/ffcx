@@ -62,7 +62,7 @@ ir_expression = namedtuple('ir_expression', [
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
 
-def compute_ir(analysis: namedtuple, object_names, prefix, parameters, visualise):
+def compute_ir(analysis, object_names, prefix, parameters, visualise):
     """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
