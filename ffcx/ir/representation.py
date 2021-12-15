@@ -52,7 +52,8 @@ ir_integral = namedtuple('ir_integral', [
     'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
     'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
     'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
-    'table_dofmaps', 'integrand', 'name', 'precision', 'needs_facet_permutations', 'coordinate_element'])
+    'table_dofmaps', 'integrand', 'name', 'precision', 'needs_facet_permutations', 'coordinate_element',
+    'mixed_dim'])
 ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
@@ -250,6 +251,14 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             for i, ufl_element in enumerate(unique_elements)
         }
 
+        # FIXME Hack to get mixed dim working
+        ir["mixed_dim"] = False
+        if itg_data.integral_type == "exterior_facet":
+            for e_0 in unique_elements:
+                for e_1 in unique_elements:
+                    if e_0.cell() == e_1.cell().facet_cell():
+                        ir["mixed_dim"] = True
+
         # Create dimensions of primary indices, needed to reset the argument
         # 'A' given to tabulate_tensor() by the assembler.
         argument_dimensions = [
@@ -359,7 +368,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         # Build more specific intermediate representation
         integral_ir = compute_integral_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
                                           ir["entitytype"], integrands, ir["tensor_shape"],
-                                          parameters, visualise)
+                                          ir["mixed_dim"], parameters, visualise)
 
         ir.update(integral_ir)
 

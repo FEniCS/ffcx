@@ -174,7 +174,7 @@ class FFCXBackendSymbols(object):
     def named_table(self, name):
         return self.S(name)
 
-    def element_table(self, tabledata, entitytype, restriction):
+    def element_table(self, tabledata, entitytype, restriction, facet_space=False):
         entity = self.entity(entitytype, restriction)
 
         if tabledata.is_uniform:
@@ -189,7 +189,7 @@ class FFCXBackendSymbols(object):
 
         if tabledata.is_permuted:
             qp = self.quadrature_permutation(0)
-            if restriction == "-":
+            if restriction == "-" or facet_space:
                 qp = self.quadrature_permutation(1)
         else:
             qp = 0

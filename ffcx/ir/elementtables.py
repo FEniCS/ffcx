@@ -270,7 +270,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 
 def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
-                           modified_terminals, existing_tables,
+                           modified_terminals, existing_tables, is_mixed_dim,
                            rtol=default_rtol, atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
@@ -320,7 +320,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         tdim = cell.topological_dimension()
 
-        if integral_type == "interior_facet":
+        if integral_type == "interior_facet" or is_mixed_dim:
             if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
