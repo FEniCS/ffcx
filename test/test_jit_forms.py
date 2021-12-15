@@ -654,8 +654,10 @@ def test_prism(compile_args):
 @pytest.mark.parametrize("mode,expected_result", [
     ("double", np.array([[0, np.sqrt(2) / 3, np.sqrt(2) / 6],
                          [0, np.sqrt(2) / 6, np.sqrt(2) / 3]], dtype=np.float64))])
-def test_cell_facet_form(mode, expected_result, compile_args):
+@pytest.mark.parametrize("permutation", [[0, 0], [0, 1], [1, 0], [1, 1]])
+def test_cell_facet_form(mode, expected_result, permutation, compile_args):
     # TODO Test 3D and non-simplex
+    # TODO Test permutation
     domain_cell = ufl.triangle
     V_fe = ufl.FiniteElement("Lagrange", domain_cell, 1)
     Vbar_fe = ufl.FiniteElement("Lagrange", ufl.Cell("interval", 2), 1)
@@ -679,7 +681,7 @@ def test_cell_facet_form(mode, expected_result, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
     facet = np.array([0], dtype=np.intc)
-    perm = np.array([0], dtype=np.uint8)
+    perm = np.array(permutation, dtype=np.uint8)
 
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
@@ -692,5 +694,8 @@ def test_cell_facet_form(mode, expected_result, compile_args):
            ffi.cast('double *', coords.ctypes.data),
            ffi.cast('int *', facet.ctypes.data),
            ffi.cast('uint8_t *', perm.ctypes.data))
+
+    if permutation[0] != permutation[1]:
+        expected_result = np.flipud(expected_result)
 
     assert np.allclose(A, expected_result)
