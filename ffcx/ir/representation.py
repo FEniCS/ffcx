@@ -551,7 +551,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
         assert len(ir["original_coefficient_positions"]) == 0 and len(ir["original_constant_offsets"]) == 0
 
     expression_ir = compute_integral_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
-                                        parameters, visualise)
+                                        False, parameters, visualise)
 
     ir.update(expression_ir)
 
