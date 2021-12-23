@@ -105,14 +105,14 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     component_element, offset, stride = basix_element.get_component_element(flat_component)
 
     for entity in range(num_entities):
+        # Check if the domain cell is the same as the element cell and map
+        # points accordingly
         if cell == ufl_element.cell():
             entity_points = map_integral_points(points, integral_type,
                                                 cell, entity)
         elif cell.facet_cell() == ufl_element.cell() and is_mixed_dim:
-            # If the integral domain cell's facet cell is the same as the
-            # ufl_element.cell() and we have a mixed dimensional integral, then we
-            # have a facet space. points should be mapped by treating it
-            # as a "cell" integral over the ufl_element cell.
+            # In this case we have a facet element. `points` should be mapped in the same way
+            # as a "cell" integral over ufl_element.cell()
             entity_points = map_integral_points(points, "cell",
                                                 ufl_element.cell(), 0)
         else:
