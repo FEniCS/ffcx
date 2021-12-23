@@ -657,7 +657,6 @@ def test_prism(compile_args):
 @pytest.mark.parametrize("permutation", [[0, 0], [0, 1], [1, 0], [1, 1]])
 def test_cell_facet_form(mode, expected_result, permutation, compile_args):
     # TODO Test 3D and non-simplex
-    # TODO Test permutation
     domain_cell = ufl.triangle
     V_fe = ufl.FiniteElement("Lagrange", domain_cell, 1)
     Vbar_fe = ufl.FiniteElement("Lagrange", ufl.Cell("interval", 2), 1)
