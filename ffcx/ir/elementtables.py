@@ -353,7 +353,8 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_quadrilateral(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component, is_mixed_dim))
+                                cell, integral_type, element, avg, entitytype, local_derivatives,
+                                flat_component, is_mixed_dim))
                     t = new_table[0]
                     t['array'] = numpy.vstack([td['array'] for td in new_table])
         else:
