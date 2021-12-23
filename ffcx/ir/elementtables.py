@@ -105,8 +105,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     component_element, offset, stride = basix_element.get_component_element(flat_component)
 
     for entity in range(num_entities):
-        # Check if the domain cell is the same as the element cell and map
-        # points accordingly
+        # Map points according to relationship between domain cell and element cell
         if cell == ufl_element.cell():
             entity_points = map_integral_points(points, integral_type,
                                                 cell, entity)
@@ -319,6 +318,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         tdim = cell.topological_dimension()
 
+        # Interior facet and mixed dimensional integrals need permutations
         if integral_type == "interior_facet" or is_mixed_dim:
             if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
