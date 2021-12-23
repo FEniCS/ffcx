@@ -251,7 +251,9 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             for i, ufl_element in enumerate(unique_elements)
         }
 
-        # FIXME Hack to get mixed dim working
+        # If we have an exterior facet integral, and the cell of one element
+        # is the same as the facet of another, then we have a mixed dimensional
+        # integral
         ir["mixed_dim"] = False
         if itg_data.integral_type == "exterior_facet":
             for e_0 in unique_elements:
