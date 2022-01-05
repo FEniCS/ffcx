@@ -48,7 +48,11 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":
         return create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
-        return create_quadrature(ufl.cell.cellname2facetname[cell.cellname()], degree, rule)
+        facet_cells = cell.facet_cells()
+        # Raise exception for cells with more than one facet type e.g. prisms
+        if len(facet_cells) > 1:
+            raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
+        return create_quadrature(facet_cells[0].cellname(), degree, rule)
     elif integral_type in ufl.measure.point_integral_types:
         return create_quadrature("vertex", degree, rule)
     elif integral_type == "expression":
