@@ -109,7 +109,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         if cell == ufl_element.cell():
             entity_points = map_integral_points(points, integral_type,
                                                 cell, entity)
-        elif cell.facet_cell() == ufl_element.cell() and is_mixed_dim:
+        elif ufl_element.cell() in cell.facet_types() and is_mixed_dim:
             # In this case we have a facet element. `points` should be mapped in the same way
             # as a "cell" integral over ufl_element.cell()
             entity_points = map_integral_points(points, "cell",

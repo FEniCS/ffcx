@@ -258,7 +258,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         if itg_data.integral_type == "exterior_facet":
             for e_0 in unique_elements:
                 for e_1 in unique_elements:
-                    if e_0.cell() == e_1.cell().facet_cell():
+                    if e_0.cell() in e_1.cell().facet_types():
                         ir["mixed_dim"] = True
 
         # Create dimensions of primary indices, needed to reset the argument
