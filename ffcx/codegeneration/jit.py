@@ -36,8 +36,10 @@ UFC_FORM_DECL = '\n'.join(re.findall('typedef struct ufcx_form.*?ufcx_form;', uf
 UFC_INTEGRAL_DECL = '\n'.join(re.findall(r'typedef void ?\(ufcx_tabulate_tensor_float32\).*?\);', ufcx_h, re.DOTALL))
 UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufcx_tabulate_tensor_float64\).*?\);', ufcx_h, re.DOTALL))
 UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufcx_tabulate_tensor_complex64\).*?\);', ufcx_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufcx_tabulate_tensor_complex128\).*?\);', ufcx_h, re.DOTALL))
-UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufcx_tabulate_tensor_longdouble\).*?\);', ufcx_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufcx_tabulate_tensor_complex128\).*?\);',
+                               ufcx_h, re.DOTALL))
+UFC_INTEGRAL_DECL += '\n'.join(re.findall(r'typedef void ?\(ufcx_tabulate_tensor_longdouble\).*?\);',
+                               ufcx_h, re.DOTALL))
 
 UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufcx_integral.*?ufcx_integral;',
                                           ufcx_h, re.DOTALL))
