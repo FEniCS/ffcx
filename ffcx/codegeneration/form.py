@@ -122,7 +122,6 @@ def generator(ir, parameters):
         code += [f".geometry_basix_variant = {int(cmap_variant)}"]
         code += ["};"]
 
-    print(ir.function_spaces)
     _if = L.If
     for name in ir.function_spaces.keys():
         condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
