@@ -125,7 +125,7 @@ def _generate_comment(parameters):
 def _generate_includes(parameters):
 
     default_h_includes = [
-        "#include <ufc.h>",
+        "#include <ufcx.h>",
     ]
 
     default_c_includes = [
@@ -133,7 +133,7 @@ def _generate_includes(parameters):
         "#include <stdalign.h>",  # This should really be set by the backend
         "#include <stdlib.h>",  # This should really be set by the backend
         "#include <string.h>",  # This should really be set by the backend
-        "#include <ufc.h>"
+        "#include <ufcx.h>"
     ]
 
     if "_Complex" in parameters["scalar_type"]:

@@ -22,10 +22,35 @@ FFCx is part of the FEniCS Project. For more information, visit
 https://www.fenicsproject.org
 
 
+Installation
+============
+
+To install FFCx from PyPI::
+
+   $ pip install ffcx
+
+To install FFCx from tge source directory::
+
+   $ pip install .
+
+
 Documentation
 =============
 
 Documentation can be viewed at https://docs.fenicsproject.org/ffcx/main
+
+
+Interface file installation only
+================================
+
+FFCx provides the `ufcx.h` interface header for finite element kernels,
+used by DOLFINx. `ufcx.h` is installed by FFCx within the Python site
+packages, but it is sometimes helpful to install only the header file.
+This can ne done by::
+
+   $ cmake -B build-dir -S cmake/
+   $ cmake --build build-dir
+   $ cmake --install build-dir
 
 
 License

@@ -20,9 +20,9 @@ import ffcx.naming
 
 logger = logging.getLogger("ffcx")
 
-# Get declarations directly from ufc.h
+# Get declarations directly from ufcx.h
 file_dir = os.path.dirname(os.path.abspath(__file__))
-with open(file_dir + "/ufc.h", "r") as f:
+with open(file_dir + "/ufcx.h", "r") as f:
     ufc_h = ''.join(f.readlines())
 
 header = ufc_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
