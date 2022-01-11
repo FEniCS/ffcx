@@ -118,8 +118,10 @@ def generator(ir, parameters):
         code += [f".geometry_family = \"{cmap_family}\","]
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        assert cmap_variant is not None
-        code += [f".geometry_basix_variant = {int(cmap_variant)}"]
+        if cmap_variant is None:
+            code += [f".geometry_basix_variant = -1"]
+        else:
+            code += [f".geometry_basix_variant = {int(cmap_variant)}"]
         code += ["};"]
 
     _if = L.If
