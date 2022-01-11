@@ -44,7 +44,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools
           python -m pip install git+https://github.com/FEniCS/ufl.git
-          python -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/lagrange_variant
+          python -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install FFCx
         run: |
