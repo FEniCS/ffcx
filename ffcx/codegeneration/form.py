@@ -119,7 +119,7 @@ def generator(ir, parameters):
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
         if cmap_variant is None:
-            code += [f".geometry_basix_variant = -1"]
+            code += [".geometry_basix_variant = -1"]
         else:
             code += [f".geometry_basix_variant = {int(cmap_variant)}"]
         code += ["};"]
