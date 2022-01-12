@@ -5,6 +5,9 @@ project(ufcx VERSION 0.3.1 DESCRIPTION "UFCx interface header for finite element
   HOMEPAGE_URL https://github.com/fenics/ffcx)
 include(GNUInstallDirs)
 
+file(SHA1 ${PROJECT_SOURCE_DIR}/../ffcx/codegeneration/ufcx.h UFCX_HASH)
+message("Test hash: ${UFCX_HASH}")
+
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}
