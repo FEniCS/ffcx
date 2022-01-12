@@ -429,8 +429,8 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     # for codegen phase
     ir["integral_names"] = {}
     ir["subdomain_ids"] = {}
-    ufc_integral_types = ("cell", "exterior_facet", "interior_facet")
-    for integral_type in ufc_integral_types:
+    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
+    for integral_type in ufcx_integral_types:
         ir["subdomain_ids"][integral_type] = []
         ir["integral_names"][integral_type] = []
 
