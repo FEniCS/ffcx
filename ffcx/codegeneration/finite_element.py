@@ -10,7 +10,7 @@
 
 import logging
 
-import ffcx.codegeneration.finite_element_template as ufc_finite_element
+import ffcx.codegeneration.finite_element_template as ufcx_finite_element
 import ufl
 
 logger = logging.getLogger("ffcx")
@@ -79,7 +79,7 @@ def generator(ir, parameters):
     if len(ir.sub_elements) > 0:
         d["sub_elements"] = f"sub_elements_{ir.name}"
         d["sub_elements_init"] = L.ArrayDecl(
-            "ufc_finite_element*", f"sub_elements_{ir.name}",
+            "ufcx_finite_element*", f"sub_elements_{ir.name}",
             values=[L.AddressOf(L.Symbol(el)) for el in ir.sub_elements], sizes=len(ir.sub_elements))
     else:
         d["sub_elements"] = "NULL"
@@ -88,15 +88,15 @@ def generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fieldnames = [
-        fname for _, fname, _, _ in Formatter().parse(ufc_finite_element.factory) if fname
+        fname for _, fname, _, _ in Formatter().parse(ufcx_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
         d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
-    implementation = ufc_finite_element.factory.format_map(d)
+    implementation = ufcx_finite_element.factory.format_map(d)
 
     # Format declaration
-    declaration = ufc_finite_element.declaration.format(factory_name=ir.name)
+    declaration = ufcx_finite_element.declaration.format(factory_name=ir.name)
 
     return declaration, implementation

@@ -5,7 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 declaration = """
-extern ufc_expression {factory_name};
+extern ufcx_expression {factory_name};
 """
 
 factory = """
@@ -23,7 +23,7 @@ void tabulate_expression_{factory_name}({scalar_type}* restrict A,
 {value_shape_init}
 {original_coefficient_positions_init}
 
-ufc_expression {factory_name} =
+ufcx_expression {factory_name} =
 {{
   .tabulate_expression = tabulate_expression_{factory_name},
   .num_coefficients = {num_coefficients},

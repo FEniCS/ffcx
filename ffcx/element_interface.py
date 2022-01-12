@@ -273,7 +273,7 @@ class BasixElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_basix_element"
+        return "ufcx_basix_element"
 
     @property
     def dim(self):
@@ -496,7 +496,7 @@ class MixedElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_mixed_element"
+        return "ufcx_mixed_element"
 
     @property
     def dim(self):
@@ -788,7 +788,7 @@ class QuadratureElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_quadrature_element"
+        return "ufcx_quadrature_element"
 
     @property
     def dim(self):

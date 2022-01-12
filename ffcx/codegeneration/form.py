@@ -67,7 +67,7 @@ def generator(ir, parameters):
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
-        d["finite_elements_init"] = L.ArrayDecl("ufc_finite_element*", f"finite_elements_{ir.name}", values=[
+        d["finite_elements_init"] = L.ArrayDecl("ufcx_finite_element*", f"finite_elements_{ir.name}", values=[
                                                 L.AddressOf(L.Symbol(el)) for el in ir.finite_elements],
                                                 sizes=len(ir.finite_elements))
     else:
@@ -76,7 +76,7 @@ def generator(ir, parameters):
 
     if len(ir.dofmaps) > 0:
         d["dofmaps"] = f"dofmaps_{ir.name}"
-        d["dofmaps_init"] = L.ArrayDecl("ufc_dofmap*", f"dofmaps_{ir.name}", values=[
+        d["dofmaps_init"] = L.ArrayDecl("ufcx_dofmap*", f"dofmaps_{ir.name}", values=[
             L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.dofmaps], sizes=len(ir.dofmaps))
     else:
         d["dofmaps"] = L.Null()
@@ -89,7 +89,7 @@ def generator(ir, parameters):
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
         if len(ir.integral_names[itg_type]) > 0:
             code += [L.ArrayDecl(
-                "static ufc_integral*", f"integrals_{itg_type}_{ir.name}",
+                "static ufcx_integral*", f"integrals_{itg_type}_{ir.name}",
                 values=[L.AddressOf(L.Symbol(itg)) for itg in ir.integral_names[itg_type]],
                 sizes=len(ir.integral_names[itg_type]))]
             cases.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}"))))
@@ -109,9 +109,9 @@ def generator(ir, parameters):
     function_name = L.Symbol("function_name")
 
     # FIXME: Should be handled differently, revise how
-    # ufc_function_space is generated
+    # ufcx_function_space is generated
     for (name, (element, dofmap, cmap_family, cmap_degree, cmap_celltype, cmap_variant)) in ir.function_spaces.items():
-        code += [f"static ufc_function_space functionspace_{name} ="]
+        code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
