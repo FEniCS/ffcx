@@ -96,8 +96,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
-        num_targets = numpy.int32(numpy.prod(expression.ufl_shape))
-        assert(num_targets == len(S_targets))
+        num_components = numpy.int32(numpy.prod(expression.ufl_shape))
+        value_rank = len(expression.ufl_shape)
 
         if 'zeros' in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
@@ -113,22 +113,22 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 if deps:
                     v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
-            if len(expression.ufl_shape) == 0:
+            if value_rank == 0:
                 # Rebuild scalar target expressions and graph (this may be
                 # overkill and possible to optimize away if it turns out to be
                 # costly)
                 expression = S.nodes[S_targets[0]]['expression']
-            elif len(expression.ufl_shape) == 1:
-                expressions = [None, ] * num_targets
+            elif value_rank == 1 or value_rank == 2:
+                expressions = [None, ] * num_components
                 for target in S_targets:
-                    expressions[S.nodes[target]["component"][0]] = S.nodes[target]["expression"]
-                expression = ufl.as_vector(expressions)
-            elif len(expression.ufl_shape) == 2:
-                expressions = [None, ] * num_targets
-                for target in S_targets:
-                    expressions[S.nodes[target]["component"][0]] = S.nodes[target]["expression"]
-
-                expression = ufl.as_tensor(numpy.asarray(expressions).reshape(expression.ufl_shape))
+                    for comp in S.nodes[target]["component"]:
+                        expressions[comp] = S.nodes[target]["expression"]
+                if value_rank == 1:
+                    expression = ufl.as_vector(expressions)
+                else:
+                    expression = ufl.as_tensor(numpy.asarray(expressions).reshape(expression.ufl_shape))
+            else:
+                raise RuntimeError("Expression has to be a scalar, vector or tensor.")
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
