@@ -25,7 +25,7 @@ To install FFCx from PyPI:
 $ pip install ffcx
 ```
 
-To install FFCx from tge source directory:
+To install FFCx from the source directory:
 ```
 $ pip install .
 ```
