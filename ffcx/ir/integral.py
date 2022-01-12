@@ -118,16 +118,16 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 # overkill and possible to optimize away if it turns out to be
                 # costly)
                 expression = S.nodes[S_targets[0]]['expression']
-            elif 'zeros' in table_types.values() and len(expression.ufl_shape) == 1:
+            elif len(expression.ufl_shape) == 1:
                 expressions = [None, ] * num_targets
                 for target in S_targets:
                     expressions[S.nodes[target]["component"][0]] = S.nodes[target]["expression"]
                 expression = ufl.as_vector(expressions)
-            elif 'zeros' in table_types.values() and len(expression.ufl_shape) == 2:
+            elif len(expression.ufl_shape) == 2:
                 expressions = [None, ] * num_targets
                 for target in S_targets:
                     expressions[S.nodes[target]["component"][0]] = S.nodes[target]["expression"]
-                expression = ufl.as_vector(expressions.reshape(expression.ufl_shape))
+                expression = ufl.as_tensor(expressions.reshape(expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
