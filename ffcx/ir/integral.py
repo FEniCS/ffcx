@@ -127,7 +127,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 expressions = [None, ] * num_targets
                 for target in S_targets:
                     expressions[S.nodes[target]["component"][0]] = S.nodes[target]["expression"]
-                expression = ufl.as_tensor(expressions.reshape(expression.ufl_shape))
+
+                expression = ufl.as_tensor(numpy.asarray(expressions).reshape(expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
