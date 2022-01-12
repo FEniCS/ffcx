@@ -9,6 +9,7 @@ import collections
 import itertools
 import logging
 
+import numpy
 import ufl
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
@@ -95,11 +96,11 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
+        num_targets = numpy.int32(numpy.prod(expression.ufl_shape))
+        assert(num_targets == len(S_targets))
 
-        if 'zeros' in table_types.values() and len(S_targets) == 1:
+        if 'zeros' in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
-            #
-            # TODO: Implement zero table elimination for non-scalar graphs
             for i, mt in initial_terminals.items():
                 # Set modified terminals with zero tables to zero
                 tr = mt_table_reference.get(mt)
@@ -112,14 +113,26 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 if deps:
                     v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
-            # Rebuild scalar target expressions and graph (this may be
-            # overkill and possible to optimize away if it turns out to be
-            # costly)
-            expression = S.nodes[S_targets[0]]['expression']
+            if len(expression.ufl_shape) == 0:
+                # Rebuild scalar target expressions and graph (this may be
+                # overkill and possible to optimize away if it turns out to be
+                # costly)
+                expression = S.nodes[S_targets[0]]['expression']
+            elif 'zeros' in table_types.values() and len(expression.ufl_shape) == 1:
+                expressions = [None, ] * num_targets
+                for target in S_targets:
+                    expressions[S.nodes[target]["component"][0]] = S.nodes[target]["expression"]
+                expression = ufl.as_vector(expressions)
+            elif 'zeros' in table_types.values() and len(expression.ufl_shape) == 2:
+                expressions = [None, ] * num_targets
+                for target in S_targets:
+                    expressions[S.nodes[target]["component"][0]] = S.nodes[target]["expression"]
+                expression = ufl.as_vector(expressions.reshape(expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
-
+            from IPython import embed
+            embed()
         # Output diagnostic graph as pdf
         if visualise:
             visualise_graph(S, 'S.pdf')
