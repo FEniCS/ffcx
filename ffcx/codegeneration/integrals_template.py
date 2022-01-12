@@ -4,7 +4,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
-extern ufc_integral {factory_name};
+extern ufcx_integral {factory_name};
 """
 
 factory = """
@@ -22,7 +22,7 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 
 {enabled_coefficients_init}
 
-ufc_integral {factory_name} =
+ufcx_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
   .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
