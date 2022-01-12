@@ -202,13 +202,13 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
         raise NotImplementedError
 
     @property
-    def element_family(self):
-        """Get the Basix element family used to initialise the element."""
+    def lagrange_variant(self):
+        """Get the Basix Lagrange variant used to initialise the element."""
         raise NotImplementedError
 
     @property
@@ -230,7 +230,6 @@ class BasixElement(BaseElement):
                                             discontinuous)
         self._family = family_type
         self._cell = cell_type
-        self._variant_info = variant_info
         self._discontinuous = discontinuous
 
     def tabulate(self, nderivs, points):
@@ -333,17 +332,14 @@ class BasixElement(BaseElement):
         return basix.geometry(self.element.cell_type)
 
     @property
-    def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
-        for a in self._variant_info:
-            if isinstance(a, basix.LagrangeVariant):
-                return a
-        return None
-
-    @property
     def element_family(self):
         """Get the Basix element family used to initialise the element."""
         return self._family
+
+    @property
+    def lagrange_variant(self):
+        """Get the Basix Lagrange variant used to initialise the element."""
+        return self.element.lagrange_variant
 
     @property
     def cell_type(self):

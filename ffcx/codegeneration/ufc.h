@@ -390,6 +390,12 @@ extern "C"
 
     /// The degree of the finite element for the geometry map
     int geometry_degree;
+
+    /// The Basix cell of the finite element for the geometry map
+    int geometry_basix_cell;
+
+    /// The Basix variant of the finite element for the geometry map
+    int geometry_basix_variant;
   } ufc_function_space;
 
 #ifdef __cplusplus

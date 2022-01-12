@@ -410,9 +410,14 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         name = object_names.get(id(function), str(function))
         el = function.ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        # Default point spacing for CoordinateElement is equispaced
+        if cmap.variant() is None:
+            cmap._sub_element._variant = "equispaced"
+        basix_cmap = create_element(cmap)
         family = cmap.family()
         degree = cmap.degree()
-        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
+        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
+                    basix_cmap.cell_type, basix_cmap.lagrange_variant)
 
     form_name = object_names.get(id(form_data.original_form), form_id)
 
