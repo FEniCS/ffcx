@@ -132,6 +132,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
+
         # Output diagnostic graph as pdf
         if visualise:
             visualise_graph(S, 'S.pdf')
