@@ -241,3 +241,63 @@ def test_elimiate_zero_tables_vector(compile_args):
         return val.T
     exact = exact_expr(points.T)
     assert np.allclose(exact, output)
+
+
+def test_elimiate_zero_tables_tensor(compile_args):
+    """
+    Test elimination of tensor-valued expressions with zero tables
+    """
+    cell = "tetrahedron"
+    c_el = ufl.VectorElement("P", cell, 1)
+    mesh = ufl.Mesh(c_el)
+
+    e = ufl.FiniteElement("CG", cell, 1)
+    V = ufl.FunctionSpace(mesh, e)
+    u = ufl.Coefficient(V)
+    expr = ufl.sym(ufl.as_tensor([[u, u.dx(0).dx(0), 0],
+                                  [u.dx(1), u.dx(1), 0],
+                                  [0, 0, 0]]))
+
+    # Get vectices of cell
+    # Coords storage XYZXYZXYZ
+    basix_c_e = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 1, False)
+    coords = basix_c_e.points
+
+    # Using same basix element for coordinate element and coefficient
+    coeff_points = basix_c_e.points
+
+    # Compile expression
+    # Get interpolation points of CG 2
+    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 0, True)
+    points = b_el.points
+    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args)
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+    c_type, np_type = float_to_type("double")
+
+    output = np.zeros(9 * points.shape[0], dtype=np_type)
+
+    def u_expr(x):
+        return np.array(x[0] + 2 * x[1], dtype=np_type)
+
+    u_coeffs = u_expr(coeff_points.T)
+    consts = np.array([], dtype=np_type)
+
+    expression.tabulate_expression(
+        ffi.cast('{type} *'.format(type=c_type), output.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), u_coeffs.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), consts.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data))
+
+    def exact_expr(x):
+        val = np.zeros((9, x.shape[1]), dtype=np_type)
+        val[0] = x[0] + 2 * x[1]
+        val[1] = 0 + 0.5 * 2
+        val[3] = 0.5 * 2 + 0
+        val[4] = 2
+        return val.T
+    exact = exact_expr(points.T)
+
+    assert np.allclose(exact, output)
