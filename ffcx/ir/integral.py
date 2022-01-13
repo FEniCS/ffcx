@@ -98,6 +98,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
         num_components = numpy.int32(numpy.prod(expression.ufl_shape))
         value_rank = len(expression.ufl_shape)
+        if value_rank < 0:
+            raise RuntimeError("Value rank has to be non-negative")
 
         if 'zeros' in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
@@ -118,17 +120,12 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 # overkill and possible to optimize away if it turns out to be
                 # costly)
                 expression = S.nodes[S_targets[0]]['expression']
-            elif value_rank == 1 or value_rank == 2:
+            else:
                 expressions = [None, ] * num_components
                 for target in S_targets:
                     for comp in S.nodes[target]["component"]:
                         expressions[comp] = S.nodes[target]["expression"]
-                if value_rank == 1:
-                    expression = ufl.as_vector(expressions)
-                else:
-                    expression = ufl.as_tensor(numpy.asarray(expressions).reshape(expression.ufl_shape))
-            else:
-                raise RuntimeError("Expression has to be a scalar, vector or tensor.")
+                expression = ufl.as_tensor(numpy.reshape(expressions, expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
