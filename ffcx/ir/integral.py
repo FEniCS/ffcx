@@ -97,9 +97,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
         num_components = numpy.int32(numpy.prod(expression.ufl_shape))
-        value_rank = len(expression.ufl_shape)
-        if value_rank < 0:
-            raise RuntimeError("Value rank has to be non-negative")
 
         if 'zeros' in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
@@ -115,18 +112,13 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 if deps:
                     v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
-            if value_rank == 0:
-                # Rebuild scalar target expressions and graph (this may be
-                # overkill and possible to optimize away if it turns out to be
-                # costly)
-                expression = S.nodes[S_targets[0]]['expression']
-            else:
-                expressions = [None, ] * num_components
-                for target in S_targets:
-                    for comp in S.nodes[target]["component"]:
-                        assert(expressions[comp] is None)
-                        expressions[comp] = S.nodes[target]["expression"]
-                expression = ufl.as_tensor(numpy.reshape(expressions, expression.ufl_shape))
+            # Recreate expression with correct ufl_shape
+            expressions = [None, ] * num_components
+            for target in S_targets:
+                for comp in S.nodes[target]["component"]:
+                    assert(expressions[comp] is None)
+                    expressions[comp] = S.nodes[target]["expression"]
+            expression = ufl.as_tensor(numpy.reshape(expressions, expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
