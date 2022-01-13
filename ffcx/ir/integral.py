@@ -124,7 +124,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 expressions = [None, ] * num_components
                 for target in S_targets:
                     for comp in S.nodes[target]["component"]:
-                        assert(expressions[comp] == None)
+                        assert(expressions[comp] is None)
                         expressions[comp] = S.nodes[target]["expression"]
                 expression = ufl.as_tensor(numpy.reshape(expressions, expression.ufl_shape))
 
