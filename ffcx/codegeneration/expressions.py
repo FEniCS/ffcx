@@ -3,14 +3,17 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+
 import collections
-from itertools import product
 import logging
+from typing import Dict, Set, Any, DefaultDict
+from itertools import product
 
 import ufl
 from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.codegeneration.C.cnodes import CNode
 from ffcx.ir.representation import ir_expression
 
 logger = logging.getLogger("ffcx")
@@ -86,10 +89,10 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scope = {}
-        self._ufl_names = set()
-        self.symbol_counters = collections.defaultdict(int)
-        self.shared_symbols = {}
+        self.scope: Dict[Any, CNode] = {}
+        self._ufl_names: Set[Any] = set()
+        self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
+        self.shared_symbols: Dict[Any, Any] = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):

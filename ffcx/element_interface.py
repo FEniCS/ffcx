@@ -1,7 +1,14 @@
+# Copyright (C) 2021 Matthew W. Scroggs and Chris Richardson
+#
+# This file is part of FFCx.(https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
+
+import warnings
+
+import basix
 import numpy
 import ufl
-import basix
-import warnings
 
 
 def create_element(ufl_element):
@@ -108,12 +115,15 @@ class BaseElement:
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.
 
-        For example, for a MixedElement, this will return the sub-element that represents the given component,
-        the offset of that sub-element, and a stride of 1. For a BlockedElement, this will return the sub-element,
-        an offset equal to the component number, and a stride equal to the block size. For vector-valued element
-        (eg H(curl) and H(div) elements), this returns a ComponentElement (and as offset of 0 and a stride of 1).
-        When tabulate is called on the ComponentElement, only the part of the table for the given component is
-        returned.
+        For example, for a MixedElement, this will return the
+        sub-element that represents the given component, the offset of
+        that sub-element, and a stride of 1. For a BlockedElement, this
+        will return the sub-element, an offset equal to the component
+        number, and a stride equal to the block size. For vector-valued
+        element (eg H(curl) and H(div) elements), this returns a
+        ComponentElement (and as offset of 0 and a stride of 1). When
+        tabulate is called on the ComponentElement, only the part of the
+        table for the given component is returned.
 
         Parameters
         ----------
@@ -192,13 +202,13 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
+    def element_family(self):
+        """Get the Basix element family used to initialise the element."""
         raise NotImplementedError
 
     @property
-    def element_family(self):
-        """Get the Basix element family used to initialise the element."""
+    def lagrange_variant(self):
+        """Get the Basix Lagrange variant used to initialise the element."""
         raise NotImplementedError
 
     @property
@@ -220,7 +230,6 @@ class BasixElement(BaseElement):
                                             discontinuous)
         self._family = family_type
         self._cell = cell_type
-        self._variant_info = variant_info
         self._discontinuous = discontinuous
 
     def tabulate(self, nderivs, points):
@@ -239,9 +248,10 @@ class BasixElement(BaseElement):
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.
 
-        For vector-valued elements (eg H(curl) and H(div) elements), this returns a ComponentElement (and an
-        offset of 0 and a stride of 1). When tabulate is called on the ComponentElement, only the part of the
-        table for the given component is returned.
+        For vector-valued elements (eg H(curl) and H(div) elements),
+        this returns a ComponentElement (and an offset of 0 and a stride
+        of 1). When tabulate is called on the ComponentElement, only the
+        part of the table for the given component is returned.
 
         Parameters
         ----------
@@ -263,7 +273,7 @@ class BasixElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_basix_element"
+        return "ufcx_basix_element"
 
     @property
     def dim(self):
@@ -322,17 +332,14 @@ class BasixElement(BaseElement):
         return basix.geometry(self.element.cell_type)
 
     @property
-    def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
-        for a in self._variant_info:
-            if isinstance(a, basix.LagrangeVariant):
-                return a
-        return None
-
-    @property
     def element_family(self):
         """Get the Basix element family used to initialise the element."""
         return self._family
+
+    @property
+    def lagrange_variant(self):
+        """Get the Basix Lagrange variant used to initialise the element."""
+        return self.element.lagrange_variant
 
     @property
     def cell_type(self):
@@ -451,8 +458,9 @@ class MixedElement(BaseElement):
     def get_component_element(self, flat_component):
         """Get an element that represents a component of the element, and the offset and stride of the component.
 
-        For a MixedElement, this will return the sub-element that represents the given component,
-        the offset of that sub-element, and a stride of 1.
+        For a MixedElement, this will return the sub-element that
+        represents the given component, the offset of that sub-element,
+        and a stride of 1.
 
         Parameters
         ----------
@@ -474,7 +482,8 @@ class MixedElement(BaseElement):
         irange = numpy.cumsum(sub_dims)
         crange = numpy.cumsum(sub_cmps)
 
-        # Find index of sub element which corresponds to the current flat component
+        # Find index of sub element which corresponds to the current
+        # flat component
         component_element_index = numpy.where(
             crange <= flat_component)[0].shape[0] - 1
 
@@ -487,7 +496,7 @@ class MixedElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_mixed_element"
+        return "ufcx_mixed_element"
 
     @property
     def dim(self):
@@ -588,6 +597,12 @@ class BlockedElement(BaseElement):
 
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
+
+        if sub_element.value_size != 1:
+            raise ValueError("Blocked elements (VectorElement and TensorElement) of "
+                             "non-scalar elements are not supported. Try using MixedElement "
+                             "instead.")
+
         self.sub_element = sub_element
         self.block_size = block_size
         if block_shape is None:
@@ -618,10 +633,11 @@ class BlockedElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and the offset and stride of the component.
+        """Get an element that represents a component of the element and the offset and stride of the component.
 
-        For a BlockedElement, this will return the sub-element, an offset equal to the component number, and a
-        stride equal to the block size.
+        For a BlockedElement, this will return the sub-element, an
+        offset equal to the component number, and a stride equal to the
+        block size.
 
         Parameters
         ----------
@@ -642,7 +658,7 @@ class BlockedElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_blocked_element"
+        return self.sub_element.element_type
 
     @property
     def dim(self):
@@ -772,7 +788,7 @@ class QuadratureElement(BaseElement):
     @property
     def element_type(self):
         """Get the element type."""
-        return "ufc_quadrature_element"
+        return "ufcx_quadrature_element"
 
     @property
     def dim(self):
