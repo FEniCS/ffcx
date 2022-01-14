@@ -408,7 +408,10 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     fs = {}
     for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
         name = object_names.get(id(function), str(function))
-        el = function.ufl_element()
+        if isinstance(function, ufl.Argument):
+            el = function.ufl_function_space().ufl_element()
+        else:
+            el = function.ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
         if cmap.variant() is None:
@@ -487,7 +490,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
-    argument_elements = tuple(f.ufl_element() for f in arguments)
+    argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
     argument_dimensions = [
         ir["element_dimensions"][ufl_element] for ufl_element in argument_elements
     ]
