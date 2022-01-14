@@ -56,7 +56,6 @@ jobs:
 
       - name: Static check with mypy
         run: |
-          python -m pip install mypy types-setuptools
           python -m mypy ffcx/
 
       - name: Check documentation style
