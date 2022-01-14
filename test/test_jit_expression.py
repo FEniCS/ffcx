@@ -178,10 +178,8 @@ def test_elimiate_zero_tables_tensor():
 
     output = np.zeros(9 * points.shape[0], dtype=np_type)
 
-    def u_expr(x):
-        return np.array(x[0] + 2 * x[1], dtype=np_type)
-
-    u_coeffs = u_expr(coeff_points.T)
+    # Define coefficients for u = x + 2 * y
+    u_coeffs = u_coeffs = coeff_points.T[0] + 2 * coeff_points.T[1]
     consts = np.array([], dtype=np_type)
 
     expression.tabulate_expression(
