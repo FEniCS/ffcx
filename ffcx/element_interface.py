@@ -3,36 +3,53 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+# """Finite element interface"""
+
+from __future__ import annotations
+
+import typing
+
+if typing.TYPE_CHECKING:
+    import ufl.finiteelement.FiniteElementBase
 
 import warnings
+from abc import ABC, abstractmethod, abstractproperty
 
 import basix
 import numpy
 import ufl
 
 
-def create_element(ufl_element):
-    """Create an element from a UFL element."""
+def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
+    """Create an FFCx element from a UFL element.
+
+    Args:
+        ufl_element: A UFL finite element
+
+    Returns:
+        A FFCx finite element
+
+    """
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
     # TODO: Allow different args for different parts of mixed element
 
-    if isinstance(ufl_element, ufl.VectorElement):
-        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
-                              ufl_element.num_sub_elements())
-    if isinstance(ufl_element, ufl.TensorElement):
-        return BlockedElement(create_element(ufl_element.sub_elements()[0]),
-                              ufl_element.num_sub_elements(), None)  # TODO: block shape
+    if isinstance(element, ufl.VectorElement):
+        return BlockedElement(create_element(element.sub_elements()[0]),
+                              element.num_sub_elements())
+    if isinstance(element, ufl.TensorElement):
+        return BlockedElement(create_element(element.sub_elements()[0]),
+                              element.num_sub_elements(), None)  # TODO: block shape
 
-    if isinstance(ufl_element, ufl.MixedElement):
-        return MixedElement([create_element(e) for e in ufl_element.sub_elements()])
+    if isinstance(element, ufl.MixedElement):
+        return MixedElement([create_element(e) for e in element.sub_elements()])
 
-    if ufl_element.family() == "Quadrature":
-        return QuadratureElement(ufl_element)
+    if element.family() == "Quadrature":
+        return QuadratureElement(element)
 
     variant_info = []
 
-    family_name = ufl_element.family()
+    family_name = element.family()
     discontinuous = False
     if family_name.startswith("Discontinuous "):
         family_name = family_name[14:]
@@ -47,15 +64,15 @@ def create_element(ufl_element):
         discontinuous = True
 
     if family_name in ["Lagrange", "Q"]:
-        if ufl_element.variant() is None:
+        if element.variant() is None:
             variant_info.append(basix.LagrangeVariant.gll_warped)
         else:
-            variant_info.append(basix.variants.string_to_lagrange_variant(ufl_element.variant()))
+            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
 
-    family_type = basix.finite_element.string_to_family(family_name, ufl_element.cell().cellname())
-    cell_type = basix.cell.string_to_type(ufl_element.cell().cellname())
+    family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
+    cell_type = basix.cell.string_to_type(element.cell().cellname())
 
-    return BasixElement(family_type, cell_type, ufl_element.degree(), variant_info, discontinuous)
+    return BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
 
 
 def basix_index(*args):
@@ -97,9 +114,10 @@ def map_facet_points(points, facet, cellname):
             for p in points]
 
 
-class BaseElement:
+class BaseElement(ABC):
     """An abstract element class."""
 
+    @abstractmethod
     def tabulate(self, nderivs, points):
         """Tabulate the basis functions of the element.
 
@@ -110,10 +128,12 @@ class BaseElement:
         points : np.array
             The points to tabulate at
         """
-        raise NotImplementedError
+        pass
 
-    def get_component_element(self, flat_component: int):
-        """Get an element that represents a component of the element, and the offset and stride of the component.
+    @abstractmethod
+    def get_component_element(self, flat_component: int) -> tuple[BaseElement, int, int]:
+        """Get an element that represents a component of the element, and
+        the offset and stride of the component.
 
         For example, for a MixedElement, this will return the
         sub-element that represents the given component, the offset of
@@ -125,21 +145,13 @@ class BaseElement:
         tabulate is called on the ComponentElement, only the part of the
         table for the given component is returned.
 
-        Parameters
-        ----------
-        flat_component : int
-            The component
+        Args:
+            flat_component: The component
 
-        Returns
-        -------
-        BaseElement
-            The component element
-        int
-            The offset of the component
-        int
-            The stride of the component
+        Returns:
+            component element, offset of the component, stride of the component
         """
-        raise NotImplementedError
+        pass
 
     @property
     def element_type(self):
@@ -201,31 +213,31 @@ class BaseElement:
         """Get the geometry of the reference element."""
         raise NotImplementedError
 
-    @property
+    @abstractproperty
     def element_family(self):
-        """Get the Basix element family used to initialise the element."""
-        raise NotImplementedError
+        """Basix element family used to initialise the element."""
+        pass
 
-    @property
+    @abstractproperty
     def lagrange_variant(self):
-        """Get the Basix Lagrange variant used to initialise the element."""
-        raise NotImplementedError
+        """Basix Lagrange variant used to initialise the element."""
+        pass
 
-    @property
+    @abstractproperty
     def cell_type(self):
-        """Get the Basix cell type used to initialise the element."""
-        raise NotImplementedError
+        """Basix cell type used to initialise the element."""
+        pass
 
-    @property
+    @abstractproperty
     def discontinuous(self) -> bool:
         """True if the discontinuous version of the element is used."""
-        raise NotImplementedError
+        pass
 
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, family_type, cell_type, degree, variant_info, discontinuous):
+    def __init__(self, family_type, cell_type, degree, variant_info, discontinuous: bool):
         self.element = basix.create_element(family_type, cell_type, degree, *variant_info,
                                             discontinuous)
         self._family = family_type
@@ -233,47 +245,16 @@ class BasixElement(BaseElement):
         self._discontinuous = discontinuous
 
     def tabulate(self, nderivs, points):
-        """Tabulate the basis functions of the element.
-
-        Parameters
-        ----------
-        nderivs : int
-            The number of derivatives to tabulate.
-        points : np.array
-            The points to tabulate at
-        """
         tab = self.element.tabulate(nderivs, points)
         return tab.transpose((0, 1, 3, 2)).reshape((tab.shape[0], tab.shape[1], -1))
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and
-        the offset and stride of the component.
-
-        For vector-valued elements (eg H(curl) and H(div) elements),
-        this returns a ComponentElement (and an offset of 0 and a stride
-        of 1). When tabulate is called on the ComponentElement, only the
-        part of the table for the given component is returned.
-
-        Parameters
-        ----------
-        flat_component : int
-            The component
-
-        Returns
-        -------
-        BaseElement
-            The component element
-        int
-            The offset of the component
-        int
-            The stride of the component
-        """
         assert flat_component < self.value_size
         return ComponentElement(self, flat_component), 0, 1
 
     @property
-    def element_type(self):
-        """Get the element type."""
+    def element_type(self) -> str:
+        """Element type."""
         return "ufcx_basix_element"
 
     @property
@@ -343,19 +324,14 @@ class BasixElement(BaseElement):
 
     @property
     def lagrange_variant(self):
-        """Get the Basix Lagrange variant used to initialise the
-        element."""
         return self.element.lagrange_variant
 
     @property
     def cell_type(self):
-        """Get the Basix cell type used to initialise the element."""
         return self._cell
 
     @property
-    def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is
-        used."""
+    def discontinuous(self):
         return self._discontinuous
 
 
@@ -367,15 +343,6 @@ class ComponentElement(BaseElement):
         self.component = component
 
     def tabulate(self, nderivs, points):
-        """Tabulate the basis functions of the element.
-
-        Parameters
-        ----------
-        nderivs : int
-            The number of derivatives to tabulate.
-        points : np.array
-            The points to tabulate at
-        """
         tables = self.element.tabulate(nderivs, points)
         output = []
         for tbl in tables:
@@ -393,45 +360,24 @@ class ComponentElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and
-        the offset and stride of the component.
-
-        Parameters
-        ----------
-        flat_component : int
-            The component
-
-        Returns
-        -------
-        BaseElement
-            The component element
-        int
-            The offset of the component
-        int
-            The stride of the component
-        """
         if flat_component == 0:
             return self, 0, 1
         raise NotImplementedError
 
     @property
     def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
         return self.element.lagrange_variant
 
     @property
     def element_family(self):
-        """Get the Basix element family used to initialise the element."""
         return self.element.element_family
 
     @property
     def cell_type(self):
-        """Get the Basix cell type used to initialise the element."""
         return self.element.cell_type
 
     @property
-    def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is used."""
+    def discontinuous(self):
         return self.element.discontinuous
 
 
@@ -443,15 +389,6 @@ class MixedElement(BaseElement):
         self.sub_elements = sub_elements
 
     def tabulate(self, nderivs, points):
-        """Tabulate the basis functions of the element.
-
-        Parameters
-        ----------
-        nderivs : int
-            The number of derivatives to tabulate.
-        points : np.array
-            The points to tabulate at
-        """
         tables = []
         results = [e.tabulate(nderivs, points) for e in self.sub_elements]
         for deriv_tables in zip(*results):
@@ -465,27 +402,6 @@ class MixedElement(BaseElement):
         return tables
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and
-        the offset and stride of the component.
-
-        For a MixedElement, this will return the sub-element that
-        represents the given component, the offset of that sub-element,
-        and a stride of 1.
-
-        Parameters
-        ----------
-        flat_component : int
-            The component
-
-        Returns
-        -------
-        BaseElement
-            The component element
-        int
-            The offset of the component
-        int
-            The stride of the component
-        """
         sub_dims = [0] + [e.dim for e in self.sub_elements]
         sub_cmps = [0] + [e.value_size for e in self.sub_elements]
 
@@ -504,7 +420,7 @@ class MixedElement(BaseElement):
         return e, irange[component_element_index] + offset, stride
 
     @property
-    def element_type(self):
+    def element_type(self) -> str:
         """Get the element type."""
         return "ufcx_mixed_element"
 
@@ -583,27 +499,24 @@ class MixedElement(BaseElement):
 
     @property
     def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
         return None
 
     @property
     def element_family(self):
-        """Get the Basix element family used to initialise the element."""
         return None
 
     @property
     def cell_type(self):
-        """Get the Basix cell type used to initialise the element."""
         return None
 
     @property
-    def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is used."""
+    def discontinuous(self):
         return False
 
 
 class BlockedElement(BaseElement):
-    """An element with a block size that contains multiple copies of a sub element."""
+    """An element with a block size that contains multiple copies of a
+    sub element."""
 
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
@@ -620,18 +533,8 @@ class BlockedElement(BaseElement):
             self.block_shape = block_shape
 
     def tabulate(self, nderivs, points):
-        """Tabulate the basis functions of the element.
-
-        Parameters
-        ----------
-        nderivs : int
-            The number of derivatives to tabulate.
-        points : np.array
-            The points to tabulate at
-        """
         assert len(self.block_shape) == 1  # TODO: block shape
         assert self.value_size == self.block_size  # TODO: remove this assumption
-
         output = []
         for table in self.sub_element.tabulate(nderivs, points):
             new_table = numpy.zeros((table.shape[0], table.shape[1] * self.block_size**2))
@@ -642,47 +545,26 @@ class BlockedElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element and
-        the offset and stride of the component.
-
-        For a BlockedElement, this will return the sub-element, an
-        offset equal to the component number, and a stride equal to the
-        block size.
-
-        Parameters
-        ----------
-        flat_component : int
-            The component
-
-        Returns
-        -------
-        BaseElement
-            The component element
-        int
-            The offset of the component
-        int
-            The stride of the component
-        """
         return self.sub_element, flat_component, self.block_size
 
     @property
     def element_type(self):
-        """Get the element type."""
+        """Element type."""
         return self.sub_element.element_type
 
     @property
     def dim(self):
-        """Get the number of DOFs the element has."""
+        """Number of DOFs for the the element."""
         return self.sub_element.dim * self.block_size
 
     @property
     def value_size(self):
-        """Get the value size of the element."""
+        """Value size of the element."""
         return self.block_size * self.sub_element.value_size
 
     @property
     def value_shape(self):
-        """Get the value shape of the element."""
+        """Value shape of the element."""
         return (self.value_size, )
 
     @property
@@ -731,22 +613,18 @@ class BlockedElement(BaseElement):
 
     @property
     def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
         return self.sub_element.lagrange_variant
 
     @property
     def element_family(self):
-        """Get the Basix element family used to initialise the element."""
         return self.sub_element.element_family
 
     @property
     def cell_type(self):
-        """Get the Basix cell type used to initialise the element."""
         return self.sub_element.cell_type
 
     @property
-    def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is used."""
+    def discontinuous(self):
         return self.sub_element.discontinuous
 
 
@@ -759,15 +637,6 @@ class QuadratureElement(BaseElement):
         self._ufl_element = ufl_element
 
     def tabulate(self, nderivs, points):
-        """Tabulate the basis functions of the element.
-
-        Parameters
-        ----------
-        nderivs : int
-            The number of derivatives to tabulate.
-        points : np.array
-            The points to tabulate at
-        """
         if nderivs > 0:
             raise ValueError("Cannot take derivatives of Quadrature element.")
 
@@ -777,27 +646,11 @@ class QuadratureElement(BaseElement):
         return tables
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and the offset and stride of the component.
-
-        Parameters
-        ----------
-        flat_component : int
-            The component
-
-        Returns
-        -------
-        BaseElement
-            The component element
-        int
-            The offset of the component
-        int
-            The stride of the component
-        """
         return self, 0, 1
 
     @property
-    def element_type(self):
-        """Get the element type."""
+    def element_type(self) -> str:
+        """Element type."""
         return "ufcx_quadrature_element"
 
     @property
@@ -868,20 +721,16 @@ class QuadratureElement(BaseElement):
 
     @property
     def lagrange_variant(self):
-        """Get the Lagrange variant used to initialise the element."""
         return None
 
     @property
     def element_family(self):
-        """Get the Basix element family used to initialise the element."""
         return None
 
     @property
-    def cell_type(self):
-        """Get the Basix cell type used to initialise the element."""
+    def cell_type(self) -> None:
         return None
 
     @property
-    def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is used."""
+    def discontinuous(self):
         return False
