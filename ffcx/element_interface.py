@@ -112,7 +112,7 @@ class BaseElement:
         """
         raise NotImplementedError
 
-    def get_component_element(self, flat_component):
+    def get_component_element(self, flat_component: int):
         """Get an element that represents a component of the element, and the offset and stride of the component.
 
         For example, for a MixedElement, this will return the
@@ -147,12 +147,12 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         """Get the number of DOFs the element has."""
         raise NotImplementedError
 
     @property
-    def value_size(self):
+    def value_size(self) -> int:
         """Get the value size of the element."""
         raise NotImplementedError
 
@@ -187,7 +187,7 @@ class BaseElement:
         raise NotImplementedError
 
     @property
-    def family_name(self):
+    def family_name(self) -> str:
         """Get the family name of the element."""
         raise NotImplementedError
 
@@ -218,7 +218,7 @@ class BaseElement:
 
     @property
     def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is used."""
+        """True if the discontinuous version of the element is used."""
         raise NotImplementedError
 
 
@@ -246,7 +246,8 @@ class BasixElement(BaseElement):
         return tab.transpose((0, 1, 3, 2)).reshape((tab.shape[0], tab.shape[1], -1))
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and the offset and stride of the component.
+        """Get an element that represents a component of the element, and
+        the offset and stride of the component.
 
         For vector-valued elements (eg H(curl) and H(div) elements),
         this returns a ComponentElement (and an offset of 0 and a stride
@@ -288,7 +289,10 @@ class BasixElement(BaseElement):
     @property
     def value_shape(self):
         """Get the value shape of the element."""
-        return self.element.value_shape
+        if len(self.element.value_shape) == 0:
+            return (1,)
+        else:
+            return self.element.value_shape
 
     @property
     def num_entity_dofs(self):
@@ -333,12 +337,14 @@ class BasixElement(BaseElement):
 
     @property
     def element_family(self):
-        """Get the Basix element family used to initialise the element."""
+        """Get the Basix element family used to initialise the
+        element."""
         return self._family
 
     @property
     def lagrange_variant(self):
-        """Get the Basix Lagrange variant used to initialise the element."""
+        """Get the Basix Lagrange variant used to initialise the
+        element."""
         return self.element.lagrange_variant
 
     @property
@@ -348,7 +354,8 @@ class BasixElement(BaseElement):
 
     @property
     def discontinuous(self) -> bool:
-        """Indicate whether the discontinuous version of the element is used."""
+        """Indicate whether the discontinuous version of the element is
+        used."""
         return self._discontinuous
 
 
@@ -377,7 +384,8 @@ class ComponentElement(BaseElement):
             if len(self.element.value_shape) == 1:
                 output.append(tbl[:, self.component, :])
             elif len(self.element.value_shape) == 2:
-                # TODO: Something different may need doing here if tensor is symmetric
+                # TODO: Something different may need doing here if
+                # tensor is symmetric
                 vs0 = self.element.value_shape[0]
                 output.append(tbl[:, self.component // vs0, self.component % vs0, :])
             else:
@@ -385,7 +393,8 @@ class ComponentElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and the offset and stride of the component.
+        """Get an element that represents a component of the element, and
+        the offset and stride of the component.
 
         Parameters
         ----------
@@ -456,7 +465,8 @@ class MixedElement(BaseElement):
         return tables
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element, and the offset and stride of the component.
+        """Get an element that represents a component of the element, and
+        the offset and stride of the component.
 
         For a MixedElement, this will return the sub-element that
         represents the given component, the offset of that sub-element,
@@ -597,7 +607,6 @@ class BlockedElement(BaseElement):
 
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
-
         if sub_element.value_size != 1:
             raise ValueError("Blocked elements (VectorElement and TensorElement) of "
                              "non-scalar elements are not supported. Try using MixedElement "
@@ -633,7 +642,8 @@ class BlockedElement(BaseElement):
         return output
 
     def get_component_element(self, flat_component):
-        """Get an element that represents a component of the element and the offset and stride of the component.
+        """Get an element that represents a component of the element and
+        the offset and stride of the component.
 
         For a BlockedElement, this will return the sub-element, an
         offset equal to the component number, and a stride equal to the
@@ -803,7 +813,7 @@ class QuadratureElement(BaseElement):
     @property
     def value_shape(self):
         """Get the value shape of the element."""
-        return [1]
+        return (1,)
 
     @property
     def num_entity_dofs(self):
