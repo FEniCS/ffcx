@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     import ufl.finiteelement.FiniteElementBase
 
 import warnings
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 
 import basix
 import numpy
@@ -109,7 +109,6 @@ def map_facet_points(points, facet, cellname):
     """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
-
     return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
             for p in points]
 
@@ -159,20 +158,23 @@ class BaseElement(ABC):
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def dim(self) -> int:
         """Number of DOFs the element has."""
-        raise NotImplementedError
+        pass
 
     @property
+    @abstractmethod
     def value_size(self) -> int:
         """Value size of the element.
 
         Equal to product(vale_shape).
 
         """
-        raise NotImplementedError
+        pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def value_shape(self) -> typing.Tuple[int, ...]:
         """Value shape of the element basis function.
 
@@ -224,22 +226,26 @@ class BaseElement(ABC):
         """Geometry of the reference element."""
         raise NotImplementedError
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def element_family(self):
         """Basix element family used to initialise the element."""
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def lagrange_variant(self):
         """Basix Lagrange variant used to initialise the element."""
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def cell_type(self):
         """Basix cell type used to initialise the element."""
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def discontinuous(self) -> bool:
         """True if the discontinuous version of the element is used."""
         pass
@@ -270,12 +276,10 @@ class BasixElement(BaseElement):
 
     @property
     def dim(self):
-        """Get the number of DOFs the element has."""
         return self.element.dim
 
     @property
     def value_size(self):
-        """Get the value size of the element."""
         return self.element.value_size
 
     @property
@@ -375,6 +379,14 @@ class ComponentElement(BaseElement):
         raise NotImplementedError
 
     @property
+    def dim(self):
+        raise NotImplementedError
+
+    @property
+    def value_size(self):
+        raise NotImplementedError
+
+    @property
     def value_shape(self):
         raise NotImplementedError
 
@@ -440,12 +452,10 @@ class MixedElement(BaseElement):
 
     @property
     def dim(self):
-        """Get the number of DOFs the element has."""
         return sum(e.dim for e in self.sub_elements)
 
     @property
     def value_size(self):
-        """Get the value size of the element."""
         return sum(e.value_size for e in self.sub_elements)
 
     @property
@@ -566,12 +576,10 @@ class BlockedElement(BaseElement):
 
     @property
     def dim(self):
-        """Number of DOFs for the the element."""
         return self.sub_element.dim * self.block_size
 
     @property
     def value_size(self):
-        """Value size of the element."""
         return self.block_size * self.sub_element.value_size
 
     @property
@@ -666,12 +674,10 @@ class QuadratureElement(BaseElement):
 
     @property
     def dim(self):
-        """Get the number of DOFs the element has."""
         return self._points.shape[0]
 
     @property
     def value_size(self):
-        """Get the value size of the element."""
         return 1
 
     @property
