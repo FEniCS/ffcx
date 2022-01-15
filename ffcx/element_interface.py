@@ -118,15 +118,15 @@ class BaseElement(ABC):
     """An abstract element class."""
 
     @abstractmethod
-    def tabulate(self, nderivs, points):
+    def tabulate(self, nderivs: int, points: numpy.ndarray):
         """Tabulate the basis functions of the element.
 
-        Parameters
-        ----------
-        nderivs : int
-            The number of derivatives to tabulate.
-        points : np.array
-            The points to tabulate at
+        Args:
+            nderivs: Number of derivatives to tabulate.
+            points: Points to tabulate at
+
+        Returns:
+            Tabulated basis functions
         """
         pass
 
@@ -155,62 +155,62 @@ class BaseElement(ABC):
 
     @property
     def element_type(self):
-        """Get the element type."""
+        """Element type."""
         raise NotImplementedError
 
     @property
     def dim(self) -> int:
-        """Get the number of DOFs the element has."""
+        """Number of DOFs the element has."""
         raise NotImplementedError
 
     @property
     def value_size(self) -> int:
-        """Get the value size of the element."""
+        """Value size of the element."""
         raise NotImplementedError
 
     @property
     def value_shape(self):
-        """Get the value shape of the element."""
+        """Value shape of the element."""
         raise NotImplementedError
 
     @property
     def num_entity_dofs(self):
-        """Get the number of DOFs associated with each entity."""
+        """Number of DOFs associated with each entity."""
         raise NotImplementedError
 
     @property
     def entity_dofs(self):
-        """Get the DOF numbers associated with each entity."""
+        """DOF numbers associated with each entity."""
         raise NotImplementedError
 
     @property
     def num_entity_closure_dofs(self):
-        """Get the number of DOFs associated with the closure of each entity."""
+        """Number of DOFs associated with the closure of each entity."""
         raise NotImplementedError
 
     @property
     def entity_closure_dofs(self):
-        """Get the DOF numbers associated with the closure of each entity."""
+        """DOF numbers associated with the closure of each entity."""
         raise NotImplementedError
 
     @property
     def num_global_support_dofs(self):
-        """Get the number of globally supported DOFs."""
+        """Number of globally supported DOFs."""
         raise NotImplementedError
 
     @property
     def family_name(self) -> str:
-        """Get the family name of the element."""
+        """Family name of the element."""
         raise NotImplementedError
 
     @property
     def reference_topology(self):
-        """Get the topology of the reference element."""
+        """Topology of the reference element."""
         raise NotImplementedError
 
     @property
     def reference_geometry(self):
-        """Get the geometry of the reference element."""
+        """Geometry of the reference element."""
         raise NotImplementedError
 
     @abstractproperty
@@ -318,8 +318,7 @@ class BasixElement(BaseElement):
 
     @property
     def element_family(self):
-        """Get the Basix element family used to initialise the
-        element."""
+        """Get the Basix element family used to initialise the element."""
         return self._family
 
     @property
@@ -515,8 +514,7 @@ class MixedElement(BaseElement):
 
 
 class BlockedElement(BaseElement):
-    """An element with a block size that contains multiple copies of a
-    sub element."""
+    """An element with a block size that contains multiple copies of a sub element."""
 
     def __init__(self, sub_element, block_size, block_shape=None):
         assert block_size > 0
