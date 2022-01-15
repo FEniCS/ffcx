@@ -168,7 +168,7 @@ class BaseElement(ABC):
     def value_size(self) -> int:
         """Value size of the element.
 
-        Equal to product(vale_shape).
+        Equal to ``numpy.prod(value_shape)``.
 
         """
         pass
