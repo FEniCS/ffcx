@@ -217,12 +217,6 @@ class BaseElement(ABC):
 
     @property
     @abstractmethod
-    def family_name(self) -> str:
-        """Family name of the element."""
-        pass
-
-    @property
-    @abstractmethod
     def reference_topology(self):
         """Topology of the reference element."""
         pass
@@ -231,6 +225,12 @@ class BaseElement(ABC):
     @abstractmethod
     def reference_geometry(self):
         """Geometry of the reference element."""
+        pass
+
+    @property
+    @abstractmethod
+    def family_name(self) -> str:
+        """Family name of the element."""
         pass
 
     @property
@@ -740,6 +740,14 @@ class QuadratureElement(BaseElement):
     @property
     def num_global_support_dofs(self):
         return 0
+
+    @property
+    def reference_topology(self):
+        raise NotImplementedError
+
+    @property
+    def reference_geometry(self):
+        raise NotImplementedError
 
     @property
     def family_name(self):
