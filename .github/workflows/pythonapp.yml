@@ -48,8 +48,7 @@ jobs:
 
       - name: Install FFCx
         run: |
-          python -m pip install .
-          # python -m pip install .[ci]
+          python -m pip install .[ci]
 
       - name: Lint with flake8
         run: |
