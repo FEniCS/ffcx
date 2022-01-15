@@ -171,7 +171,11 @@ texinfo_documents = [
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+autodoc_default_options = {'members': True, 'show-inheritance': True, 'imported-members': True, 'undoc-members': True}
 autosummary_generate = True
+autoclass_content = "both"
+
 
 autodoc_default_flags = ['members', 'show-inheritance']
 napoleon_numpy_docstring = True
+napoleon_google_docstring = True
