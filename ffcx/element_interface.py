@@ -3,7 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-# """Finite element interface"""
+"""Finite element interface"""
 
 from __future__ import annotations
 
@@ -165,13 +165,24 @@ class BaseElement(ABC):
 
     @property
     def value_size(self) -> int:
-        """Value size of the element."""
+        """Value size of the element.
+
+        Equal to product(vale_shape).
+
+        """
         raise NotImplementedError
 
-    @property
-    def value_shape(self):
-        """Value shape of the element."""
-        raise NotImplementedError
+    @abstractproperty
+    def value_shape(self) -> typing.Tuple[int, ...]:
+        """Value shape of the element basis function.
+
+        Note:
+            For scalar elements, ``(1,)`` is returned. This is different
+            from Basix where the value shape for scalar elements is
+            ``(,)``.
+
+        """
+        pass
 
     @property
     def num_entity_dofs(self):
@@ -364,6 +375,10 @@ class ComponentElement(BaseElement):
         raise NotImplementedError
 
     @property
+    def value_shape(self):
+        raise NotImplementedError
+
+    @property
     def lagrange_variant(self):
         return self.element.lagrange_variant
 
@@ -435,7 +450,6 @@ class MixedElement(BaseElement):
 
     @property
     def value_shape(self):
-        """Get the value shape of the element."""
         return (sum(e.value_size for e in self.sub_elements), )
 
     @property
@@ -562,7 +576,6 @@ class BlockedElement(BaseElement):
 
     @property
     def value_shape(self):
-        """Value shape of the element."""
         return (self.value_size, )
 
     @property
@@ -663,7 +676,6 @@ class QuadratureElement(BaseElement):
 
     @property
     def value_shape(self):
-        """Get the value shape of the element."""
         return (1,)
 
     @property
