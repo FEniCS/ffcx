@@ -24,7 +24,7 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     """Create an FFCx element from a UFL element.
 
     Args:
-        ufl_element: A UFL finite element
+        element: A UFL finite element
 
     Returns:
         A FFCx finite element
@@ -216,19 +216,22 @@ class BaseElement(ABC):
         pass
 
     @property
+    @abstractmethod
     def family_name(self) -> str:
         """Family name of the element."""
-        raise NotImplementedError
+        pass
 
     @property
+    @abstractmethod
     def reference_topology(self):
         """Topology of the reference element."""
-        raise NotImplementedError
+        pass
 
     @property
+    @abstractmethod
     def reference_geometry(self):
         """Geometry of the reference element."""
-        raise NotImplementedError
+        pass
 
     @property
     @abstractmethod
@@ -317,22 +320,18 @@ class BasixElement(BaseElement):
 
     @property
     def family_name(self):
-        """Get the family name of the element."""
         return self.element.family.name
 
     @property
     def reference_topology(self):
-        """Get the topology of the reference element."""
         return basix.topology(self.element.cell_type)
 
     @property
     def reference_geometry(self):
-        """Get the geometry of the reference element."""
         return basix.geometry(self.element.cell_type)
 
     @property
     def element_family(self):
-        """Get the Basix element family used to initialise the element."""
         return self._family
 
     @property
@@ -410,12 +409,24 @@ class ComponentElement(BaseElement):
         raise NotImplementedError
 
     @property
-    def lagrange_variant(self):
-        return self.element.lagrange_variant
+    def family_name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def reference_topology(self):
+        raise NotImplementedError
+
+    @property
+    def reference_geometry(self):
+        raise NotImplementedError
 
     @property
     def element_family(self):
         return self.element.element_family
+
+    @property
+    def lagrange_variant(self):
+        return self.element.lagrange_variant
 
     @property
     def cell_type(self):
@@ -521,17 +532,14 @@ class MixedElement(BaseElement):
 
     @property
     def family_name(self):
-        """Get the family name of the element."""
         return "mixed element"
 
     @property
     def reference_topology(self):
-        """Get the topology of the reference element."""
         return self.sub_elements[0].reference_topology
 
     @property
     def reference_geometry(self):
-        """Get the geometry of the reference element."""
         return self.sub_elements[0].reference_geometry
 
     @property
@@ -628,17 +636,14 @@ class BlockedElement(BaseElement):
 
     @property
     def family_name(self):
-        """Get the family name of the element."""
         return self.sub_element.family_name
 
     @property
     def reference_topology(self):
-        """Get the topology of the reference element."""
         return self.sub_element.reference_topology
 
     @property
     def reference_geometry(self):
-        """Get the geometry of the reference element."""
         return self.sub_element.reference_geometry
 
     @property
@@ -738,7 +743,6 @@ class QuadratureElement(BaseElement):
 
     @property
     def family_name(self):
-        """Get the family name of the element."""
         return self._ufl_element.family()
 
     @property
