@@ -3,7 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Finite element interface"""
+"""Finite element interface."""
 
 from __future__ import annotations
 
@@ -131,8 +131,7 @@ class BaseElement(ABC):
 
     @abstractmethod
     def get_component_element(self, flat_component: int) -> tuple[BaseElement, int, int]:
-        """Get an element that represents a component of the element, and
-        the offset and stride of the component.
+        """Get element that represents a component of the element, and the offset and stride of the component.
 
         For example, for a MixedElement, this will return the
         sub-element that represents the given component, the offset of
