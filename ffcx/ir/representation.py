@@ -408,10 +408,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     fs = {}
     for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
         name = object_names.get(id(function), str(function))
-        if isinstance(function, ufl.Argument):
-            el = function.ufl_function_space().ufl_element()
-        else:
-            el = function.ufl_element()
+        el = function.ufl_function_space().ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
         if cmap.variant() is None:
