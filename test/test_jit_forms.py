@@ -118,14 +118,14 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel0 = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
+    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
     kernel0(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
             ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     b = np.zeros(3, dtype=np_type)
-    kernel1 = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
+    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
     kernel1(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
@@ -376,7 +376,7 @@ def test_conditional(mode, compile_args):
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
 
-    kernel0 = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
+    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
     kernel0(ffi.cast('{type} *'.format(type=mode), A1.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
@@ -388,7 +388,7 @@ def test_conditional(mode, compile_args):
     A2 = np.zeros(3, dtype=np_type)
     w2 = np.array([1.0, 1.0, 1.0], dtype=np_type)
 
-    kernel1 = ffi.cast(f"ufc_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
+    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
     kernel1(ffi.cast('{type} *'.format(type=mode), A2.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w2.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),

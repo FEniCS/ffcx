@@ -13,7 +13,7 @@ logger = logging.getLogger("ffcx")
 
 
 # TODO: Get restriction postfix from somewhere central
-def ufc_restriction_postfix(restriction):
+def ufcx_restriction_postfix(restriction):
     if restriction == "+":
         res = "_0"
     elif restriction == "-":
@@ -33,7 +33,7 @@ def format_mt_name(basename, mt):
         access += avg
 
     # Format restriction
-    res = ufc_restriction_postfix(mt.restriction).replace("_", "_r")
+    res = ufcx_restriction_postfix(mt.restriction).replace("_", "_r")
     access += res
 
     # Format global derivatives
