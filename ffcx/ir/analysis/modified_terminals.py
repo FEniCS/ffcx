@@ -259,12 +259,13 @@ def analyse_modified_terminal(expr):
     else:
         component = tuple(component)
 
-    # Get the shape of the core terminal or its reference value,
-    # this is the shape that component refers to
+    # Get the shape of the core terminal or its reference value, this is
+    # the shape that component refers to
     if isinstance(t, FormArgument):
         element = t.ufl_element()
         if reference_value:
-            # Ignoring symmetry, assuming already applied in conversion to reference frame
+            # Ignoring symmetry, assuming already applied in conversion
+            # to reference frame
             base_symmetry = {}
             base_shape = element.reference_value_shape()
         else:
@@ -274,7 +275,8 @@ def analyse_modified_terminal(expr):
         base_symmetry = {}
         base_shape = t.ufl_shape
 
-    # Assert that component is within the shape of the (reference) terminal
+    # Assert that component is within the shape of the (reference)
+    # terminal
     if len(component) != len(base_shape):
         raise RuntimeError("Length of component does not match rank of (reference) terminal.")
     if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):

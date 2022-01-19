@@ -5,7 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 declaration = """
-extern ufc_expression {factory_name};
+extern ufcx_expression {factory_name};
 """
 
 factory = """
@@ -26,7 +26,7 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {original_coefficient_positions_init}
 {num_argument_dofs_init}
 
-ufc_expression {factory_name} =
+ufcx_expression {factory_name} =
 {{
   .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
   .num_coefficients = {num_coefficients},

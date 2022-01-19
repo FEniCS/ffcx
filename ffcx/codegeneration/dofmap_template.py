@@ -4,7 +4,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-extern ufc_dofmap {factory_name};
+extern ufcx_dofmap {factory_name};
 """
 
 factory = """
@@ -26,7 +26,7 @@ void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int 
 
 {num_entity_closure_dofs_init}
 
-ufc_dofmap {factory_name} =
+ufcx_dofmap {factory_name} =
 {{
   .signature = {signature},
   .num_global_support_dofs = {num_global_support_dofs},
