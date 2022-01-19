@@ -277,13 +277,13 @@ extern "C"
     /// @param[out] A
     ///         Dimensions: A[num_points][num_components][num_argument_dofs]
     ///
-    /// @see ufc_tabulate_tensor
+    /// @see ufcx_tabulate_tensor
     ///
-    ufc_tabulate_tensor_float32* tabulate_tensor_float32;
-    ufc_tabulate_tensor_float64* tabulate_tensor_float64;
-    ufc_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
-    ufc_tabulate_tensor_complex64* tabulate_tensor_complex64;
-    ufc_tabulate_tensor_complex128* tabulate_tensor_complex128;
+    ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
+    ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
+    ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
+    ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
+    ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 
     /// String identifying the expression
     const char* signature;
@@ -330,7 +330,7 @@ extern "C"
     /// Dimensions: num_argument_dofs[rank].
     const int* num_argument_dofs;
 
-  } ufc_expression;
+  } ufcx_expression;
 
   /// This class defines the interface for the assembly of the global
   /// tensor corresponding to a form with r + n arguments, that is, a
