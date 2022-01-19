@@ -70,6 +70,8 @@ extern "C"
   /// Forward declarations
   typedef struct ufc_finite_element ufc_finite_element;
   typedef struct ufc_dofmap ufc_dofmap;
+  typedef struct ufc_function_space ufc_function_space;
+
 
   // </HEADER_DECL>
 
@@ -310,9 +312,6 @@ extern "C"
     /// reference cell
     int topological_dimension;
 
-    /// Indicates whether facet permutations are needed
-    bool needs_facet_permutations;
-
     /// Coordinates of evaluations points. Dimensions:
     /// points[num_points][topological_dimension]
     const double* points;
@@ -326,9 +325,12 @@ extern "C"
     /// Rank, i.e. number of arguments
     int rank;
 
-    /// Number of dofs for Arguments
-    /// Dimensions: num_argument_dofs[rank].
-    const int* num_argument_dofs;
+    /// Function spaces for all functions in the Expression.
+    ///
+    /// First, function spaces for Coefficients are laid, then
+    /// Arguments.
+    /// Dimensions: function_spaces[num_coefficients + rank]
+    ufc_function_space** function_spaces;
 
   } ufc_expression;
 

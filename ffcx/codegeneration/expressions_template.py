@@ -24,7 +24,8 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {points_init}
 {value_shape_init}
 {original_coefficient_positions_init}
-{num_argument_dofs_init}
+{function_spaces_alloc}
+{function_spaces_init}
 
 ufc_expression {factory_name} =
 {{
@@ -32,13 +33,12 @@ ufc_expression {factory_name} =
   .num_coefficients = {num_coefficients},
   .num_points = {num_points},
   .topological_dimension = {topological_dimension},
-  .needs_facet_permutations = {needs_facet_permutations},
   .points = {points},
   .value_shape = {value_shape},
   .num_components = {num_components},
   .original_coefficient_positions = {original_coefficient_positions},
   .rank = {rank},
-  .num_argument_dofs = {num_argument_dofs}
+  .function_spaces = {function_spaces}
 }};
 
 // End of code for expression {factory_name}

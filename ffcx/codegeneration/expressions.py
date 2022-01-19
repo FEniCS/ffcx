@@ -37,6 +37,7 @@ def generator(ir, parameters):
 
     d = {}
     d["factory_name"] = ir.name
+
     parts = eg.generate()
 
     body = format_indented_lines(parts.cs_format(), 1)
@@ -67,18 +68,36 @@ def generator(ir, parameters):
     d["num_coefficients"] = len(ir.coefficient_numbering)
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
-    d["needs_facet_permutations"] = "true" if ir.needs_facet_permutations else "false"
     d["scalar_type"] = parameters["scalar_type"]
     d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
     d["rank"] = len(ir.tensor_shape)
 
-    if len(ir.tensor_shape) > 0:
-        d["num_argument_dofs_init"] = L.ArrayDecl(
-            "static int", f"num_argument_dofs_{ir.name}", values=ir.tensor_shape, sizes=len(ir.tensor_shape))
-        d["num_argument_dofs"] = f"num_argument_dofs_{ir.name}"
+    code = []
+    function_name = L.Symbol("function_name")
+
+    # FIXME: Should be handled differently, revise how
+    # ufc_function_space is generated (also for ufc_form)
+    for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
+        code += [f"static ufc_function_space function_space_{name} ="]
+        code += ["{"]
+        code += [f".finite_element = &{element},"]
+        code += [f".dofmap = &{dofmap},"]
+        code += [f".geometry_family = \"{cmap_family}\","]
+        code += [f".geometry_degree = {cmap_degree}"]
+        code += ["};"]
+
+    d["function_spaces_alloc"] = L.StatementList(code)
+    d["function_spaces"] = ""
+
+    if len(ir.function_spaces) > 0:
+        d["function_spaces"] = f"function_spaces_{ir.name}"
+        d["function_spaces_init"] = L.ArrayDecl("ufc_function_space*", f"function_spaces_{ir.name}", values=[
+                                                L.AddressOf(L.Symbol(f"function_space_{name}"))
+                                                for (name, _) in ir.function_spaces.items()],
+                                                sizes=len(ir.function_spaces))
     else:
-        d["num_argument_dofs_init"] = ""
-        d["num_argument_dofs"] = L.Null()
+        d["function_spaces"] = L.Null()
+        d["function_spaces_init"] = ""
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
@@ -88,6 +107,8 @@ def generator(ir, parameters):
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)
+
+    print(implementation)
 
     return declaration, implementation
 
