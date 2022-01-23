@@ -108,13 +108,13 @@ class FFCXBackendDefinitions(object):
         code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
-        return code, pre_code
+        return pre_code, code
 
     def constant(self, t, mt, tabledata, quadrature_rule, access):
         # Constants are not defined within the kernel.
         # No definition is needed because access to them is directly
         # via symbol c[], i.e. as passed into the kernel.
-        return []
+        return [], []
 
     def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
@@ -145,7 +145,7 @@ class FFCXBackendDefinitions(object):
         value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
         code = [L.VariableDecl("const double", access, value)]
 
-        return code
+        return [], code
 
     def spatial_coordinate(self, e, mt, tabledata, quadrature_rule, access):
         """Return definition code for the physical spatial coordinates.
@@ -180,14 +180,14 @@ class FFCXBackendDefinitions(object):
     def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""
         # TODO: Inject const static table here instead?
-        return []
+        return [], []
 
     def _expect_physical_coords(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?
-        return []
+        return [], []
 
     def _pass(self, *args, **kwargs):
         """Return nothing."""
-        return []
+        return [], []
