@@ -6,6 +6,12 @@
 
 declaration = """
 extern ufcx_expression {factory_name};
+
+// Helper used to create expression using name which was given to the
+// expression in the UFL file.
+// This helper is called in user c++ code.
+//
+extern ufcx_expression* {name_from_uflfile};
 """
 
 factory = """
@@ -40,6 +46,9 @@ ufcx_expression {factory_name} =
   .rank = {rank},
   .function_spaces = {function_spaces}
 }};
+
+// Alias name
+ufcx_expression* {name_from_uflfile} = &{factory_name};
 
 // End of code for expression {factory_name}
 """

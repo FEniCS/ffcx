@@ -29,13 +29,15 @@ def generator(ir, parameters):
     factory_name = ir.name
 
     # Format declaration
-    declaration = expressions_template.declaration.format(factory_name=factory_name)
+    declaration = expressions_template.declaration.format(
+        factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile)
 
     backend = FFCXBackend(ir, parameters)
     L = backend.language
     eg = ExpressionGenerator(ir, backend)
 
     d = {}
+    d["name_from_uflfile"] = ir.name_from_uflfile
     d["factory_name"] = ir.name
 
     parts = eg.generate()
@@ -75,9 +77,9 @@ def generator(ir, parameters):
     code = []
 
     # FIXME: Should be handled differently, revise how
-    # ufcs_function_space is generated (also for ufc_form)
+    # ufcx_function_space is generated (also for ufcx_form)
     for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
-        code += [f"static ufcx_function_space function_space_{name} ="]
+        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
@@ -91,7 +93,7 @@ def generator(ir, parameters):
     if len(ir.function_spaces) > 0:
         d["function_spaces"] = f"function_spaces_{ir.name}"
         d["function_spaces_init"] = L.ArrayDecl("ufcx_function_space*", f"function_spaces_{ir.name}", values=[
-                                                L.AddressOf(L.Symbol(f"function_space_{name}"))
+                                                L.AddressOf(L.Symbol(f"function_space_{name}_{ir.name_from_uflfile}"))
                                                 for (name, _) in ir.function_spaces.items()],
                                                 sizes=len(ir.function_spaces))
     else:

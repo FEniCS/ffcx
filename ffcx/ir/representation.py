@@ -528,8 +528,10 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
         degree = cmap.degree()
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
 
+    expression_name = object_names.get(id(original_expression), index)
+
     ir["function_spaces"] = fs
-    ir["name_from_uflfile"] = f"expression_{prefix}_{index}"
+    ir["name_from_uflfile"] = f"expression_{prefix}_{expression_name}"
 
     if len(argument_elements) > 1:
         raise RuntimeError("Expression with more than one Argument not implemented.")
