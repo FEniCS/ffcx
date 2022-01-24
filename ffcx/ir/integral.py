@@ -9,6 +9,7 @@ import collections
 import itertools
 import logging
 
+import numpy
 import ufl
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
@@ -96,11 +97,10 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
+        num_components = numpy.int32(numpy.prod(expression.ufl_shape))
 
-        if 'zeros' in table_types.values() and len(S_targets) == 1:
+        if 'zeros' in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
-            #
-            # TODO: Implement zero table elimination for non-scalar graphs
             for i, mt in initial_terminals.items():
                 # Set modified terminals with zero tables to zero
                 tr = mt_table_reference.get(mt)
@@ -113,10 +113,13 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 if deps:
                     v['expression'] = v['expression']._ufl_expr_reconstruct_(*deps)
 
-            # Rebuild scalar target expressions and graph (this may be
-            # overkill and possible to optimize away if it turns out to be
-            # costly)
-            expression = S.nodes[S_targets[0]]['expression']
+            # Recreate expression with correct ufl_shape
+            expressions = [None, ] * num_components
+            for target in S_targets:
+                for comp in S.nodes[target]["component"]:
+                    assert(expressions[comp] is None)
+                    expressions[comp] = S.nodes[target]["expression"]
+            expression = ufl.as_tensor(numpy.reshape(expressions, expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
