@@ -73,12 +73,11 @@ def generator(ir, parameters):
     d["rank"] = len(ir.tensor_shape)
 
     code = []
-    function_name = L.Symbol("function_name")
 
     # FIXME: Should be handled differently, revise how
-    # ufc_function_space is generated (also for ufc_form)
+    # ufcs_function_space is generated (also for ufc_form)
     for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
-        code += [f"static ufc_function_space function_space_{name} ="]
+        code += [f"static ufcx_function_space function_space_{name} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
@@ -91,7 +90,7 @@ def generator(ir, parameters):
 
     if len(ir.function_spaces) > 0:
         d["function_spaces"] = f"function_spaces_{ir.name}"
-        d["function_spaces_init"] = L.ArrayDecl("ufc_function_space*", f"function_spaces_{ir.name}", values=[
+        d["function_spaces_init"] = L.ArrayDecl("ufcx_function_space*", f"function_spaces_{ir.name}", values=[
                                                 L.AddressOf(L.Symbol(f"function_space_{name}"))
                                                 for (name, _) in ir.function_spaces.items()],
                                                 sizes=len(ir.function_spaces))
@@ -107,8 +106,6 @@ def generator(ir, parameters):
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)
-
-    print(implementation)
 
     return declaration, implementation
 

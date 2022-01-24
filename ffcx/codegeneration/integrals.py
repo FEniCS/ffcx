@@ -10,7 +10,7 @@ from typing import List, Tuple
 
 import ufl
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration import integrals_template as ufc_integrals
+from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode, BinOp
@@ -31,7 +31,7 @@ def generator(ir, parameters):
     factory_name = ir.name
 
     # Format declaration
-    declaration = ufc_integrals.declaration.format(factory_name=factory_name)
+    declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
 
     # Create FFCx C backend
     backend = FFCXBackend(ir, parameters)
@@ -71,7 +71,7 @@ def generator(ir, parameters):
     if parameters["tabulate_tensor_void"]:
         code["tabulate_tensor"] = ""
 
-    implementation = ufc_integrals.factory.format(
+    implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
