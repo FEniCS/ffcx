@@ -50,15 +50,13 @@ def analyze_ufl_objects(ufl_objects: typing.List,
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    unique_elements = set()
-    unique_coordinate_elements = set()
-    expressions = []
+    elements = []
+    coordinate_elements = []
 
     # Group objects by types
     forms = []
     expressions = []
     processed_expressions = []
-    elements = []
 
     for ufl_object in ufl_objects:
         if isinstance(ufl_object, ufl.form.Form):
@@ -66,7 +64,7 @@ def analyze_ufl_objects(ufl_objects: typing.List,
         elif isinstance(ufl_object, ufl.FiniteElementBase):
             elements += [ufl_object]
         elif isinstance(ufl_object, ufl.Mesh):
-            elements += [ufl_object.ufl_coordinate_element()]
+            coordinate_elements += [ufl_object.ufl_coordinate_element()]
         elif isinstance(ufl_object[0], ufl.core.expr.Expr):
             original_expression = ufl_object[0]
             points = numpy.asarray(ufl_object[1])
@@ -76,18 +74,20 @@ def analyze_ufl_objects(ufl_objects: typing.List,
 
     form_data = tuple(_analyze_form(form, parameters) for form in forms)
     for data in form_data:
-        unique_elements.update(data.unique_sub_elements)
+        elements += data.unique_sub_elements
+        coordinate_elements += data.coordinate_elements
 
-    unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
     for original_expression, points in expressions:
-        unique_elements.update(ufl.algorithms.extract_elements(original_expression))
-        unique_elements.update(ufl.algorithms.extract_sub_elements(unique_elements))
+        elements += list(ufl.algorithms.extract_elements(original_expression))
         processed_expression = _analyze_expression(original_expression, parameters)
         processed_expressions += [(processed_expression, points, original_expression)]
 
+    print(elements)
+    elements += ufl.algorithms.analysis.extract_sub_elements(elements)
+
     # Sort elements so sub-elements come before mixed elements
-    unique_elements = ufl.algorithms.sort_elements(unique_elements)
-    unique_coordinate_element_list = sorted(unique_coordinate_elements, key=lambda x: repr(x))
+    unique_elements = ufl.algorithms.sort_elements(set(elements))
+    unique_coordinate_element_list = sorted(set(coordinate_elements), key=lambda x: repr(x))
 
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
