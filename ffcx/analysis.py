@@ -82,7 +82,6 @@ def analyze_ufl_objects(ufl_objects: typing.List,
         processed_expression = _analyze_expression(original_expression, parameters)
         processed_expressions += [(processed_expression, points, original_expression)]
 
-    print(elements)
     elements += ufl.algorithms.analysis.extract_sub_elements(elements)
 
     # Sort elements so sub-elements come before mixed elements
