@@ -159,7 +159,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
                 variant="equispaced")
             equi_element = ufl.VectorElement(sub_element)
-            form._integrals[0]._ufl_domain._ufl_coordinate_element = equi_element
+            form._integrals[n]._ufl_domain._ufl_coordinate_element = equi_element
 
     # Check for complex mode
     complex_mode = "_Complex" in parameters["scalar_type"]
