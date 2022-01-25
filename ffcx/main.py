@@ -68,15 +68,9 @@ def main(args=None):
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        if len(ufd.forms) > 0:
-            code_h, code_c = compiler.compile_ufl_objects(
-                ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)
-        elif len(ufd.expressions) > 0:
-            code_h, code_c = compiler.compile_ufl_objects(
-                ufd.expressions, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)
-        else:
-            code_h, code_c = compiler.compile_ufl_objects(
-                ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)
+        code_h, code_c = compiler.compile_ufl_objects(
+            ufd.forms + ufd.expressions + ufd.elements, ufd.object_names,
+            prefix=prefix, parameters=parameters, visualise=xargs.visualise)
 
         # Write to file
         formatting.write_code(code_h, code_c, prefix, xargs.output_directory)
