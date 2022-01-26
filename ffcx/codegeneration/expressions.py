@@ -10,6 +10,8 @@ from typing import Dict, Set, Any, DefaultDict
 from itertools import product
 
 import ufl
+
+from ffcx.codegeneration import geometry
 from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
@@ -151,6 +153,8 @@ class ExpressionGenerator:
         parts = []
 
         parts += self.generate_element_tables()
+        # Generate the tables of geometry data that are needed
+        parts += self.generate_geometry_tables()
         parts += self.generate_piecewise_partition()
 
         all_preparts = []
@@ -165,6 +169,31 @@ class ExpressionGenerator:
         parts += all_quadparts
 
         return L.StatementList(parts)
+
+    def generate_geometry_tables(self):
+        """Generate static tables of geometry data."""
+        L = self.backend.language
+
+        # Currently we only support circumradius
+        ufl_geometry = {
+            ufl.geometry.ReferenceCellVolume: "reference_cell_volume"
+        }
+        cells = {t: set() for t in ufl_geometry.keys()}
+        
+        for integrand in self.ir.integrand.values():
+            for attr in integrand["factorization"].nodes.values():
+                mt = attr.get("mt")
+                if mt is not None:
+                    t = type(mt.terminal)
+                    if t in ufl_geometry:
+                        cells[t].add(mt.terminal.ufl_domain().ufl_cell().cellname())
+
+        parts = []
+        for i, cell_list in cells.items():
+            for c in cell_list:
+                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+
+        return parts
 
     def generate_element_tables(self):
         """Generate tables of FE basis evaluated at specified points."""
