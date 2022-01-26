@@ -68,11 +68,30 @@ def generator(ir, parameters):
 
     d["num_components"] = len(ir.expression_shape)
     d["num_coefficients"] = len(ir.coefficient_numbering)
+    d["num_constants"] = len(ir.constant_names)
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
     d["scalar_type"] = parameters["scalar_type"]
     d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
     d["rank"] = len(ir.tensor_shape)
+
+    if len(ir.coefficient_names) > 0:
+        d["coefficient_names_init"] = L.ArrayDecl(
+            "static const char*", f"coefficient_names_{ir.name}", values=ir.coefficient_names,
+            sizes=len(ir.coefficient_names))
+        d["coefficient_names"] = f"coefficient_names_{ir.name}"
+    else:
+        d["coefficient_names_init"] = ""
+        d["coefficient_names"] = L.Null()
+
+    if len(ir.constant_names) > 0:
+        d["constant_names_init"] = L.ArrayDecl(
+            "static const char*", f"constant_names_{ir.name}", values=ir.coefficient_names,
+            sizes=len(ir.coefficient_names))
+        d["constant_names"] = f"constant_names_{ir.name}"
+    else:
+        d["constant_names_init"] = ""
+        d["constant_names"] = L.Null()
 
     code = []
 

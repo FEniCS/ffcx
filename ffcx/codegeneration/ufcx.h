@@ -286,9 +286,6 @@ extern "C"
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 
-    /// String identifying the expression
-    const char* signature;
-
     /// Number of coefficients
     int num_coefficients;
 

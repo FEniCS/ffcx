@@ -32,17 +32,23 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {original_coefficient_positions_init}
 {function_spaces_alloc}
 {function_spaces_init}
+{coefficient_names_init}
+{constant_names_init}
+
 
 ufcx_expression {factory_name} =
 {{
   .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
   .num_coefficients = {num_coefficients},
+  .num_constants = {num_constants},
+  .original_coefficient_positions = {original_coefficient_positions},
+  .coefficient_names = {coefficient_names},
+  .constant_names = {constant_names},
   .num_points = {num_points},
   .topological_dimension = {topological_dimension},
   .points = {points},
   .value_shape = {value_shape},
   .num_components = {num_components},
-  .original_coefficient_positions = {original_coefficient_positions},
   .rank = {rank},
   .function_spaces = {function_spaces}
 }};
