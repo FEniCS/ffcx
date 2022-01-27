@@ -179,7 +179,7 @@ class ExpressionGenerator:
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume"
         }
         cells = {t: set() for t in ufl_geometry.keys()}
-        
+
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
                 mt = attr.get("mt")
