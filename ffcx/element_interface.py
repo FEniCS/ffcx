@@ -31,7 +31,6 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
 
     """
     # TODO: EnrichedElement
-    # TODO: Short/alternative names for elements
     # TODO: Allow different args for different parts of mixed element
 
     if isinstance(element, ufl.VectorElement):
@@ -317,7 +316,6 @@ class BasixElement(BaseElement):
 
     @property
     def num_global_support_dofs(self):
-        # TODO
         return 0
 
     @property
@@ -823,7 +821,6 @@ class RealElement(BaseElement):
 
     @property
     def num_global_support_dofs(self):
-        # TODO
         return 1
 
     @property
