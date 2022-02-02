@@ -788,7 +788,7 @@ class RealElement(BaseElement):
     @property
     def element_type(self) -> str:
         """Element type."""
-        return "ufcx_real_element"
+        return "ufcx_custom_element"
 
     @property
     def dim(self):
