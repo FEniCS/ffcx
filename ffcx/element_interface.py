@@ -47,6 +47,9 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     if element.family() == "Quadrature":
         return QuadratureElement(element)
 
+    if element.family() == "Real":
+        return RealElement(element.cell().cellname())
+
     variant_info = []
 
     family_name = element.family()
@@ -763,6 +766,89 @@ class QuadratureElement(BaseElement):
     @property
     def cell_type(self) -> None:
         return None
+
+    @property
+    def discontinuous(self):
+        return False
+
+
+class RealElement(BaseElement):
+    """A real element."""
+
+    def __init__(self, cell_type):
+        self._cell = getattr(basix.CellType, cell_type)
+
+    def tabulate(self, nderivs, points):
+        out = numpy.zeros((nderivs + 1, len(points), 1))
+        out[0, :] = 1.
+        return out
+
+    def get_component_element(self, flat_component):
+        assert flat_component < self.value_size
+        return ComponentElement(self, flat_component), 0, 1
+
+    @property
+    def element_type(self) -> str:
+        """Element type."""
+        return "ufcx_real_element"
+
+    @property
+    def dim(self):
+        return 1
+
+    @property
+    def value_size(self):
+        return 1
+
+    @property
+    def value_shape(self):
+        """Get the value shape of the element."""
+        return (1,)
+
+    @property
+    def num_entity_dofs(self):
+        return [[0 for j in i] for i in basix.topology(self._cell)]
+
+    @property
+    def entity_dofs(self):
+        return [[[] for j in i] for i in basix.topology(self._cell)]
+
+    @property
+    def num_entity_closure_dofs(self):
+        return self.num_entity_dofs
+
+    @property
+    def entity_closure_dofs(self):
+        return self.entity_dofs
+
+    @property
+    def num_global_support_dofs(self):
+        # TODO
+        return 1
+
+    @property
+    def family_name(self):
+        return "Real"
+
+    @property
+    def reference_topology(self):
+        return basix.topology(self._cell)
+
+    @property
+    def reference_geometry(self):
+        return basix.geometry(self._cell)
+
+    @property
+    def element_family(self):
+        return None
+
+    @property
+    def lagrange_variant(self):
+        return None
+
+    @property
+    def cell_type(self):
+        return self._cell
 
     @property
     def discontinuous(self):
