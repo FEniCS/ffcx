@@ -472,7 +472,8 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     original_expression = expression[2]
 
-    # If the second element argument of the Expression tuple is an ufl.FiniteElement,
+    # If the second element argument of the Expression tuple is defined as a finite element from ufl,
+    # get the corresponding interpolation points
     # get the interpolation points
     if isinstance(expression[1], ufl.FiniteElementBase):
         point_element = create_element(expression[1])
