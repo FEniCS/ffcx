@@ -485,7 +485,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
         else:
             points = point_element.element.points
     else:
-        points = expression[1]
+        points = numpy.asarray(expression[1])
 
     expression = expression[0]
 
