@@ -39,7 +39,7 @@ def iter_indented_lines(snippets, level=0):
     - tuple,list: Yield lines from recursive application of this function to list items.
 
     """
-    tabsize = 4
+    tabsize = 2
     indentation = ' ' * (tabsize * level)
     if isinstance(snippets, str):
         for line in snippets.split("\n"):
