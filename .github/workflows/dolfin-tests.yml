@@ -33,7 +33,7 @@ jobs:
           python3 -m pip install --upgrade pip
       - name: Install UFL and Basix
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git@michal/expressions
+          python3 -m pip install git+https://github.com/FEniCS/ufl.git
           python3 -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install FFCx
@@ -45,7 +45,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: michal/ufc-expression
+          ref: main
       - name: Clone and install DOLFINx
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
