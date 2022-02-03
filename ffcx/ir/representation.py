@@ -24,7 +24,7 @@ from collections import namedtuple
 import numpy
 import ufl
 from ffcx import naming
-from ffcx.element_interface import create_element
+from ffcx.element_interface import BlockedElement, MixedElement, QuadratureElement, create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -471,7 +471,22 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     ir["name"] = naming.expression_name(original_expression, prefix)
 
     original_expression = expression[2]
-    points = expression[1]
+
+    # If the second element argument of the Expression tuple is an ufl.FiniteElement,
+    # get the interpolation points
+    if isinstance(expression[1], ufl.FiniteElementBase):
+        point_element = create_element(expression[1])
+        if isinstance(point_element, BlockedElement):
+            points = point_element.sub_element.element.points
+        elif isinstance(point_element, QuadratureElement):
+            points = point_element._points
+        elif isinstance(point_element, MixedElement):
+            raise ValueError("Evaluation of an expression with a mixed element is not allowed")
+        else:
+            points = point_element.element.points
+    else:
+        points = expression[1]
+
     expression = expression[0]
 
     try:

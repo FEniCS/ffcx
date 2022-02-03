@@ -67,7 +67,10 @@ def analyze_ufl_objects(ufl_objects: typing.List,
             coordinate_elements += [ufl_object.ufl_coordinate_element()]
         elif isinstance(ufl_object[0], ufl.core.expr.Expr):
             original_expression = ufl_object[0]
-            points = numpy.asarray(ufl_object[1])
+            if isinstance(ufl_object[1], ufl.FiniteElementBase):
+                points = ufl_object[1]
+            else:
+                points = numpy.asarray(ufl_object[1])
             expressions += [(original_expression, points)]
         else:
             raise TypeError("UFL objects not recognised.")

@@ -176,15 +176,16 @@ def test_elimiate_zero_tables_tensor(compile_args):
     coeff_points = basix_c_e.points
 
     # Compile expression at interpolation points of second order Lagrange space
-    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 0, True)
-    points = b_el.points
+    interpolation_element = ufl.FiniteElement("Discontinuous Lagrange", cell, 0)
     obj, module, code = ffcx.codegeneration.jit.compile_expressions(
-        [(expr, points)], cffi_extra_compile_args=compile_args)
+        [(expr, interpolation_element)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     expression = obj[0]
     c_type, np_type = float_to_type("double")
 
+    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 0, True)
+    points = b_el.points
     output = np.zeros(9 * points.shape[0], dtype=np_type)
 
     # Define coefficients for u = x + 2 * y
