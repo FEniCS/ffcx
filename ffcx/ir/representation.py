@@ -522,7 +522,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     fs = {}
     for function in tuple(original_coefficients) + tuple(arguments):
         name = object_names.get(id(function), str(function))
-        el = function.ufl_element()
+        el = function.ufl_function_space().ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         family = cmap.family()
         degree = cmap.degree()
