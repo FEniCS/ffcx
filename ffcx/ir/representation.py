@@ -57,7 +57,8 @@ ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
-    'original_coefficient_positions', 'points', 'needs_facet_permutations'])
+    'original_coefficient_positions', 'points', 'coefficient_names', 'constant_names', 'needs_facet_permutations',
+    'function_spaces', 'name_from_uflfile'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
@@ -104,7 +105,8 @@ def compute_ir(analysis, object_names, prefix, parameters, visualise):
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise)
+    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise, object_names,
+                                             finite_element_names, dofmap_names)
                       for i, expr in enumerate(analysis.expressions)]
 
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
@@ -388,10 +390,10 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
     ir["num_constants"] = len(form_data.original_form.constants())
 
-    ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
+    ir["coefficient_names"] = [object_names.get(id(obj), f"w{j}")
                                for j, obj in enumerate(form_data.reduced_coefficients)]
 
-    ir["constant_names"] = [object_names.get(id(obj), "c%d" % j)
+    ir["constant_names"] = [object_names.get(id(obj), f"c{j}")
                             for j, obj in enumerate(form_data.original_form.constants())]
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
@@ -456,7 +458,8 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
+def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, object_names,
+                           finite_element_names, dofmap_names):
     """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
 
@@ -509,6 +512,29 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
+
+    ir["coefficient_names"] = [object_names.get(id(obj), f"w{j}")
+                               for j, obj in enumerate(coefficients)]
+
+    ir["constant_names"] = [object_names.get(id(obj), f"c{j}")
+                            for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))]
+
+    fs = {}
+    for function in tuple(original_coefficients) + tuple(arguments):
+        name = object_names.get(id(function), str(function))
+        el = function.ufl_element()
+        cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        family = cmap.family()
+        degree = cmap.degree()
+        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
+
+    expression_name = object_names.get(id(original_expression), index)
+
+    ir["function_spaces"] = fs
+    ir["name_from_uflfile"] = f"expression_{prefix}_{expression_name}"
+
+    if len(argument_elements) > 1:
+        raise RuntimeError("Expression with more than one Argument not implemented.")
 
     ir["original_coefficient_positions"] = original_coefficient_positions
 
