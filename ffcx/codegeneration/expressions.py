@@ -460,13 +460,9 @@ class ExpressionGenerator:
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt.terminal, mt, tabledata, 0)
 
-                if isinstance(mt.terminal, ufl.Coefficient):
-                    vdef, predef = self.backend.definitions.get(
-                        mt.terminal, mt, tabledata, 0, vaccess)
-                    if predef:
-                        pre_definitions[str(predef[0].symbol.name)] = predef
-                else:
-                    vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+                predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+                if predef:
+                    pre_definitions[str(predef[0].symbol.name)] = predef
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)
