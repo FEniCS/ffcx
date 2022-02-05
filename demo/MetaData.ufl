@@ -20,11 +20,15 @@
 # Compile this form with FFCx: ffcx MetaData.ufl
 
 element = FiniteElement("Lagrange", triangle, 1)
+vector_element = VectorElement("Lagrange", triangle, 1)
+
 
 u = TrialFunction(element)
 v = TestFunction(element)
+c = Coefficient(vector_element)
 
-# Three terms on the same subdomain using different representations and order
+# Terms on the same subdomain using different quadrature degree
 a = inner(grad(u), grad(v))*dx(0, degree=8)\
-    + inner(grad(u), grad(v))*dx(1, degree=4)\
+    + inner(c, c) * inner(grad(u), grad(v))*dx(1, degree=4)\
+    + inner(c, c) * inner(grad(u), grad(v))*dx(1, degree=2)\
     + inner(grad(u), grad(v))*dx(1, degree=-1)
