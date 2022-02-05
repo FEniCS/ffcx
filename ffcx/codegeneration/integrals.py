@@ -214,7 +214,7 @@ class IntegralGenerator(object):
             all_quadparts += quadparts
             all_predefinitions.update(pre_definitions)
 
-        parts += L.commented_code_list(self.fuse_loops(pre_definitions),
+        parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
                                        "Pre-definitions of modified terminals to enable unit-stride access")
 
         # Collect parts before, during, and after quadrature loops
