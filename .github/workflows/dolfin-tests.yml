@@ -34,7 +34,7 @@ jobs:
       - name: Install UFL and Basix
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/serendipity-variants2
+          python3 -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install FFCx
         run: |
