@@ -35,6 +35,7 @@ ufcx_finite_element {factory_name} =
   .basix_cell = {basix_cell},
   .discontinuous = {discontinuous},
   .lagrange_variant = {lagrange_variant},
+  .dpc_variant = {dpc_variant},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements}
 }};
