@@ -63,19 +63,24 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     if family_name == "DPC":
         discontinuous = True
 
-    if family_name in ["Lagrange", "Q"]:
-        if element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.gll_warped)
-        else:
-            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
-    elif family_name in ["S", "serendipity"]:
-        if element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.gll_warped)
-        else:
-            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
-
     family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
     cell_type = basix.cell.string_to_type(element.cell().cellname())
+
+    if family_type == basix.ElementFamily.P:
+        if element.variant() is None:
+            variant_info.append(basix.LagrangeVariant.gll_warped)
+        else:
+            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
+    elif family_type == basix.ElementFamily.serendipity:
+        if element.variant() is None:
+            variant_info.append(basix.LagrangeVariant.gll_warped)
+        else:
+            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
+    elif family_type == basix.ElementFamily.DPC:
+        if element.variant() is None:
+            variant_info.append(basix.DPCVariant.diagonal_gll)
+        else:
+            variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
 
     return BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
 
