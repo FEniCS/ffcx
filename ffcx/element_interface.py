@@ -256,6 +256,12 @@ class BaseElement(ABC):
 
     @property
     @abstractmethod
+    def dpc_variant(self):
+        """Basix DPC variant used to initialise the element."""
+        pass
+
+    @property
+    @abstractmethod
     def cell_type(self):
         """Basix cell type used to initialise the element."""
         pass
@@ -348,6 +354,10 @@ class BasixElement(BaseElement):
         return self.element.lagrange_variant
 
     @property
+    def dpc_variant(self):
+        return self.element.dpc_variant
+
+    @property
     def cell_type(self):
         return self._cell
 
@@ -436,6 +446,10 @@ class ComponentElement(BaseElement):
     @property
     def lagrange_variant(self):
         return self.element.lagrange_variant
+
+    @property
+    def dpc_variant(self):
+        return self.element.dpc_variant
 
     @property
     def cell_type(self):
@@ -556,6 +570,10 @@ class MixedElement(BaseElement):
         return None
 
     @property
+    def dpc_variant(self):
+        return None
+
+    @property
     def element_family(self):
         return None
 
@@ -658,6 +676,10 @@ class BlockedElement(BaseElement):
     @property
     def lagrange_variant(self):
         return self.sub_element.lagrange_variant
+
+    @property
+    def dpc_variant(self):
+        return self.sub_element.dpc_variant
 
     @property
     def element_family(self):
@@ -764,6 +786,10 @@ class QuadratureElement(BaseElement):
 
     @property
     def lagrange_variant(self):
+        return None
+
+    @property
+    def dpc_variant(self):
         return None
 
     @property
