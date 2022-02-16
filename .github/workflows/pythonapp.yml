@@ -84,11 +84,9 @@ jobs:
 
       - name: Compile UFL demos
         run: |
-          git clone https://github.com/FEniCS/ufl.git@michal/py-form-files
-          cd ufl/demo
-          # Compile UFL demos which does not begin with underscore
-          shopt -s extglob
-          for file in !(_*).py; do echo "Compiling $file"; ffcx $file; CPATH=../../ffcx/ffcx/codegeneration/ gcc -shared ${file%.py}.c -o ${file%.py}.so -Wall -Werror || break; done;
+          git clone --branch michal/py-form-files https://github.com/FEniCS/ufl.git
+          mv ufl/demo/* demo/
+          pytest demo/test_demos.py
 
       - name: Build documentation
         run: |

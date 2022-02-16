@@ -1,0 +1,33 @@
+# Copyright (C) 2005-2007 Anders Logg
+#
+# This file is part of FFCx.
+#
+# FFCx is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# FFCx is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+#
+# The bilinear form a(u, v) for tensor-weighted Poisson's equation.
+#
+# Compile this form with FFCx: ffcx TensorWeightedPoisson.ufl
+from ufl import (Coefficient, FiniteElement, TensorElement, TestFunction,
+                 TrialFunction, dx, grad, inner, triangle)
+
+P1 = FiniteElement("Lagrange", triangle, 1)
+P0 = TensorElement("Discontinuous Lagrange", triangle, 0, (2, 2))
+
+u = TrialFunction(P1)
+v = TestFunction(P1)
+f = Coefficient(P1)
+
+C = Coefficient(P0)
+
+a = inner(C * grad(u), grad(v)) * dx
