@@ -49,9 +49,6 @@ def main(args=None):
     # Call parser and compiler for each file
     for filename in xargs.ufl_file:
         file = pathlib.Path(filename)
-        if file.suffix != ".ufl":
-            logger.error("Expecting a UFL form file (.ufl).")
-            return 1
 
         # Remove weird characters (file system allows more than the C
         # preprocessor)
