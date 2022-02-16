@@ -134,6 +134,9 @@ extern "C"
     /// The Lagrange variant to be passed to Basix's create_element function
     int lagrange_variant;
 
+    /// The DPC variant to be passed to Basix's create_element function
+    int dpc_variant;
+
     /// Number of sub elements (for a mixed element)
     int num_sub_elements;
 

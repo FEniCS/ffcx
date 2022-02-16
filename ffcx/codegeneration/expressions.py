@@ -88,8 +88,8 @@ def generator(ir, parameters):
 
     if len(ir.constant_names) > 0:
         d["constant_names_init"] = L.ArrayDecl(
-            "static const char*", f"constant_names_{ir.name}", values=ir.coefficient_names,
-            sizes=len(ir.coefficient_names))
+            "static const char*", f"constant_names_{ir.name}", values=ir.constant_names,
+            sizes=len(ir.constant_names))
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
