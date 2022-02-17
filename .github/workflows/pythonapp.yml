@@ -82,9 +82,15 @@ jobs:
         # when there are test failures
         if: always()
 
+      - name: Get UFL
+        uses: actions/checkout@v2
+        with:
+          path: ./ufl
+          repository: FEniCS/ufl
+          ref: michal/py-form-files
+
       - name: Run FFCx and UFL demos
         run: |
-          git clone --branch michal/py-form-files https://github.com/FEniCS/ufl.git
           mv ufl/demo/* demo/
           pytest demo/test_demos.py
           rm -Rf ufl/
