@@ -74,8 +74,11 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     elif family_type == basix.ElementFamily.serendipity:
         if element.variant() is None:
             variant_info.append(basix.LagrangeVariant.gll_warped)
+            variant_info.append(basix.DPCVariant.diagonal_gll)
         else:
-            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
+            v1, v2 = element.variant().split(",")
+            variant_info.append(basix.variants.string_to_lagrange_variant(v1))
+            variant_info.append(basix.variants.string_to_dpc_variant(v2))
     elif family_type == basix.ElementFamily.DPC:
         if element.variant() is None:
             variant_info.append(basix.DPCVariant.diagonal_gll)
