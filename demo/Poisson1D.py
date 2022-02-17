@@ -17,8 +17,6 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation.
-#
-# Compile this form with FFCx: ffcx Poisson.ufl
 from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction, dx,
                  grad, inner, interval)
 

@@ -1,44 +1,39 @@
-# Copyright (C) 2008-2016 Kristian B. Oelgaard
+# Copyright (C) 2008 Kristian B. Oelgaard
 #
-# This file is part of FFCx.
+# This file is part of UFL.
 #
-# FFCx is free software: you can redistribute it and/or modify
+# UFL is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFCx is distributed in the hope that it will be useful,
+# UFL is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+# along with UFL. If not, see <http://www.gnu.org/licenses/>.
 #
-# The linearised bilinear form a(u, v) and linear form L(v) for
-# the nonlinear equation -div (1 + u) grad u = f (nonlinear Poisson)
+# First added:  2008-03-31
+# Last changed: 2008-03-31
 #
-# Compile this form with FFCx: ffcx QuadratureElement.ufl
-from ufl import (Coefficient, FiniteElement, Measure, MixedElement,
-                 TestFunction, TrialFunction, grad, i, inner, triangle)
+# The linearised bilinear form a(u,v) and linear form L(v) for
+# the nonlinear equation - div (1+u) grad u = f (non-linear Poisson)
+from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction,
+                 VectorElement, dot, dx, grad, i, triangle)
 
-# Configure measure with specific quadrature rule
-scheme = "default"
-degree = 3
-dx = Measure("dx")
-dx = dx(degree=degree, scheme=scheme)
-
-# Configure quadrature elements with compatible rule
 element = FiniteElement("Lagrange", triangle, 2)
-QE = FiniteElement("Quadrature", triangle, degree, quad_scheme=scheme)
-sig = MixedElement(QE, QE)
 
-u = TrialFunction(element)
+QE = FiniteElement("Quadrature", triangle, 2, quad_scheme="default")
+sig = VectorElement("Quadrature", triangle, 1, quad_scheme="default")
+
 v = TestFunction(element)
+u = TrialFunction(element)
 u0 = Coefficient(element)
 C = Coefficient(QE)
 sig0 = Coefficient(sig)
 f = Coefficient(element)
 
-a = C * u.dx(i) * v.dx(i) * dx + 2 * u0 * u0.dx(i) * u * v.dx(i) * dx
-L = f * v * dx - inner(sig0, grad(v)) * dx
+a = v.dx(i) * C * u.dx(i) * dx(metadata={"quadrature_degree": 2}) + v.dx(i) * 2 * u0 * u * u0.dx(i) * dx
+L = v * f * dx - dot(grad(v), sig0) * dx(metadata={"quadrature_degree": 1})

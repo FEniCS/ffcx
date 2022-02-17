@@ -1,38 +1,41 @@
-# Copyright (C) 2006-2007 Anders Logg and Marie E. Rognes
+# Copyright (C) 2006-2009 Anders Logg and Marie Rognes
 #
-# This file is part of FFCx.
+# This file is part of UFL.
 #
-# FFCx is free software: you can redistribute it and/or modify
+# UFL is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFCx is distributed in the hope that it will be useful,
+# UFL is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+# along with UFL. If not, see <http://www.gnu.org/licenses/>.
 #
-# The bilinear form a and linear form L for a mixed formulation of
-# Poisson's equation with BDM (Brezzi-Douglas-Marini) elements.
-
-# Compile this form with FFCx: ffcx MixedPoisson.ufl
+# Modified by Martin Sandve Alnes, 2009
+#
+# Last changed: 2009-01-12
+#
+# The bilinear form a(v, u) and linear form L(v) for
+# a mixed formulation of Poisson's equation with BDM
+# (Brezzi-Douglas-Marini) elements.
+#
 from ufl import (Coefficient, FiniteElement, TestFunctions, TrialFunctions,
-                 div, dx, inner, triangle)
+                 div, dot, dx, triangle)
 
-q = 1
+cell = triangle
+BDM1 = FiniteElement("Brezzi-Douglas-Marini", cell, 1)
+DG0 = FiniteElement("Discontinuous Lagrange", cell, 0)
 
-BDM = FiniteElement("Brezzi-Douglas-Marini", triangle, q)
-DG = FiniteElement("Discontinuous Lagrange", triangle, q - 1)
+element = BDM1 * DG0
 
-mixed_element = BDM * DG
+(tau, w) = TestFunctions(element)
+(sigma, u) = TrialFunctions(element)
 
-(sigma, u) = TrialFunctions(mixed_element)
-(tau, w) = TestFunctions(mixed_element)
+f = Coefficient(DG0)
 
-f = Coefficient(DG)
-
-a = (inner(sigma, tau) - div(tau) * u + div(sigma) * w) * dx
-L = f * w * dx
+a = (dot(tau, sigma) - div(tau) * u + w * div(sigma)) * dx
+L = w * f * dx

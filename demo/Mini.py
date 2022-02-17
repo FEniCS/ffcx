@@ -19,8 +19,6 @@
 # bilinear form a(u, v) for the Stokes equations using a mixed
 # formulation involving the Mini element. The velocity element is
 # composed of a P1 element augmented by the cubic bubble function.
-
-# Compile this form with FFCx: ffcx Mini.ufl
 from ufl import (FiniteElement, TestFunctions, TrialFunctions, VectorElement,
                  div, dx, grad, inner, triangle)
 

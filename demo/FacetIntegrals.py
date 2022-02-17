@@ -19,8 +19,6 @@
 # Last changed: 2011-03-08
 #
 # Simple example of a form defined over exterior and interior facets.
-#
-# Compile this form with FFCx: ffcx FacetIntegrals.ufl
 from ufl import (FacetNormal, FiniteElement, TestFunction, TrialFunction, avg,
                  ds, dS, grad, inner, jump, triangle)
 

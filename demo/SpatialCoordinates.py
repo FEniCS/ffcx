@@ -18,8 +18,6 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation where spatial coordinates are used to define the source
 # and boundary flux terms.
-#
-# Compile this form with FFCx: ffcx SpatialCoordinates.ufl
 from ufl import (FiniteElement, SpatialCoordinate, TestFunction, TrialFunction,
                  ds, dx, exp, grad, inner, sin, triangle)
 

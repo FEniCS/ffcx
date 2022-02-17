@@ -17,8 +17,6 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation using bilinear elements on bilinear mesh geometry.
-#
-# Compile this form with FFCx: ffcx PoissonQuad.ufl
 from ufl import (Coefficient, FiniteElement, FunctionSpace, Mesh, TestFunction,
                  TrialFunction, VectorElement, dx, grad, inner, triangle)
 

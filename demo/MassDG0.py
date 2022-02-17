@@ -16,8 +16,6 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # The bilinear form for a mass matrix.
-#
-# Compile this form with FFCx: ffcx MassDG0.ufl
 from ufl import (FiniteElement, TestFunction, TrialFunction, dx, inner,
                  tetrahedron)
 

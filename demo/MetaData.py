@@ -15,9 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
-# Test form for metadata
-#
-# Compile this form with FFCx: ffcx MetaData.ufl
+# Test form for metadata.
 from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction,
                  VectorElement, dx, grad, inner, triangle)
 

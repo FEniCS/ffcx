@@ -1,35 +1,37 @@
 # Copyright (C) 2005-2007 Anders Logg
 #
-# This file is part of FFCx.
+# This file is part of UFL.
 #
-# FFCx is free software: you can redistribute it and/or modify
+# UFL is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFCx is distributed in the hope that it will be useful,
+# UFL is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+# along with UFL. If not, see <http://www.gnu.org/licenses/>.
 #
-# The bilinear form a(u, v) and Linear form L(v) for the Stokes
+# Modified by: Martin Sandve Alnes (2009)
+# Date: 2009-03-02
+#
+# The bilinear form a(v, u) and Linear form L(v) for the Stokes
 # equations using a mixed formulation (Taylor-Hood elements).
-
-# Compile this form with FFCx: ffcx Stokes.ufl
 from ufl import (Coefficient, FiniteElement, TestFunctions, TrialFunctions,
-                 VectorElement, div, dx, grad, inner, triangle)
+                 VectorElement, div, dot, dx, grad, inner, triangle)
 
-P2 = VectorElement("Lagrange", triangle, 2)
-P1 = FiniteElement("Lagrange", triangle, 1)
+cell = triangle
+P2 = VectorElement("Lagrange", cell, 2)
+P1 = FiniteElement("Lagrange", cell, 1)
 TH = P2 * P1
 
-(u, p) = TrialFunctions(TH)
 (v, q) = TestFunctions(TH)
+(u, p) = TrialFunctions(TH)
 
 f = Coefficient(P2)
 
-a = (inner(grad(u), grad(v)) - div(v) * p + div(u) * q) * dx
-L = inner(f, v) * dx
+a = (inner(grad(v), grad(u)) - div(v) * p + q * div(u)) * dx
+L = dot(v, f) * dx

@@ -16,8 +16,6 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Illustration on how to use Conditional to define a source term
-#
-# Compile this form with FFCx: ffcx Conditional.ufl
 from ufl import (And, Constant, FiniteElement, Not, Or, SpatialCoordinate,
                  TestFunction, conditional, dx, ge, gt, le, lt, triangle)
 

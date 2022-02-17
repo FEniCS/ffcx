@@ -17,8 +17,6 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for a simple
 # reaction-diffusion equation using simplified tuple notation.
-#
-# Compile this form with FFCx: ffcx ReactionDiffusion.ufl
 from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction, dx,
                  grad, inner, triangle)
 

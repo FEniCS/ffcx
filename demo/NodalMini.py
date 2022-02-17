@@ -14,8 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-
-# Compile this form with FFCx: ffcx NodalMini.ufl
 from ufl import (FiniteElement, MixedElement, NodalEnrichedElement,
                  TestFunctions, TrialFunctions, VectorElement, div, dx, grad,
                  inner, triangle)

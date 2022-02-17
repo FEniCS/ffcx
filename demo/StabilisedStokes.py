@@ -17,8 +17,6 @@
 #
 # The bilinear form a(u, v) and Linear form L(v) for the Stokes
 # equations using a mixed formulation (equal-order stabilized).
-#
-# Compile this form with FFCx: ffcx Stokes.ufl
 from ufl import (Coefficient, FiniteElement, TestFunctions, TrialFunctions,
                  VectorElement, div, dot, dx, grad, inner, triangle)
 

@@ -1,60 +1,95 @@
-# Copyright (C) 2009 Harish Narayanan
 #
-# This file is part of FFCx.
+# Author: Martin Sandve Alnes
+# Date: 2008-12-22
 #
-# FFCx is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFCx is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-09-29
-# Last changed: 2011-07-01
-#
-# The bilinear form a(u, v) and linear form L(v) for
-# a hyperelastic model. (Copied from dolfin/demo/pde/hyperelasticity/cpp)
-#
-# Compile this form with FFCx: ffcx HyperElasticity.ufl.
-from ufl import (Coefficient, Constant, Identity, TestFunction, TrialFunction,
-                 VectorElement, derivative, diff, ds, dx, grad, inner,
-                 tetrahedron, tr, variable)
 
-# Coefficient spaces
-element = VectorElement("Lagrange", tetrahedron, 1)
+# Modified by Garth N. Wells, 2009
+from ufl import (Coefficient, Constant, FacetNormal, FiniteElement, Identity,
+                 SpatialCoordinate, TensorElement, TestFunction, TrialFunction,
+                 VectorElement, derivative, det, diff, dot, ds, dx, exp, grad,
+                 inner, inv, tetrahedron, tr, variable)
 
-# Coefficients
-v = TestFunction(element)      # Test function
-du = TrialFunction(element)     # Incremental displacement
-u = Coefficient(element)       # Displacement from previous iteration
+# Cell and its properties
+cell = tetrahedron
+d = cell.geometric_dimension()
+N = FacetNormal(cell)
+x = SpatialCoordinate(cell)
 
-B = Coefficient(element)       # Body force per unit mass
-T = Coefficient(element)       # Traction force on the boundary
+# Elements
+u_element = VectorElement("CG", cell, 2)
+p_element = FiniteElement("CG", cell, 1)
+A_element = TensorElement("CG", cell, 1)
 
-# Kinematics
-d = len(u)
-I = Identity(d)                 # Identity tensor
-F = I + grad(u)                 # Deformation gradient
-C = F.T * F                       # Right Cauchy-Green tensor
-E = (C - I) / 2                   # Euler-Lagrange strain tensor
-E = variable(E)
+# Test and trial functions
+v = TestFunction(u_element)
+w = TrialFunction(u_element)
 
-# Material constants
-mu = Constant(tetrahedron)  # Lame's constants
-lmbda = Constant(tetrahedron)
+# Displacement at current and two previous timesteps
+u = Coefficient(u_element)
+up = Coefficient(u_element)
+upp = Coefficient(u_element)
 
-# Strain energy function (material model)
-psi = lmbda / 2 * (tr(E)**2) + mu * tr(E * E)
+# Time parameters
+dt = Constant(cell)
 
-S = diff(psi, E)                # Second Piola-Kirchhoff stress tensor
-P = F * S                         # First Piola-Kirchoff stress tensor
+# Fiber field
+A = Coefficient(A_element)
 
-# The variational problem corresponding to hyperelasticity
-L = inner(P, grad(v)) * dx - inner(B, v) * dx - inner(T, v) * ds
-a = derivative(L, u, du)
+# External forces
+T = Coefficient(u_element)
+p0 = Coefficient(p_element)
+
+# Material parameters FIXME
+rho = Constant(cell)
+K = Constant(cell)
+c00 = Constant(cell)
+c11 = Constant(cell)
+c22 = Constant(cell)
+
+# Deformation gradient
+I = Identity(d)
+F = I + grad(u)
+F = variable(F)
+Finv = inv(F)
+J = det(F)
+
+# Left Cauchy-Green deformation tensor
+B = F * F.T
+I1_B = tr(B)
+I2_B = (I1_B**2 - tr(B * B)) / 2
+I3_B = J**2
+
+# Right Cauchy-Green deformation tensor
+C = F.T * F
+I1_C = tr(C)
+I2_C = (I1_C**2 - tr(C * C)) / 2
+I3_C = J**2
+
+# Green strain tensor
+E = (C - I) / 2
+
+# Mapping of strain in fiber directions
+Ef = A * E * A.T
+
+# Strain energy function W(Q(Ef))
+Q = c00 * Ef[0, 0]**2 + c11 * Ef[1, 1]**2 + c22 * Ef[2, 2]**2  # FIXME: insert some simple law here
+W = (K / 2) * (exp(Q) - 1)  # + p stuff
+
+# First Piola-Kirchoff stress tensor
+P = diff(W, F)
+
+# Acceleration term discretized with finite differences
+k = dt / rho
+acc = (u - 2 * up + upp)
+
+# Residual equation # FIXME: Can contain errors, not tested!
+a_F = inner(acc, v) * dx \
+    + k * inner(P, grad(v)) * dx \
+    - k * dot(J * Finv * T, v) * ds(0) \
+    - k * dot(J * Finv * p0 * N, v) * ds(1)
+
+# Jacobi matrix of residual equation
+a_J = derivative(a_F, u, w)
+
+# Export forms
+forms = [a_F, a_J]

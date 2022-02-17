@@ -1,38 +1,20 @@
-# Copyright (C) 2005 Johan Jansson
 #
-# This file is part of FFCx.
+# Author: Anders Logg
+# Modified by: Martin Sandve Alnes
+# Date: 2009-01-12
 #
-# FFCx is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFCx is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# Modified by Anders Logg 2005-2007
-# Modified by Marie E. Rognes 2012
-#
-# The bilinear form e(v) : e(u) for linear
-# elasticity with e(v) = 1/2 (grad(v) + grad(v)^T)
-#
-# Compile this form with FFCx: ffcx Elasticity.ufl
 from ufl import (TestFunction, TrialFunction, VectorElement, dx, grad, inner,
-                 sym, tetrahedron)
+                 tetrahedron)
 
 element = VectorElement("Lagrange", tetrahedron, 1)
 
-u = TrialFunction(element)
 v = TestFunction(element)
+u = TrialFunction(element)
 
 
-def eps(v):
-    return sym(grad(v))
+def epsilon(v):
+    Dv = grad(v)
+    return 0.5 * (Dv + Dv.T)
 
 
-a = inner(eps(u), eps(v)) * dx
+a = inner(epsilon(v), epsilon(u)) * dx

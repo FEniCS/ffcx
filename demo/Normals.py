@@ -16,9 +16,7 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # This example demonstrates how to use the facet normals
-# Merely project the normal onto a vector section
-#
-# Compile this form with FFCx: ffcx Normals.ufl
+# Merely project the normal onto a vector section.
 from ufl import (FacetNormal, TestFunction, TrialFunction, VectorElement, dot,
                  ds, triangle)
 

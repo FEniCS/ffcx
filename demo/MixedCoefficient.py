@@ -17,9 +17,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
-# Mixed coefficient
-#
-# Compile this form with FFCx: ffcx MixedCoefficient.ufl
+# Mixed coefficient.
 from ufl import (Coefficients, FiniteElement, MixedElement, VectorElement, dot,
                  dS, dx, triangle)
 

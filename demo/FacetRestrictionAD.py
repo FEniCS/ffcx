@@ -14,10 +14,6 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2010-06-07
-# Last changed: 2011-07-01
-#
 from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction, avg,
                  derivative, dot, dS, dx, grad, inner, triangle)
 

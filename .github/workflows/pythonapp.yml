@@ -82,11 +82,12 @@ jobs:
         # when there are test failures
         if: always()
 
-      - name: Compile UFL demos
+      - name: Run FFCx and UFL demos
         run: |
           git clone --branch michal/py-form-files https://github.com/FEniCS/ufl.git
           mv ufl/demo/* demo/
           pytest demo/test_demos.py
+          rm -Rf ufl/
 
       - name: Build documentation
         run: |

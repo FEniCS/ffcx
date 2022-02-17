@@ -1,62 +1,50 @@
-# Copyright (C) 2006-2007 Kristian B. Oelgaard and Anders Logg
+# Copyright (C) 2006-2007 Kristiand Oelgaard and Anders Logg
 #
-# This file is part of FFCx.
+# This file is part of UFL.
 #
-# FFCx is free software: you can redistribute it and/or modify
+# UFL is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFCx is distributed in the hope that it will be useful,
+# UFL is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+# along with UFL. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2006-12-05
-# Last changed: 2011-03-08
+# Last changed: 2007-07-15
 #
-# The bilinear form a(u, v) and linear form L(v) for
+# The bilinear form a(v, u) and linear form L(v) for
 # Poisson's equation in a discontinuous Galerkin (DG)
 # formulation.
-#
-# Compile this form with FFCx: ffcx PoissonDG.ufl
-from ufl import (Circumradius, Coefficient, FacetNormal, FiniteElement,
-                 TestFunction, TrialFunction, avg, ds, dS, dx, grad, inner,
-                 jump, triangle)
+from ufl import (Coefficient, Constant, FacetNormal, FiniteElement,
+                 TestFunction, TrialFunction, avg, dot, dS, ds, dx, grad,
+                 inner, jump, triangle)
 
-# Elements
 element = FiniteElement("Discontinuous Lagrange", triangle, 1)
 
-# Trial and test functions
-u = TrialFunction(element)
 v = TestFunction(element)
-
-# Facet normal, mesh size and right-hand side
-n = FacetNormal(triangle)
-h = 2.0 * Circumradius(triangle)
+u = TrialFunction(element)
 f = Coefficient(element)
 
-# Compute average of mesh size
-h_avg = (h('+') + h('-')) / 2.0
+n = FacetNormal(triangle)
+h = Constant(triangle)
 
-# Neumann boundary conditions
 gN = Coefficient(element)
 
-# Parameters
 alpha = 4.0
 gamma = 8.0
 
-# Bilinear form
-a = inner(grad(u), grad(v)) * dx \
-    - inner(jump(u, n), avg(grad(v))) * dS \
-    - inner(avg(grad(u)), jump(v, n)) * dS \
-    + alpha / h_avg * inner(jump(u, n), jump(v, n)) * dS \
-    - inner(u * n, grad(v)) * ds \
-    - inner(grad(u), v * n) * ds \
-    + gamma / h * u * v * ds
+a = inner(grad(v), grad(u)) * dx \
+    - inner(avg(grad(v)), jump(u, n)) * dS \
+    - inner(jump(v, n), avg(grad(u))) * dS \
+    + alpha / h('+') * dot(jump(v, n), jump(u, n)) * dS \
+    - inner(grad(v), u * n) * ds \
+    - inner(v * n, grad(u)) * ds \
+    + gamma / h * v * u * ds
 
-# Linear form
-L = f * v * dx + gN * v * ds
+L = v * f * dx + v * gN * ds

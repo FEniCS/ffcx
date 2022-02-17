@@ -16,8 +16,6 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # This example demonstrates how to create vectors component-wise
-#
-# Compile this form with FFCx: ffcx Component.ufl
 from ufl import (Coefficient, TestFunction, VectorElement, as_vector, dot, dx,
                  tetrahedron)
 

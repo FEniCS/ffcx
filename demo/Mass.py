@@ -1,28 +1,30 @@
 # Copyright (C) 2004-2007 Anders Logg
 #
-# This file is part of FFCx.
+# This file is part of UFL.
 #
-# FFCx is free software: you can redistribute it and/or modify
+# UFL is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFCx is distributed in the hope that it will be useful,
+# UFL is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+#
+# Modified by Martin Sandve Alnes, 2009
+#
+# Last changed: 2009-03-02
 #
 # The bilinear form for a mass matrix.
-#
-# Compile this form with FFCx: ffcx Mass.ufl
-from ufl import FiniteElement, TestFunction, TrialFunction, dx, tetrahedron
+from ufl import FiniteElement, TestFunction, TrialFunction, dx, triangle
 
-element = FiniteElement("Lagrange", tetrahedron, 3)
+element = FiniteElement("Lagrange", triangle, 1)
 
-v = TestFunction(element)
 u = TrialFunction(element)
+v = TestFunction(element)
 
-a = u * v * dx
+a = v * u * dx

@@ -17,8 +17,6 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # the vector-valued Poisson's equation.
-#
-# Compile this form with FFCx: ffcx VectorPoisson.ufl
 from ufl import (Coefficient, TestFunction, TrialFunction, VectorElement, dx,
                  grad, inner, triangle)
 

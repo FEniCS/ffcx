@@ -17,8 +17,6 @@
 #
 # Defines an Expression which evaluates gradient of an Argument
 # at predefined set of points.
-#
-# Compile this form with FFC: ffcx GradExpression.ufl
 from ufl import (Coefficient, Constant, FiniteElement, FunctionSpace, Mesh,
                  TrialFunction, VectorElement, grad, triangle)
 

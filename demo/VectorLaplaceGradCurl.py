@@ -1,54 +1,45 @@
 # Copyright (C) 2007 Marie Rognes
 #
-# This file is part of FFCx.
+# This file is part of UFL.
 #
-# FFCx is free software: you can redistribute it and/or modify
+# UFL is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# FFCx is distributed in the hope that it will be useful,
+# UFL is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+# along with UFL. If not, see <http://www.gnu.org/licenses/>.
 #
-# The bilinear form a(u, v) and linear form L(v) for the Hodge Laplace
-# problem using 0- and 1-forms. Intended to demonstrate use of N1curl
+# The bilinear form a(v, u) and linear form L(v) for the Hodge Laplace
+# problem using 0- and 1-forms. Intended to demonstrate use of Nedelec
 # elements.
-
-# Compile this form with FFCx: ffcx VectorLaplaceGradCurl.ufl
 from ufl import (Coefficient, FiniteElement, TestFunctions, TrialFunctions,
                  VectorElement, curl, dx, grad, inner, tetrahedron)
 
 
 def HodgeLaplaceGradCurl(element, felement):
-    """This is a formulation of the Hodge Laplacian using k=1 and n=3,
-    i.e 0-forms and 1-forms in 3D.
-
-    Appropriate elements are
-
-    GRAD \\times CURL =
-         Lagrange_r \\ times Ned^1_{r}
-         Lagrange_{r+1} \\ times Ned^2_{r}
-    """
-
-    (sigma, u) = TrialFunctions(element)
-    (tau, v) = TestFunctions(element)
+    tau, v = TestFunctions(element)
+    sigma, u = TrialFunctions(element)
     f = Coefficient(felement)
-    a = (inner(sigma, tau) - inner(grad(tau), u)
-         + inner(grad(sigma), v) + inner(curl(u), curl(v))) * dx
-    L = inner(f, v) * dx
-    return [a, L]
+
+    a = (inner(tau, sigma) - inner(grad(tau), u) +
+         inner(v, grad(sigma)) + inner(curl(v), curl(u))) * dx
+    L = inner(v, f) * dx
+
+    return a, L
 
 
-shape = tetrahedron
+cell = tetrahedron
 order = 1
 
-GRAD = FiniteElement("Lagrange", shape, order)
-CURL = FiniteElement("N1curl", shape, order)
-VectorLagrange = VectorElement("Lagrange", shape, order + 1)
+GRAD = FiniteElement("Lagrange", cell, order)
+CURL = FiniteElement("N1curl", cell, order)
 
-[a, L] = HodgeLaplaceGradCurl(GRAD * CURL, VectorLagrange)
+VectorLagrange = VectorElement("Lagrange", cell, order + 1)
+
+a, L = HodgeLaplaceGradCurl(GRAD * CURL, VectorLagrange)

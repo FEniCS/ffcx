@@ -17,8 +17,6 @@
 #
 # This demo illustrates use of finite element spaces defined over
 # simplicies embedded in higher dimensions
-#
-# Compile this form with FFCx: ffcx ProjectionManifold.ufl
 from ufl import (Cell, FiniteElement, TestFunctions, TrialFunctions, div, dx,
                  inner)
 
