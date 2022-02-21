@@ -21,7 +21,7 @@ def test_demo(file):
         "MassHdiv_2D_1", "MassHdiv_2D_3", "MixedPoisson", "MassHdiv_2D_2",  # Brezzi-Douglas-Marini
         "MixedElasticity",  # VectorElement of BDM
         "RestrictedElement",
-        "_TensorProductElement"
+        "_TensorProductElement",
     ]:
         # Skip demos that use elements not yet implemented in basix
         pytest.skip()
