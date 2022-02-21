@@ -42,7 +42,7 @@ jobs:
       - name: Checkout FFCx
         uses: actions/checkout@v2
         with:
-          ref: ${{ inputs.ffcx_ref }}
+          ref: ${{ github.event.inputs.ffcx_ref }}
 
       - name: Upgrade pip and setuptools
         run: python -m pip install setuptools pip --upgrade
@@ -68,14 +68,14 @@ jobs:
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@v1.4.2
-        if: ${{ inputs.test_pypi_publish }}
+        if: ${{ github.event.inputs.test_pypi_publish }}
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
           repository_url: https://pypi.org/legacy/
 
       - uses: pypa/gh-action-pypi-publish@v1.4.2
-        if: ${{ inputs.pypi_publish }}
+        if: ${{ github.event.inputs.pypi_publish }}
         with:
           user: __token__
           password: ${{ secrets.PYPI_TEST_TOKEN }}

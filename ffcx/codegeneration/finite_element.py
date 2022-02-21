@@ -48,6 +48,11 @@ def generator(ir, parameters):
     else:
         d["lagrange_variant"] = int(ir.lagrange_variant)
 
+    if ir.dpc_variant is None:
+        d["dpc_variant"] = -1
+    else:
+        d["dpc_variant"] = int(ir.dpc_variant)
+
     if ir.basix_family is None:
         d["basix_family"] = -1
     else:

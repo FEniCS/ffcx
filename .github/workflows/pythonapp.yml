@@ -82,9 +82,18 @@ jobs:
         # when there are test failures
         if: always()
 
-      - name: Runs demos
+      - name: Get UFL
+        uses: actions/checkout@v2
+        with:
+          path: ./ufl
+          repository: FEniCS/ufl
+          ref: main
+
+      - name: Run FFCx and UFL demos
         run: |
-          python -m pytest demo/test_demos.py
+          mv ufl/demo/* demo/
+          pytest demo/test_demos.py
+          rm -Rf ufl/
 
       - name: Build documentation
         run: |

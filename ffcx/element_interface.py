@@ -63,14 +63,27 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     if family_name == "DPC":
         discontinuous = True
 
-    if family_name in ["Lagrange", "Q"]:
+    family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
+    cell_type = basix.cell.string_to_type(element.cell().cellname())
+
+    if family_type == basix.ElementFamily.P:
         if element.variant() is None:
             variant_info.append(basix.LagrangeVariant.gll_warped)
         else:
             variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
-
-    family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
-    cell_type = basix.cell.string_to_type(element.cell().cellname())
+    elif family_type == basix.ElementFamily.serendipity:
+        if element.variant() is None:
+            variant_info.append(basix.LagrangeVariant.gll_warped)
+            variant_info.append(basix.DPCVariant.diagonal_gll)
+        else:
+            v1, v2 = element.variant().split(",")
+            variant_info.append(basix.variants.string_to_lagrange_variant(v1))
+            variant_info.append(basix.variants.string_to_dpc_variant(v2))
+    elif family_type == basix.ElementFamily.DPC:
+        if element.variant() is None:
+            variant_info.append(basix.DPCVariant.diagonal_gll)
+        else:
+            variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
 
     return BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
 
@@ -246,6 +259,12 @@ class BaseElement(ABC):
 
     @property
     @abstractmethod
+    def dpc_variant(self):
+        """Basix DPC variant used to initialise the element."""
+        pass
+
+    @property
+    @abstractmethod
     def cell_type(self):
         """Basix cell type used to initialise the element."""
         pass
@@ -338,6 +357,10 @@ class BasixElement(BaseElement):
         return self.element.lagrange_variant
 
     @property
+    def dpc_variant(self):
+        return self.element.dpc_variant
+
+    @property
     def cell_type(self):
         return self._cell
 
@@ -426,6 +449,10 @@ class ComponentElement(BaseElement):
     @property
     def lagrange_variant(self):
         return self.element.lagrange_variant
+
+    @property
+    def dpc_variant(self):
+        return self.element.dpc_variant
 
     @property
     def cell_type(self):
@@ -546,6 +573,10 @@ class MixedElement(BaseElement):
         return None
 
     @property
+    def dpc_variant(self):
+        return None
+
+    @property
     def element_family(self):
         return None
 
@@ -648,6 +679,10 @@ class BlockedElement(BaseElement):
     @property
     def lagrange_variant(self):
         return self.sub_element.lagrange_variant
+
+    @property
+    def dpc_variant(self):
+        return self.sub_element.dpc_variant
 
     @property
     def element_family(self):
@@ -754,6 +789,10 @@ class QuadratureElement(BaseElement):
 
     @property
     def lagrange_variant(self):
+        return None
+
+    @property
+    def dpc_variant(self):
         return None
 
     @property
