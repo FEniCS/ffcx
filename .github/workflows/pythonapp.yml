@@ -42,7 +42,7 @@ jobs:
 
       - name: Install FEniCS dependencies (Python)
         run: |
-          python -m pip install git+https://github.com/FEniCS/ufl.git@michal/py-form-files
+          python -m pip install git+https://github.com/FEniCS/ufl.git
           python -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install FFCx
@@ -87,7 +87,7 @@ jobs:
         with:
           path: ./ufl
           repository: FEniCS/ufl
-          ref: michal/py-form-files
+          ref: main
 
       - name: Run FFCx and UFL demos
         run: |
