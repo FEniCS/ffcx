@@ -2,18 +2,7 @@
 #
 # This file is part of FFCx.
 #
-# FFC is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# FFC is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with FFC. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:     LGPL-3.0-or-later
 #
 # Defines an Expression which evaluates the several different functions at
 # a set of interpolation points
@@ -24,13 +13,10 @@ from ufl import (Coefficient, FiniteElement, FunctionSpace, Mesh, MixedElement,
 
 # Define mesh
 cell = triangle
-v_el = VectorElement("Lagrange", cell, 1)
-mesh = Mesh(v_el)
+mesh = Mesh(VectorElement("Lagrange", cell, 1))
 
 # Define mixed function space
-el = FiniteElement("CG", cell, 2)
-el_int = VectorElement("Discontinuous Lagrange", cell, 1)
-me = MixedElement([el, el_int])
+me = MixedElement([FiniteElement("CG", cell, 2), VectorElement("Discontinuous Lagrange", cell, 1)])
 V = FunctionSpace(mesh, me)
 u = Coefficient(V)
 
@@ -50,14 +36,14 @@ powq = 3 * q**2
 b_cell = basix.cell.string_to_type(cell.cellname())
 
 # Find quadrature points for quadrature element
-b_rule = basix.quadrature.string_to_type(q_rule)
-quadrature_points, _ = basix.make_quadrature(b_rule, b_cell, q_degree)
+b_rule = basix.quadrature.string_to_type(q_el.quadrature_scheme())
+quadrature_points, _ = basix.make_quadrature(b_rule, b_cell, q_el.degree())
 
 # Get interpolation points for output space
 family = basix.finite_element.string_to_family("Lagrange", cell.cellname())
-b_element = basix.create_element(family, b_cell, 4, basix.LagrangeVariant.gll_warped, True)
-interpolation_points = b_element.points
+output_degree = 4
+b_element = basix.create_element(family, b_cell, output_degree, basix.LagrangeVariant.gll_warped, True)
+X = b_element.points
 
 # Create expressions that can be used for interpolation
-expressions = [(du0, interpolation_points), (du1, interpolation_points),
-               (powq, quadrature_points)]
+expressions = [(du0, X), (du1, X), (powq, quadrature_points)]
