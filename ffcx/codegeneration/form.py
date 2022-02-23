@@ -88,12 +88,15 @@ def generator(ir, parameters):
     cases_ids = []
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
         if len(ir.integral_names[itg_type]) > 0:
+            values = []
+            for itg in ir.integral_names[itg_type]:
+                for _ in ir.subdomain_ids[itg_type]:
+                    values.append(L.AddressOf(L.Symbol(itg)))
             code += [L.ArrayDecl(
                 "static ufcx_integral*", f"integrals_{itg_type}_{ir.name}",
-                values=[L.AddressOf(L.Symbol(itg)) for itg in ir.integral_names[itg_type]],
-                sizes=len(ir.integral_names[itg_type]))]
+                values=values,
+                sizes=len(values))]
             cases.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}"))))
-
             code_ids += [L.ArrayDecl(
                 "static int", f"integral_ids_{itg_type}_{ir.name}",
                 values=ir.subdomain_ids[itg_type], sizes=len(ir.subdomain_ids[itg_type]))]

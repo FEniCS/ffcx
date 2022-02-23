@@ -79,8 +79,8 @@ def compute_ir(analysis, object_names, prefix, parameters, visualise):
     for fd_index, fd in enumerate(analysis.form_data):
         form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)
         for itg_index, itg_data in enumerate(fd.integral_data):
-            integral_names[(fd_index, itg_index)] = naming.integral_name(fd.original_form, itg_data.integral_type,
-                                                                         fd_index, itg_data.subdomain_id, prefix)
+            integral_names[(fd_index, itg_index)] = naming.integral_name(
+                fd.original_form, itg_data.integral_type, fd_index, prefix)
 
     ir_elements = [
         _compute_element_ir(e, analysis.element_numbers, finite_element_names)
@@ -449,11 +449,10 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
                     ir["subdomain_ids"][integral_type] = [-1] + ir["subdomain_ids"][integral_type]
                     ir["integral_names"][integral_type] = [
                         integral_names[(form_id, itg_index)]] + ir["integral_names"][integral_type]
-                elif itg_data.subdomain_id < 0:
-                    raise ValueError("Integral subdomain ID must be non-negative.")
+                elif min(itg_data.subdomain_id) < 0:
+                    raise ValueError("Integral subdomain IDs must be non-negative.")
                 else:
-                    assert isinstance(itg_data.subdomain_id, int)
-                    ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
+                    ir["subdomain_ids"][integral_type] += list(itg_data.subdomain_id)
                     ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
 
     return ir_form(**ir)
