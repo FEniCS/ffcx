@@ -87,19 +87,22 @@ def generator(ir, parameters):
     code_ids = []
     cases_ids = []
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        if len(ir.integral_names[itg_type]) > 0:
-            values = []
-            for itg in ir.integral_names[itg_type]:
-                for _ in ir.subdomain_ids[itg_type]:
-                    values.append(L.AddressOf(L.Symbol(itg)))
+        # Get list of integrals and subdomain_ids for each kernel
+        values = []
+        id_values = []
+        for idx in ir.integral_names[itg_type].keys():
+            values.append(L.AddressOf(L.Symbol(ir.integral_names[itg_type][idx])))
+            id_values.extend(list(ir.subdomain_ids[itg_type][idx]))
+        if len(values) > 0:
             code += [L.ArrayDecl(
                 "static ufcx_integral*", f"integrals_{itg_type}_{ir.name}",
-                values=values,
-                sizes=len(values))]
+                values=values, sizes=len(values))]
             cases.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}"))))
+
+        if len(id_values) > 0:
             code_ids += [L.ArrayDecl(
                 "static int", f"integral_ids_{itg_type}_{ir.name}",
-                values=ir.subdomain_ids[itg_type], sizes=len(ir.subdomain_ids[itg_type]))]
+                values=id_values, sizes=len(id_values))]
             cases_ids.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integral_ids_{itg_type}_{ir.name}"))))
 
     code += [L.Switch("integral_type", cases, default=L.Return(L.Null()))]
