@@ -79,8 +79,9 @@ def compute_ir(analysis, object_names, prefix, parameters, visualise):
     for fd_index, fd in enumerate(analysis.form_data):
         form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)
         for itg_index, itg_data in enumerate(fd.integral_data):
+            # Unique ID for integrals is 2**form_index * 3**integral_index
             integral_names[(fd_index, itg_index)] = naming.integral_name(
-                fd.original_form, itg_data.integral_type, itg_index, prefix)
+                fd.original_form, itg_data.integral_type, 2**fd_index * 3**itg_index, prefix)
 
     ir_elements = [
         _compute_element_ir(e, analysis.element_numbers, finite_element_names)

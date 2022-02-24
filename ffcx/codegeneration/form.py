@@ -9,6 +9,8 @@
 
 import logging
 
+import numpy
+
 from ffcx.codegeneration import form_template
 
 logger = logging.getLogger("ffcx")
@@ -33,7 +35,10 @@ def generator(ir, parameters):
     code = []
     cases = []
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        cases += [(L.Symbol(itg_type), L.Return(len(ir.subdomain_ids[itg_type])))]
+        num_integrals = 0
+        for ids in ir.subdomain_ids[itg_type].values():
+            num_integrals += len(ids)
+        cases += [(L.Symbol(itg_type), L.Return(num_integrals))]
     code += [L.Switch("integral_type", cases, default=L.Return(0))]
     d["num_integrals"] = L.StatementList(code)
 
@@ -68,8 +73,8 @@ def generator(ir, parameters):
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
         d["finite_elements_init"] = L.ArrayDecl("ufcx_finite_element*", f"finite_elements_{ir.name}", values=[
-                                                L.AddressOf(L.Symbol(el)) for el in ir.finite_elements],
-                                                sizes=len(ir.finite_elements))
+            L.AddressOf(L.Symbol(el)) for el in ir.finite_elements],
+            sizes=len(ir.finite_elements))
     else:
         d["finite_elements"] = L.Null()
         d["finite_elements_init"] = ""
@@ -91,8 +96,12 @@ def generator(ir, parameters):
         values = []
         id_values = []
         for idx in ir.integral_names[itg_type].keys():
-            values.append(L.AddressOf(L.Symbol(ir.integral_names[itg_type][idx])))
-            id_values.extend(list(ir.subdomain_ids[itg_type][idx]))
+            integrals = list(ir.subdomain_ids[itg_type][idx])
+            values.extend([L.AddressOf(L.Symbol(ir.integral_names[itg_type][idx]))] * len(integrals))
+            id_values.extend(integrals)
+        value_sort = numpy.argsort(id_values)
+        values = [values[value_sort[i]] for i in range(len(values))]
+        id_values = [id_values[value_sort[i]] for i in range(len(id_values))]
         if len(values) > 0:
             code += [L.ArrayDecl(
                 "static ufcx_integral*", f"integrals_{itg_type}_{ir.name}",
