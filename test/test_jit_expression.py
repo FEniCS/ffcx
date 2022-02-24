@@ -178,7 +178,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
     b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 0, True)
     points = b_el.points
     obj, module, code = ffcx.codegeneration.jit.compile_expressions(
-        [(expr, points)])
+        [(expr, points)], cffi_extra_compile_args=compile_args)
 
     ffi = cffi.FFI()
     expression = obj[0]
