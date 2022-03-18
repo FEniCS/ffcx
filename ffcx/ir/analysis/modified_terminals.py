@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import logging
+import functools
 
 from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
                          Grad, Indexed, Jacobian, ReferenceGrad,
@@ -153,6 +154,7 @@ def strip_modified_terminal(v):
     return v
 
 
+@functools.lru_cache(maxsize=1000)
 def analyse_modified_terminal(expr):
     """Analyse a so-called 'modified terminal' expression.
 
