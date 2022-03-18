@@ -11,6 +11,7 @@ import ffcx.codegeneration.jit
 from ffcx.naming import cdtype_to_numpy
 import ufl
 import sympy
+from sympy.abc import x, y, z
 
 
 @pytest.mark.parametrize("mode,expected_result", [
@@ -446,8 +447,6 @@ def test_curl_curl(compile_args):
 
 
 def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lambda i: i):
-    x = sympy.Symbol("x")
-    y = sympy.Symbol("y")
     from sympy import S
     poly_basis = [x**i * y**j for i in range(order + 1) for j in range(order + 1 - i)]
     # vertices
@@ -487,8 +486,8 @@ def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lamb
 @pytest.mark.parametrize("mode", ["double"])
 @pytest.mark.parametrize("sym_fun,ufl_fun", [
     (lambda i: i, lambda i: i),
-    (lambda i: i.diff("x"), lambda i: ufl.grad(i)[0]),
-    (lambda i: i.diff("y"), lambda i: ufl.grad(i)[1])])
+    (lambda i: i.diff(x), lambda i: ufl.grad(i)[0]),
+    (lambda i: i.diff(y), lambda i: ufl.grad(i)[1])])
 @pytest.mark.parametrize("order", [1, 2, 3])
 def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_triangle_symbolic(order, fun=sym_fun)
@@ -526,9 +525,6 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
 
 
 def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0), (0, 0, 1)], fun=lambda i: i):
-    x = sympy.Symbol("x")
-    y = sympy.Symbol("y")
-    z = sympy.Symbol("z")
     from sympy import S
     poly_basis = [
         x**i * y**j * z**k for i in range(order + 1) for j in range(order + 1 - i)
@@ -579,8 +575,8 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
 @pytest.mark.parametrize("mode", ["double"])
 @pytest.mark.parametrize("sym_fun,ufl_fun", [
     (lambda i: i, lambda i: i),
-    (lambda i: i.diff("x"), lambda i: ufl.grad(i)[0]),
-    (lambda i: i.diff("y"), lambda i: ufl.grad(i)[1])])
+    (lambda i: i.diff(x), lambda i: ufl.grad(i)[0]),
+    (lambda i: i.diff(y), lambda i: ufl.grad(i)[1])])
 @pytest.mark.parametrize("order", [1, 2, 3])
 def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_tetrahedron_symbolic(order, fun=sym_fun)
