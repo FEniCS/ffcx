@@ -88,8 +88,8 @@ def generator(ir, parameters):
 
     if len(ir.constant_names) > 0:
         d["constant_names_init"] = L.ArrayDecl(
-            "static const char*", f"constant_names_{ir.name}", values=ir.coefficient_names,
-            sizes=len(ir.coefficient_names))
+            "static const char*", f"constant_names_{ir.name}", values=ir.constant_names,
+            sizes=len(ir.constant_names))
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
@@ -460,13 +460,9 @@ class ExpressionGenerator:
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt.terminal, mt, tabledata, 0)
 
-                if isinstance(mt.terminal, ufl.Coefficient):
-                    vdef, predef = self.backend.definitions.get(
-                        mt.terminal, mt, tabledata, 0, vaccess)
-                    if predef:
-                        pre_definitions[str(predef[0].symbol.name)] = predef
-                else:
-                    vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+                predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+                if predef:
+                    pre_definitions[str(predef[0].symbol.name)] = predef
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)
