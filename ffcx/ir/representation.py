@@ -18,12 +18,14 @@ representation under the key "foo".
 
 import itertools
 import logging
+import typing
 import warnings
 from collections import namedtuple
 
 import numpy
 import ufl
 from ffcx import naming
+from ffcx.analysis import ufl_data
 from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
@@ -63,7 +65,8 @@ ir_expression = namedtuple('ir_expression', [
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
 
-def compute_ir(analysis, object_names, prefix, parameters, visualise):
+def compute_ir(analysis: ufl_data, object_names: typing.Dict, prefix: str, parameters: typing.Dict,
+               visualise: bool):
     """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
@@ -81,7 +84,7 @@ def compute_ir(analysis, object_names, prefix, parameters, visualise):
         for itg_index, itg_data in enumerate(fd.integral_data):
             # Unique ID for integrals is 2**form_index * 3**integral_index
             integral_names[(fd_index, itg_index)] = naming.integral_name(
-                fd.original_form, itg_data.integral_type, 2**fd_index * 3**itg_index, prefix)
+                fd.original_form, itg_data.integral_type, fd_index, itg_index, prefix)
 
     ir_elements = [
         _compute_element_ir(e, analysis.element_numbers, finite_element_names)
@@ -115,7 +118,9 @@ def compute_ir(analysis, object_names, prefix, parameters, visualise):
                    expressions=ir_expressions)
 
 
-def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
+def _compute_element_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
+                        element_numbers: typing.Dict[ufl.finiteelement.FiniteElementBase, int],
+                        finite_element_names: typing.Dict[ufl.finiteelement.FiniteElementBase, str]) -> ir_element:
     """Compute intermediate representation of element."""
     logger.info(f"Computing IR for element {ufl_element}")
 
@@ -160,7 +165,9 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     return ir_element(**ir)
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
+def _compute_dofmap_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
+                       element_numbers: typing.Dict[ufl.finiteelement.FiniteElementBase, int],
+                       dofmap_names: typing.Dict[ufl.finiteelement.FiniteElementBase, str]) -> ir_dofmap:
     """Compute intermediate representation of dofmap."""
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
@@ -205,7 +212,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
 
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
-                         finite_element_names, parameters, visualise):
+                         finite_element_names, parameters, visualise) -> list[ir_integral]:
     """Compute intermediate represention for form integrals."""
     _entity_types = {
         "cell": "cell",

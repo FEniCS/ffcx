@@ -5,17 +5,19 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import hashlib
-
+import typing
+import numpy
 import ufl
 
 import ffcx
 
 
-def compute_signature(ufl_objects, tag):
+def compute_signature(
+    ufl_objects: typing.Union[ufl.Form, ufl.FiniteElementBase,
+                              typing.Tuple[ufl.core.expr.Expr, numpy.ndarray]], tag: str) -> str:
     """Compute the signature hash.
 
-    Based on the UFL type of the objects and an additional optional
-    'tag'.
+    Based on the UFL type of the objects and an additional optional 'tag'.
     """
     object_signature = ""
     for ufl_object in ufl_objects:
@@ -66,35 +68,36 @@ def compute_signature(ufl_objects, tag):
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
-def integral_name(original_form, integral_type, form_id, prefix):
-    sig = compute_signature([original_form], str((prefix, integral_type, form_id)))
+def integral_name(original_form: ufl.form.Form, integral_type: str, form_id: int, integral_id: int, prefix: str) -> str:
+    """Compute signature for an integral in an ufl form"""
+    sig = compute_signature([original_form], str((prefix, integral_type, form_id, integral_id)))
     return f"integral_{sig}"
 
 
-def form_name(original_form, form_id, prefix):
+def form_name(original_form: ufl.form.Form, form_id: int, prefix: str) -> str:
     sig = compute_signature([original_form], str((prefix, form_id)))
     return f"form_{sig}"
 
 
-def finite_element_name(ufl_element, prefix):
+def finite_element_name(ufl_element: ufl.FiniteElementBase, prefix: str) -> str:
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"element_{sig}"
 
 
-def dofmap_name(ufl_element, prefix):
+def dofmap_name(ufl_element: ufl.FiniteElementBase, prefix: str) -> str:
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"dofmap_{sig}"
 
 
-def expression_name(expression, prefix):
+def expression_name(expression: ufl.core.expr.Expr, prefix: str) -> str:
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)
     return f"expression_{sig}"
 
 
-def cdtype_to_numpy(cdtype):
+def cdtype_to_numpy(cdtype: str) -> str:
     """Map a C data type string NumPy datatype string."""
     if cdtype == "double":
         return "float64"
