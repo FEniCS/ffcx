@@ -65,7 +65,7 @@ ir_expression = namedtuple('ir_expression', [
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
 
-def compute_ir(analysis: ufl_data, object_names: typing.Dict, prefix: str, parameters: typing.Dict,
+def compute_ir(analysis: ufl_data, object_names: typing.Dict, prefix: typing.Optional[str], parameters: typing.Dict,
                visualise: bool):
     """Compute intermediate representation."""
     logger.info(79 * "*")
@@ -118,9 +118,7 @@ def compute_ir(analysis: ufl_data, object_names: typing.Dict, prefix: str, param
                    expressions=ir_expressions)
 
 
-def _compute_element_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
-                        element_numbers: typing.Dict[ufl.finiteelement.FiniteElementBase, int],
-                        finite_element_names: typing.Dict[ufl.finiteelement.FiniteElementBase, str]) -> ir_element:
+def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     """Compute intermediate representation of element."""
     logger.info(f"Computing IR for element {ufl_element}")
 
@@ -153,11 +151,11 @@ def _compute_element_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    if hasattr(basix_element, "block_size"):
+    try:
         ir["block_size"] = basix_element.block_size
         ufl_element = ufl_element.sub_elements()[0]
         basix_element = create_element(ufl_element)
-    else:
+    except AttributeError:
         ir["block_size"] = 1
 
     ir["entity_dofs"] = basix_element.entity_dofs
@@ -165,9 +163,7 @@ def _compute_element_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
     return ir_element(**ir)
 
 
-def _compute_dofmap_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
-                       element_numbers: typing.Dict[ufl.finiteelement.FiniteElementBase, int],
-                       dofmap_names: typing.Dict[ufl.finiteelement.FiniteElementBase, str]) -> ir_dofmap:
+def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     """Compute intermediate representation of dofmap."""
     logger.info(f"Computing IR for dofmap of {ufl_element}")
 
@@ -183,10 +179,10 @@ def _compute_dofmap_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
     ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
-    if hasattr(basix_element, "block_size"):
+    try:
         ir["block_size"] = basix_element.block_size
         basix_element = basix_element.sub_element
-    else:
+    except AttributeError:
         ir["block_size"] = 1
 
     # Precompute repeatedly used items
@@ -212,7 +208,7 @@ def _compute_dofmap_ir(ufl_element: ufl.finiteelement.FiniteElementBase,
 
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
-                         finite_element_names, parameters, visualise) -> list[ir_integral]:
+                         finite_element_names, parameters, visualise):
     """Compute intermediate represention for form integrals."""
     _entity_types = {
         "cell": "cell",

@@ -5,16 +5,12 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import hashlib
-import typing
-import numpy
 import ufl
-
+import typing
 import ffcx
 
 
-def compute_signature(
-    ufl_objects: typing.Union[ufl.Form, ufl.FiniteElementBase,
-                              typing.Tuple[ufl.core.expr.Expr, numpy.ndarray]], tag: str) -> str:
+def compute_signature(ufl_objects, tag):
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional 'tag'.
@@ -68,30 +64,30 @@ def compute_signature(
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
-def integral_name(original_form: ufl.form.Form, integral_type: str, form_id: int, integral_id: int, prefix: str) -> str:
+def integral_name(original_form: ufl.form.Form, integral_type: str, form_id: int, integral_id: int, prefix: typing.Optional[str]) -> str:
     """Compute signature for an integral in an ufl form"""
     sig = compute_signature([original_form], str((prefix, integral_type, form_id, integral_id)))
     return f"integral_{sig}"
 
 
-def form_name(original_form: ufl.form.Form, form_id: int, prefix: str) -> str:
+def form_name(original_form: ufl.form.Form, form_id: int, prefix: typing.Optional[str]) -> str:
     sig = compute_signature([original_form], str((prefix, form_id)))
     return f"form_{sig}"
 
 
-def finite_element_name(ufl_element: ufl.FiniteElementBase, prefix: str) -> str:
+def finite_element_name(ufl_element: ufl.FiniteElementBase, prefix: typing.Optional[str]) -> str:
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"element_{sig}"
 
 
-def dofmap_name(ufl_element: ufl.FiniteElementBase, prefix: str) -> str:
+def dofmap_name(ufl_element: ufl.FiniteElementBase, prefix: typing.Optional[str]) -> str:
     assert isinstance(ufl_element, ufl.FiniteElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"dofmap_{sig}"
 
 
-def expression_name(expression: ufl.core.expr.Expr, prefix: str) -> str:
+def expression_name(expression: ufl.core.expr.Expr, prefix: typing.Optional[str]) -> str:
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)
     return f"expression_{sig}"
