@@ -64,7 +64,8 @@ def compute_signature(ufl_objects, tag):
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
-def integral_name(original_form: ufl.form.Form, integral_type: str, form_id: int, integral_id: int, prefix: typing.Optional[str]) -> str:
+def integral_name(original_form: ufl.form.Form, integral_type: str, form_id: int, integral_id: int,
+                  prefix: typing.Optional[str]) -> str:
     """Compute signature for an integral in an ufl form"""
     sig = compute_signature([original_form], str((prefix, integral_type, form_id, integral_id)))
     return f"integral_{sig}"
