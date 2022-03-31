@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 import basix
 import numpy
 import ufl
+import basix.ufl_wrapper
 
 
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
@@ -33,6 +34,9 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
     # TODO: Allow different args for different parts of mixed element
+
+    if isinstance(element, basix.ufl_wrapper.BasixElement):
+        return BasixElement(element.basix_element)
 
     if isinstance(element, ufl.VectorElement):
         return BlockedElement(create_element(element.sub_elements()[0]),
@@ -85,7 +89,8 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
         else:
             variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
 
-    return BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
+    return BasixElement(basix.create_element(
+        family_type, cell_type, element.degree(), *variant_info, discontinuous))
 
 
 def basix_index(*args):
@@ -279,12 +284,8 @@ class BaseElement(ABC):
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, family_type, cell_type, degree, variant_info, discontinuous: bool):
-        self.element = basix.create_element(family_type, cell_type, degree, *variant_info,
-                                            discontinuous)
-        self._family = family_type
-        self._cell = cell_type
-        self._discontinuous = discontinuous
+    def __init__(self, element):
+        self.element = element
 
     def tabulate(self, nderivs, points):
         tab = self.element.tabulate(nderivs, points)
@@ -350,7 +351,7 @@ class BasixElement(BaseElement):
 
     @property
     def element_family(self):
-        return self._family
+        return self.element.family
 
     @property
     def lagrange_variant(self):
@@ -362,11 +363,11 @@ class BasixElement(BaseElement):
 
     @property
     def cell_type(self):
-        return self._cell
+        return self.element.cell_type
 
     @property
     def discontinuous(self):
-        return self._discontinuous
+        return self.element.discontinuous
 
 
 class ComponentElement(BaseElement):
