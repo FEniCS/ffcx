@@ -197,6 +197,6 @@ def generate_custom_element(name, ir):
         d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
-    implementation = ufcx_custom_finite_element.factory.format_map(d)
+    implementation = ufcx_basix_custom_finite_element.factory.format_map(d)
 
     return implementation
