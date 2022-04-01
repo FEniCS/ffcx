@@ -280,6 +280,11 @@ class BaseElement(ABC):
         """True if the discontinuous version of the element is used."""
         pass
 
+    @property
+    def is_custom_element(self) -> bool:
+        """True if the element is a custom Basix element."""
+        return False
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
@@ -298,7 +303,10 @@ class BasixElement(BaseElement):
     @property
     def element_type(self) -> str:
         """Element type."""
-        return "ufcx_basix_element"
+        if self.is_custom_element:
+            return "ufcx_basix_custom_element"
+        else:
+            return "ufcx_basix_element"
 
     @property
     def dim(self):
@@ -368,6 +376,11 @@ class BasixElement(BaseElement):
     @property
     def discontinuous(self):
         return self.element.discontinuous
+
+    @property
+    def is_custom_element(self) -> bool:
+        """True if the element is a custom Basix element."""
+        return self.element.family == basix.ElementFamily.custom
 
 
 class ComponentElement(BaseElement):

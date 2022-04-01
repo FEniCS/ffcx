@@ -22,6 +22,7 @@ import warnings
 from collections import namedtuple
 
 import numpy
+import basix
 import ufl
 from ffcx import naming
 from ffcx.element_interface import create_element
@@ -42,7 +43,7 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs',
-    'lagrange_variant', 'dpc_variant', 'basix_family', 'basix_cell', 'discontinuous'])
+    'lagrange_variant', 'dpc_variant', 'basix_family', 'basix_cell', 'discontinuous', 'custom_element'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_entity_closure_dofs', 'tabulate_entity_closure_dofs', 'num_sub_dofmaps',
@@ -59,6 +60,9 @@ ir_expression = namedtuple('ir_expression', [
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
     'original_coefficient_positions', 'points', 'coefficient_names', 'constant_names', 'needs_facet_permutations',
     'function_spaces', 'name_from_uflfile'])
+ir_custom_element = namedtuple('ir_custom_element', [
+    'cell_type', 'degree', 'value_shape', 'wcoeffs', 'entity_transformations', 'x', 'M', 'map_type',
+    'discontinuous', 'highest_degree', 'highest_complete_degree'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
@@ -156,7 +160,31 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
     ir["entity_dofs"] = basix_element.entity_dofs
 
+    if basix_element.is_custom_element:
+        ir["custom_element"] = _compute_custom_element_ir(basix_element.element)
+    else:
+        ir["custom_element"] = None
+
     return ir_element(**ir)
+
+
+def _compute_custom_element_ir(basix_element):
+    """Compute intermediate representation of a custom Basix element."""
+    ir = {}
+    ir["cell_type"] = basix_element.cell_type
+    ir["degree"] = basix_element.degree
+    ir["value_shape"] = basix_element.value_shape
+    ir["wcoeffs"] = basix_element.wcoeffs
+    et = basix_element.entity_transformations()
+    ir["entity_transformations"] = {getattr(basix.CellType, i): j for i, j in et.items()}
+    ir["x"] = basix_element.x
+    ir["M"] = basix_element.M
+    ir["map_type"] = basix_element.map_type
+    ir["discontinuous"] = basix_element.discontinuous
+    ir["highest_degree"] = basix_element.degree_bounds[0]
+    ir["highest_complete_degree"] = basix_element.degree_bounds[1]
+
+    return ir_custom_element(**ir)
 
 
 def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):

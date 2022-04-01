@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
+# Copyright (C) 2009-2022 Anders Logg, Martin Sandve Alnæs, Matthew Scroggs
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -11,6 +11,7 @@
 import logging
 
 import ffcx.codegeneration.finite_element_template as ufcx_finite_element
+import ffcx.codegeneration.basix_custom_element_template as ufcx_basix_custom_finite_element
 import ufl
 
 logger = logging.getLogger("ffcx")
@@ -90,6 +91,13 @@ def generator(ir, parameters):
         d["sub_elements"] = "NULL"
         d["sub_elements_init"] = ""
 
+    if ir.custom_element is not None:
+        d["custom_element"] = f"&custom_element_{ir.name}"
+        d["custom_element_init"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element)
+    else:
+        d["custom_element"] = "NULL"
+        d["custom_element_init"] = ""
+
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fieldnames = [
@@ -105,3 +113,90 @@ def generator(ir, parameters):
     declaration = ufcx_finite_element.declaration.format(factory_name=ir.name)
 
     return declaration, implementation
+
+
+def generate_custom_element(name, ir):
+    d = {}
+    d["factory_name"] = name
+    d["cell_type"] = int(ir.cell_type)
+    d["map_type"] = int(ir.map_type)
+    d["degree"] = ir.degree
+    d["highest_degree"] = ir.highest_degree
+    d["highest_complete_degree"] = ir.highest_complete_degree
+    d["discontinuous"] = "true" if ir.discontinuous else "false"
+
+    import ffcx.codegeneration.C.cnodes as L
+
+    if len(ir.value_shape) > 0:
+        d["value_shape"] = f"value_shape_{ir.name}"
+        d["value_shape_init"] = L.ArrayDecl(
+            "int", f"value_shape_{ir.name}", values=ir.value_shape, sizes=len(ir.value_shape))
+    else:
+        d["value_shape"] = "NULL"
+        d["value_shape_init"] = ""
+
+    d["wcoeffs_rows"] = ir.wcoeffs.shape[0]
+    d["wcoeffs_cols"] = ir.wcoeffs.shape[1]
+    d["wcoeffs"] = f"wcoeffs_{name}"
+    d["wcoeffs_init"] = f"double wcoeffs_{name}[{ir.wcoeffs.shape[0] * ir.wcoeffs.shape[1]}] = "
+    d["wcoeffs_init"] += "{" + ",".join([f" {i}" for row in ir.wcoeffs for i in row]) + "};"
+
+    d["entity_transformations_count"] = len(ir.entity_transformations)
+    shapes = []
+    entities = []
+    data = []
+    for cell, transf in ir.entity_transformations.items():
+        entities.append(int(cell))
+        for i in transf.shape:
+            shapes.append(i)
+        for mat in data:
+            for row in mat:
+                for i in row:
+                    data.append(i)
+    d["entity_transformations_entities"] = f"entity_transformations_entities_{name}"
+    d["entity_transformations_shapes"] = f"entity_transformations_shapes_{name}"
+    d["entity_transformations"] = f"entity_transformations_{name}"
+    d["entity_transformations_init"] = f"int entity_transformations_entities_{name}[{len(entities)}] = "
+    d["entity_transformations_init"] += "{" + ",".join([f" {i}" for i in entities]) + "};\n"
+    d["entity_transformations_init"] += f"int entity_transformations_shapes_{name}[{len(shapes)}] = "
+    d["entity_transformations_init"] += "{" + ",".join([f" {i}" for i in shapes]) + "};\n"
+    d["entity_transformations_init"] += f"double entity_transformations_{name}[{len(data)}] = "
+    d["entity_transformations_init"] += "{" + ",".join([f" {i}" for i in data]) + "};"
+
+    npts = []
+    x = []
+    for entity in ir.x:
+        for points in entity:
+            npts.append(points.shape[0])
+            for row in points:
+                for i in row:
+                    x.append(i)
+    d["npts"] = f"npts_{name}"
+    d["npts_init"] = f"int npts_{name}[{len(npts)}] = "
+    d["npts_init"] += "{" + ",".join([f" {i}" for i in npts]) + "};"
+    d["x"] = f"x_{name}"
+    d["x_init"] = f"double x_{name}[{len(x)}] = "
+    d["x_init"] += "{" + ",".join([f" {i}" for i in x]) + "};"
+    M = []
+    for entity in ir.M:
+        for matrices in entity:
+            for mat in matrices:
+                for row in mat:
+                    for i in row:
+                        M.append(i)
+    d["M"] = f"M_{name}"
+    d["M_init"] = f"double M_{name}[{len(M)}] = "
+    d["M_init"] += "{" + ",".join([f" {i}" for i in M]) + "};"
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fieldnames = [
+        fname for _, fname, _, _ in Formatter().parse(ufcx_basix_custom_finite_element.factory) if fname
+    ]
+    assert set(fieldnames) == set(
+        d.keys()), "Mismatch between keys in template and in formattting dict"
+
+    # Format implementation code
+    implementation = ufcx_custom_finite_element.factory.format_map(d)
+
+    return implementation
