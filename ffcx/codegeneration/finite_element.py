@@ -127,6 +127,7 @@ def generate_custom_element(name, ir):
 
     import ffcx.codegeneration.C.cnodes as L
 
+    d["value_shape_length"] = len(ir.value_shape)
     if len(ir.value_shape) > 0:
         d["value_shape"] = f"value_shape_{ir.name}"
         d["value_shape_init"] = L.ArrayDecl(

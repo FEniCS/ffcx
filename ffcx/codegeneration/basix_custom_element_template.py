@@ -17,6 +17,7 @@ ufcx_basix_custom_finite_element {factory_name} =
 {{
   .cell_type = {cell_type},
   .degree = {degree},
+  .value_shape_length = {value_shape_length},
   .value_shape = {value_shape},
   .wcoeffs_rows = {wcoeffs_rows},
   .wcoeffs_cols = {wcoeffs_cols},

@@ -159,6 +159,9 @@ extern "C"
     int degree;
 
     /// Dimension of the value space for axis i
+    int value_shape_length;
+
+    /// Dimension of the value space for axis i
     int* value_shape;
 
     /// The number of rows in the wcoeffs matrix
