@@ -151,7 +151,7 @@ def generate_custom_element(name, ir):
             entities.append(int(cell))
             for i in transf.shape:
                 shapes.append(i)
-            for mat in data:
+            for mat in transf:
                 for row in mat:
                     for i in row:
                         data.append(i)
