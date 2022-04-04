@@ -169,7 +169,8 @@ extern "C"
     /// The number of columnss in the wcoeffs matrix
     int wcoeffs_cols;
 
-    /// The data contained in wcoeffs
+    /// The coefficents that define the polynomial set of the element in terms
+    /// of the orthonormal polynomials on the cell
     double* wcoeffs;
 
     /// The number of entity transformations
