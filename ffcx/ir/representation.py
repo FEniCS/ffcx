@@ -22,7 +22,6 @@ import warnings
 from collections import namedtuple
 
 import numpy
-import basix
 import ufl
 from ffcx import naming
 from ffcx.element_interface import create_element
@@ -175,7 +174,6 @@ def _compute_custom_element_ir(basix_element):
     ir["degree"] = basix_element.degree
     ir["value_shape"] = basix_element.value_shape
     ir["wcoeffs"] = basix_element.wcoeffs
-    et = basix_element.entity_transformations()
     ir["x"] = basix_element.x
     ir["M"] = basix_element.M
     ir["map_type"] = basix_element.map_type
