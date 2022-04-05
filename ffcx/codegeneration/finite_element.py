@@ -142,37 +142,6 @@ def generate_custom_element(name, ir):
     d["wcoeffs_init"] = f"double wcoeffs_{name}[{ir.wcoeffs.shape[0] * ir.wcoeffs.shape[1]}] = "
     d["wcoeffs_init"] += "{" + ",".join([f" {i}" for row in ir.wcoeffs for i in row]) + "};"
 
-    d["entity_transformations_count"] = len(ir.entity_transformations)
-    if len(ir.entity_transformations) > 0:
-        shapes = []
-        entities = []
-        data = []
-        for cell, transforms in ir.entity_transformations.items():
-            entities.append(int(cell))
-            for i in transforms.shape:
-                shapes.append(i)
-            for mat in transforms:
-                for row in mat:
-                    for i in row:
-                        data.append(i)
-        d["entity_transformations_entities"] = f"entity_transformations_entities_{name}"
-        d["entity_transformations_shapes"] = f"entity_transformations_shapes_{name}"
-        d["entity_transformations_init"] = f"int entity_transformations_entities_{name}[{len(entities)}] = "
-        d["entity_transformations_init"] += "{" + ",".join([f" {i}" for i in entities]) + "};\n"
-        d["entity_transformations_init"] += f"int entity_transformations_shapes_{name}[{len(shapes)}] = "
-        d["entity_transformations_init"] += "{" + ",".join([f" {i}" for i in shapes]) + "};\n"
-        if len(data) > 0:
-            d["entity_transformations"] = f"entity_transformations_{name}"
-            d["entity_transformations_init"] += f"double entity_transformations_{name}[{len(data)}] = "
-            d["entity_transformations_init"] += "{" + ",".join([f" {i}" for i in data]) + "};"
-        else:
-            d["entity_transformations"] = "NULL"
-    else:
-        d["entity_transformations_entities"] = "NULL"
-        d["entity_transformations_shapes"] = "NULL"
-        d["entity_transformations_init"] = ""
-        d["entity_transformations"] = "NULL"
-
     npts = []
     x = []
     for entity in ir.x:

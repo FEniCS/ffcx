@@ -61,7 +61,7 @@ ir_expression = namedtuple('ir_expression', [
     'original_coefficient_positions', 'points', 'coefficient_names', 'constant_names', 'needs_facet_permutations',
     'function_spaces', 'name_from_uflfile'])
 ir_custom_element = namedtuple('ir_custom_element', [
-    'cell_type', 'degree', 'value_shape', 'wcoeffs', 'entity_transformations', 'x', 'M', 'map_type',
+    'cell_type', 'degree', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type',
     'discontinuous', 'highest_degree', 'highest_complete_degree'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
@@ -176,7 +176,6 @@ def _compute_custom_element_ir(basix_element):
     ir["value_shape"] = basix_element.value_shape
     ir["wcoeffs"] = basix_element.wcoeffs
     et = basix_element.entity_transformations()
-    ir["entity_transformations"] = {getattr(basix.CellType, i): j for i, j in et.items()}
     ir["x"] = basix_element.x
     ir["M"] = basix_element.M
     ir["map_type"] = basix_element.map_type

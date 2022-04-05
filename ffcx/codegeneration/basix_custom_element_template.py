@@ -8,7 +8,6 @@ factory = """
 
 {value_shape_init}
 {wcoeffs_init}
-{entity_transformations_init}
 {npts_init}
 {x_init}
 {M_init}
@@ -22,10 +21,6 @@ ufcx_basix_custom_finite_element {factory_name} =
   .wcoeffs_rows = {wcoeffs_rows},
   .wcoeffs_cols = {wcoeffs_cols},
   .wcoeffs = {wcoeffs},
-  .entity_transformations_count = {entity_transformations_count},
-  .entity_transformations_entities = {entity_transformations_entities},
-  .entity_transformations_shapes = {entity_transformations_shapes},
-  .entity_transformations = {entity_transformations},
   .npts = {npts},
   .x = {x},
   .M = {M},

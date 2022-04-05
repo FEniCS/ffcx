@@ -173,18 +173,6 @@ extern "C"
     /// of the orthonormal polynomials on the cell
     double* wcoeffs;
 
-    /// The number of entity transformations
-    int entity_transformations_count;
-
-    /// The entity types for the entity transformations
-    int* entity_transformations_entities;
-
-    /// The shapes of the entity transformation matrices
-    int* entity_transformations_shapes;
-
-    /// The data contained in the entity transformations
-    double* entity_transformations;
-
     /// The number of interpolation points associated with each entity
     int* npts;
 
