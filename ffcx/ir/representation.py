@@ -61,7 +61,7 @@ ir_expression = namedtuple('ir_expression', [
     'function_spaces', 'name_from_uflfile'])
 ir_custom_element = namedtuple('ir_custom_element', [
     'cell_type', 'degree', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type',
-    'discontinuous', 'highest_degree', 'highest_complete_degree'])
+    'discontinuous', 'highest_complete_degree'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
@@ -178,8 +178,7 @@ def _compute_custom_element_ir(basix_element):
     ir["M"] = basix_element.M
     ir["map_type"] = basix_element.map_type
     ir["discontinuous"] = basix_element.discontinuous
-    ir["highest_degree"] = basix_element.degree_bounds[0]
-    ir["highest_complete_degree"] = basix_element.degree_bounds[1]
+    ir["highest_complete_degree"] = basix_element.degree_bounds[0]
 
     return ir_custom_element(**ir)
 

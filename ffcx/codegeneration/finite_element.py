@@ -121,7 +121,6 @@ def generate_custom_element(name, ir):
     d["cell_type"] = int(ir.cell_type)
     d["map_type"] = int(ir.map_type)
     d["degree"] = ir.degree
-    d["highest_degree"] = ir.highest_degree
     d["highest_complete_degree"] = ir.highest_complete_degree
     d["discontinuous"] = "true" if ir.discontinuous else "false"
 

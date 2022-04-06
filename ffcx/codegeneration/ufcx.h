@@ -188,9 +188,6 @@ extern "C"
     /// Indicates whether or not this is the discontinuous version of the element
     bool discontinuous;
 
-    /// The highest degree polynomial in this element
-    int highest_degree;
-
     /// The highest degree full polynomial space contained in this element
     int highest_complete_degree;
   } ufcx_basix_custom_finite_element;
