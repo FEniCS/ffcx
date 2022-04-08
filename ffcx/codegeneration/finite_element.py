@@ -128,9 +128,9 @@ def generate_custom_element(name, ir):
 
     d["value_shape_length"] = len(ir.value_shape)
     if len(ir.value_shape) > 0:
-        d["value_shape"] = f"value_shape_{ir.name}"
+        d["value_shape"] = f"value_shape_{name}"
         d["value_shape_init"] = L.ArrayDecl(
-            "int", f"value_shape_{ir.name}", values=ir.value_shape, sizes=len(ir.value_shape))
+            "int", f"value_shape_{name}", values=ir.value_shape, sizes=len(ir.value_shape))
     else:
         d["value_shape"] = "NULL"
         d["value_shape_init"] = ""
