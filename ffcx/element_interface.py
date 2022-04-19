@@ -18,10 +18,10 @@ from abc import ABC, abstractmethod
 import basix
 import numpy
 import ufl
+import functools
 
-_element_cache = {}
 
-
+@functools.cache
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     """Create an FFCx element from a UFL element.
 
@@ -31,67 +31,62 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     Returns:
         A FFCx finite element
     """
-    global _element_cache
+    # TODO: EnrichedElement
+    # TODO: Short/alternative names for elements
+    # TODO: Allow different args for different parts of mixed element
 
-    if element not in _element_cache:
-        # TODO: EnrichedElement
-        # TODO: Short/alternative names for elements
-        # TODO: Allow different args for different parts of mixed element
+    if isinstance(element, ufl.VectorElement):
+        return BlockedElement(create_element(element.sub_elements()[0]),
+                              element.num_sub_elements())
+    if isinstance(element, ufl.TensorElement):
+        return BlockedElement(create_element(element.sub_elements()[0]),
+                              element.num_sub_elements(), None)  # TODO: block shape
 
-        if isinstance(element, ufl.VectorElement):
-            return BlockedElement(create_element(element.sub_elements()[0]),
-                                  element.num_sub_elements())
-        if isinstance(element, ufl.TensorElement):
-            return BlockedElement(create_element(element.sub_elements()[0]),
-                                  element.num_sub_elements(), None)  # TODO: block shape
+    if isinstance(element, ufl.MixedElement):
+        return MixedElement([create_element(e) for e in element.sub_elements()])
 
-        if isinstance(element, ufl.MixedElement):
-            return MixedElement([create_element(e) for e in element.sub_elements()])
+    if element.family() == "Quadrature":
+        return QuadratureElement(element)
 
-        if element.family() == "Quadrature":
-            return QuadratureElement(element)
+    variant_info = []
 
-        variant_info = []
+    family_name = element.family()
+    discontinuous = False
+    if family_name.startswith("Discontinuous "):
+        family_name = family_name[14:]
+        discontinuous = True
+    if family_name == "DP":
+        family_name = "P"
+        discontinuous = True
+    if family_name == "DQ":
+        family_name = "Q"
+        discontinuous = True
+    if family_name == "DPC":
+        discontinuous = True
 
-        family_name = element.family()
-        discontinuous = False
-        if family_name.startswith("Discontinuous "):
-            family_name = family_name[14:]
-            discontinuous = True
-        if family_name == "DP":
-            family_name = "P"
-            discontinuous = True
-        if family_name == "DQ":
-            family_name = "Q"
-            discontinuous = True
-        if family_name == "DPC":
-            discontinuous = True
+    family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
+    cell_type = basix.cell.string_to_type(element.cell().cellname())
 
-        family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
-        cell_type = basix.cell.string_to_type(element.cell().cellname())
+    if family_type == basix.ElementFamily.P:
+        if element.variant() is None:
+            variant_info.append(basix.LagrangeVariant.gll_warped)
+        else:
+            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
+    elif family_type == basix.ElementFamily.serendipity:
+        if element.variant() is None:
+            variant_info.append(basix.LagrangeVariant.gll_warped)
+            variant_info.append(basix.DPCVariant.diagonal_gll)
+        else:
+            v1, v2 = element.variant().split(",")
+            variant_info.append(basix.variants.string_to_lagrange_variant(v1))
+            variant_info.append(basix.variants.string_to_dpc_variant(v2))
+    elif family_type == basix.ElementFamily.DPC:
+        if element.variant() is None:
+            variant_info.append(basix.DPCVariant.diagonal_gll)
+        else:
+            variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
 
-        if family_type == basix.ElementFamily.P:
-            if element.variant() is None:
-                variant_info.append(basix.LagrangeVariant.gll_warped)
-            else:
-                variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
-        elif family_type == basix.ElementFamily.serendipity:
-            if element.variant() is None:
-                variant_info.append(basix.LagrangeVariant.gll_warped)
-                variant_info.append(basix.DPCVariant.diagonal_gll)
-            else:
-                v1, v2 = element.variant().split(",")
-                variant_info.append(basix.variants.string_to_lagrange_variant(v1))
-                variant_info.append(basix.variants.string_to_dpc_variant(v2))
-        elif family_type == basix.ElementFamily.DPC:
-            if element.variant() is None:
-                variant_info.append(basix.DPCVariant.diagonal_gll)
-            else:
-                variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
-
-        _element_cache[element] = BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
-
-    return _element_cache[element]
+    return BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
 
 
 def basix_index(*args):
