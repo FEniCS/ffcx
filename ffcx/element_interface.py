@@ -18,10 +18,10 @@ from abc import ABC, abstractmethod
 import basix
 import numpy
 import ufl
-from functools import cache
+from functools import lru_cache
 
 
-@cache
+@lru_cache
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     """Create an FFCx element from a UFL element.
 
