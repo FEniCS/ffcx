@@ -190,6 +190,9 @@ extern "C"
 
     /// The highest degree full polynomial space contained in this element
     int highest_complete_degree;
+
+    /// The number of derivatives needed when interpolating
+    int interpolation_nderivs;
   } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap

@@ -287,6 +287,12 @@ class BaseElement(ABC):
         pass
 
     @property
+    @abstractmethod
+    def interpolation_nderivs(self) -> int:
+        """The number of derivatives needed when interpolating."""
+        pass
+
+    @property
     def is_custom_element(self) -> bool:
         """True if the element is a custom Basix element."""
         return False
@@ -382,6 +388,10 @@ class BasixElement(BaseElement):
     @property
     def discontinuous(self):
         return self.element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.element.interpolation_nderivs
 
     @property
     def is_custom_element(self) -> bool:

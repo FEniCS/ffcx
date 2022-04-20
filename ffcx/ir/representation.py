@@ -179,6 +179,7 @@ def _compute_custom_element_ir(basix_element):
     ir["map_type"] = basix_element.map_type
     ir["discontinuous"] = basix_element.discontinuous
     ir["highest_complete_degree"] = basix_element.degree_bounds[0]
+    ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
 
     return ir_custom_element(**ir)
 
