@@ -19,8 +19,10 @@ import basix
 import numpy
 import ufl
 import basix.ufl_wrapper
+from functools import lru_cache
 
 
+@lru_cache
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     """Create an FFCx element from a UFL element.
 
@@ -29,7 +31,6 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
 
     Returns:
         A FFCx finite element
-
     """
     # TODO: EnrichedElement
     # TODO: Short/alternative names for elements
