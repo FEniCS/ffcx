@@ -55,11 +55,11 @@ jobs:
 
       - name: Build DOLFINx C++ unit tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B dolfinx/cpp/build/test/ -S dolfinx/cpp/build/test/
-          cmake --build dolfinx/cpp/build/test
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S build/test/
+          cmake --build build/test
       - name: Run DOLFINx C++ unit tests
         run: |
-          cd dolfinx/cpp/build/test
+          cd build/test
           ctest -V --output-on-failure -R unittests
 
       - name: Run DOLFINx Python unit tests
