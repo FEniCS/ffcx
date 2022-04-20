@@ -53,5 +53,14 @@ jobs:
           cmake --install build
           pip3 -v install --global-option build --global-option --debug dolfinx/python/
 
-      - name: Run DOLFINx unit tests
+      - name: Build DOLFINx C++ unit tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B dolfinx/cpp/build/test/ -S dolfinx/cpp/build/test/
+          cmake --build dolfinx/cpp/build/test
+      - name: Run DOLFINx C++ unit tests
+        run: |
+          cd dolfinx/cpp/build/test
+          ctest -V --output-on-failure -R unittests
+
+      - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
