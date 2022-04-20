@@ -64,11 +64,12 @@ extern "C"
     ufcx_basix_element = 0,
     ufcx_mixed_element = 1,
     ufcx_quadrature_element = 2,
-    ufcx_custom_element = 3
+    ufcx_basix_custom_element = 3
   } ufcx_element_type;
 
   /// Forward declarations
   typedef struct ufcx_finite_element ufcx_finite_element;
+  typedef struct ufcx_basix_custom_finite_element ufcx_basix_custom_finite_element;
   typedef struct ufcx_dofmap ufcx_dofmap;
   typedef struct ufcx_function_space ufcx_function_space;
 
@@ -144,7 +145,52 @@ extern "C"
     /// element).
     ufcx_finite_element** sub_elements;
 
+    /// Pointer to data to recreate the element if it is a custom Basix element
+    ufcx_basix_custom_finite_element* custom_element;
   } ufcx_finite_element;
+
+  typedef struct ufcx_basix_custom_finite_element
+  {
+    /// Basix identifier of the cell shape
+    int cell_type;
+
+    /// The degree of the element
+    int degree;
+
+    /// Dimension of the value space for axis i
+    int value_shape_length;
+
+    /// Dimension of the value space for axis i
+    int* value_shape;
+
+    /// The number of rows in the wcoeffs matrix
+    int wcoeffs_rows;
+
+    /// The number of columnss in the wcoeffs matrix
+    int wcoeffs_cols;
+
+    /// The coefficents that define the polynomial set of the element in terms
+    /// of the orthonormal polynomials on the cell
+    double* wcoeffs;
+
+    /// The number of interpolation points associated with each entity
+    int* npts;
+
+    // The coordinates of the interpolation points
+    double* x;
+
+    // The entries in the interpolation matrices
+    double* M;
+
+    /// The map type for the element
+    int map_type;
+
+    /// Indicates whether or not this is the discontinuous version of the element
+    bool discontinuous;
+
+    /// The highest degree full polynomial space contained in this element
+    int highest_complete_degree;
+  } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
   {
