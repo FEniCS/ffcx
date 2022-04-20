@@ -19,10 +19,15 @@ import basix
 import numpy
 import ufl
 import basix.ufl_wrapper
-# from functools import lru_cache
+import functools
 
 
-# @lru_cache
+@functools.lru_cache
+def create_basix_element(family_type, cell_type, degree, variant_info, discontinuous):
+    """Create a basix element."""
+    return basix.create_element(family_type, cell_type, degree, *variant_info, discontinuous)
+
+
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     """Create an FFCx element from a UFL element.
 
@@ -90,8 +95,8 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
         else:
             variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
 
-    return BasixElement(basix.create_element(
-        family_type, cell_type, element.degree(), *variant_info, discontinuous))
+    return BasixElement(create_basix_element(
+        family_type, cell_type, element.degree(), tuple(variant_info), discontinuous))
 
 
 def basix_index(*args):
