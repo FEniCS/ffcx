@@ -38,8 +38,6 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
         A FFCx finite element
     """
     # TODO: EnrichedElement
-    # TODO: Short/alternative names for elements
-    # TODO: Allow different args for different parts of mixed element
 
     if isinstance(element, basix.ufl_wrapper.BasixElement):
         return BasixElement(element.basix_element)
@@ -82,11 +80,14 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
         if element.variant() is not None:
             raise ValueError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
 
-        if family_type == basix.ElementFamily.P:
+        EF = basix.ElementFamily
+        if family_type == EF.P:
             variant_info = [basix.LagrangeVariant.gll_warped]
-        elif family_type == basix.ElementFamily.serendipity:
+        elif family_type in [EF.RT, EF.N1E]:
+            variant_info = [basix.LagrangeVariant.legendre]
+        elif family_type in [EF.serendipity, EF.BDM, EF.N2E]:
             variant_info = [basix.LagrangeVariant.legendre, basix.DPCVariant.legendre]
-        elif family_type == basix.ElementFamily.DPC:
+        elif family_type == EF.DPC:
             variant_info = [basix.DPCVariant.diagonal_gll]
 
     return BasixElement(create_basix_element(
