@@ -57,8 +57,6 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     if element.family() == "Quadrature":
         return QuadratureElement(element)
 
-    variant_info = []
-
     family_name = element.family()
     discontinuous = False
     if family_name.startswith("Discontinuous "):
@@ -76,27 +74,20 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
     cell_type = basix.cell.string_to_type(element.cell().cellname())
 
+    if element.variant() is not None:
+        raise NotImplementedError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
+
     if family_type == basix.ElementFamily.P:
-        if element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.gll_warped)
-        else:
-            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
+        variant_info = (basix.LagrangeVariant.gll_warped, )
     elif family_type == basix.ElementFamily.serendipity:
-        if element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.gll_warped)
-            variant_info.append(basix.DPCVariant.diagonal_gll)
-        else:
-            v1, v2 = element.variant().split(",")
-            variant_info.append(basix.variants.string_to_lagrange_variant(v1))
-            variant_info.append(basix.variants.string_to_dpc_variant(v2))
+        variant_info = (basix.LagrangeVariant.legendre, basix.DPCVariant.legendre)
     elif family_type == basix.ElementFamily.DPC:
-        if element.variant() is None:
-            variant_info.append(basix.DPCVariant.diagonal_gll)
-        else:
-            variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
+        variant_info = (basix.DPCVariant.diagonal_gll, )
+    else:
+        variant_info = tuple()
 
     return BasixElement(create_basix_element(
-        family_type, cell_type, element.degree(), tuple(variant_info), discontinuous))
+        family_type, cell_type, element.degree(), variant_info, discontinuous))
 
 
 def basix_index(*args):
