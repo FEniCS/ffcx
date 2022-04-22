@@ -78,16 +78,16 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
         raise NotImplementedError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
 
     if family_type == basix.ElementFamily.P:
-        variant_info = (basix.LagrangeVariant.gll_warped, )
+        variant_info = [basix.LagrangeVariant.gll_warped]
     elif family_type == basix.ElementFamily.serendipity:
-        variant_info = (basix.LagrangeVariant.legendre, basix.DPCVariant.legendre)
+        variant_info = [basix.LagrangeVariant.legendre, basix.DPCVariant.legendre]
     elif family_type == basix.ElementFamily.DPC:
-        variant_info = (basix.DPCVariant.diagonal_gll, )
+        variant_info = [basix.DPCVariant.diagonal_gll]
     else:
-        variant_info = tuple()
+        variant_info = []
 
     return BasixElement(create_basix_element(
-        family_type, cell_type, element.degree(), variant_info, discontinuous))
+        family_type, cell_type, element.degree(), tuple(variant_info), discontinuous))
 
 
 def basix_index(*args):
