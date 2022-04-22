@@ -125,11 +125,10 @@ supported (non-mixed) for low degrees"""
                                          -6 * x[1] + 3 * x[0] * x[1] + 6 * x[1]**2)]
     reference_triangle_ned1 = [lambda x: (-x[1], x[0]), lambda x: (x[1], 1 - x[0]),
                                lambda x: (1.0 - x[1], x[0])]
-    root2 = numpy.sqrt(2)
-    reference_tetrahedron_rt1 = [lambda x: (root2 * x[0], root2 * x[1], root2 * x[2]),
-                                 lambda x: (root2 - root2 * x[0], -root2 * x[1], -root2 * x[2]),
-                                 lambda x: (root2 * x[0], root2 * x[1] - root2, root2 * x[2]),
-                                 lambda x: (-root2 * x[0], -root2 * x[1], root2 - root2 * x[2])]
+    reference_tetrahedron_rt1 = [lambda x: (2 ** 0.5 * x[0], 2 ** 0.5 * x[1], 2 ** 0.5 * x[2]),
+                                 lambda x: (2 ** 0.5 - 2 ** 0.5 * x[0], -2 ** 0.5 * x[1], -2 ** 0.5 * x[2]),
+                                 lambda x: (2 ** 0.5 * x[0], 2 ** 0.5 * x[1] - 2 ** 0.5, 2 ** 0.5 * x[2]),
+                                 lambda x: (-2 ** 0.5 * x[0], -2 ** 0.5 * x[1], 2 ** 0.5 - 2 ** 0.5 * x[2])]
     reference_tetrahedron_bdm1 = [lambda x: (-3 * x[0], x[1], x[2]),
                                   lambda x: (x[0], -3 * x[1], x[2]),
                                   lambda x: (x[0], x[1], -3 * x[2]),
