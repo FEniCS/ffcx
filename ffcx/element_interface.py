@@ -74,17 +74,20 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
     cell_type = basix.cell.string_to_type(element.cell().cellname())
 
-    if element.variant() is not None:
-        raise NotImplementedError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
-
-    if family_type == basix.ElementFamily.P:
-        variant_info = [basix.LagrangeVariant.gll_warped]
-    elif family_type == basix.ElementFamily.serendipity:
-        variant_info = [basix.LagrangeVariant.legendre, basix.DPCVariant.legendre]
-    elif family_type == basix.ElementFamily.DPC:
-        variant_info = [basix.DPCVariant.diagonal_gll]
+    variant_info = []
+    if family_type == basix.ElementFamily.P and element.variant() == "equispaced":
+        # This is used for elements defining cells
+        variant_info = [basix.LagrangeVariant.equispaced]
     else:
-        variant_info = []
+        if element.variant() is not None:
+            raise NotImplementedError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
+
+        if family_type == basix.ElementFamily.P:
+            variant_info = [basix.LagrangeVariant.gll_warped]
+        elif family_type == basix.ElementFamily.serendipity:
+            variant_info = [basix.LagrangeVariant.legendre, basix.DPCVariant.legendre]
+        elif family_type == basix.ElementFamily.DPC:
+            variant_info = [basix.DPCVariant.diagonal_gll]
 
     return BasixElement(create_basix_element(
         family_type, cell_type, element.degree(), tuple(variant_info), discontinuous))
