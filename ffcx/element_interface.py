@@ -80,7 +80,7 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
         variant_info = [basix.LagrangeVariant.equispaced]
     else:
         if element.variant() is not None:
-            raise NotImplementedError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
+            raise ValueError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
 
         if family_type == basix.ElementFamily.P:
             variant_info = [basix.LagrangeVariant.gll_warped]
