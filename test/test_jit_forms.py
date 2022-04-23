@@ -492,7 +492,7 @@ def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lamb
 def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_triangle_symbolic(order, fun=sym_fun)
     cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, order, variant="gll")
+    element = ufl.FiniteElement("Lagrange", cell, order)
     v = ufl.TestFunction(element)
 
     a = ufl_fun(v) * ufl.dx
@@ -581,7 +581,7 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
 def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_tetrahedron_symbolic(order, fun=sym_fun)
     cell = ufl.tetrahedron
-    element = ufl.FiniteElement("Lagrange", cell, order, variant="gll")
+    element = ufl.FiniteElement("Lagrange", cell, order)
     v = ufl.TestFunction(element)
 
     a = ufl_fun(v) * ufl.dx
