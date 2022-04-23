@@ -22,7 +22,7 @@ import basix.ufl_wrapper
 import functools
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def create_basix_element(family_type, cell_type, degree, variant_info, discontinuous):
     """Create a basix element."""
     return basix.create_element(family_type, cell_type, degree, *variant_info, discontinuous)
