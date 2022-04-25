@@ -44,7 +44,7 @@ def compute_signature(ufl_objects, tag):
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
             for arg in args:
-                domains.append(*arg.ufl_domains())
+                domains.append(*arg.ufl_function_space().ufl_domains())
             for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
                 domains.append(*gc.ufl_domains())
 

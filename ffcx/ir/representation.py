@@ -42,7 +42,7 @@ ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
     'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs',
-    'lagrange_variant', 'basix_family', 'basix_cell', 'discontinuous'])
+    'lagrange_variant', 'dpc_variant', 'basix_family', 'basix_cell', 'discontinuous', 'custom_element'])
 ir_dofmap = namedtuple('ir_dofmap', [
     'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
     'tabulate_entity_dofs', 'num_entity_closure_dofs', 'tabulate_entity_closure_dofs', 'num_sub_dofmaps',
@@ -57,7 +57,11 @@ ir_expression = namedtuple('ir_expression', [
     'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
     'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
-    'original_coefficient_positions', 'points', 'needs_facet_permutations'])
+    'original_coefficient_positions', 'points', 'coefficient_names', 'constant_names', 'needs_facet_permutations',
+    'function_spaces', 'name_from_uflfile'])
+ir_custom_element = namedtuple('ir_custom_element', [
+    'cell_type', 'degree', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type',
+    'discontinuous', 'highest_complete_degree'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
@@ -104,7 +108,8 @@ def compute_ir(analysis, object_names, prefix, parameters, visualise):
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise)
+    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise, object_names,
+                                             finite_element_names, dofmap_names)
                       for i, expr in enumerate(analysis.expressions)]
 
     return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
@@ -133,6 +138,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["space_dimension"] = basix_element.dim
     ir["element_type"] = basix_element.element_type
     ir["lagrange_variant"] = basix_element.lagrange_variant
+    ir["dpc_variant"] = basix_element.dpc_variant
     ir["basix_family"] = basix_element.element_family
     ir["basix_cell"] = basix_element.cell_type
     ir["discontinuous"] = basix_element.discontinuous
@@ -153,7 +159,28 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
     ir["entity_dofs"] = basix_element.entity_dofs
 
+    if basix_element.is_custom_element:
+        ir["custom_element"] = _compute_custom_element_ir(basix_element.element)
+    else:
+        ir["custom_element"] = None
+
     return ir_element(**ir)
+
+
+def _compute_custom_element_ir(basix_element):
+    """Compute intermediate representation of a custom Basix element."""
+    ir = {}
+    ir["cell_type"] = basix_element.cell_type
+    ir["degree"] = basix_element.degree
+    ir["value_shape"] = basix_element.value_shape
+    ir["wcoeffs"] = basix_element.wcoeffs
+    ir["x"] = basix_element.x
+    ir["M"] = basix_element.M
+    ir["map_type"] = basix_element.map_type
+    ir["discontinuous"] = basix_element.discontinuous
+    ir["highest_complete_degree"] = basix_element.degree_bounds[0]
+
+    return ir_custom_element(**ir)
 
 
 def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
@@ -388,10 +415,10 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
     ir["num_constants"] = len(form_data.original_form.constants())
 
-    ir["coefficient_names"] = [object_names.get(id(obj), "w%d" % j)
+    ir["coefficient_names"] = [object_names.get(id(obj), f"w{j}")
                                for j, obj in enumerate(form_data.reduced_coefficients)]
 
-    ir["constant_names"] = [object_names.get(id(obj), "c%d" % j)
+    ir["constant_names"] = [object_names.get(id(obj), f"c{j}")
                             for j, obj in enumerate(form_data.original_form.constants())]
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
@@ -408,7 +435,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     fs = {}
     for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
         name = object_names.get(id(function), str(function))
-        el = function.ufl_element()
+        el = function.ufl_function_space().ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
         if cmap.variant() is None:
@@ -456,7 +483,8 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     return ir_form(**ir)
 
 
-def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise):
+def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, object_names,
+                           finite_element_names, dofmap_names):
     """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
 
@@ -487,7 +515,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
-    argument_elements = tuple(f.ufl_element() for f in arguments)
+    argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
     argument_dimensions = [
         ir["element_dimensions"][ufl_element] for ufl_element in argument_elements
     ]
@@ -509,6 +537,29 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
+
+    ir["coefficient_names"] = [object_names.get(id(obj), f"w{j}")
+                               for j, obj in enumerate(coefficients)]
+
+    ir["constant_names"] = [object_names.get(id(obj), f"c{j}")
+                            for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))]
+
+    fs = {}
+    for function in tuple(original_coefficients) + tuple(arguments):
+        name = object_names.get(id(function), str(function))
+        el = function.ufl_function_space().ufl_element()
+        cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        family = cmap.family()
+        degree = cmap.degree()
+        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
+
+    expression_name = object_names.get(id(original_expression), index)
+
+    ir["function_spaces"] = fs
+    ir["name_from_uflfile"] = f"expression_{prefix}_{expression_name}"
+
+    if len(argument_elements) > 1:
+        raise RuntimeError("Expression with more than one Argument not implemented.")
 
     ir["original_coefficient_positions"] = original_coefficient_positions
 

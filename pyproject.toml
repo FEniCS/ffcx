@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=58", "wheel"]
+requires = ["setuptools>=58,<61", "wheel"]
 
 build-backend = "setuptools.build_meta"
 
@@ -24,6 +24,9 @@ add-ignore = [
     "D102",  # Missing docstrings in methods
     "D103",  # Missing docstrings in functions
     "D104",  # Missing docstrings in packages
-    "D105"   # Missing docstrings in magic methods
+    "D105",  # Missing docstrings in magic methods
+    "D401",  # Google convention
+    "D406",  # Google convention
+    "D407"   # Google convention
 ]
 

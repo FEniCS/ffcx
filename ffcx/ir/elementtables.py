@@ -100,8 +100,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
     # Extract arrays for the right scalar component
     component_tables = []
-    sh = tuple(basix_element.value_shape)
-    assert len(sh) > 0
     component_element, offset, stride = basix_element.get_component_element(flat_component)
 
     for entity in range(num_entities):
@@ -181,7 +179,7 @@ def get_modified_terminal_element(mt):
         elif ld and not mt.reference_value:
             raise RuntimeError(
                 "Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_element()
+        element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:

@@ -64,12 +64,14 @@ extern "C"
     ufcx_basix_element = 0,
     ufcx_mixed_element = 1,
     ufcx_quadrature_element = 2,
-    ufcx_custom_element = 3
+    ufcx_basix_custom_element = 3
   } ufcx_element_type;
 
   /// Forward declarations
   typedef struct ufcx_finite_element ufcx_finite_element;
+  typedef struct ufcx_basix_custom_finite_element ufcx_basix_custom_finite_element;
   typedef struct ufcx_dofmap ufcx_dofmap;
+  typedef struct ufcx_function_space ufcx_function_space;
 
   // </HEADER_DECL>
 
@@ -133,6 +135,9 @@ extern "C"
     /// The Lagrange variant to be passed to Basix's create_element function
     int lagrange_variant;
 
+    /// The DPC variant to be passed to Basix's create_element function
+    int dpc_variant;
+
     /// Number of sub elements (for a mixed element)
     int num_sub_elements;
 
@@ -140,7 +145,52 @@ extern "C"
     /// element).
     ufcx_finite_element** sub_elements;
 
+    /// Pointer to data to recreate the element if it is a custom Basix element
+    ufcx_basix_custom_finite_element* custom_element;
   } ufcx_finite_element;
+
+  typedef struct ufcx_basix_custom_finite_element
+  {
+    /// Basix identifier of the cell shape
+    int cell_type;
+
+    /// The degree of the element
+    int degree;
+
+    /// Dimension of the value space for axis i
+    int value_shape_length;
+
+    /// Dimension of the value space for axis i
+    int* value_shape;
+
+    /// The number of rows in the wcoeffs matrix
+    int wcoeffs_rows;
+
+    /// The number of columnss in the wcoeffs matrix
+    int wcoeffs_cols;
+
+    /// The coefficents that define the polynomial set of the element in terms
+    /// of the orthonormal polynomials on the cell
+    double* wcoeffs;
+
+    /// The number of interpolation points associated with each entity
+    int* npts;
+
+    // The coordinates of the interpolation points
+    double* x;
+
+    // The entries in the interpolation matrices
+    double* M;
+
+    /// The map type for the element
+    int map_type;
+
+    /// Indicates whether or not this is the discontinuous version of the element
+    bool discontinuous;
+
+    /// The highest degree full polynomial space contained in this element
+    int highest_complete_degree;
+  } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
   {
@@ -272,28 +322,33 @@ extern "C"
 
   typedef struct ufcx_expression
   {
-
-    /// Evaluate expression into tensor A with compiled evaluation
-    /// points
+    /// Evaluate expression into tensor A with compiled evaluation points
     ///
     /// @param[out] A
-    /// @param[in] w Coefficients attached to the expression.
-    /// Dimensions: w[coefficient][dof].
-    /// @param[in] c Constants attached to the expression. Dimensions:
-    /// c[constant][dim].
-    /// @param[in] coordinate_dofs Values of degrees of freedom of
-    /// coordinate element. Defines the geometry of the cell.
-    /// Dimensions: coordinate_dofs[num_dofs][3].
-    void (*tabulate_expression)(double* restrict A,
-                                const double* restrict w,
-                                const double* restrict c,
-                                const double* restrict coordinate_dofs);
-
-    /// Positions of coefficients in original expression
-    const int* original_coefficient_positions;
+    ///         Dimensions: A[num_points][num_components][num_argument_dofs]
+    ///
+    /// @see ufcx_tabulate_tensor
+    ///
+    ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
+    ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
+    ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
+    ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
+    ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 
     /// Number of coefficients
     int num_coefficients;
+
+    /// Number of constants
+    int num_constants;
+
+    /// Original coefficient position for each coefficient
+    const int* original_coefficient_positions;
+
+    /// List of names of coefficients
+    const char** coefficient_names;
+
+    /// List of names of constants
+    const char** constant_names;
 
     /// Number of evaluation points
     int num_points;
@@ -301,9 +356,6 @@ extern "C"
     /// Dimension of evaluation point, i.e. topological dimension of
     /// reference cell
     int topological_dimension;
-
-    /// Indicates whether facet permutations are needed
-    bool needs_facet_permutations;
 
     /// Coordinates of evaluations points. Dimensions:
     /// points[num_points][topological_dimension]
@@ -314,6 +366,17 @@ extern "C"
 
     /// Number of components of return_shape
     int num_components;
+
+    /// Rank, i.e. number of arguments
+    int rank;
+
+    /// Function spaces for all functions in the Expression.
+    ///
+    /// Function spaces for coefficients are followed by
+    /// Arguments function spaces.
+    /// Dimensions: function_spaces[num_coefficients + rank]
+    ufcx_function_space** function_spaces;
+
   } ufcx_expression;
 
   /// This class defines the interface for the assembly of the global

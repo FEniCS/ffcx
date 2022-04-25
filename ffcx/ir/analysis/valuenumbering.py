@@ -88,7 +88,7 @@ class ValueNumberer(object):
 
     def form_argument(self, v):
         """Create new symbols for expressions that represent new values."""
-        symmetry = v.ufl_element().symmetry()
+        symmetry = v.ufl_function_space().ufl_element().symmetry()
 
         if symmetry:
             # Build symbols with symmetric components skipped
