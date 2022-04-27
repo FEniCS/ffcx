@@ -154,9 +154,6 @@ extern "C"
     /// Basix identifier of the cell shape
     int cell_type;
 
-    /// The degree of the element
-    int degree;
-
     /// Dimension of the value space for axis i
     int value_shape_length;
 
@@ -190,6 +187,9 @@ extern "C"
 
     /// The highest degree full polynomial space contained in this element
     int highest_complete_degree;
+
+    /// The highest degree of a polynomial in the element
+    int highest_degree;
   } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
