@@ -15,11 +15,11 @@
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
-#define UFC_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE
+#define UFCX_VERSION                                                            \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE
 #else
-#define UFC_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE ".dev0"
+#define UFCX_VERSION                                                            \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".dev0"
 #endif
 
 #include <stdbool.h>
@@ -442,7 +442,7 @@ extern "C"
 
   } ufcx_form;
 
-  // FIXME: Formalise a UFC 'function space'
+  // FIXME: Formalise a UFCX 'function space'
   typedef struct ufcx_function_space
   {
     ufcx_finite_element* finite_element;
