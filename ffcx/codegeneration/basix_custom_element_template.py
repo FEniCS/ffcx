@@ -15,7 +15,6 @@ factory = """
 ufcx_basix_custom_finite_element {factory_name} =
 {{
   .cell_type = {cell_type},
-  .degree = {degree},
   .value_shape_length = {value_shape_length},
   .value_shape = {value_shape},
   .wcoeffs_rows = {wcoeffs_rows},
@@ -26,7 +25,8 @@ ufcx_basix_custom_finite_element {factory_name} =
   .M = {M},
   .map_type = {map_type},
   .discontinuous = {discontinuous},
-  .highest_complete_degree = {highest_complete_degree}
+  .highest_complete_degree = {highest_complete_degree},
+  .highest_degree = {highest_degree}
 }};
 
 // End of code for custom element {factory_name}
