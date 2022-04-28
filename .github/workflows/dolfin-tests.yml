@@ -34,7 +34,7 @@ jobs:
       - name: Install UFL and Basix
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/degree
+          python3 -m pip install git+https://github.com/FEniCS/basix.git
 
       - name: Install FFCx
         run: |
@@ -45,7 +45,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: mscroggs/degree
+          ref: main
       - name: Clone and install DOLFINx
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
