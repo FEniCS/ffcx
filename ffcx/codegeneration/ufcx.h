@@ -12,7 +12,7 @@
 #define UFCX_VERSION_MAJOR 0
 #define UFCX_VERSION_MINOR 4
 #define UFCX_VERSION_MAINTENANCE 1
-#define UFCX_VERSION_RELEASE 0
+#define UFCX_VERSION_RELEASE 1
 
 #if UFCX_VERSION_RELEASE
 #define UFCX_VERSION                                                            \
