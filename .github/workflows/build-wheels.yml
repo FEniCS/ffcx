@@ -51,7 +51,7 @@ jobs:
         run: python setup.py bdist_wheel
 
       - name: Build sdist
-        run: python setup.py sdist --formats=bztar,gztar
+        run: python setup.py sdist --formats=gztar
 
       - uses: actions/upload-artifact@v2
         with:
@@ -67,15 +67,15 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.4.2
-        if: ${{ github.event.inputs.test_pypi_publish }}
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        if: ${{ github.event.inputs.pypi_publish }}
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
-          repository_url: https://pypi.org/legacy/
+          repository_url: https://upload.pypi.org/legacy/
 
-      - uses: pypa/gh-action-pypi-publish@v1.4.2
-        if: ${{ github.event.inputs.pypi_publish }}
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        if: ${{ github.event.inputs.test_pypi_publish }}
         with:
           user: __token__
           password: ${{ secrets.PYPI_TEST_TOKEN }}
