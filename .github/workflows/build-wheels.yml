@@ -66,18 +66,16 @@ jobs:
       
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.5.0
-        if: ${{ github.event.inputs.pypi_publish }}
+        if: ${{ github.event.inputs.pypi_publish == 'true' }}
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
           repository_url: https://upload.pypi.org/legacy/
-          verbose: true
       
       - name: Publish to Test PyPI
         uses: pypa/gh-action-pypi-publish@v1.5.0
-        if: ${{ github.event.inputs.test_pypi_publish }}
+        if: ${{ github.event.inputs.test_pypi_publish == 'true' }}
         with:
           user: __token__
           password: ${{ secrets.PYPI_TEST_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
-          verbose: true
