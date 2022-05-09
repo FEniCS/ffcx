@@ -262,7 +262,7 @@ def analyse_modified_terminal(expr):
     # Get the shape of the core terminal or its reference value, this is
     # the shape that component refers to
     if isinstance(t, FormArgument):
-        element = t.ufl_element()
+        element = t.ufl_function_space().ufl_element()
         if reference_value:
             # Ignoring symmetry, assuming already applied in conversion
             # to reference frame

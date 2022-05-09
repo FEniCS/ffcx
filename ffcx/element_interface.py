@@ -18,6 +18,14 @@ from abc import ABC, abstractmethod
 import basix
 import numpy
 import ufl
+import basix.ufl_wrapper
+import functools
+
+
+@functools.lru_cache()
+def create_basix_element(family_type, cell_type, degree, variant_info, discontinuous):
+    """Create a basix element."""
+    return basix.create_element(family_type, cell_type, degree, *variant_info, discontinuous)
 
 
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
@@ -28,11 +36,11 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
 
     Returns:
         A FFCx finite element
-
     """
     # TODO: EnrichedElement
-    # TODO: Short/alternative names for elements
-    # TODO: Allow different args for different parts of mixed element
+
+    if isinstance(element, basix.ufl_wrapper.BasixElement):
+        return BasixElement(element.basix_element)
 
     if isinstance(element, ufl.VectorElement):
         return BlockedElement(create_element(element.sub_elements()[0]),
@@ -46,8 +54,6 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
 
     if element.family() == "Quadrature":
         return QuadratureElement(element)
-
-    variant_info = []
 
     family_name = element.family()
     discontinuous = False
@@ -63,16 +69,29 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     if family_name == "DPC":
         discontinuous = True
 
-    if family_name in ["Lagrange", "Q"]:
-        if element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.gll_warped)
-        else:
-            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
-
     family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
     cell_type = basix.cell.string_to_type(element.cell().cellname())
 
-    return BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
+    variant_info = []
+    if family_type == basix.ElementFamily.P and element.variant() == "equispaced":
+        # This is used for elements defining cells
+        variant_info = [basix.LagrangeVariant.equispaced]
+    else:
+        if element.variant() is not None:
+            raise ValueError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
+
+        EF = basix.ElementFamily
+        if family_type == EF.P:
+            variant_info = [basix.LagrangeVariant.gll_warped]
+        elif family_type in [EF.RT, EF.N1E]:
+            variant_info = [basix.LagrangeVariant.legendre]
+        elif family_type in [EF.serendipity, EF.BDM, EF.N2E]:
+            variant_info = [basix.LagrangeVariant.legendre, basix.DPCVariant.legendre]
+        elif family_type == EF.DPC:
+            variant_info = [basix.DPCVariant.diagonal_gll]
+
+    return BasixElement(create_basix_element(
+        family_type, cell_type, element.degree(), tuple(variant_info), discontinuous))
 
 
 def basix_index(*args):
@@ -246,6 +265,12 @@ class BaseElement(ABC):
 
     @property
     @abstractmethod
+    def dpc_variant(self):
+        """Basix DPC variant used to initialise the element."""
+        pass
+
+    @property
+    @abstractmethod
     def cell_type(self):
         """Basix cell type used to initialise the element."""
         pass
@@ -256,16 +281,17 @@ class BaseElement(ABC):
         """True if the discontinuous version of the element is used."""
         pass
 
+    @property
+    def is_custom_element(self) -> bool:
+        """True if the element is a custom Basix element."""
+        return False
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, family_type, cell_type, degree, variant_info, discontinuous: bool):
-        self.element = basix.create_element(family_type, cell_type, degree, *variant_info,
-                                            discontinuous)
-        self._family = family_type
-        self._cell = cell_type
-        self._discontinuous = discontinuous
+    def __init__(self, element):
+        self.element = element
 
     def tabulate(self, nderivs, points):
         tab = self.element.tabulate(nderivs, points)
@@ -278,7 +304,10 @@ class BasixElement(BaseElement):
     @property
     def element_type(self) -> str:
         """Element type."""
-        return "ufcx_basix_element"
+        if self.is_custom_element:
+            return "ufcx_basix_custom_element"
+        else:
+            return "ufcx_basix_element"
 
     @property
     def dim(self):
@@ -331,19 +360,28 @@ class BasixElement(BaseElement):
 
     @property
     def element_family(self):
-        return self._family
+        return self.element.family
 
     @property
     def lagrange_variant(self):
         return self.element.lagrange_variant
 
     @property
+    def dpc_variant(self):
+        return self.element.dpc_variant
+
+    @property
     def cell_type(self):
-        return self._cell
+        return self.element.cell_type
 
     @property
     def discontinuous(self):
-        return self._discontinuous
+        return self.element.discontinuous
+
+    @property
+    def is_custom_element(self) -> bool:
+        """True if the element is a custom Basix element."""
+        return self.element.family == basix.ElementFamily.custom
 
 
 class ComponentElement(BaseElement):
@@ -426,6 +464,10 @@ class ComponentElement(BaseElement):
     @property
     def lagrange_variant(self):
         return self.element.lagrange_variant
+
+    @property
+    def dpc_variant(self):
+        return self.element.dpc_variant
 
     @property
     def cell_type(self):
@@ -546,6 +588,10 @@ class MixedElement(BaseElement):
         return None
 
     @property
+    def dpc_variant(self):
+        return None
+
+    @property
     def element_family(self):
         return None
 
@@ -648,6 +694,10 @@ class BlockedElement(BaseElement):
     @property
     def lagrange_variant(self):
         return self.sub_element.lagrange_variant
+
+    @property
+    def dpc_variant(self):
+        return self.sub_element.dpc_variant
 
     @property
     def element_family(self):
@@ -754,6 +804,10 @@ class QuadratureElement(BaseElement):
 
     @property
     def lagrange_variant(self):
+        return None
+
+    @property
+    def dpc_variant(self):
         return None
 
     @property
