@@ -173,6 +173,9 @@ extern "C"
     /// The number of interpolation points associated with each entity
     int* npts;
 
+    /// The number of DOFs associated with each entity
+    int* ndofs;
+
     // The coordinates of the interpolation points
     double* x;
 
