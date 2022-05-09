@@ -11,7 +11,7 @@
 
 #define UFCX_VERSION_MAJOR 0
 #define UFCX_VERSION_MINOR 4
-#define UFCX_VERSION_MAINTENANCE 1
+#define UFCX_VERSION_MAINTENANCE 3
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
@@ -172,6 +172,9 @@ extern "C"
 
     /// The number of interpolation points associated with each entity
     int* npts;
+
+    /// The number of DOFs associated with each entity
+    int* ndofs;
 
     // The coordinates of the interpolation points
     double* x;

@@ -155,13 +155,18 @@ def generate_custom_element(name, ir):
     d["x"] = f"x_{name}"
     d["x_init"] = f"double x_{name}[{len(x)}] = "
     d["x_init"] += "{" + ",".join([f" {i}" for i in x]) + "};"
+    ndofs = []
     M = []
     for entity in ir.M:
         for matrices in entity:
+            ndofs.append(matrices.shape[0])
             for mat in matrices:
                 for row in mat:
                     for i in row:
                         M.append(i)
+    d["ndofs"] = f"ndofs_{name}"
+    d["ndofs_init"] = f"int ndofs_{name}[{len(ndofs)}] = "
+    d["ndofs_init"] += "{" + ",".join([f" {i}" for i in ndofs]) + "};"
     d["M"] = f"M_{name}"
     d["M_init"] = f"double M_{name}[{len(M)}] = "
     d["M_init"] += "{" + ",".join([f" {i}" for i in M]) + "};"
