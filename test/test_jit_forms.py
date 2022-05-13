@@ -694,3 +694,57 @@ def test_cell_facet_form(mode, expected_result, permutation, compile_args):
         expected_result = np.flipud(expected_result)
 
     assert np.allclose(A, expected_result)
+
+
+@pytest.mark.parametrize("mode,expected_result", [
+    ("double", [0.94280904, 1.1785113])])
+@pytest.mark.parametrize("permutation", [[0, 0], [0, 1], [1, 0], [1, 1]])
+def test_cell_facet_coeff_form(mode, expected_result, permutation, compile_args):
+    domain_cell = ufl.triangle
+    V_fe = ufl.FiniteElement("Lagrange", domain_cell, 1)
+    Vbar_fe = ufl.FiniteElement("Lagrange", ufl.Cell("interval", 2), 1)
+
+    f = ufl.Coefficient(V_fe)
+    g = ufl.Coefficient(Vbar_fe)
+
+    ds = ufl.Measure("ds", domain=domain_cell)
+
+    forms = [f * g * ds]
+
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode},
+        cffi_extra_compile_args=compile_args)
+
+    with open("code.c", "w") as f:
+        f.write(code[1])
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+
+    integral0 = form0.integrals(module.lib.exterior_facet)[0]
+
+    np_type = cdtype_to_numpy(mode)
+
+    s = np.zeros((1), dtype=np_type)
+    w = np.array([0, 1, 2, 0, 1], dtype=np_type)
+    c = np.array([], dtype=np_type)
+    facet = np.array([0], dtype=np.intc)
+    perm = np.array(permutation, dtype=np.uint8)
+
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
+
+    kernel = getattr(integral0, f"tabulate_tensor_{np_type}")
+    kernel(ffi.cast(f'{mode}  *', s.ctypes.data),
+           ffi.cast(f'{mode}  *', w.ctypes.data),
+           ffi.cast(f'{mode}  *', c.ctypes.data),
+           ffi.cast('double *', coords.ctypes.data),
+           ffi.cast('int *', facet.ctypes.data),
+           ffi.cast('uint8_t *', perm.ctypes.data))
+
+    # TODO Check if the expected result is correct
+    if permutation[0] != permutation[1]:
+        assert(np.isclose(s[0], expected_result[0]))
+    else:
+        assert(np.isclose(s[0], expected_result[1]))
