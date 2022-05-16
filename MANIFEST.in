@@ -5,6 +5,7 @@ include ChangeLog.rst
 include INSTALL
 include LICENSE
 include ffcx/codegeneration/ufcx.h
+recursive-include cmake *
 recursive-include demo *
 recursive-include doc *
 recursive-include ffcx *.in
