@@ -476,7 +476,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
                 elif itg_data.subdomain_id < 0:
                     raise ValueError("Integral subdomain ID must be non-negative.")
                 else:
-                    assert isinstance(itg_data.subdomain_id, numpy.integer)
+                    assert isinstance(itg_data.subdomain_id, (int, numpy.integer))
                     ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
                     ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
 
