@@ -487,6 +487,10 @@ class ComponentElement(BaseElement):
     def discontinuous(self):
         return self.element.discontinuous
 
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.element.interpolation_nderivs
+
 
 class MixedElement(BaseElement):
     """A mixed element that combines two or more elements."""
@@ -613,6 +617,10 @@ class MixedElement(BaseElement):
     def discontinuous(self):
         return False
 
+    @property
+    def interpolation_nderivs(self) -> int:
+        return max([e.interpolation_nderivs for e in self.elements])
+
 
 class BlockedElement(BaseElement):
     """An element with a block size that contains multiple copies of a sub element."""
@@ -720,6 +728,10 @@ class BlockedElement(BaseElement):
     @property
     def discontinuous(self):
         return self.sub_element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.sub_element.interpolation_nderivs
 
 
 class QuadratureElement(BaseElement):
@@ -831,3 +843,7 @@ class QuadratureElement(BaseElement):
     @property
     def discontinuous(self):
         return False
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return 0
