@@ -120,8 +120,8 @@ def generate_custom_element(name, ir):
     d["factory_name"] = name
     d["cell_type"] = int(ir.cell_type)
     d["map_type"] = int(ir.map_type)
-    d["degree"] = ir.degree
     d["highest_complete_degree"] = ir.highest_complete_degree
+    d["highest_degree"] = ir.highest_degree
     d["discontinuous"] = "true" if ir.discontinuous else "false"
     d["interpolation_nderivs"] = ir.interpolation_nderivs
 
@@ -156,14 +156,20 @@ def generate_custom_element(name, ir):
     d["x"] = f"x_{name}"
     d["x_init"] = f"double x_{name}[{len(x)}] = "
     d["x_init"] += "{" + ",".join([f" {i}" for i in x]) + "};"
+    ndofs = []
     M = []
     for entity in ir.M:
         for mat4d in entity:
+            ndofs.append(mat4d.shape[0])
             for mat3d in mat4d:
                 for mat2d in mat3d:
                     for row in mat2d:
                         for i in row:
                             M.append(i)
+
+    d["ndofs"] = f"ndofs_{name}"
+    d["ndofs_init"] = f"int ndofs_{name}[{len(ndofs)}] = "
+    d["ndofs_init"] += "{" + ",".join([f" {i}" for i in ndofs]) + "};"
     d["M"] = f"M_{name}"
     d["M_init"] = f"double M_{name}[{len(M)}] = "
     d["M_init"] += "{" + ",".join([f" {i}" for i in M]) + "};"

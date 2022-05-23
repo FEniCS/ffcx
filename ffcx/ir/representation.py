@@ -60,8 +60,8 @@ ir_expression = namedtuple('ir_expression', [
     'original_coefficient_positions', 'points', 'coefficient_names', 'constant_names', 'needs_facet_permutations',
     'function_spaces', 'name_from_uflfile'])
 ir_custom_element = namedtuple('ir_custom_element', [
-    'cell_type', 'degree', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type',
-    'discontinuous', 'highest_complete_degree'])
+    'cell_type', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type',
+    'discontinuous', 'highest_complete_degree', 'highest_degree'])
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
@@ -171,15 +171,15 @@ def _compute_custom_element_ir(basix_element):
     """Compute intermediate representation of a custom Basix element."""
     ir = {}
     ir["cell_type"] = basix_element.cell_type
-    ir["degree"] = basix_element.degree
     ir["value_shape"] = basix_element.value_shape
     ir["wcoeffs"] = basix_element.wcoeffs
     ir["x"] = basix_element.x
     ir["M"] = basix_element.M
     ir["map_type"] = basix_element.map_type
     ir["discontinuous"] = basix_element.discontinuous
-    ir["highest_complete_degree"] = basix_element.degree_bounds[0]
     ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
+    ir["highest_complete_degree"] = basix_element.highest_complete_degree
+    ir["highest_degree"] = basix_element.highest_degree
 
     return ir_custom_element(**ir)
 

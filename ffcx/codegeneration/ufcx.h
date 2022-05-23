@@ -10,16 +10,16 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 3
-#define UFCX_VERSION_MAINTENANCE 1
+#define UFCX_VERSION_MINOR 4
+#define UFCX_VERSION_MAINTENANCE 3
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
-#define UFC_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE
+#define UFCX_VERSION                                                            \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE
 #else
-#define UFC_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE ".dev0"
+#define UFCX_VERSION                                                            \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".dev0"
 #endif
 
 #include <stdbool.h>
@@ -154,9 +154,6 @@ extern "C"
     /// Basix identifier of the cell shape
     int cell_type;
 
-    /// The degree of the element
-    int degree;
-
     /// Dimension of the value space for axis i
     int value_shape_length;
 
@@ -176,6 +173,9 @@ extern "C"
     /// The number of interpolation points associated with each entity
     int* npts;
 
+    /// The number of DOFs associated with each entity
+    int* ndofs;
+
     // The coordinates of the interpolation points
     double* x;
 
@@ -193,6 +193,9 @@ extern "C"
 
     /// The number of derivatives needed when interpolating
     int interpolation_nderivs;
+
+    /// The highest degree of a polynomial in the element
+    int highest_degree;
   } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
@@ -445,7 +448,7 @@ extern "C"
 
   } ufcx_form;
 
-  // FIXME: Formalise a UFC 'function space'
+  // FIXME: Formalise a UFCX 'function space'
   typedef struct ufcx_function_space
   {
     ufcx_finite_element* finite_element;
