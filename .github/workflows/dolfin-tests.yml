@@ -14,7 +14,7 @@ on:
         type: string
       basix_ref:
         description: "Basix branch or tag"
-        default: "main"
+        default: "mscroggs/hermite"
         type: string
       ufl_ref:
         description: "UFL branch or tag"
@@ -50,7 +50,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git
+          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/hermite
       - name: Install UFL and Basix (specified branches/tags)
         if: github.event_name == 'workflow_dispatch'
         run: |
