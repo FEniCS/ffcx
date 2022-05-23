@@ -619,7 +619,7 @@ class MixedElement(BaseElement):
 
     @property
     def interpolation_nderivs(self) -> int:
-        return max([e.interpolation_nderivs for e in self.elements])
+        return max([e.interpolation_nderivs for e in self.sub_elements])
 
 
 class BlockedElement(BaseElement):
