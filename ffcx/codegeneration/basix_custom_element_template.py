@@ -28,6 +28,7 @@ ufcx_basix_custom_finite_element {factory_name} =
   .map_type = {map_type},
   .discontinuous = {discontinuous},
   .highest_complete_degree = {highest_complete_degree},
+  .interpolation_nderivs = {interpolation_nderivs},
   .highest_degree = {highest_degree}
 }};
 

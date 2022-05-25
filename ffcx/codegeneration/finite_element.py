@@ -123,6 +123,7 @@ def generate_custom_element(name, ir):
     d["highest_complete_degree"] = ir.highest_complete_degree
     d["highest_degree"] = ir.highest_degree
     d["discontinuous"] = "true" if ir.discontinuous else "false"
+    d["interpolation_nderivs"] = ir.interpolation_nderivs
 
     import ffcx.codegeneration.C.cnodes as L
 
@@ -158,12 +159,14 @@ def generate_custom_element(name, ir):
     ndofs = []
     M = []
     for entity in ir.M:
-        for matrices in entity:
-            ndofs.append(matrices.shape[0])
-            for mat in matrices:
-                for row in mat:
-                    for i in row:
-                        M.append(i)
+        for mat4d in entity:
+            ndofs.append(mat4d.shape[0])
+            for mat3d in mat4d:
+                for mat2d in mat3d:
+                    for row in mat2d:
+                        for i in row:
+                            M.append(i)
+
     d["ndofs"] = f"ndofs_{name}"
     d["ndofs_init"] = f"int ndofs_{name}[{len(ndofs)}] = "
     d["ndofs_init"] += "{" + ",".join([f" {i}" for i in ndofs]) + "};"
