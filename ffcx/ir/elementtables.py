@@ -316,8 +316,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         tdim = cell.topological_dimension()
 
-        # Interior facet and mixed dimensional integrals need permutations
-        if integral_type == "interior_facet" or is_mixed_dim:
+        if integral_type == "interior_facet":
             if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
