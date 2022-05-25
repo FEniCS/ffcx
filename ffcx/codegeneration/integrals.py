@@ -521,15 +521,7 @@ class IntegralGenerator(object):
             #       Not using self.backend.access.argument() here
             #       now because it assumes too much about indices.
 
-            # Check if we have a facet element from a mixed dimensional integral. This
-            # ensures it gets the correct permutation.
-            facet_element = False
-            if self.ir.mixed_dim:
-                ufl_cell = mt.terminal.ufl_element().cell()
-                if ufl_cell.topological_dimension() == ufl_cell.geometric_dimension() - 1:
-                    facet_element = True
-
-            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction, facet_element)
+            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
 
             assert td.ttype != "zeros"
 

@@ -647,11 +647,8 @@ def test_prism(compile_args):
     assert np.isclose(sum(b), 0.5)
 
 
-@pytest.mark.parametrize("mode,expected_result", [
-    ("double", np.array([[0, np.sqrt(2) / 3, np.sqrt(2) / 6],
-                         [0, np.sqrt(2) / 6, np.sqrt(2) / 3]], dtype=np.float64))])
-@pytest.mark.parametrize("permutation", [[0, 0], [0, 1], [1, 0], [1, 1]])
-def test_cell_facet_form(mode, expected_result, permutation, compile_args):
+def test_cell_facet_form(compile_args):
+    mode = "double"
     # TODO Test 3D and non-simplex
     domain_cell = ufl.triangle
     V_fe = ufl.FiniteElement("Lagrange", domain_cell, 1)
@@ -676,7 +673,7 @@ def test_cell_facet_form(mode, expected_result, permutation, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
     facet = np.array([0], dtype=np.intc)
-    perm = np.array(permutation, dtype=np.uint8)
+    perm = np.array([], dtype=np.uint8)
 
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
@@ -690,16 +687,15 @@ def test_cell_facet_form(mode, expected_result, permutation, compile_args):
            ffi.cast('int *', facet.ctypes.data),
            ffi.cast('uint8_t *', perm.ctypes.data))
 
-    if permutation[0] != permutation[1]:
-        expected_result = np.flipud(expected_result)
+    expected_result = np.array([[0, np.sqrt(2) / 3, np.sqrt(2) / 6],
+                                [0, np.sqrt(2) / 6, np.sqrt(2) / 3]],
+                               dtype=np.float64)
 
     assert np.allclose(A, expected_result)
 
 
-@pytest.mark.parametrize("mode,expected_result", [
-    ("double", [0.94280904, 1.1785113])])
-@pytest.mark.parametrize("permutation", [[0, 0], [0, 1], [1, 0], [1, 1]])
-def test_cell_facet_coeff_form(mode, expected_result, permutation, compile_args):
+def test_cell_facet_coeff_form(compile_args):
+    mode = "double"
     domain_cell = ufl.triangle
     V_fe = ufl.FiniteElement("Lagrange", domain_cell, 1)
     Vbar_fe = ufl.FiniteElement("Lagrange", ufl.Cell("interval", 2), 1)
@@ -729,7 +725,7 @@ def test_cell_facet_coeff_form(mode, expected_result, permutation, compile_args)
     w = np.array([0, 1, 2, 0, 1], dtype=np_type)
     c = np.array([], dtype=np_type)
     facet = np.array([0], dtype=np.intc)
-    perm = np.array(permutation, dtype=np.uint8)
+    perm = np.array([], dtype=np.uint8)
 
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
@@ -744,7 +740,4 @@ def test_cell_facet_coeff_form(mode, expected_result, permutation, compile_args)
            ffi.cast('uint8_t *', perm.ctypes.data))
 
     # TODO Check if the expected result is correct
-    if permutation[0] != permutation[1]:
-        assert(np.isclose(s[0], expected_result[0]))
-    else:
-        assert(np.isclose(s[0], expected_result[1]))
+    assert(np.isclose(s[0], 1.1785113))
