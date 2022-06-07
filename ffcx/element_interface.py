@@ -282,6 +282,12 @@ class BaseElement(ABC):
         pass
 
     @property
+    @abstractmethod
+    def interpolation_nderivs(self) -> int:
+        """The number of derivatives needed when interpolating."""
+        pass
+
+    @property
     def is_custom_element(self) -> bool:
         """True if the element is a custom Basix element."""
         return False
@@ -377,6 +383,10 @@ class BasixElement(BaseElement):
     @property
     def discontinuous(self):
         return self.element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.element.interpolation_nderivs
 
     @property
     def is_custom_element(self) -> bool:
@@ -476,6 +486,10 @@ class ComponentElement(BaseElement):
     @property
     def discontinuous(self):
         return self.element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.element.interpolation_nderivs
 
 
 class MixedElement(BaseElement):
@@ -603,6 +617,10 @@ class MixedElement(BaseElement):
     def discontinuous(self):
         return False
 
+    @property
+    def interpolation_nderivs(self) -> int:
+        return max([e.interpolation_nderivs for e in self.sub_elements])
+
 
 class BlockedElement(BaseElement):
     """An element with a block size that contains multiple copies of a sub element."""
@@ -710,6 +728,10 @@ class BlockedElement(BaseElement):
     @property
     def discontinuous(self):
         return self.sub_element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.sub_element.interpolation_nderivs
 
 
 class QuadratureElement(BaseElement):
@@ -821,3 +843,7 @@ class QuadratureElement(BaseElement):
     @property
     def discontinuous(self):
         return False
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return 0
