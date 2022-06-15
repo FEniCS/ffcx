@@ -34,12 +34,10 @@ def handle_conditional(o, ops):
     return symbols
 
 
-def handle_conj(o, ops):
-    if len(ops) != 1:
-        raise RuntimeError("Expecting one operand")
-    if o.ufl_shape != ():
-        raise RuntimeError("Expecting scalar.")
-    return [o._ufl_expr_reconstruct_(x) for x in ops[0]]
+def handle_elementwise_unary(o, ops):
+    if len(ops) > 1:
+        raise RuntimeError("Expecting unary operator.")
+    return [o._ufl_expr_reconstruct_(op) for op in ops[0]]
 
 
 def handle_division(o, ops):
@@ -142,8 +140,8 @@ _reconstruct_call_lookup = {ufl.classes.MathFunction: handle_scalar_nary,
                             ufl.classes.Abs: handle_scalar_nary,
                             ufl.classes.MinValue: handle_scalar_nary,
                             ufl.classes.MaxValue: handle_scalar_nary,
-                            ufl.classes.Real: handle_scalar_nary,
-                            ufl.classes.Imag: handle_scalar_nary,
+                            ufl.classes.Real: handle_elementwise_unary,
+                            ufl.classes.Imag: handle_elementwise_unary,
                             ufl.classes.Power: handle_scalar_nary,
                             ufl.classes.BesselFunction: handle_scalar_nary,
                             ufl.classes.Atan2: handle_scalar_nary,
@@ -151,7 +149,7 @@ _reconstruct_call_lookup = {ufl.classes.MathFunction: handle_scalar_nary,
                             ufl.classes.Division: handle_division,
                             ufl.classes.Sum: handle_sum,
                             ufl.classes.IndexSum: handle_index_sum,
-                            ufl.classes.Conj: handle_conj,
+                            ufl.classes.Conj: handle_elementwise_unary,
                             ufl.classes.Conditional: handle_conditional,
                             ufl.classes.Condition: handle_condition}
 
