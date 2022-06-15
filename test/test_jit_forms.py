@@ -647,7 +647,6 @@ def test_prism(compile_args):
     assert np.isclose(sum(b), 0.5)
 
 
-
 def test_cell_facet_form(compile_args):
     mode = "double"
     # TODO Test 3D and non-simplex
