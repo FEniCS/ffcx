@@ -268,7 +268,7 @@ class UFL2CNodesTranslatorCpp(object):
             raise type(e)("Math function not found:", self.scalar_type, k)
         if name is None:
             raise RuntimeError("Not supported in current scalar mode")
-        
+
         if self.batch_size == 1:
             return self.L.Call(name, args)
         else:
@@ -278,7 +278,7 @@ class UFL2CNodesTranslatorCpp(object):
                 calls += [self.L.Call(name, [arg])]
             calls = numpy.array(calls)
             init_list = self.L.build_1d_initializer_list(calls, str)
-            return  self.L.as_symbol(init_list)
+            return self.L.as_symbol(init_list)
 
     # === Formatting rules for bessel functions ===
     # Some Bessel functions exist in gcc, as XSI extensions

@@ -7,7 +7,6 @@
 import collections
 import logging
 from typing import List, Tuple
-import copy
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -235,7 +234,7 @@ class IntegralGenerator(object):
             if batch_size > 1:
                 scalar_type += str(batch_size)
             values = self.backend.ufl_to_language.get(literal)
-            all_preparts.insert(0, L.VariableDecl(f"const {scalar_type}", self.literals[literal], values)) 
+            all_preparts.insert(0, L.VariableDecl(f"const {scalar_type}", self.literals[literal], values))
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
