@@ -34,7 +34,6 @@ math_table = {'double': {'sqrt': 'sqrt',
                          'atan_2': 'atan2',
                          'min_value': 'fmin',
                          'max_value': 'fmax'},
-
               'float': {'sqrt': 'sqrtf',
                         'abs': 'fabsf',
                         'cos': 'cosf',

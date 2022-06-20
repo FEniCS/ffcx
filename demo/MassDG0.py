@@ -16,12 +16,12 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # The bilinear form for a mass matrix.
-from ufl import (FiniteElement, TestFunction, TrialFunction, dx, inner,
+from ufl import (FiniteElement, TestFunction, Coefficient, dx, inner,
                  tetrahedron)
 
-element = FiniteElement("DG", tetrahedron, 0)
+element = FiniteElement("DG", tetrahedron, 3)
 
 v = TestFunction(element)
-u = TrialFunction(element)
+u = Coefficient(element)
 
 a = inner(u, v) * dx

@@ -136,13 +136,33 @@ def _generate_includes(parameters):
         "#include <ufcx.h>"
     ]
 
-    if "_Complex" in parameters["scalar_type"]:
+    scalar_type = parameters["scalar_type"]
+    batch_size = parameters["batch_size"]
+    print(batch_size)
+
+    if "_Complex" in scalar_type:
         default_c_includes += ["#include <complex.h>"]
+        if batch_size > 1:
+            raise Exception("Batch size greater than one not allowed in complex mode.")
+
+    default_vector = f"""
+
+#if defined(__clang__)
+    typedef {scalar_type} {scalar_type}{batch_size} __attribute__((ext_vector_type({batch_size})));
+#elif defined(__GNUC__) || defined(__GNUG__)
+    typedef {scalar_type} {scalar_type}{batch_size} __attribute__((vector_size({batch_size} * sizeof({scalar_type}))));
+#else
+    #error "Compiler not supported"
+#endif
+    """
 
     s_h = set(default_h_includes)
     s_c = set(default_c_includes)
 
     includes_h = "\n".join(sorted(s_h)) + "\n" if s_h else ""
     includes_c = "\n".join(sorted(s_c)) + "\n" if s_c else ""
+
+    if batch_size > 1:
+        includes_c += default_vector
 
     return includes_h, includes_c

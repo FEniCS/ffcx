@@ -432,6 +432,7 @@ class ExpressionGenerator:
         if v._ufl_is_literal_:
             return self.backend.ufl_to_language.get(v)
         f = self.scope.get(v)
+        print(f)
         return f
 
     def generate_partition(self, symbol, F, mode):

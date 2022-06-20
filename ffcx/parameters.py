@@ -21,6 +21,7 @@ FFCX_DEFAULT_PARAMETERS = {
     "scalar_type":
         ("double", """Scalar type used in generated code. Any of real or complex C floating-point types, e.g.
                       float, double, float _Complex, double _Complex, ..."""),
+    "batch_size": (1, "Number of elements processed in a single kernel (cross element vectorization)"),
     "tabulate_tensor_void":
         (False, "True to generate empty tabulation kernels."),
     "table_rtol":

@@ -7,6 +7,7 @@
 import collections
 import logging
 from typing import List, Tuple
+import copy
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -106,6 +107,9 @@ class IntegralGenerator(object):
         # Cache
         self.shared_symbols = {}
 
+        # Literals
+        self.literals = {}
+
         # Set of counters used for assigning names to intermediate variables
         self.symbol_counters = collections.defaultdict(int)
 
@@ -138,8 +142,16 @@ class IntegralGenerator(object):
 
         Returns the CNodes expression to access the value in the code.
         """
-        if v._ufl_is_literal_:
+        L = self.backend.language
+        batch_size = self.backend.access.parameters["batch_size"]
+        if batch_size > 1:
+            if v._ufl_is_literal_:
+                if v not in self.literals:
+                    self.literals[v] = L.Symbol("literal" + str(len(self.literals)))
+                return self.literals[v]
+        else:
             return self.backend.ufl_to_language.get(v)
+
         f = self.scopes[quadrature_rule].get(v)
         if f is None:
             f = self.scopes[None].get(v)
@@ -216,6 +228,18 @@ class IntegralGenerator(object):
 
         parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
                                        "Pre-definitions of modified terminals to enable unit-stride access")
+
+
+
+
+        print(self.literals)
+        for literal in self.literals.keys():
+            scalar_type = self.backend.access.parameters["scalar_type"]
+            batch_size = self.backend.access.parameters["batch_size"]
+            if batch_size > 1:
+                scalar_type += str(batch_size)
+            values = self.backend.ufl_to_language.get(literal)
+            all_preparts.insert(0, L.VariableDecl(f"const {scalar_type}", self.literals[literal], values)) 
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
@@ -455,6 +479,9 @@ class IntegralGenerator(object):
                             intermediates.append(L.Assign(vaccess, vexpr))
                         else:
                             scalar_type = self.backend.access.parameters["scalar_type"]
+                            batch_size = self.backend.access.parameters["batch_size"]
+                            if batch_size > 1:
+                                scalar_type += str(batch_size)
                             vaccess = L.Symbol("%s_%d" % (symbol.name, j))
                             intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
@@ -469,8 +496,11 @@ class IntegralGenerator(object):
         if intermediates:
             if use_symbol_array:
                 padlen = self.ir.params["padlen"]
-                parts += [L.ArrayDecl(self.backend.access.parameters["scalar_type"],
-                                      symbol, len(intermediates), padlen=padlen)]
+                scalar_type = self.backend.access.parameters["scalar_type"]
+                batch_size = self.backend.access.parameters["batch_size"]
+                if batch_size > 1:
+                    scalar_type += str(batch_size)
+                parts += [L.ArrayDecl(scalar_type, symbol, len(intermediates), padlen=padlen)]
             parts += intermediates
         return pre_definitions, parts
 
@@ -597,6 +627,9 @@ class IntegralGenerator(object):
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
                     scalar_type = self.backend.access.parameters["scalar_type"]
+                    batch_size = self.backend.access.parameters["batch_size"]
+                    if batch_size > 1:
+                        scalar_type += str(batch_size)
                     quadparts.append(L.VariableDecl(f"const {scalar_type}", fw, fw_rhs))
 
             assert not blockdata.transposed, "Not handled yet"
@@ -664,6 +697,9 @@ class IntegralGenerator(object):
                     else:
                         t = self.new_temp_symbol("t")
                         scalar_type = self.backend.access.parameters["scalar_type"]
+                        batch_size = self.backend.access.parameters["batch_size"]
+                        if batch_size > 1:
+                            scalar_type += str(batch_size)
                         pre_loop.append(L.ArrayDecl(scalar_type, t, blockdims[0]))
                         keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
                         hoist.append(L.Assign(t[B_indices[i - 1]], sum))

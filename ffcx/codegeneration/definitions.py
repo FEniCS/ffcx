@@ -65,6 +65,12 @@ class FFCXBackendDefinitions(object):
         """Return definition code for coefficients."""
         L = self.language
 
+        scalar_type = self.parameters["scalar_type"]
+        batch_size = self.parameters["batch_size"]
+
+        if (batch_size > 1):
+            scalar_type += str(batch_size)
+
         ttype = tabledata.ttype
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
@@ -98,14 +104,14 @@ class FFCXBackendDefinitions(object):
 
             # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
-                pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
+                pre_code += [L.ArrayDecl(scalar_type, dof_access.array, num_dofs)]
                 pre_body = L.Assign(dof_access, dof_access_map)
                 pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
-
+        print(scalar_type)
         body = [L.AssignAdd(access, dof_access * FE[ic])]
-        code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
+        code += [L.VariableDecl(scalar_type, access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
         return pre_code, code
@@ -143,7 +149,12 @@ class FFCXBackendDefinitions(object):
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
         value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
-        code = [L.VariableDecl("const double", access, value)]
+        scalar_type = self.parameters["scalar_type"]
+        batch_size = self.parameters["batch_size"]
+        if batch_size > 1:
+            scalar_type += str(batch_size)
+
+        code = [L.VariableDecl("const " + scalar_type, access, value)]
 
         return [], code
 
