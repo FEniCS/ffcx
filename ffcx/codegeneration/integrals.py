@@ -229,10 +229,6 @@ class IntegralGenerator(object):
         parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
                                        "Pre-definitions of modified terminals to enable unit-stride access")
 
-
-
-
-        print(self.literals)
         for literal in self.literals.keys():
             scalar_type = self.backend.access.parameters["scalar_type"]
             batch_size = self.backend.access.parameters["batch_size"]

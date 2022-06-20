@@ -109,7 +109,6 @@ class FFCXBackendDefinitions(object):
                 pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
-        print(scalar_type)
         body = [L.AssignAdd(access, dof_access * FE[ic])]
         code += [L.VariableDecl(scalar_type, access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]

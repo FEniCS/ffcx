@@ -138,7 +138,6 @@ def _generate_includes(parameters):
 
     scalar_type = parameters["scalar_type"]
     batch_size = parameters["batch_size"]
-    print(batch_size)
 
     if "_Complex" in scalar_type:
         default_c_includes += ["#include <complex.h>"]

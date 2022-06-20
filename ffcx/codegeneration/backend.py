@@ -20,7 +20,9 @@ class FFCXBackend(object):
         # This is the seam where cnodes/C is chosen for the FFCx backend
         self.language = ffcx.codegeneration.C.cnodes
         scalar_type = parameters["scalar_type"]
-        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type)
+        batch_size = parameters["batch_size"]
+
+        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type, batch_size)
 
         coefficient_numbering = ir.coefficient_numbering
         coefficient_offsets = ir.coefficient_offsets

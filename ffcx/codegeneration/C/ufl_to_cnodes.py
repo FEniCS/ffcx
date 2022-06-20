@@ -6,7 +6,7 @@
 """Tools for C/C++ expression formatting."""
 
 import logging
-
+import numpy
 import ufl
 
 logger = logging.getLogger("ffcx")
@@ -128,11 +128,12 @@ math_table = {'double': {'sqrt': 'sqrt',
 class UFL2CNodesTranslatorCpp(object):
     """UFL to CNodes translator class."""
 
-    def __init__(self, language, scalar_type="double"):
+    def __init__(self, language, scalar_type, batch_size):
         self.L = language
         self.force_floats = False
         self.enable_strength_reduction = False
         self.scalar_type = scalar_type
+        self.batch_size = batch_size
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
@@ -267,7 +268,17 @@ class UFL2CNodesTranslatorCpp(object):
             raise type(e)("Math function not found:", self.scalar_type, k)
         if name is None:
             raise RuntimeError("Not supported in current scalar mode")
-        return self.L.Call(name, args)
+        
+        if self.batch_size == 1:
+            return self.L.Call(name, args)
+        else:
+            calls = []
+            for i in range(self.batch_size):
+                arg = self.L.as_symbol(args[0].ce_format() + f"[{i}]")
+                calls += [self.L.Call(name, [arg])]
+            calls = numpy.array(calls)
+            init_list = self.L.build_1d_initializer_list(calls, str)
+            return  self.L.as_symbol(init_list)
 
     # === Formatting rules for bessel functions ===
     # Some Bessel functions exist in gcc, as XSI extensions
