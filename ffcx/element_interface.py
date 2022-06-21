@@ -126,12 +126,13 @@ def reference_cell_vertices(cellname: str) -> numpy.typing.NDArray[numpy.float64
     return basix.geometry(basix.cell.string_to_type(cellname))
 
 
-def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int, cellname: str) -> numpy.typing.NDArray[numpy.float64]:
+def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int,
+                     cellname: str) -> numpy.typing.NDArray[numpy.float64]:
     """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
     return numpy.asarray([facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
-                          for p in points], dtype=numpy.int64)
+                          for p in points], dtype=numpy.float64)
 
 
 class BaseElement(ABC):
