@@ -382,12 +382,14 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         tensor_factors = None
         tensor_perm = None
-        if basix_element.has_tensor_product_factorisation:
+        if (
+            basix_element.has_tensor_product_factorisation
+            # TODO: allow for element made from multiple tensor parts
+            and len(factors) == 1
+            and quadrature_rule.degree is not None
+            and quadrature_rule.scheme is not None
+        ):
             factors = basix_element.get_tensor_product_representation()
-            # For now assert we're in simplest case
-            assert len(factors) == 1
-            assert quadrature_rule.degree is not None
-            assert quadrature_rule.scheme is not None
             dim = len(factors[0][0])
 
             tensor_factors = []
