@@ -55,6 +55,36 @@ class FormIR(typing.NamedTuple):
     subdomain_ids: typing.Dict[str, typing.List[int]]
 
 
+ir_custom_element = namedtuple('ir_custom_element', [
+    'cell_type', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type', 'interpolation_nderivs',
+    'discontinuous', 'highest_complete_degree', 'highest_degree'])
+
+
+class ElementIR(typing.NamedTuple):
+    id: int
+    name: str
+    signature: str
+    cell_shape: str
+    topological_dimension: int
+    geometric_dimension: int
+    space_dimension: int
+    value_shape: typing.Tuple[int]
+    reference_value_shape: typing.Tuple[int]
+    degree: int
+    family: str
+    num_sub_elements: int
+    block_size: int
+    sub_elements: typing.List[str]
+    element_type: str
+    entity_dofs: typing.List[typing.List[typing.List[int]]]
+    lagrange_variant: basix.LagrangeVariant
+    dpc_variant: basix.DPCVariant
+    basix_family: basix.ElementFamily
+    basix_cell: basix.CellType
+    discontinuous: bool
+    custom_element: ir_custom_element
+
+
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
@@ -76,9 +106,7 @@ ir_expression = namedtuple('ir_expression', [
     'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
     'original_coefficient_positions', 'points', 'coefficient_names', 'constant_names', 'needs_facet_permutations',
     'function_spaces', 'name_from_uflfile'])
-ir_custom_element = namedtuple('ir_custom_element', [
-    'cell_type', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type', 'interpolation_nderivs',
-    'discontinuous', 'highest_complete_degree', 'highest_degree'])
+
 
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 

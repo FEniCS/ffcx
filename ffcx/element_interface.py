@@ -105,7 +105,7 @@ def create_quadrature(cellname, degree, rule) -> typing.Tuple[numpy.typing.NDArr
                                                               numpy.typing.NDArray[numpy.float64]]:
     """Create a quadrature rule."""
     if cellname == "vertex":
-        return (numpy.ones(0, dtype=numpy.float64), numpy.ones(1, dtype=numpy.float64))
+        return (numpy.ones((1, 0), dtype=numpy.float64), numpy.ones(1, dtype=numpy.float64))
 
     quadrature = basix.make_quadrature(
         basix.quadrature.string_to_type(rule), basix.cell.string_to_type(cellname), degree)
@@ -126,12 +126,12 @@ def reference_cell_vertices(cellname: str) -> numpy.typing.NDArray[numpy.float64
     return basix.geometry(basix.cell.string_to_type(cellname))
 
 
-def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int, cellname: str) -> typing.List[int]:
+def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int, cellname: str) -> numpy.typing.NDArray[numpy.float64]:
     """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
-    return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
-            for p in points]
+    return numpy.asarray([facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
+                          for p in points], dtype=numpy.int64)
 
 
 class BaseElement(ABC):
@@ -410,7 +410,8 @@ class ComponentElement(BaseElement):
         self.element = element
         self.component = component
 
-    def tabulate(self, nderivs, points) -> typing.List[numpy.typing.NDArray[numpy.float64]]:
+    def tabulate(self, nderivs: int, points:
+                 numpy.typing.NDArray[numpy.float64]) -> typing.List[numpy.typing.NDArray[numpy.float64]]:
         tables = self.element.tabulate(nderivs, points)
         output = []
         for tbl in tables:
