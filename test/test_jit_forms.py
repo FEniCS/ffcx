@@ -748,3 +748,53 @@ def test_cell_facet_coeff_form(mode, expected_result, permutation, compile_args)
         assert(np.isclose(s[0], expected_result[0]))
     else:
         assert(np.isclose(s[0], expected_result[1]))
+
+
+def test_complex_operations(compile_args):
+    mode = "double _Complex"
+    cell = ufl.triangle
+    c_element = ufl.VectorElement("Lagrange", cell, 1)
+    mesh = ufl.Mesh(c_element)
+    element = ufl.VectorElement("DG", cell, 0)
+    V = ufl.FunctionSpace(mesh, element)
+    u = ufl.Coefficient(V)
+    J1 = ufl.real(u)[0] * ufl.imag(u)[1] * ufl.conj(u)[0] * ufl.dx
+    J2 = ufl.real(u[0]) * ufl.imag(u[1]) * ufl.conj(u[0]) * ufl.dx
+    forms = [J1, J2]
+
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+
+    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
+    form1 = compiled_forms[1].integrals(module.lib.cell)[0]
+
+    ffi = module.ffi
+    np_type = cdtype_to_numpy(mode)
+    w1 = np.array([3 + 5j, 8 - 7j], dtype=np_type)
+    c = np.array([], dtype=np_type)
+
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [1.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
+    J_1 = np.zeros((1), dtype=np_type)
+    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
+    kernel0(ffi.cast('{type} *'.format(type=mode), J_1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+
+    expected_result = np.array([0.5 * np.real(w1[0]) * np.imag(w1[1])
+                               * (np.real(w1[0]) - 1j * np.imag(w1[0]))], dtype=np_type)
+    assert np.allclose(J_1, expected_result)
+
+    J_2 = np.zeros((1), dtype=np_type)
+
+    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
+    kernel1(ffi.cast('{type} *'.format(type=mode), J_2.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+
+    assert np.allclose(J_2, expected_result)
+
+    assert np.allclose(J_1, J_2)
