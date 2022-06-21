@@ -516,21 +516,27 @@ class IntegralGenerator(object):
             scope = self.ir.integrand[quadrature_rule]["modified_arguments"]
             mt = scope[mad.ma_index]
 
-            # Translate modified terminal to code
-            # TODO: Move element table access out of backend?
-            #       Not using self.backend.access.argument() here
-            #       now because it assumes too much about indices.
-
-            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
 
             assert td.ttype != "zeros"
-
             if td.ttype == "ones":
                 arg_factor = 1
             else:
-                # Assuming B sparsity follows element table sparsity
-                arg_factor = table[indices[i]]
-            arg_factors.append(arg_factor)
+
+                tables = []
+                if (td.has_tensor_factorisation):
+                    factors = td.tensor_factors
+                    for factor in factors:
+                        table = self.backend.symbols.element_table(factor, self.ir.entitytype, mt.restriction)
+                        arg_factor = table[indices[i]]
+                        arg_factors.append(arg_factor)
+                else:
+                    # Translate modified terminal to code
+                    # TODO: Move element table access out of backend?
+                    #       Not using self.backend.access.argument() here
+                    #       now because it assumes too much about indices.
+                    table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
+                    arg_factors.append(table[indices[i]])
+
         return arg_factors
 
     def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[block_data_t]):
