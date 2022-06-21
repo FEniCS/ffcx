@@ -631,44 +631,44 @@ class IntegralGenerator(object):
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
 
-            # Hoist loop invariant code and group array access (each table should only be read one
-            # time in the inner loop).
-            if block_rank == 2:
-                ind = B_indices[-1]
-                for rhs in rhs_expressions[indices]:
-                    if len(rhs.args) <= 2:
-                        keep[indices].append(rhs)
-                    else:
-                        varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
-                        if varying:
-                            invariant = [x for x in rhs.args if x is not varying]
-                            hoist_rhs[varying].append(invariant)
-                        else:
-                            keep[indices].append(rhs)
+            # # Hoist loop invariant code and group array access (each table should only be read one
+            # # time in the inner loop).
+            # if block_rank == 2:
+            #     ind = B_indices[-1]
+            #     for rhs in rhs_expressions[indices]:
+            #         if len(rhs.args) <= 2:
+            #             keep[indices].append(rhs)
+            #         else:
+            #             varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
+            #             if varying:
+            #                 invariant = [x for x in rhs.args if x is not varying]
+            #                 hoist_rhs[varying].append(invariant)
+            #             else:
+            #                 keep[indices].append(rhs)
 
-                # Perform algebraic manipulations to reduce number of floating point
-                # operations (factorize expressions by grouping)
-                for statement in hoist_rhs:
-                    sum = []
-                    for rhs in hoist_rhs[statement]:
-                        sum.append(L.float_product(rhs))
-                    sum = L.Sum(sum)
+            #     # Perform algebraic manipulations to reduce number of floating point
+            #     # operations (factorize expressions by grouping)
+            #     for statement in hoist_rhs:
+            #         sum = []
+            #         for rhs in hoist_rhs[statement]:
+            #             sum.append(L.float_product(rhs))
+            #         sum = L.Sum(sum)
 
-                    lhs = None
-                    for h in hoist:
-                        if (h.rhs == sum):
-                            lhs = h.lhs
-                            break
-                    if lhs:
-                        keep[indices].append(L.float_product([statement, lhs]))
-                    else:
-                        t = self.new_temp_symbol("t")
-                        scalar_type = self.backend.access.parameters["scalar_type"]
-                        pre_loop.append(L.ArrayDecl(scalar_type, t, blockdims[0]))
-                        keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
-                        hoist.append(L.Assign(t[B_indices[i - 1]], sum))
-            else:
-                keep[indices] = rhs_expressions[indices]
+            #         lhs = None
+            #         for h in hoist:
+            #             if (h.rhs == sum):
+            #                 lhs = h.lhs
+            #                 break
+            #         if lhs:
+            #             keep[indices].append(L.float_product([statement, lhs]))
+            #         else:
+            #             t = self.new_temp_symbol("t")
+            #             scalar_type = self.backend.access.parameters["scalar_type"]
+            #             pre_loop.append(L.ArrayDecl(scalar_type, t, blockdims[0]))
+            #             keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
+            #             hoist.append(L.Assign(t[B_indices[i - 1]], sum))
+            # else:
+            keep[indices] = rhs_expressions[indices]
 
         hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
 
