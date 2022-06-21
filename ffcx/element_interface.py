@@ -298,6 +298,7 @@ class BaseElement(ABC):
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
+
     element: basix.finite_element.FiniteElement
 
     def __init__(self, element: basix.finite_element.FiniteElement):
@@ -401,6 +402,7 @@ class BasixElement(BaseElement):
 
 class ComponentElement(BaseElement):
     """An element representing one component of a BasixElement."""
+
     element: BasixElement
     component: int
 
@@ -501,6 +503,7 @@ class ComponentElement(BaseElement):
 
 class MixedElement(BaseElement):
     """A mixed element that combines two or more elements."""
+
     sub_elements: typing.List[BaseElement]
 
     def __init__(self, sub_elements: typing.List[BaseElement]):
@@ -747,6 +750,7 @@ class BlockedElement(BaseElement):
 
 class QuadratureElement(BaseElement):
     """A quadrature element."""
+
     _points: numpy.typing.NDArray[numpy.float64]
 
     def __init__(self, ufl_element):
