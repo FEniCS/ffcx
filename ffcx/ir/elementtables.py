@@ -405,10 +405,17 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                     tensor_factors.append(
                         unique_table_reference_t(
                             f"THIS_TABLE_NEEDS_A_NAME_{i}", sub_tbl,
-                            0, 0, tabletype,
-                            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
+                            None, None, None,
+                            False, False, False,
                             False, None, None))
-                    mt_tables[tensor_factors[-1].name] = tensor_factors[-1]
+
+                for i, j in enumerate(tensor_factors):
+                    if i > 0 and numpy.allclose(tensor_factors[0].values, j.values):
+                        tensor_factors[i] = tensor_factors[0]
+
+
+                for i in tensor_factors:
+                    mt_tables[i.name] = i
 
                 tensor_perm = factors[0][1]
 
