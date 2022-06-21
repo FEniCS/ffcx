@@ -18,12 +18,15 @@ representation under the key "foo".
 
 import itertools
 import logging
+import typing
 import warnings
 from collections import namedtuple
 
+import basix
 import numpy
 import ufl
 from ffcx import naming
+from ffcx.analysis import UFLData
 from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
@@ -33,11 +36,25 @@ from ufl.sorting import sorted_expr_sum
 
 logger = logging.getLogger("ffcx")
 
-ir_form = namedtuple('ir_form', [
-    'id', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
-    'name_from_uflfile', 'function_spaces', 'original_coefficient_position',
-    'coefficient_names', 'constant_names', 'finite_elements',
-    'dofmaps', 'integral_names', 'subdomain_ids'])
+
+class FormIR(typing.NamedTuple):
+    id: int
+    name: str
+    signature: str
+    rank: int
+    num_coefficients: int
+    num_constants: int
+    name_from_uflfile: str
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    original_coefficient_position: typing.List[int]
+    coefficient_names: typing.List[str]
+    constant_names: typing.List[str]
+    finite_elements: typing.List[str]
+    dofmaps: typing.List[str]
+    integral_names: typing.Dict[str, typing.List[str]]
+    subdomain_ids: typing.Dict[str, typing.List[int]]
+
+
 ir_element = namedtuple('ir_element', [
     'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
     'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
@@ -66,7 +83,7 @@ ir_custom_element = namedtuple('ir_custom_element', [
 ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
 
 
-def compute_ir(analysis, object_names, prefix, parameters, visualise):
+def compute_ir(analysis: UFLData, object_names, prefix, parameters, visualise):
     """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
@@ -400,7 +417,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
 
 
 def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, element_numbers, finite_element_names,
-                     dofmap_names, object_names):
+                     dofmap_names, object_names) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
 
@@ -481,7 +498,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
                     ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
                     ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
 
-    return ir_form(**ir)
+    return FormIR(**ir)
 
 
 def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, object_names,

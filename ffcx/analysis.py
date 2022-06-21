@@ -13,20 +13,25 @@ representation type.
 
 import logging
 import typing
-from collections import namedtuple
 
 import numpy
+import numpy.typing
 import ufl
 
 logger = logging.getLogger("ffcx")
 
 
-ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numbers',
-                                   'unique_coordinate_elements', 'expressions'])
+class UFLData(typing.NamedTuple):
+    form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]  # Tuple of ufl form data
+    unique_elements: typing.List[ufl.finiteelement.FiniteElementBase]  # List of unique elements
+    # Lookup table from each unique element to its index in `unique_elements`
+    element_numbers: typing.Dict[ufl.finiteelement.FiniteElementBase, int]
+    unique_coordinate_elements: typing.List[ufl.finiteelement.FiniteElementBase]  # List of unique coordinate elements
+    # List of ufl Expressions as tuples (expression, points, original_expression)
+    expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64], ufl.core.expr.Expr]]
 
 
-def analyze_ufl_objects(ufl_objects: typing.List,
-                        parameters: typing.Dict) -> ufl_data:
+def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UFLData:
     """Analyze ufl object(s).
 
     Parameters
@@ -35,16 +40,18 @@ def analyze_ufl_objects(ufl_objects: typing.List,
     parameters
       FFCx parameters. These parameters take priority over all other set parameters.
 
-    Returns
+    Returns a data structure holding
     -------
     form_datas
         Form_data objects
     unique_elements
-        Unique elements across all forms
+        Unique elements across all forms and expressions
     element_numbers
         Mapping to unique numbers for all elements
     unique_coordinate_elements
-
+        Unique coordinate elements across all forms and expressions
+    expressions
+        List of all expressions after post-processing, with its evaluation points and the original expression
     """
     logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")
@@ -91,10 +98,8 @@ def analyze_ufl_objects(ufl_objects: typing.List,
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    return ufl_data(form_data=form_data, unique_elements=unique_elements,
-                    element_numbers=element_numbers,
-                    unique_coordinate_elements=unique_coordinate_element_list,
-                    expressions=processed_expressions)
+    return UFLData(form_data=form_data, unique_elements=unique_elements, element_numbers=element_numbers,
+                   unique_coordinate_elements=unique_coordinate_element_list, expressions=processed_expressions)
 
 
 def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
