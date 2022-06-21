@@ -384,13 +384,23 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                 factors = basix_element.element.get_tensor_product_representation()
                 # For now assert we're in simplest case
                 assert len(factors) == 1
+                assert len(factors[0]) == 2
                 for i in factors[0][0]:
                     assert i == factors[0][0][0]
 
                 tensor_factors = []
                 for i, j in enumerate(factors[0][0]):
                     d = local_derivatives[i]
-                    sub_tbl = j.tabulate(d, [[p[i]] for p in quadrature_rule.points])[d]
+                    num_pts = 0
+                    while num_pts ** 2 < quadrature_rule.points.shape[0]:
+                        num_pts += 1
+                    assert num_pts ** 2 == quadrature_rule.points.shape[0]
+
+                    if i == 0:
+                        pts = [[p[0]] for p in quadrature_rule.points[::num_pts]]
+                    if i == 1:
+                        pts = [[p[1]] for p in quadrature_rule.points[:num_pts]]
+                    sub_tbl = j.tabulate(d, pts)[d]
                     sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
                     tensor_factors.append(
                         unique_table_reference_t(
