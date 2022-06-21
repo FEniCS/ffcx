@@ -11,7 +11,7 @@ import logging
 import numpy
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.element_interface import basix_index, create_element
+from ffcx.element_interface import basix_index, create_element, BasixElement
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -28,7 +28,7 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 unique_table_reference_t = collections.namedtuple("unique_table_reference_t", [
     "name", "values", "offset", "block_size", "ttype",
     "is_piecewise", "is_uniform", "is_permuted",
-    "has_tensor_factorisation", "tensor_factors"
+    "has_tensor_factorisation", "tensor_factors", "tensor_permutation"
 ])
 
 
@@ -377,6 +377,29 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         cell_offset = 0
         basix_element = create_element(element)
 
+        tensor_factors = None
+        tensor_perm = None
+        if isinstance(basix_element, BasixElement):  # TODO: move this to element interface file, and also make it work for vector elements
+            if basix_element.element.has_tensor_product_factorisation:
+                factors = basix_element.element.get_tensor_product_representation()
+                # For now assert we're in simplest case
+                assert len(factors) == 1
+                for i in factors[0][0]:
+                    assert i == factors[0][0][0]
+
+                tensor_factors = []
+                for i, j in enumerate(factors[0][0]):
+                    d = local_derivatives[i]
+                    sub_tbl = j.tabulate(d, [[p[i]] for p in quadrature_rule.points])[d]
+                    sub_tbl.reshape(1, 1, sub_tbl.shape[1], sub_tbl.shape[2])
+                    tensor_factors.append(
+                        unique_table_reference_t(
+                            f"THIS_TABLE_NEEDS_A_NAME_{i}", sub_tbl,
+                            0, 0, tabletype,
+                            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
+                            False, None, None))
+                tensor_perm = factors[0][1]
+
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
             cell_offset = basix_element.dim
@@ -388,7 +411,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         mt_tables[mt] = unique_table_reference_t(
             name, tbl, offset, block_size, tabletype,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
-            False, [])
+            tensor_factors is None, tensor_factors, tensor_perm)
 
     return mt_tables
 
