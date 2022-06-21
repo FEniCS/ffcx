@@ -327,14 +327,15 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 elif cellname == "interval":
                     # Trapezoidal rule
                     return (numpy.array([[0.0], [1.0]]), numpy.array([1.0 / 2.0, 1.0 / 2.0]))
+                points = numpy.asarray(points)
+                weights = numpy.asarray(weights)
+                rule = QuadratureRule(points, weights)
             else:
                 points, weights = create_quadrature_points_and_weights(
                     integral_type, cell, degree, scheme)
+                rule = QuadratureRule(points, weights, degree, scheme)
 
-            points = numpy.asarray(points)
-            weights = numpy.asarray(weights)
 
-            rule = QuadratureRule(points, weights)
 
             if rule not in grouped_integrands:
                 grouped_integrands[rule] = []

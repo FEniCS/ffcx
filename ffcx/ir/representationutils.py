@@ -17,9 +17,11 @@ logger = logging.getLogger("ffcx")
 
 
 class QuadratureRule:
-    def __init__(self, points, weights):
+    def __init__(self, points, weights, degree=None, scheme=None):
         self.points = numpy.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
         self.weights = weights
+        self.degree = degree
+        self.scheme = scheme
         self._hash = None
 
     def __hash__(self):
