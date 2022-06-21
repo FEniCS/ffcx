@@ -25,10 +25,11 @@ default_atol = 1e-9
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
-unique_table_reference_t = collections.namedtuple(
-    "unique_table_reference_t",
-    ["name", "values", "offset", "block_size", "ttype",
-     "is_piecewise", "is_uniform", "is_permuted"])
+unique_table_reference_t = collections.namedtuple("unique_table_reference_t", [
+    "name", "values", "offset", "block_size", "ttype",
+    "is_piecewise", "is_uniform", "is_permuted",
+    "has_tensor_factorisation", "tensor_factors"
+])
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -386,7 +387,8 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         # tables is just np.arrays, mt_tables hold metadata too
         mt_tables[mt] = unique_table_reference_t(
             name, tbl, offset, block_size, tabletype,
-            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted)
+            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
+            False, [])
 
     return mt_tables
 
