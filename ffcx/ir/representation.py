@@ -301,8 +301,9 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             degree = md["quadrature_degree"]
 
             if scheme == "custom":
-                points = md["quadrature_points"]
-                weights = md["quadrature_weights"]
+                points = numpy.asarray(md["quadrature_points"])
+                weights = numpy.asarray(md["quadrature_weights"])
+                rule = QuadratureRule(points, weights)
             elif scheme == "vertex":
                 # FIXME: Could this come from basix?
 
@@ -318,17 +319,18 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                         "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
                         format(degree))
                 if cellname == "tetrahedron":
-                    points, weights = (numpy.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
-                                                    [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
-                                       numpy.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]))
+                    points = numpy.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
+                                          [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+                    weights = numpy.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0])
                 elif cellname == "triangle":
-                    points, weights = (numpy.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
-                                       numpy.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]))
+                    points = numpy.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
+                    weights = numpy.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
                 elif cellname == "interval":
                     # Trapezoidal rule
-                    return (numpy.array([[0.0], [1.0]]), numpy.array([1.0 / 2.0, 1.0 / 2.0]))
-                points = numpy.asarray(points)
-                weights = numpy.asarray(weights)
+                    points = numpy.array([[0.0], [1.0]])
+                    weights = numpy.array([1.0 / 2.0, 1.0 / 2.0]))
+                else:
+                    raise ValueError(f"Unsupported cell: {cellname}")
                 rule = QuadratureRule(points, weights)
             else:
                 points, weights = create_quadrature_points_and_weights(
