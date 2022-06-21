@@ -629,7 +629,7 @@ class IntegralGenerator(object):
         hoist: List[BinOp] = []
 
         for indices in rhs_expressions:
-            hoist_rhs = collections.defaultdict(list)
+            # hoist_rhs = collections.defaultdict(list)
 
             # # Hoist loop invariant code and group array access (each table should only be read one
             # # time in the inner loop).
