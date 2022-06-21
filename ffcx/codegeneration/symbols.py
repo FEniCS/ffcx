@@ -98,6 +98,10 @@ class FFCXBackendSymbols(object):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
         return self.S("ic")
 
+    def coefficient_dof_sum_index_tensor(self, dim):
+        """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
+        return [self.S(f"ic{i}") for i in range(dim)]
+
     def quadrature_loop_index(self):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
         return self.S("iq")

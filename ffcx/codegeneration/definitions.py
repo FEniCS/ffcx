@@ -8,6 +8,7 @@
 import logging
 
 import ufl
+import numpy
 from ffcx.element_interface import create_element
 
 logger = logging.getLogger("ffcx")
@@ -81,32 +82,50 @@ class FFCXBackendDefinitions(object):
 
         assert begin < end
 
-        # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index()
-
         code = []
         pre_code = []
+        FE = []
+        if (tabledata.has_tensor_factorisation):
+            dim = len(tabledata.tensor_factors)
+            indices = self.symbols.coefficient_dof_sum_index_tensor(dim)
+            sizes = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+            strides = [numpy.prod(sizes[i + 1:], dtype=int) for i in range(dim)]
+            multi_index = self.language.Sum([strides[i] * indices[i] for i in range(dim)])
+            for i in range(dim):
+                factor = tabledata.tensor_factors[i]
+                table = self.symbols.element_table(factor, self.entitytype, mt.restriction, i)
+                FE.append(table[indices[i]])
+            FE = L.Product(FE)
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, multi_index * bs + begin)
+            body = [L.AssignAdd(access, dof_access * FE)]
+            code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
+            for i in range(dim):
+                body = [L.ForRange(indices[dim - i - 1], 0, sizes[dim - i - 1], body)]
+            code += body
 
-        if bs > 1 and not tabledata.is_piecewise:
-            # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
-            # When memory access patterns are non-sequential, the number of cache misses increases.
-            # In turn, it results in noticeably reduced performance.
-            # In this case, we create temp arrays outside the quadrature to store the coefficients and
-            # have a sequential access pattern.
-            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
-
-            # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
-            if dof_access_map:
-                pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
-                pre_body = L.Assign(dof_access, dof_access_map)
-                pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
+            FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+            ic = self.symbols.coefficient_dof_sum_index()
 
-        body = [L.AssignAdd(access, dof_access * FE[ic])]
-        code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
-        code += [L.ForRange(ic, 0, num_dofs, body)]
+            if bs > 1 and not tabledata.is_piecewise:
+                # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
+                # When memory access patterns are non-sequential, the number of cache misses increases.
+                # In turn, it results in noticeably reduced performance.
+                # In this case, we create temp arrays outside the quadrature to store the coefficients and
+                # have a sequential access pattern.
+                dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
+
+                # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
+                if dof_access_map:
+                    pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
+                    pre_body = L.Assign(dof_access, dof_access_map)
+                    pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
+            else:
+                dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
+
+            body = [L.AssignAdd(access, dof_access * FE[ic])]
+            code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
+            code += [L.ForRange(ic, 0, num_dofs, body)]
 
         return pre_code, code
 
