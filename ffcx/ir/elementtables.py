@@ -286,6 +286,9 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
     _existing_tables = existing_tables.copy()
 
+    all_tensor_factors = []
+    tensor_n = 0
+
     for mt in modified_terminals:
         res = analysis.get(mt)
         if not res:
@@ -380,43 +383,43 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         tensor_factors = None
         tensor_perm = None
         if basix_element.has_tensor_product_factorisation:
-                factors = basix_element.get_tensor_product_representation()
-                # For now assert we're in simplest case
-                assert len(factors) == 1
-                assert len(factors[0]) == 2
-                for i in factors[0][0]:
-                    assert i == factors[0][0][0]
+            factors = basix_element.get_tensor_product_representation()
+            # For now assert we're in simplest case
+            assert len(factors) == 1
+            assert len(factors[0]) == 2
+            for i in factors[0][0]:
+                assert i == factors[0][0][0]
 
-                tensor_factors = []
-                for i, j in enumerate(factors[0][0]):
-                    d = local_derivatives[i]
-                    num_pts = 0
-                    while num_pts ** 2 < quadrature_rule.points.shape[0]:
-                        num_pts += 1
-                    assert num_pts ** 2 == quadrature_rule.points.shape[0]
+            tensor_factors = []
+            for i, j in enumerate(factors[0][0]):
+                d = local_derivatives[i]
+                num_pts = 0
+                while num_pts ** 2 < quadrature_rule.points.shape[0]:
+                    num_pts += 1
+                assert num_pts ** 2 == quadrature_rule.points.shape[0]
 
-                    if i == 0:
-                        pts = [[p[0]] for p in quadrature_rule.points[::num_pts]]
-                    if i == 1:
-                        pts = [[p[1]] for p in quadrature_rule.points[:num_pts]]
-                    sub_tbl = j.tabulate(d, pts)[d]
-                    sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
-                    tensor_factors.append(
-                        unique_table_reference_t(
-                            f"THIS_TABLE_NEEDS_A_NAME_{i}", sub_tbl,
-                            None, None, None,
-                            False, False, False,
-                            False, None, None))
+                if i == 0:
+                    pts = [[p[0]] for p in quadrature_rule.points[::num_pts]]
+                if i == 1:
+                    pts = [[p[1]] for p in quadrature_rule.points[:num_pts]]
+                sub_tbl = j.tabulate(d, pts)[d]
+                sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
+                for i in all_tensor_factors:
+                    if numpy.allclose(i.values, sub_tbl):
+                        tensor_factors.append(i)
+                        break
+                else:
+                    ut = unique_table_reference_t(
+                        f"FE_TENSOR_FACTOR_{tensor_n}", sub_tbl,
+                        None, None, None,
+                        False, False, False,
+                        False, None, None)
+                    all_tensor_factors.append(ut)
+                    tensor_factors.append(ut)
+                    mt_tables[ut.name] = ut
+                    tensor_n += 1
 
-                for i, j in enumerate(tensor_factors):
-                    if i > 0 and numpy.allclose(tensor_factors[0].values, j.values):
-                        tensor_factors[i] = tensor_factors[0]
-
-
-                for i in tensor_factors:
-                    mt_tables[i.name] = i
-
-                tensor_perm = factors[0][1]
+            tensor_perm = factors[0][1]
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
