@@ -398,6 +398,8 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                             0, 0, tabletype,
                             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
                             False, None, None))
+                    mt_tables[tensor_factors[-1].name] = tensor_factors[-1]
+
                 tensor_perm = factors[0][1]
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
@@ -411,7 +413,9 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         mt_tables[mt] = unique_table_reference_t(
             name, tbl, offset, block_size, tabletype,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
-            tensor_factors is None, tensor_factors, tensor_perm)
+            tensor_factors is not None, tensor_factors, tensor_perm)
+
+        print(mt)
 
     return mt_tables
 
