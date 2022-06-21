@@ -236,8 +236,9 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 if tr.has_tensor_factorisation:
                     for t in tr.tensor_factors:
                         active_table_names.add(t.name)
-                else:
-                    active_table_names.add(tr.name)
+                # TODO: Put this else back in
+                # else:
+                active_table_names.add(tr.name)
 
         # Figure out which table names are referenced in blocks
         for blockmap, contributions in itertools.chain(
@@ -247,8 +248,9 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                     if mad.tabledata.has_tensor_factorisation:
                         for t in mad.tabledata.tensor_factors:
                             active_table_names.add(t.name)
-                    else:
-                        active_table_names.add(mad.tabledata.name)
+                    # TODO: Put this else back in
+                    # else:
+                    active_table_names.add(mad.tabledata.name)
 
         active_tables = {}
         active_table_types = {}
