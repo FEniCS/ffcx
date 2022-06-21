@@ -425,8 +425,6 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
             tensor_factors is not None, tensor_factors, tensor_perm)
 
-        print(mt)
-
     return mt_tables
 
 
