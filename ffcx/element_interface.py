@@ -301,6 +301,7 @@ class BaseElement(ABC):
         """Get the element's tensor product factorisation."""
         return None
 
+
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 

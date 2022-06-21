@@ -193,7 +193,7 @@ class FFCXBackendSymbols(object):
                 qp = self.quadrature_permutation(1)
         else:
             qp = 0
-        
+
         nq = tabledata.values.shape[2]
 
         if tensor_id is None:
@@ -205,5 +205,3 @@ class FFCXBackendSymbols(object):
             else:
                 index = self.L.as_symbol(iq.ce_format() + f"%{nq}")
             return self.named_table(tabledata.name)[qp][entity][index]
-
-

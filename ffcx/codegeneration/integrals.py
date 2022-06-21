@@ -516,12 +516,10 @@ class IntegralGenerator(object):
             scope = self.ir.integrand[quadrature_rule]["modified_arguments"]
             mt = scope[mad.ma_index]
 
-
             assert td.ttype != "zeros"
             if td.ttype == "ones":
                 arg_factor = 1
             else:
-                tables = []
                 if (td.has_tensor_factorisation):
                     factors = td.tensor_factors
                     for j in range(len(factors)):

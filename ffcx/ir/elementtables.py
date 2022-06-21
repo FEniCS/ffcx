@@ -11,7 +11,7 @@ import logging
 import numpy
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.element_interface import basix_index, create_element, BasixElement
+from ffcx.element_interface import basix_index, create_element
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -387,8 +387,6 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             # For now assert we're in simplest case
             assert len(factors) == 1
             assert len(factors[0]) == 2
-            for i in factors[0][0]:
-                assert i == factors[0][0][0]
 
             tensor_factors = []
             for i, j in enumerate(factors[0][0]):
