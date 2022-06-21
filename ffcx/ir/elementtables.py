@@ -403,7 +403,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                 sub_tbl = j.tabulate(d, pts)[d]
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
                 for i in all_tensor_factors:
-                    if numpy.allclose(i.values, sub_tbl):
+                    if i.values.shape == sub_tbl.shape and numpy.allclose(i.values, sub_tbl):
                         tensor_factors.append(i)
                         break
                 else:
