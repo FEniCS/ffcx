@@ -335,8 +335,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                     integral_type, cell, degree, scheme)
                 rule = QuadratureRule(points, weights, degree, scheme)
 
-
-
             if rule not in grouped_integrands:
                 grouped_integrands[rule] = []
 

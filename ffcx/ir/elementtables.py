@@ -385,12 +385,11 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         if (
             basix_element.has_tensor_product_factorisation
             # TODO: allow for element made from multiple tensor parts
-            and len(factors) == 1
+            and len(basix_element.get_tensor_product_representation()) == 1
             and quadrature_rule.degree is not None
             and quadrature_rule.scheme is not None
         ):
             factors = basix_element.get_tensor_product_representation()
-            dim = len(factors[0][0])
 
             tensor_factors = []
             pts, _ = create_quadrature_points_and_weights(

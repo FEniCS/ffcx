@@ -9,9 +9,6 @@ from __future__ import annotations
 
 import typing
 
-if typing.TYPE_CHECKING:
-    import ufl.finiteelement.FiniteElementBase
-
 import warnings
 from abc import ABC, abstractmethod
 
@@ -20,6 +17,9 @@ import numpy
 import ufl
 import basix.ufl_wrapper
 import functools
+
+if typing.TYPE_CHECKING:
+    import ufl.finiteelement.FiniteElementBase
 
 
 @functools.lru_cache()
