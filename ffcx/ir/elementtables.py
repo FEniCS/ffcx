@@ -410,7 +410,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                         break
                 else:
                     ut = unique_table_reference_t(
-                        f"FE_TENSOR_FACTOR_{tensor_n}", sub_tbl,
+                        f"FE_TF{tensor_n}", sub_tbl,
                         None, None, None,
                         False, False, False,
                         False, None, None)
