@@ -174,7 +174,7 @@ class FFCXBackendSymbols(object):
     def named_table(self, name):
         return self.S(name)
 
-    def element_table(self, tabledata, entitytype, restriction):
+    def element_table(self, tabledata, entitytype, restriction, tensor_id=None):
         entity = self.entity(entitytype, restriction)
 
         if tabledata.is_uniform:
@@ -193,6 +193,17 @@ class FFCXBackendSymbols(object):
                 qp = self.quadrature_permutation(1)
         else:
             qp = 0
+        
+        nq = tabledata.values.shape[2]
 
-        # Return direct access to element table
-        return self.named_table(tabledata.name)[qp][entity][iq]
+        if tensor_id is None:
+            # Return direct access to element table
+            return self.named_table(tabledata.name)[qp][entity][iq]
+        else:
+            if tensor_id == 0:
+                index = self.L.as_symbol(iq.ce_format() + f"/{nq}")
+            else:
+                index = self.L.as_symbol(iq.ce_format() + f"%{nq}")
+            return self.named_table(tabledata.name)[qp][entity][index]
+
+

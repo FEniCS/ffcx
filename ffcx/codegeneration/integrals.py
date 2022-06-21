@@ -521,13 +521,18 @@ class IntegralGenerator(object):
             if td.ttype == "ones":
                 arg_factor = 1
             else:
-
                 tables = []
                 if (td.has_tensor_factorisation):
                     factors = td.tensor_factors
-                    for factor in factors:
-                        table = self.backend.symbols.element_table(factor, self.ir.entitytype, mt.restriction)
-                        arg_factor = table[indices[i]]
+                    for j in range(len(factors)):
+                        factor = factors[j]
+                        ndofs = factor.values.shape[3]
+                        table = self.backend.symbols.element_table(factor, self.ir.entitytype, mt.restriction, j)
+                        if j == 0:
+                            index = self.backend.language.as_symbol(indices[i].ce_format() + f"/{ndofs}")
+                        else:
+                            index = self.backend.language.as_symbol(indices[i].ce_format() + f"%{ndofs}")
+                        arg_factor = table[index]
                         arg_factors.append(arg_factor)
                 else:
                     # Translate modified terminal to code
