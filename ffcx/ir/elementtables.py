@@ -379,9 +379,8 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         tensor_factors = None
         tensor_perm = None
-        if isinstance(basix_element, BasixElement):  # TODO: move this to element interface file, and also make it work for vector elements
-            if basix_element.element.has_tensor_product_factorisation:
-                factors = basix_element.element.get_tensor_product_representation()
+        if basix_element.has_tensor_product_factorisation:
+                factors = basix_element.get_tensor_product_representation()
                 # For now assert we're in simplest case
                 assert len(factors) == 1
                 assert len(factors[0]) == 2

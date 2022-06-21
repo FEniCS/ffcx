@@ -292,6 +292,14 @@ class BaseElement(ABC):
         """True if the element is a custom Basix element."""
         return False
 
+    @property
+    def has_tensor_product_factorisation(self) -> bool:
+        """True if the element is has a tensor product factorisation."""
+        return False
+
+    def get_tensor_product_representation(self):
+        """Get the element's tensor product factorisation."""
+        return None
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
@@ -392,6 +400,17 @@ class BasixElement(BaseElement):
     def is_custom_element(self) -> bool:
         """True if the element is a custom Basix element."""
         return self.element.family == basix.ElementFamily.custom
+
+    @property
+    def has_tensor_product_factorisation(self) -> bool:
+        """True if the element is has a tensor product factorisation."""
+        return self.element.has_tensor_product_factorisation
+
+    def get_tensor_product_representation(self):
+        """Get the element's tensor product factorisation."""
+        if not self.has_tensor_product_factorisation:
+            return None
+        return self.element.get_tensor_product_representation()
 
 
 class ComponentElement(BaseElement):
@@ -732,6 +751,17 @@ class BlockedElement(BaseElement):
     @property
     def interpolation_nderivs(self) -> int:
         return self.sub_element.interpolation_nderivs
+
+    @property
+    def has_tensor_product_factorisation(self) -> bool:
+        """True if the element is has a tensor product factorisation."""
+        return self.sub_element.has_tensor_product_factorisation
+
+    def get_tensor_product_representation(self):
+        """Get the element's tensor product factorisation."""
+        if not self.has_tensor_product_factorisation:
+            return None
+        return self.sub_element.get_tensor_product_representation()
 
 
 class QuadratureElement(BaseElement):
