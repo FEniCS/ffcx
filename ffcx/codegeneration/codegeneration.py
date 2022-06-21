@@ -26,9 +26,11 @@ logger = logging.getLogger("ffcx")
 
 class CodeBlocks(typing.NamedTuple):
     """
-    Storage of code blocks of the form (declaration, implementation) for elements, dofmaps, integrals,
-    forms and expressions
+    Storage of code blocks of the form (declaration, implementation).
+
+    Blocks for elements, dofmaps, integrals, forms and expressions is stored
     """
+
     elements: typing.List[typing.Tuple[str, str]]
     dofmaps: typing.List[typing.Tuple[str, str]]
     integrals: typing.List[typing.Tuple[str, str]]
