@@ -105,7 +105,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     for entity in range(num_entities):
         entity_points = map_integral_points(points, integral_type, cell, entity)
         tbl = component_element.tabulate(deriv_order, entity_points)
-        tbl = tbl[basix_index(*derivative_counts)]
+        tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
 
     if avg in ("cell", "facet"):
