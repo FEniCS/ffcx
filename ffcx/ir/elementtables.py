@@ -392,9 +392,10 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             factors = basix_element.get_tensor_product_representation()
 
             tensor_factors = []
-            pts, _ = create_quadrature_points_and_weights(
-                "cell", ufl.interval, quadrature_rule.degree, quadrature_rule.scheme)
             for i, j in enumerate(factors[0][0]):
+                pts, _ = create_quadrature_points_and_weights(
+                    "cell", getattr(ufl, j.cell_type.name), quadrature_rule.degree,
+                    quadrature_rule.scheme)
                 d = local_derivatives[i]
                 sub_tbl = j.tabulate(d, pts)[d]
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
