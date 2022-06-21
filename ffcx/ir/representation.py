@@ -328,7 +328,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 elif cellname == "interval":
                     # Trapezoidal rule
                     points = numpy.array([[0.0], [1.0]])
-                    weights = numpy.array([1.0 / 2.0, 1.0 / 2.0]))
+                    weights = numpy.array([1.0 / 2.0, 1.0 / 2.0])
                 else:
                     raise ValueError(f"Unsupported cell: {cellname}")
                 rule = QuadratureRule(points, weights)
