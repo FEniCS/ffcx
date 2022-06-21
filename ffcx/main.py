@@ -16,6 +16,7 @@ import re
 import string
 
 import ufl
+
 from ffcx import __version__ as FFCX_VERSION
 from ffcx import compiler, formatting
 from ffcx.parameters import FFCX_DEFAULT_PARAMETERS, get_parameters
@@ -48,9 +49,6 @@ def main(args=None):
     # Call parser and compiler for each file
     for filename in xargs.ufl_file:
         file = pathlib.Path(filename)
-        if file.suffix != ".ufl":
-            logger.error("Expecting a UFL form file (.ufl).")
-            return 1
 
         # Remove weird characters (file system allows more than the C
         # preprocessor)
@@ -67,12 +65,9 @@ def main(args=None):
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        if len(ufd.forms) > 0:
-            code_h, code_c = compiler.compile_ufl_objects(
-                ufd.forms, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)
-        else:
-            code_h, code_c = compiler.compile_ufl_objects(
-                ufd.elements, ufd.object_names, prefix=prefix, parameters=parameters, visualise=xargs.visualise)
+        code_h, code_c = compiler.compile_ufl_objects(
+            ufd.forms + ufd.expressions + ufd.elements, ufd.object_names,
+            prefix=prefix, parameters=parameters, visualise=xargs.visualise)
 
         # Write to file
         formatting.write_code(code_h, code_c, prefix, xargs.output_directory)

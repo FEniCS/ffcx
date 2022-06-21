@@ -6,6 +6,20 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      dolfinx_ref:
+        description: "DOLFINx branch or tag"
+        default: "main"
+        type: string
+      basix_ref:
+        description: "Basix branch or tag"
+        default: "main"
+        type: string
+      ufl_ref:
+        description: "UFL branch or tag"
+        default: "main"
+        type: string
 
 jobs:
   build:
@@ -31,27 +45,51 @@ jobs:
       - name: Install dependencies (Python)
         run: |
           python3 -m pip install --upgrade pip
-      - name: Install UFL and Basix
+
+      - name: Install UFL and Basix (default branches/tags)
+        if: github.event_name != 'workflow_dispatch'
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
           python3 -m pip install git+https://github.com/FEniCS/basix.git
+      - name: Install UFL and Basix (specified branches/tags)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          python3 -m pip install git+https://github.com/FEniCS/ufl.git@${{ github.event.inputs.ufl_ref }}
+          python3 -m pip install git+https://github.com/FEniCS/basix.git@${{ github.event.inputs.basix_ref }}
 
       - name: Install FFCx
         run: |
           pip3 install .
 
-      - name: Clone DOLFINx
+      - name: Get DOLFINx source (default branch/tag)
+        if: github.event_name != 'workflow_dispatch'
         uses: actions/checkout@v2
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: main
-      - name: Clone and install DOLFINx
+      - name: Get DOLFINx source (specified branch/tag)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v2
+        with:
+          path: ./dolfinx
+          repository: FEniCS/dolfinx
+          ref: ${{ github.event.inputs.dolfinx_ref }}
+
+      - name: Install DOLFINx
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
           cmake --build build
           cmake --install build
           pip3 -v install --global-option build --global-option --debug dolfinx/python/
 
-      - name: Run DOLFINx unit tests
+      - name: Build DOLFINx C++ unit tests
+        run: |
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S build/test/
+          cmake --build build/test
+      - name: Run DOLFINx C++ unit tests
+        run: |
+          cd build/test
+          ctest -V --output-on-failure -R unittests
+
+      - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit

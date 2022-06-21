@@ -11,11 +11,11 @@ import subprocess
 
 def test_cmdline_simple():
     os.chdir(os.path.dirname(__file__))
-    subprocess.run(["ffcx", "Poisson.ufl"])
+    subprocess.run(["ffcx", "Poisson.py"])
 
 
 def test_visualise():
     os.chdir(os.path.dirname(__file__))
-    subprocess.run(["ffcx", "--visualise", "Poisson.ufl"])
+    subprocess.run(["ffcx", "--visualise", "Poisson.py"])
     assert os.path.isfile("S.pdf")
     assert os.path.isfile("F.pdf")

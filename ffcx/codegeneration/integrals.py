@@ -6,16 +6,17 @@
 
 import collections
 import logging
-from typing import Tuple, List
+from typing import List, Tuple
 
 import ufl
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration import integrals_template as ufc_integrals
+from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.codegeneration.C.cnodes import CNode, BinOp
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.integral import block_data_t
+from ffcx.ir.representationutils import QuadratureRule
 from ffcx.naming import cdtype_to_numpy
 
 logger = logging.getLogger("ffcx")
@@ -30,7 +31,7 @@ def generator(ir, parameters):
     factory_name = ir.name
 
     # Format declaration
-    declaration = ufc_integrals.declaration.format(factory_name=factory_name)
+    declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
 
     # Create FFCx C backend
     backend = FFCXBackend(ir, parameters)
@@ -70,7 +71,7 @@ def generator(ir, parameters):
     if parameters["tabulate_tensor_void"]:
         code["tabulate_tensor"] = ""
 
-    implementation = ufc_integrals.factory.format(
+    implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
@@ -198,15 +199,23 @@ class IntegralGenerator(object):
         all_preparts = []
         all_quadparts = []
 
+        # Pre-definitions are collected across all quadrature loops
+        # to improve re-use and avoid name clashes
+        all_predefinitions = dict()
+
         for rule in self.ir.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
             all_preparts += self.generate_piecewise_partition(rule)
 
             # Generate code to integrate reusable blocks of final
             # element tensor
-            preparts, quadparts = self.generate_quadrature_loop(rule)
+            pre_definitions, preparts, quadparts = self.generate_quadrature_loop(rule)
             all_preparts += preparts
             all_quadparts += quadparts
+            all_predefinitions.update(pre_definitions)
+
+        parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
+                                       "Pre-definitions of modified terminals to enable unit-stride access")
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
@@ -318,19 +327,16 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         L = self.backend.language
-        preparts = []
         # Generate varying partition
-        prepart, body = self.generate_varying_partition(quadrature_rule)
-        preparts += prepart
+        pre_definitions, body = self.generate_varying_partition(quadrature_rule)
 
         body = L.commented_code_list(
             body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
-        prepart, quadparts = \
+        preparts, quadparts = \
             self.generate_dofblock_partition(quadrature_rule)
-        preparts += prepart
         body += quadparts
 
         # Wrap body in loop or scope
@@ -343,7 +349,7 @@ class IntegralGenerator(object):
             iq = self.backend.symbols.quadrature_loop_index()
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
-        return preparts, quadparts
+        return pre_definitions, preparts, quadparts
 
     def generate_piecewise_partition(self, quadrature_rule):
         L = self.backend.language
@@ -352,8 +358,8 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}")
-        preparts, parts = self.generate_partition(arraysymbol, F, "piecewise", None)
-        parts = preparts + parts
+        pre_definitions, parts = self.generate_partition(arraysymbol, F, "piecewise", None)
+        assert len(pre_definitions) == 0, "Quadrature independent code should have not pre-definitions"
         parts = L.commented_code_list(
             parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
 
@@ -366,11 +372,11 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}")
-        preparts, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
+        pre_definitions, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
         parts = L.commented_code_list(
             parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
 
-        return preparts, parts
+        return pre_definitions, parts
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
         L = self.backend.language
@@ -400,17 +406,10 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
-                    if isinstance(mt.terminal, ufl.Coefficient):
-                        vdef, predef = self.backend.definitions.get(
-                            mt.terminal, mt, tabledata, quadrature_rule, vaccess)
-                        assert isinstance(predef, list)
-                        if predef:
-                            access = predef[0].symbol.name
-                            predef = L.commented_code_list(
-                                predef, "Auxiliary array to enable unit-stride access in coefficient computations.")
-                            pre_definitions[str(access)] = predef
-                    else:
-                        vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                    predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                    if predef:
+                        access = predef[0].symbol.name
+                        pre_definitions[str(access)] = predef
 
                     # Store definitions of terminals in list
                     assert isinstance(vdef, list)
@@ -465,9 +464,6 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
         parts = []
-        preparts = []
-
-        preparts += self.fuse_loops(pre_definitions)
         parts += self.fuse_loops(definitions)
 
         if intermediates:
@@ -476,7 +472,7 @@ class IntegralGenerator(object):
                 parts += [L.ArrayDecl(self.backend.access.parameters["scalar_type"],
                                       symbol, len(intermediates), padlen=padlen)]
             parts += intermediates
-        return preparts, parts
+        return pre_definitions, parts
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
@@ -547,8 +543,8 @@ class IntegralGenerator(object):
         L = self.backend.language
 
         # The parts to return
-        preparts = []
-        quadparts = []
+        preparts: List[CNode] = []
+        quadparts: List[CNode] = []
 
         # RHS expressiong grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
@@ -628,9 +624,9 @@ class IntegralGenerator(object):
         # List of statements to keep in the inner loop
         keep = collections.defaultdict(list)
         # List of temporary array declarations
-        pre_loop = []
+        pre_loop: List[CNode] = []
         # List of loop invariant expressions to hoist
-        hoist = []
+        hoist: List[BinOp] = []
 
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
@@ -674,18 +670,20 @@ class IntegralGenerator(object):
             else:
                 keep[indices] = rhs_expressions[indices]
 
-        hoist = L.ForRange(B_indices[0], 0, blockdims[0], body=[hoist]) if hoist else []
+        hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
 
-        body = []
+        body: List[CNode] = []
 
         for indices in keep:
             sum = L.Sum(keep[indices])
             body.append(L.AssignAdd(A[indices], sum))
 
         for i in reversed(range(block_rank)):
-            body = L.ForRange(B_indices[i], 0, blockdims[i], body=body)
+            body = [L.ForRange(B_indices[i], 0, blockdims[i], body=body)]
 
-        quadparts += [pre_loop, hoist, body]
+        quadparts += pre_loop
+        quadparts += hoist_code
+        quadparts += body
 
         return preparts, quadparts
 

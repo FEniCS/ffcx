@@ -8,7 +8,6 @@
 import logging
 
 import numpy
-
 import ufl
 from ffcx.ir.analysis.modified_terminals import is_modified_terminal
 from ffcx.ir.analysis.reconstruct import reconstruct

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2019 Michal Habera
+# Copyright (C) 2019-2022 Michal Habera and Jørgen S. Dokken
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -10,6 +10,7 @@ import numpy as np
 import cffi
 import ffcx.codegeneration.jit
 import ufl
+import basix
 
 
 def float_to_type(name):
@@ -60,16 +61,20 @@ def test_matvec(compile_args):
     # Coefficient storage XYXYXY
     w = np.array(f_mat.T.flatten(), dtype=np_type)
     c = np.array([0.5], dtype=np_type)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     # Coords storage XYZXYZXYZ
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np.float64)
-    expression.tabulate_expression(
+    expression.tabulate_tensor_float64(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data))
+        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast('int *', entity_index.ctypes.data),
+        ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
     # Check the computation against correct NumPy value
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
@@ -118,15 +123,19 @@ def test_rank1(compile_args):
     # Coefficient storage XYXYXY
     w = np.array([0.0], dtype=np_type)
     c = np.array([0.0], dtype=np_type)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     # Coords storage XYZXYZXYZ
     coords = np.zeros((points.shape[0], 3), dtype=np.float64)
     coords[:, :2] = points
-    expression.tabulate_expression(
+    expression.tabulate_tensor_float64(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data))
+        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast('int *', entity_index.ctypes.data),
+        ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
     f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
 
@@ -141,3 +150,64 @@ def test_rank1(compile_args):
     u_correct = np.array([f[1], f[0]]) + gradf0
 
     assert np.allclose(u_ffcx, u_correct.T)
+
+
+def test_elimiate_zero_tables_tensor(compile_args):
+    """
+    Test elimination of tensor-valued expressions with zero tables
+    """
+    cell = "tetrahedron"
+    c_el = ufl.VectorElement("P", cell, 1)
+    mesh = ufl.Mesh(c_el)
+
+    e = ufl.FiniteElement("CG", cell, 1)
+    V = ufl.FunctionSpace(mesh, e)
+    u = ufl.Coefficient(V)
+    expr = ufl.sym(ufl.as_tensor([[u, u.dx(0).dx(0), 0],
+                                  [u.dx(1), u.dx(1), 0],
+                                  [0, 0, 0]]))
+
+    # Get vectices of cell
+    # Coords storage XYZXYZXYZ
+    basix_c_e = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 1, False)
+    coords = basix_c_e.points
+
+    # Using same basix element for coordinate element and coefficient
+    coeff_points = basix_c_e.points
+
+    # Compile expression at interpolation points of second order Lagrange space
+    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 0, True)
+    points = b_el.points
+    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args)
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+    c_type, np_type = float_to_type("double")
+
+    output = np.zeros(9 * points.shape[0], dtype=np_type)
+
+    # Define coefficients for u = x + 2 * y
+    u_coeffs = u_coeffs = coeff_points.T[0] + 2 * coeff_points.T[1]
+    consts = np.array([], dtype=np_type)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    expression.tabulate_tensor_float64(
+        ffi.cast('{type} *'.format(type=c_type), output.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), u_coeffs.ctypes.data),
+        ffi.cast('{type} *'.format(type=c_type), consts.ctypes.data),
+        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast('int *', entity_index.ctypes.data),
+        ffi.cast('uint8_t *', quad_perm.ctypes.data))
+
+    def exact_expr(x):
+        val = np.zeros((9, x.shape[1]), dtype=np_type)
+        val[0] = x[0] + 2 * x[1]
+        val[1] = 0 + 0.5 * 2
+        val[3] = 0.5 * 2 + 0
+        val[4] = 2
+        return val.T
+    exact = exact_expr(points.T)
+
+    assert np.allclose(exact, output)

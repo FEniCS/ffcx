@@ -9,10 +9,9 @@ import collections
 import logging
 
 import numpy
-
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.element_interface import create_element, basix_index
+from ffcx.element_interface import basix_index, create_element
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -27,7 +26,7 @@ piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 unique_table_reference_t = collections.namedtuple(
-    "unique_table_reference",
+    "unique_table_reference_t",
     ["name", "values", "offset", "block_size", "ttype",
      "is_piecewise", "is_uniform", "is_permuted"])
 
@@ -101,8 +100,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
     # Extract arrays for the right scalar component
     component_tables = []
-    sh = tuple(basix_element.value_shape)
-    assert len(sh) > 0
     component_element, offset, stride = basix_element.get_component_element(flat_component)
 
     for entity in range(num_entities):
@@ -182,7 +179,7 @@ def get_modified_terminal_element(mt):
         elif ld and not mt.reference_value:
             raise RuntimeError(
                 "Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_element()
+        element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
@@ -307,7 +304,8 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         # the dofmap offset may differ due to restriction.
 
         tdim = cell.topological_dimension()
-        if entitytype == "facet":
+
+        if integral_type == "interior_facet":
             if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,

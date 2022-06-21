@@ -8,7 +8,7 @@
 Breaks the compilation into several sequential stages.
 The output of each stage is the input of the next stage.
 
-Compiler stages:
+Compiler stages
 ---------------
 
 0. Language, parsing
@@ -80,10 +80,10 @@ def _print_timing(stage, timing):
         stage=stage, time=timing))
 
 
-def compile_ufl_objects(ufl_objects: typing.Union[typing.List, typing.Tuple],
+def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
                         object_names: typing.Dict = {},
                         prefix: str = None,
-                        parameters: typing.Dict = None,
+                        parameters: typing.Dict = {},
                         visualise: bool = False):
     """Generate UFC code for a given UFL objects.
 

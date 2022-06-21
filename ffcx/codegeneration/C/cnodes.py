@@ -8,7 +8,6 @@ import logging
 import numbers
 
 import numpy
-
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
 from ffcx.codegeneration.C.format_value import (format_float, format_int,
                                                 format_value)
@@ -58,15 +57,6 @@ def float_product(factors):
             if is_zero_cexpr(f):
                 return f
         return Product(factors)
-
-
-def MemCopy(src, dst, size, type):
-    src = as_cexpr_or_string_symbol(src)
-    dst = as_cexpr_or_string_symbol(dst)
-    size = as_cexpr_or_string_symbol(f"{size}*sizeof({type})")
-    return Call("memcpy", (dst, src, size))
-
-
 # CNode core
 
 
@@ -85,9 +75,6 @@ class CNode(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-
-CNode.debug = False
 
 # CExpr base classes
 
@@ -108,10 +95,6 @@ class CExpr(CNode):
         try:
             s = self.ce_format()
         except Exception:
-            if CNode.debug:
-                logger.error("Error in CExpr string formatting. Inspect self.")
-                import IPython
-                IPython.embed()
             raise
 
         return s
@@ -298,6 +281,9 @@ class LiteralFloat(CExprLiteral):
     def __float__(self):
         return float(self.value)
 
+    def flops(self):
+        return 0
+
 
 class LiteralInt(CExprLiteral):
     """An integer literal value."""
@@ -311,6 +297,9 @@ class LiteralInt(CExprLiteral):
 
     def ce_format(self, precision=None):
         return str(self.value)
+
+    def flops(self):
+        return 0
 
     def __eq__(self, other):
         return isinstance(other, LiteralInt) and self.value == other.value
@@ -383,6 +372,9 @@ class Symbol(CExprTerminal):
     def ce_format(self, precision=None):
         return self.name
 
+    def flops(self):
+        return 0
+
     def __eq__(self, other):
         return isinstance(other, Symbol) and self.name == other.name
 
@@ -391,7 +383,6 @@ class Symbol(CExprTerminal):
 
 
 # CExprOperator base classes
-
 
 class UnaryOp(CExprOperator):
     """Base class for unary operators."""
@@ -403,6 +394,9 @@ class UnaryOp(CExprOperator):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.arg == other.arg
+
+    def flops(self):
+        raise NotImplementedError()
 
 
 class PrefixUnaryOp(UnaryOp):
@@ -462,6 +456,9 @@ class BinOp(CExprOperator):
     def __hash__(self):
         return hash(self.ce_format())
 
+    def flops(self):
+        return 1 + self.lhs.flops() + self.rhs.flops()
+
 
 class NaryOp(CExprOperator):
     """Base class for special n-ary operators."""
@@ -490,6 +487,12 @@ class NaryOp(CExprOperator):
     def __eq__(self, other):
         return (isinstance(other, type(self)) and len(self.args) == len(other.args)
                 and all(a == b for a, b in zip(self.args, other.args)))
+
+    def flops(self):
+        flops = len(self.args) - 1
+        for arg in self.args:
+            flops += arg.flops()
+        return flops
 
 
 # CExpr unary operators
@@ -689,6 +692,9 @@ class Assign(AssignOp):
     __slots__ = ()
     op = "="
 
+    def flops(self):
+        return super().flops() - 1
+
 
 class AssignAdd(AssignOp):
     __slots__ = ()
@@ -708,7 +714,6 @@ class AssignMul(AssignOp):
 class AssignDiv(AssignOp):
     __slots__ = ()
     op = "/="
-
 
 # CExpr operators
 
@@ -831,6 +836,9 @@ class ArrayAccess(CExprOperator):
     def __hash__(self):
         return hash(self.ce_format())
 
+    def flops(self):
+        return 0
+
 
 class Conditional(CExprOperator):
     __slots__ = ("condition", "true", "false")
@@ -862,6 +870,9 @@ class Conditional(CExprOperator):
         return (isinstance(other, type(self)) and self.condition == other.condition
                 and self.true == other.true and self.false == other.false)
 
+    def flops(self):
+        raise NotImplementedError("Flop count is not implemented for conditionals")
+
 
 class Call(CExprOperator):
     __slots__ = ("function", "arguments")
@@ -885,6 +896,9 @@ class Call(CExprOperator):
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.function == other.function
                 and self.arguments == other.arguments)
+
+    def flops(self):
+        return 1
 
 
 def Sqrt(x):
@@ -996,12 +1010,12 @@ class CStatement(CNode):
         try:
             s = self.cs_format()
         except Exception:
-            if CNode.debug:
-                logger.error("Error in CStatement string formatting. Inspect self.")
-                import IPython
-                IPython.embed()
+            logger.error("Error in CStatement string formatting.")
             raise
         return format_indented_lines(s)
+
+    def flops(self):
+        raise NotImplementedError()
 
 
 # Statements
@@ -1039,6 +1053,10 @@ class Statement(CStatement):
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.expr == other.expr)
 
+    def flops(self):
+        # print(self.expr.rhs.flops())
+        return self.expr.flops()
+
 
 class StatementList(CStatement):
     """A simple sequence of statements. No new scopes are introduced."""
@@ -1058,6 +1076,12 @@ class StatementList(CStatement):
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.statements == other.statements)
 
+    def flops(self):
+        flops = 0
+        for statement in self.statements:
+            flops += statement.flops()
+        return flops
+
 
 # Simple statements
 
@@ -1072,6 +1096,9 @@ class Break(CStatement):
     def __eq__(self, other):
         return isinstance(other, type(self))
 
+    def flops(self):
+        return 0
+
 
 class Continue(CStatement):
     __slots__ = ()
@@ -1082,6 +1109,9 @@ class Continue(CStatement):
 
     def __eq__(self, other):
         return isinstance(other, type(self))
+
+    def flops(self):
+        return 0
 
 
 class Return(CStatement):
@@ -1103,6 +1133,9 @@ class Return(CStatement):
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.value == other.value)
 
+    def flops(self):
+        return 0
+
 
 class Comment(CStatement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
@@ -1120,6 +1153,9 @@ class Comment(CStatement):
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.comment == other.comment)
+
+    def flops(self):
+        return 0
 
 
 def NoOp():
@@ -1156,6 +1192,9 @@ class Pragma(CStatement):
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.comment == other.comment)
 
+    def flops(self):
+        return 0
+
 
 # Type and variable declarations
 
@@ -1188,6 +1227,12 @@ class VariableDecl(CStatement):
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.typename == other.typename
                 and self.symbol == other.symbol and self.value == other.value)
+
+    def flops(self):
+        if self.value is not None:
+            return self.value.flops()
+        else:
+            return 0
 
 
 def leftover(size, padlen):
@@ -1370,6 +1415,9 @@ class ArrayDecl(CStatement):
         return (isinstance(other, type(self))
                 and all(getattr(self, name) == getattr(self, name) for name in attributes))
 
+    def flops(self):
+        return 0
+
 
 # Scoped statements
 
@@ -1386,6 +1434,9 @@ class Scope(CStatement):
 
     def __eq__(self, other):
         return (isinstance(other, type(self)) and self.body == other.body)
+
+    def flops(self):
+        return 0
 
 
 def _is_simple_if_body(body):
@@ -1554,14 +1605,8 @@ class ForRange(CStatement):
         return (isinstance(other, type(self))
                 and all(getattr(self, name) == getattr(self, name) for name in attributes))
 
-
-def ForRanges(*ranges, **kwargs):
-    ranges = list(reversed(ranges))
-    code = kwargs["body"]
-    for r in ranges:
-        kwargs["body"] = code
-        code = ForRange(*r, **kwargs)
-    return code
+    def flops(self):
+        return (self.end.value - self.begin.value) * self.body.flops()
 
 
 # Conversion function to statement nodes

@@ -4,18 +4,18 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2020.
 
 declaration = """
-extern ufc_form {factory_name};
+extern ufcx_form {factory_name};
 
 // Helper used to create form using name which was given to the
 // form in the UFL file.
 // This helper is called in user c++ code.
 //
-extern ufc_form* {name_from_uflfile};
+extern ufcx_form* {name_from_uflfile};
 
 // Helper used to create function space using function name
 // i.e. name of the Python variable.
 //
-ufc_function_space* functionspace_{name_from_uflfile}(const char* function_name);
+ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name);
 """
 
 factory = """
@@ -37,22 +37,22 @@ const char** constant_name_{factory_name}(void)
 {constant_name_map}
 }}
 
-int* integral_ids_{factory_name}(ufc_integral_type integral_type)
+int* integral_ids_{factory_name}(ufcx_integral_type integral_type)
 {{
 {integral_ids}
 }}
 
-int num_integrals_{factory_name}(ufc_integral_type integral_type)
+int num_integrals_{factory_name}(ufcx_integral_type integral_type)
 {{
 {num_integrals}
 }}
 
-ufc_integral** integrals_{factory_name}(ufc_integral_type integral_type)
+ufcx_integral** integrals_{factory_name}(ufcx_integral_type integral_type)
 {{
 {integrals}
 }}
 
-ufc_form {factory_name} =
+ufcx_form {factory_name} =
 {{
 
   .signature = {signature},
@@ -74,9 +74,9 @@ ufc_form {factory_name} =
 }};
 
 // Alias name
-ufc_form* {name_from_uflfile} = &{factory_name};
+ufcx_form* {name_from_uflfile} = &{factory_name};
 
-ufc_function_space* functionspace_{name_from_uflfile}(const char* function_name)
+ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name)
 {{
 {functionspace}
 }}

@@ -50,7 +50,7 @@ def graph_insert(F, expr):
 
 
 # Reuse these empty objects where appropriate to save memory
-noargs = {}
+noargs = {}  # type: ignore
 
 
 @singledispatch

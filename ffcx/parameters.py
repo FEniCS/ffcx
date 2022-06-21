@@ -9,9 +9,9 @@ import json
 import logging
 import os
 import os.path
-from pathlib import Path
 import pprint
-from typing import Optional
+from typing import Optional, Dict, Any
+from pathlib import Path
 
 logger = logging.getLogger("ffcx")
 
@@ -93,7 +93,7 @@ def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
       { "assume_aligned": 32, "epsilon": 1e-7 }
 
     """
-    parameters = {}
+    parameters: Dict[str, Any] = {}
 
     for param, (value, _) in FFCX_DEFAULT_PARAMETERS.items():
         parameters[param] = value

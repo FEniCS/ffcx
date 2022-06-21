@@ -4,7 +4,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-extern ufc_finite_element {factory_name};
+extern ufcx_finite_element {factory_name};
 """
 
 factory = """
@@ -13,8 +13,9 @@ factory = """
 {value_shape_init}
 {reference_value_shape_init}
 {sub_elements_init}
+{custom_element_init}
 
-ufc_finite_element {factory_name} =
+ufcx_finite_element {factory_name} =
 {{
   .signature = {signature},
   .cell_shape = {cell_shape},
@@ -35,8 +36,10 @@ ufc_finite_element {factory_name} =
   .basix_cell = {basix_cell},
   .discontinuous = {discontinuous},
   .lagrange_variant = {lagrange_variant},
+  .dpc_variant = {dpc_variant},
   .num_sub_elements = {num_sub_elements},
-  .sub_elements = {sub_elements}
+  .sub_elements = {sub_elements},
+  .custom_element = {custom_element}
 }};
 
 // End of code for element {factory_name}
