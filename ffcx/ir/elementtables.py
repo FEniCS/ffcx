@@ -391,7 +391,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                 for i, j in enumerate(factors[0][0]):
                     d = local_derivatives[i]
                     sub_tbl = j.tabulate(d, [[p[i]] for p in quadrature_rule.points])[d]
-                    sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
+                    sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
                     tensor_factors.append(
                         unique_table_reference_t(
                             f"THIS_TABLE_NEEDS_A_NAME_{i}", sub_tbl,
