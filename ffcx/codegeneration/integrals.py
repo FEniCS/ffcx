@@ -7,6 +7,7 @@
 import collections
 import logging
 from typing import List, Tuple
+import numpy
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -149,7 +150,8 @@ class IntegralGenerator(object):
                     self.literals[v] = L.Symbol("literal" + str(len(self.literals)))
                 return self.literals[v]
         else:
-            return self.backend.ufl_to_language.get(v)
+            if v._ufl_is_literal_:
+                return self.backend.ufl_to_language.get(v)
 
         f = self.scopes[quadrature_rule].get(v)
         if f is None:
@@ -234,7 +236,8 @@ class IntegralGenerator(object):
             if batch_size > 1:
                 scalar_type += str(batch_size)
             values = self.backend.ufl_to_language.get(literal)
-            all_preparts.insert(0, L.VariableDecl(f"const {scalar_type}", self.literals[literal], values))
+            init_list = L.as_symbol(L.build_1d_initializer_list(numpy.array([values]*batch_size), str))
+            all_preparts.insert(0, L.VariableDecl(f"const {scalar_type}", self.literals[literal], init_list))
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts

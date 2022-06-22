@@ -17,11 +17,11 @@
 #
 # The bilinear form for a mass matrix.
 from ufl import (FiniteElement, TestFunction, Coefficient, dx, inner,
-                 tetrahedron)
+                 tetrahedron, grad)
 
-element = FiniteElement("DG", tetrahedron, 3)
+element = FiniteElement("Lagrange", tetrahedron, 3)
 
 v = TestFunction(element)
 u = Coefficient(element)
 
-a = inner(u, v) * dx
+a = inner(grad(u), grad(v)) * dx
