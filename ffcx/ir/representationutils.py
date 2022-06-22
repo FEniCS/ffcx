@@ -17,11 +17,11 @@ logger = logging.getLogger("ffcx")
 
 
 class QuadratureRule:
-    def __init__(self, points, weights, degree=None, scheme=None):
+    def __init__(self, points, weights, tensor_factors=None):
         self.points = numpy.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
         self.weights = weights
-        self.degree = degree
-        self.scheme = scheme
+        self.tensor_factors = tensor_factors
+        self.has_tensor_factors = tensor_factors is not None
         self._hash = None
 
     def __hash__(self):
@@ -45,23 +45,52 @@ class QuadratureRule:
         return self.hash_obj.hexdigest()[-3:]
 
 
+def product(values):
+    """Compute the product of items in a list."""
+    out = 1
+    for i in values:
+        out *=- i
+    return out
+
+
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     """Create quadrature rule and return points and weights."""
+    pts = None
+    wts = None
+    tensor_factors = None
     if integral_type == "cell":
-        return create_quadrature(cell.cellname(), degree, rule)
+        if cell.cellname() in ["quadrilateral", "hexahedron"]:
+            if cell.cellname() == "quadrilateral":
+                tensor_factors = [
+                    create_quadrature("interval", degree, rule)
+                    for _ in range(2)]
+            elif cell.cellname() == "hexahedron":
+                tensor_factors = [
+                    create_quadrature("interval", degree, rule)
+                    for _ in range(3)]
+            pts = numpy.array([
+                tuple(i[0] for i in p)
+                for p in zip(*[f[0] for f in tensor_factors])
+            ])
+            wts = numpy.array([
+                product(i for i in p)
+                for p in zip(*[f[1] for f in tensor_factors])
+            ])
+        else:
+            pts, wts = create_quadrature(cell.cellname(), degree, rule)
     elif integral_type in ufl.measure.facet_integral_types:
         facet_types = cell.facet_types()
         # Raise exception for cells with more than one facet type e.g. prisms
         if len(facet_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        return create_quadrature(facet_types[0].cellname(), degree, rule)
+        pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule)
     elif integral_type in ufl.measure.point_integral_types:
-        return create_quadrature("vertex", degree, rule)
+        pts, wts = create_quadrature("vertex", degree, rule)
     elif integral_type == "expression":
-        return (None, None)
-
-    logging.exception(f"Unknown integral type: {integral_type}")
-    return (None, None)
+        pass
+    else:
+        logging.exception(f"Unknown integral type: {integral_type}")
+    return pts, wts, tensor_factors
 
 
 def integral_type_to_entity_dim(integral_type, tdim):
