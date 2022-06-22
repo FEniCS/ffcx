@@ -48,13 +48,14 @@ def test_additive_facet_integral(mode, compile_args):
     facets = np.array([0], dtype=np.int32)
     perm = np.array([0], dtype=np.uint8)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([0.0, 2.0, 0.0,
                        np.sqrt(3.0), -1.0, 0.0,
-                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np_gtype)
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
-    geom_type = mode.replace(' _Complex', '')
     for i in range(3):
         facets[0] = i
         kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
@@ -94,23 +95,24 @@ def test_additive_cell_integral(mode, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([0.0, 2.0, 0.0,
                        np.sqrt(3.0), -1.0, 0.0,
-                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np_gtype)
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     A0 = np.array(A)
-
     for i in range(3):
         kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-               ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+               ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
         assert np.all(np.isclose(A, (i + 2) * A0))
