@@ -16,7 +16,7 @@ def write_table(L, tablename, cellname, type):
     if tablename == "reference_cell_volume":
         return reference_cell_volume(L, tablename, cellname, type)
     if tablename == "reference_facet_volume":
-        return reference_facet_volume(L, tablename, cellnam, type)
+        return reference_facet_volume(L, tablename, cellname, type)
     if tablename == "reference_edge_vectors":
         return reference_edge_vectors(L, tablename, cellname, type)
     if tablename == "facet_reference_edge_vectors":
@@ -62,7 +62,7 @@ def reference_cell_volume(L, tablename, cellname, type):
     return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", out)
 
 
-def reference_facet_volume(L, tablename, cellna, typeme):
+def reference_facet_volume(L, tablename, cellname, type):
     celltype = getattr(basix.CellType, cellname)
     volumes = basix.cell.facet_reference_volumes(celltype)
     for i in volumes[1:]:
