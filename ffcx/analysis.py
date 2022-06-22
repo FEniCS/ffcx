@@ -33,7 +33,7 @@ class UFLData(typing.NamedTuple):
 
 def replace_average_quantities(form: ufl.form.Form) -> ufl.form.Form:
     """
-    Replaces cell_avg(a) with a/CellVolume(mesh) and facet_avg(a) with a/FacetArea(mesh)
+    Replaces cell_avg(a) with a/CellVolume(mesh) and facet_avg(a) with a/FacetArea(mesh).
 
     Parameters
     ----------
