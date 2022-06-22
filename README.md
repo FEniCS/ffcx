@@ -22,7 +22,7 @@ https://www.fenicsproject.org
 
 To install FFCx from PyPI:
 ```
-$ pip install ffcx
+$ pip install fenics-ffcx
 ```
 
 To install FFCx from the source directory:
