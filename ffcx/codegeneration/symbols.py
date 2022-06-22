@@ -28,7 +28,7 @@ def format_mt_name(basename, mt):
     access = str(basename)
 
     # Add averaged state to name
-    if mt.averaged:
+    if mt.averaged is not None:
         avg = f"_a{mt.averaged}"
         access += avg
 
