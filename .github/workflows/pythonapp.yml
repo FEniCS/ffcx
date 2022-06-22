@@ -43,7 +43,7 @@ jobs:
       - name: Install FEniCS dependencies (Python)
         run: |
           python -m pip install git+https://github.com/FEniCS/ufl.git
-          python -m pip install git+https://github.com/FEniCS/basix.git
+          python -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/VectorElement
 
       - name: Install FFCx
         run: |
