@@ -27,11 +27,6 @@ def format_mt_name(basename, mt):
     """Format variable name for modified terminal."""
     access = str(basename)
 
-    # Add averaged state to name
-    if mt.averaged is not None:
-        avg = f"_a{mt.averaged}"
-        access += avg
-
     # Format restriction
     res = ufcx_restriction_postfix(mt.restriction).replace("_", "_r")
     access += res

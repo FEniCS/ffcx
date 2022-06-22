@@ -28,7 +28,6 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 class ModifiedTerminalElement(typing.NamedTuple):
     element: ufl.FiniteElementBase
-    averaged: str
     local_derivatives: typing.Tuple[int]
     fc: int
 
@@ -65,7 +64,7 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
+def get_ffcx_table_values(points, cell, integral_type, ufl_element, entitytype,
                           derivative_counts, flat_component):
     """Extract values from FFCx element table.
 
@@ -77,32 +76,10 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     if integral_type in ufl.custom_integral_types:
         # Use quadrature points on cell for analysis in custom integral types
         integral_type = "cell"
-        assert not avg
 
     if integral_type == "expression":
         # FFCx tables for expression are generated as interior cell points
         integral_type = "cell"
-
-    if avg in ("cell", "facet"):
-        # Redefine points to compute average tables
-
-        # Make sure this is not called with points, that doesn't make sense
-        # assert points is None
-
-        # Not expecting derivatives of averages
-        assert not any(derivative_counts)
-        assert deriv_order == 0
-
-        # Doesn't matter if it's exterior or interior facet integral,
-        # just need a valid integral type to create quadrature rule
-        if avg == "cell":
-            integral_type = "cell"
-        elif avg == "facet":
-            integral_type = "exterior_facet"
-
-        # Make quadrature rule and get points and weights
-        points, weights = create_quadrature_points_and_weights(integral_type, cell,
-                                                               ufl_element.degree(), "default")
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension()
@@ -121,15 +98,6 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
         tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
 
-    if avg in ("cell", "facet"):
-        # Compute numeric integral of the each component table
-        wsum = sum(weights)
-        for entity, tbl in enumerate(component_tables):
-            num_dofs = tbl.shape[1]
-            tbl = numpy.dot(tbl, weights) / wsum
-            tbl = numpy.reshape(tbl, (1, num_dofs))
-            component_tables[entity] = tbl
-
     # Loop over entities and fill table blockwise (each block = points x dofs)
     # Reorder axes as (points, dofs) instead of (dofs, points)
     assert len(component_tables) == num_entities
@@ -142,12 +110,12 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     return {'array': res, 'offset': offset, 'stride': stride}
 
 
-def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, entitytype, derivative_counts,
+def generate_psi_table_name(quadrature_rule, element_counter, entitytype, derivative_counts,
                             flat_component):
     """Generate a name for the psi table.
 
     Format:
-    FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
+    FE#_C#_D###[_F|V][_Q#], where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
@@ -157,10 +125,6 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, ent
 
     D   - is the number of derivatives in each spatial direction if any.
           If the element is defined in 3D, then D012 means d^3(*)/dydz^2.
-
-    AC  - marks that the element values are averaged over the cell
-
-    AF  - marks that the element values are averaged over the facet
 
     F   - marks that the first array dimension enumerates facets on the cell
 
@@ -174,7 +138,6 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, ent
         name += "_C%d" % flat_component
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
-    name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
     name += {"cell": "", "facet": "_F", "vertex": "_V"}[entitytype]
     name += f"_Q{quadrature_rule.id()}"
     return name
@@ -220,13 +183,12 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
     else:
         return None
 
-    assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     gdim = mt.terminal.ufl_domain().geometric_dimension()
     local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
         ld, gdim)
 
-    return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
+    return ModifiedTerminalElement(element, local_derivatives, fc)
 
 
 def permute_quadrature_interval(points, reflections=0):
@@ -300,13 +262,13 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         res = analysis.get(mt)
         if not res:
             continue
-        element, avg, local_derivatives, flat_component = res
+        element, local_derivatives, flat_component = res
 
         # Generate table and store table name with modified terminal
 
         # Build name for this particular table
         element_number = element_numbers[element]
-        name = generate_psi_table_name(quadrature_rule, element_number, avg, entitytype,
+        name = generate_psi_table_name(quadrature_rule, element_number, entitytype,
                                        local_derivatives, flat_component)
 
         # FIXME - currently just recalculate the tables every time,
@@ -319,14 +281,14 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         if integral_type == "interior_facet":
             if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
-                                          integral_type, element, avg, entitytype,
+                                          integral_type, element, entitytype,
                                           local_derivatives, flat_component)
             elif tdim == 2:
                 new_table = []
                 for ref in range(2):
                     new_table.append(get_ffcx_table_values(
                         permute_quadrature_interval(quadrature_rule.points, ref), cell,
-                        integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                        integral_type, element, entitytype, local_derivatives, flat_component))
 
                 t = new_table[0]
                 t['array'] = numpy.vstack([td['array'] for td in new_table])
@@ -339,7 +301,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_triangle(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives,
+                                cell, integral_type, element, entitytype, local_derivatives,
                                 flat_component))
                     t = new_table[0]
                     t['array'] = numpy.vstack([td['array'] for td in new_table])
@@ -350,12 +312,12 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_quadrilateral(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                                cell, integral_type, element, entitytype, local_derivatives, flat_component))
                     t = new_table[0]
                     t['array'] = numpy.vstack([td['array'] for td in new_table])
         else:
             t = get_ffcx_table_values(quadrature_rule.points, cell,
-                                      integral_type, element, avg, entitytype,
+                                      integral_type, element, entitytype,
                                       local_derivatives, flat_component)
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)

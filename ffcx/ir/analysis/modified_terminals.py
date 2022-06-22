@@ -6,7 +6,7 @@
 
 import logging
 
-from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
+from ufl.classes import (Argument, FixedIndex, FormArgument,
                          Grad, Indexed, Jacobian, ReferenceGrad,
                          ReferenceValue, Restricted, SpatialCoordinate)
 from ufl.permutation import build_component_numbering
@@ -27,7 +27,6 @@ class ModifiedTerminal(object):
         global_derivatives - tuple of ints, each meaning derivative in that global direction
         local_derivatives  - tuple of ints, each meaning derivative in that local direction
         reference_value    - bool, whether this is represented in reference frame
-        averaged           - None, 'facet' or 'cell'
         restriction        - None, '+' or '-'
 
         component          - tuple of ints, the global component of the Terminal
@@ -41,7 +40,7 @@ class ModifiedTerminal(object):
     """
 
     def __init__(self, expr, terminal, reference_value, base_shape, base_symmetry, component,
-                 flat_component, global_derivatives, local_derivatives, averaged, restriction):
+                 flat_component, global_derivatives, local_derivatives, restriction):
         # The original expression
         self.expr = expr
 
@@ -64,10 +63,6 @@ class ModifiedTerminal(object):
         self.global_derivatives = global_derivatives
         self.local_derivatives = local_derivatives
 
-        # Evaluation method (alternatives: { None, 'facet_midpoint',
-        #  'cell_midpoint', 'facet_avg', 'cell_avg' })
-        self.averaged = averaged
-
         # Restriction to one cell or the other for interior facet integrals
         self.restriction = restriction
 
@@ -85,9 +80,8 @@ class ModifiedTerminal(object):
         fc = self.flat_component
         gd = self.global_derivatives
         ld = self.local_derivatives
-        a = self.averaged
         r = self.restriction
-        return (t, rv, fc, gd, ld, a, r)
+        return (t, rv, fc, gd, ld, r)
 
     def argument_ordering_key(self):
         """Return a key for deterministic sorting of argument vertex indices.
@@ -107,9 +101,8 @@ class ModifiedTerminal(object):
         fc = self.flat_component
         gd = self.global_derivatives
         ld = self.local_derivatives
-        a = self.averaged
         r = self.restriction
-        return (n, p, rv, fc, gd, ld, a, r)
+        return (n, p, rv, fc, gd, ld, r)
 
     def __hash__(self):
         return hash(self.as_tuple())
@@ -128,7 +121,6 @@ class ModifiedTerminal(object):
             f"terminal:           {self.terminal}\n"
             f"global_derivatives: {self.global_derivatives}\n"
             f"local_derivatives:  {self.local_derivatives}\n"
-            f"averaged:           {self.averaged}\n"
             f"component:          {self.component}\n"
             f"restriction:        {self.restriction}")
 
@@ -171,7 +163,6 @@ def analyse_modified_terminal(expr):
     local_derivatives = []
     reference_value = None
     restriction = None
-    averaged = None
 
     # Start with expr and strip away layers of modifiers
     t = expr
@@ -215,20 +206,6 @@ def analyse_modified_terminal(expr):
 
             restriction = t._side
             t, = t.ufl_operands
-
-        elif isinstance(t, CellAvg):
-            if averaged is not None:
-                raise RuntimeError("Got twice averaged terminal!")
-
-            t, = t.ufl_operands
-            averaged = "cell"
-
-        elif isinstance(t, FacetAvg):
-            if averaged is not None:
-                raise RuntimeError("Got twice averaged terminal!")
-
-            t, = t.ufl_operands
-            averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
             raise RuntimeError("Missing handler for terminal modifier type {}, object is {}.".format(
@@ -287,5 +264,4 @@ def analyse_modified_terminal(expr):
     flat_component = vi2si[component]
 
     return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,
-                            flat_component, global_derivatives, local_derivatives, averaged,
-                            restriction)
+                            flat_component, global_derivatives, local_derivatives, restriction)
