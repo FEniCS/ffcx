@@ -58,10 +58,11 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
+    geom_type = mode.replace(' _Complex', '')
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, np.trace(kappa_value) * expected_result)
 

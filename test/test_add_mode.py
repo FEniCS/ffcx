@@ -12,7 +12,14 @@ import ufl
 from ffcx.naming import cdtype_to_numpy
 
 
-@pytest.mark.parametrize("mode", ["double", "float", "long double", "double _Complex", "float _Complex"])
+@pytest.mark.parametrize("mode",
+                         [
+                             "double",
+                             "float",
+                             "long double",
+                             "double _Complex",
+                             "float _Complex"
+                         ])
 def test_additive_facet_integral(mode, compile_args):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
@@ -47,12 +54,13 @@ def test_additive_facet_integral(mode, compile_args):
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
+    geom_type = mode.replace(' _Complex', '')
     for i in range(3):
         facets[0] = i
         kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-               ffi.cast('double *', coords.ctypes.data),
+               ffi.cast(f'{geom_type} *', coords.ctypes.data),
                ffi.cast('int *', facets.ctypes.data),
                ffi.cast('uint8_t *', perm.ctypes.data))
 
