@@ -71,13 +71,17 @@ def generator(ir, parameters):
     if parameters["tabulate_tensor_void"]:
         code["tabulate_tensor"] = ""
 
+    scalar_type = parameters["scalar_type"]
+    geom_type = scalar_type.replace(' _Complex', '')
+
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
-        scalar_type=parameters["scalar_type"],
+        scalar_type=scalar_type,
+        geom_type=geom_type,
         np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]),
         coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
 
@@ -183,15 +187,18 @@ class IntegralGenerator(object):
                       L.VerbatimStatement(
                           f"coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]
 
+        scalar_type = self.backend.access.parameters["scalar_type"]
+        float_type = scalar_type.replace(' _Complex', '')
+
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables()
+        parts += self.generate_quadrature_tables(float_type)
 
         # Generate the tables of basis function values and preintegrated
         # blocks
-        parts += self.generate_element_tables()
+        parts += self.generate_element_tables(float_type)
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += self.generate_geometry_tables(float_type)
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -223,7 +230,7 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self):
+    def generate_quadrature_tables(self, float_type):
         """Generate static tables of quadrature points and weights."""
         L = self.backend.language
 
@@ -243,17 +250,14 @@ class IntegralGenerator(object):
             num_points = quadrature_rule.weights.shape[0]
             # Generate quadrature weights array
             wsym = self.backend.symbols.weights_table(quadrature_rule)
-            parts += [
-                L.ArrayDecl(
-                    "static const double", wsym, num_points,
-                    quadrature_rule.weights, padlen=padlen)
-            ]
+            parts += [L.ArrayDecl(f"static const {float_type}", wsym, num_points,
+                                  quadrature_rule.weights, padlen=padlen)]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
         return parts
 
-    def generate_geometry_tables(self):
+    def generate_geometry_tables(self, float_type):
         """Generate static tables of geometry data."""
         L = self.backend.language
 
@@ -280,11 +284,11 @@ class IntegralGenerator(object):
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+                parts.append(geometry.write_table(L, ufl_geometry[i], c, float_type))
 
         return parts
 
-    def generate_element_tables(self):
+    def generate_element_tables(self, float_type: str):
         """Generate static tables with precomputed element basis function values in quadrature points."""
         L = self.backend.language
         parts = []
@@ -303,7 +307,7 @@ class IntegralGenerator(object):
 
         for name in table_names:
             table = tables[name]
-            parts += self.declare_table(name, table, padlen)
+            parts += self.declare_table(name, table, padlen, float_type)
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
@@ -312,7 +316,7 @@ class IntegralGenerator(object):
         ])
         return parts
 
-    def declare_table(self, name, table, padlen):
+    def declare_table(self, name, table, padlen, float_type: str):
         """Declare a table.
 
         If the dof dimensions of the table have dof rotations, apply
@@ -321,8 +325,7 @@ class IntegralGenerator(object):
         """
         L = self.backend.language
 
-        return [L.ArrayDecl(
-            "static const double", name, table.shape, table, padlen=padlen)]
+        return [L.ArrayDecl(f"static const {float_type}", name, table.shape, table, padlen=padlen)]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""

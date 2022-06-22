@@ -139,11 +139,14 @@ class FFCXBackendDefinitions(object):
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
 
+        scalar_type = self.parameters["scalar_type"]
+        geom_type = scalar_type.replace(' _Complex', '')
+
         # Inlined version (we know this is bounded by a small number)
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
         value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
-        code = [L.VariableDecl("const double", access, value)]
+        code = [L.VariableDecl(f"const {geom_type}", access, value)]
 
         return [], code
 
