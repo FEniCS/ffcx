@@ -11,12 +11,12 @@ import logging
 import typing
 
 import ffcx.codegeneration.dofmap_template as ufcx_dofmap
-import ffcx.codegeneration.C.cnodes as cnodes
+
 
 logger = logging.getLogger("ffcx")
 
 
-def tabulate_entity_dofs(L: cnodes, entity_dofs: typing.List[typing.List[typing.List[int]]],
+def tabulate_entity_dofs(L, entity_dofs: typing.List[typing.List[typing.List[int]]],
                          num_dofs_per_entity: typing.List[int]):
     # Output argument array
     dofs = L.Symbol("dofs")
