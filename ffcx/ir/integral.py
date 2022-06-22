@@ -56,8 +56,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
 
     ir["integrand"] = {}
 
-    ir["table_dofmaps"] = {}
-
     for quadrature_rule, integrand in integrands.items():
 
         expression = integrand
@@ -254,7 +252,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         # Add tables and types for this quadrature rule to global tables dict
         ir["unique_tables"].update(active_tables)
         ir["unique_table_types"].update(active_table_types)
-
         # Build IR dict for the given expressions
         # Store final ir for this num_points
         ir["integrand"][quadrature_rule] = {"factorization": F,
