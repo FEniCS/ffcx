@@ -7,6 +7,7 @@
 
 import hashlib
 import logging
+import itertools
 
 import numpy
 import ufl
@@ -70,11 +71,11 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
                     for _ in range(3)]
             pts = numpy.array([
                 tuple(i[0] for i in p)
-                for p in zip(*[f[0] for f in tensor_factors])
+                for p in itertools.product(*[f[0] for f in tensor_factors])
             ])
             wts = numpy.array([
                 product(i for i in p)
-                for p in zip(*[f[1] for f in tensor_factors])
+                for p in itertools.product(*[f[1] for f in tensor_factors])
             ])
         else:
             pts, wts = create_quadrature(cell.cellname(), degree, rule)
