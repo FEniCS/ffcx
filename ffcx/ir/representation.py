@@ -20,7 +20,6 @@ import itertools
 import logging
 import typing
 import warnings
-from collections import namedtuple
 
 import basix
 import numpy
