@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2020 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
+# Copyright (C) 2007-2022 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 #                         Michal Habera and others
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
@@ -29,6 +29,38 @@ class UFLData(typing.NamedTuple):
     unique_coordinate_elements: typing.List[ufl.finiteelement.FiniteElementBase]  # List of unique coordinate elements
     # List of ufl Expressions as tuples (expression, points, original_expression)
     expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64], ufl.core.expr.Expr]]
+
+
+def replace_average_quantities(form: ufl.form.Form) -> ufl.form.Form:
+    """
+    Replaces cell_avg(a) with a/CellVolume(mesh) and facet_avg(a) with a/FacetArea(mesh)
+
+    Parameters
+    ----------
+    form
+        The initial form
+
+    Returns
+    -------
+    The modified form
+    """
+    replace_map = {}
+    new_integrals = []
+    for integral in form._integrals:
+        itg = integral.integrand()
+
+        for node in ufl.corealg.traversal.unique_pre_traversal(itg):
+            if isinstance(node, (ufl.averaging.CellAvg)):
+                replace_map[node] = node.ufl_operands[0] / ufl.CellVolume(form.ufl_domain())
+            elif isinstance(node, (ufl.averaging.FacetAvg)):
+                replace_map[node] = node.ufl_operands[0] / ufl.FacetArea(form.ufl_domain())
+        itg = ufl.algorithms.replace(itg, replace_map)
+        new_integrals.append(integral.reconstruct(integrand=itg))
+    # If nothing has been replaced return original form
+    if len(replace_map) == 0:
+        return form
+    else:
+        return ufl.form.Form(new_integrals)
 
 
 def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UFLData:
@@ -153,6 +185,9 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
                 variant="equispaced")
             equi_element = ufl.VectorElement(sub_element)
             form._integrals[n]._ufl_domain._ufl_coordinate_element = equi_element
+
+    # Replace average quantities in form
+    form = replace_average_quantities(form)
 
     # Check for complex mode
     complex_mode = "_Complex" in parameters["scalar_type"]
