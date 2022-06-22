@@ -6,7 +6,6 @@
 """Tools for C/C++ expression formatting."""
 
 import logging
-import numpy
 import ufl
 
 logger = logging.getLogger("ffcx")
@@ -269,16 +268,7 @@ class UFL2CNodesTranslatorCpp(object):
         if name is None:
             raise RuntimeError("Not supported in current scalar mode")
 
-        if self.batch_size == 1:
-            return self.L.Call(name, args)
-        else:
-            calls = []
-            # for i in range(1):
-            arg = self.L.as_symbol(args[0].ce_format() + f"[{0}]")
-            # calls = self.L.Call(name, [arg])
-            # calls = numpy.array(calls)
-            # init_list = self.L.build_1d_initializer_list(calls, str)
-            return self.L.Call(name, [arg])
+        return self.L.Call(name, args)
 
     # === Formatting rules for bessel functions ===
     # Some Bessel functions exist in gcc, as XSI extensions

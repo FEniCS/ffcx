@@ -236,7 +236,7 @@ class IntegralGenerator(object):
             if batch_size > 1:
                 scalar_type += str(batch_size)
             values = self.backend.ufl_to_language.get(literal)
-            init_list = L.as_symbol(L.build_1d_initializer_list(numpy.array([values]*batch_size), str))
+            init_list = L.as_symbol(L.build_1d_initializer_list(numpy.array([values] * batch_size), str))
             all_preparts.insert(0, L.VariableDecl(f"const {scalar_type}", self.literals[literal], init_list))
 
         # Collect parts before, during, and after quadrature loops
