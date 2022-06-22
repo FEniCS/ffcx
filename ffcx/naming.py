@@ -5,13 +5,19 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import hashlib
+import typing
 
+import numpy
+import numpy.typing
 import ufl
 
 import ffcx
 
 
-def compute_signature(ufl_objects, tag):
+def compute_signature(ufl_objects: typing.List[
+    typing.Union[ufl.Form,
+                 ufl.FiniteElementBase,
+                 typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64]]]], tag: str) -> str:
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional
@@ -40,7 +46,7 @@ def compute_signature(ufl_objects, tag):
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains = []
+            domains: typing.List[ufl.Mesh] = []
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
             for arg in args:
