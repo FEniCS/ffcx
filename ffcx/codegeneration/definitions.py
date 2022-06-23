@@ -174,7 +174,6 @@ class FFCXBackendDefinitions(object):
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-
         L = self.language
 
         num_dofs = tabledata.values.shape[3]
