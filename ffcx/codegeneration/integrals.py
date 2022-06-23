@@ -288,8 +288,7 @@ class IntegralGenerator(object):
         return parts
 
     def generate_element_tables(self, float_type: str):
-        """Generate static tables with precomputed element basis
-        function values in quadrature points."""
+        """Generate static tables with precomputed element basisfunction values in quadrature points."""
         L = self.backend.language
         parts = []
 
@@ -692,8 +691,7 @@ class IntegralGenerator(object):
         return preparts, quadparts
 
     def fuse_loops(self, definitions):
-        """Merge a sequence of loops with the same iteration space into
-        a single loop.
+        """Merge a sequence of loops with the same iteration space into a single loop.
 
         Loop fusion improves data locality, cache reuse and decreases
         the loop control overhead.
@@ -701,6 +699,7 @@ class IntegralGenerator(object):
         NOTE: Loop fusion might increase the pressure on register
         allocation. Ideally, we should define a cost function to
         determine how many loops should fuse at a time.
+
         """
         L = self.backend.language
 
