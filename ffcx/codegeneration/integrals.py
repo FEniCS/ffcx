@@ -226,11 +226,11 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self, value_type: str):
+    def generate_quadrature_tables(self, value_type: str) -> List[str]:
         """Generate static tables of quadrature points and weights."""
         L = self.backend.language
 
-        parts = []
+        parts: List[str] = []
 
         # No quadrature tables for custom (given argument) or point
         # (evaluation in single vertex)
