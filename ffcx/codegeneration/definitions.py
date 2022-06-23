@@ -177,7 +177,7 @@ class FFCXBackendDefinitions(object):
             L = self.language
 
             num_dofs = tabledata.values.shape[3]
-            bs = tabledata.block_size
+            # bs = tabledata.block_size
             begin = tabledata.offset
 
             # Get access to element table
