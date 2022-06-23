@@ -243,8 +243,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["discontinuous"] = basix_element.discontinuous
     ir["degree"] = basix_element.degree
     ir["family"] = basix_element.family_name
-    ir["value_shape"] = basix_element.value_shape
-    ir["reference_value_shape"] = basix_element.value_shape
+    ir["value_shape"] = basix_element.value_shape()
+    ir["reference_value_shape"] = basix_element.value_shape()
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
@@ -269,7 +269,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     """Compute intermediate representation of a custom Basix element."""
     ir = {}
     ir["cell_type"] = basix_element.cell_type
-    ir["value_shape"] = basix_element.value_shape
+    ir["value_shape"] = basix_element.value_shape()
     ir["wcoeffs"] = basix_element.wcoeffs
     ir["x"] = basix_element.x
     ir["M"] = basix_element.M

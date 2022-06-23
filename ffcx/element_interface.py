@@ -150,7 +150,6 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         """
         return 1
 
-    @property
     def value_shape(self) -> typing.Tuple[int, ...]:
         """Value shape of the element basis function.
 
