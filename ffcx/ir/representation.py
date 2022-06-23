@@ -235,7 +235,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = basix_element.dim
-    ir["element_type"] = basix_element.element_type
+    ir["element_type"] = basix_element.ufcx_element_type
     ir["lagrange_variant"] = basix_element.lagrange_variant
     ir["dpc_variant"] = basix_element.dpc_variant
     ir["basix_family"] = basix_element.element_family
