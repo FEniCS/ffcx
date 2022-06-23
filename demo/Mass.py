@@ -1,7 +1,7 @@
 import ufl
 
 cell = ufl.hexahedron
-element = ufl.VectorElement("Lagrange", cell, 2)
+element = ufl.FiniteElement("Lagrange", cell, 3)
 coords = ufl.VectorElement("Lagrange", cell, 1)
 mesh = ufl.Mesh(coords)
 V = ufl.FunctionSpace(mesh, element)
