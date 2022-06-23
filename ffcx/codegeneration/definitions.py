@@ -170,32 +170,33 @@ class FFCXBackendDefinitions(object):
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
 
     def jacobian(self, e, mt, tabledata, quadrature_rule, access):
-        """Return definition code for the Jacobian of x(X).
-        """
+        """Return definition code for the Jacobian of x(X)."""
+        L = self.language
 
-        if self.integral_type == "cell":
-            L = self.language
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
 
-            num_dofs = tabledata.values.shape[3]
-            # bs = tabledata.block_size
-            begin = tabledata.offset
+        # Find table name
+        ttype = tabledata.ttype
 
-            # Get access to element table
-            FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-            ic = self.symbols.coefficient_dof_sum_index()
-            dof_access = self.symbols.S("coordinate_dofs")
+        assert ttype != "zeros"
+        assert ttype != "ones"
 
-            # coordinate dofs is always 3d
-            dim = 3
+        # Get access to element table
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+        ic = self.symbols.coefficient_dof_sum_index()
+        dof_access = self.symbols.S("coordinate_dofs")
 
-            code = []
-            body = [L.AssignAdd(access, dof_access[ic * dim + begin] * FE[ic])]
-            code += [L.VariableDecl("double", access, 0.0)]
-            code += [L.ForRange(ic, 0, num_dofs, body)]
+        # coordinate dofs is always 3d
+        dim = 3
 
-            return [], code
-        else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+        code = []
+        body = [L.AssignAdd(access, dof_access[ic * dim + begin] * FE[ic])]
+        code += [L.VariableDecl("double", access, 0.0)]
+        code += [L.ForRange(ic, 0, num_dofs, body)]
+
+        return [], code
+        
 
     def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""
