@@ -73,7 +73,7 @@ def generator(ir, parameters):
         code["tabulate_tensor"] = ""
 
     code["result_needs_permuting"] = 0
-    code["result_permutations"] = "void"
+    code["result_permutations"] = "NULL"
     code["result_permutations_init"] = ""
 
     implementation = ufcx_integrals.factory.format(
