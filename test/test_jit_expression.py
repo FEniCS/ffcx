@@ -5,12 +5,12 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import numpy as np
-
+import basix
 import cffi
 import ffcx.codegeneration.jit
+import numpy as np
 import ufl
-import basix
+from ffcx.naming import cdtype_to_numpy
 
 
 def float_to_type(name):
@@ -64,7 +64,7 @@ def test_matvec(compile_args):
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = c_type.replace(' _Complex', '')
     np_gtype = cdtype_to_numpy(geom_type)
 
     # Coords storage XYZXYZXYZ
@@ -117,6 +117,8 @@ def test_rank1(compile_args):
     expression = obj[0]
 
     c_type, np_type = float_to_type("double")
+    geom_type = c_type.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
 
     # 2 components for vector components of expression
     # 3 points of evaluation
@@ -130,13 +132,13 @@ def test_rank1(compile_args):
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     # Coords storage XYZXYZXYZ
-    coords = np.zeros((points.shape[0], 3), dtype=np.float64)
+    coords = np.zeros((points.shape[0], 3), dtype=np_gtype)
     coords[:, :2] = points
     expression.tabulate_tensor_float64(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast(f'{geom_type} *', coords.ctypes.data),
         ffi.cast('int *', entity_index.ctypes.data),
         ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
