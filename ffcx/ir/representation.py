@@ -224,7 +224,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     # Create basix elements
     basix_element = create_element(ufl_element)
     cell = ufl_element.cell()
-    cellname = cell.cellname()
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -232,7 +231,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = cellname
+    ir["cell_shape"] = basix_element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = basix_element.dim
