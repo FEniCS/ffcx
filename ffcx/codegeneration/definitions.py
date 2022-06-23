@@ -196,7 +196,6 @@ class FFCXBackendDefinitions(object):
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
         return [], code
-        
 
     def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""
