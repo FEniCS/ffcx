@@ -173,8 +173,15 @@ class FFCXBackendDefinitions(object):
         """Return definition code for the Jacobian of x(X)."""
         L = self.language
 
+        # Get properties of domain
+        domain = mt.terminal.ufl_domain()
+        coordinate_element = domain.ufl_coordinate_element()
+        num_scalar_dofs = create_element(coordinate_element).sub_element.dim
+
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+
+        assert num_scalar_dofs == num_dofs
 
         # Find table name
         ttype = tabledata.ttype
@@ -189,11 +196,14 @@ class FFCXBackendDefinitions(object):
 
         # coordinate dofs is always 3d
         dim = 3
+        offset = 0
+        if mt.restriction == "-":
+            offset = num_scalar_dofs * dim
 
         code = []
-        body = [L.AssignAdd(access, dof_access[ic * dim + begin] * FE[ic])]
+        body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
         code += [L.VariableDecl("double", access, 0.0)]
-        code += [L.ForRange(ic, 0, num_dofs, body)]
+        code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
 
