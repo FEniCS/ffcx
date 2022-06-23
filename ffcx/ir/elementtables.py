@@ -25,6 +25,7 @@ default_atol = 1e-9
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
+
 class ModifiedTerminalElement(typing.NamedTuple):
     element: ufl.FiniteElementBase
     averaged: str

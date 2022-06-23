@@ -1,4 +1,4 @@
-from ufl import (FiniteElement, TestFunction, Coefficient, TrialFunction, dx, inner,
+from ufl import (FiniteElement, TestFunction, TrialFunction, dx, inner,
                  hexahedron)
 
 element = FiniteElement("Lagrange", hexahedron, 5)
