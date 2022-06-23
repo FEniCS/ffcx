@@ -228,7 +228,6 @@ class FFCXBackendDefinitions(object):
     def _expect_table(self, mt: ModifiedTerminal, tabledata: UniqueTableReference,
                       quadrature_rule: QuadratureRule, access: Symbol):
         """Return quantities referring to constant tables defined in the generated code."""
-        print("here")
         # TODO: Inject const static table here instead?
         return [], []
 
