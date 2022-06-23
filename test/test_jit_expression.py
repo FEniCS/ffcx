@@ -64,15 +64,18 @@ def test_matvec(compile_args):
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     # Coords storage XYZXYZXYZ
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np.float64)
+                       [0.0, 1.0, 0.0]], dtype=np_gtype)
     expression.tabulate_tensor_float64(
         ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
         ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast(f'{geom_type} *', coords.ctypes.data),
         ffi.cast('int *', entity_index.ctypes.data),
         ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
