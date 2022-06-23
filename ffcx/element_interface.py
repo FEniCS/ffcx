@@ -81,12 +81,14 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     _element: basix.ufl_wrapper._BasixElementBase
     _entity_counts: typing.List[int]
     _family_name: str
+    _cellname: str
 
     def __init__(self, element: ufl.finiteelement.FiniteElementBase):
         """Initialise the element."""
         self._points, _ = create_quadrature(element.cell().cellname(),
                                             element.degree(), element.quadrature_scheme())
 
+        self._cellname = element.cell().cellname()
         tdim = element.family()
         tdim = element.cell().topological_dimension()
         self._entity_counts = []
@@ -233,7 +235,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     @property
     def cell_type(self) -> basix.CellType:
         """Basix cell type used to initialise the element."""
-        return None
+        return basix.cell.string_to_type(self._cellname)
 
     @property
     def discontinuous(self) -> bool:
