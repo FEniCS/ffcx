@@ -79,11 +79,27 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
     _points: basix.ufl_wrapper._nda_f64
     _element: basix.ufl_wrapper._BasixElementBase
+    _entity_counts: typing.List[int]
+    _family_name: str
 
-    def __init__(self, element: basix.ufl_wrapper._BasixElementBase):
+    def __init__(self, element: ufl.finiteelement.FiniteElementBase):
         """Initialise the element."""
-        self._points, _ = basix.make_quadrature(element.cell_type, element.degree)
-        self._element = element
+        self._points, _ = create_quadrature(element.cell().cellname(),
+                                            element.degree(), element.quadrature_scheme())
+
+        tdim = element.family()
+        tdim = element.cell().topological_dimension()
+        self._entity_counts = []
+        if tdim >= 1:
+            self._entity_counts.append(element.cell().num_vertices())
+        if tdim >= 2:
+            self._entity_counts.append(element.cell().num_edges())
+        if tdim >= 3:
+            self._entity_counts.append(element.cell().num_facets())
+        self._entity_counts.append(1)
+
+        super().__init__(
+            "", "quadrature element", element.cell_type.name)
 
     def tabulate(
         self, nderivs: int, points: basix.ufl_wrapper._nda_f64
@@ -150,16 +166,8 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         """Number of DOFs associated with each entity."""
         dofs = []
-        tdim = self._element.cell().topological_dimension()
-
-        if tdim >= 1:
-            dofs += [[0] * self._element.cell().num_vertices()]
-
-        if tdim >= 2:
-            dofs += [[0] * self._element.cell().num_edges()]
-
-        if tdim >= 3:
-            dofs += [[0] * self._element.cell().num_facets()]
+        for d in self._entity_counts[:-1]:
+            dofs += [[0] * d]
 
         dofs += [[self.dim]]
         return dofs
@@ -205,7 +213,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     @property
     def family_name(self) -> str:
         """Family name of the element."""
-        return self._element.family()
+        return self._family_name
 
     @property
     def lagrange_variant(self) -> basix.LagrangeVariant:
