@@ -215,10 +215,17 @@ class FFCXBackendDefinitions(object):
         assert ttype != "zeros"
         assert ttype != "ones"
 
-        # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = self.symbols.S("coordinate_dofs")
+        # compute quadrature loop multi index
+        ranges = [quadrature_rule.weights.size]
+        if quadrature_rule.has_tensor_factors:
+            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
+        iq = MultiIndex(L, "iq", ranges)
+
+        # compute dof multi index
+        ranges = [tabledata.values.shape[3]]
+        if tabledata.has_tensor_factorisation:
+            ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+        ic = MultiIndex(L, "ic", ranges)
 
         # coordinate dofs is always 3d
         dim = 3
@@ -226,10 +233,25 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
+        dof_access = self.symbols.S("coordinate_dofs")
+
         code = []
-        body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
         code += [L.VariableDecl("double", access, 0.0)]
-        code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
+
+        assert ic.dim == iq.dim
+        if tabledata.has_tensor_factorisation:
+            FE = []
+            for i in range(ic.dim):
+                factor = tabledata.tensor_factors[i]
+                table = self.symbols.table_access(factor, self.entitytype, mt.restriction, iq.local_idx(i))
+                FE.append(table[ic.local_idx(i)])
+            FE = L.Product(FE)
+        else:
+            FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+
+        dof_access = dof_access[ic.global_idx() * dim + begin + offset]
+        body = [L.AssignAdd(access, dof_access * FE)]
+        code += [L.NestedForRange(ic, body)]
 
         return [], code
 
