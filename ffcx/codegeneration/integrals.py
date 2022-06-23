@@ -178,24 +178,24 @@ class IntegralGenerator(object):
 
         parts = []
         scalar_type = self.backend.access.parameters["scalar_type"]
-        float_type = scalar_to_value_type(scalar_type)
+        value_type = scalar_to_value_type(scalar_type)
         alignment = self.ir.params['assume_aligned']
         if alignment != -1:
             scalar_type = self.backend.access.parameters["scalar_type"]
             parts += [L.VerbatimStatement(f"A = ({scalar_type}*)__builtin_assume_aligned(A, {alignment});"),
                       L.VerbatimStatement(f"w = (const {scalar_type}*)__builtin_assume_aligned(w, {alignment});"),
                       L.VerbatimStatement(f"c = (const {scalar_type}*)__builtin_assume_aligned(c, {alignment});"),
-                      L.VerbatimStatement(f"coordinate_dofs = (const {float_type}*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]  # noqa
+                      L.VerbatimStatement(f"coordinate_dofs = (const {value_type}*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]  # noqa
 
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables(float_type)
+        parts += self.generate_quadrature_tables(value_type)
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
-        parts += self.generate_element_tables(float_type)
+        parts += self.generate_element_tables(value_type)
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables(float_type)
+        parts += self.generate_geometry_tables(value_type)
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -226,7 +226,7 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self, float_type):
+    def generate_quadrature_tables(self, value_type: str):
         """Generate static tables of quadrature points and weights."""
         L = self.backend.language
 
@@ -246,7 +246,7 @@ class IntegralGenerator(object):
 
             # Generate quadrature weights array
             wsym = self.backend.symbols.weights_table(quadrature_rule)
-            parts += [L.ArrayDecl(f"static const {float_type}", wsym, num_points,
+            parts += [L.ArrayDecl(f"static const {value_type}", wsym, num_points,
                                   quadrature_rule.weights, padlen=padlen)]
 
         # Add leading comment if there are any tables
@@ -288,12 +288,9 @@ class IntegralGenerator(object):
         """Generate static tables with precomputed element basisfunction values in quadrature points."""
         L = self.backend.language
         parts = []
-
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-
         padlen = self.ir.params["padlen"]
-
         if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
@@ -308,11 +305,10 @@ class IntegralGenerator(object):
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [permutation][entities][points][dofs]",
-        ])
+            "FE* dimensions: [permutation][entities][points][dofs]"])
         return parts
 
-    def declare_table(self, name, table, padlen, float_type: str):
+    def declare_table(self, name, table, padlen, value_type: str):
         """Declare a table.
 
         If the dof dimensions of the table have dof rotations, apply
@@ -320,8 +316,7 @@ class IntegralGenerator(object):
 
         """
         L = self.backend.language
-
-        return [L.ArrayDecl(f"static const {float_type}", name, table.shape, table, padlen=padlen)]
+        return [L.ArrayDecl(f"static const {value_type}", name, table.shape, table, padlen=padlen)]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
@@ -333,8 +328,7 @@ class IntegralGenerator(object):
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
-        preparts, quadparts = \
-            self.generate_dofblock_partition(quadrature_rule)
+        preparts, quadparts = self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
 
         # Wrap body in loop or scope
