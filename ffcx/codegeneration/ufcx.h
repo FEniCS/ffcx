@@ -321,7 +321,8 @@ extern "C"
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
-
+    bool result_needs_permuting;
+    int* result_permutations;
     /// Get the coordinate element associated with the geometry of the mesh.
     ufcx_finite_element* coordinate_element;
   } ufcx_integral;

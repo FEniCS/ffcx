@@ -21,6 +21,7 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 }}
 
 {enabled_coefficients_init}
+{result_permutations_init}
 
 ufcx_integral {factory_name} =
 {{
@@ -28,6 +29,8 @@ ufcx_integral {factory_name} =
   .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
   .needs_facet_permutations = {needs_facet_permutations},
   .coordinate_element = {coordinate_element},
+  .result_needs_permuting = {result_needs_permuting},
+  .result_permutations = {result_permutations},
 }};
 
 // End of code for integral {factory_name}
