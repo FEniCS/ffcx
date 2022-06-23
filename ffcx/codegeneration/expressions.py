@@ -74,7 +74,9 @@ def generator(ir, parameters):
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
     d["scalar_type"] = parameters["scalar_type"]
+    d["geom_type"] = parameters["scalar_type"].replace(' _Complex', '')
     d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
+
     d["rank"] = len(ir.tensor_shape)
 
     if len(ir.coefficient_names) > 0:
@@ -124,7 +126,6 @@ def generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
-
     assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
