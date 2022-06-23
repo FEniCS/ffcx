@@ -178,17 +178,17 @@ class IntegralGenerator(object):
 
         parts = []
 
+        scalar_type = self.backend.access.parameters["scalar_type"]
+        float_type = scalar_type.replace(' _Complex', '')
+
         alignment = self.ir.params['assume_aligned']
         if alignment != -1:
             scalar_type = self.backend.access.parameters["scalar_type"]
             parts += [L.VerbatimStatement(f"A = ({scalar_type}*)__builtin_assume_aligned(A, {alignment});"),
                       L.VerbatimStatement(f"w = (const {scalar_type}*)__builtin_assume_aligned(w, {alignment});"),
                       L.VerbatimStatement(f"c = (const {scalar_type}*)__builtin_assume_aligned(c, {alignment});"),
-                      L.VerbatimStatement(
-                          f"coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]
+                      L.VerbatimStatement(f"coordinate_dofs = (const {float_type}*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]
 
-        scalar_type = self.backend.access.parameters["scalar_type"]
-        float_type = scalar_type.replace(' _Complex', '')
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables(float_type)
