@@ -10,7 +10,7 @@ import numpy
 
 def write_table(L, tablename, cellname, type: str):
     if tablename == "facet_edge_vertices":
-        return facet_edge_vertices(L, tablename, cellname, type)
+        return facet_edge_vertices(L, tablename, cellname)
     if tablename == "reference_facet_jacobian":
         return reference_facet_jacobian(L, tablename, cellname, type)
     if tablename == "reference_cell_volume":
