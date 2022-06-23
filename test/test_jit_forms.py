@@ -52,13 +52,14 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
     c = np.array(kappa_value.flatten(), dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np.float64)
+                       [0.0, 1.0, 0.0]], dtype=np_gtype)
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
-    geom_type = mode.replace(' _Complex', '')
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
@@ -115,23 +116,26 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     ffi = module.ffi
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np.float64)
+                       [0.0, 1.0, 0.0]], dtype=np_gtype)
 
     kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
     kernel0(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     b = np.zeros(3, dtype=np_type)
     kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
     kernel1(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
     assert np.allclose(b, 1.0 / 6.0)
@@ -170,16 +174,19 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     ffi = module.ffi
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np.float64)
+                       [0.0, 1.0, 0.0]], dtype=np_gtype)
     kernel = getattr(form0, f"tabulate_tensor_{np_type}")
 
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
 
@@ -216,17 +223,20 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     ffi = module.ffi
     coords = np.array([0.0, 0.0, 0.0,
                        1.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
-                       0.0, 0.0, 1.0], dtype=np.float64)
+                       0.0, 0.0, 1.0], dtype=np_gtype)
 
     kernel = getattr(form0, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
 
@@ -329,18 +339,21 @@ def test_interior_facet_integral(mode, compile_args):
     facets = np.array([0, 2], dtype=np.intc)
     perms = np.array([0, 1], dtype=np.uint8)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     coords = np.array([[0.0, 0.0, 0.0,
                         1.0, 0.0, 0.0,
                         0.0, 1.0, 0.0],
                        [1.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
-                       1.0, 1.0, 0.0]], dtype=np.float64)
+                       1.0, 1.0, 0.0]], dtype=np_gtype)
 
     kernel = getattr(integral0, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast(f'{mode}  *', A.ctypes.data),
            ffi.cast(f'{mode}  *', w.ctypes.data),
            ffi.cast(f'{mode}  *', c.ctypes.data),
-           ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
            ffi.cast('uint8_t *', perms.ctypes.data))
 
 
@@ -374,15 +387,18 @@ def test_conditional(mode, compile_args):
     w1 = np.array([1.0, 1.0, 1.0], dtype=np_type)
     c = np.array([], dtype=np.float64)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np.float64)
+                       [0.0, 1.0, 0.0]], dtype=np_gtype)
 
     kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
     kernel0(ffi.cast('{type} *'.format(type=mode), A1.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=np_type)
     assert np.allclose(A1, expected_result)
@@ -394,7 +410,7 @@ def test_conditional(mode, compile_args):
     kernel1(ffi.cast('{type} *'.format(type=mode), A2.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w2.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.ones(3, dtype=np_type)
     assert np.allclose(A2, expected_result)
@@ -511,15 +527,18 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
     w = np.array([], dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     coords = np.array([[1.0, 0.0, 0.0],
                        [2.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np.float64)
+                       [0.0, 1.0, 0.0]], dtype=np_gtype)
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.NULL,
-           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     # Check that the result is the same as for sympy
     assert np.allclose(b, [float(i) for i in sym])
@@ -601,16 +620,19 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     b = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=np_type)
     w = np.array([], dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     coords = np.array([1.0, 0.0, 0.0,
                        2.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
-                       0.0, 0.0, 1.0], dtype=np.float64)
+                       0.0, 0.0, 1.0], dtype=np_gtype)
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.NULL,
-           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     # Check that the result is the same as for sympy
     assert np.allclose(b, [float(i) for i in sym])
@@ -671,15 +693,18 @@ def test_complex_operations(compile_args):
     w1 = np.array([3 + 5j, 8 - 7j], dtype=np_type)
     c = np.array([], dtype=np_type)
 
+    geom_type = mode.replace(' _Complex', '')
+    np_gtype = cdtype_to_numpy(geom_type)
+
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np.float64)
+                       [0.0, 1.0, 0.0]], dtype=np_gtype)
     J_1 = np.zeros((1), dtype=np_type)
     kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
     kernel0(ffi.cast('{type} *'.format(type=mode), J_1.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.array([0.5 * np.real(w1[0]) * np.imag(w1[1])
                                * (np.real(w1[0]) - 1j * np.imag(w1[0]))], dtype=np_type)
@@ -691,7 +716,7 @@ def test_complex_operations(compile_args):
     kernel1(ffi.cast('{type} *'.format(type=mode), J_2.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
             ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(J_2, expected_result)
 
