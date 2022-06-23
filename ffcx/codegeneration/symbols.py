@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2022 Martin Sandve Alnæs, Igor Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -8,33 +8,9 @@
 import logging
 
 import ufl.utils.derivativetuples
-import numpy
+from ffcx.codegeneration.indices import MultiIndex
 
 logger = logging.getLogger("ffcx")
-
-
-class MultiIndex:
-    def __init__(self, language, name, ranges):
-        self.L = language
-        self.name = name
-        self.ranges = ranges
-        self.dim = len(ranges)
-        self.strides = [numpy.prod(ranges[i + 1:], dtype=int) for i in range(self.dim)]
-        if self.dim == 1:
-            self.indices = self.L.Symbol(name)
-        else:
-            self.indices = [self.L.Symbol(name + f"{i}") for i in range(self.dim)]
-
-    def global_idx(self):
-        if self.dim == 1:
-            return self.indices
-        else:
-            global_factors = [self.strides[i] * self.indices[i] for i in range(self.dim)]
-            return self.L.Sum(global_factors)
-
-    def local_idx(self, idx):
-        assert idx < self.dim
-        return self.indices[idx]
 
 
 # TODO: Get restriction postfix from somewhere central
@@ -88,8 +64,8 @@ class FFCXBackendSymbols(object):
 
     def __init__(self, language, coefficient_numbering, coefficient_offsets,
                  original_constant_offsets):
-        self.L = language
-        self.S = self.L.Symbol
+        self.lang = language
+        self.S = self.lang.Symbol
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
 
@@ -103,7 +79,7 @@ class FFCXBackendSymbols(object):
         """Entity index for lookup in element tables."""
         if entitytype == "cell":
             # Always 0 for cells (even with restriction)
-            return self.L.LiteralInt(0)
+            return self.lang.LiteralInt(0)
         elif entitytype == "facet":
             postfix = "[0]"
             if restriction == "-":
@@ -118,14 +94,6 @@ class FFCXBackendSymbols(object):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
         return self.S(indices[iarg])
-
-    def coefficient_dof_sum_index(self):
-        """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
-        return self.S("ic")
-
-    def coefficient_dof_sum_index_tensor(self, dim):
-        """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
-        return [self.S(f"ic{i}") for i in range(dim)]
 
     def quadrature_loop_index(self):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
@@ -226,21 +194,29 @@ class FFCXBackendSymbols(object):
         # Return direct access to element table
         return self.named_table(tabledata.name)[qp][entity][iq]
 
-    def table_access(self, tabledata, entitytype, restriction, index):
+    def table_access(self, tabledata, entitytype, restriction, quadrature_index, dof_index):
         entity = self.entity(entitytype, restriction)
         if tabledata.is_uniform:
             entity = 0
 
+        iq = quadrature_index
         if tabledata.is_piecewise:
-            iq = 0
-        else:
-            iq = index
+            iq = MultiIndex(iq.L, iq.name, [0])
 
+        qp = 0
         if tabledata.is_permuted:
             qp = self.quadrature_permutation(0)
             if restriction == "-":
                 qp = self.quadrature_permutation(1)
-        else:
-            qp = 0
 
-        return self.named_table(tabledata.name)[qp][entity][iq]
+        ic = dof_index
+
+        if dof_index.dim == 1:
+            return self.named_table(tabledata.name)[qp][entity][iq.global_idx()][ic.global_idx()]
+        else:
+            FE = []
+            for i in range(dof_index.dim):
+                factor = tabledata.tensor_factors[i]
+                table = self.named_table(factor.name)[qp][entity][iq.local_idx(i)][ic.local_idx(i)]
+                FE.append(table)
+        return self.lang.Product(FE)

@@ -33,7 +33,7 @@ class ModifiedTerminalElement(typing.NamedTuple):
     fc: int
 
 
-class UniqueTableReferenceT(typing.NamedTuple):
+class UniqueTableReference(typing.NamedTuple):
     name: str
     values: numpy.typing.NDArray[numpy.float64]
     offset: int
@@ -43,9 +43,9 @@ class UniqueTableReferenceT(typing.NamedTuple):
     is_uniform: bool
     is_permuted: bool
     has_tensor_factorisation: bool
-    # tensor_factors: typing.List[UniqueTableReferenceT]
+    # tensor_factors: typing.List[UniqueTableReference]
     tensor_factors: typing.List[typing.Any]
-    tensor_permutation: numpy.typing.NDArray[int]
+    tensor_permutation: numpy.typing.NDArray[numpy.int32]
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -415,7 +415,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                         tensor_factors.append(i)
                         break
                 else:
-                    ut = UniqueTableReferenceT(
+                    ut = UniqueTableReference(
                         f"FE_TF{tensor_n}", sub_tbl,
                         None, None, None,
                         False, False, False,
@@ -435,7 +435,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         block_size = t['stride']
 
         # tables is just np.arrays, mt_tables hold metadata too
-        mt_tables[mt] = UniqueTableReferenceT(
+        mt_tables[mt] = UniqueTableReference(
             name, tbl, offset, block_size, tabletype,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
             tensor_factors is not None, tensor_factors, tensor_perm)

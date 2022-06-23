@@ -17,7 +17,7 @@ from ffcx.ir.analysis.graph import build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import (analyse_modified_terminal,
                                                  is_modified_terminal)
 from ffcx.ir.analysis.visualise import visualise_graph
-from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
+from ffcx.ir.elementtables import UniqueTableReference, build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
@@ -25,12 +25,12 @@ from ufl.classes import QuadratureWeight
 logger = logging.getLogger("ffcx")
 
 
-class ModifiedArgumentDataT(typing.NamedTuple):
+class ModifiedArgumentData(typing.NamedTuple):
     ma_index: int
-    tabledata: UniqueTableReferenceT
+    tabledata: UniqueTableReference
 
 
-class BlockDataT(typing.NamedTuple):
+class BlockData(typing.NamedTuple):
     ttypes: typing.Tuple[str, ...]  # list of table types for each block rank
     factor_indices_comp_indices: typing.List[typing.Tuple[int, int]]  # list of tuples (factor index, component index)
     all_factors_piecewise: bool  # True if all factors for this block are piecewise
@@ -38,7 +38,7 @@ class BlockDataT(typing.NamedTuple):
     restrictions: typing.Tuple[str, ...]  # restriction "+" | "-" | None for each block rank
     transposed: bool  # block is the transpose of another
     is_uniform: bool
-    ma_data: typing.Tuple[ModifiedArgumentDataT, ...]  # used in "full", "safe" and "partial"
+    ma_data: typing.Tuple[ModifiedArgumentData, ...]  # used in "full", "safe" and "partial"
     is_permuted: bool  # Do quad points on facets need to be permuted?
 
 
@@ -214,14 +214,14 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                     block_is_permuted = True
             ma_data = []
             for i, ma in enumerate(ma_indices):
-                ma_data.append(ModifiedArgumentDataT(ma, trs[i]))
+                ma_data.append(ModifiedArgumentData(ma, trs[i]))
 
             block_is_transposed = False  # FIXME: Handle transposes for these block types
             block_unames = unames
-            blockdata = BlockDataT(ttypes, fi_ci,
-                                   all_factors_piecewise, block_unames,
-                                   block_restrictions, block_is_transposed,
-                                   block_is_uniform, tuple(ma_data), block_is_permuted)
+            blockdata = BlockData(ttypes, fi_ci,
+                                  all_factors_piecewise, block_unames,
+                                  block_restrictions, block_is_transposed,
+                                  block_is_uniform, tuple(ma_data), block_is_permuted)
 
             # Insert in expr_ir for this quadrature loop
             block_contributions[blockmap].append(blockdata)
