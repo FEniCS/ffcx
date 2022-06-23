@@ -263,7 +263,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                                             "block_contributions": block_contributions}
 
         restrictions = [i.restriction for i in initial_terminals.values()]
-        ir["needs_facet_permutations"] = "+" in restrictions and "-" in restrictions
+        ir["needs_facet_permutations"] = ("+" in restrictions and "-" in restrictions) or is_mixed_dim
 
     return ir
 
