@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2022 Martin Sandve Alnæs, Igor Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -9,7 +9,12 @@ import logging
 
 import ufl
 from ffcx.element_interface import create_element
-from ffcx.codegeneration.symbols import MultiIndex
+from ffcx.codegeneration.indices import create_quadrature_index, create_dof_index
+from ffcx.codegeneration.C.cnodes import Symbol
+from ffcx.ir.elementtables import UniqueTableReference
+from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
+from ufl.core.terminal import Terminal
 
 logger = logging.getLogger("ffcx")
 
@@ -45,26 +50,28 @@ class FFCXBackendDefinitions(object):
                             ufl.geometry.FacetOrientation: self._expect_table,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
-    def get(self, t, mt, tabledata, quadrature_rule, access):
-        # Call appropriate handler, depending on the type of t
-        ttype = type(t)
+    def get(self, terminal: Terminal, mt: ModifiedTerminal, tabledata: UniqueTableReference,
+            quadrature_rule: QuadratureRule, access: Symbol):
+        # Call appropriate handler, depending on the type of terminal
+        ttype = type(terminal)
         handler = self.call_lookup.get(ttype, False)
 
         if not handler:
             # Look for parent class types instead
             for k in self.call_lookup.keys():
-                if isinstance(t, k):
+                if isinstance(terminal, k):
                     handler = self.call_lookup[k]
                     break
 
         if handler:
-            return handler(t, mt, tabledata, quadrature_rule, access)
+            return handler(mt, tabledata, quadrature_rule, access)
         else:
             raise RuntimeError("Not handled: %s", ttype)
 
-    def coefficient(self, t, mt, tabledata, quadrature_rule, access):
+    def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReference, quadrature_rule: QuadratureRule,
+                    access: Symbol):
         """Return definition code for coefficients."""
-        L = self.language
+        lang = self.language
 
         ttype = tabledata.ttype
         num_dofs = tabledata.values.shape[3]
@@ -72,79 +79,57 @@ class FFCXBackendDefinitions(object):
         begin = tabledata.offset
         end = begin + bs * (num_dofs - 1) + 1
 
-        if ttype == "zeros":
-            logging.debug("Not expecting zero coefficients to get this far.")
-            return [], []
+        assert ttype != "zeros"
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
         if ttype == "ones" and end - begin == 1:
-            return [], []
+            return self._pass()
 
         assert begin < end
 
-        # compute quadrature loop multi index
-        ranges = [quadrature_rule.weights.size]
-        if quadrature_rule.has_tensor_factors:
-            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
-        iq = MultiIndex(L, "iq", ranges)
-
-        # compute dof multi index
-        ranges = [tabledata.values.shape[3]]
-        if tabledata.has_tensor_factorisation:
-            ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        ic = MultiIndex(L, "ic", ranges)
+        # create quadrature loop multi index
+        iq = create_quadrature_index(lang, quadrature_rule)
+        ic = create_dof_index(lang, tabledata, "ic")
+        assert ic.dim == iq.dim
 
         code = []
         pre_code = []
-        FE = []
-        assert ic.dim == iq.dim
-        if tabledata.has_tensor_factorisation:
-            for i in range(ic.dim):
-                factor = tabledata.tensor_factors[i]
-                table = self.symbols.table_access(factor, self.entitytype, mt.restriction, iq.local_idx(i))
-                FE.append(table[ic.local_idx(i)])
-            FE = L.Product(FE)
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic.global_idx() * bs + begin)
-            body = [L.AssignAdd(access, dof_access * FE)]
-            loop = [L.NestedForRange(ic, body)]
-            code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
-            code += loop
 
+        table_access = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        if bs > 1 and not tabledata.is_piecewise:
+            # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
+            # When memory access patterns are non-sequential, the number of cache misses increases.
+            # In turn, it results in noticeably reduced performance.
+            # In this case, we create temp arrays outside the quadrature to store the coefficients and
+            # have a sequential access pattern.
+            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(
+                mt.terminal, ic.global_idx(), bs, begin)
+
+            # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
+            if dof_access_map:
+                pre_code += [lang.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
+                pre_body = lang.Assign(dof_access, dof_access_map)
+                pre_code += [lang.NestedForRange(ic, pre_body)]
         else:
-            FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-            ic = self.symbols.coefficient_dof_sum_index()
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic.global_idx() * bs + begin)
 
-            if bs > 1 and not tabledata.is_piecewise:
-                # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
-                # When memory access patterns are non-sequential, the number of cache misses increases.
-                # In turn, it results in noticeably reduced performance.
-                # In this case, we create temp arrays outside the quadrature to store the coefficients and
-                # have a sequential access pattern.
-                dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
-
-                # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
-                if dof_access_map:
-                    pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
-                    pre_body = L.Assign(dof_access, dof_access_map)
-                    pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
-            else:
-                dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
-
-            body = [L.AssignAdd(access, dof_access * FE[ic])]
-            code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
-            code += [L.ForRange(ic, 0, num_dofs, body)]
+        body = [lang.AssignAdd(access, dof_access * table_access)]
+        code += [lang.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
+        code += [lang.NestedForRange(ic, body)]
 
         return pre_code, code
 
-    def constant(self, t, mt, tabledata, quadrature_rule, access):
+    def constant(self, mt: ModifiedTerminal, tabledata: UniqueTableReference, quadrature_rule: QuadratureRule,
+                 access: Symbol):
         # Constants are not defined within the kernel.
         # No definition is needed because access to them is directly
         # via symbol c[], i.e. as passed into the kernel.
         return [], []
 
-    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, quadrature_rule, access):
+    def _define_coordinate_dofs_lincomb(self, mt: ModifiedTerminal, tabledata: UniqueTableReference,
+                                        quadrature_rule: QuadratureRule, access: Symbol):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
-        L = self.language
+        lang = self.language
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
@@ -168,12 +153,13 @@ class FFCXBackendDefinitions(object):
         # Inlined version (we know this is bounded by a small number)
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-        value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
-        code = [L.VariableDecl("const double", access, value)]
+        value = lang.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
+        code = [lang.VariableDecl("const double", access, value)]
 
         return [], code
 
-    def spatial_coordinate(self, e, mt, tabledata, quadrature_rule, access):
+    def spatial_coordinate(self, mt: ModifiedTerminal, tabledata: UniqueTableReference,
+                           quadrature_rule: QuadratureRule, access: Symbol):
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -191,13 +177,14 @@ class FFCXBackendDefinitions(object):
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         elif self.integral_type == "expression":
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+            return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
         else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+            return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def jacobian(self, e, mt, tabledata, quadrature_rule, access):
+    def jacobian(self, mt: ModifiedTerminal, tabledata: UniqueTableReference,
+                 quadrature_rule: QuadratureRule, access: Symbol):
         """Return definition code for the Jacobian of x(X)."""
-        L = self.language
+        lang = self.language
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
@@ -215,17 +202,8 @@ class FFCXBackendDefinitions(object):
         assert ttype != "zeros"
         assert ttype != "ones"
 
-        # compute quadrature loop multi index
-        ranges = [quadrature_rule.weights.size]
-        if quadrature_rule.has_tensor_factors:
-            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
-        iq = MultiIndex(L, "iq", ranges)
-
-        # compute dof multi index
-        ranges = [tabledata.values.shape[3]]
-        if tabledata.has_tensor_factorisation:
-            ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        ic = MultiIndex(L, "ic", ranges)
+        iq = create_quadrature_index(lang, quadrature_rule)
+        ic = create_dof_index(lang, tabledata, "ic")
 
         # coordinate dofs is always 3d
         dim = 3
@@ -236,31 +214,26 @@ class FFCXBackendDefinitions(object):
         dof_access = self.symbols.S("coordinate_dofs")
 
         code = []
-        code += [L.VariableDecl("double", access, 0.0)]
+        code += [lang.VariableDecl("double", access, 0.0)]
 
         assert ic.dim == iq.dim
-        if tabledata.has_tensor_factorisation:
-            FE = []
-            for i in range(ic.dim):
-                factor = tabledata.tensor_factors[i]
-                table = self.symbols.table_access(factor, self.entitytype, mt.restriction, iq.local_idx(i))
-                FE.append(table[ic.local_idx(i)])
-            FE = L.Product(FE)
-        else:
-            FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-
+        table_access = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
         dof_access = dof_access[ic.global_idx() * dim + begin + offset]
-        body = [L.AssignAdd(access, dof_access * FE)]
-        code += [L.NestedForRange(ic, body)]
+
+        body = [lang.AssignAdd(access, dof_access * table_access)]
+        code += [lang.NestedForRange(ic, body)]
 
         return [], code
 
-    def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
+    def _expect_table(self, mt: ModifiedTerminal, tabledata: UniqueTableReference,
+                      quadrature_rule: QuadratureRule, access: Symbol):
         """Return quantities referring to constant tables defined in the generated code."""
+        print("here")
         # TODO: Inject const static table here instead?
         return [], []
 
-    def _expect_physical_coords(self, e, mt, tabledata, quadrature_rule, access):
+    def _expect_physical_coords(self, mt: ModifiedTerminal, tabledata: UniqueTableReference,
+                                quadrature_rule: QuadratureRule, access: Symbol):
         """Return quantities referring to coordinate_dofs."""
         # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
         #       and CellDiameter here rather than lowering these quantities?

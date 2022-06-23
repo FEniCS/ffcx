@@ -10,13 +10,13 @@ from typing import List, Tuple
 
 import ufl
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration.symbols import MultiIndex
+from ffcx.codegeneration.indices import MultiIndex
 from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode, BinOp
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.integral import BlockDataT
+from ffcx.ir.integral import BlockData
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.naming import cdtype_to_numpy
 
@@ -512,36 +512,27 @@ class IntegralGenerator(object):
         return preparts, quadparts
 
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
+
+        scope = self.ir.integrand[quadrature_rule]["modified_arguments"]
+        entitytype = self.ir.entitytype
+
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
-            scope = self.ir.integrand[quadrature_rule]["modified_arguments"]
             mt = scope[mad.ma_index]
 
             assert td.ttype != "zeros"
             if td.ttype == "ones":
                 arg_factor = 1
             else:
-                if (td.has_tensor_factorisation):
-                    factors = td.tensor_factors
-                    for j in range(len(factors)):
-                        factor = factors[j]
-                        table = self.backend.symbols.table_access(
-                            factor, self.ir.entitytype, mt.restriction, iq.local_idx(j))
-                        arg_factor = table[indices[i].local_idx(j)]
-                        arg_factors.append(arg_factor)
-                else:
-                    # Translate modified terminal to code
-                    # TODO: Move element table access out of backend?
-                    #       Not using self.backend.access.argument() here
-                    #       now because it assumes too much about indices.
-                    table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
-                    arg_factors.append(table[indices[i]])
+                arg_factor = self.backend.symbols.table_access(
+                    td, entitytype, mt.restriction, iq, indices[i])
+            arg_factors.append(arg_factor)
 
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):
+    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockData]):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after the quadrature loop identified by the quadrature rule.
@@ -571,6 +562,7 @@ class IntegralGenerator(object):
 
         # Override dof index with quadrature loop index for arguments
         # with quadrature element, to index B like B[iq*num_dofs + iq]
+
         B_indices = [self.backend.symbols.argument_loop_index(i) for i in range(block_rank)]
 
         # B_indices = [MultiIndex(L, "id", ranges)]
