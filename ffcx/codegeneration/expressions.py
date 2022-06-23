@@ -16,7 +16,7 @@ from ffcx.codegeneration import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode
-from ffcx.ir.representation import ir_expression
+from ffcx.ir.representation import ExpressionIR
 from ffcx.naming import cdtype_to_numpy
 
 logger = logging.getLogger("ffcx")
@@ -135,7 +135,7 @@ def generator(ir, parameters):
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: ir_expression, backend: FFCXBackend):
+    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
 
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")

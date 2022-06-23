@@ -12,7 +12,7 @@ UFC function from an intermediate representation (IR).
 """
 
 import logging
-from collections import namedtuple
+import typing
 
 from ffcx.codegeneration.dofmap import generator as dofmap_generator
 from ffcx.codegeneration.expressions import generator as expression_generator
@@ -23,10 +23,22 @@ from ffcx.codegeneration.integrals import generator as integral_generator
 
 logger = logging.getLogger("ffcx")
 
-code_blocks = namedtuple("code_blocks", ["elements", "dofmaps", "integrals", "forms", "expressions"])
+
+class CodeBlocks(typing.NamedTuple):
+    """
+    Storage of code blocks of the form (declaration, implementation).
+
+    Blocks for elements, dofmaps, integrals, forms and expressions is stored
+    """
+
+    elements: typing.List[typing.Tuple[str, str]]
+    dofmaps: typing.List[typing.Tuple[str, str]]
+    integrals: typing.List[typing.Tuple[str, str]]
+    forms: typing.List[typing.Tuple[str, str]]
+    expressions: typing.List[typing.Tuple[str, str]]
 
 
-def generate_code(ir, parameters):
+def generate_code(ir, parameters) -> CodeBlocks:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
@@ -38,6 +50,5 @@ def generate_code(ir, parameters):
     code_integrals = [integral_generator(integral_ir, parameters) for integral_ir in ir.integrals]
     code_forms = [form_generator(form_ir, parameters) for form_ir in ir.forms]
     code_expressions = [expression_generator(expression_ir, parameters) for expression_ir in ir.expressions]
-
-    return code_blocks(elements=code_finite_elements, dofmaps=code_dofmaps,
-                       integrals=code_integrals, forms=code_forms, expressions=code_expressions)
+    return CodeBlocks(elements=code_finite_elements, dofmaps=code_dofmaps,
+                      integrals=code_integrals, forms=code_forms, expressions=code_expressions)

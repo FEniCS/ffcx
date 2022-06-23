@@ -15,7 +15,7 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.cnodes import BinOp, CNode
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.integral import block_data_t
+from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.naming import cdtype_to_numpy
 
@@ -533,7 +533,7 @@ class IntegralGenerator(object):
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[block_data_t]):
+    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):
         """Generate and return code parts for a given block.
 
         Returns parts occuring before, inside, and after the quadrature
