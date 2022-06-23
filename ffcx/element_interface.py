@@ -24,10 +24,8 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
         element: A UFL finite element
 
     Returns:
-        A FFCx finite element
+        A Basix finite element
     """
-    # TODO: EnrichedElement
-
     if element.family() == "Quadrature":
         return QuadratureElement(element)
 
