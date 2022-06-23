@@ -1,3 +1,4 @@
+
 # Copyright (C) 2021 Matthew W. Scroggs and Chris Richardson
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
@@ -9,17 +10,12 @@ from __future__ import annotations
 
 import typing
 
-if typing.TYPE_CHECKING:
-    import ufl.finiteelement.FiniteElementBase
-
 import warnings
-from abc import ABC, abstractmethod
 
 import basix
 import numpy
 import ufl
 import basix.ufl_wrapper
-import functools
 
 
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
@@ -81,17 +77,17 @@ def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int,
 class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     """A quadrature element."""
 
-    _points: _nda_f64
-    _element: _BasixElementBase
+    _points: basix.ufl_wrapper._nda_f64
+    _element: basix.ufl_wrapper._BasixElementBase
 
-    def __init__(self, element: _BasixElementBase):
+    def __init__(self, element: basix.ufl_wrapper._BasixElementBase):
         """Initialise the element."""
-        self._points, _ = _basix.make_quadrature(element.cell_type, element.degree)
+        self._points, _ = basix.make_quadrature(element.cell_type, element.degree)
         self._element = element
 
     def tabulate(
-        self, nderivs: int, points: _nda_f64
-    ) -> _nda_f64:
+        self, nderivs: int, points: basix.ufl_wrapper._nda_f64
+    ) -> basix.ufl_wrapper._nda_f64:
         """Tabulate the basis functions of the element.
 
         Args:
@@ -106,10 +102,10 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
         if points.shape != self._points.shape:
             raise ValueError("Mismatch of tabulation points and element points.")
-        tables = _numpy.asarray([_numpy.eye(points.shape[0], points.shape[0])])
+        tables = numpy.asarray([numpy.eye(points.shape[0], points.shape[0])])
         return tables
 
-    def get_component_element(self, flat_component: int) -> _typing.Tuple[_BasixElementBase, int, int]:
+    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl_wrapper._BasixElementBase, int, int]:
         """Get element that represents a component of the element, and the offset and stride of the component.
 
         Args:
@@ -134,13 +130,13 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     def value_size(self) -> int:
         """Value size of the element.
 
-        Equal to ``_numpy.prod(value_shape)``.
+        Equal to ``numpy.prod(value_shape)``.
 
         """
         return 1
 
     @property
-    def value_shape(self) -> _typing.Tuple[int, ...]:
+    def value_shape(self) -> typing.Tuple[int, ...]:
         """Value shape of the element basis function.
 
         Note:
@@ -151,7 +147,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return (1,)
 
     @property
-    def num_entity_dofs(self) -> _typing.List[_typing.List[int]]:
+    def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         """Number of DOFs associated with each entity."""
         dofs = []
         tdim = self._element.cell().topological_dimension()
@@ -169,7 +165,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return dofs
 
     @property
-    def entity_dofs(self) -> _typing.List[_typing.List[_typing.List[int]]]:
+    def entity_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         """DOF numbers associated with each entity."""
         start_dof = 0
         entity_dofs = []
@@ -182,12 +178,12 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return entity_dofs
 
     @property
-    def num_entity_closure_dofs(self) -> _typing.List[_typing.List[int]]:
+    def num_entity_closure_dofs(self) -> typing.List[typing.List[int]]:
         """Number of DOFs associated with the closure of each entity."""
         return self.num_entity_dofs
 
     @property
-    def entity_closure_dofs(self) -> _typing.List[_typing.List[_typing.List[int]]]:
+    def entity_closure_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         """DOF numbers associated with the closure of each entity."""
         return self.entity_dofs
 
@@ -197,12 +193,12 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return 0
 
     @property
-    def reference_topology(self) -> _typing.List[_typing.List[_typing.List[int]]]:
+    def reference_topology(self) -> typing.List[typing.List[typing.List[int]]]:
         """Topology of the reference element."""
         raise NotImplementedError()
 
     @property
-    def reference_geometry(self) -> _nda_f64:
+    def reference_geometry(self) -> basix.ufl_wrapper._nda_f64:
         """Geometry of the reference element."""
         raise NotImplementedError()
 
@@ -212,22 +208,22 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return self._element.family()
 
     @property
-    def lagrange_variant(self) -> _basix.LagrangeVariant:
+    def lagrange_variant(self) -> basix.LagrangeVariant:
         """Basix Lagrange variant used to initialise the element."""
         return None
 
     @property
-    def dpc_variant(self) -> _basix.DPCVariant:
+    def dpc_variant(self) -> basix.DPCVariant:
         """Basix DPC variant used to initialise the element."""
         return None
 
     @property
-    def element_family(self) -> _basix.ElementFamily:
+    def element_family(self) -> basix.ElementFamily:
         """Basix element family used to initialise the element."""
         return None
 
     @property
-    def cell_type(self) -> _basix.CellType:
+    def cell_type(self) -> basix.CellType:
         """Basix cell type used to initialise the element."""
         return None
 
