@@ -12,6 +12,7 @@ import numpy.typing
 import ufl
 
 import ffcx
+import ffcx.analysis
 
 
 def compute_signature(ufl_objects: typing.List[
@@ -27,8 +28,9 @@ def compute_signature(ufl_objects: typing.List[
     for ufl_object in ufl_objects:
         # Get signature from ufl object
         if isinstance(ufl_object, ufl.Form):
+            object = ffcx.analysis.replace_average_quantities(ufl_object)
             kind = "form"
-            object_signature += ufl_object.signature()
+            object_signature += object.signature()
         elif isinstance(ufl_object, ufl.FiniteElementBase):
             object_signature += repr(ufl_object)
             kind = "element"
