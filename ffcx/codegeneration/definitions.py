@@ -171,7 +171,7 @@ class FFCXBackendDefinitions(object):
             if mt.local_derivatives:
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
-        elif self.integral_type == "expression":
+        else:
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
 
     def jacobian(self, e, mt, tabledata, quadrature_rule, access):
