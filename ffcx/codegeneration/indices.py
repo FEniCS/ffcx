@@ -49,7 +49,7 @@ class MultiIndex:
 
 def create_quadrature_index(lang: types.ModuleType, quadrature_rule: QuadratureRule) -> MultiIndex:
     ranges = [0]
-    if quadrature_rule is not None:
+    if quadrature_rule:
         ranges = [quadrature_rule.weights.size]
         if quadrature_rule.has_tensor_factors:
             ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
