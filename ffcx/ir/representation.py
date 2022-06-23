@@ -22,6 +22,7 @@ import typing
 import warnings
 
 import basix
+import basix.ufl_wrapper
 import numpy
 import ufl
 from ffcx import naming
@@ -241,7 +242,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["basix_family"] = basix_element.element_family
     ir["basix_cell"] = basix_element.cell_type
     ir["discontinuous"] = basix_element.discontinuous
-    ir["degree"] = ufl_element.degree()
+    ir["degree"] = basix_element.degree
     ir["family"] = ufl_element.family()
     ir["value_shape"] = ufl_element.value_shape()
     ir["reference_value_shape"] = ufl_element.reference_value_shape()
@@ -249,10 +250,9 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    if hasattr(basix_element, "block_size"):
+    if isinstance(basix_element, basix.ufl_wrapper.BlockedElement):
         ir["block_size"] = basix_element.block_size
-        ufl_element = ufl_element.sub_elements()[0]
-        basix_element = create_element(ufl_element)
+        basix_element = basix_element.sub_element
     else:
         ir["block_size"] = 1
 
