@@ -26,7 +26,7 @@ import numpy
 import ufl
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.element_interface import BaseElement, create_element
+from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -117,7 +117,7 @@ class IntegralIR(typing.NamedTuple):
     num_facets: int
     num_vertices: int
     enabled_coefficients: typing.List[bool]
-    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
     element_ids: typing.Dict[ufl.FiniteElementBase, int]
     tensor_shape: typing.List[int]
     coefficient_numbering: typing.Dict[ufl.Coefficient, int]
@@ -136,7 +136,7 @@ class IntegralIR(typing.NamedTuple):
 
 class ExpressionIR(typing.NamedTuple):
     name: str
-    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
     params: dict
     unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
     unique_table_types: typing.Dict[str, str]
