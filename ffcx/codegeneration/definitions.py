@@ -8,8 +8,8 @@
 import logging
 
 import ufl
-import numpy
 from ffcx.element_interface import create_element
+from ffcx.codegeneration.symbols import MultiIndex
 
 logger = logging.getLogger("ffcx")
 
@@ -82,26 +82,33 @@ class FFCXBackendDefinitions(object):
 
         assert begin < end
 
+        # compute quadrature loop multi index
+        ranges = [quadrature_rule.weights.size]
+        if quadrature_rule.has_tensor_factors:
+            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
+        iq = MultiIndex(L, "iq", ranges)
+
+        # compute dof multi index
+        ranges = [tabledata.values.shape[3]]
+        if tabledata.has_tensor_factorisation:
+            ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+        ic = MultiIndex(L, "ic", ranges)
+
         code = []
         pre_code = []
         FE = []
-        if (tabledata.has_tensor_factorisation):
-            dim = len(tabledata.tensor_factors)
-            indices = self.symbols.coefficient_dof_sum_index_tensor(dim)
-            sizes = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-            strides = [numpy.prod(sizes[i + 1:], dtype=int) for i in range(dim)]
-            multi_index = self.language.Sum([strides[i] * indices[i] for i in range(dim)])
-            for i in range(dim):
+        assert ic.dim == iq.dim
+        if tabledata.has_tensor_factorisation:
+            for i in range(ic.dim):
                 factor = tabledata.tensor_factors[i]
-                table = self.symbols.element_table(factor, self.entitytype, mt.restriction, i)
-                FE.append(table[indices[i]])
+                table = self.symbols.table_access(factor, self.entitytype, mt.restriction, iq.local_idx(i))
+                FE.append(table[ic.local_idx(i)])
             FE = L.Product(FE)
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, multi_index * bs + begin)
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic.global_idx() * bs + begin)
             body = [L.AssignAdd(access, dof_access * FE)]
+            loop = [L.NestedForRange(ic, body)]
             code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
-            for i in range(dim):
-                body = [L.ForRange(indices[dim - i - 1], 0, sizes[dim - i - 1], body)]
-            code += body
+            code += loop
 
         else:
             FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)

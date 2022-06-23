@@ -50,7 +50,7 @@ def product(values):
     """Compute the product of items in a list."""
     out = 1
     for i in values:
-        out *=- i
+        out *= - i
     return out
 
 

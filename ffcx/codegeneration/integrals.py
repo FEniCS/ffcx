@@ -10,6 +10,7 @@ from typing import List, Tuple
 
 import ufl
 from ffcx.codegeneration import geometry
+from ffcx.codegeneration.symbols import MultiIndex
 from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
@@ -345,9 +346,11 @@ class IntegralGenerator(object):
             # optimized away
             quadparts = []
         else:
-            num_points = quadrature_rule.points.shape[0]
-            iq = self.backend.symbols.quadrature_loop_index()
-            quadparts = [L.ForRange(iq, 0, num_points, body=body)]
+            ranges = [quadrature_rule.weights.size]
+            if quadrature_rule.has_tensor_factors:
+                ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
+            iq = MultiIndex(L, "iq", ranges)
+            quadparts = [L.NestedForRange(iq, body)]
 
         return pre_definitions, preparts, quadparts
 
@@ -524,13 +527,9 @@ class IntegralGenerator(object):
                     factors = td.tensor_factors
                     for j in range(len(factors)):
                         factor = factors[j]
-                        ndofs = factor.values.shape[3]
-                        table = self.backend.symbols.element_table(factor, self.ir.entitytype, mt.restriction, j)
-                        if j == 0:
-                            index = self.backend.language.as_symbol(indices[i].ce_format() + f"/{ndofs}")
-                        else:
-                            index = self.backend.language.as_symbol(indices[i].ce_format() + f"%{ndofs}")
-                        arg_factor = table[index]
+                        table = self.backend.symbols.table_access(
+                            factor, self.ir.entitytype, mt.restriction, iq.local_idx(j))
+                        arg_factor = table[indices[i].local_idx(j)]
                         arg_factors.append(arg_factor)
                 else:
                     # Translate modified terminal to code
@@ -561,15 +560,20 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
-        iq = self.backend.symbols.quadrature_loop_index()
+        # from IPython import embed
+        # embed()
+
+        ranges = [quadrature_rule.weights.size]
+        if quadrature_rule.has_tensor_factors:
+            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
+
+        iq = MultiIndex(L, "iq", ranges)
 
         # Override dof index with quadrature loop index for arguments
         # with quadrature element, to index B like B[iq*num_dofs + iq]
-        arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
-        B_indices = []
-        for i in range(block_rank):
-            B_indices.append(arg_indices[i])
-        B_indices = list(B_indices)
+        B_indices = [self.backend.symbols.argument_loop_index(i) for i in range(block_rank)]
+
+        # B_indices = [MultiIndex(L, "id", ranges)]
 
         for blockdata in blocklist:
             ttypes = blockdata.ttypes
@@ -591,10 +595,10 @@ class IntegralGenerator(object):
             # Quadrature weight was removed in representation, add it back now
             if self.ir.integral_type in ufl.custom_integral_types:
                 weights = self.backend.symbols.custom_weights_table()
-                weight = weights[iq]
+                weight = weights[iq.global_idx()]
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
-                weight = weights[iq]
+                weight = weights[iq.global_idx()]
 
             # Define fw = f * weight
             fw_rhs = L.float_product([f, weight])
@@ -614,20 +618,34 @@ class IntegralGenerator(object):
             Asym = self.backend.symbols.element_tensor()
             A = L.FlattenedArray(Asym, dims=A_shape)
 
+            indices = []
+            for i in range(block_rank):
+                tabledata = blockdata.ma_data[i].tabledata
+                ranges = [tabledata.values.shape[3]]
+                if (tabledata.has_tensor_factorisation):
+                    ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+                index = MultiIndex(L, B_indices[i].ce_format(), ranges)
+                indices.append(index)
+
             # Fetch code to access modified arguments
-            arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+            arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, indices)
 
             B_rhs = L.float_product([fw] + arg_factors)
 
             A_indices = []
             for i in range(block_rank):
-                offset = blockdata.ma_data[i].tabledata.offset
-                index = arg_indices[i]
+                tabledata = blockdata.ma_data[i].tabledata
+                ranges = [tabledata.values.shape[3]]
+                if (tabledata.has_tensor_factorisation):
+                    ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+                offset = tabledata.offset
+
+                index = MultiIndex(L, B_indices[i].ce_format(), ranges)
                 if len(blockmap[i]) == 1:
-                    A_indices.append(index + offset)
+                    A_indices.append(index.global_idx() + offset)
                 else:
-                    block_size = blockdata.ma_data[i].tabledata.block_size
-                    A_indices.append(block_size * index + offset)
+                    block_size = tabledata.block_size
+                    A_indices.append(block_size * index.global_idx() + offset)
             rhs_expressions[tuple(A_indices)].append(B_rhs)
 
         # List of statements to keep in the inner loop
@@ -638,45 +656,6 @@ class IntegralGenerator(object):
         hoist: List[BinOp] = []
 
         for indices in rhs_expressions:
-            # hoist_rhs = collections.defaultdict(list)
-
-            # # Hoist loop invariant code and group array access (each table should only be read one
-            # # time in the inner loop).
-            # if block_rank == 2:
-            #     ind = B_indices[-1]
-            #     for rhs in rhs_expressions[indices]:
-            #         if len(rhs.args) <= 2:
-            #             keep[indices].append(rhs)
-            #         else:
-            #             varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
-            #             if varying:
-            #                 invariant = [x for x in rhs.args if x is not varying]
-            #                 hoist_rhs[varying].append(invariant)
-            #             else:
-            #                 keep[indices].append(rhs)
-
-            #     # Perform algebraic manipulations to reduce number of floating point
-            #     # operations (factorize expressions by grouping)
-            #     for statement in hoist_rhs:
-            #         sum = []
-            #         for rhs in hoist_rhs[statement]:
-            #             sum.append(L.float_product(rhs))
-            #         sum = L.Sum(sum)
-
-            #         lhs = None
-            #         for h in hoist:
-            #             if (h.rhs == sum):
-            #                 lhs = h.lhs
-            #                 break
-            #         if lhs:
-            #             keep[indices].append(L.float_product([statement, lhs]))
-            #         else:
-            #             t = self.new_temp_symbol("t")
-            #             scalar_type = self.backend.access.parameters["scalar_type"]
-            #             pre_loop.append(L.ArrayDecl(scalar_type, t, blockdims[0]))
-            #             keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
-            #             hoist.append(L.Assign(t[B_indices[i - 1]], sum))
-            # else:
             keep[indices] = rhs_expressions[indices]
 
         hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
@@ -688,7 +667,12 @@ class IntegralGenerator(object):
             body.append(L.AssignAdd(A[indices], sum))
 
         for i in reversed(range(block_rank)):
-            body = [L.ForRange(B_indices[i], 0, blockdims[i], body=body)]
+            table_data = blockdata.ma_data[i].tabledata
+            ranges = [table_data.values.shape[3]]
+            if (tabledata.has_tensor_factorisation):
+                ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+            index = MultiIndex(L, B_indices[i].ce_format(), ranges)
+            body = [L.NestedForRange(index, body, "int")]
 
         quadparts += pre_loop
         quadparts += hoist_code

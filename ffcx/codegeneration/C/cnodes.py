@@ -494,6 +494,9 @@ class NaryOp(CExprOperator):
             flops += arg.flops()
         return flops
 
+    def __hash__(self):
+        return hash(self.ce_format())
+
 
 # CExpr unary operators
 
@@ -1607,6 +1610,27 @@ class ForRange(CStatement):
 
     def flops(self):
         return (self.end.value - self.begin.value) * self.body.flops()
+
+
+class NestedForRange(CStatement):
+    is_scoped = True
+
+    def __init__(self, multi_index, body, index_type="int"):
+        self.loops = []
+        self.depth = len(multi_index.ranges)
+        for i in reversed(range(self.depth)):
+            body = body
+            idx = multi_index.local_idx(i)
+            end = multi_index.ranges[i]
+            for_range = ForRange(idx, 0, end, body=body)
+            self.loops.insert(0, for_range)
+            body = for_range
+
+    def cs_format(self, precision=None):
+        return self.loops[0].cs_format()
+
+    def flops(self):
+        return self.loops[0].flops()
 
 
 # Conversion function to statement nodes

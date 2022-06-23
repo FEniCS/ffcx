@@ -8,8 +8,33 @@
 import logging
 
 import ufl.utils.derivativetuples
+import numpy
 
 logger = logging.getLogger("ffcx")
+
+
+class MultiIndex:
+    def __init__(self, language, name, ranges):
+        self.L = language
+        self.name = name
+        self.ranges = ranges
+        self.dim = len(ranges)
+        self.strides = [numpy.prod(ranges[i + 1:], dtype=int) for i in range(self.dim)]
+        if self.dim == 1:
+            self.indices = self.L.Symbol(name)
+        else:
+            self.indices = [self.L.Symbol(name + f"{i}") for i in range(self.dim)]
+
+    def global_idx(self):
+        if self.dim == 1:
+            return self.indices
+        else:
+            global_factors = [self.strides[i] * self.indices[i] for i in range(self.dim)]
+            return self.L.Sum(global_factors)
+
+    def local_idx(self, idx):
+        assert idx < self.dim
+        return self.indices[idx]
 
 
 # TODO: Get restriction postfix from somewhere central
@@ -198,14 +223,24 @@ class FFCXBackendSymbols(object):
         else:
             qp = 0
 
-        nq = tabledata.values.shape[2]
+        # Return direct access to element table
+        return self.named_table(tabledata.name)[qp][entity][iq]
 
-        if tensor_id is None:
-            # Return direct access to element table
-            return self.named_table(tabledata.name)[qp][entity][iq]
+    def table_access(self, tabledata, entitytype, restriction, index):
+        entity = self.entity(entitytype, restriction)
+        if tabledata.is_uniform:
+            entity = 0
+
+        if tabledata.is_piecewise:
+            iq = 0
         else:
-            if tensor_id == 0:
-                index = self.L.as_symbol(iq.ce_format() + f"/{nq}")
-            else:
-                index = self.L.as_symbol(iq.ce_format() + f"%{nq}")
-            return self.named_table(tabledata.name)[qp][entity][index]
+            iq = index
+
+        if tabledata.is_permuted:
+            qp = self.quadrature_permutation(0)
+            if restriction == "-":
+                qp = self.quadrature_permutation(1)
+        else:
+            qp = 0
+
+        return self.named_table(tabledata.name)[qp][entity][iq]
