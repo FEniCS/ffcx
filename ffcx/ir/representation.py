@@ -243,8 +243,8 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["discontinuous"] = basix_element.discontinuous
     ir["degree"] = basix_element.degree
     ir["family"] = basix_element.family_name
-    ir["value_shape"] = ufl_element.value_shape()
-    ir["reference_value_shape"] = ufl_element.reference_value_shape()
+    ir["value_shape"] = basix_element.value_shape
+    ir["reference_value_shape"] = basix_element.value_shape
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
