@@ -196,12 +196,42 @@ class FFCXBackendDefinitions(object):
             return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
 
     def jacobian(self, e, mt, tabledata, quadrature_rule, access):
-        """Return definition code for the Jacobian of x(X).
+        """Return definition code for the Jacobian of x(X)."""
+        L = self.language
 
-        J = sum_k xdof_k grad_X xphi_k(X)
-        """
-        # TODO: Jacobian may need adjustment for custom_integral_types
-        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+        # Get properties of domain
+        domain = mt.terminal.ufl_domain()
+        coordinate_element = domain.ufl_coordinate_element()
+        num_scalar_dofs = create_element(coordinate_element).sub_element.dim
+
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
+
+        assert num_scalar_dofs == num_dofs
+
+        # Find table name
+        ttype = tabledata.ttype
+
+        assert ttype != "zeros"
+        assert ttype != "ones"
+
+        # Get access to element table
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+        ic = self.symbols.coefficient_dof_sum_index()
+        dof_access = self.symbols.S("coordinate_dofs")
+
+        # coordinate dofs is always 3d
+        dim = 3
+        offset = 0
+        if mt.restriction == "-":
+            offset = num_scalar_dofs * dim
+
+        code = []
+        body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
+        code += [L.VariableDecl("double", access, 0.0)]
+        code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
+
+        return [], code
 
     def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""
