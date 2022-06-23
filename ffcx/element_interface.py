@@ -1,4 +1,3 @@
-
 # Copyright (C) 2021 Matthew W. Scroggs and Chris Richardson
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
@@ -89,7 +88,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
                                             element.degree(), element.quadrature_scheme())
 
         self._cellname = element.cell().cellname()
-        tdim = element.family()
+        self._family_name = element.family()
         tdim = element.cell().topological_dimension()
         self._entity_counts = []
         if tdim >= 1:
