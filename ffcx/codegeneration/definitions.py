@@ -122,12 +122,13 @@ class FFCXBackendDefinitions(object):
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
-        gdim = domain.geometric_dimension()
         coordinate_element = domain.ufl_coordinate_element()
         num_scalar_dofs = create_element(coordinate_element).sub_element.dim
 
-        # Reference coordinates are known, no coordinate field, so we compute
-        # this component as linear combination of coordinate_dofs "dofs" and table
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
+
+        assert num_scalar_dofs == num_dofs
 
         # Find table name
         ttype = tabledata.ttype
@@ -135,15 +136,21 @@ class FFCXBackendDefinitions(object):
         assert ttype != "zeros"
         assert ttype != "ones"
 
-        begin = tabledata.offset
-        num_dofs = tabledata.values.shape[3]
-        bs = tabledata.block_size
-
-        # Inlined version (we know this is bounded by a small number)
+        # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-        value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
-        code = [L.VariableDecl("const double", access, value)]
+        ic = self.symbols.coefficient_dof_sum_index()
+        dof_access = self.symbols.S("coordinate_dofs")
+
+        # coordinate dofs is always 3d
+        dim = 3
+        offset = 0
+        if mt.restriction == "-":
+            offset = num_scalar_dofs * dim
+
+        code = []
+        body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
+        code += [L.VariableDecl("double", access, 0.0)]
+        code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
 
