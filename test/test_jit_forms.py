@@ -695,3 +695,100 @@ def test_complex_operations(compile_args):
     assert np.allclose(J_2, expected_result)
 
     assert np.allclose(J_1, J_2)
+
+
+@pytest.mark.parametrize("mode", ["double", "double _Complex"])
+def test_cell_averages(mode, compile_args):
+    cell = ufl.triangle
+    c_el = ufl.VectorElement("Lagrange", cell, 1)
+    mesh = ufl.Mesh(c_el)
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    V = ufl.FunctionSpace(mesh, element)
+    w = ufl.Coefficient(V)
+    u = ufl.TrialFunction(V)
+    v = ufl.TestFunction(V)
+    J1 = ufl.inner(ufl.cell_avg(u), v) * ufl.cell_avg(ufl.inner(w, w)) * ufl.dx
+    J2 = ufl.inner(u, v) * ufl.inner(w, w) / ufl.CellVolume(mesh)**2 * ufl.dx
+    forms = [J1, J2]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+
+    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
+    form1 = compiled_forms[1].integrals(module.lib.cell)[0]
+
+    ffi = module.ffi
+    np_type = cdtype_to_numpy(mode)
+
+    A1 = np.zeros((3, 3), dtype=np_type)
+    if mode == "double":
+        w1 = np.array([1.0, 2., 0.3], dtype=np_type)
+    else:
+        w1 = np.array([1.0 - 3j, 2., 0.3 + 2j], dtype=np_type)
+    c = np.array([], dtype=np_type)
+
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [3.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
+
+    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
+    kernel0(ffi.cast('{type} *'.format(type=mode), A1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+
+    A2 = np.zeros((3, 3), dtype=np_type)
+    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
+    kernel1(ffi.cast('{type} *'.format(type=mode), A2.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    assert(np.allclose(A1, A2))
+
+
+@pytest.mark.parametrize("mode", ["double", "double _Complex"])
+def test_facet_averages(mode, compile_args):
+    cell = ufl.triangle
+    c_el = ufl.VectorElement("Lagrange", cell, 1)
+    mesh = ufl.Mesh(c_el)
+    element = ufl.FiniteElement("Lagrange", cell, 1)
+    V = ufl.FunctionSpace(mesh, element)
+    w = ufl.Coefficient(V)
+    u = ufl.TrialFunction(V)
+    v = ufl.TestFunction(V)
+    J1 = w * ufl.inner(ufl.facet_avg(u), v) * ufl.facet_avg(ufl.inner(w, w)) * ufl.ds
+    J2 = w * ufl.inner(u, v) * ufl.inner(w, w) / ufl.FacetArea(mesh)**2 * ufl.ds
+    forms = [J1, J2]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+
+    form0 = compiled_forms[0].integrals(module.lib.exterior_facet)[0]
+    form1 = compiled_forms[1].integrals(module.lib.exterior_facet)[0]
+
+    ffi = module.ffi
+    np_type = cdtype_to_numpy(mode)
+
+    A1 = np.zeros((3, 3), dtype=np_type)
+    if mode == "double":
+        w1 = np.array([1.0, 2., 0.3], dtype=np_type)
+    else:
+        w1 = np.array([1j, 3j, 2j], dtype=np_type)
+    c = np.array([], dtype=np_type)
+
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [3.0, 0.0, 0.0],
+                       [0.0, 1.0, 0.0]], dtype=np.float64)
+    facets = np.array([0], dtype=np.intc)
+    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
+    kernel0(ffi.cast('{type} *'.format(type=mode), A1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data), ffi.NULL)
+
+    A2 = np.zeros((3, 3), dtype=np_type)
+    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
+    kernel1(ffi.cast('{type} *'.format(type=mode), A2.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
+            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
+            ffi.cast('double *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data), ffi.NULL)
+    assert(np.allclose(A1, A2))
+    print("\n", A1, "\n", A2)
