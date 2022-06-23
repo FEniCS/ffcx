@@ -72,6 +72,10 @@ def generator(ir, parameters):
     if parameters["tabulate_tensor_void"]:
         code["tabulate_tensor"] = ""
 
+    code["result_needs_permuting"] = 0
+    code["result_permutations"] = "void"
+    code["result_permutations_init"] = ""
+
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
@@ -80,7 +84,10 @@ def generator(ir, parameters):
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=parameters["scalar_type"],
         np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]),
-        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
+        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)),
+        result_needs_permuting=code["result_needs_permuting"],
+        result_permutations=code["result_permutations"],
+        result_permutations_init=code["result_permutations_init"])
 
     return declaration, implementation
 
