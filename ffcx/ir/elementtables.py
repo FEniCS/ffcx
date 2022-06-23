@@ -5,8 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for precomputed tables of terminal values."""
 
-import collections
 import logging
+import typing
 
 import numpy
 import ufl
@@ -25,11 +25,26 @@ default_atol = 1e-9
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
-unique_table_reference_t = collections.namedtuple("unique_table_reference_t", [
-    "name", "values", "offset", "block_size", "ttype",
-    "is_piecewise", "is_uniform", "is_permuted",
-    "has_tensor_factorisation", "tensor_factors", "tensor_permutation"
-])
+class ModifiedTerminalElement(typing.NamedTuple):
+    element: ufl.FiniteElementBase
+    averaged: str
+    local_derivatives: typing.Tuple[int]
+    fc: int
+
+
+class UniqueTableReferenceT(typing.NamedTuple):
+    name: str
+    values: numpy.typing.NDArray[numpy.float64]
+    offset: int
+    block_size: int
+    ttype: str
+    is_piecewise: bool
+    is_uniform: bool
+    is_permuted: bool
+    has_tensor_factorisation: bool
+    # tensor_factors: typing.List[UniqueTableReferenceT]
+    tensor_factors: typing.List[typing.Any]
+    tensor_permutation: numpy.typing.NDArray[int]
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -106,7 +121,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     for entity in range(num_entities):
         entity_points = map_integral_points(points, integral_type, cell, entity)
         tbl = component_element.tabulate(deriv_order, entity_points)
-        tbl = tbl[basix_index(*derivative_counts)]
+        tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
 
     if avg in ("cell", "facet"):
@@ -130,7 +145,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     return {'array': res, 'offset': offset, 'stride': stride}
 
 
-def generate_psi_table_name(quadrature_rule, element_counter, averaged, entitytype, derivative_counts,
+def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, entitytype, derivative_counts,
                             flat_component):
     """Generate a name for the psi table.
 
@@ -168,7 +183,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged, entityty
     return name
 
 
-def get_modified_terminal_element(mt):
+def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement]:
     gd = mt.global_derivatives
     ld = mt.local_derivatives
 
@@ -208,14 +223,13 @@ def get_modified_terminal_element(mt):
     else:
         return None
 
-    assert not (mt.averaged and (ld or gd))
-
+    assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     gdim = mt.terminal.ufl_domain().geometric_dimension()
     local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
         ld, gdim)
 
-    return element, mt.averaged, local_derivatives, fc
+    return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
 
 def permute_quadrature_interval(points, reflections=0):
@@ -271,7 +285,6 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
     # Add to element tables
     analysis = {}
     for mt in modified_terminals:
-        # FIXME: Use a namedtuple for res
         res = get_modified_terminal_element(mt)
         if res:
             analysis[mt] = res
@@ -401,7 +414,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                         tensor_factors.append(i)
                         break
                 else:
-                    ut = unique_table_reference_t(
+                    ut = UniqueTableReferenceT(
                         f"FE_TF{tensor_n}", sub_tbl,
                         None, None, None,
                         False, False, False,
@@ -421,7 +434,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         block_size = t['stride']
 
         # tables is just np.arrays, mt_tables hold metadata too
-        mt_tables[mt] = unique_table_reference_t(
+        mt_tables[mt] = UniqueTableReferenceT(
             name, tbl, offset, block_size, tabletype,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
             tensor_factors is not None, tensor_factors, tensor_perm)

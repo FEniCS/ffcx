@@ -8,6 +8,7 @@
 import collections
 import itertools
 import logging
+import typing
 
 import numpy
 import ufl
@@ -16,29 +17,29 @@ from ffcx.ir.analysis.graph import build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import (analyse_modified_terminal,
                                                  is_modified_terminal)
 from ffcx.ir.analysis.visualise import visualise_graph
-from ffcx.ir.elementtables import build_optimized_tables
+from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 
 logger = logging.getLogger("ffcx")
 
-# FIXME: What's ma?
-ma_data_t = collections.namedtuple("ma_data_t", ["ma_index", "tabledata"])
 
-block_data_t = collections.namedtuple("block_data_t",
-                                      ["ttypes",  # list of table types for each block rank
-                                       "factor_indices_comp_indices",  # list of tuples (factor index, component index)
-                                       "all_factors_piecewise",  # True if all factors for this block are piecewise
-                                       "unames",  # list of unique FE table names for each block rank
-                                       "restrictions",  # restriction "+" | "-" | None for each block rank
-                                       "transposed",  # block is the transpose of another
-                                       "is_uniform",
-                                       "name",  # used in "preintegrated" and "premultiplied"
-                                       "ma_data",  # used in "full", "safe" and "partial"
-                                       "piecewise_ma_index",  # used in "partial"
-                                       "is_permuted"  # Do quad points on facets need to be permuted?
-                                       ])
+class ModifiedArgumentDataT(typing.NamedTuple):
+    ma_index: int
+    tabledata: UniqueTableReferenceT
+
+
+class BlockDataT(typing.NamedTuple):
+    ttypes: typing.Tuple[str, ...]  # list of table types for each block rank
+    factor_indices_comp_indices: typing.List[typing.Tuple[int, int]]  # list of tuples (factor index, component index)
+    all_factors_piecewise: bool  # True if all factors for this block are piecewise
+    unames: typing.Tuple[str, ...]  # list of unique FE table names for each block rank
+    restrictions: typing.Tuple[str, ...]  # restriction "+" | "-" | None for each block rank
+    transposed: bool  # block is the transpose of another
+    is_uniform: bool
+    ma_data: typing.Tuple[ModifiedArgumentDataT, ...]  # used in "full", "safe" and "partial"
+    is_permuted: bool  # Do quad points on facets need to be permuted?
 
 
 def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_shape,
@@ -55,8 +56,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     ir["unique_table_types"] = {}
 
     ir["integrand"] = {}
-
-    ir["table_dofmaps"] = {}
 
     for quadrature_rule, integrand in integrands.items():
 
@@ -215,15 +214,14 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                     block_is_permuted = True
             ma_data = []
             for i, ma in enumerate(ma_indices):
-                ma_data.append(ma_data_t(ma, trs[i]))
+                ma_data.append(ModifiedArgumentDataT(ma, trs[i]))
 
             block_is_transposed = False  # FIXME: Handle transposes for these block types
-
             block_unames = unames
-            blockdata = block_data_t(ttypes, fi_ci,
-                                     all_factors_piecewise, block_unames,
-                                     block_restrictions, block_is_transposed,
-                                     block_is_uniform, None, tuple(ma_data), None, block_is_permuted)
+            blockdata = BlockDataT(ttypes, fi_ci,
+                                   all_factors_piecewise, block_unames,
+                                   block_restrictions, block_is_transposed,
+                                   block_is_uniform, tuple(ma_data), block_is_permuted)
 
             # Insert in expr_ir for this quadrature loop
             block_contributions[blockmap].append(blockdata)
@@ -264,7 +262,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         # Add tables and types for this quadrature rule to global tables dict
         ir["unique_tables"].update(active_tables)
         ir["unique_table_types"].update(active_table_types)
-
         # Build IR dict for the given expressions
         # Store final ir for this num_points
         ir["integrand"][quadrature_rule] = {"factorization": F,
