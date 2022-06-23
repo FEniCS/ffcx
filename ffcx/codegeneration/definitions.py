@@ -174,8 +174,26 @@ class FFCXBackendDefinitions(object):
 
         J = sum_k xdof_k grad_X xphi_k(X)
         """
-        # TODO: Jacobian may need adjustment for custom_integral_types
-        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+
+        L = self.language
+
+        ttype = tabledata.ttype
+        num_dofs = tabledata.values.shape[3]
+        bs = tabledata.block_size
+        begin = tabledata.offset
+        end = begin + bs * (num_dofs - 1) + 1
+
+        # Get access to element table
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+        ic = self.symbols.coefficient_dof_sum_index()
+        dof_access = self.symbols.S("coordinate_dofs")
+        
+        code  = []
+        body = [L.AssignAdd(access, dof_access[begin + ic * bs] * FE[ic])]
+        code += [L.VariableDecl("double", access, 0.0)]
+        code += [L.ForRange(ic, 0, num_dofs, body)]
+
+        return [], code
 
     def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""

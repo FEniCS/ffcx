@@ -407,6 +407,7 @@ class IntegralGenerator(object):
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
                     predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                    print(predef)
                     if predef:
                         access = predef[0].symbol.name
                         pre_definitions[str(access)] = predef
