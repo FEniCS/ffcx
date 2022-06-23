@@ -150,25 +150,6 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return self._points.shape[0]
 
     @property
-    def value_size(self) -> int:
-        """Value size of the element.
-
-        Equal to ``numpy.prod(value_shape)``.
-
-        """
-        return 1
-
-    def value_shape(self) -> typing.Tuple[int, ...]:
-        """Value shape of the element basis function.
-
-        Note:
-            For scalar elements, ``(1,)`` is returned. This is different
-            from Basix where the value shape for scalar elements is
-            ``(,)``.
-        """
-        return (1,)
-
-    @property
     def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         """Number of DOFs associated with each entity."""
         dofs = []
