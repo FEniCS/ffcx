@@ -9,6 +9,7 @@ import logging
 
 import ufl
 from ffcx.element_interface import create_element
+from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -140,7 +141,7 @@ class FFCXBackendDefinitions(object):
         bs = tabledata.block_size
 
         scalar_type = self.parameters["scalar_type"]
-        geom_type = scalar_type.replace(' _Complex', '')
+        geom_type = scalar_to_value_type(scalar_type)
 
         # Inlined version (we know this is bounded by a small number)
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)

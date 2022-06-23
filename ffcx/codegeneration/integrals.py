@@ -17,7 +17,7 @@ from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.naming import cdtype_to_numpy
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -71,17 +71,14 @@ def generator(ir, parameters):
     if parameters["tabulate_tensor_void"]:
         code["tabulate_tensor"] = ""
 
-    scalar_type = parameters["scalar_type"]
-    geom_type = scalar_type.replace(' _Complex', '')
-
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
-        scalar_type=scalar_type,
-        geom_type=geom_type,
+        scalar_type=parameters["scalar_type"],
+        geom_type=scalar_to_value_type(parameters["scalar_type"]),
         np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]),
         coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
 
@@ -181,7 +178,7 @@ class IntegralGenerator(object):
 
         parts = []
         scalar_type = self.backend.access.parameters["scalar_type"]
-        float_type = scalar_type.replace(' _Complex', '')
+        float_type = scalar_to_value_type(scalar_type)
         alignment = self.ir.params['assume_aligned']
         if alignment != -1:
             scalar_type = self.backend.access.parameters["scalar_type"]

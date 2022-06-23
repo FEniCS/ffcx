@@ -4,13 +4,12 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import ffcx.codegeneration.jit
 import numpy as np
 import pytest
-
-import ffcx.codegeneration.jit
-from ffcx.naming import cdtype_to_numpy
-import ufl
 import sympy
+import ufl
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 from sympy.abc import x, y, z
 
 
@@ -52,7 +51,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
     c = np.array(kappa_value.flatten(), dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
@@ -116,7 +115,7 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     ffi = module.ffi
@@ -174,7 +173,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     ffi = module.ffi
@@ -223,7 +222,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     ffi = module.ffi
@@ -339,7 +338,7 @@ def test_interior_facet_integral(mode, compile_args):
     facets = np.array([0, 2], dtype=np.intc)
     perms = np.array([0, 1], dtype=np.uint8)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     coords = np.array([[0.0, 0.0, 0.0,
@@ -387,7 +386,7 @@ def test_conditional(mode, compile_args):
     w1 = np.array([1.0, 1.0, 1.0], dtype=np_type)
     c = np.array([], dtype=np.float64)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     coords = np.array([[0.0, 0.0, 0.0],
@@ -527,7 +526,7 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
     w = np.array([], dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     coords = np.array([[1.0, 0.0, 0.0],
@@ -620,7 +619,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     b = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=np_type)
     w = np.array([], dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     coords = np.array([1.0, 0.0, 0.0,
@@ -693,7 +692,7 @@ def test_complex_operations(compile_args):
     w1 = np.array([3 + 5j, 8 - 7j], dtype=np_type)
     c = np.array([], dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
 
     coords = np.array([[0.0, 0.0, 0.0],

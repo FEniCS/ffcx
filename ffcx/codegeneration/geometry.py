@@ -8,7 +8,7 @@ import basix
 import numpy
 
 
-def write_table(L, tablename, cellname, type):
+def write_table(L, tablename, cellname, type: str):
     if tablename == "facet_edge_vertices":
         return facet_edge_vertices(L, tablename, cellname, type)
     if tablename == "reference_facet_jacobian":
@@ -50,19 +50,19 @@ def facet_edge_vertices(L, tablename, cellname):
     return L.ArrayDecl("static const unsigned int", f"{cellname}_{tablename}", out.shape, out)
 
 
-def reference_facet_jacobian(L, tablename, cellname, type):
+def reference_facet_jacobian(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_jacobians(celltype)
     return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
 
 
-def reference_cell_volume(L, tablename, cellname, type):
+def reference_cell_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.volume(celltype)
     return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", out)
 
 
-def reference_facet_volume(L, tablename, cellname, type):
+def reference_facet_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     volumes = basix.cell.facet_reference_volumes(celltype)
     for i in volumes[1:]:
@@ -71,18 +71,16 @@ def reference_facet_volume(L, tablename, cellname, type):
     return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", volumes[0])
 
 
-def reference_edge_vectors(L, tablename, cellname, type):
+def reference_edge_vectors(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
-
     edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
-
     out = numpy.array(edge_vectors[cellname])
     return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
 
 
-def facet_reference_edge_vectors(L, tablename, cellname, type):
+def facet_reference_edge_vectors(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
@@ -105,13 +103,13 @@ def facet_reference_edge_vectors(L, tablename, cellname, type):
     return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
 
 
-def reference_facet_normals(L, tablename, cellname, type):
+def reference_facet_normals(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_outward_normals(celltype)
     return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
 
 
-def facet_orientation(L, tablename, cellname, type):
+def facet_orientation(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_orientations(celltype)
     return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)

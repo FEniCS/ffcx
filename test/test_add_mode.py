@@ -4,12 +4,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import ffcx.codegeneration.jit
 import numpy as np
 import pytest
-
-import ffcx.codegeneration.jit
 import ufl
-from ffcx.naming import cdtype_to_numpy
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 
 @pytest.mark.parametrize("mode",
@@ -48,7 +47,7 @@ def test_additive_facet_integral(mode, compile_args):
     facets = np.array([0], dtype=np.int32)
     perm = np.array([0], dtype=np.uint8)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([0.0, 2.0, 0.0,
                        np.sqrt(3.0), -1.0, 0.0,
@@ -95,7 +94,7 @@ def test_additive_cell_integral(mode, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
-    geom_type = mode.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([0.0, 2.0, 0.0,
                        np.sqrt(3.0), -1.0, 0.0,

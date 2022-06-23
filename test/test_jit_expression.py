@@ -10,7 +10,7 @@ import cffi
 import ffcx.codegeneration.jit
 import numpy as np
 import ufl
-from ffcx.naming import cdtype_to_numpy
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 
 def float_to_type(name):
@@ -64,7 +64,7 @@ def test_matvec(compile_args):
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
-    geom_type = c_type.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(c_type)
     np_gtype = cdtype_to_numpy(geom_type)
 
     # Coords storage XYZXYZXYZ
@@ -117,7 +117,7 @@ def test_rank1(compile_args):
     expression = obj[0]
 
     c_type, np_type = float_to_type("double")
-    geom_type = c_type.replace(' _Complex', '')
+    geom_type = scalar_to_value_type(c_type)
     np_gtype = cdtype_to_numpy(geom_type)
 
     # 2 components for vector components of expression

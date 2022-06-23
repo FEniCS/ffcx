@@ -6,18 +6,16 @@
 
 import collections
 import logging
-from typing import Dict, Set, Any, DefaultDict
 from itertools import product
+from typing import Any, DefaultDict, Dict, Set
 
 import ufl
-
-from ffcx.codegeneration import geometry
-from ffcx.codegeneration import expressions_template
+from ffcx.codegeneration import expressions_template, geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode
+from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representation import ExpressionIR
-from ffcx.naming import cdtype_to_numpy
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -74,7 +72,7 @@ def generator(ir, parameters):
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
     d["scalar_type"] = parameters["scalar_type"]
-    d["geom_type"] = parameters["scalar_type"].replace(' _Complex', '')
+    d["geom_type"] = scalar_to_value_type(parameters["scalar_type"])
     d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
 
     d["rank"] = len(ir.tensor_shape)
