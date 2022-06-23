@@ -98,7 +98,15 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         self._entity_counts.append(1)
 
         super().__init__(
-            "", "quadrature element", element.cell().cellname(), (1, ))
+            f"QuadratureElement({element})", "quadrature element", element.cell().cellname(), (1, ))
+
+   def __eq__(self, other) -> bool:
+        """Check if two elements are equal."""
+        return isinstance(other, QuadratureElement) and self.element == other.element
+
+    def __hash__(self) -> int:
+        """Return a hash."""
+        return super().__hash__()
 
     def tabulate(
         self, nderivs: int, points: basix.ufl_wrapper._nda_f64
