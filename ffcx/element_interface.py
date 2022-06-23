@@ -99,7 +99,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         self._entity_counts.append(1)
 
         super().__init__(
-            "", "quadrature element", element.cell_type.name)
+            "", "quadrature element", element.cell().cellname(), (1, ))
 
     def tabulate(
         self, nderivs: int, points: basix.ufl_wrapper._nda_f64
