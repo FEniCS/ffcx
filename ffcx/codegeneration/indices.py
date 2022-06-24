@@ -45,6 +45,9 @@ class MultiIndex:
     def local_idx(self, idx):
         assert idx < self.dim
         return self.indices[idx]
+    
+    def __hash__(self):
+        return hash(self.global_idx())
 
 
 def create_quadrature_index(lang: types.ModuleType, quadrature_rule: QuadratureRule) -> MultiIndex:

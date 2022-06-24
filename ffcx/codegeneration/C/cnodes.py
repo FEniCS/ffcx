@@ -1618,6 +1618,7 @@ class NestedForRange(CStatement):
     def __init__(self, multi_index, body, index_type="int"):
         self.loops = []
         self.depth = len(multi_index.ranges)
+        self.multi_index = multi_index
         for i in reversed(range(self.depth)):
             body = body
             idx = multi_index.local_idx(i)
@@ -1628,6 +1629,9 @@ class NestedForRange(CStatement):
 
     def cs_format(self, precision=None):
         return self.loops[0].cs_format()
+
+    def body(self):
+        return self.loops[-1].body
 
     def flops(self):
         return self.loops[0].flops()

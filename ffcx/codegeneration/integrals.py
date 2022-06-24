@@ -14,6 +14,7 @@ from ffcx.codegeneration.indices import MultiIndex
 from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.indices import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.optimise import fuse_loops
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode, BinOp
 from ffcx.ir.elementtables import piecewise_ttypes
@@ -223,7 +224,8 @@ class IntegralGenerator(object):
             all_quadparts += quadparts
             all_predefinitions.update(pre_definitions)
 
-        parts += lang.commented_code_list(self.fuse_loops(all_predefinitions),
+        pre_definitions = fuse_loops(lang, all_predefinitions)
+        parts += lang.commented_code_list(pre_definitions,
                                           "Pre-definitions of modified terminals to enable unit-stride access")
 
         # Collect parts before, during, and after quadrature loops
@@ -475,7 +477,7 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
         parts = []
-        parts += self.fuse_loops(definitions)
+        parts += fuse_loops(lang, definitions)
 
         if intermediates:
             if use_symbol_array:
@@ -658,32 +660,3 @@ class IntegralGenerator(object):
         quadparts += body
 
         return preparts, quadparts
-
-    def fuse_loops(self, definitions):
-        """
-        Merge a sequence of loops with the same iteration space into a single loop.
-
-        Loop fusion improves data locality, cache reuse and decreases the loop control overhead.
-        NOTE: Loop fusion might increase the pressure on register allocation.
-        Ideally, we should define a cost function to determine how many loops should fuse at a time.
-        """
-        lang = self.backend.language
-
-        loops = collections.defaultdict(list)
-        pre_loop = []
-        for access, definition in definitions.items():
-            for d in definition:
-                if isinstance(d, lang.ForRange):
-                    loops[(d.index, d.begin, d.end)] += [d.body]
-                else:
-                    pre_loop += [d]
-        fused = []
-
-        for info, body in loops.items():
-            index, begin, end = info
-            fused += [lang.ForRange(index, begin, end, body)]
-
-        code = []
-        code += pre_loop
-        code += fused
-        return code
