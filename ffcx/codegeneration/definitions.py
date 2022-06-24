@@ -9,6 +9,7 @@ import logging
 
 import ufl
 from ffcx.element_interface import create_element
+from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -139,11 +140,14 @@ class FFCXBackendDefinitions(object):
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
 
+        scalar_type = self.parameters["scalar_type"]
+        geom_type = scalar_to_value_type(scalar_type)
+
         # Inlined version (we know this is bounded by a small number)
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
         value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
-        code = [L.VariableDecl("const double", access, value)]
+        code = [L.VariableDecl(f"const {geom_type}", access, value)]
 
         return [], code
 
@@ -200,9 +204,11 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
+        value_type = scalar_to_value_type(self.parameters["scalar_type"])
+
         code = []
         body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
-        code += [L.VariableDecl("double", access, 0.0)]
+        code += [L.VariableDecl(f"{value_type}", access, 0.0)]
         code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
