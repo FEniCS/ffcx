@@ -9,6 +9,7 @@ import logging
 
 import ufl
 from ffcx.element_interface import create_element
+from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -147,9 +148,11 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
+        value_type = scalar_to_value_type(self.parameters["scalar_type"])
+
         code = []
         body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
-        code += [L.VariableDecl("double", access, 0.0)]
+        code += [L.VariableDecl(f"{value_type}", access, 0.0)]
         code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
