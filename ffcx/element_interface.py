@@ -98,7 +98,8 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         self._entity_counts.append(1)
 
         super().__init__(
-            f"QuadratureElement({element})", "quadrature element", element.cell().cellname(), element.value_shape())
+            f"QuadratureElement({element})", "quadrature element", element.cell().cellname(), element.value_shape(),
+            element.degree())
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""

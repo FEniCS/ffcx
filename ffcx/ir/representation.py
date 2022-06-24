@@ -22,7 +22,6 @@ import typing
 import warnings
 
 import basix
-import basix.ufl_wrapper
 import numpy
 import ufl
 from ffcx import naming
@@ -249,11 +248,9 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    if isinstance(basix_element, basix.ufl_wrapper.BlockedElement):
-        ir["block_size"] = basix_element.block_size
+    ir["block_size"] = basix_element.block_size
+    if basix_element.block_size > 1:
         basix_element = basix_element.sub_element
-    else:
-        ir["block_size"] = 1
 
     ir["entity_dofs"] = basix_element.entity_dofs
 
