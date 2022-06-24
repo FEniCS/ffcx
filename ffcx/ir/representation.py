@@ -295,11 +295,9 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
-    if hasattr(basix_element, "block_size"):
-        ir["block_size"] = basix_element.block_size
+    ir["block_size"] = basix_element.block_size
+    if basix_element.block_size > 1:
         basix_element = basix_element.sub_element
-    else:
-        ir["block_size"] = 1
 
     # Precompute repeatedly used items
     for i in basix_element.num_entity_dofs:

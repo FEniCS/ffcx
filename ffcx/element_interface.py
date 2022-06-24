@@ -26,10 +26,21 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
     Returns:
         A Basix finite element
     """
-    if element.family() == "Quadrature":
+    if isinstance(element, basix.ufl_wrapper._BasixElementBase):
+        return element
+
+    elif isinstance(element, ufl.VectorElement):
+        return basix.ufl_wrapper.VectorElement(create_element(element.sub_elements()[0]), element.num_sub_elements())
+    elif isinstance(element, ufl.TensorElement):
+        return basix.ufl_wrapper.TensorElement(create_element(element.sub_elements()[0]), element._value_shape)
+    elif isinstance(element, ufl.MixedElement):
+        return basix.ufl_wrapper.MixedElement([create_element(e) for e in element.sub_elements()])
+
+    elif element.family() == "Quadrature":
         return QuadratureElement(element)
 
-    return basix.ufl_wrapper.convert_ufl_element(element)
+    else:
+        return basix.ufl_wrapper.convert_ufl_element(element)
 
 
 def basix_index(indices: typing.Tuple[int]) -> int:
