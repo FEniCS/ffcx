@@ -123,62 +123,6 @@ class FFCXBackendDefinitions(object):
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
-        gdim = domain.geometric_dimension()
-        coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = create_element(coordinate_element).sub_element.dim
-
-        # Reference coordinates are known, no coordinate field, so we compute
-        # this component as linear combination of coordinate_dofs "dofs" and table
-
-        # Find table name
-        ttype = tabledata.ttype
-
-        assert ttype != "zeros"
-        assert ttype != "ones"
-
-        begin = tabledata.offset
-        num_dofs = tabledata.values.shape[3]
-        bs = tabledata.block_size
-
-        scalar_type = self.parameters["scalar_type"]
-        geom_type = scalar_to_value_type(scalar_type)
-
-        # Inlined version (we know this is bounded by a small number)
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-        value = L.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
-        code = [L.VariableDecl(f"const {geom_type}", access, value)]
-
-        return [], code
-
-    def spatial_coordinate(self, e, mt, tabledata, quadrature_rule, access):
-        """Return definition code for the physical spatial coordinates.
-
-        If physical coordinates are given:
-          No definition needed.
-
-        If reference coordinates are given:
-          x = sum_k xdof_k xphi_k(X)
-
-        If reference facet coordinates are given:
-          x = sum_k xdof_k xphi_k(Xf)
-        """
-        if self.integral_type in ufl.custom_integral_types:
-            # FIXME: Jacobian may need adjustment for custom_integral_types
-            if mt.local_derivatives:
-                logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
-            return []
-        elif self.integral_type == "expression":
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
-        else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
-
-    def jacobian(self, e, mt, tabledata, quadrature_rule, access):
-        """Return definition code for the Jacobian of x(X)."""
-        L = self.language
-
-        # Get properties of domain
-        domain = mt.terminal.ufl_domain()
         coordinate_element = domain.ufl_coordinate_element()
         num_scalar_dofs = create_element(coordinate_element).sub_element.dim
 
@@ -212,6 +156,30 @@ class FFCXBackendDefinitions(object):
         code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
+
+    def spatial_coordinate(self, e, mt, tabledata, quadrature_rule, access):
+        """Return definition code for the physical spatial coordinates.
+
+        If physical coordinates are given:
+          No definition needed.
+
+        If reference coordinates are given:
+          x = sum_k xdof_k xphi_k(X)
+
+        If reference facet coordinates are given:
+          x = sum_k xdof_k xphi_k(Xf)
+        """
+        if self.integral_type in ufl.custom_integral_types:
+            # FIXME: Jacobian may need adjustment for custom_integral_types
+            if mt.local_derivatives:
+                logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
+            return []
+        else:
+            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+
+    def jacobian(self, e, mt, tabledata, quadrature_rule, access):
+        """Return definition code for the Jacobian of x(X)."""
+        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
 
     def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""
