@@ -4,10 +4,10 @@ cell = ufl.hexahedron
 element = ufl.FiniteElement("Lagrange", cell, 3)
 coords = ufl.VectorElement("Lagrange", cell, 1)
 mesh = ufl.Mesh(coords)
-V = ufl.FunctionSpace(mesh, element)
+function_space = ufl.FunctionSpace(mesh, element)
 x = ufl.SpatialCoordinate(mesh)
 
-v = ufl.TestFunction(V)
-u = ufl.Coefficient(V)
+v = ufl.TestFunction(function_space)
+u = ufl.TrialFunction(function_space)
 
 a = ufl.inner(u, v) * ufl.dx

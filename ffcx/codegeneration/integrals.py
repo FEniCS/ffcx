@@ -220,6 +220,7 @@ class IntegralGenerator(object):
             # Generate code to integrate reusable blocks of final
             # element tensor
             pre_definitions, preparts, quadparts = self.generate_quadrature_loop(rule)
+
             all_preparts += preparts
             all_quadparts += quadparts
             all_predefinitions.update(pre_definitions)
@@ -341,16 +342,27 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         lang = self.backend.language
+        iq = create_quadrature_index(lang, quadrature_rule)
+
+        quadrature_values = []
+
         # Generate varying partition
-        pre_definitions, body = self.generate_varying_partition(quadrature_rule)
+        pre_definitions, body, intermediates = self.generate_varying_partition(quadrature_rule)
+        quadrature_values.append(intermediates)
 
         body = lang.commented_code_list(
             body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
+        # quadrature_values = self.generate_quadrature_values(quadrature_rule)
+
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
-        preparts, quadparts = \
+        preparts, quadparts, intermediates = \
             self.generate_dofblock_partition(quadrature_rule)
+        quadrature_values.append(intermediates)
+        if iq.dim > 1:
+            quadrature_values = [lang.NestedForRange([iq], quadrature_values)]
+        body += quadrature_values
         body += quadparts
 
         # Wrap body in loop or scope
@@ -359,8 +371,9 @@ class IntegralGenerator(object):
             # optimized away
             quadparts = []
         else:
-            iq = create_quadrature_index(lang, quadrature_rule)
-            quadparts = [lang.NestedForRange(iq, body)]
+            quadparts = body
+            if iq.dim == 1:
+                quadparts = [lang.NestedForRange([iq], body)]
 
         return pre_definitions, preparts, quadparts
 
@@ -371,12 +384,15 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = lang.Symbol(f"sp_{quadrature_rule.id()}")
-        pre_definitions, parts = self.generate_partition(arraysymbol, F, "piecewise", None)
-        assert len(pre_definitions) == 0, "Quadrature independent code should have not pre-definitions"
-        parts = lang.commented_code_list(
-            parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
+        pre_definitions, parts, intermediates = self.generate_partition(arraysymbol, F, "piecewise", None)
 
-        return parts
+        assert len(pre_definitions) == 0, "Quadrature independent code should have not pre-definitions"
+
+        code = [parts, intermediates]
+        code = lang.commented_code_list(
+            code, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
+
+        return code
 
     def generate_varying_partition(self, quadrature_rule):
         lang = self.backend.language
@@ -385,11 +401,11 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = lang.Symbol(f"sv_{quadrature_rule.id()}")
-        pre_definitions, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
+        pre_definitions, parts, intermediates = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
         parts = lang.commented_code_list(
             parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
 
-        return pre_definitions, parts
+        return pre_definitions, parts, intermediates
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
         lang = self.backend.language
@@ -406,6 +422,9 @@ class IntegralGenerator(object):
             v = attr['expression']
             mt = attr.get('mt')
 
+            iq = create_quadrature_index(lang, quadrature_rule)
+
+
             # Generate code only if the expression is not already in
             # cache
             if not self.get_var(quadrature_rule, v):
@@ -419,6 +438,9 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
+                    # vaccess = lang.as_symbol(vaccess[iq])
+                    print(type(vaccess))
+
                     predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
                     if predef:
                         access = predef[0].symbol.name
@@ -482,10 +504,11 @@ class IntegralGenerator(object):
         if intermediates:
             if use_symbol_array:
                 padlen = self.ir.params["padlen"]
-                parts += [lang.ArrayDecl(self.backend.access.parameters["scalar_type"],
-                                         symbol, len(intermediates), padlen=padlen)]
-            parts += intermediates
-        return pre_definitions, parts
+                declaration = [lang.ArrayDecl(self.backend.access.parameters["scalar_type"],
+                                              symbol, len(intermediates))]
+                intermediates.insert(0, declaration)
+
+        return pre_definitions, parts, intermediates
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
@@ -510,7 +533,7 @@ class IntegralGenerator(object):
             block_groups[tuple(scalar_blockmap)].append(blockdata)
 
         for blockmap in block_groups:
-            block_preparts, block_quadparts = \
+            block_preparts, block_quadparts, intermediates = \
                 self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
 
             # Add definitions
@@ -519,7 +542,7 @@ class IntegralGenerator(object):
             # Add computations
             quadparts.extend(block_quadparts)
 
-        return preparts, quadparts
+        return preparts, quadparts, intermediates
 
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
 
@@ -554,6 +577,7 @@ class IntegralGenerator(object):
         # The parts to return
         preparts: List[CNode] = []
         quadparts: List[CNode] = []
+        intermediates: List[CNode] = []
 
         # RHS expressiong grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
@@ -564,7 +588,6 @@ class IntegralGenerator(object):
         iq = create_quadrature_index(lang, quadrature_rule)
 
         for blockdata in blocklist:
-
             # Override dof index with quadrature loop index for arguments
             # with quadrature element, to index B like B[iq*num_dofs + iq]
             B_indices = []
@@ -585,7 +608,6 @@ class IntegralGenerator(object):
 
             # Get factor expression
             F = self.ir.integrand[quadrature_rule]["factorization"]
-
             v = F.nodes[factor_index]['expression']
             f = self.get_var(quadrature_rule, v)
 
@@ -608,7 +630,12 @@ class IntegralGenerator(object):
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
                     scalar_type = self.backend.access.parameters["scalar_type"]
-                    quadparts.append(lang.VariableDecl(f"const {scalar_type}", fw, fw_rhs))
+                    if iq.dim > 0:
+                        preparts += [lang.ArrayDecl(scalar_type, fw, iq.ranges, values=[0.0])]
+                        intermediates += [lang.Assign(fw[iq], fw_rhs)]
+                    else:
+                        preparts += [lang.VariableDecl(scalar_type, fw, value=0.0)]
+                        intermediates += [lang.Assign(fw, fw_rhs)]
 
             assert not blockdata.transposed, "Not handled yet"
             A_shape = self.ir.tensor_shape
@@ -651,12 +678,13 @@ class IntegralGenerator(object):
             sum = lang.Sum(keep[indices])
             body.append(lang.AssignAdd(A[indices], sum))
 
-        for i in reversed(range(block_rank)):
-            index = B_indices[i]
-            body = [lang.NestedForRange(index, body)]
+        if iq.dim > 1:
+            B_indices.insert(0, iq)
+
+        body = [lang.NestedForRange(B_indices, body)]
 
         quadparts += pre_loop
         quadparts += hoist_code
         quadparts += body
 
-        return preparts, quadparts
+        return preparts, quadparts, intermediates

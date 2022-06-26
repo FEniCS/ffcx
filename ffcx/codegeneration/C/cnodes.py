@@ -12,6 +12,7 @@ from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
 from ffcx.codegeneration.C.format_value import (format_float, format_int,
                                                 format_value)
 from ffcx.codegeneration.C.precedence import PRECEDENCE
+from ffcx.codegeneration.indices import MultiIndex
 
 logger = logging.getLogger("ffcx")
 """CNode TODO:
@@ -801,6 +802,9 @@ class ArrayAccess(CExprOperator):
             raise ValueError("Unexpected array type %s." % (type(array).__name__, ))
 
         # Allow expressions or literals as indices
+        if isinstance(indices, MultiIndex):
+            indices = [indices.local_idx(idx) for idx in range(indices.dim)]
+
         if not isinstance(indices, (list, tuple)):
             indices = (indices, )
         self.indices = tuple(as_cexpr_or_string_symbol(i) for i in indices)
@@ -1615,15 +1619,15 @@ class ForRange(CStatement):
 class NestedForRange(CStatement):
     is_scoped = True
 
-    def __init__(self, multi_index, body, index_type="int"):
+    def __init__(self, indices, body, index_type="int"):
         self.loops = []
-        self.depth = len(multi_index.ranges)
-        self.multi_index = multi_index
+        self.ranges = [r for idx in indices for r in idx.ranges]
+        self.indices = [idx.local_idx(i) for idx in indices for i in range(idx.dim)]
+        self.depth = len(self.ranges)
+        self.multi_indices = indices
         for i in reversed(range(self.depth)):
             body = body
-            idx = multi_index.local_idx(i)
-            end = multi_index.ranges[i]
-            for_range = ForRange(idx, 0, end, body=body)
+            for_range = ForRange(self.indices[i], 0, self.ranges[i], body=body)
             self.loops.insert(0, for_range)
             body = for_range
 

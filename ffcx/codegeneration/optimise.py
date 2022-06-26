@@ -3,7 +3,10 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+
 import collections
+
+from ffcx.codegeneration.indices import MultiIndex
 
 
 def fuse_loops(lang, definitions):
@@ -15,22 +18,30 @@ def fuse_loops(lang, definitions):
     Ideally, we should define a cost function to determine how many loops should fuse at a time.
     """
 
-    loops = collections.defaultdict(list)
+    bodies = collections.defaultdict(list)
+    indices = collections.defaultdict(MultiIndex)
+
     pre_loop = []
+
     for access, definition in definitions.items():
-        
         for d in definition:
             if isinstance(d, lang.NestedForRange):
-                index = d.multi_index
-                loops[index].append(d.body())
-                print(len(loops[index]))
+                index = d.multi_indices[0]
+                if index.dim == 1:
+                    hash_ = hash(index)
+                    bodies[hash_] += [d.body()]
+                    indices[hash_] = index
+                else:
+                    pre_loop += [d]
             else:
                 pre_loop += [d]
+
     fused = []
+    for key in indices.keys():
+        body = bodies[key]
+        index = indices[key]
+        fused += [lang.NestedForRange([index], body)]
 
-
-    for multi_index, body in loops.items():
-        fused += [lang.NestedForRange(multi_index, body)]
 
     code = []
     code += pre_loop

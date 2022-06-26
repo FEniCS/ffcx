@@ -45,7 +45,10 @@ class MultiIndex:
     def local_idx(self, idx):
         assert idx < self.dim
         return self.indices[idx]
-    
+
+    def global_size(self):
+        return numpy.prod(self.ranges)
+
     def __hash__(self):
         return hash(self.global_idx())
 

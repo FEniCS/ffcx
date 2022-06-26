@@ -109,13 +109,20 @@ class FFCXBackendDefinitions(object):
             if dof_access_map:
                 pre_code += [lang.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
                 pre_body = lang.Assign(dof_access, dof_access_map)
-                pre_code += [lang.NestedForRange(ic, pre_body)]
+                pre_code += [lang.NestedForRange([ic], pre_body)]
         else:
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic.global_idx() * bs + begin)
 
-        body = [lang.AssignAdd(access, dof_access * table_access)]
-        code += [lang.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
-        code += [lang.NestedForRange(ic, body)]
+        scalar_type = self.parameters["scalar_type"]
+
+        if iq.dim > 1:
+            code += [lang.ArrayDecl(scalar_type, access, iq.ranges, values=[0.0])]
+            body = [lang.AssignAdd(access[iq], dof_access * table_access)]
+            code += [lang.NestedForRange([iq, ic], body)]
+        else:
+            body = [lang.AssignAdd(access, dof_access * table_access)]
+            code += [lang.VariableDecl(scalar_type, access, 0.0)]
+            code += [lang.NestedForRange([ic], body)]
 
         return pre_code, code
 
@@ -204,6 +211,7 @@ class FFCXBackendDefinitions(object):
 
         iq = create_quadrature_index(lang, quadrature_rule)
         ic = create_dof_index(lang, tabledata, "ic")
+        assert ic.dim == iq.dim
 
         # coordinate dofs is always 3d
         dim = 3
@@ -211,17 +219,21 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        dof_access = self.symbols.S("coordinate_dofs")
+        scalar_type = self.parameters["scalar_type"]
 
-        code = []
-        code += [lang.VariableDecl("double", access, 0.0)]
-
-        assert ic.dim == iq.dim
         table_access = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        dof_access = self.symbols.S("coordinate_dofs")
         dof_access = dof_access[ic.global_idx() * dim + begin + offset]
 
-        body = [lang.AssignAdd(access, dof_access * table_access)]
-        code += [lang.NestedForRange(ic, body)]
+        code = []
+        if iq.dim > 1:
+            code += [lang.ArrayDecl(scalar_type, access, iq.ranges, values=[0.0])]
+            body = [lang.AssignAdd(access[iq], dof_access * table_access)]
+            code += [lang.NestedForRange([iq, ic], body)]
+        else:
+            code += [lang.VariableDecl(scalar_type, access, 0.0)]
+            body = [lang.AssignAdd(access, dof_access * table_access)]
+            code += [lang.NestedForRange([ic], body)]
 
         return [], code
 
