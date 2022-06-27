@@ -10,16 +10,16 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 3
-#define UFCX_VERSION_MAINTENANCE 1
+#define UFCX_VERSION_MINOR 4
+#define UFCX_VERSION_MAINTENANCE 3
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
-#define UFC_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE
+#define UFCX_VERSION                                                            \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE
 #else
-#define UFC_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFC_VERSION_MINOR "." UFC_VERSION_MAINTENANCE ".dev0"
+#define UFCX_VERSION                                                            \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".dev0"
 #endif
 
 #include <stdbool.h>
@@ -64,11 +64,12 @@ extern "C"
     ufcx_basix_element = 0,
     ufcx_mixed_element = 1,
     ufcx_quadrature_element = 2,
-    ufcx_custom_element = 3
+    ufcx_basix_custom_element = 3
   } ufcx_element_type;
 
   /// Forward declarations
   typedef struct ufcx_finite_element ufcx_finite_element;
+  typedef struct ufcx_basix_custom_finite_element ufcx_basix_custom_finite_element;
   typedef struct ufcx_dofmap ufcx_dofmap;
   typedef struct ufcx_function_space ufcx_function_space;
 
@@ -144,7 +145,58 @@ extern "C"
     /// element).
     ufcx_finite_element** sub_elements;
 
+    /// Pointer to data to recreate the element if it is a custom Basix element
+    ufcx_basix_custom_finite_element* custom_element;
   } ufcx_finite_element;
+
+  typedef struct ufcx_basix_custom_finite_element
+  {
+    /// Basix identifier of the cell shape
+    int cell_type;
+
+    /// Dimension of the value space for axis i
+    int value_shape_length;
+
+    /// Dimension of the value space for axis i
+    int* value_shape;
+
+    /// The number of rows in the wcoeffs matrix
+    int wcoeffs_rows;
+
+    /// The number of columnss in the wcoeffs matrix
+    int wcoeffs_cols;
+
+    /// The coefficents that define the polynomial set of the element in terms
+    /// of the orthonormal polynomials on the cell
+    double* wcoeffs;
+
+    /// The number of interpolation points associated with each entity
+    int* npts;
+
+    /// The number of DOFs associated with each entity
+    int* ndofs;
+
+    // The coordinates of the interpolation points
+    double* x;
+
+    // The entries in the interpolation matrices
+    double* M;
+
+    /// The map type for the element
+    int map_type;
+
+    /// Indicates whether or not this is the discontinuous version of the element
+    bool discontinuous;
+
+    /// The highest degree full polynomial space contained in this element
+    int highest_complete_degree;
+
+    /// The number of derivatives needed when interpolating
+    int interpolation_nderivs;
+
+    /// The highest degree of a polynomial in the element
+    int highest_degree;
+  } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
   {
@@ -216,7 +268,7 @@ extern "C"
   /// (one permutation for each cell adjacent to the facet).
   typedef void(ufcx_tabulate_tensor_float32)(
       float* restrict A, const float* restrict w,
-      const float* restrict c, const double* restrict coordinate_dofs,
+      const float* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -236,7 +288,7 @@ extern "C"
   /// @see ufcx_tabulate_tensor_single
   typedef void(ufcx_tabulate_tensor_longdouble)(
       long double* restrict A, const long double* restrict w,
-      const long double* restrict c, const double* restrict coordinate_dofs,
+      const long double* restrict c, const long double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -246,7 +298,7 @@ extern "C"
   /// @see ufcx_tabulate_tensor_single
   typedef void(ufcx_tabulate_tensor_complex64)(
       float _Complex* restrict A, const float _Complex* restrict w,
-      const float _Complex* restrict c, const double* restrict coordinate_dofs,
+      const float _Complex* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -396,7 +448,7 @@ extern "C"
 
   } ufcx_form;
 
-  // FIXME: Formalise a UFC 'function space'
+  // FIXME: Formalise a UFCX 'function space'
   typedef struct ufcx_function_space
   {
     ufcx_finite_element* finite_element;

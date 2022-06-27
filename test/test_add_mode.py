@@ -4,15 +4,21 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import ffcx.codegeneration.jit
 import numpy as np
 import pytest
-
-import ffcx.codegeneration.jit
 import ufl
-from ffcx.naming import cdtype_to_numpy
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 
-@pytest.mark.parametrize("mode", ["double", "float", "long double", "double _Complex", "float _Complex"])
+@pytest.mark.parametrize("mode",
+                         [
+                             "double",
+                             "float",
+                             "long double",
+                             "double _Complex",
+                             "float _Complex"
+                         ])
 def test_additive_facet_integral(mode, compile_args):
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
@@ -41,9 +47,11 @@ def test_additive_facet_integral(mode, compile_args):
     facets = np.array([0], dtype=np.int32)
     perm = np.array([0], dtype=np.uint8)
 
+    geom_type = scalar_to_value_type(mode)
+    np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([0.0, 2.0, 0.0,
                        np.sqrt(3.0), -1.0, 0.0,
-                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np_gtype)
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
@@ -52,7 +60,7 @@ def test_additive_facet_integral(mode, compile_args):
         kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-               ffi.cast('double *', coords.ctypes.data),
+               ffi.cast(f'{geom_type} *', coords.ctypes.data),
                ffi.cast('int *', facets.ctypes.data),
                ffi.cast('uint8_t *', perm.ctypes.data))
 
@@ -86,23 +94,24 @@ def test_additive_cell_integral(mode, compile_args):
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
 
+    geom_type = scalar_to_value_type(mode)
+    np_gtype = cdtype_to_numpy(geom_type)
     coords = np.array([0.0, 2.0, 0.0,
                        np.sqrt(3.0), -1.0, 0.0,
-                       -np.sqrt(3.0), -1.0, 0.0], dtype=np.float64)
+                       -np.sqrt(3.0), -1.0, 0.0], dtype=np_gtype)
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     A0 = np.array(A)
-
     for i in range(3):
         kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
                ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-               ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+               ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
         assert np.all(np.isclose(A, (i + 2) * A0))

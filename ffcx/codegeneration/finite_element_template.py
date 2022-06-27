@@ -13,6 +13,7 @@ factory = """
 {value_shape_init}
 {reference_value_shape_init}
 {sub_elements_init}
+{custom_element_init}
 
 ufcx_finite_element {factory_name} =
 {{
@@ -37,7 +38,8 @@ ufcx_finite_element {factory_name} =
   .lagrange_variant = {lagrange_variant},
   .dpc_variant = {dpc_variant},
   .num_sub_elements = {num_sub_elements},
-  .sub_elements = {sub_elements}
+  .sub_elements = {sub_elements},
+  .custom_element = {custom_element}
 }};
 
 // End of code for element {factory_name}

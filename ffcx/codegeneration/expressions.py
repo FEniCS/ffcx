@@ -6,18 +6,16 @@
 
 import collections
 import logging
-from typing import Dict, Set, Any, DefaultDict
 from itertools import product
+from typing import Any, DefaultDict, Dict, Set
 
 import ufl
-
-from ffcx.codegeneration import geometry
-from ffcx.codegeneration import expressions_template
+from ffcx.codegeneration import expressions_template, geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode
-from ffcx.ir.representation import ir_expression
-from ffcx.naming import cdtype_to_numpy
+from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.ir.representation import ExpressionIR
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -74,7 +72,9 @@ def generator(ir, parameters):
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
     d["scalar_type"] = parameters["scalar_type"]
+    d["geom_type"] = scalar_to_value_type(parameters["scalar_type"])
     d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
+
     d["rank"] = len(ir.tensor_shape)
 
     if len(ir.coefficient_names) > 0:
@@ -124,7 +124,6 @@ def generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
-
     assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
@@ -134,7 +133,7 @@ def generator(ir, parameters):
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: ir_expression, backend: FFCXBackend):
+    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
 
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")

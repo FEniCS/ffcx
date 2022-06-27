@@ -18,6 +18,16 @@ from abc import ABC, abstractmethod
 import basix
 import numpy
 import ufl
+import basix.ufl_wrapper
+import functools
+
+
+@functools.lru_cache()
+def create_basix_element(family_type: basix.ElementFamily, cell_type: basix.CellType, degree: int,
+                         variant_info: typing.Tuple[typing.Union[basix.LagrangeVariant, basix.DPCVariant]],
+                         discontinuous: bool):
+    """Create a basix element."""
+    return basix.create_element(family_type, cell_type, degree, *variant_info, discontinuous)
 
 
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
@@ -28,11 +38,11 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
 
     Returns:
         A FFCx finite element
-
     """
     # TODO: EnrichedElement
-    # TODO: Short/alternative names for elements
-    # TODO: Allow different args for different parts of mixed element
+
+    if isinstance(element, basix.ufl_wrapper.BasixElement):
+        return BasixElement(element.basix_element)
 
     if isinstance(element, ufl.VectorElement):
         return BlockedElement(create_element(element.sub_elements()[0]),
@@ -46,8 +56,6 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
 
     if element.family() == "Quadrature":
         return QuadratureElement(element)
-
-    variant_info = []
 
     family_name = element.family()
     discontinuous = False
@@ -66,37 +74,38 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> BaseElement:
     family_type = basix.finite_element.string_to_family(family_name, element.cell().cellname())
     cell_type = basix.cell.string_to_type(element.cell().cellname())
 
-    if family_type == basix.ElementFamily.P:
-        if element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.gll_warped)
-        else:
-            variant_info.append(basix.variants.string_to_lagrange_variant(element.variant()))
-    elif family_type == basix.ElementFamily.serendipity:
-        if element.variant() is None:
-            variant_info.append(basix.LagrangeVariant.gll_warped)
-            variant_info.append(basix.DPCVariant.diagonal_gll)
-        else:
-            v1, v2 = element.variant().split(",")
-            variant_info.append(basix.variants.string_to_lagrange_variant(v1))
-            variant_info.append(basix.variants.string_to_dpc_variant(v2))
-    elif family_type == basix.ElementFamily.DPC:
-        if element.variant() is None:
-            variant_info.append(basix.DPCVariant.diagonal_gll)
-        else:
-            variant_info.append(basix.variants.string_to_dpc_variant(element.variant()))
+    variant_info = []
+    if family_type == basix.ElementFamily.P and element.variant() == "equispaced":
+        # This is used for elements defining cells
+        variant_info = [basix.LagrangeVariant.equispaced]
+    else:
+        if element.variant() is not None:
+            raise ValueError("UFL variants are not supported by FFCx. Please wrap a Basix element directly.")
 
-    return BasixElement(family_type, cell_type, element.degree(), variant_info, discontinuous)
+        EF = basix.ElementFamily
+        if family_type == EF.P:
+            variant_info = [basix.LagrangeVariant.gll_warped]
+        elif family_type in [EF.RT, EF.N1E]:
+            variant_info = [basix.LagrangeVariant.legendre]
+        elif family_type in [EF.serendipity, EF.BDM, EF.N2E]:
+            variant_info = [basix.LagrangeVariant.legendre, basix.DPCVariant.legendre]
+        elif family_type == EF.DPC:
+            variant_info = [basix.DPCVariant.diagonal_gll]
+
+    return BasixElement(create_basix_element(
+        family_type, cell_type, element.degree(), tuple(variant_info), discontinuous))
 
 
-def basix_index(*args):
+def basix_index(indices: typing.Tuple[int]) -> int:
     """Get the Basix index of a derivative."""
-    return basix.index(*args)
+    return basix.index(*indices)
 
 
-def create_quadrature(cellname, degree, rule):
+def create_quadrature(cellname, degree, rule) -> typing.Tuple[numpy.typing.NDArray[numpy.float64],
+                                                              numpy.typing.NDArray[numpy.float64]]:
     """Create a quadrature rule."""
     if cellname == "vertex":
-        return [[]], [1]
+        return (numpy.ones((1, 0), dtype=numpy.float64), numpy.ones(1, dtype=numpy.float64))
 
     quadrature = basix.make_quadrature(
         basix.quadrature.string_to_type(rule), basix.cell.string_to_type(cellname), degree)
@@ -109,28 +118,29 @@ def create_quadrature(cellname, degree, rule):
         warnings.warn(
             f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
             "to reduce number.")
-
     return quadrature
 
 
-def reference_cell_vertices(cellname):
+def reference_cell_vertices(cellname: str) -> numpy.typing.NDArray[numpy.float64]:
     """Get the vertices of a reference cell."""
     return basix.geometry(basix.cell.string_to_type(cellname))
 
 
-def map_facet_points(points, facet, cellname):
+def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int,
+                     cellname: str) -> numpy.typing.NDArray[numpy.float64]:
     """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
-    return [facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
-            for p in points]
+    return numpy.asarray([facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
+                          for p in points], dtype=numpy.float64)
 
 
 class BaseElement(ABC):
     """An abstract element class."""
 
     @abstractmethod
-    def tabulate(self, nderivs: int, points: numpy.ndarray):
+    def tabulate(self, nderivs: int, points: numpy.ndarray) -> typing.Union[
+            typing.List[numpy.typing.NDArray[numpy.float64]], numpy.typing.NDArray[numpy.float64]]:
         """Tabulate the basis functions of the element.
 
         Args:
@@ -200,42 +210,42 @@ class BaseElement(ABC):
 
     @property
     @abstractmethod
-    def num_entity_dofs(self):
+    def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         """Number of DOFs associated with each entity."""
         pass
 
     @property
     @abstractmethod
-    def entity_dofs(self):
+    def entity_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         """DOF numbers associated with each entity."""
         pass
 
     @property
     @abstractmethod
-    def num_entity_closure_dofs(self):
+    def num_entity_closure_dofs(self) -> typing.List[typing.List[int]]:
         """Number of DOFs associated with the closure of each entity."""
         pass
 
     @property
     @abstractmethod
-    def entity_closure_dofs(self):
+    def entity_closure_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         """DOF numbers associated with the closure of each entity."""
         pass
 
     @property
     @abstractmethod
-    def num_global_support_dofs(self):
+    def num_global_support_dofs(self) -> int:
         pass
 
     @property
     @abstractmethod
-    def reference_topology(self):
+    def reference_topology(self) -> typing.List[typing.List[typing.List[int]]]:
         """Topology of the reference element."""
         pass
 
     @property
     @abstractmethod
-    def reference_geometry(self):
+    def reference_geometry(self) -> numpy.typing.NDArray[numpy.float64]:
         """Geometry of the reference element."""
         pass
 
@@ -247,25 +257,25 @@ class BaseElement(ABC):
 
     @property
     @abstractmethod
-    def element_family(self):
+    def element_family(self) -> basix.ElementFamily:
         """Basix element family used to initialise the element."""
         pass
 
     @property
     @abstractmethod
-    def lagrange_variant(self):
+    def lagrange_variant(self) -> basix.LagrangeVariant:
         """Basix Lagrange variant used to initialise the element."""
         pass
 
     @property
     @abstractmethod
-    def dpc_variant(self):
+    def dpc_variant(self) -> basix.DPCVariant:
         """Basix DPC variant used to initialise the element."""
         pass
 
     @property
     @abstractmethod
-    def cell_type(self):
+    def cell_type(self) -> basix.CellType:
         """Basix cell type used to initialise the element."""
         pass
 
@@ -275,40 +285,53 @@ class BaseElement(ABC):
         """True if the discontinuous version of the element is used."""
         pass
 
+    @property
+    @abstractmethod
+    def interpolation_nderivs(self) -> int:
+        """The number of derivatives needed when interpolating."""
+        pass
+
+    @property
+    def is_custom_element(self) -> bool:
+        """True if the element is a custom Basix element."""
+        return False
+
 
 class BasixElement(BaseElement):
     """An element defined by Basix."""
 
-    def __init__(self, family_type, cell_type, degree, variant_info, discontinuous: bool):
-        self.element = basix.create_element(family_type, cell_type, degree, *variant_info,
-                                            discontinuous)
-        self._family = family_type
-        self._cell = cell_type
-        self._discontinuous = discontinuous
+    element: basix.finite_element.FiniteElement
 
-    def tabulate(self, nderivs, points):
+    def __init__(self, element: basix.finite_element.FiniteElement):
+        self.element = element
+
+    def tabulate(self, nderivs: int,
+                 points: numpy.typing.NDArray[numpy.float64]) -> numpy.typing.NDArray[numpy.float64]:
         tab = self.element.tabulate(nderivs, points)
         return tab.transpose((0, 1, 3, 2)).reshape((tab.shape[0], tab.shape[1], -1))
 
-    def get_component_element(self, flat_component):
+    def get_component_element(self, flat_component: int) -> typing.Tuple[ComponentElement, int, int]:
         assert flat_component < self.value_size
         return ComponentElement(self, flat_component), 0, 1
 
     @property
     def element_type(self) -> str:
         """Element type."""
-        return "ufcx_basix_element"
+        if self.is_custom_element:
+            return "ufcx_basix_custom_element"
+        else:
+            return "ufcx_basix_element"
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         return self.element.dim
 
     @property
-    def value_size(self):
+    def value_size(self) -> int:
         return self.element.value_size
 
     @property
-    def value_shape(self):
+    def value_shape(self) -> typing.Tuple[int]:
         """Get the value shape of the element."""
         if len(self.element.value_shape) == 0:
             return (1,)
@@ -316,67 +339,80 @@ class BasixElement(BaseElement):
             return self.element.value_shape
 
     @property
-    def num_entity_dofs(self):
+    def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         return self.element.num_entity_dofs
 
     @property
-    def entity_dofs(self):
+    def entity_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         return self.element.entity_dofs
 
     @property
-    def num_entity_closure_dofs(self):
+    def num_entity_closure_dofs(self) -> typing.List[typing.List[int]]:
         return self.element.num_entity_closure_dofs
 
     @property
-    def entity_closure_dofs(self):
+    def entity_closure_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         return self.element.entity_closure_dofs
 
     @property
-    def num_global_support_dofs(self):
+    def num_global_support_dofs(self) -> int:
         # TODO
         return 0
 
     @property
-    def family_name(self):
+    def family_name(self) -> str:
         return self.element.family.name
 
     @property
-    def reference_topology(self):
+    def reference_topology(self) -> typing.List[typing.List[typing.List[int]]]:
         return basix.topology(self.element.cell_type)
 
     @property
-    def reference_geometry(self):
+    def reference_geometry(self) -> numpy.typing.NDArray[numpy.float64]:
         return basix.geometry(self.element.cell_type)
 
     @property
-    def element_family(self):
-        return self._family
+    def element_family(self) -> basix.ElementFamily:
+        return self.element.family
 
     @property
-    def lagrange_variant(self):
+    def lagrange_variant(self) -> basix.LagrangeVariant:
         return self.element.lagrange_variant
 
     @property
-    def dpc_variant(self):
+    def dpc_variant(self) -> basix.DPCVariant:
         return self.element.dpc_variant
 
     @property
-    def cell_type(self):
-        return self._cell
+    def cell_type(self) -> basix.CellType:
+        return self.element.cell_type
 
     @property
-    def discontinuous(self):
-        return self._discontinuous
+    def discontinuous(self) -> bool:
+        return self.element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.element.interpolation_nderivs
+
+    @property
+    def is_custom_element(self) -> bool:
+        """True if the element is a custom Basix element."""
+        return self.element.family == basix.ElementFamily.custom
 
 
 class ComponentElement(BaseElement):
     """An element representing one component of a BasixElement."""
 
-    def __init__(self, element, component):
+    element: BasixElement
+    component: int
+
+    def __init__(self, element: BasixElement, component: int):
         self.element = element
         self.component = component
 
-    def tabulate(self, nderivs, points):
+    def tabulate(self, nderivs: int, points:
+                 numpy.typing.NDArray[numpy.float64]) -> typing.List[numpy.typing.NDArray[numpy.float64]]:
         tables = self.element.tabulate(nderivs, points)
         output = []
         for tbl in tables:
@@ -443,34 +479,41 @@ class ComponentElement(BaseElement):
         raise NotImplementedError
 
     @property
-    def element_family(self):
+    def element_family(self) -> basix.ElementFamily:
         return self.element.element_family
 
     @property
-    def lagrange_variant(self):
+    def lagrange_variant(self) -> basix.LagrangeVariant:
         return self.element.lagrange_variant
 
     @property
-    def dpc_variant(self):
+    def dpc_variant(self) -> basix.DPCVariant:
         return self.element.dpc_variant
 
     @property
-    def cell_type(self):
+    def cell_type(self) -> basix.CellType:
         return self.element.cell_type
 
     @property
-    def discontinuous(self):
+    def discontinuous(self) -> bool:
         return self.element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.element.interpolation_nderivs
 
 
 class MixedElement(BaseElement):
     """A mixed element that combines two or more elements."""
 
-    def __init__(self, sub_elements):
+    sub_elements: typing.List[BaseElement]
+
+    def __init__(self, sub_elements: typing.List[BaseElement]):
         assert len(sub_elements) > 0
         self.sub_elements = sub_elements
 
-    def tabulate(self, nderivs, points):
+    def tabulate(self, nderivs: int, points: numpy.typing.NDArray[numpy.float64]) -> typing.List[
+            numpy.typing.NDArray[numpy.float64]]:
         tables = []
         results = [e.tabulate(nderivs, points) for e in self.sub_elements]
         for deriv_tables in zip(*results):
@@ -483,7 +526,7 @@ class MixedElement(BaseElement):
             tables.append(new_table)
         return tables
 
-    def get_component_element(self, flat_component):
+    def get_component_element(self, flat_component: int) -> tuple[BaseElement, int, int]:
         sub_dims = [0] + [e.dim for e in self.sub_elements]
         sub_cmps = [0] + [e.value_size for e in self.sub_elements]
 
@@ -507,26 +550,27 @@ class MixedElement(BaseElement):
         return "ufcx_mixed_element"
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         return sum(e.dim for e in self.sub_elements)
 
     @property
-    def value_size(self):
+    def value_size(self) -> int:
         return sum(e.value_size for e in self.sub_elements)
 
     @property
-    def value_shape(self):
+    def value_shape(self) -> typing.Tuple[int]:
         return (sum(e.value_size for e in self.sub_elements), )
 
     @property
-    def num_entity_dofs(self):
+    def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         data = [e.num_entity_dofs for e in self.sub_elements]
         return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
                 for tdim, entities in enumerate(data[0])]
 
     @property
-    def entity_dofs(self):
-        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_dofs]
+    def entity_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
+        dofs: typing.List[typing.List[typing.List[int]]] = [[[] for i in entities]
+                                                            for entities in self.sub_elements[0].entity_dofs]
         start_dof = 0
         for e in self.sub_elements:
             for tdim, entities in enumerate(e.entity_dofs):
@@ -536,14 +580,15 @@ class MixedElement(BaseElement):
         return dofs
 
     @property
-    def num_entity_closure_dofs(self):
+    def num_entity_closure_dofs(self) -> typing.List[typing.List[int]]:
         data = [e.num_entity_closure_dofs for e in self.sub_elements]
         return [[sum(d[tdim][entity_n] for d in data) for entity_n, _ in enumerate(entities)]
                 for tdim, entities in enumerate(data[0])]
 
     @property
-    def entity_closure_dofs(self):
-        dofs = [[[] for i in entities] for entities in self.sub_elements[0].entity_closure_dofs]
+    def entity_closure_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
+        dofs: typing.List[typing.List[typing.List[int]]] = [[[] for i in entities]
+                                                            for entities in self.sub_elements[0].entity_closure_dofs]
         start_dof = 0
         for e in self.sub_elements:
             for tdim, entities in enumerate(e.entity_closure_dofs):
@@ -553,46 +598,50 @@ class MixedElement(BaseElement):
         return dofs
 
     @property
-    def num_global_support_dofs(self):
+    def num_global_support_dofs(self) -> int:
         return sum(e.num_global_support_dofs for e in self.sub_elements)
 
     @property
-    def family_name(self):
+    def family_name(self) -> str:
         return "mixed element"
 
     @property
-    def reference_topology(self):
+    def reference_topology(self) -> typing.List[typing.List[typing.List[int]]]:
         return self.sub_elements[0].reference_topology
 
     @property
-    def reference_geometry(self):
+    def reference_geometry(self) -> numpy.typing.NDArray[numpy.float64]:
         return self.sub_elements[0].reference_geometry
 
     @property
-    def lagrange_variant(self):
+    def lagrange_variant(self) -> basix.LagrangeVariant:
         return None
 
     @property
-    def dpc_variant(self):
+    def dpc_variant(self) -> basix.DPCVariant:
         return None
 
     @property
-    def element_family(self):
+    def element_family(self) -> basix.ElementFamily:
         return None
 
     @property
-    def cell_type(self):
+    def cell_type(self) -> basix.CellType:
         return None
 
     @property
-    def discontinuous(self):
+    def discontinuous(self) -> bool:
         return False
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return max([e.interpolation_nderivs for e in self.sub_elements])
 
 
 class BlockedElement(BaseElement):
     """An element with a block size that contains multiple copies of a sub element."""
 
-    def __init__(self, sub_element, block_size, block_shape=None):
+    def __init__(self, sub_element: BaseElement, block_size: int, block_shape: typing.Tuple[int] = None):
         assert block_size > 0
         if sub_element.value_size != 1:
             raise ValueError("Blocked elements (VectorElement and TensorElement) of "
@@ -606,7 +655,7 @@ class BlockedElement(BaseElement):
         else:
             self.block_shape = block_shape
 
-    def tabulate(self, nderivs, points):
+    def tabulate(self, nderivs, points) -> typing.List[numpy.typing.NDArray[numpy.float64]]:
         assert len(self.block_shape) == 1  # TODO: block shape
         assert self.value_size == self.block_size  # TODO: remove this assumption
         output = []
@@ -618,94 +667,101 @@ class BlockedElement(BaseElement):
             output.append(new_table)
         return output
 
-    def get_component_element(self, flat_component):
+    def get_component_element(self, flat_component) -> typing.Tuple[BaseElement, int, int]:
         return self.sub_element, flat_component, self.block_size
 
     @property
-    def element_type(self):
+    def element_type(self) -> str:
         """Element type."""
         return self.sub_element.element_type
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         return self.sub_element.dim * self.block_size
 
     @property
-    def value_size(self):
+    def value_size(self) -> int:
         return self.block_size * self.sub_element.value_size
 
     @property
-    def value_shape(self):
+    def value_shape(self) -> typing.Tuple[int]:
         return (self.value_size, )
 
     @property
-    def num_entity_dofs(self):
+    def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         return [[j * self.block_size for j in i] for i in self.sub_element.num_entity_dofs]
 
     @property
-    def entity_dofs(self):
+    def entity_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         # TODO: should this return this, or should it take blocks into
         # account?
         return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
                  for j in i] for i in self.sub_element.entity_dofs]
 
     @property
-    def num_entity_closure_dofs(self):
+    def num_entity_closure_dofs(self) -> typing.List[typing.List[int]]:
         return [[j * self.block_size for j in i] for i in self.sub_element.num_entity_closure_dofs]
 
     @property
-    def entity_closure_dofs(self):
+    def entity_closure_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         # TODO: should this return this, or should it take blocks into
         # account?
         return [[[k * self.block_size + b for k in j for b in range(self.block_size)]
                  for j in i] for i in self.sub_element.entity_closure_dofs]
 
     @property
-    def num_global_support_dofs(self):
+    def num_global_support_dofs(self) -> int:
         return self.sub_element.num_global_support_dofs * self.block_size
 
     @property
-    def family_name(self):
+    def family_name(self) -> str:
         return self.sub_element.family_name
 
     @property
-    def reference_topology(self):
+    def reference_topology(self) -> typing.List[typing.List[typing.List[int]]]:
         return self.sub_element.reference_topology
 
     @property
-    def reference_geometry(self):
+    def reference_geometry(self) -> numpy.typing.NDArray[numpy.float64]:
         return self.sub_element.reference_geometry
 
     @property
-    def lagrange_variant(self):
+    def lagrange_variant(self) -> basix.LagrangeVariant:
         return self.sub_element.lagrange_variant
 
     @property
-    def dpc_variant(self):
+    def dpc_variant(self) -> basix.DPCVariant:
         return self.sub_element.dpc_variant
 
     @property
-    def element_family(self):
+    def element_family(self) -> basix.ElementFamily:
         return self.sub_element.element_family
 
     @property
-    def cell_type(self):
+    def cell_type(self) -> basix.CellType:
         return self.sub_element.cell_type
 
     @property
-    def discontinuous(self):
+    def discontinuous(self) -> bool:
         return self.sub_element.discontinuous
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return self.sub_element.interpolation_nderivs
 
 
 class QuadratureElement(BaseElement):
     """A quadrature element."""
+
+    _points: numpy.typing.NDArray[numpy.float64]
 
     def __init__(self, ufl_element):
         self._points, _ = create_quadrature(ufl_element.cell().cellname(),
                                             ufl_element.degree(), ufl_element.quadrature_scheme())
         self._ufl_element = ufl_element
 
-    def tabulate(self, nderivs, points):
+    def tabulate(self, nderivs: int,
+                 points: numpy.typing.NDArray[numpy.float64]) -> typing.List[numpy.typing.NDArray[numpy.float64]]:
         if nderivs > 0:
             raise ValueError("Cannot take derivatives of Quadrature element.")
 
@@ -714,7 +770,7 @@ class QuadratureElement(BaseElement):
         tables = [numpy.eye(points.shape[0], points.shape[0])]
         return tables
 
-    def get_component_element(self, flat_component):
+    def get_component_element(self, flat_component: int) -> typing.Tuple[BaseElement, int, int]:
         return self, 0, 1
 
     @property
@@ -723,19 +779,19 @@ class QuadratureElement(BaseElement):
         return "ufcx_quadrature_element"
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         return self._points.shape[0]
 
     @property
-    def value_size(self):
+    def value_size(self) -> int:
         return 1
 
     @property
-    def value_shape(self):
+    def value_shape(self) -> typing.Tuple[int]:
         return (1,)
 
     @property
-    def num_entity_dofs(self):
+    def num_entity_dofs(self) -> typing.List[typing.List[int]]:
         dofs = []
         tdim = self._ufl_element.cell().topological_dimension()
 
@@ -752,7 +808,7 @@ class QuadratureElement(BaseElement):
         return dofs
 
     @property
-    def entity_dofs(self):
+    def entity_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         start_dof = 0
         entity_dofs = []
         for i in self.num_entity_dofs:
@@ -764,15 +820,15 @@ class QuadratureElement(BaseElement):
         return entity_dofs
 
     @property
-    def num_entity_closure_dofs(self):
+    def num_entity_closure_dofs(self) -> typing.List[typing.List[int]]:
         return self.num_entity_dofs
 
     @property
-    def entity_closure_dofs(self):
+    def entity_closure_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
         return self.entity_dofs
 
     @property
-    def num_global_support_dofs(self):
+    def num_global_support_dofs(self) -> int:
         return 0
 
     @property
@@ -784,25 +840,29 @@ class QuadratureElement(BaseElement):
         raise NotImplementedError
 
     @property
-    def family_name(self):
+    def family_name(self) -> str:
         return self._ufl_element.family()
 
     @property
-    def lagrange_variant(self):
+    def lagrange_variant(self) -> basix.LagrangeVariant:
         return None
 
     @property
-    def dpc_variant(self):
+    def dpc_variant(self) -> basix.DPCVariant:
         return None
 
     @property
-    def element_family(self):
+    def element_family(self) -> basix.ElementFamily:
         return None
 
     @property
-    def cell_type(self) -> None:
+    def cell_type(self) -> basix.CellType:
         return None
 
     @property
-    def discontinuous(self):
+    def discontinuous(self) -> bool:
         return False
+
+    @property
+    def interpolation_nderivs(self) -> int:
+        return 0
