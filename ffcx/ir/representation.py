@@ -19,13 +19,15 @@ representation under the key "foo".
 import itertools
 import logging
 import numbers
+import typing
 import warnings
-from collections import namedtuple
 
+import basix
 import numpy
 import ufl
 from ffcx import naming
-from ffcx.element_interface import create_element
+from ffcx.analysis import UFLData
+from ffcx.element_interface import BaseElement, create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -34,40 +36,137 @@ from ufl.sorting import sorted_expr_sum
 
 logger = logging.getLogger("ffcx")
 
-ir_form = namedtuple('ir_form', [
-    'id', 'name', 'signature', 'rank', 'num_coefficients', 'num_constants',
-    'name_from_uflfile', 'function_spaces', 'original_coefficient_position',
-    'coefficient_names', 'constant_names', 'finite_elements',
-    'dofmaps', 'integral_names', 'subdomain_ids'])
-ir_element = namedtuple('ir_element', [
-    'id', 'name', 'signature', 'cell_shape', 'topological_dimension',
-    'geometric_dimension', 'space_dimension', 'value_shape', 'reference_value_shape', 'degree',
-    'family', 'num_sub_elements', 'block_size', 'sub_elements', 'element_type', 'entity_dofs',
-    'lagrange_variant', 'dpc_variant', 'basix_family', 'basix_cell', 'discontinuous', 'custom_element'])
-ir_dofmap = namedtuple('ir_dofmap', [
-    'id', 'name', 'signature', 'num_global_support_dofs', 'num_element_support_dofs', 'num_entity_dofs',
-    'tabulate_entity_dofs', 'num_entity_closure_dofs', 'tabulate_entity_closure_dofs', 'num_sub_dofmaps',
-    'sub_dofmaps', 'block_size'])
-ir_integral = namedtuple('ir_integral', [
-    'integral_type', 'subdomain_id', 'rank', 'geometric_dimension', 'topological_dimension', 'entitytype',
-    'num_facets', 'num_vertices', 'enabled_coefficients', 'element_dimensions',
-    'element_ids', 'tensor_shape', 'coefficient_numbering', 'coefficient_offsets',
-    'original_constant_offsets', 'params', 'cell_shape', 'unique_tables', 'unique_table_types',
-    'table_dofmaps', 'integrand', 'name', 'precision', 'needs_facet_permutations', 'coordinate_element'])
-ir_expression = namedtuple('ir_expression', [
-    'name', 'element_dimensions', 'params', 'unique_tables', 'unique_table_types', 'integrand',
-    'table_dofmaps', 'coefficient_numbering', 'coefficient_offsets',
-    'integral_type', 'entitytype', 'tensor_shape', 'expression_shape', 'original_constant_offsets',
-    'original_coefficient_positions', 'points', 'coefficient_names', 'constant_names', 'needs_facet_permutations',
-    'function_spaces', 'name_from_uflfile'])
-ir_custom_element = namedtuple('ir_custom_element', [
-    'cell_type', 'value_shape', 'wcoeffs', 'x', 'M', 'map_type', 'interpolation_nderivs',
-    'discontinuous', 'highest_complete_degree', 'highest_degree'])
 
-ir_data = namedtuple('ir_data', ['elements', 'dofmaps', 'integrals', 'forms', 'expressions'])
+class FormIR(typing.NamedTuple):
+    id: int
+    name: str
+    signature: str
+    rank: int
+    num_coefficients: int
+    num_constants: int
+    name_from_uflfile: str
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    original_coefficient_position: typing.List[int]
+    coefficient_names: typing.List[str]
+    constant_names: typing.List[str]
+    finite_elements: typing.List[str]
+    dofmaps: typing.List[str]
+    integral_names: typing.Dict[str, typing.List[str]]
+    subdomain_ids: typing.Dict[str, typing.List[int]]
 
 
-def compute_ir(analysis, object_names, prefix, parameters, visualise):
+class CustomElementIR(typing.NamedTuple):
+    cell_type: basix.CellType
+    value_shape: typing.Tuple[int]
+    wcoeffs: numpy.typing.NDArray[numpy.float64]
+    x: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
+    M: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
+    map_type: basix.MapType
+    interpolation_nderivs: int
+    discontinuous: bool
+    highest_complete_degree: int
+    highest_degree: int
+
+
+class ElementIR(typing.NamedTuple):
+    id: int
+    name: str
+    signature: str
+    cell_shape: str
+    topological_dimension: int
+    geometric_dimension: int
+    space_dimension: int
+    value_shape: typing.Tuple[int]
+    reference_value_shape: typing.Tuple[int]
+    degree: int
+    family: str
+    num_sub_elements: int
+    block_size: int
+    sub_elements: typing.List[str]
+    element_type: str
+    entity_dofs: typing.List[typing.List[typing.List[int]]]
+    lagrange_variant: basix.LagrangeVariant
+    dpc_variant: basix.DPCVariant
+    basix_family: basix.ElementFamily
+    basix_cell: basix.CellType
+    discontinuous: bool
+    custom_element: CustomElementIR
+
+
+class DofMapIR(typing.NamedTuple):
+    id: int
+    name: str
+    signature: str
+    num_global_support_dofs: int
+    num_element_support_dofs: int
+    entity_dofs: typing.List[typing.List[typing.List[int]]]
+    num_entity_dofs: typing.List[typing.List[int]]
+    entity_closure_dofs: typing.List[typing.List[typing.List[int]]]
+    num_entity_closure_dofs: typing.List[typing.List[int]]
+    num_sub_dofmaps: int
+    sub_dofmaps: typing.List[str]
+    block_size: int
+
+
+class IntegralIR(typing.NamedTuple):
+    integral_type: str
+    subdomain_id: typing.Union[str, typing.Tuple[int], int]
+    rank: int
+    geometric_dimension: int
+    topological_dimension: int
+    entitytype: str
+    num_facets: int
+    num_vertices: int
+    enabled_coefficients: typing.List[bool]
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    element_ids: typing.Dict[ufl.FiniteElementBase, int]
+    tensor_shape: typing.List[int]
+    coefficient_numbering: typing.Dict[ufl.Coefficient, int]
+    coefficient_offsets: typing.Dict[ufl.Coefficient, int]
+    original_constant_offsets: typing.Dict[ufl.Constant, int]
+    params: dict
+    cell_shape: str
+    unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
+    unique_table_types: typing.Dict[str, str]
+    integrand: typing.Dict[QuadratureRule, dict]
+    name: str
+    precision: int
+    needs_facet_permutations: bool
+    coordinate_element: str
+
+
+class ExpressionIR(typing.NamedTuple):
+    name: str
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    params: dict
+    unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
+    unique_table_types: typing.Dict[str, str]
+    integrand: typing.Dict[QuadratureRule, dict]
+    coefficient_numbering: typing.Dict[ufl.Coefficient, int]
+    coefficient_offsets: typing.Dict[ufl.Coefficient, int]
+    integral_type: str
+    entitytype: str
+    tensor_shape: typing.List[int]
+    expression_shape: typing.List[int]
+    original_constant_offsets: typing.Dict[ufl.Constant, int]
+    points: numpy.typing.NDArray[numpy.float64]
+    coefficient_names: typing.List[str]
+    constant_names: typing.List[str]
+    needs_facet_permutations: bool
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    name_from_uflfile: str
+    original_coefficient_positions: typing.List[int]
+
+
+class DataIR(typing.NamedTuple):
+    elements: typing.List[ElementIR]
+    dofmaps: typing.List[DofMapIR]
+    integrals: typing.List[IntegralIR]
+    forms: typing.List[FormIR]
+    expressions: typing.List[ExpressionIR]
+
+
+def compute_ir(analysis: UFLData, object_names, prefix, parameters, visualise):
     """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
@@ -113,9 +212,9 @@ def compute_ir(analysis, object_names, prefix, parameters, visualise):
                                              finite_element_names, dofmap_names)
                       for i, expr in enumerate(analysis.expressions)]
 
-    return ir_data(elements=ir_elements, dofmaps=ir_dofmaps,
-                   integrals=ir_integrals, forms=ir_forms,
-                   expressions=ir_expressions)
+    return DataIR(elements=ir_elements, dofmaps=ir_dofmaps,
+                  integrals=ir_integrals, forms=ir_forms,
+                  expressions=ir_expressions)
 
 
 def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
@@ -165,10 +264,10 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     else:
         ir["custom_element"] = None
 
-    return ir_element(**ir)
+    return ElementIR(**ir)
 
 
-def _compute_custom_element_ir(basix_element):
+def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement):
     """Compute intermediate representation of a custom Basix element."""
     ir = {}
     ir["cell_type"] = basix_element.cell_type
@@ -182,7 +281,7 @@ def _compute_custom_element_ir(basix_element):
     ir["highest_complete_degree"] = basix_element.highest_complete_degree
     ir["highest_degree"] = basix_element.highest_degree
 
-    return ir_custom_element(**ir)
+    return CustomElementIR(**ir)
 
 
 def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
@@ -215,18 +314,19 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
             raise RuntimeError("Elements with different numbers of DOFs on subentities of the same dimension"
                                " are not yet supported in FFCx.")
 
+    # FIXME: This does not work for prisms and pyramids
     num_dofs_per_entity = [i[0] for i in basix_element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["tabulate_entity_dofs"] = (basix_element.entity_dofs, num_dofs_per_entity)
+    ir["entity_dofs"] = basix_element.entity_dofs
 
     num_dofs_per_entity_closure = [i[0] for i in basix_element.num_entity_closure_dofs]
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
-    ir["tabulate_entity_closure_dofs"] = (basix_element.entity_closure_dofs, num_dofs_per_entity_closure)
+    ir["entity_closure_dofs"] = basix_element.entity_closure_dofs
 
     ir["num_global_support_dofs"] = basix_element.num_global_support_dofs
     ir["num_element_support_dofs"] = basix_element.dim - ir["num_global_support_dofs"]
 
-    return ir_dofmap(**ir)
+    return DofMapIR(**ir)
 
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
@@ -379,7 +479,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             _offset += numpy.product(constant.ufl_shape, dtype=int)
 
         ir["original_constant_offsets"] = original_constant_offsets
-
         ir["precision"] = itg_data.metadata["precision"]
 
         # Create map from number of quadrature points -> integrand
@@ -395,13 +494,13 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         # Fetch name
         ir["name"] = integral_names[(form_index, itg_data_index)]
 
-        irs.append(ir_integral(**ir))
+        irs.append(IntegralIR(**ir))
 
     return irs
 
 
 def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, element_numbers, finite_element_names,
-                     dofmap_names, object_names):
+                     dofmap_names, object_names) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
 
@@ -483,7 +582,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
                     ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
                     ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
 
-    return ir_form(**ir)
+    return FormIR(**ir)
 
 
 def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, object_names,
@@ -603,4 +702,4 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     ir.update(expression_ir)
 
-    return ir_expression(**ir)
+    return ExpressionIR(**ir)
