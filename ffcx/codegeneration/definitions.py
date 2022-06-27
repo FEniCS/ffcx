@@ -11,6 +11,7 @@ import ufl
 from ffcx.element_interface import create_element
 from ffcx.codegeneration.indices import create_quadrature_index, create_dof_index
 from ffcx.codegeneration.C.cnodes import Symbol
+from ffcx.codegeneration.optimise import sum_factorise
 from ffcx.ir.elementtables import UniqueTableReference
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
@@ -117,8 +118,10 @@ class FFCXBackendDefinitions(object):
 
         if iq.dim > 1:
             code += [lang.ArrayDecl(scalar_type, access, iq.ranges, values=[0.0])]
-            body = [lang.AssignAdd(access[iq], dof_access * table_access)]
-            code += [lang.NestedForRange([iq, ic], body)]
+            lhs = lang.Product([dof_access, table_access])
+            body = [lang.AssignAdd(access[iq], lhs)]
+            loop = lang.NestedForRange([iq, ic], body)
+            code += [sum_factorise(lang, loop, scalar_type)]
         else:
             body = [lang.AssignAdd(access, dof_access * table_access)]
             code += [lang.VariableDecl(scalar_type, access, 0.0)]
@@ -228,8 +231,10 @@ class FFCXBackendDefinitions(object):
         code = []
         if iq.dim > 1:
             code += [lang.ArrayDecl(scalar_type, access, iq.ranges, values=[0.0])]
-            body = [lang.AssignAdd(access[iq], dof_access * table_access)]
-            code += [lang.NestedForRange([iq, ic], body)]
+            lhs = lang.Product([dof_access, table_access])
+            body = [lang.AssignAdd(access[iq], lhs)]
+            loop = lang.NestedForRange([iq, ic], body)
+            code += [sum_factorise(lang, loop, scalar_type)]
         else:
             code += [lang.VariableDecl(scalar_type, access, 0.0)]
             body = [lang.AssignAdd(access, dof_access * table_access)]

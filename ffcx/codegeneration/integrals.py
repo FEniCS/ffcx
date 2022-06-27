@@ -10,11 +10,10 @@ from typing import List, Tuple
 
 import ufl
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration.indices import MultiIndex
 from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.indices import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.optimise import fuse_loops
+from ffcx.codegeneration.optimise import fuse_loops, sum_factorise
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode, BinOp
 from ffcx.ir.elementtables import piecewise_ttypes
@@ -413,17 +412,17 @@ class IntegralGenerator(object):
         definitions = dict()
         pre_definitions = dict()
         intermediates = []
+        quadrature_values = []
 
         use_symbol_array = True
+
+        iq = create_quadrature_index(lang, quadrature_rule)
 
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
             v = attr['expression']
             mt = attr.get('mt')
-
-            iq = create_quadrature_index(lang, quadrature_rule)
-
 
             # Generate code only if the expression is not already in
             # cache
@@ -438,8 +437,7 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
-                    # vaccess = lang.as_symbol(vaccess[iq])
-                    print(type(vaccess))
+                    quadrature_values.append(vaccess)
 
                     predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
                     if predef:
@@ -462,6 +460,7 @@ class IntegralGenerator(object):
 
                     # Mapping UFL operator to target language
                     self._ufl_names.add(v._ufl_handler_name_)
+
                     vexpr = self.backend.ufl_to_language.get(v, *vops)
 
                     # Create a new intermediate for each subexpression
@@ -503,10 +502,30 @@ class IntegralGenerator(object):
 
         if intermediates:
             if use_symbol_array:
-                padlen = self.ir.params["padlen"]
                 declaration = [lang.ArrayDecl(self.backend.access.parameters["scalar_type"],
                                               symbol, len(intermediates))]
                 intermediates.insert(0, declaration)
+
+        def substitute_acess(intermediates, quadrature_values):
+            if (isinstance(intermediates, list)):
+                new_intermediates = []
+                for intermediate in intermediates:
+                    expression = substitute_acess(intermediate, quadrature_values)
+                    new_intermediates.append(expression)
+                return new_intermediates
+            elif isinstance(intermediates, lang.Call):
+                return intermediates
+            elif hasattr(intermediates, 'rhs'):
+                intermediates.rhs = substitute_acess(intermediates.rhs, quadrature_values)
+                intermediates.lhs = substitute_acess(intermediates.lhs, quadrature_values)
+                return intermediates
+            else:
+                if intermediates in quadrature_values:
+                    return intermediates[iq]
+                else:
+                    return intermediates
+        if iq.dim > 1:
+            intermediates = substitute_acess(intermediates, quadrature_values)
 
         return pre_definitions, parts, intermediates
 
@@ -585,6 +604,7 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
+        scalar_type = self.backend.access.parameters["scalar_type"]
         iq = create_quadrature_index(lang, quadrature_rule)
 
         for blockdata in blocklist:
@@ -629,8 +649,7 @@ class IntegralGenerator(object):
                 key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
-                    scalar_type = self.backend.access.parameters["scalar_type"]
-                    if iq.dim > 0:
+                    if iq.dim > 1:
                         preparts += [lang.ArrayDecl(scalar_type, fw, iq.ranges, values=[0.0])]
                         intermediates += [lang.Assign(fw[iq], fw_rhs)]
                     else:
@@ -646,7 +665,10 @@ class IntegralGenerator(object):
             # Fetch code to access modified arguments
             arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
 
-            B_rhs = lang.float_product([fw] + arg_factors)
+            if iq.dim > 1:
+                B_rhs = lang.float_product([fw[iq]] + arg_factors)
+            else:
+                B_rhs = lang.float_product([fw] + arg_factors)
 
             A_indices = []
             for i in range(block_rank):
@@ -675,16 +697,15 @@ class IntegralGenerator(object):
         body: List[CNode] = []
 
         for indices in keep:
-            sum = lang.Sum(keep[indices])
-            body.append(lang.AssignAdd(A[indices], sum))
+            body.append(lang.AssignAdd(A[indices], lang.Sum(keep[indices])))
 
         if iq.dim > 1:
             B_indices.insert(0, iq)
 
-        body = [lang.NestedForRange(B_indices, body)]
-
+        body = sum_factorise(lang, lang.NestedForRange(B_indices, body), scalar_type)
+        
         quadparts += pre_loop
         quadparts += hoist_code
-        quadparts += body
+        quadparts += [body]
 
         return preparts, quadparts, intermediates
