@@ -8,6 +8,7 @@ import collections
 import logging
 from typing import List, Tuple
 import numpy
+import copy
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -462,17 +463,26 @@ class IntegralGenerator(object):
                         vaccess = vexpr
                     else:
                         # Record assignment of vexpr to intermediate variable
-                        j = len(intermediates)
-                        if use_symbol_array:
-                            vaccess = symbol[j]
-                            intermediates.append(L.Assign(vaccess, vexpr))
+                        batch_size = self.backend.access.parameters["batch_size"]
+                        if isinstance(vexpr, L.Call) and batch_size > 1:
+                            for b in range(batch_size):
+                                argument = copy.deepcopy(vexpr.arguments[0])
+                                vaccess = symbol[j][b]
+                                new_vexpr = copy.deepcopy(vexpr)
+                                new_vexpr.arguments[0] = argument[b]
+                                intermediates.append(L.Assign(vaccess, new_vexpr))
                         else:
-                            scalar_type = self.backend.access.parameters["scalar_type"]
-                            batch_size = self.backend.access.parameters["batch_size"]
-                            if batch_size > 1:
-                                scalar_type += str(batch_size)
-                            vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                            intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
+                            j = len(intermediates)
+                            if use_symbol_array:
+                                vaccess = symbol[j]
+                                intermediates.append(L.Assign(vaccess, vexpr))
+                            else:
+                                scalar_type = self.backend.access.parameters["scalar_type"]
+                                batch_size = self.backend.access.parameters["batch_size"]
+                                if batch_size > 1:
+                                    scalar_type += str(batch_size)
+                                vaccess = L.Symbol("%s_%d" % (symbol.name, j))
+                                intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
