@@ -754,6 +754,7 @@ class FlattenedArray(object):
                 else:
                     strides[i] = d * s
         else:
+            raise RuntimeError("Used strides")
             self.dims = None
             assert isinstance(strides, (list, tuple))
             strides = tuple(as_cexpr(i) for i in strides)
@@ -781,6 +782,7 @@ class FlattenedArray(object):
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
         else:
+            raise RuntimeError("Incomplete indices")
             return FlattenedArray(self.array, strides=self.strides[n:], offset=flat)
 
 

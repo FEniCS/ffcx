@@ -147,10 +147,8 @@ class FFCXBackendDefinitions(object):
             offset = 1
 
         value_type = scalar_to_value_type(self.parameters["scalar_type"])
-
-        code = []
+        code = [L.VariableDecl(f"{value_type}", access, 0.0)]
         body = [L.AssignAdd(access, dof_access[(offset, ic, begin)] * FE[ic])]
-        code += [L.VariableDecl(f"{value_type}", access, 0.0)]
         code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
