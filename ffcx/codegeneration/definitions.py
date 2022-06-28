@@ -140,18 +140,19 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = self.symbols.S("coordinate_dofs")
+        dof_access = L.FlattenedArray("coordinate_dofs", dims=(2, num_scalar_dofs, 3))
+        # dof_access = self.symbols.S("coordinate_dofs")
 
         # coordinate dofs is always 3d
         dim = 3
         offset = 0
         if mt.restriction == "-":
-            offset = num_scalar_dofs * dim
+            offset = 1
 
         value_type = scalar_to_value_type(self.parameters["scalar_type"])
 
         code = []
-        body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
+        body = [L.AssignAdd(access, dof_access[(offset, begin, ic)] * FE[ic])]
         code += [L.VariableDecl(f"{value_type}", access, 0.0)]
         code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
