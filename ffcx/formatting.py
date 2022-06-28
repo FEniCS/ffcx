@@ -58,7 +58,7 @@ c_extern_post = """
 """
 
 
-def format_code(code, parameters):
+def format_code(code, parameters: dict):
     """Format given code in UFC format. Returns two strings with header and source file contents."""
     logger.info(79 * "*")
     logger.info("Compiler stage 5: Formatting code")
@@ -122,7 +122,7 @@ def _generate_comment(parameters):
     return comment
 
 
-def _generate_includes(parameters):
+def _generate_includes(parameters: dict):
 
     default_h_includes = [
         "#include <ufcx.h>",
