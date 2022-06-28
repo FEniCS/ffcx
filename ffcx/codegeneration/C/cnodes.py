@@ -1220,7 +1220,11 @@ class VariableDecl(CStatement):
 
     def cs_format(self, precision=None):
         code = self.typename + " " + self.symbol.name
-        if self.value is not None:
+        lbr = " { "
+        rbr = " } "
+        if _is_zero_valued(self.value):
+            code += " = " + lbr + self.value.ce_format(precision) + rbr
+        elif self.value is not None:
             code += " = " + self.value.ce_format(precision)
         return code + ";"
 
