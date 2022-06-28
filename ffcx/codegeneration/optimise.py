@@ -5,8 +5,18 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import collections
-
+import numpy
 from ffcx.codegeneration.indices import MultiIndex
+
+
+def flatten_list(original_list):
+    flat_list = []
+    if isinstance(original_list, (list, tuple)):
+        for sublist in original_list:
+            flat_list += flatten_list(sublist)
+        return flat_list
+    else:
+        return [original_list]
 
 
 def fuse_loops(lang, definitions):
@@ -22,25 +32,53 @@ def fuse_loops(lang, definitions):
     indices = collections.defaultdict(MultiIndex)
 
     pre_loop = []
+    # flatten_list = list(itertools.chain(*definitions.items()))
+    #
 
-    for access, definition in definitions.items():
-        for d in definition:
-            if isinstance(d, lang.NestedForRange):
-                index = d.multi_indices[0]
-                if index.dim == 1:
-                    hash_ = hash(index)
-                    bodies[hash_] += [d.body()]
-                    indices[hash_] = index
-                else:
-                    pre_loop += [d]
+    definitions = flatten_list(list(definitions.items()))
+    definitions = [d for d in definitions if not isinstance(d, str)]
+
+    for definition in definitions:
+        if isinstance(definition, lang.NestedForRange):
+            if definition.depth == 1:
+                index_set = tuple(definition.indices)
+                hash_ = hash(index_set)
+                bodies[hash_] += [definition.body()]
+                indices[hash_] = definition.multi_indices[0]
             else:
-                pre_loop += [d]
+                pre_loop += [definition]
+        else:
+            pre_loop += [definition]
 
     fused = []
+
     for key in indices.keys():
         body = bodies[key]
         index = indices[key]
         fused += [lang.NestedForRange([index], body)]
+
+    # for access, definition in definitions.items():
+    #     for defs in definition:
+    #         if not isinstance(defs, list):
+    #             defs = [defs]
+
+    #         for d in defs:
+    #             if isinstance(d, lang.NestedForRange):
+    #                 index = d.multi_indices[0]
+    #                 if index.dim >= 1:
+    #                     hash_ = hash(index)
+    #                     bodies[hash_] += [d.body()]
+    #                     indices[hash_] = index
+    #                 else:
+    #                     pre_loop += [d]
+    #             else:
+    #                 pre_loop += [d]
+
+    # fused = []
+    # for key in indices.keys():
+    #     body = bodies[key]
+    #     index = indices[key]
+    #     fused += [lang.NestedForRange([index], body)]
 
     code = []
     code += pre_loop
@@ -72,38 +110,69 @@ def compute_sizes(index_set, indices, sizes):
     return ranges
 
 
+def extract_multi_index(lang, tensor, all_indices, all_sizes):
+    indices = extract_indices(lang, tensor.indices)
+    sizes = compute_sizes(indices, all_indices, all_sizes)
+    return MultiIndex(lang, indices, sizes)
+
+
+def transpose_tensor(lang, A, Ia, Ib, scalar_type):
+    code = []
+    name = A.array.name + "transp"
+    A_t = lang.Symbol(name)
+    code += [lang.ArrayDecl(scalar_type, A_t, [Ib.global_size()], values=0.0)]
+    body = lang.AssignAdd(A_t[Ib.global_idx()], A)
+    code += [lang.NestedForRange([Ib], body)]
+    return code, A_t
+
+
 # Let A, B, C be nd-tensors, this function generates code
 # for computing the tensor contraction
 # C{Ic} = A{Ia} * B {Ib}
 def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type):
     code = []
 
-    Ib = set(extract_indices(lang, B.indices))
-    Ia = set(extract_indices(lang, A.indices))
+    Ib = extract_multi_index(lang, B, indices, sizes)
+    Ia = extract_multi_index(lang, A, indices, sizes)
 
-    # contracted index
     Ik = Ib.intersection(Ia)
-    # Loop indices
-    Iu = Ib.union(Ia)
-    # output indices
+    assert Ik.dim == 1, "contract one index at a time"
+
+    Iu = Ia.union(Ib)
     Ic = Iu.difference(Ik)
 
-    c_sizes = compute_sizes(Ic, indices, sizes)
-    code += [lang.ArrayDecl(scalar_type, C, c_sizes, values=0.0)]
+    if isinstance(C, lang.Symbol):
+        code += [lang.ArrayDecl(scalar_type, C, [Ic.global_size()], values=0.0)]
 
-    lhs = C[list(Ic)]
-    rhs = lang.Mul(A, B)
+    use_gemm = True
+    if use_gemm:
+        Jb = Ib.intersection(Ic)
+        Ib_ = Ik.union(Jb)
+        Iu = Ia.union(Ib_)
+        Ic_ = Iu.difference(Ik)
 
-    body = lang.AssignAdd(lhs, rhs)
+        transp_code, newB = transpose_tensor(lang, B, Ib, Ib_, scalar_type)
 
-    Iu = list(Iu)
-    u_sizes = compute_sizes(Iu, indices, sizes)
-    for i in reversed(range(len(Iu))):
-        body = body
-        for_range = lang.ForRange(Iu[i], 0, u_sizes[i], body=body)
-        body = for_range
+        Jb = Jb.collapse("id")
+        Ib_ = Ik.union(Jb)
+        Iu = Ia.union(Ib_)
+        Ic_ = Iu.difference(Ik)
 
-    code += [body]
+
+        code += transp_code
+        rhs = lang.Mul(A, newB[Ib_.global_idx()])
+        if isinstance(C, lang.Symbol):
+            lhs = C[Ic_.global_idx()]
+        elif isinstance(C, lang.ArrayAccess):
+            lhs = C.array[Ic_.global_idx()]
+        body = lang.AssignAdd(lhs, rhs)
+        code += [lang.NestedForRange([Iu], body)]
+        lhs = C[Ic.global_idx()]
+    else:
+        lhs = C[Ic.global_idx()]
+        rhs = lang.Mul(A, newB)
+        body = lang.AssignAdd(lhs, rhs)
+        code += [lang.NestedForRange([Iu], body)]
 
     return code, lhs
 
@@ -138,7 +207,6 @@ def sum_factorise(lang, expression, scalar_type):
         code = []
         expr = expression.body().expr
         assert isinstance(expr.rhs, (lang.Sum, lang.Product))
-
         if isinstance(expr.rhs, lang.Product):
             terms = [expr.rhs]
         else:
@@ -147,11 +215,14 @@ def sum_factorise(lang, expression, scalar_type):
         for term in terms:
             B = term.args[0]
             tables = term.args[1]
-            for phi in tables.args:
+            for phi in tables.args[:-1]:
                 C = lang.Symbol(f"temp{counter}")
                 t_code, B = tensor_contraction(lang, phi, B, C, indices, sizes, scalar_type)
-                code += t_code
                 counter += 1
-            code += assign_add(lang, B, expr.lhs, indices, sizes)
+                code += t_code
+            phi = tables.args[-1]
+            t_code, B = tensor_contraction(lang, phi, B, expr.lhs, indices, sizes, scalar_type)
+            code += t_code
         code = lang.Scope(code)
+
         return code

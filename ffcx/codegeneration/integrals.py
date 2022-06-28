@@ -521,7 +521,7 @@ class IntegralGenerator(object):
                 return intermediates
             else:
                 if intermediates in quadrature_values:
-                    return intermediates[iq]
+                    return intermediates[iq.global_idx()]
                 else:
                     return intermediates
         if iq.dim > 1:

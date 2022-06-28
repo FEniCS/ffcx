@@ -117,9 +117,9 @@ class FFCXBackendDefinitions(object):
         scalar_type = self.parameters["scalar_type"]
 
         if iq.dim > 1:
-            code += [lang.ArrayDecl(scalar_type, access, iq.ranges, values=[0.0])]
+            code += [lang.ArrayDecl(scalar_type, access, [iq.global_size()], values=[0.0])]
             lhs = lang.Product([dof_access, table_access])
-            body = [lang.AssignAdd(access[iq], lhs)]
+            body = [lang.AssignAdd(access[iq.global_idx()], lhs)]
             loop = lang.NestedForRange([iq, ic], body)
             code += [sum_factorise(lang, loop, scalar_type)]
         else:
@@ -230,9 +230,9 @@ class FFCXBackendDefinitions(object):
 
         code = []
         if iq.dim > 1:
-            code += [lang.ArrayDecl(scalar_type, access, iq.ranges, values=[0.0])]
+            code += [lang.ArrayDecl(scalar_type, access, [iq.global_size()], values=[0.0])]
             lhs = lang.Product([dof_access, table_access])
-            body = [lang.AssignAdd(access[iq], lhs)]
+            body = [lang.AssignAdd(access[iq.global_idx()], lhs)]
             loop = lang.NestedForRange([iq, ic], body)
             code += [sum_factorise(lang, loop, scalar_type)]
         else:

@@ -201,7 +201,7 @@ class FFCXBackendSymbols(object):
 
         iq = quadrature_index
         if tabledata.is_piecewise:
-            iq = MultiIndex(iq.L, iq.name, [0])
+            iq = MultiIndex(iq.lang, "iq", [0])
 
         qp = 0
         if tabledata.is_permuted:
