@@ -746,13 +746,9 @@ class FlattenedArray(object):
     def __getitem__(self, indices):
         if not isinstance(indices, (list, tuple)):
             indices = (indices, )
-        n = len(indices)
-        assert n == len(self.strides)
-        if n == 0:
-            flat = LiteralInt(0)
-        else:
-            flat = sum(s * i for i, s in zip(indices, self.strides))
-        return ArrayAccess(self.array, flat)
+        assert len(indices) == len(self.strides)
+        flat_index = sum(s * i for i, s in zip(indices, self.strides))
+        return ArrayAccess(self.array, flat_index)
 
 
 class ArrayAccess(CExprOperator):
