@@ -399,6 +399,11 @@ class IntegralGenerator(object):
         pre_definitions = dict()
         intermediates = []
 
+        batch_size = self.backend.access.parameters["batch_size"]
+        scalar_type = self.backend.access.parameters["scalar_type"]
+        if batch_size > 1:
+            scalar_type += str(batch_size)
+
         use_symbol_array = True
 
         for i, attr in F.nodes.items():
@@ -463,8 +468,8 @@ class IntegralGenerator(object):
                         vaccess = vexpr
                     else:
                         # Record assignment of vexpr to intermediate variable
-                        batch_size = self.backend.access.parameters["batch_size"]
                         if isinstance(vexpr, L.Call) and batch_size > 1:
+                            j = len(intermediates)
                             vaccess = symbol[j]
                             for b in range(batch_size):
                                 argument = copy.deepcopy(vexpr.arguments[0])
@@ -472,15 +477,11 @@ class IntegralGenerator(object):
                                 new_vexpr.arguments[0] = argument[b]
                                 intermediates.append(L.Assign(vaccess[b], new_vexpr))
                         else:
-                            j = len(intermediates)
                             if use_symbol_array:
+                                j = len(intermediates)
                                 vaccess = symbol[j]
                                 intermediates.append(L.Assign(vaccess, vexpr))
                             else:
-                                scalar_type = self.backend.access.parameters["scalar_type"]
-                                batch_size = self.backend.access.parameters["batch_size"]
-                                if batch_size > 1:
-                                    scalar_type += str(batch_size)
                                 vaccess = L.Symbol("%s_%d" % (symbol.name, j))
                                 intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
