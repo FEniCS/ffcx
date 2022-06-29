@@ -721,10 +721,9 @@ class AssignDiv(AssignOp):
 class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
 
-    __slots__ = ("array", "strides", "offset", "dims")
+    __slots__ = ("array", "dims", "strides")
 
-    def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
-        assert dummy is None, "Please use keyword arguments for strides or dims."
+    def __init__(self, array, dims=None):
 
         # Typecheck array argument
         if isinstance(array, ArrayDecl):
@@ -735,55 +734,38 @@ class FlattenedArray(object):
             assert isinstance(array, str)
             self.array = Symbol(array)
 
-        # Allow expressions or literals as strides or dims and offset
-        if strides is None:
-            assert dims is not None, "Please provide either strides or dims."
-            assert isinstance(dims, (list, tuple))
-            dims = tuple(as_cexpr(i) for i in dims)
-            self.dims = dims
-            n = len(dims)
-            literal_one = LiteralInt(1)
-            strides = [literal_one] * n
-            for i in range(n - 2, -1, -1):
-                s = strides[i + 1]
-                d = dims[i + 1]
-                if d == literal_one:
-                    strides[i] = s
-                elif s == literal_one:
-                    strides[i] = d
-                else:
-                    strides[i] = d * s
-        else:
-            raise RuntimeError("Used strides")
-            self.dims = None
-            assert isinstance(strides, (list, tuple))
-            strides = tuple(as_cexpr(i) for i in strides)
+        assert dims is not None, "Please provide dims."
+        assert isinstance(dims, (list, tuple))
+        dims = tuple(as_cexpr(i) for i in dims)
+        self.dims = dims
+        n = len(dims)
+        literal_one = LiteralInt(1)
+        strides = [literal_one] * n
+        for i in range(n - 2, -1, -1):
+            s = strides[i + 1]
+            d = dims[i + 1]
+            if d == literal_one:
+                strides[i] = s
+            elif s == literal_one:
+                strides[i] = d
+            else:
+                strides[i] = d * s
         self.strides = strides
-        self.offset = None if offset is None else as_cexpr(offset)
 
     def __getitem__(self, indices):
         if not isinstance(indices, (list, tuple)):
             indices = (indices, )
         n = len(indices)
+        assert n == len(self.strides)
         if n == 0:
-            # Handle scalar case, allowing dims=() and indices=() for A[0]
-            if len(self.strides) != 0:
-                raise ValueError("Empty indices for nonscalar array.")
             flat = LiteralInt(0)
         else:
             i, s = (indices[0], self.strides[0])
             literal_one = LiteralInt(1)
             flat = (i if s == literal_one else s * i)
-            if self.offset is not None:
-                flat = self.offset + flat
-            for i, s in zip(indices[1:n], self.strides[1:n]):
+            for i, s in zip(indices[1:], self.strides[1:]):
                 flat = flat + (i if s == literal_one else s * i)
-        # Delay applying ArrayAccess until we have all indices
-        if n == len(self.strides):
-            return ArrayAccess(self.array, flat)
-        else:
-            raise RuntimeError("Incomplete indices")
-            return FlattenedArray(self.array, strides=self.strides[n:], offset=flat)
+        return ArrayAccess(self.array, flat)
 
 
 class ArrayAccess(CExprOperator):
