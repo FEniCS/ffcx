@@ -465,12 +465,12 @@ class IntegralGenerator(object):
                         # Record assignment of vexpr to intermediate variable
                         batch_size = self.backend.access.parameters["batch_size"]
                         if isinstance(vexpr, L.Call) and batch_size > 1:
+                            vaccess = symbol[j]
                             for b in range(batch_size):
                                 argument = copy.deepcopy(vexpr.arguments[0])
-                                vaccess = symbol[j][b]
                                 new_vexpr = copy.deepcopy(vexpr)
                                 new_vexpr.arguments[0] = argument[b]
-                                intermediates.append(L.Assign(vaccess, new_vexpr))
+                                intermediates.append(L.Assign(vaccess[b], new_vexpr))
                         else:
                             j = len(intermediates)
                             if use_symbol_array:
