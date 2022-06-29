@@ -736,20 +736,10 @@ class FlattenedArray(object):
 
         assert dims is not None, "Please provide dims."
         assert isinstance(dims, (list, tuple))
-        dims = tuple(as_cexpr(i) for i in dims)
-        self.dims = dims
         n = len(dims)
-        literal_one = LiteralInt(1)
-        strides = [literal_one] * n
+        strides = numpy.ones(n, dtype=int)
         for i in range(n - 2, -1, -1):
-            s = strides[i + 1]
-            d = dims[i + 1]
-            if d == literal_one:
-                strides[i] = s
-            elif s == literal_one:
-                strides[i] = d
-            else:
-                strides[i] = d * s
+            strides[i] = strides[i + 1] * dims[i + 1]
         self.strides = strides
 
     def __getitem__(self, indices):
@@ -760,11 +750,7 @@ class FlattenedArray(object):
         if n == 0:
             flat = LiteralInt(0)
         else:
-            i, s = (indices[0], self.strides[0])
-            literal_one = LiteralInt(1)
-            flat = (i if s == literal_one else s * i)
-            for i, s in zip(indices[1:], self.strides[1:]):
-                flat = flat + (i if s == literal_one else s * i)
+            flat = sum(s * i for i, s in zip(indices[1:], self.strides[1:]))
         return ArrayAccess(self.array, flat)
 
 
