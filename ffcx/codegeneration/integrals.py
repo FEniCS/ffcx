@@ -604,14 +604,23 @@ class IntegralGenerator(object):
             B_rhs = L.float_product([fw] + arg_factors)
 
             A_indices = []
-            for i in range(block_rank):
-                offset = blockdata.ma_data[i].tabledata.offset
-                index = arg_indices[i]
-                if len(blockmap[i]) == 1:
-                    A_indices.append(index + offset)
-                else:
-                    block_size = blockdata.ma_data[i].tabledata.block_size
-                    A_indices.append(block_size * index + offset)
+            if block_rank == 2:
+                for i in range(block_rank):
+                    offset = blockdata.ma_data[i].tabledata.offset
+                    index = arg_indices[i]
+                    if len(blockmap[i]) == 1:
+                        A_indices.append(index + offset)
+                    else:
+                        block_size = blockdata.ma_data[i].tabledata.block_size
+                        A_indices.append(block_size * index + offset)
+            else:
+                index = arg_indices[0]
+                tabledata = blockdata.ma_data[0].tabledata
+                size = tabledata.values.shape[-1]
+                offset = tabledata.offset
+                block_size = tabledata.block_size
+                A_indices.append(index + offset * size)
+
             rhs_expressions[tuple(A_indices)].append(B_rhs)
 
         # List of statements to keep in the inner loop
