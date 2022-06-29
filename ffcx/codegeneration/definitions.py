@@ -140,7 +140,7 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = L.FlattenedArray("coordinate_dofs", dims=(2, num_scalar_dofs, 3))
+        dof_access = L.FlattenedArray("coordinate_dofs", [2, num_scalar_dofs, 3])
 
         offset = 0
         if mt.restriction == "-":

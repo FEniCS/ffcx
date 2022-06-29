@@ -251,6 +251,7 @@ class IntegralGenerator(object):
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
+        print(parts)
         return parts
 
     def generate_geometry_tables(self, float_type):
@@ -596,7 +597,7 @@ class IntegralGenerator(object):
             A_shape = self.ir.tensor_shape
 
             Asym = self.backend.symbols.element_tensor()
-            A = L.FlattenedArray(Asym, dims=A_shape)
+            A = L.FlattenedArray(Asym, A_shape)
 
             # Fetch code to access modified arguments
             arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)

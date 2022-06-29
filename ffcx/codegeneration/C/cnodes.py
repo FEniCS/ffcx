@@ -6,6 +6,7 @@
 
 import logging
 import numbers
+from typing import List
 
 import numpy
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
@@ -723,7 +724,7 @@ class FlattenedArray(object):
 
     __slots__ = ("array", "dims", "strides")
 
-    def __init__(self, array, dims=None):
+    def __init__(self, array, dims: List[int]):
 
         # Typecheck array argument
         if isinstance(array, ArrayDecl):

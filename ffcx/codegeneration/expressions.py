@@ -324,7 +324,7 @@ class ExpressionGenerator:
         num_points = self.quadrature_rule.points.shape[0]
         A_shape = self.ir.tensor_shape
         Asym = self.backend.symbols.element_tensor()
-        A = L.FlattenedArray(Asym, dims=[num_points, components] + A_shape)
+        A = L.FlattenedArray(Asym, [num_points, components] + A_shape)
 
         iq = self.backend.symbols.quadrature_loop_index()
 
