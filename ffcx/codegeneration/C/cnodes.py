@@ -736,6 +736,7 @@ class FlattenedArray(object):
 
         assert dims is not None, "Please provide dims."
         assert isinstance(dims, (list, tuple))
+        self.dims = dims
         n = len(dims)
         strides = numpy.ones(n, dtype=int)
         for i in range(n - 2, -1, -1):
@@ -750,7 +751,7 @@ class FlattenedArray(object):
         if n == 0:
             flat = LiteralInt(0)
         else:
-            flat = sum(s * i for i, s in zip(indices[1:], self.strides[1:]))
+            flat = sum(s * i for i, s in zip(indices, self.strides))
         return ArrayAccess(self.array, flat)
 
 
