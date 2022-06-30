@@ -735,8 +735,6 @@ class FlattenedArray(object):
             assert isinstance(array, str)
             self.array = Symbol(array)
 
-        assert dims is not None, "Please provide dims."
-        assert isinstance(dims, (list, tuple))
         self.dims = dims
         n = len(dims)
         strides = numpy.ones(n, dtype=int)
