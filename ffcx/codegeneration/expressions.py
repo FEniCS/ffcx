@@ -6,15 +6,16 @@
 
 import collections
 import logging
-from typing import Dict, Set, Any, DefaultDict
 from itertools import product
+from typing import Any, DefaultDict, Dict, Set
 
 import ufl
-from ffcx.codegeneration import expressions_template
+from ffcx.codegeneration import expressions_template, geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.cnodes import CNode
-from ffcx.ir.representation import ir_expression
+from ffcx.codegeneration.C.format_lines import format_indented_lines
+from ffcx.ir.representation import ExpressionIR
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -28,14 +29,17 @@ def generator(ir, parameters):
     factory_name = ir.name
 
     # Format declaration
-    declaration = expressions_template.declaration.format(factory_name=factory_name)
+    declaration = expressions_template.declaration.format(
+        factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile)
 
     backend = FFCXBackend(ir, parameters)
     L = backend.language
     eg = ExpressionGenerator(ir, backend)
 
     d = {}
+    d["name_from_uflfile"] = ir.name_from_uflfile
     d["factory_name"] = ir.name
+
     parts = eg.generate()
 
     body = format_indented_lines(parts.cs_format(), 1)
@@ -64,15 +68,62 @@ def generator(ir, parameters):
 
     d["num_components"] = len(ir.expression_shape)
     d["num_coefficients"] = len(ir.coefficient_numbering)
+    d["num_constants"] = len(ir.constant_names)
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
-    d["needs_facet_permutations"] = "true" if ir.needs_facet_permutations else "false"
     d["scalar_type"] = parameters["scalar_type"]
+    d["geom_type"] = scalar_to_value_type(parameters["scalar_type"])
+    d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
+
+    d["rank"] = len(ir.tensor_shape)
+
+    if len(ir.coefficient_names) > 0:
+        d["coefficient_names_init"] = L.ArrayDecl(
+            "static const char*", f"coefficient_names_{ir.name}", values=ir.coefficient_names,
+            sizes=len(ir.coefficient_names))
+        d["coefficient_names"] = f"coefficient_names_{ir.name}"
+    else:
+        d["coefficient_names_init"] = ""
+        d["coefficient_names"] = L.Null()
+
+    if len(ir.constant_names) > 0:
+        d["constant_names_init"] = L.ArrayDecl(
+            "static const char*", f"constant_names_{ir.name}", values=ir.constant_names,
+            sizes=len(ir.constant_names))
+        d["constant_names"] = f"constant_names_{ir.name}"
+    else:
+        d["constant_names_init"] = ""
+        d["constant_names"] = L.Null()
+
+    code = []
+
+    # FIXME: Should be handled differently, revise how
+    # ufcx_function_space is generated (also for ufcx_form)
+    for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
+        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
+        code += ["{"]
+        code += [f".finite_element = &{element},"]
+        code += [f".dofmap = &{dofmap},"]
+        code += [f".geometry_family = \"{cmap_family}\","]
+        code += [f".geometry_degree = {cmap_degree}"]
+        code += ["};"]
+
+    d["function_spaces_alloc"] = L.StatementList(code)
+    d["function_spaces"] = ""
+
+    if len(ir.function_spaces) > 0:
+        d["function_spaces"] = f"function_spaces_{ir.name}"
+        d["function_spaces_init"] = L.ArrayDecl("ufcx_function_space*", f"function_spaces_{ir.name}", values=[
+                                                L.AddressOf(L.Symbol(f"function_space_{name}_{ir.name_from_uflfile}"))
+                                                for (name, _) in ir.function_spaces.items()],
+                                                sizes=len(ir.function_spaces))
+    else:
+        d["function_spaces"] = L.Null()
+        d["function_spaces_init"] = ""
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
-
     assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
 
     # Format implementation code
@@ -82,7 +133,7 @@ def generator(ir, parameters):
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: ir_expression, backend: FFCXBackend):
+    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
 
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
@@ -101,6 +152,8 @@ class ExpressionGenerator:
         parts = []
 
         parts += self.generate_element_tables()
+        # Generate the tables of geometry data that are needed
+        parts += self.generate_geometry_tables()
         parts += self.generate_piecewise_partition()
 
         all_preparts = []
@@ -115,6 +168,31 @@ class ExpressionGenerator:
         parts += all_quadparts
 
         return L.StatementList(parts)
+
+    def generate_geometry_tables(self):
+        """Generate static tables of geometry data."""
+        L = self.backend.language
+
+        # Currently we only support circumradius
+        ufl_geometry = {
+            ufl.geometry.ReferenceCellVolume: "reference_cell_volume"
+        }
+        cells = {t: set() for t in ufl_geometry.keys()}
+
+        for integrand in self.ir.integrand.values():
+            for attr in integrand["factorization"].nodes.values():
+                mt = attr.get("mt")
+                if mt is not None:
+                    t = type(mt.terminal)
+                    if t in ufl_geometry:
+                        cells[t].add(mt.terminal.ufl_domain().ufl_cell().cellname())
+
+        parts = []
+        for i, cell_list in cells.items():
+            for c in cell_list:
+                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+
+        return parts
 
     def generate_element_tables(self):
         """Generate tables of FE basis evaluated at specified points."""
@@ -381,13 +459,9 @@ class ExpressionGenerator:
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt.terminal, mt, tabledata, 0)
 
-                if isinstance(mt.terminal, ufl.Coefficient):
-                    vdef, predef = self.backend.definitions.get(
-                        mt.terminal, mt, tabledata, 0, vaccess)
-                    if predef:
-                        pre_definitions[str(predef[0].symbol.name)] = predef
-                else:
-                    vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+                predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+                if predef:
+                    pre_definitions[str(predef[0].symbol.name)] = predef
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)

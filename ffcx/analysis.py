@@ -13,21 +13,25 @@ representation type.
 
 import logging
 import typing
-from collections import namedtuple
 
 import numpy
+import numpy.typing
 import ufl
 
 logger = logging.getLogger("ffcx")
 
 
-ufl_data = namedtuple('ufl_data', ['form_data', 'unique_elements', 'element_numbers',
-                                   'unique_coordinate_elements', 'expressions'])
+class UFLData(typing.NamedTuple):
+    form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]  # Tuple of ufl form data
+    unique_elements: typing.List[ufl.finiteelement.FiniteElementBase]  # List of unique elements
+    # Lookup table from each unique element to its index in `unique_elements`
+    element_numbers: typing.Dict[ufl.finiteelement.FiniteElementBase, int]
+    unique_coordinate_elements: typing.List[ufl.finiteelement.FiniteElementBase]  # List of unique coordinate elements
+    # List of ufl Expressions as tuples (expression, points, original_expression)
+    expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64], ufl.core.expr.Expr]]
 
 
-def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], typing.List[ufl.FiniteElement],
-                                                  typing.List],
-                        parameters: typing.Dict) -> ufl_data:
+def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UFLData:
     """Analyze ufl object(s).
 
     Parameters
@@ -36,77 +40,66 @@ def analyze_ufl_objects(ufl_objects: typing.Union[typing.List[ufl.form.Form], ty
     parameters
       FFCx parameters. These parameters take priority over all other set parameters.
 
-    Returns
+    Returns a data structure holding
     -------
     form_datas
         Form_data objects
     unique_elements
-        Unique elements across all forms
+        Unique elements across all forms and expressions
     element_numbers
         Mapping to unique numbers for all elements
     unique_coordinate_elements
-
+        Unique coordinate elements across all forms and expressions
+    expressions
+        List of all expressions after post-processing, with its evaluation points and the original expression
     """
     logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    unique_elements = set()
-    unique_coordinate_elements = set()
+    elements = []
+    coordinate_elements = []
+
+    # Group objects by types
+    forms = []
     expressions = []
+    processed_expressions = []
 
-    # FIXME: This assumes that forms come before elements in
-    # ufl_objects? Is this reasonable?
-    if isinstance(ufl_objects[0], ufl.form.Form):
-        forms = ufl_objects
-        form_data = tuple(_analyze_form(form, parameters) for form in forms)
+    for ufl_object in ufl_objects:
+        if isinstance(ufl_object, ufl.form.Form):
+            forms += [ufl_object]
+        elif isinstance(ufl_object, ufl.FiniteElementBase):
+            elements += [ufl_object]
+        elif isinstance(ufl_object, ufl.Mesh):
+            coordinate_elements += [ufl_object.ufl_coordinate_element()]
+        elif isinstance(ufl_object[0], ufl.core.expr.Expr):
+            original_expression = ufl_object[0]
+            points = numpy.asarray(ufl_object[1])
+            expressions += [(original_expression, points)]
+        else:
+            raise TypeError("UFL objects not recognised.")
 
-        # Extract unique elements across forms
-        for data in form_data:
-            unique_elements.update(data.unique_sub_elements)
+    form_data = tuple(_analyze_form(form, parameters) for form in forms)
+    for data in form_data:
+        elements += data.unique_sub_elements
+        coordinate_elements += data.coordinate_elements
 
-        # Extract uniquecoordinate elements across forms
-        for data in form_data:
-            unique_coordinate_elements.update(data.coordinate_elements)
-    elif isinstance(ufl_objects[0], ufl.FiniteElementBase):
-        form_data = ()
-        # Extract unique (sub)elements
-        elements = ufl_objects
-        unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(elements))
-    elif isinstance(ufl_objects[0], ufl.Mesh):
-        form_data = ()
-        # Extract unique (sub)elements
-        meshes = ufl_objects
-        unique_coordinate_elements = set(mesh.ufl_coordinate_element() for mesh in meshes)
-    elif isinstance(ufl_objects[0], tuple) and isinstance(ufl_objects[0][0], ufl.core.expr.Expr):
-        form_data = ()
-        for expression in ufl_objects:
-            original_expression = expression[0]
-            points = expression[1]
-            expression = expression[0]
+    for original_expression, points in expressions:
+        elements += list(ufl.algorithms.extract_elements(original_expression))
+        processed_expression = _analyze_expression(original_expression, parameters)
+        processed_expressions += [(processed_expression, points, original_expression)]
 
-            unique_elements.update(ufl.algorithms.extract_elements(expression))
-            unique_elements.update(ufl.algorithms.extract_sub_elements(unique_elements))
-
-            expression = _analyze_expression(expression, parameters)
-            expressions.append((expression, points, original_expression))
-    else:
-        raise TypeError("UFL objects not recognised.")
-
-    # Make sure coordinate elements and their subelements are included
-    unique_elements.update(ufl.algorithms.analysis.extract_sub_elements(unique_coordinate_elements))
+    elements += ufl.algorithms.analysis.extract_sub_elements(elements)
 
     # Sort elements so sub-elements come before mixed elements
-    unique_elements = ufl.algorithms.sort_elements(unique_elements)
-    unique_coordinate_element_list = sorted(unique_coordinate_elements, key=lambda x: repr(x))
+    unique_elements = ufl.algorithms.sort_elements(set(elements))
+    unique_coordinate_element_list = sorted(set(coordinate_elements), key=lambda x: repr(x))
 
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    return ufl_data(form_data=form_data, unique_elements=unique_elements,
-                    element_numbers=element_numbers,
-                    unique_coordinate_elements=unique_coordinate_element_list,
-                    expressions=expressions)
+    return UFLData(form_data=form_data, unique_elements=unique_elements, element_numbers=element_numbers,
+                   unique_coordinate_elements=unique_coordinate_element_list, expressions=processed_expressions)
 
 
 def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
@@ -231,7 +224,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     return form_data
 
 
-def _has_custom_integrals(o) -> bool:
+def _has_custom_integrals(o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple]) -> bool:
     """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):
         return o.integral_type() in ufl.custom_integral_types

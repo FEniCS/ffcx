@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10']
 
     steps:
       - name: Checkout FFCx
@@ -82,9 +82,18 @@ jobs:
         # when there are test failures
         if: always()
 
-      - name: Runs demos
+      - name: Get UFL
+        uses: actions/checkout@v2
+        with:
+          path: ./ufl
+          repository: FEniCS/ufl
+          ref: main
+
+      - name: Run FFCx and UFL demos
         run: |
-          python -m pytest demo/test_demos.py
+          mv ufl/demo/* demo/
+          pytest demo/test_demos.py
+          rm -Rf ufl/
 
       - name: Build documentation
         run: |
