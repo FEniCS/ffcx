@@ -27,7 +27,7 @@ import numpy
 import ufl
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.element_interface import BaseElement, create_element
+from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -118,7 +118,7 @@ class IntegralIR(typing.NamedTuple):
     num_facets: int
     num_vertices: int
     enabled_coefficients: typing.List[bool]
-    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
     element_ids: typing.Dict[ufl.FiniteElementBase, int]
     tensor_shape: typing.List[int]
     coefficient_numbering: typing.Dict[ufl.Coefficient, int]
@@ -137,7 +137,7 @@ class IntegralIR(typing.NamedTuple):
 
 class ExpressionIR(typing.NamedTuple):
     name: str
-    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
     params: dict
     unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
     unique_table_types: typing.Dict[str, str]
@@ -224,7 +224,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     # Create basix elements
     basix_element = create_element(ufl_element)
     cell = ufl_element.cell()
-    cellname = cell.cellname()
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -232,30 +231,27 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = cellname
+    ir["cell_shape"] = basix_element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = basix_element.dim
-    ir["element_type"] = basix_element.element_type
+    ir["element_type"] = basix_element.ufcx_element_type
     ir["lagrange_variant"] = basix_element.lagrange_variant
     ir["dpc_variant"] = basix_element.dpc_variant
     ir["basix_family"] = basix_element.element_family
     ir["basix_cell"] = basix_element.cell_type
     ir["discontinuous"] = basix_element.discontinuous
-    ir["degree"] = ufl_element.degree()
-    ir["family"] = ufl_element.family()
-    ir["value_shape"] = ufl_element.value_shape()
-    ir["reference_value_shape"] = ufl_element.reference_value_shape()
+    ir["degree"] = basix_element.degree()
+    ir["family"] = basix_element.family_name
+    ir["value_shape"] = basix_element.value_shape()
+    ir["reference_value_shape"] = basix_element.value_shape()
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    if hasattr(basix_element, "block_size"):
-        ir["block_size"] = basix_element.block_size
-        ufl_element = ufl_element.sub_elements()[0]
-        basix_element = create_element(ufl_element)
-    else:
-        ir["block_size"] = 1
+    ir["block_size"] = basix_element.block_size
+    if basix_element.block_size > 1:
+        basix_element = basix_element.sub_element
 
     ir["entity_dofs"] = basix_element.entity_dofs
 
@@ -300,11 +296,9 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
-    if hasattr(basix_element, "block_size"):
-        ir["block_size"] = basix_element.block_size
+    ir["block_size"] = basix_element.block_size
+    if basix_element.block_size > 1:
         basix_element = basix_element.sub_element
-    else:
-        ir["block_size"] = 1
 
     # Precompute repeatedly used items
     for i in basix_element.num_entity_dofs:
