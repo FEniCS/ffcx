@@ -57,7 +57,7 @@ class FormIR(typing.NamedTuple):
 
 class CustomElementIR(typing.NamedTuple):
     cell_type: basix.CellType
-    value_shape: typing.Tuple[int]
+    value_shape: typing.Tuple[int, ...]
     wcoeffs: numpy.typing.NDArray[numpy.float64]
     x: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
     M: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
@@ -76,8 +76,8 @@ class ElementIR(typing.NamedTuple):
     topological_dimension: int
     geometric_dimension: int
     space_dimension: int
-    value_shape: typing.Tuple[int]
-    reference_value_shape: typing.Tuple[int]
+    value_shape: typing.Tuple[int, ...]
+    reference_value_shape: typing.Tuple[int, ...]
     degree: int
     family: str
     num_sub_elements: int
@@ -110,7 +110,7 @@ class DofMapIR(typing.NamedTuple):
 
 class IntegralIR(typing.NamedTuple):
     integral_type: str
-    subdomain_id: typing.Union[str, typing.Tuple[int], int]
+    subdomain_id: typing.Union[str, typing.Tuple[int, ...], int]
     rank: int
     geometric_dimension: int
     topological_dimension: int
@@ -244,7 +244,7 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     ir["degree"] = basix_element.degree()
     ir["family"] = basix_element.family_name
     ir["value_shape"] = basix_element.value_shape()
-    ir["reference_value_shape"] = basix_element.value_shape()
+    ir["reference_value_shape"] = basix_element.reference_value_shape()
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]

@@ -32,7 +32,12 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
     elif isinstance(element, ufl.VectorElement):
         return basix.ufl_wrapper.VectorElement(create_element(element.sub_elements()[0]), element.num_sub_elements())
     elif isinstance(element, ufl.TensorElement):
-        return basix.ufl_wrapper.TensorElement(create_element(element.sub_elements()[0]), element._value_shape)
+        if len(element.symmetry()) == 0:
+            return basix.ufl_wrapper.TensorElement(create_element(element.sub_elements()[0]), element._value_shape)
+        else:
+            assert element.symmetry()[(1, 0)] == (0, 1)
+            return basix.ufl_wrapper.TensorElement(create_element(
+                element.sub_elements()[0]), element._value_shape, symmetric=True)
     elif isinstance(element, ufl.MixedElement):
         return basix.ufl_wrapper.MixedElement([create_element(e) for e in element.sub_elements()])
 
