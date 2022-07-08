@@ -65,6 +65,7 @@ extern "C"
     ufcx_mixed_element = 1,
     ufcx_quadrature_element = 2,
     ufcx_basix_custom_element = 3,
+    ufcx_real_element = 4,
   } ufcx_element_type;
 
   /// Forward declarations
