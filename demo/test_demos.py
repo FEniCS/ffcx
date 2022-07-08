@@ -16,6 +16,9 @@ def test_demo(file):
         "NodalMini",  # NodalEnrichedElement
         "Mini",  # EnrichedElement
         "MixedGradient", "TraceElement",  # HDiv Trace
+        "MixedElasticity",  # VectorElement of BDM
+        "RestrictedElement",
+        "_TensorProductElement"
     ]:
         # Skip demos that use elements not yet implemented in Basix
         pytest.skip()
