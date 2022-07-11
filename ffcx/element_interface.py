@@ -249,6 +249,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
     _element: basix.ufl_wrapper._BasixElementBase
     _family_name: str
     _cellname: str
+    _entity_counts: typing.List[int]
 
     def __init__(self, element: ufl.finiteelement.FiniteElementBase):
         """Initialise the element."""
@@ -314,7 +315,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
     @property
     def dim(self) -> int:
         """Number of DOFs the element has."""
-        return 0
+        return 1
 
     @property
     def num_entity_dofs(self) -> typing.List[typing.List[int]]:
