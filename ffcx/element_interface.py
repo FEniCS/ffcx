@@ -256,7 +256,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         self._cellname = element.cell().cellname()
         self._family_name = element.family()
         tdim = element.cell().topological_dimension()
-        
+
         self._entity_counts = []
         if tdim >= 1:
             self._entity_counts.append(element.cell().num_vertices())
@@ -269,7 +269,6 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         super().__init__(
             f"RealElement({element})", "real element", element.cell().cellname(), element.value_shape(),
             element.degree())
-
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
