@@ -122,7 +122,6 @@ class ValueNumberer(object):
         global_derivatives - tuple of ints, each meaning derivative in that global direction
         local_derivatives  - tuple of ints, each meaning derivative in that local direction
         reference_value    - bool, whether this is represented in reference frame
-        averaged           - None, 'facet' or 'cell'
         restriction        - None, '+' or '-'
         component          - tuple of ints, the global component of the Terminal
         flat_component     - single int, flattened local component of the Terminal, considering symmetry

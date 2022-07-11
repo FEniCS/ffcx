@@ -87,8 +87,6 @@ class FFCXBackendAccess(object):
     def spatial_coordinate(self, e, mt, tabledata, num_points):
         if mt.global_derivatives:
             raise RuntimeError("Not expecting global derivatives of SpatialCoordinate.")
-        if mt.averaged is not None:
-            raise RuntimeError("Not expecting average of SpatialCoordinates.")
 
         if self.integral_type in ufl.custom_integral_types:
             if mt.local_derivatives:
@@ -117,8 +115,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError("Not expecting derivatives of CellCoordinate.")
         if mt.local_derivatives:
             raise RuntimeError("Not expecting derivatives of CellCoordinate.")
-        if mt.averaged is not None:
-            raise RuntimeError("Not expecting average of CellCoordinate.")
 
         if self.integral_type == "cell" and not mt.restriction:
             # Access predefined quadrature points table
@@ -143,8 +139,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError("Not expecting derivatives of FacetCoordinate.")
         if mt.local_derivatives:
             raise RuntimeError("Not expecting derivatives of FacetCoordinate.")
-        if mt.averaged is not None:
-            raise RuntimeError("Not expecting average of FacetCoordinate.")
         if mt.restriction:
             raise RuntimeError("Not expecting restriction of FacetCoordinate.")
 
@@ -173,8 +167,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError("Expecting reference facet coordinate to be symbolically rewritten.")
 
     def jacobian(self, e, mt, tabledata, num_points):
-        if mt.averaged is not None:
-            raise RuntimeError("Not expecting average of Jacobian.")
         return self.symbols.J_component(mt)
 
     def reference_cell_volume(self, e, mt, tabledata, access):
