@@ -318,7 +318,7 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["entity_closure_dofs"] = basix_element.entity_closure_dofs
 
     ir["num_global_support_dofs"] = basix_element.num_global_support_dofs
-    ir["num_element_support_dofs"] = basix_element.dim - ir["num_global_support_dofs"]
+    ir["num_element_support_dofs"] = basix_element.dim
 
     return DofMapIR(**ir)
 

@@ -315,7 +315,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
     @property
     def dim(self) -> int:
         """Number of DOFs the element has."""
-        return 1
+        return 0
 
     @property
     def num_entity_dofs(self) -> typing.List[typing.List[int]]:
