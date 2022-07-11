@@ -246,7 +246,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
 class RealElement(basix.ufl_wrapper._BasixElementBase):
     """A real element."""
-    _element: basix.ufl_wrapper._BasixElementBase
+
     _family_name: str
     _cellname: str
     _entity_counts: typing.List[int]
@@ -272,7 +272,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
-        return isinstance(other, RealElement) and self.element == other.element
+        return isinstance(other, RealElement)
 
     def __hash__(self) -> int:
         """Return a hash."""
