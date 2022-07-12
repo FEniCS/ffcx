@@ -190,7 +190,7 @@ supported (non-mixed) for low degrees"""
         for x in points:
             table = element.tabulate(0, (x,))
             basis = table[0]
-            if sum(element.value_shape) == 1:
+            if sum(element.value_shape()) == 1:
                 for i, value in enumerate(basis[0]):
                     assert numpy.isclose(value, reference[i](x))
             else:
