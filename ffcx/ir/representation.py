@@ -18,6 +18,7 @@ representation under the key "foo".
 
 import itertools
 import logging
+import numbers
 import typing
 import warnings
 
@@ -26,7 +27,7 @@ import numpy
 import ufl
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.element_interface import BaseElement, create_element
+from ffcx.element_interface import create_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -56,7 +57,7 @@ class FormIR(typing.NamedTuple):
 
 class CustomElementIR(typing.NamedTuple):
     cell_type: basix.CellType
-    value_shape: typing.Tuple[int]
+    value_shape: typing.Tuple[int, ...]
     wcoeffs: numpy.typing.NDArray[numpy.float64]
     x: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
     M: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
@@ -75,8 +76,8 @@ class ElementIR(typing.NamedTuple):
     topological_dimension: int
     geometric_dimension: int
     space_dimension: int
-    value_shape: typing.Tuple[int]
-    reference_value_shape: typing.Tuple[int]
+    value_shape: typing.Tuple[int, ...]
+    reference_value_shape: typing.Tuple[int, ...]
     degree: int
     family: str
     num_sub_elements: int
@@ -109,7 +110,7 @@ class DofMapIR(typing.NamedTuple):
 
 class IntegralIR(typing.NamedTuple):
     integral_type: str
-    subdomain_id: typing.Union[str, typing.Tuple[int], int]
+    subdomain_id: typing.Union[str, typing.Tuple[int, ...], int]
     rank: int
     geometric_dimension: int
     topological_dimension: int
@@ -117,7 +118,7 @@ class IntegralIR(typing.NamedTuple):
     num_facets: int
     num_vertices: int
     enabled_coefficients: typing.List[bool]
-    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
     element_ids: typing.Dict[ufl.FiniteElementBase, int]
     tensor_shape: typing.List[int]
     coefficient_numbering: typing.Dict[ufl.Coefficient, int]
@@ -136,7 +137,7 @@ class IntegralIR(typing.NamedTuple):
 
 class ExpressionIR(typing.NamedTuple):
     name: str
-    element_dimensions: typing.Dict[ufl.FiniteElementBase, BaseElement]
+    element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
     params: dict
     unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
     unique_table_types: typing.Dict[str, str]
@@ -223,7 +224,6 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
     # Create basix elements
     basix_element = create_element(ufl_element)
     cell = ufl_element.cell()
-    cellname = cell.cellname()
 
     # Store id
     ir = {"id": element_numbers[ufl_element]}
@@ -231,30 +231,27 @@ def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = cellname
+    ir["cell_shape"] = basix_element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = basix_element.dim
-    ir["element_type"] = basix_element.element_type
+    ir["element_type"] = basix_element.ufcx_element_type
     ir["lagrange_variant"] = basix_element.lagrange_variant
     ir["dpc_variant"] = basix_element.dpc_variant
     ir["basix_family"] = basix_element.element_family
     ir["basix_cell"] = basix_element.cell_type
     ir["discontinuous"] = basix_element.discontinuous
-    ir["degree"] = ufl_element.degree()
-    ir["family"] = ufl_element.family()
-    ir["value_shape"] = ufl_element.value_shape()
-    ir["reference_value_shape"] = ufl_element.reference_value_shape()
+    ir["degree"] = basix_element.degree()
+    ir["family"] = basix_element.family_name
+    ir["value_shape"] = basix_element.value_shape()
+    ir["reference_value_shape"] = basix_element.reference_value_shape()
 
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
 
-    if hasattr(basix_element, "block_size"):
-        ir["block_size"] = basix_element.block_size
-        ufl_element = ufl_element.sub_elements()[0]
-        basix_element = create_element(ufl_element)
-    else:
-        ir["block_size"] = 1
+    ir["block_size"] = basix_element.block_size
+    if basix_element.block_size > 1:
+        basix_element = basix_element.sub_element
 
     ir["entity_dofs"] = basix_element.entity_dofs
 
@@ -299,11 +296,9 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
     ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
     ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
 
-    if hasattr(basix_element, "block_size"):
-        ir["block_size"] = basix_element.block_size
+    ir["block_size"] = basix_element.block_size
+    if basix_element.block_size > 1:
         basix_element = basix_element.sub_element
-    else:
-        ir["block_size"] = 1
 
     # Precompute repeatedly used items
     for i in basix_element.num_entity_dofs:
@@ -552,9 +547,9 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     ir["function_spaces"] = fs
     ir["name_from_uflfile"] = f"form_{prefix}_{form_name}"
 
-    # Store names of integrals and subdomain_ids for this form, grouped by integral types
-    # Since form points to all integrals it contains, it has to know their names
-    # for codegen phase
+    # Store names of integrals and subdomain_ids for this form, grouped
+    # by integral types Since form points to all integrals it contains,
+    # it has to know their names for codegen phase
     ir["integral_names"] = {}
     ir["subdomain_ids"] = {}
     ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
@@ -565,8 +560,9 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         for itg_index, itg_data in enumerate(form_data.integral_data):
             if (itg_data.integral_type == integral_type):
                 if itg_data.subdomain_id == "otherwise":
-                    # UFL is using "otherwise" for default integrals (over whole mesh)
-                    # but FFCx needs integers, so otherwise = -1
+                    # UFL is using "otherwise" for default integrals
+                    # (over whole mesh) but FFCx needs integers, so
+                    # otherwise = -1
                     if len(ir["subdomain_ids"][integral_type]) > 0 and ir["subdomain_ids"][integral_type][0] == -1:
                         raise ValueError("Only one default ('otherwise') integral allowed.")
 
@@ -577,7 +573,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
                 elif itg_data.subdomain_id < 0:
                     raise ValueError("Integral subdomain ID must be non-negative.")
                 else:
-                    assert isinstance(itg_data.subdomain_id, int)
+                    assert isinstance(itg_data.subdomain_id, numbers.Integral)
                     ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
                     ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
 

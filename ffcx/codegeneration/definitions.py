@@ -16,6 +16,7 @@ from ffcx.ir.elementtables import UniqueTableReference
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ufl.core.terminal import Terminal
+from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -143,12 +144,13 @@ class FFCXBackendDefinitions(object):
 
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
-        gdim = domain.geometric_dimension()
         coordinate_element = domain.ufl_coordinate_element()
         num_scalar_dofs = create_element(coordinate_element).sub_element.dim
 
-        # Reference coordinates are known, no coordinate field, so we compute
-        # this component as linear combination of coordinate_dofs "dofs" and table
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
+
+        assert num_scalar_dofs == num_dofs
 
         # Find table name
         ttype = tabledata.ttype
@@ -156,15 +158,23 @@ class FFCXBackendDefinitions(object):
         assert ttype != "zeros"
         assert ttype != "ones"
 
-        begin = tabledata.offset
-        num_dofs = tabledata.values.shape[3]
-        bs = tabledata.block_size
-
-        # Inlined version (we know this is bounded by a small number)
+        # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        dof_access = self.symbols.domain_dofs_access(gdim, num_scalar_dofs, mt.restriction)
-        value = lang.Sum([dof_access[begin + i * bs] * FE[i] for i in range(num_dofs)])
-        code = [lang.VariableDecl("const double", access, value)]
+        ic = self.symbols.coefficient_dof_sum_index()
+        dof_access = self.symbols.S("coordinate_dofs")
+
+        # coordinate dofs is always 3d
+        dim = 3
+        offset = 0
+        if mt.restriction == "-":
+            offset = num_scalar_dofs * dim
+
+        value_type = scalar_to_value_type(self.parameters["scalar_type"])
+
+        code = []
+        body = [lang.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
+        code += [lang.VariableDecl(f"{value_type}", access, 0.0)]
+        code += [lang.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
 
@@ -186,8 +196,6 @@ class FFCXBackendDefinitions(object):
             if mt.local_derivatives:
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
-        elif self.integral_type == "expression":
-            return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
         else:
             return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
@@ -222,7 +230,7 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        scalar_type = self.parameters["scalar_type"]
+        value_type = scalar_to_value_type(self.parameters["scalar_type"])
 
         table_access = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
         dof_access = self.symbols.S("coordinate_dofs")
@@ -230,13 +238,13 @@ class FFCXBackendDefinitions(object):
 
         code = []
         if iq.dim > 1:
-            code += [lang.ArrayDecl(scalar_type, access, [iq.global_size()], values=[0.0])]
+            code += [lang.ArrayDecl(value_type, access, [iq.global_size()], values=[0.0])]
             lhs = lang.Product([dof_access, table_access])
             body = [lang.AssignAdd(access[iq.global_idx()], lhs)]
             loop = lang.NestedForRange([iq, ic], body)
-            code += [sum_factorise(lang, loop, scalar_type)]
+            code += [sum_factorise(lang, loop, value_type)]
         else:
-            code += [lang.VariableDecl(scalar_type, access, 0.0)]
+            code += [lang.VariableDecl(value_type, access, 0.0)]
             body = [lang.AssignAdd(access, dof_access * table_access)]
             code += [lang.NestedForRange([ic], body)]
 

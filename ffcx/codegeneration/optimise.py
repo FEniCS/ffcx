@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import collections
-import numpy
 from ffcx.codegeneration.indices import MultiIndex
 
 
@@ -157,7 +156,6 @@ def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type):
         Ib_ = Ik.union(Jb)
         Iu = Ia.union(Ib_)
         Ic_ = Iu.difference(Ik)
-
 
         code += transp_code
         rhs = lang.Mul(A, newB[Ib_.global_idx()])

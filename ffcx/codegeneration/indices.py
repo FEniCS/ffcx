@@ -6,7 +6,6 @@
 
 import types
 import typing
-import itertools
 import numpy
 
 from ffcx.ir.elementtables import UniqueTableReference
