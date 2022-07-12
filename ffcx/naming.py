@@ -128,3 +128,20 @@ def scalar_to_value_type(scalar_type: str) -> str:
 
     """
     return scalar_type.replace(' _Complex', '')
+
+
+def batched_value_type(scalar_type: str, batch_size: int) -> str:
+    """The C value type associated with a C scalar type.
+
+    Args:
+      scalar_type: A C type.
+
+    Returns:
+      The value type associated with ``scalar_type``. E.g., if
+      ``scalar_type`` is ``float _Complex`` the return value is 'float'.
+
+    """
+    if batch_size > 1:
+        return scalar_type + str(batch_size)
+    else:
+        return scalar_type

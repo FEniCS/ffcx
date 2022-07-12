@@ -6,7 +6,6 @@
 """Tools for C/C++ expression formatting."""
 
 import logging
-
 import ufl
 
 logger = logging.getLogger("ffcx")
@@ -34,7 +33,6 @@ math_table = {'double': {'sqrt': 'sqrt',
                          'atan_2': 'atan2',
                          'min_value': 'fmin',
                          'max_value': 'fmax'},
-
               'float': {'sqrt': 'sqrtf',
                         'abs': 'fabsf',
                         'cos': 'cosf',
@@ -129,11 +127,12 @@ math_table = {'double': {'sqrt': 'sqrt',
 class UFL2CNodesTranslatorCpp(object):
     """UFL to CNodes translator class."""
 
-    def __init__(self, language, scalar_type="double"):
+    def __init__(self, language, scalar_type, batch_size):
         self.L = language
         self.force_floats = False
         self.enable_strength_reduction = False
         self.scalar_type = scalar_type
+        self.batch_size = batch_size
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
@@ -268,6 +267,7 @@ class UFL2CNodesTranslatorCpp(object):
             raise type(e)("Math function not found:", self.scalar_type, k)
         if name is None:
             raise RuntimeError("Not supported in current scalar mode")
+
         return self.L.Call(name, args)
 
     # === Formatting rules for bessel functions ===

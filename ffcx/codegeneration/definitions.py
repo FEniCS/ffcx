@@ -16,7 +16,7 @@ from ffcx.ir.elementtables import UniqueTableReference
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ufl.core.terminal import Terminal
-from ffcx.naming import scalar_to_value_type
+from ffcx.naming import scalar_to_value_type, batched_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -75,6 +75,12 @@ class FFCXBackendDefinitions(object):
         """Return definition code for coefficients."""
         lang = self.language
 
+        scalar_type = self.parameters["scalar_type"]
+        batch_size = self.parameters["batch_size"]
+
+        if (batch_size > 1):
+            scalar_type += str(batch_size)
+
         ttype = tabledata.ttype
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
@@ -109,13 +115,11 @@ class FFCXBackendDefinitions(object):
 
             # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
-                pre_code += [lang.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
+                pre_code += [lang.ArrayDecl(scalar_type, dof_access.array, num_dofs)]
                 pre_body = lang.Assign(dof_access, dof_access_map)
                 pre_code += [lang.NestedForRange([ic], pre_body)]
         else:
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic.global_idx() * bs + begin)
-
-        scalar_type = self.parameters["scalar_type"]
 
         if iq.dim > 1:
             code += [lang.ArrayDecl(scalar_type, access, [iq.global_size()], values=[0.0])]
@@ -170,6 +174,7 @@ class FFCXBackendDefinitions(object):
             offset = num_scalar_dofs * dim
 
         value_type = scalar_to_value_type(self.parameters["scalar_type"])
+        value_type = batched_value_type(value_type, self.parameters["batch_size"])
 
         code = []
         body = [lang.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
@@ -230,7 +235,9 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
+        batch_size = self.parameters["batch_size"]
         value_type = scalar_to_value_type(self.parameters["scalar_type"])
+        value_type = batched_value_type(value_type, batch_size)
 
         table_access = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
         dof_access = self.symbols.S("coordinate_dofs")

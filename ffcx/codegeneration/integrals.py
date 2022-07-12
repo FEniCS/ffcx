@@ -7,6 +7,8 @@
 import collections
 import logging
 from typing import List, Tuple
+import numpy
+import copy
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -116,6 +118,9 @@ class IntegralGenerator(object):
         # Cache
         self.shared_symbols = {}
 
+        # Literals
+        self.literals = {}
+
         # Set of counters used for assigning names to intermediate
         # variables
         self.symbol_counters = collections.defaultdict(int)
@@ -149,8 +154,17 @@ class IntegralGenerator(object):
 
         Returns the CNodes expression to access the value in the code.
         """
-        if v._ufl_is_literal_:
-            return self.backend.ufl_to_language.get(v)
+        lang = self.backend.language
+        batch_size = self.backend.access.parameters["batch_size"]
+        if batch_size > 1:
+            if v._ufl_is_literal_:
+                if v not in self.literals:
+                    self.literals[v] = lang.Symbol("literal" + str(len(self.literals)))
+                return self.literals[v]
+        else:
+            if v._ufl_is_literal_:
+                return self.backend.ufl_to_language.get(v)
+
         f = self.scopes[quadrature_rule].get(v)
         if f is None:
             f = self.scopes[None].get(v)
@@ -230,6 +244,15 @@ class IntegralGenerator(object):
         pre_definitions = fuse_loops(lang, all_predefinitions)
         parts += lang.commented_code_list(pre_definitions,
                                           "Pre-definitions of modified terminals to enable unit-stride access")
+
+        for literal in self.literals.keys():
+            scalar_type = self.backend.access.parameters["scalar_type"]
+            batch_size = self.backend.access.parameters["batch_size"]
+            if batch_size > 1:
+                scalar_type += str(batch_size)
+            values = self.backend.ufl_to_language.get(literal)
+            init_list = lang.as_symbol(lang.build_1d_initializer_list(numpy.array([values] * batch_size), str))
+            all_preparts.insert(0, lang.VariableDecl(f"const {scalar_type}", self.literals[literal], init_list))
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
@@ -413,6 +436,11 @@ class IntegralGenerator(object):
         intermediates = []
         quadrature_values = []
 
+        batch_size = self.backend.access.parameters["batch_size"]
+        scalar_type = self.backend.access.parameters["scalar_type"]
+        if batch_size > 1:
+            scalar_type += str(batch_size)
+
         use_symbol_array = True
 
         iq = create_quadrature_index(lang, quadrature_rule)
@@ -482,14 +510,22 @@ class IntegralGenerator(object):
                         vaccess = vexpr
                     else:
                         # Record assignment of vexpr to intermediate variable
-                        j = len(intermediates)
-                        if use_symbol_array:
+                        if isinstance(vexpr, lang.Call) and batch_size > 1:
+                            j = len(intermediates)
                             vaccess = symbol[j]
-                            intermediates.append(lang.Assign(vaccess, vexpr))
+                            for b in range(batch_size):
+                                argument = copy.deepcopy(vexpr.arguments[0])
+                                new_vexpr = copy.deepcopy(vexpr)
+                                new_vexpr.arguments[0] = argument[b]
+                                intermediates.append(lang.Assign(vaccess[b], new_vexpr))
                         else:
-                            scalar_type = self.backend.access.parameters["scalar_type"]
-                            vaccess = lang.Symbol("%s_%d" % (symbol.name, j))
-                            intermediates.append(lang.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
+                            if use_symbol_array:
+                                j = len(intermediates)
+                                vaccess = symbol[j]
+                                intermediates.append(lang.Assign(vaccess, vexpr))
+                            else:
+                                vaccess = lang.Symbol("%s_%d" % (symbol.name, j))
+                                intermediates.append(lang.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
@@ -501,8 +537,11 @@ class IntegralGenerator(object):
 
         if intermediates:
             if use_symbol_array:
-                declaration = [lang.ArrayDecl(self.backend.access.parameters["scalar_type"],
-                                              symbol, len(intermediates))]
+                scalar_type = self.backend.access.parameters["scalar_type"]
+                batch_size = self.backend.access.parameters["batch_size"]
+                if batch_size > 1:
+                    scalar_type += str(batch_size)
+                declaration = [lang.ArrayDecl(scalar_type, symbol, len(intermediates))]
                 intermediates.insert(0, declaration)
 
         def substitute_acess(intermediates, quadrature_values):
@@ -650,6 +689,10 @@ class IntegralGenerator(object):
                 key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
+                    scalar_type = self.backend.access.parameters["scalar_type"]
+                    batch_size = self.backend.access.parameters["batch_size"]
+                    if batch_size > 1:
+                        scalar_type += str(batch_size)
                     if iq.dim > 1:
                         preparts += [lang.ArrayDecl(scalar_type, fw, iq.ranges, values=[0.0])]
                         intermediates += [lang.Assign(fw[iq], fw_rhs)]
