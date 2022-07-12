@@ -169,8 +169,11 @@ def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type):
         code += [lang.NestedForRange([Iu], body)]
         lhs = C[Ic.global_idx()]
     else:
-        lhs = C[Ic.global_idx()]
-        rhs = lang.Mul(A, newB)
+        if isinstance(C, lang.Symbol):
+            lhs = C[Ic.global_idx()]
+        else:
+            lhs = C
+        rhs = lang.Mul(A, B)
         body = lang.AssignAdd(lhs, rhs)
         code += [lang.NestedForRange([Iu], body)]
 
