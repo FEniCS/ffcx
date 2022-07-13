@@ -364,7 +364,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         ir["element_dimensions"] = {
-            ufl_element: create_element(ufl_element).dim
+            ufl_element: create_element(ufl_element).dim + create_element(ufl_element).num_global_support_dofs
             for ufl_element in unique_elements
         }
 
@@ -605,7 +605,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
     ir["element_dimensions"] = {
-        ufl_element: create_element(ufl_element).dim
+        ufl_element: create_element(ufl_element).dim + create_element(ufl_element).num_global_support_dofs
         for ufl_element in analysis.unique_elements
     }
 

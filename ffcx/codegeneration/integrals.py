@@ -679,6 +679,8 @@ class IntegralGenerator(object):
         quadparts += hoist_code
         quadparts += body
 
+        from IPython import embed; embed()
+
         return preparts, quadparts
 
     def fuse_loops(self, definitions):
