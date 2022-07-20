@@ -11,7 +11,6 @@ import numpy
 import numpy.typing
 import ufl
 
-import basix.ufl_wrapper
 import ffcx
 from .element_interface import convert_element
 
