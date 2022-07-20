@@ -88,7 +88,7 @@ def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UF
         coordinate_elements += [convert_element(e) for e in data.coordinate_elements]
 
     for original_expression, points in expressions:
-        elements += list(ufl.algorithms.extract_elements(original_expression))
+        elements += [convert_element(e) for e in ufl.algorithms.extract_elements(original_expression)]
         processed_expression = _analyze_expression(original_expression, parameters)
         processed_expressions += [(processed_expression, points, original_expression)]
 
@@ -97,6 +97,9 @@ def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UF
     # Sort elements so sub-elements come before mixed elements
     unique_elements = ufl.algorithms.sort_elements(set(elements))
     unique_coordinate_element_list = sorted(set(coordinate_elements), key=lambda x: repr(x))
+
+    for e in unique_elements:
+        assert isinstance(e, basix.ufl_wrapper._BasixElementBase)
 
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}

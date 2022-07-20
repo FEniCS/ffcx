@@ -364,10 +364,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
-        ir["element_dimensions"] = {
-            element: element.dim
-            for element in unique_elements
-        }
+        ir["element_dimensions"] = {element: element.dim for element in unique_elements}
 
         ir["element_ids"] = {
             element: i
