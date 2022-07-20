@@ -1447,7 +1447,7 @@ class Scope(CStatement):
         return (isinstance(other, type(self)) and self.body == other.body)
 
     def flops(self):
-        return 0
+        return self.body.flops()
 
 
 def _is_simple_if_body(body):
