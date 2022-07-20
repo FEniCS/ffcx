@@ -100,7 +100,6 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     """A quadrature element."""
 
     _points: basix.ufl_wrapper._nda_f64
-    _element: basix.ufl_wrapper._BasixElementBase
     _entity_counts: typing.List[int]
     _family_name: str
     _cellname: str
@@ -128,7 +127,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
-        return isinstance(other, QuadratureElement) and self.element == other.element
+        return isinstance(other, QuadratureElement) and np.allclose(self._points, other._points)
 
     def __hash__(self) -> int:
         """Return a hash."""
