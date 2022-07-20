@@ -151,13 +151,12 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
         assert not isinstance(element, basix.ufl_wrapper._BasixElementBase)
-        if not isinstance(element, basix.ufl_wrapper._BasixElementBase):
-            if element._sub_element._variant is None and element.degree() > 2:
-                sub_element = ufl.FiniteElement(
-                    element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
-                    variant="equispaced")
-                equi_element = ufl.VectorElement(sub_element)
-                form._integrals[n]._ufl_domain._ufl_coordinate_element = convert_element(equi_element)
+        if element._sub_element._variant is None and element.degree() > 2:
+            sub_element = ufl.FiniteElement(
+                element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
+                variant="equispaced")
+            equi_element = ufl.VectorElement(sub_element)
+            form._integrals[n]._ufl_domain._ufl_coordinate_element = equi_element
 
     # Check for complex mode
     complex_mode = "_Complex" in parameters["scalar_type"]
