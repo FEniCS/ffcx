@@ -17,16 +17,19 @@ import typing
 import numpy
 import numpy.typing
 import ufl
+import basix.ufl_wrapper
+
+from ffcx.element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
 
 
 class UFLData(typing.NamedTuple):
     form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]  # Tuple of ufl form data
-    unique_elements: typing.List[ufl.finiteelement.FiniteElementBase]  # List of unique elements
+    unique_elements: typing.List[basix.ufl_wrapper._BasixElementBase]  # List of unique elements
     # Lookup table from each unique element to its index in `unique_elements`
-    element_numbers: typing.Dict[ufl.finiteelement.FiniteElementBase, int]
-    unique_coordinate_elements: typing.List[ufl.finiteelement.FiniteElementBase]  # List of unique coordinate elements
+    element_numbers: typing.Dict[basix.ufl_wrapper._BasixElementBase, int]
+    unique_coordinate_elements: typing.List[basix.ufl_wrapper._BasixElementBase]  # List of unique coordinate elements
     # List of ufl Expressions as tuples (expression, points, original_expression)
     expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64], ufl.core.expr.Expr]]
 
@@ -67,22 +70,22 @@ def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UF
 
     for ufl_object in ufl_objects:
         if isinstance(ufl_object, ufl.form.Form):
-            forms += [ufl_object]
+            forms.append(ufl_object)
         elif isinstance(ufl_object, ufl.FiniteElementBase):
-            elements += [ufl_object]
+            elements.append(convert_element(ufl_object))
         elif isinstance(ufl_object, ufl.Mesh):
-            coordinate_elements += [ufl_object.ufl_coordinate_element()]
+            coordinate_elements.append(convert_element(ufl_object.ufl_coordinate_element()))
         elif isinstance(ufl_object[0], ufl.core.expr.Expr):
             original_expression = ufl_object[0]
             points = numpy.asarray(ufl_object[1])
-            expressions += [(original_expression, points)]
+            expressions.append((original_expression, points))
         else:
             raise TypeError("UFL objects not recognised.")
 
     form_data = tuple(_analyze_form(form, parameters) for form in forms)
     for data in form_data:
-        elements += data.unique_sub_elements
-        coordinate_elements += data.coordinate_elements
+        elements += [convert_element(e) for e in data.unique_sub_elements]
+        coordinate_elements += [convert_element(e) for e in data.coordinate_elements]
 
     for original_expression, points in expressions:
         elements += list(ufl.algorithms.extract_elements(original_expression))
@@ -147,12 +150,14 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        if element._sub_element._variant is None and element.degree() > 2:
-            sub_element = ufl.FiniteElement(
-                element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
-                variant="equispaced")
-            equi_element = ufl.VectorElement(sub_element)
-            form._integrals[n]._ufl_domain._ufl_coordinate_element = equi_element
+        assert not isinstance(element, basix.ufl_wrapper._BasixElementBase)
+        if not isinstance(element, basix.ufl_wrapper._BasixElementBase):
+            if element._sub_element._variant is None and element.degree() > 2:
+                sub_element = ufl.FiniteElement(
+                    element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
+                    variant="equispaced")
+                equi_element = ufl.VectorElement(sub_element)
+                form._integrals[n]._ufl_domain._ufl_coordinate_element = convert_element(equi_element)
 
     # Check for complex mode
     complex_mode = "_Complex" in parameters["scalar_type"]

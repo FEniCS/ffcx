@@ -11,7 +11,9 @@ import numpy
 import numpy.typing
 import ufl
 
+import basix.ufl_wrapper
 import ffcx
+from .element_interface import convert_element
 
 
 def compute_signature(ufl_objects: typing.List[
@@ -30,7 +32,7 @@ def compute_signature(ufl_objects: typing.List[
             kind = "form"
             object_signature += ufl_object.signature()
         elif isinstance(ufl_object, ufl.FiniteElementBase):
-            object_signature += repr(ufl_object)
+            object_signature += repr(convert_element(ufl_object))
             kind = "element"
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
             expr = ufl_object[0]
@@ -84,13 +86,13 @@ def form_name(original_form, form_id, prefix):
 
 def finite_element_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], prefix)
+    sig = compute_signature([convert_element(ufl_element)], prefix)
     return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], prefix)
+    sig = compute_signature([convert_element(ufl_element)], prefix)
     return f"dofmap_{sig}"
 
 

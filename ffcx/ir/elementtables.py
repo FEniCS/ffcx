@@ -11,7 +11,7 @@ import typing
 import numpy
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.element_interface import basix_index, create_element
+from ffcx.element_interface import basix_index, convert_element
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -65,13 +65,14 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
+def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
                           derivative_counts, flat_component):
     """Extract values from FFCx element table.
 
     Returns a 3D numpy array with axes
     (entity number, quadrature point number, dof number)
     """
+    element = convert_element(element)
     deriv_order = sum(derivative_counts)
 
     if integral_type in ufl.custom_integral_types:
@@ -102,18 +103,16 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
         # Make quadrature rule and get points and weights
         points, weights = create_quadrature_points_and_weights(integral_type, cell,
-                                                               ufl_element.degree(), "default")
+                                                               element.degree(), "default")
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension()
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
-    basix_element = create_element(ufl_element)
-
     # Extract arrays for the right scalar component
     component_tables = []
-    component_element, offset, stride = basix_element.get_component_element(flat_component)
+    component_element, offset, stride = element.get_component_element(flat_component)
 
     for entity in range(num_entities):
         entity_points = map_integral_points(points, integral_type, cell, entity)
@@ -192,14 +191,14 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
         elif ld and not mt.reference_value:
             raise RuntimeError(
                 "Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()
+        element = convert_element(mt.terminal.ufl_function_space().ufl_element())
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of x.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of x.")
-        element = mt.terminal.ufl_domain().ufl_coordinate_element()
+        element = convert_element(mt.terminal.ufl_domain().ufl_coordinate_element())
         if not ld:
             fc = mt.flat_component
         else:
@@ -212,7 +211,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
             raise RuntimeError("Not expecting reference value of J.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of J.")
-        element = mt.terminal.ufl_domain().ufl_coordinate_element()
+        element = convert_element(mt.terminal.ufl_domain().ufl_coordinate_element())
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
@@ -385,11 +384,11 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             _existing_tables[name] = tbl
 
         cell_offset = 0
-        basix_element = create_element(element)
+        element = convert_element(element)
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
-            cell_offset = basix_element.dim
+            cell_offset = element.dim
 
         offset = cell_offset + t['offset']
         block_size = t['stride']

@@ -15,8 +15,17 @@ import basix
 import numpy
 import ufl
 import basix.ufl_wrapper
+from functools import lru_cache
 
 
+def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
+    """Convert and element to a FFCx element."""
+    if isinstance(element, basix.ufl_wrapper._BasixElementBase):
+        return element
+    return create_element(element)
+
+
+@lru_cache
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
     """Create an FFCx element from a UFL element.
 
