@@ -10,6 +10,7 @@ from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
                          Grad, Indexed, Jacobian, ReferenceGrad,
                          ReferenceValue, Restricted, SpatialCoordinate)
 from ufl.permutation import build_component_numbering
+from ...element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
 
@@ -262,7 +263,7 @@ def analyse_modified_terminal(expr):
     # Get the shape of the core terminal or its reference value, this is
     # the shape that component refers to
     if isinstance(t, FormArgument):
-        element = t.ufl_function_space().ufl_element()
+        element = convert_element(t.ufl_function_space().ufl_element())
         if reference_value:
             # Ignoring symmetry, assuming already applied in conversion
             # to reference frame
