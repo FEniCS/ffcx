@@ -253,7 +253,7 @@ class IntegralGenerator(object):
         parts = L.commented_code_list(parts, "Quadrature rules")
         return parts
 
-    def generate_geometry_tables(self, float_type):
+    def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
         L = self.backend.language
 

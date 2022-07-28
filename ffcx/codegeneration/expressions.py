@@ -150,10 +150,12 @@ class ExpressionGenerator:
         L = self.backend.language
 
         parts = []
+        scalar_type = self.backend.access.parameters["scalar_type"]
+        value_type = scalar_to_value_type(scalar_type)
 
-        parts += self.generate_element_tables()
+        parts += self.generate_element_tables(value_type)
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += self.generate_geometry_tables(value_type)
         parts += self.generate_piecewise_partition()
 
         all_preparts = []
@@ -169,13 +171,13 @@ class ExpressionGenerator:
 
         return L.StatementList(parts)
 
-    def generate_geometry_tables(self):
+    def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
         L = self.backend.language
 
         # Currently we only support circumradius
         ufl_geometry = {
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume"
+            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
         }
         cells = {t: set() for t in ufl_geometry.keys()}
 
@@ -190,11 +192,11 @@ class ExpressionGenerator:
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+                parts.append(geometry.write_table(L, ufl_geometry[i], c, float_type))
 
         return parts
 
-    def generate_element_tables(self):
+    def generate_element_tables(self, float_type: str):
         """Generate tables of FE basis evaluated at specified points."""
         L = self.backend.language
         parts = []
@@ -204,12 +206,10 @@ class ExpressionGenerator:
         padlen = self.ir.params["padlen"]
         table_names = sorted(tables)
 
-        scalar_type = self.backend.access.parameters["scalar_type"]
-
         for name in table_names:
             table = tables[name]
             decl = L.ArrayDecl(
-                f"static const {scalar_type}", name, table.shape, table, padlen=padlen)
+                f"static const {float_type}", name, table.shape, table, padlen=padlen)
             parts += [decl]
 
         # Add leading comment if there are any tables
