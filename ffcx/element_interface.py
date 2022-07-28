@@ -65,6 +65,7 @@ def basix_index(indices: typing.Tuple[int]) -> int:
 def create_quadrature(cellname, degree, rule) -> typing.Tuple[numpy.typing.NDArray[numpy.float64],
                                                               numpy.typing.NDArray[numpy.float64]]:
     """Create a quadrature rule."""
+    print(cellname, degree, rule)
     if cellname == "vertex":
         return (numpy.ones((1, 0), dtype=numpy.float64), numpy.ones(1, dtype=numpy.float64))
 

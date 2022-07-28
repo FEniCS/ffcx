@@ -9,7 +9,7 @@ import logging
 import warnings
 
 import ufl
-from ffcx.element_interface import create_element
+from ffcx.element_interface import create_element, convert_element
 from basix.ufl_wrapper import BlockedElement
 
 logger = logging.getLogger("ffcx")
@@ -254,7 +254,7 @@ class FFCXBackendAccess(object):
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
         gdim = domain.geometric_dimension()
-        coordinate_element = domain.ufl_coordinate_element()
+        coordinate_element = convert_element(domain.ufl_coordinate_element())
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, BlockedElement)
@@ -278,7 +278,7 @@ class FFCXBackendAccess(object):
         domain = mt.terminal.ufl_domain()
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
-        coordinate_element = domain.ufl_coordinate_element()
+        coordinate_element = convert_element(domain.ufl_coordinate_element())
 
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             pass
@@ -319,7 +319,7 @@ class FFCXBackendAccess(object):
         domain = mt.terminal.ufl_domain()
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
-        coordinate_element = domain.ufl_coordinate_element()
+        coordinate_element = convert_element(domain.ufl_coordinate_element())
 
         if cellname in ("tetrahedron", "hexahedron"):
             pass
