@@ -11,8 +11,8 @@
 
 #define UFCX_VERSION_MAJOR 0
 #define UFCX_VERSION_MINOR 4
-#define UFCX_VERSION_MAINTENANCE 2
-#define UFCX_VERSION_RELEASE 1
+#define UFCX_VERSION_MAINTENANCE 3
+#define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
 #define UFCX_VERSION                                                            \
@@ -173,6 +173,9 @@ extern "C"
     /// The number of interpolation points associated with each entity
     int* npts;
 
+    /// The number of DOFs associated with each entity
+    int* ndofs;
+
     // The coordinates of the interpolation points
     double* x;
 
@@ -187,6 +190,9 @@ extern "C"
 
     /// The highest degree full polynomial space contained in this element
     int highest_complete_degree;
+
+    /// The number of derivatives needed when interpolating
+    int interpolation_nderivs;
 
     /// The highest degree of a polynomial in the element
     int highest_degree;
@@ -262,7 +268,7 @@ extern "C"
   /// (one permutation for each cell adjacent to the facet).
   typedef void(ufcx_tabulate_tensor_float32)(
       float* restrict A, const float* restrict w,
-      const float* restrict c, const double* restrict coordinate_dofs,
+      const float* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -282,7 +288,7 @@ extern "C"
   /// @see ufcx_tabulate_tensor_single
   typedef void(ufcx_tabulate_tensor_longdouble)(
       long double* restrict A, const long double* restrict w,
-      const long double* restrict c, const double* restrict coordinate_dofs,
+      const long double* restrict c, const long double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -292,7 +298,7 @@ extern "C"
   /// @see ufcx_tabulate_tensor_single
   typedef void(ufcx_tabulate_tensor_complex64)(
       float _Complex* restrict A, const float _Complex* restrict w,
-      const float _Complex* restrict c, const double* restrict coordinate_dofs,
+      const float _Complex* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 

@@ -5,13 +5,13 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tools for precomputed tables of terminal values."""
 
-import collections
 import logging
+import typing
 
 import numpy
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.element_interface import basix_index, create_element
+from ffcx.element_interface import basix_index, convert_element
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -25,10 +25,23 @@ default_atol = 1e-9
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
-unique_table_reference_t = collections.namedtuple(
-    "unique_table_reference_t",
-    ["name", "values", "offset", "block_size", "ttype",
-     "is_piecewise", "is_uniform", "is_permuted"])
+
+class ModifiedTerminalElement(typing.NamedTuple):
+    element: ufl.FiniteElementBase
+    averaged: str
+    local_derivatives: typing.Tuple[int]
+    fc: int
+
+
+class UniqueTableReferenceT(typing.NamedTuple):
+    name: str
+    values: numpy.typing.NDArray[numpy.float64]
+    offset: int
+    block_size: int
+    ttype: str
+    is_piecewise: bool
+    is_uniform: bool
+    is_permuted: bool
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -52,13 +65,14 @@ def clamp_table_small_numbers(table,
     return table
 
 
-def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entitytype,
+def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
                           derivative_counts, flat_component):
     """Extract values from FFCx element table.
 
     Returns a 3D numpy array with axes
     (entity number, quadrature point number, dof number)
     """
+    element = convert_element(element)
     deriv_order = sum(derivative_counts)
 
     if integral_type in ufl.custom_integral_types:
@@ -89,23 +103,21 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
 
         # Make quadrature rule and get points and weights
         points, weights = create_quadrature_points_and_weights(integral_type, cell,
-                                                               ufl_element.degree(), "default")
+                                                               element.degree(), "default")
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension()
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
 
-    basix_element = create_element(ufl_element)
-
     # Extract arrays for the right scalar component
     component_tables = []
-    component_element, offset, stride = basix_element.get_component_element(flat_component)
+    component_element, offset, stride = element.get_component_element(flat_component)
 
     for entity in range(num_entities):
         entity_points = map_integral_points(points, integral_type, cell, entity)
         tbl = component_element.tabulate(deriv_order, entity_points)
-        tbl = tbl[basix_index(*derivative_counts)]
+        tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
 
     if avg in ("cell", "facet"):
@@ -129,7 +141,7 @@ def get_ffcx_table_values(points, cell, integral_type, ufl_element, avg, entityt
     return {'array': res, 'offset': offset, 'stride': stride}
 
 
-def generate_psi_table_name(quadrature_rule, element_counter, averaged, entitytype, derivative_counts,
+def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, entitytype, derivative_counts,
                             flat_component):
     """Generate a name for the psi table.
 
@@ -167,7 +179,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged, entityty
     return name
 
 
-def get_modified_terminal_element(mt):
+def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement]:
     gd = mt.global_derivatives
     ld = mt.local_derivatives
 
@@ -179,14 +191,14 @@ def get_modified_terminal_element(mt):
         elif ld and not mt.reference_value:
             raise RuntimeError(
                 "Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()
+        element = convert_element(mt.terminal.ufl_function_space().ufl_element())
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of x.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of x.")
-        element = mt.terminal.ufl_domain().ufl_coordinate_element()
+        element = convert_element(mt.terminal.ufl_domain().ufl_coordinate_element())
         if not ld:
             fc = mt.flat_component
         else:
@@ -199,7 +211,7 @@ def get_modified_terminal_element(mt):
             raise RuntimeError("Not expecting reference value of J.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of J.")
-        element = mt.terminal.ufl_domain().ufl_coordinate_element()
+        element = convert_element(mt.terminal.ufl_domain().ufl_coordinate_element())
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
@@ -207,14 +219,13 @@ def get_modified_terminal_element(mt):
     else:
         return None
 
-    assert not (mt.averaged and (ld or gd))
-
+    assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     gdim = mt.terminal.ufl_domain().geometric_dimension()
     local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
         ld, gdim)
 
-    return element, mt.averaged, local_derivatives, fc
+    return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
 
 def permute_quadrature_interval(points, reflections=0):
@@ -270,7 +281,6 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
     # Add to element tables
     analysis = {}
     for mt in modified_terminals:
-        # FIXME: Use a namedtuple for res
         res = get_modified_terminal_element(mt)
         if res:
             analysis[mt] = res
@@ -374,17 +384,17 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             _existing_tables[name] = tbl
 
         cell_offset = 0
-        basix_element = create_element(element)
+        element = convert_element(element)
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
-            cell_offset = basix_element.dim
+            cell_offset = element.dim
 
         offset = cell_offset + t['offset']
         block_size = t['stride']
 
         # tables is just np.arrays, mt_tables hold metadata too
-        mt_tables[mt] = unique_table_reference_t(
+        mt_tables[mt] = UniqueTableReferenceT(
             name, tbl, offset, block_size, tabletype,
             tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted)
 

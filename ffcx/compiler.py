@@ -75,9 +75,8 @@ from ffcx.ir.representation import compute_ir
 logger = logging.getLogger("ffcx")
 
 
-def _print_timing(stage, timing):
-    logger.info("Compiler stage {stage} finished in {time:.4f} seconds.".format(
-        stage=stage, time=timing))
+def _print_timing(stage: int, timing: float):
+    logger.info(f"Compiler stage {stage} finished in {timing:.4f} seconds.")
 
 
 def compile_ufl_objects(ufl_objects: typing.List[typing.Any],

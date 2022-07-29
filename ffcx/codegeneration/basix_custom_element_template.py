@@ -9,6 +9,7 @@ factory = """
 {value_shape_init}
 {wcoeffs_init}
 {npts_init}
+{ndofs_init}
 {x_init}
 {M_init}
 
@@ -21,11 +22,13 @@ ufcx_basix_custom_finite_element {factory_name} =
   .wcoeffs_cols = {wcoeffs_cols},
   .wcoeffs = {wcoeffs},
   .npts = {npts},
+  .ndofs = {ndofs},
   .x = {x},
   .M = {M},
   .map_type = {map_type},
   .discontinuous = {discontinuous},
   .highest_complete_degree = {highest_complete_degree},
+  .interpolation_nderivs = {interpolation_nderivs},
   .highest_degree = {highest_degree}
 }};
 

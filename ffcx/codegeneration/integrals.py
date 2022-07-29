@@ -12,12 +12,12 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.C.cnodes import BinOp, CNode
 from ffcx.codegeneration.C.format_lines import format_indented_lines
-from ffcx.codegeneration.C.cnodes import CNode, BinOp
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.integral import block_data_t
+from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.naming import cdtype_to_numpy
+from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -58,8 +58,8 @@ def generator(ir, parameters):
     L = backend.language
     if len(ir.enabled_coefficients) > 0:
         code["enabled_coefficients_init"] = L.ArrayDecl(
-            "bool", f"enabled_coefficients_{ir.name}",
-            values=ir.enabled_coefficients, sizes=len(ir.enabled_coefficients))
+            "bool", f"enabled_coefficients_{ir.name}", values=ir.enabled_coefficients,
+            sizes=len(ir.enabled_coefficients))
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""
@@ -78,6 +78,7 @@ def generator(ir, parameters):
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=parameters["scalar_type"],
+        geom_type=scalar_to_value_type(parameters["scalar_type"]),
         np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]),
         coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
 
@@ -96,8 +97,8 @@ class IntegralGenerator(object):
         # - access: for accessing backend specific variables
         self.backend = backend
 
-        # Set of operator names code has been generated for,
-        # used in the end for selecting necessary includes
+        # Set of operator names code has been generated for, used in the
+        # end for selecting necessary includes
         self._ufl_names = set()
 
         # Initialize lookup tables for variable scopes
@@ -106,7 +107,8 @@ class IntegralGenerator(object):
         # Cache
         self.shared_symbols = {}
 
-        # Set of counters used for assigning names to intermediate variables
+        # Set of counters used for assigning names to intermediate
+        # variables
         self.symbol_counters = collections.defaultdict(int)
 
     def init_scopes(self):
@@ -164,34 +166,36 @@ class IntegralGenerator(object):
     def generate(self):
         """Generate entire tabulate_tensor body.
 
-        Assumes that the code returned from here will be wrapped in a context
-        that matches a suitable version of the UFC tabulate_tensor signatures.
+        Assumes that the code returned from here will be wrapped in a
+        context that matches a suitable version of the UFC
+        tabulate_tensor signatures.
         """
         L = self.backend.language
 
-        # Assert that scopes are empty: expecting this to be called only once
+        # Assert that scopes are empty: expecting this to be called only
+        # once
         assert not any(d for d in self.scopes.values())
 
         parts = []
-
+        scalar_type = self.backend.access.parameters["scalar_type"]
+        value_type = scalar_to_value_type(scalar_type)
         alignment = self.ir.params['assume_aligned']
         if alignment != -1:
             scalar_type = self.backend.access.parameters["scalar_type"]
             parts += [L.VerbatimStatement(f"A = ({scalar_type}*)__builtin_assume_aligned(A, {alignment});"),
                       L.VerbatimStatement(f"w = (const {scalar_type}*)__builtin_assume_aligned(w, {alignment});"),
                       L.VerbatimStatement(f"c = (const {scalar_type}*)__builtin_assume_aligned(c, {alignment});"),
-                      L.VerbatimStatement(
-                          f"coordinate_dofs = (const double*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]
+                      L.VerbatimStatement(f"coordinate_dofs = (const {value_type}*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]  # noqa
 
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables()
+        parts += self.generate_quadrature_tables(value_type)
 
-        # Generate the tables of basis function values and preintegrated
-        # blocks
-        parts += self.generate_element_tables()
+        # Generate the tables of basis function values and
+        # pre-integrated blocks
+        parts += self.generate_element_tables(value_type)
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += self.generate_geometry_tables(value_type)
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -199,10 +203,9 @@ class IntegralGenerator(object):
         all_preparts = []
         all_quadparts = []
 
-        # Pre-definitions are collected across all quadrature loops
-        # to improve re-use and avoid name clashes
+        # Pre-definitions are collected across all quadrature loops to
+        # improve re-use and avoid name clashes
         all_predefinitions = dict()
-
         for rule in self.ir.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
             all_preparts += self.generate_piecewise_partition(rule)
@@ -223,11 +226,11 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self):
+    def generate_quadrature_tables(self, value_type: str) -> List[str]:
         """Generate static tables of quadrature points and weights."""
         L = self.backend.language
 
-        parts = []
+        parts: List[str] = []
 
         # No quadrature tables for custom (given argument) or point
         # (evaluation in single vertex)
@@ -239,21 +242,18 @@ class IntegralGenerator(object):
 
         # Loop over quadrature rules
         for quadrature_rule, integrand in self.ir.integrand.items():
-
             num_points = quadrature_rule.weights.shape[0]
+
             # Generate quadrature weights array
             wsym = self.backend.symbols.weights_table(quadrature_rule)
-            parts += [
-                L.ArrayDecl(
-                    "static const double", wsym, num_points,
-                    quadrature_rule.weights, padlen=padlen)
-            ]
+            parts += [L.ArrayDecl(f"static const {value_type}", wsym, num_points,
+                                  quadrature_rule.weights, padlen=padlen)]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
         return parts
 
-    def generate_geometry_tables(self):
+    def generate_geometry_tables(self, float_type):
         """Generate static tables of geometry data."""
         L = self.backend.language
 
@@ -280,20 +280,17 @@ class IntegralGenerator(object):
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+                parts.append(geometry.write_table(L, ufl_geometry[i], c, float_type))
 
         return parts
 
-    def generate_element_tables(self):
-        """Generate static tables with precomputed element basis function values in quadrature points."""
+    def generate_element_tables(self, float_type: str):
+        """Generate static tables with precomputed element basisfunction values in quadrature points."""
         L = self.backend.language
         parts = []
-
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-
         padlen = self.ir.params["padlen"]
-
         if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
@@ -303,16 +300,15 @@ class IntegralGenerator(object):
 
         for name in table_names:
             table = tables[name]
-            parts += self.declare_table(name, table, padlen)
+            parts += self.declare_table(name, table, padlen, float_type)
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, [
             "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [permutation][entities][points][dofs]",
-        ])
+            "FE* dimensions: [permutation][entities][points][dofs]"])
         return parts
 
-    def declare_table(self, name, table, padlen):
+    def declare_table(self, name, table, padlen, value_type: str):
         """Declare a table.
 
         If the dof dimensions of the table have dof rotations, apply
@@ -320,9 +316,7 @@ class IntegralGenerator(object):
 
         """
         L = self.backend.language
-
-        return [L.ArrayDecl(
-            "static const double", name, table.shape, table, padlen=padlen)]
+        return [L.ArrayDecl(f"static const {value_type}", name, table.shape, table, padlen=padlen)]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
@@ -330,13 +324,11 @@ class IntegralGenerator(object):
         # Generate varying partition
         pre_definitions, body = self.generate_varying_partition(quadrature_rule)
 
-        body = L.commented_code_list(
-            body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
+        body = L.commented_code_list(body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
-        preparts, quadparts = \
-            self.generate_dofblock_partition(quadrature_rule)
+        preparts, quadparts = self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
 
         # Wrap body in loop or scope
@@ -373,8 +365,7 @@ class IntegralGenerator(object):
 
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}")
         pre_definitions, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
-        parts = L.commented_code_list(
-            parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
+        parts = L.commented_code_list(parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
 
         return pre_definitions, parts
 
@@ -497,8 +488,8 @@ class IntegralGenerator(object):
             block_groups[tuple(scalar_blockmap)].append(blockdata)
 
         for blockmap in block_groups:
-            block_preparts, block_quadparts = \
-                self.generate_block_parts(quadrature_rule, blockmap, block_groups[blockmap])
+            block_preparts, block_quadparts = self.generate_block_parts(
+                quadrature_rule, blockmap, block_groups[blockmap])
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -533,12 +524,14 @@ class IntegralGenerator(object):
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[block_data_t]):
+    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):
         """Generate and return code parts for a given block.
 
-        Returns parts occuring before, inside, and after the quadrature loop identified by the quadrature rule.
+        Returns parts occuring before, inside, and after the quadrature
+        loop identified by the quadrature rule.
 
-        Should be called with quadrature_rule=None for quadloop-independent blocks.
+        Should be called with quadrature_rule=None for
+        quadloop-independent blocks.
         """
         L = self.backend.language
 
@@ -631,8 +624,8 @@ class IntegralGenerator(object):
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
 
-            # Hoist loop invariant code and group array access (each table should only be read one
-            # time in the inner loop).
+            # Hoist loop invariant code and group array access (each
+            # table should only be read one time in the inner loop)
             if block_rank == 2:
                 ind = B_indices[-1]
                 for rhs in rhs_expressions[indices]:
@@ -646,8 +639,9 @@ class IntegralGenerator(object):
                         else:
                             keep[indices].append(rhs)
 
-                # Perform algebraic manipulations to reduce number of floating point
-                # operations (factorize expressions by grouping)
+                # Perform algebraic manipulations to reduce number of
+                # floating point operations (factorize expressions by
+                # grouping)
                 for statement in hoist_rhs:
                     sum = []
                     for rhs in hoist_rhs[statement]:
@@ -688,12 +682,15 @@ class IntegralGenerator(object):
         return preparts, quadparts
 
     def fuse_loops(self, definitions):
-        """
-        Merge a sequence of loops with the same iteration space into a single loop.
+        """Merge a sequence of loops with the same iteration space into a single loop.
 
-        Loop fusion improves data locality, cache reuse and decreases the loop control overhead.
-        NOTE: Loop fusion might increase the pressure on register allocation.
-        Ideally, we should define a cost function to determine how many loops should fuse at a time.
+        Loop fusion improves data locality, cache reuse and decreases
+        the loop control overhead.
+
+        NOTE: Loop fusion might increase the pressure on register
+        allocation. Ideally, we should define a cost function to
+        determine how many loops should fuse at a time.
+
         """
         L = self.backend.language
 

@@ -73,7 +73,7 @@ def generator(ir, parameters):
         d["value_shape"] = "NULL"
         d["value_shape_init"] = ""
 
-    if len(ir.value_shape) > 0:
+    if len(ir.reference_value_shape) > 0:
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
         d["reference_value_shape_init"] = L.ArrayDecl(
             "int", f"reference_value_shape_{ir.name}",
@@ -123,6 +123,7 @@ def generate_custom_element(name, ir):
     d["highest_complete_degree"] = ir.highest_complete_degree
     d["highest_degree"] = ir.highest_degree
     d["discontinuous"] = "true" if ir.discontinuous else "false"
+    d["interpolation_nderivs"] = ir.interpolation_nderivs
 
     import ffcx.codegeneration.C.cnodes as L
 
@@ -155,13 +156,20 @@ def generate_custom_element(name, ir):
     d["x"] = f"x_{name}"
     d["x_init"] = f"double x_{name}[{len(x)}] = "
     d["x_init"] += "{" + ",".join([f" {i}" for i in x]) + "};"
+    ndofs = []
     M = []
     for entity in ir.M:
-        for matrices in entity:
-            for mat in matrices:
-                for row in mat:
-                    for i in row:
-                        M.append(i)
+        for mat4d in entity:
+            ndofs.append(mat4d.shape[0])
+            for mat3d in mat4d:
+                for mat2d in mat3d:
+                    for row in mat2d:
+                        for i in row:
+                            M.append(i)
+
+    d["ndofs"] = f"ndofs_{name}"
+    d["ndofs_init"] = f"int ndofs_{name}[{len(ndofs)}] = "
+    d["ndofs_init"] += "{" + ",".join([f" {i}" for i in ndofs]) + "};"
     d["M"] = f"M_{name}"
     d["M_init"] = f"double M_{name}[{len(M)}] = "
     d["M_init"] += "{" + ",".join([f" {i}" for i in M]) + "};"
