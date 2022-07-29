@@ -10,9 +10,9 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 4
-#define UFCX_VERSION_MAINTENANCE 3
-#define UFCX_VERSION_RELEASE 0
+#define UFCX_VERSION_MINOR 5
+#define UFCX_VERSION_MAINTENANCE 0
+#define UFCX_VERSION_RELEASE 1
 
 #if UFCX_VERSION_RELEASE
 #define UFCX_VERSION                                                            \
