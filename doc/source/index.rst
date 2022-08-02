@@ -24,7 +24,7 @@ API reference
    ffcx.main
    ffcx.naming
    ffcx.codegeneration
-   ffcx.parameters
+   ffcx.options
    ffcx.ir.representation
    ffcx.ir.representationutils
 

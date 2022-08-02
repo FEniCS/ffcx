@@ -14,7 +14,7 @@ from ffcx.codegeneration import form_template
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     """Generate UFC code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
