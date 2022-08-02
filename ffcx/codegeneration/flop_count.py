@@ -16,7 +16,7 @@ from ffcx.ir.representation import compute_ir
 def count_flops(form: ufl.Form, options: Optional[dict] = {}):
     """Return a list with the number of flops for each kernel in the Form."""
     options = ffcx.options.get_options(options)
-    assert(isinstance(form, ufl.Form))
+    assert (isinstance(form, ufl.Form))
     analysis = analyze_ufl_objects([form], options)
     ir = compute_ir(analysis, {}, "flops", options, False)
 

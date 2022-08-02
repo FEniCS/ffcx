@@ -31,5 +31,5 @@ def test_cache_modes(compile_args):
     newfile = module.__file__
     print(newname, newfile)
 
-    assert(newname == tmpname)
-    assert(newfile != tmpfile)
+    assert (newname == tmpname)
+    assert (newfile != tmpfile)
