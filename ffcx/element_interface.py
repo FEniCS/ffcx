@@ -130,9 +130,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
         self._cellname = cellname
         basix_cell = basix.cell.string_to_type(cellname)
-        topology = basix.topology(basix_cell)
-        tdim = len(topology) - 1
-        self._entity_counts = [len(i) for i in topology]
+        self._entity_counts = [len(i) for i in basix.topology(basix_cell)]
 
         super().__init__(repr, "quadrature element", cellname, value_shape, degree, mapname=mapname)
 
