@@ -25,7 +25,7 @@ def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_w
     return create_element(element)
 
 
-@lru_cache
+@lru_cache()
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
     """Create an FFCx element from a UFL element.
 
