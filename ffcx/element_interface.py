@@ -50,7 +50,7 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
     elif isinstance(element, ufl.MixedElement):
         return basix.ufl_wrapper.MixedElement([create_element(e) for e in element.sub_elements()])
     elif isinstance(element, ufl.EnrichedElement):
-        return basix.ufl_wrapper._create_enriched_element([create_element(e) for e in element._elements])
+        return basix.ufl_wrapper.create_enriched_element([create_element(e) for e in element._elements])
 
     elif element.family() == "Quadrature":
         return QuadratureElement(element)
