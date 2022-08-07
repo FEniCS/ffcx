@@ -15,8 +15,17 @@ import basix
 import numpy
 import ufl
 import basix.ufl_wrapper
+from functools import lru_cache
 
 
+def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
+    """Convert and element to a FFCx element."""
+    if isinstance(element, basix.ufl_wrapper._BasixElementBase):
+        return element
+    return create_element(element)
+
+
+@lru_cache()
 def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
     """Create an FFCx element from a UFL element.
 
@@ -40,6 +49,8 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
                 element.sub_elements()[0]), element._value_shape, symmetric=True)
     elif isinstance(element, ufl.MixedElement):
         return basix.ufl_wrapper.MixedElement([create_element(e) for e in element.sub_elements()])
+    elif isinstance(element, ufl.EnrichedElement):
+        return basix.ufl_wrapper._create_enriched_element([create_element(e) for e in element._elements])
 
     elif element.family() == "Quadrature":
         return QuadratureElement(element)
@@ -91,7 +102,6 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     """A quadrature element."""
 
     _points: basix.ufl_wrapper._nda_f64
-    _element: basix.ufl_wrapper._BasixElementBase
     _entity_counts: typing.List[int]
     _family_name: str
     _cellname: str
@@ -119,7 +129,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
-        return isinstance(other, QuadratureElement) and self.element == other.element
+        return isinstance(other, QuadratureElement) and numpy.allclose(self._points, other._points)
 
     def __hash__(self) -> int:
         """Return a hash."""

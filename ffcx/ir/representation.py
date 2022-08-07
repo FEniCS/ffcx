@@ -27,7 +27,7 @@ import numpy
 import ufl
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.element_interface import create_element
+from ffcx.element_interface import convert_element
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import (QuadratureRule,
                                          create_quadrature_points_and_weights)
@@ -218,46 +218,47 @@ def compute_ir(analysis: UFLData, object_names, prefix, parameters, visualise):
                   expressions=ir_expressions)
 
 
-def _compute_element_ir(ufl_element, element_numbers, finite_element_names):
+def _compute_element_ir(element, element_numbers, finite_element_names):
     """Compute intermediate representation of element."""
-    logger.info(f"Computing IR for element {ufl_element}")
+    logger.info(f"Computing IR for element {element}")
+
+    element = convert_element(element)
 
     # Create basix elements
-    basix_element = create_element(ufl_element)
-    cell = ufl_element.cell()
+    cell = element.cell()
 
     # Store id
-    ir = {"id": element_numbers[ufl_element]}
-    ir["name"] = finite_element_names[ufl_element]
+    ir = {"id": element_numbers[element]}
+    ir["name"] = finite_element_names[element]
 
     # Compute data for each function
-    ir["signature"] = repr(ufl_element)
-    ir["cell_shape"] = basix_element.cell_type.name
+    ir["signature"] = repr(element)
+    ir["cell_shape"] = element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["space_dimension"] = basix_element.dim
-    ir["element_type"] = basix_element.ufcx_element_type
-    ir["lagrange_variant"] = basix_element.lagrange_variant
-    ir["dpc_variant"] = basix_element.dpc_variant
-    ir["basix_family"] = basix_element.element_family
-    ir["basix_cell"] = basix_element.cell_type
-    ir["discontinuous"] = basix_element.discontinuous
-    ir["degree"] = basix_element.degree()
-    ir["family"] = basix_element.family_name
-    ir["value_shape"] = basix_element.value_shape()
-    ir["reference_value_shape"] = basix_element.reference_value_shape()
+    ir["space_dimension"] = element.dim
+    ir["element_type"] = element.ufcx_element_type
+    ir["lagrange_variant"] = element.lagrange_variant
+    ir["dpc_variant"] = element.dpc_variant
+    ir["basix_family"] = element.element_family
+    ir["basix_cell"] = element.cell_type
+    ir["discontinuous"] = element.discontinuous
+    ir["degree"] = element.degree()
+    ir["family"] = element.family_name
+    ir["value_shape"] = element.value_shape()
+    ir["reference_value_shape"] = element.reference_value_shape()
 
-    ir["num_sub_elements"] = ufl_element.num_sub_elements()
-    ir["sub_elements"] = [finite_element_names[e] for e in ufl_element.sub_elements()]
+    ir["num_sub_elements"] = element.num_sub_elements()
+    ir["sub_elements"] = [finite_element_names[e] for e in element.sub_elements()]
 
-    ir["block_size"] = basix_element.block_size
-    if basix_element.block_size > 1:
-        basix_element = basix_element.sub_element
+    ir["block_size"] = element.block_size
+    if element.block_size > 1:
+        element = element.sub_element
 
-    ir["entity_dofs"] = basix_element.entity_dofs
+    ir["entity_dofs"] = element.entity_dofs
 
-    if basix_element.is_custom_element:
-        ir["custom_element"] = _compute_custom_element_ir(basix_element.element)
+    if element.is_custom_element:
+        ir["custom_element"] = _compute_custom_element_ir(element.element)
     else:
         ir["custom_element"] = None
 
@@ -281,28 +282,28 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     return CustomElementIR(**ir)
 
 
-def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
+def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     """Compute intermediate representation of dofmap."""
-    logger.info(f"Computing IR for dofmap of {ufl_element}")
+    logger.info(f"Computing IR for dofmap of {element}")
 
     # Create basix elements
-    basix_element = create_element(ufl_element)
+    element = convert_element(element)
 
     # Store id
-    ir = {"id": element_numbers[ufl_element]}
-    ir["name"] = dofmap_names[ufl_element]
+    ir = {"id": element_numbers[element]}
+    ir["name"] = dofmap_names[element]
 
     # Compute data for each function
-    ir["signature"] = "FFCx dofmap for " + repr(ufl_element)
-    ir["sub_dofmaps"] = [dofmap_names[e] for e in ufl_element.sub_elements()]
-    ir["num_sub_dofmaps"] = ufl_element.num_sub_elements()
+    ir["signature"] = "FFCx dofmap for " + repr(element)
+    ir["sub_dofmaps"] = [dofmap_names[e] for e in element.sub_elements()]
+    ir["num_sub_dofmaps"] = element.num_sub_elements()
 
-    ir["block_size"] = basix_element.block_size
-    if basix_element.block_size > 1:
-        basix_element = basix_element.sub_element
+    ir["block_size"] = element.block_size
+    if element.block_size > 1:
+        element = element.sub_element
 
     # Precompute repeatedly used items
-    for i in basix_element.num_entity_dofs:
+    for i in element.num_entity_dofs:
         # FIXME: this assumes the same number of DOFs on each entity of the same dim: this
         # assumption will not be true for prisms and pyramids
         if max(i) != min(i):
@@ -310,16 +311,16 @@ def _compute_dofmap_ir(ufl_element, element_numbers, dofmap_names):
                                " are not yet supported in FFCx.")
 
     # FIXME: This does not work for prisms and pyramids
-    num_dofs_per_entity = [i[0] for i in basix_element.num_entity_dofs]
+    num_dofs_per_entity = [i[0] for i in element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["entity_dofs"] = basix_element.entity_dofs
+    ir["entity_dofs"] = element.entity_dofs
 
-    num_dofs_per_entity_closure = [i[0] for i in basix_element.num_entity_closure_dofs]
+    num_dofs_per_entity_closure = [i[0] for i in element.num_entity_closure_dofs]
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
-    ir["entity_closure_dofs"] = basix_element.entity_closure_dofs
+    ir["entity_closure_dofs"] = element.entity_closure_dofs
 
-    ir["num_global_support_dofs"] = basix_element.num_global_support_dofs
-    ir["num_element_support_dofs"] = basix_element.dim - ir["num_global_support_dofs"]
+    ir["num_global_support_dofs"] = element.num_global_support_dofs
+    ir["num_element_support_dofs"] = element.dim - ir["num_global_support_dofs"]
 
     return DofMapIR(**ir)
 
@@ -359,19 +360,16 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             "num_vertices": cell.num_vertices(),
             "enabled_coefficients": itg_data.enabled_coefficients,
             "cell_shape": cellname,
-            "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()]
+            "coordinate_element": finite_element_names[convert_element(itg_data.domain.ufl_coordinate_element())]
         }
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
-        ir["element_dimensions"] = {
-            ufl_element: create_element(ufl_element).dim
-            for ufl_element in unique_elements
-        }
+        ir["element_dimensions"] = {element: element.dim for element in unique_elements}
 
         ir["element_ids"] = {
-            ufl_element: i
-            for i, ufl_element in enumerate(unique_elements)
+            element: i
+            for i, element in enumerate(unique_elements)
         }
 
         # If we have an exterior facet integral, and the cell of one element
@@ -381,13 +379,16 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         if itg_data.integral_type == "exterior_facet":
             for e_0 in unique_elements:
                 for e_1 in unique_elements:
-                    if e_0.cell() in e_1.cell().facet_types():
+                    # FIXME Check equality of cell not just cell name (i.e. if e_0.cell() in e_1.cell().facet_types() etc.)
+                    # Currently only checking cell name as Basix element gets the geometric dimension wrong
+                    # (broken by https://github.com/FEniCS/ffcx/pull/511)
+                    if e_0.cell().cellname() in [facet_cell.cellname() for facet_cell in e_1.cell().facet_types()]:
                         ir["mixed_dim"] = True
 
         # Create dimensions of primary indices, needed to reset the argument
         # 'A' given to tabulate_tensor() by the assembler.
         argument_dimensions = [
-            ir["element_dimensions"][ufl_element] for ufl_element in form_data.argument_elements
+            ir["element_dimensions"][convert_element(element)] for element in form_data.argument_elements
         ]
 
         # Compute shape of element tensor
@@ -471,7 +472,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         _offset = 0
         for k, el in zip(index_to_coeff, form_data.coefficient_elements):
             offsets[k[1]] = _offset
-            _offset += width * ir["element_dimensions"][el]
+            _offset += width * ir["element_dimensions"][convert_element(el)]
 
         # Copy offsets also into IR
         ir["coefficient_offsets"] = offsets
@@ -530,27 +531,27 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
     ir["finite_elements"] = [
-        finite_element_names[e]
+        finite_element_names[convert_element(e)]
         for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
     ir["dofmaps"] = [
-        dofmap_names[e] for e in form_data.argument_elements + form_data.coefficient_elements
+        dofmap_names[convert_element(e)] for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
     fs = {}
     for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
         name = object_names.get(id(function), str(function))
-        el = function.ufl_function_space().ufl_element()
+        el = convert_element(convert_element(function.ufl_function_space().ufl_element()))
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
         if cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
-        basix_cmap = create_element(cmap)
+        cmap = convert_element(cmap)
         family = cmap.family()
         degree = cmap.degree()
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
-                    basix_cmap.cell_type, basix_cmap.lagrange_variant)
+                    cmap.cell_type, cmap.lagrange_variant)
 
     form_name = object_names.get(id(form_data.original_form), form_id)
 
@@ -615,17 +616,12 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
-    ir["element_dimensions"] = {
-        ufl_element: create_element(ufl_element).dim
-        for ufl_element in analysis.unique_elements
-    }
+    ir["element_dimensions"] = {element: element.dim for element in analysis.unique_elements}
 
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
-    argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
-    argument_dimensions = [
-        ir["element_dimensions"][ufl_element] for ufl_element in argument_elements
-    ]
+    argument_elements = tuple(convert_element(f.ufl_function_space().ufl_element()) for f in arguments)
+    argument_dimensions = [ir["element_dimensions"][element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
     ir["tensor_shape"] = tensor_shape
@@ -654,8 +650,8 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
     fs = {}
     for function in tuple(original_coefficients) + tuple(arguments):
         name = object_names.get(id(function), str(function))
-        el = function.ufl_function_space().ufl_element()
-        cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        el = convert_element(function.ufl_function_space().ufl_element())
+        cmap = convert_element(function.ufl_function_space().ufl_domain().ufl_coordinate_element())
         family = cmap.family()
         degree = cmap.degree()
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
@@ -670,13 +666,13 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     ir["original_coefficient_positions"] = original_coefficient_positions
 
-    coefficient_elements = tuple(f.ufl_element() for f in coefficients)
+    coefficient_elements = tuple(convert_element(f.ufl_element()) for f in coefficients)
 
     offsets = {}
     _offset = 0
     for i, el in enumerate(coefficient_elements):
         offsets[coefficients[i]] = _offset
-        _offset += ir["element_dimensions"][el]
+        _offset += ir["element_dimensions"][convert_element(el)]
 
     # Copy offsets also into IR
     ir["coefficient_offsets"] = offsets
