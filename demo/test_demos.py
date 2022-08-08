@@ -13,17 +13,12 @@ for file in os.listdir(demo_dir):
 @pytest.mark.parametrize("file", ufl_files)
 def test_demo(file):
     if file in [
-        "MixedPoissonDual",  # Discontinuous Raviart-Thomas
-        "BiharmonicHHJ",  # Hellan-Herrmann-Johnson
-        "NodalMini",  # NodalEnrichedElement
-        "Mini",  # EnrichedElement
         "MixedGradient", "TraceElement",  # HDiv Trace
-        "MassHdiv_2D_1", "MassHdiv_2D_3", "MixedPoisson", "MassHdiv_2D_2",  # Brezzi-Douglas-Marini
         "MixedElasticity",  # VectorElement of BDM
         "RestrictedElement",
         "_TensorProductElement"
     ]:
-        # Skip demos that use elements not yet implemented in basix
+        # Skip demos that use elements not yet implemented in Basix
         pytest.skip()
 
     extra_flags = "-Wunused-variable -Werror -fPIC "

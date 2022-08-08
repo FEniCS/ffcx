@@ -5,13 +5,20 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import hashlib
+import typing
 
+import numpy
+import numpy.typing
 import ufl
 
 import ffcx
+from .element_interface import convert_element
 
 
-def compute_signature(ufl_objects, tag):
+def compute_signature(ufl_objects: typing.List[
+    typing.Union[ufl.Form,
+                 ufl.FiniteElementBase,
+                 typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64]]]], tag: str) -> str:
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional
@@ -24,7 +31,7 @@ def compute_signature(ufl_objects, tag):
             kind = "form"
             object_signature += ufl_object.signature()
         elif isinstance(ufl_object, ufl.FiniteElementBase):
-            object_signature += repr(ufl_object)
+            object_signature += repr(convert_element(ufl_object))
             kind = "element"
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
             expr = ufl_object[0]
@@ -40,7 +47,7 @@ def compute_signature(ufl_objects, tag):
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains = []
+            domains: typing.List[ufl.Mesh] = []
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
             for arg in args:
@@ -78,13 +85,13 @@ def form_name(original_form, form_id, prefix):
 
 def finite_element_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], prefix)
+    sig = compute_signature([convert_element(ufl_element)], prefix)
     return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
     assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([ufl_element], prefix)
+    sig = compute_signature([convert_element(ufl_element)], prefix)
     return f"dofmap_{sig}"
 
 
@@ -94,7 +101,7 @@ def expression_name(expression, prefix):
     return f"expression_{sig}"
 
 
-def cdtype_to_numpy(cdtype):
+def cdtype_to_numpy(cdtype: str):
     """Map a C data type string NumPy datatype string."""
     if cdtype == "double":
         return "float64"
@@ -108,3 +115,17 @@ def cdtype_to_numpy(cdtype):
         return "longdouble"
     else:
         raise RuntimeError(f"Unknown NumPy type for: {cdtype}")
+
+
+def scalar_to_value_type(scalar_type: str) -> str:
+    """The C value type associated with a C scalar type.
+
+    Args:
+      scalar_type: A C type.
+
+    Returns:
+      The value type associated with ``scalar_type``. E.g., if
+      ``scalar_type`` is ``float _Complex`` the return value is 'float'.
+
+    """
+    return scalar_type.replace(' _Complex', '')

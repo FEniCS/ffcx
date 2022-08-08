@@ -73,7 +73,7 @@ def generator(ir, parameters):
         d["value_shape"] = "NULL"
         d["value_shape_init"] = ""
 
-    if len(ir.value_shape) > 0:
+    if len(ir.reference_value_shape) > 0:
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
         d["reference_value_shape_init"] = L.ArrayDecl(
             "int", f"reference_value_shape_{ir.name}",
