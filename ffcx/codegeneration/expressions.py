@@ -172,6 +172,7 @@ class ExpressionGenerator:
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
         L = self.backend.language
+        scalar_type = self.backend.access.parameters["scalar_type"]
 
         # Currently we only support circumradius
         ufl_geometry = {
@@ -190,7 +191,7 @@ class ExpressionGenerator:
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+                parts.append(geometry.write_table(L, ufl_geometry[i], c, scalar_to_value_type(scalar_type)))
 
         return parts
 
