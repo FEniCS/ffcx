@@ -326,7 +326,7 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                          finite_element_names, parameters, visualise):
-    """Compute intermediate represention for form integrals."""
+    """Compute intermediate representation for form integrals."""
     _entity_types = {
         "cell": "cell",
         "exterior_facet": "facet",
