@@ -35,7 +35,7 @@ def format_int(x, precision=None):
 
 
 def format_value(value, precision=None):
-    """Format a literal value as s tring.
+    """Format a literal value as string.
 
     - float: Formatted according to current precision configuration.
 

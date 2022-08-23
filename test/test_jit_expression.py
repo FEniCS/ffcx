@@ -172,7 +172,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
                                   [u.dx(1), u.dx(1), 0],
                                   [0, 0, 0]]))
 
-    # Get vectices of cell
+    # Get vertices of cell
     # Coords storage XYZXYZXYZ
     basix_c_e = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 1, False)
     coords = basix_c_e.points

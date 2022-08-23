@@ -127,6 +127,10 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
             f"QuadratureElement({element})", "quadrature element", element.cell().cellname(), element.value_shape(),
             element.degree())
 
+    def sobolev_space(self):
+        """Return the underlying Sobolev space."""
+        return ufl.sobolevspace.L2
+
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
         return isinstance(other, QuadratureElement) and numpy.allclose(self._points, other._points)
