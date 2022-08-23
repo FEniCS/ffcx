@@ -235,7 +235,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["cell_shape"] = element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["space_dimension"] = element.dim
+    ir["space_dimension"] = element.dim + element.num_global_support_dofs
     ir["element_type"] = element.ufcx_element_type
     ir["lagrange_variant"] = element.lagrange_variant
     ir["dpc_variant"] = element.dpc_variant
@@ -319,7 +319,7 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     ir["entity_closure_dofs"] = element.entity_closure_dofs
 
     ir["num_global_support_dofs"] = element.num_global_support_dofs
-    ir["num_element_support_dofs"] = element.dim - ir["num_global_support_dofs"]
+    ir["num_element_support_dofs"] = element.dim
 
     return DofMapIR(**ir)
 
@@ -364,7 +364,8 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
-        ir["element_dimensions"] = {element: element.dim for element in unique_elements}
+        ir["element_dimensions"] = {element: element.dim + element.num_global_support_dofs
+                                    for element in unique_elements}
 
         ir["element_ids"] = {
             element: i
@@ -531,7 +532,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         el = convert_element(convert_element(function.ufl_function_space().ufl_element()))
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
-        if cmap.variant() is None:
+        if not isinstance(cmap, basix.ufl_wrapper._BasixElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
         cmap = convert_element(cmap)
         family = cmap.family()
@@ -602,7 +603,8 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
-    ir["element_dimensions"] = {element: element.dim for element in analysis.unique_elements}
+    ir["element_dimensions"] = {element: element.dim + element.num_global_support_dofs
+                                for element in analysis.unique_elements}
 
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
