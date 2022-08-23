@@ -104,7 +104,7 @@ def generator(ir, parameters):
         fname for _, fname, _, _ in Formatter().parse(ufcx_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formattting dict"
+        d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_finite_element.factory.format_map(d)
@@ -180,7 +180,7 @@ def generate_custom_element(name, ir):
         fname for _, fname, _, _ in Formatter().parse(ufcx_basix_custom_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formattting dict"
+        d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_basix_custom_finite_element.factory.format_map(d)
