@@ -407,3 +407,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
     def discontinuous(self) -> bool:
         """True if the discontinuous version of the element is used."""
         return False
+
+    def sobolev_space(self):
+        """Return the underlying Sobolev space."""
+        return ufl.sobolevspace.Hinf
