@@ -101,7 +101,7 @@ math_table = {'double': {'sqrt': 'sqrt',
                                   'conj': 'conj',
                                   'max_value': 'fmax',
                                   'min_value': 'fmin'},
-
+              '_Float16': {'sqrt': 'sqrt'},
               'float _Complex': {'sqrt': 'csqrtf',
                                  'abs': 'cabsf',
                                  'cos': 'ccosf',
