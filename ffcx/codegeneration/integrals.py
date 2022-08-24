@@ -527,7 +527,7 @@ class IntegralGenerator(object):
     def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):
         """Generate and return code parts for a given block.
 
-        Returns parts occuring before, inside, and after the quadrature
+        Returns parts occurring before, inside, and after the quadrature
         loop identified by the quadrature rule.
 
         Should be called with quadrature_rule=None for
@@ -539,7 +539,7 @@ class IntegralGenerator(object):
         preparts: List[CNode] = []
         quadparts: List[CNode] = []
 
-        # RHS expressiong grouped by LHS "dofmap"
+        # RHS expressions grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
 
         block_rank = len(blockmap)
