@@ -257,6 +257,11 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         """True if the discontinuous version of the element is used."""
         return False
 
+    @property
+    def map_type(self) -> _basix.MapType:
+        """The Basix map type."""
+        return basix.MapType.identity
+
 
 class RealElement(basix.ufl_wrapper._BasixElementBase):
     """A real element."""
@@ -411,3 +416,8 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
     def basix_sobolev_space(self):
         """Return the underlying Sobolev space."""
         return basix.sobolev_spaces.Hinf
+
+    @property
+    def map_type(self) -> _basix.MapType:
+        """The Basix map type."""
+        return basix.MapType.identity
