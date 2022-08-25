@@ -258,7 +258,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return False
 
     @property
-    def map_type(self) -> _basix.MapType:
+    def map_type(self) -> basix.MapType:
         """The Basix map type."""
         return basix.MapType.identity
 
@@ -418,6 +418,6 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         return basix.sobolev_spaces.Hinf
 
     @property
-    def map_type(self) -> _basix.MapType:
+    def map_type(self) -> basix.MapType:
         """The Basix map type."""
         return basix.MapType.identity
