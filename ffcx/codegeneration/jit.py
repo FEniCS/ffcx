@@ -105,7 +105,7 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     )
 
 
-def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                      cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL elements and dofmaps into Python objects."""
     p = ffcx.options.get_options(options)
@@ -162,7 +162,7 @@ def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_co
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
         ffcx.naming.compute_signature(forms, _compute_option_signature(p)
-                                      + compilation_signature(cffi_extra_compile_args, cffi_debug))
+                                      + _compilation_signature(cffi_extra_compile_args, cffi_debug))
 
     form_names = [ffcx.naming.form_name(form, i, module_name) for i, form in enumerate(forms)]
 
