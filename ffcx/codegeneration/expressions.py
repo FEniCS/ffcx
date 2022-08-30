@@ -201,7 +201,7 @@ class ExpressionGenerator:
 
         tables = self.ir.unique_tables
 
-        padlen = self.ir.opts["padlen"]
+        padlen = self.ir.options["padlen"]
         table_names = sorted(tables)
 
         scalar_type = self.backend.access.options["scalar_type"]

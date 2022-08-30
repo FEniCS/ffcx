@@ -124,7 +124,7 @@ class IntegralIR(typing.NamedTuple):
     coefficient_numbering: typing.Dict[ufl.Coefficient, int]
     coefficient_offsets: typing.Dict[ufl.Coefficient, int]
     original_constant_offsets: typing.Dict[ufl.Constant, int]
-    opts: dict
+    options: dict
     cell_shape: str
     unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
     unique_table_types: typing.Dict[str, str]
@@ -138,7 +138,7 @@ class IntegralIR(typing.NamedTuple):
 class ExpressionIR(typing.NamedTuple):
     name: str
     element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
-    opts: dict
+    options: dict
     unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
     unique_table_types: typing.Dict[str, str]
     integrand: typing.Dict[QuadratureRule, dict]

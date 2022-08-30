@@ -179,7 +179,7 @@ class IntegralGenerator(object):
         parts = []
         scalar_type = self.backend.access.options["scalar_type"]
         value_type = scalar_to_value_type(scalar_type)
-        alignment = self.ir.opts['assume_aligned']
+        alignment = self.ir.options['assume_aligned']
         if alignment != -1:
             scalar_type = self.backend.access.options["scalar_type"]
             parts += [L.VerbatimStatement(f"A = ({scalar_type}*)__builtin_assume_aligned(A, {alignment});"),
@@ -238,7 +238,7 @@ class IntegralGenerator(object):
         if self.ir.integral_type in skip:
             return parts
 
-        padlen = self.ir.opts["padlen"]
+        padlen = self.ir.options["padlen"]
 
         # Loop over quadrature rules
         for quadrature_rule, integrand in self.ir.integrand.items():
@@ -290,7 +290,7 @@ class IntegralGenerator(object):
         parts = []
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-        padlen = self.ir.opts["padlen"]
+        padlen = self.ir.options["padlen"]
         if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
@@ -459,7 +459,7 @@ class IntegralGenerator(object):
 
         if intermediates:
             if use_symbol_array:
-                padlen = self.ir.opts["padlen"]
+                padlen = self.ir.options["padlen"]
                 parts += [L.ArrayDecl(self.backend.access.options["scalar_type"],
                                       symbol, len(intermediates), padlen=padlen)]
             parts += intermediates
