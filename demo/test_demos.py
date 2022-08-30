@@ -13,8 +13,6 @@ for file in os.listdir(demo_dir):
 @pytest.mark.parametrize("file", ufl_files)
 def test_demo(file):
     if file in [
-        "NodalMini",  # NodalEnrichedElement
-        "Mini",  # EnrichedElement
         "MixedGradient", "TraceElement",  # HDiv Trace
         "MixedElasticity",  # VectorElement of BDM
         "RestrictedElement",

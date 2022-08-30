@@ -9,6 +9,7 @@ import io
 import logging
 import os
 import re
+import sysconfig
 import tempfile
 import time
 from contextlib import redirect_stdout
@@ -88,7 +89,23 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         Try cleaning cache (e.g. remove {c_filename}) or increase timeout option.""")
 
 
-def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
+    """Compute the compilation-inputs part of the signature.
+
+    Used to avoid cache conflicts across Python versions, architectures, installs.
+
+    - SOABI includes platform, Python version, debug flags
+    - CFLAGS includes prefixes, arch targets
+    """
+    return (
+        str(cffi_extra_compile_args)
+        + str(cffi_debug)
+        + sysconfig.get_config_var("CFLAGS")
+        + sysconfig.get_config_var("SOABI")
+    )
+
+
+def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                      cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL elements and dofmaps into Python objects."""
     p = ffcx.options.get_options(options)
@@ -96,7 +113,7 @@ def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_ex
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
         ffcx.naming.compute_signature(elements, _compute_option_signature(p)
-                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+                                      + _compilation_signature(cffi_extra_compile_args, cffi_debug))
 
     names = []
     for e in elements:
@@ -145,7 +162,7 @@ def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_co
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
         ffcx.naming.compute_signature(forms, _compute_option_signature(p)
-                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+                                      + compilation_signature(cffi_extra_compile_args, cffi_debug))
 
     form_names = [ffcx.naming.form_name(form, i, module_name) for i, form in enumerate(forms)]
 
@@ -191,7 +208,7 @@ def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, c
 
     module_name = 'libffcx_expressions_' + \
         ffcx.naming.compute_signature(expressions, _compute_option_signature(p)
-                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+                                      + _compilation_signature(cffi_extra_compile_args, cffi_debug))
     expr_names = [ffcx.naming.expression_name(expression, module_name) for expression in expressions]
 
     if cache_dir is not None:

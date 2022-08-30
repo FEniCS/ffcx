@@ -124,7 +124,7 @@ def generator(ir, options):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)
@@ -263,7 +263,7 @@ class ExpressionGenerator:
         return parts
 
     def generate_piecewise_partition(self):
-        """Generate factors of blocks which are constant (i.e. do not depent on quadrature points)."""
+        """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
         L = self.backend.language
 
         # Get annotated graph of factorisation
