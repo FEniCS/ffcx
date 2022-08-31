@@ -18,7 +18,7 @@ logger = logging.getLogger("ffcx")
 index_type = "int"
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     """Generate UFC code for a finite element."""
     logger.info("Generating code for finite element:")
     logger.info(f"--- family: {ir.family}")

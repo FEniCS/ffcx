@@ -82,11 +82,11 @@ def _print_timing(stage: int, timing: float):
 def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
                         object_names: typing.Dict = {},
                         prefix: str = None,
-                        parameters: typing.Dict = {},
+                        options: typing.Dict = {},
                         visualise: bool = False):
     """Generate UFC code for a given UFL objects.
 
-    Parameters
+    Options
     ----------
     @param ufl_objects:
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
@@ -94,22 +94,22 @@ def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
     """
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_ufl_objects(ufl_objects, parameters)
+    analysis = analyze_ufl_objects(ufl_objects, options)
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, object_names, prefix, parameters, visualise)
+    ir = compute_ir(analysis, object_names, prefix, options, visualise)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
     cpu_time = time()
-    code = generate_code(ir, parameters)
+    code = generate_code(ir, options)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: format code
     cpu_time = time()
-    code_h, code_c = format_code(code, parameters)
+    code_h, code_c = format_code(code, options)
     _print_timing(4, time() - cpu_time)
 
     return code_h, code_c

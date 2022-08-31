@@ -47,9 +47,9 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufcx_integral.*?ufcx_i
 UFC_EXPRESSION_DECL = '\n'.join(re.findall('typedef struct ufcx_expression.*?ufcx_expression;', ufcx_h, re.DOTALL))
 
 
-def _compute_parameter_signature(parameters):
-    """Return parameters signature (some parameters should not affect signature)."""
-    return str(sorted(parameters.items()))
+def _compute_option_signature(options):
+    """Return options signature (some options should not affect signature)."""
+    return str(sorted(options.items()))
 
 
 def get_cached_module(module_name, object_names, cache_dir, timeout):
@@ -86,7 +86,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
             logger.info(f"Waiting for {ready_name} to appear.")
             time.sleep(1)
         raise TimeoutError(f"""JIT compilation timed out, probably due to a failed previous compile.
-        Try cleaning cache (e.g. remove {c_filename}) or increase timeout parameter.""")
+        Try cleaning cache (e.g. remove {c_filename}) or increase timeout option.""")
 
 
 def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
@@ -105,14 +105,14 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     )
 
 
-def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                      cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL elements and dofmaps into Python objects."""
-    p = ffcx.parameters.get_parameters(parameters)
+    p = ffcx.options.get_options(options)
 
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
-        ffcx.naming.compute_signature(elements, _compute_parameter_signature(p)
+        ffcx.naming.compute_signature(elements, _compute_option_signature(p)
                                       + _compilation_signature(cffi_extra_compile_args, cffi_debug))
 
     names = []
@@ -154,14 +154,14 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     return objects, module, (decl, impl)
 
 
-def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                   cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL forms into UFC Python objects."""
-    p = ffcx.parameters.get_parameters(parameters)
+    p = ffcx.options.get_options(options)
 
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
-        ffcx.naming.compute_signature(forms, _compute_parameter_signature(p)
+        ffcx.naming.compute_signature(forms, _compute_option_signature(p)
                                       + _compilation_signature(cffi_extra_compile_args, cffi_debug))
 
     form_names = [ffcx.naming.form_name(form, i, module_name) for i, form in enumerate(forms)]
@@ -194,20 +194,20 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
     return obj, module, (decl, impl)
 
 
-def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
                         cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
     """Compile a list of UFL expressions into UFC Python objects.
 
-    Parameters
+    Options
     ----------
     expressions
         List of (UFL expression, evaluation points).
 
     """
-    p = ffcx.parameters.get_parameters(parameters)
+    p = ffcx.options.get_options(options)
 
     module_name = 'libffcx_expressions_' + \
-        ffcx.naming.compute_signature(expressions, _compute_parameter_signature(p)
+        ffcx.naming.compute_signature(expressions, _compute_option_signature(p)
                                       + _compilation_signature(cffi_extra_compile_args, cffi_debug))
     expr_names = [ffcx.naming.expression_name(expression, module_name) for expression in expressions]
 
@@ -239,14 +239,14 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
     return obj, module, (decl, impl)
 
 
-def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
+def _compile_objects(decl, ufl_objects, object_names, module_name, options, cache_dir,
                      cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries):
 
     import ffcx.compiler
 
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
-    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, parameters=parameters)
+    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, options=options)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffcx.codegeneration.get_include_path()],
