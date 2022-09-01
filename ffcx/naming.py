@@ -54,7 +54,8 @@ def compute_signature(ufl_objects: typing.List[
                 domains.append(*arg.ufl_function_space().ufl_domains())
             for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
                 domains.append(*gc.ufl_domains())
-
+            for const in consts:
+                domains.append(const.ufl_domain())
             domains = ufl.algorithms.analysis.unique_tuple(domains)
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
