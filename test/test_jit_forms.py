@@ -762,7 +762,7 @@ def test_cell_facet_coeff_form(compile_args):
            ffi.cast('uint8_t *', perm.ctypes.data))
 
     # TODO Check if the expected result is correct
-    assert(np.isclose(s[0], 1.1785113))
+    assert np.isclose(s[0], 1.1785113)
 
 
 def test_complex_operations(compile_args):
