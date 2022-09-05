@@ -14,7 +14,7 @@ from ffcx.codegeneration import form_template
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     """Generate UFC code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
@@ -134,7 +134,7 @@ def generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = form_template.factory.format_map(d)

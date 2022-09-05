@@ -17,13 +17,13 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendDefinitions(object):
     """FFCx specific code definitions."""
 
-    def __init__(self, ir, language, symbols, parameters):
-        # Store ir and parameters
+    def __init__(self, ir, language, symbols, options):
+        # Store ir and options
         self.integral_type = ir.integral_type
         self.entitytype = ir.entitytype
         self.language = language
         self.symbols = symbols
-        self.parameters = parameters
+        self.options = options
 
         self.ir = ir
 
@@ -99,14 +99,14 @@ class FFCXBackendDefinitions(object):
 
             # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
-                pre_code += [L.ArrayDecl(self.parameters["scalar_type"], dof_access.array, num_dofs)]
+                pre_code += [L.ArrayDecl(self.options["scalar_type"], dof_access.array, num_dofs)]
                 pre_body = L.Assign(dof_access, dof_access_map)
                 pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
             dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
 
         body = [L.AssignAdd(access, dof_access * FE[ic])]
-        code += [L.VariableDecl(self.parameters["scalar_type"], access, 0.0)]
+        code += [L.VariableDecl(self.options["scalar_type"], access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
         return pre_code, code
@@ -148,7 +148,7 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        value_type = scalar_to_value_type(self.parameters["scalar_type"])
+        value_type = scalar_to_value_type(self.options["scalar_type"])
 
         code = []
         body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
