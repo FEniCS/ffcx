@@ -10,8 +10,8 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 4
-#define UFCX_VERSION_MAINTENANCE 3
+#define UFCX_VERSION_MINOR 5
+#define UFCX_VERSION_MAINTENANCE 1
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
@@ -64,7 +64,8 @@ extern "C"
     ufcx_basix_element = 0,
     ufcx_mixed_element = 1,
     ufcx_quadrature_element = 2,
-    ufcx_basix_custom_element = 3
+    ufcx_basix_custom_element = 3,
+    ufcx_real_element = 4,
   } ufcx_element_type;
 
   /// Forward declarations
@@ -163,10 +164,10 @@ extern "C"
     /// The number of rows in the wcoeffs matrix
     int wcoeffs_rows;
 
-    /// The number of columnss in the wcoeffs matrix
+    /// The number of columns in the wcoeffs matrix
     int wcoeffs_cols;
 
-    /// The coefficents that define the polynomial set of the element in terms
+    /// The coefficients that define the polynomial set of the element in terms
     /// of the orthonormal polynomials on the cell
     double* wcoeffs;
 

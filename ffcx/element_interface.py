@@ -37,7 +37,6 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
     """
     if isinstance(element, basix.ufl_wrapper._BasixElementBase):
         return element
-
     elif isinstance(element, ufl.VectorElement):
         return basix.ufl_wrapper.VectorElement(create_element(element.sub_elements()[0]), element.num_sub_elements())
     elif isinstance(element, ufl.TensorElement):
@@ -51,10 +50,10 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
         return basix.ufl_wrapper.MixedElement([create_element(e) for e in element.sub_elements()])
     elif isinstance(element, ufl.EnrichedElement):
         return basix.ufl_wrapper._create_enriched_element([create_element(e) for e in element._elements])
-
     elif element.family() == "Quadrature":
         return QuadratureElement(element)
-
+    elif element.family() == "Real":
+        return RealElement(element)
     else:
         return basix.ufl_wrapper.convert_ufl_element(element)
 
@@ -126,6 +125,10 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         super().__init__(
             f"QuadratureElement({element})", "quadrature element", element.cell().cellname(), element.value_shape(),
             element.degree())
+
+    def sobolev_space(self):
+        """Return the underlying Sobolev space."""
+        return ufl.sobolevspace.L2
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
@@ -254,7 +257,157 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         """True if the discontinuous version of the element is used."""
         return False
 
+
+class RealElement(basix.ufl_wrapper._BasixElementBase):
+    """A real element."""
+
+    _family_name: str
+    _cellname: str
+    _entity_counts: typing.List[int]
+
+    def __init__(self, element: ufl.finiteelement.FiniteElementBase):
+        """Initialise the element."""
+        self._cellname = element.cell().cellname()
+        self._family_name = element.family()
+        tdim = element.cell().topological_dimension()
+
+        self._entity_counts = []
+        if tdim >= 1:
+            self._entity_counts.append(element.cell().num_vertices())
+        if tdim >= 2:
+            self._entity_counts.append(element.cell().num_edges())
+        if tdim >= 3:
+            self._entity_counts.append(element.cell().num_facets())
+        self._entity_counts.append(1)
+
+        super().__init__(
+            f"RealElement({element})", "real element", element.cell().cellname(), element.value_shape(),
+            element.degree())
+
+    def __eq__(self, other) -> bool:
+        """Check if two elements are equal."""
+        return isinstance(other, RealElement)
+
+    def __hash__(self) -> int:
+        """Return a hash."""
+        return super().__hash__()
+
+    def tabulate(
+        self, nderivs: int, points: basix.ufl_wrapper._nda_f64
+    ) -> basix.ufl_wrapper._nda_f64:
+        """Tabulate the basis functions of the element.
+
+        Args:
+            nderivs: Number of derivatives to tabulate.
+            points: Points to tabulate at
+
+        Returns:
+            Tabulated basis functions
+        """
+        out = numpy.zeros((nderivs + 1, len(points), 1))
+        out[0, :] = 1.
+        return out
+
+    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl_wrapper._BasixElementBase, int, int]:
+        """Get element that represents a component of the element, and the offset and stride of the component.
+
+        Args:
+            flat_component: The component
+
+        Returns:
+            component element, offset of the component, stride of the component
+        """
+        assert flat_component < self.value_size
+        return self, 0, 1
+
     @property
-    def interpolation_nderivs(self) -> int:
-        """The number of derivatives needed when interpolating."""
+    def ufcx_element_type(self) -> str:
+        """Element type."""
+        return "ufcx_real_element"
+
+    @property
+    def dim(self) -> int:
+        """Number of DOFs the element has."""
         return 0
+
+    @property
+    def num_entity_dofs(self) -> typing.List[typing.List[int]]:
+        """Number of DOFs associated with each entity."""
+        dofs = []
+        for d in self._entity_counts[:-1]:
+            dofs += [[0] * d]
+
+        dofs += [[self.dim]]
+        return dofs
+
+    @property
+    def entity_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
+        """DOF numbers associated with each entity."""
+        start_dof = 0
+        entity_dofs = []
+        for i in self.num_entity_dofs:
+            dofs_list = []
+            for j in i:
+                dofs_list.append([start_dof + k for k in range(j)])
+                start_dof += j
+            entity_dofs.append(dofs_list)
+        return entity_dofs
+
+    @property
+    def num_entity_closure_dofs(self) -> typing.List[typing.List[int]]:
+        """Number of DOFs associated with the closure of each entity."""
+        return self.num_entity_dofs
+
+    @property
+    def entity_closure_dofs(self) -> typing.List[typing.List[typing.List[int]]]:
+        """DOF numbers associated with the closure of each entity."""
+        return self.entity_dofs
+
+    @property
+    def num_global_support_dofs(self) -> int:
+        """Get the number of global support DOFs."""
+        return 1
+
+    @property
+    def reference_topology(self) -> typing.List[typing.List[typing.List[int]]]:
+        """Topology of the reference element."""
+        raise NotImplementedError()
+
+    @property
+    def reference_geometry(self) -> basix.ufl_wrapper._nda_f64:
+        """Geometry of the reference element."""
+        raise NotImplementedError()
+
+    @property
+    def family_name(self) -> str:
+        """Family name of the element."""
+        return self._family_name
+
+    @property
+    def lagrange_variant(self) -> basix.LagrangeVariant:
+        """Basix Lagrange variant used to initialise the element."""
+        return None
+
+    @property
+    def dpc_variant(self) -> basix.DPCVariant:
+        """Basix DPC variant used to initialise the element."""
+        return None
+
+    @property
+    def element_family(self) -> basix.ElementFamily:
+        """Basix element family used to initialise the element."""
+        return None
+
+    @property
+    def cell_type(self) -> basix.CellType:
+        """Basix cell type used to initialise the element."""
+        return basix.cell.string_to_type(self._cellname)
+
+    @property
+    def discontinuous(self) -> bool:
+        """True if the discontinuous version of the element is used."""
+        return False
+
+    def sobolev_space(self):
+        """Return the underlying Sobolev space."""
+        return ufl.sobolevspace.Hinf

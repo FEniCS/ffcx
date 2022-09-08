@@ -55,7 +55,7 @@ def tabulate_entity_dofs(L, entity_dofs: typing.List[typing.List[typing.List[int
         return L.NoOp()
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     """Generate UFC code for a dofmap."""
     logger.info("Generating code for dofmap:")
     logger.info(f"--- num element support dofs: {ir.num_element_support_dofs}")
@@ -105,7 +105,7 @@ def generator(ir, parameters):
     # Remove square brackets from any field names
     fields = [f.split("[")[0] for f in fields]
     assert set(fields) == set(
-        d.keys()), "Mismatch between keys in template and in formattting dict."
+        d.keys()), "Mismatch between keys in template and in formatting dict."
 
     # Format implementation code
     implementation = ufcx_dofmap.factory.format_map(d)

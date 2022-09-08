@@ -20,7 +20,7 @@ from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     """Generate UFC code for an expression."""
     logger.info("Generating code for expression:")
     logger.info(f"--- points: {ir.points}")
@@ -32,7 +32,7 @@ def generator(ir, parameters):
     declaration = expressions_template.declaration.format(
         factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile)
 
-    backend = FFCXBackend(ir, parameters)
+    backend = FFCXBackend(ir, options)
     L = backend.language
     eg = ExpressionGenerator(ir, backend)
 
@@ -71,9 +71,9 @@ def generator(ir, parameters):
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
-    d["scalar_type"] = parameters["scalar_type"]
-    d["geom_type"] = scalar_to_value_type(parameters["scalar_type"])
-    d["np_scalar_type"] = cdtype_to_numpy(parameters["scalar_type"])
+    d["scalar_type"] = options["scalar_type"]
+    d["geom_type"] = scalar_to_value_type(options["scalar_type"])
+    d["np_scalar_type"] = cdtype_to_numpy(options["scalar_type"])
 
     d["rank"] = len(ir.tensor_shape)
 
@@ -124,7 +124,7 @@ def generator(ir, parameters):
     # Check that no keys are redundant or have been missed
     from string import Formatter
     fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formattting dict"
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)
@@ -201,10 +201,10 @@ class ExpressionGenerator:
 
         tables = self.ir.unique_tables
 
-        padlen = self.ir.params["padlen"]
+        padlen = self.ir.options["padlen"]
         table_names = sorted(tables)
 
-        scalar_type = self.backend.access.parameters["scalar_type"]
+        scalar_type = self.backend.access.options["scalar_type"]
 
         for name in table_names:
             table = tables[name]
@@ -263,7 +263,7 @@ class ExpressionGenerator:
         return parts
 
     def generate_piecewise_partition(self):
-        """Generate factors of blocks which are constant (i.e. do not depent on quadrature points)."""
+        """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
         L = self.backend.language
 
         # Get annotated graph of factorisation
@@ -393,7 +393,7 @@ class ExpressionGenerator:
     def get_arg_factors(self, blockdata, block_rank, indices):
         """Get argument factors (i.e. blocks).
 
-        Parameters
+        Options
         ----------
         blockdata
         block_rank
@@ -504,7 +504,7 @@ class ExpressionGenerator:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
-                        scalar_type = self.backend.access.parameters["scalar_type"]
+                        scalar_type = self.backend.access.options["scalar_type"]
                         vaccess = L.Symbol("%s_%d" % (symbol.name, j))
                         intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
@@ -523,7 +523,7 @@ class ExpressionGenerator:
 
         if intermediates:
             if use_symbol_array:
-                scalar_type = self.backend.access.parameters["scalar_type"]
+                scalar_type = self.backend.access.options["scalar_type"]
                 parts += [L.ArrayDecl(scalar_type, symbol, len(intermediates))]
             parts += intermediates
         return parts
