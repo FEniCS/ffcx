@@ -380,7 +380,8 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         if itg_data.integral_type == "exterior_facet":
             for e_0 in unique_elements:
                 for e_1 in unique_elements:
-                    # FIXME Check equality of cell not just cell name (i.e. if e_0.cell() in e_1.cell().facet_types() etc.)
+                    # FIXME Check equality of cell not just cell name (i.e. if e_0.cell() in
+                    # e_1.cell().facet_types() etc.)
                     # Currently only checking cell name as Basix element gets the geometric dimension wrong
                     # (broken by https://github.com/FEniCS/ffcx/pull/511)
                     if e_0.cell().cellname() in [facet_cell.cellname() for facet_cell in e_1.cell().facet_types()]:

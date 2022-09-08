@@ -767,9 +767,9 @@ def test_cell_facet_coeff_form(mode, expected_result, permutation, compile_args)
 
     # TODO Check if the expected result is correct
     if permutation[0] != permutation[1]:
-        assert(np.isclose(s[0], expected_result[0]))
+        assert np.isclose(s[0], expected_result[0])
     else:
-        assert(np.isclose(s[0], expected_result[1]))
+        assert np.isclose(s[0], expected_result[1])
 
 
 def test_complex_operations(compile_args):
