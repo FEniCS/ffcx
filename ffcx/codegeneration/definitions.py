@@ -86,7 +86,7 @@ class FFCXBackendDefinitions(object):
         # Check if we have a facet element from a mixed dimensional integral. This
         # ensures it gets the correct permutation.
         facet_element = False
-        if type(self.ir) == IntegralIR:  # FIXME Handle this properly 
+        if type(self.ir) == IntegralIR:  # FIXME Handle this properly
             if self.ir.mixed_dim:
                 ufl_cell = mt.terminal.ufl_element().cell()
                 if ufl_cell.topological_dimension() == ufl_cell.geometric_dimension() - 1:
