@@ -683,7 +683,7 @@ def test_cell_facet_form(compile_args):
     forms = [ufl.inner(u, vbar) * ds]
 
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     ffi = module.ffi
     form0 = compiled_forms[0]
@@ -730,7 +730,7 @@ def test_cell_facet_coeff_form(compile_args):
     forms = [f * g * ds]
 
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, parameters={'scalar_type': mode},
+        forms, options={'scalar_type': mode},
         cffi_extra_compile_args=compile_args)
 
     with open("code.c", "w") as f:
