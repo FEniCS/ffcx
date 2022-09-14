@@ -6,7 +6,7 @@
 
 import collections
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Any, Dict, Set
 
 import ufl
 from ffcx.codegeneration import geometry
@@ -253,7 +253,7 @@ class IntegralGenerator(object):
         parts = L.commented_code_list(parts, "Quadrature rules")
         return parts
 
-    def generate_geometry_tables(self, float_type):
+    def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
         L = self.backend.language
 
@@ -267,7 +267,7 @@ class IntegralGenerator(object):
             ufl.geometry.ReferenceNormal: "reference_facet_normals",
             ufl.geometry.FacetOrientation: "facet_orientation"
         }
-        cells = {t: set() for t in ufl_geometry.keys()}
+        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
