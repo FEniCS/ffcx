@@ -58,22 +58,22 @@ c_extern_post = """
 """
 
 
-def format_code(code, parameters: dict):
+def format_code(code, options: dict):
     """Format given code in UFC format. Returns two strings with header and source file contents."""
     logger.info(79 * "*")
     logger.info("Compiler stage 5: Formatting code")
     logger.info(79 * "*")
 
     # Generate code for comment at top of file
-    code_h_pre = _generate_comment(parameters) + "\n"
-    code_c_pre = _generate_comment(parameters) + "\n"
+    code_h_pre = _generate_comment(options) + "\n"
+    code_c_pre = _generate_comment(options) + "\n"
 
     # Generate code for header
     code_h_pre += FORMAT_TEMPLATE["header_h"]
     code_c_pre += FORMAT_TEMPLATE["header_c"]
 
     # Generate includes and add to preamble
-    includes_h, includes_c = _generate_includes(parameters)
+    includes_h, includes_c = _generate_includes(options)
     code_h_pre += includes_h
     code_c_pre += includes_c
 
@@ -107,22 +107,22 @@ def _write_file(output, prefix, postfix, output_dir):
         hfile.write(output)
 
 
-def _generate_comment(parameters):
+def _generate_comment(options):
     """Generate code for comment on top of file."""
     # Generate top level comment
     comment = FORMAT_TEMPLATE["ufc comment"].format(ffcx_version=FFCX_VERSION, ufcx_version=UFC_VERSION)
 
-    # Add parameter information
+    # Add option information
     comment += "//\n"
-    comment += "// This code was generated with the following parameters:\n"
+    comment += "// This code was generated with the following options:\n"
     comment += "//\n"
-    comment += textwrap.indent(pprint.pformat(parameters), "//  ")
+    comment += textwrap.indent(pprint.pformat(options), "//  ")
     comment += "\n"
 
     return comment
 
 
-def _generate_includes(parameters: dict):
+def _generate_includes(options: dict):
 
     default_h_includes = [
         "#include <ufcx.h>",
@@ -136,7 +136,7 @@ def _generate_includes(parameters: dict):
         "#include <ufcx.h>"
     ]
 
-    if "_Complex" in parameters["scalar_type"]:
+    if "_Complex" in options["scalar_type"]:
         default_c_includes += ["#include <complex.h>"]
 
     s_h = set(default_h_includes)
