@@ -12,7 +12,6 @@ import typing
 
 import ffcx.codegeneration.dofmap_template as ufcx_dofmap
 
-
 logger = logging.getLogger("ffcx")
 
 

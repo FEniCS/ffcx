@@ -16,9 +16,9 @@ import typing
 
 import numpy
 import numpy.typing
-import ufl
-import basix.ufl_wrapper
 
+import basix.ufl_wrapper
+import ufl
 from ffcx.element_interface import convert_element
 
 logger = logging.getLogger("ffcx")

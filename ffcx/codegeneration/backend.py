@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFCx specific pieces for the code generation phase."""
 
+import types
+
 import ffcx.codegeneration.C.cnodes
 from ffcx.codegeneration.access import FFCXBackendAccess
 from ffcx.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
@@ -18,7 +20,7 @@ class FFCXBackend(object):
     def __init__(self, ir, options):
 
         # This is the seam where cnodes/C is chosen for the FFCx backend
-        self.language = ffcx.codegeneration.C.cnodes
+        self.language: types.ModuleType = ffcx.codegeneration.C.cnodes
         scalar_type = options["scalar_type"]
         self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type)
 

@@ -16,6 +16,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 import cffi
+
 import ffcx
 import ffcx.naming
 
