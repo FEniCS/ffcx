@@ -8,6 +8,7 @@ import logging
 import numbers
 
 import numpy
+
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
 from ffcx.codegeneration.C.format_value import (format_float, format_int,
                                                 format_value)
