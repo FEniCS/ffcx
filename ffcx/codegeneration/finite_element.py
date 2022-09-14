@@ -10,8 +10,8 @@
 
 import logging
 
-import ffcx.codegeneration.finite_element_template as ufcx_finite_element
 import ffcx.codegeneration.basix_custom_element_template as ufcx_basix_custom_finite_element
+import ffcx.codegeneration.finite_element_template as ufcx_finite_element
 import ufl
 
 logger = logging.getLogger("ffcx")
