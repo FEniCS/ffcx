@@ -6,7 +6,7 @@
 
 import collections
 import logging
-from typing import List, Tuple, Any, Dict, Set
+from typing import Any, Dict, List, Set, Tuple
 
 import ufl
 from ffcx.codegeneration import geometry

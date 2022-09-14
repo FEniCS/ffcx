@@ -22,8 +22,9 @@ import numbers
 import typing
 import warnings
 
-import basix
 import numpy
+
+import basix
 import ufl
 from ffcx import naming
 from ffcx.analysis import UFLData

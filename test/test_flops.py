@@ -5,8 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 
-from ffcx.codegeneration.flop_count import count_flops
 import ufl
+from ffcx.codegeneration.flop_count import count_flops
 
 
 def create_form(degree):
