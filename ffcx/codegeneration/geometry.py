@@ -4,8 +4,9 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import basix
 import numpy
+
+import basix
 
 
 def write_table(L, tablename, cellname, type: str):
