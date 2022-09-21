@@ -23,7 +23,7 @@ install(TARGETS ${PROJECT_NAME}
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${PROJECT_NAME}ConfigVersion.cmake"
                                  VERSION ${PROJECT_VERSION}
-                                 COMPATIBILITY AnyNewerVersion)
+                                 COMPATIBILITY SameMinorVersion)
 configure_package_config_file("${PROJECT_NAME}Config.cmake.in" "${PROJECT_NAME}Config.cmake"
   INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 install(EXPORT ${PROJECT_NAME}_Targets FILE ${PROJECT_NAME}Targets.cmake
