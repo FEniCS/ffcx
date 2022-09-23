@@ -11,6 +11,7 @@ import logging
 import typing
 
 import numpy
+
 import ufl
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
@@ -48,8 +49,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     # here
     ir = {}
 
-    # Pass on parameters for consumption in code generation
-    ir["params"] = p
+    # Pass on options for consumption in code generation
+    ir["options"] = p
 
     # Shared unique tables for all quadrature loops
     ir["unique_tables"] = {}

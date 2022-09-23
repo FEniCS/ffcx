@@ -8,14 +8,14 @@
 from __future__ import annotations
 
 import typing
-
 import warnings
+from functools import lru_cache
+
+import numpy
 
 import basix
-import numpy
-import ufl
 import basix.ufl_wrapper
-from functools import lru_cache
+import ufl
 
 
 def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
