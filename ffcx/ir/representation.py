@@ -63,6 +63,7 @@ class CustomElementIR(typing.NamedTuple):
     x: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
     M: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
     map_type: basix.MapType
+    sobolev_space: basix.SobolevSpace
     interpolation_nderivs: int
     discontinuous: bool
     highest_complete_degree: int
@@ -274,6 +275,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     ir["x"] = basix_element.x
     ir["M"] = basix_element.M
     ir["map_type"] = basix_element.map_type
+    ir["sobolev_space"] = basix_element.sobolev_space
     ir["discontinuous"] = basix_element.discontinuous
     ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
     ir["highest_complete_degree"] = basix_element.highest_complete_degree
