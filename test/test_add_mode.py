@@ -4,9 +4,10 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import ffcx.codegeneration.jit
 import numpy as np
 import pytest
+
+import ffcx.codegeneration.jit
 import ufl
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
@@ -26,7 +27,7 @@ def test_additive_facet_integral(mode, compile_args):
     a = ufl.inner(u, v) * ufl.ds
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -75,7 +76,7 @@ def test_additive_cell_integral(mode, compile_args):
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, parameters={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())

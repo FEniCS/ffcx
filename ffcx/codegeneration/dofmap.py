@@ -12,7 +12,6 @@ import typing
 
 import ffcx.codegeneration.dofmap_template as ufcx_dofmap
 
-
 logger = logging.getLogger("ffcx")
 
 
@@ -55,7 +54,7 @@ def tabulate_entity_dofs(L, entity_dofs: typing.List[typing.List[typing.List[int
         return L.NoOp()
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     """Generate UFC code for a dofmap."""
     logger.info("Generating code for dofmap:")
     logger.info(f"--- num element support dofs: {ir.num_element_support_dofs}")

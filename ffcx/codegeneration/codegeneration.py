@@ -38,17 +38,17 @@ class CodeBlocks(typing.NamedTuple):
     expressions: typing.List[typing.Tuple[str, str]]
 
 
-def generate_code(ir, parameters) -> CodeBlocks:
+def generate_code(ir, options) -> CodeBlocks:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
     # Generate code for finite_elements
-    code_finite_elements = [finite_element_generator(element_ir, parameters) for element_ir in ir.elements]
-    code_dofmaps = [dofmap_generator(dofmap_ir, parameters) for dofmap_ir in ir.dofmaps]
-    code_integrals = [integral_generator(integral_ir, parameters) for integral_ir in ir.integrals]
-    code_forms = [form_generator(form_ir, parameters) for form_ir in ir.forms]
-    code_expressions = [expression_generator(expression_ir, parameters) for expression_ir in ir.expressions]
+    code_finite_elements = [finite_element_generator(element_ir, options) for element_ir in ir.elements]
+    code_dofmaps = [dofmap_generator(dofmap_ir, options) for dofmap_ir in ir.dofmaps]
+    code_integrals = [integral_generator(integral_ir, options) for integral_ir in ir.integrals]
+    code_forms = [form_generator(form_ir, options) for form_ir in ir.forms]
+    code_expressions = [expression_generator(expression_ir, options) for expression_ir in ir.expressions]
     return CodeBlocks(elements=code_finite_elements, dofmaps=code_dofmaps,
                       integrals=code_integrals, forms=code_forms, expressions=code_expressions)
