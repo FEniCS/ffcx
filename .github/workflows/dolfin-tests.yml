@@ -50,7 +50,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/sobolev_spaces
+          python3 -m pip install git+https://github.com/FEniCS/basix.git
       - name: Install UFL and Basix (specified branches/tags)
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -67,7 +67,6 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: mscroggs/sobolev_spaces
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v2
