@@ -57,9 +57,9 @@ jobs:
         run: |
           python -m flake8 --statistics ffcx/ test/
 
-      - name: Static check with mypy
-        run: |
-          python -m mypy ffcx/
+      # - name: Static check with mypy
+      #   run: |
+      #     python -m mypy ffcx/
 
       - name: isort checks (non-blocking)
         continue-on-error: true
