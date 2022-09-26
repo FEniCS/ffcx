@@ -88,7 +88,7 @@ def generator(ir, options):
         scalar_type=options["scalar_type"],
         geom_type=scalar_to_value_type(options["scalar_type"]),
         np_scalar_type=cdtype_to_numpy(options["scalar_type"]),
-        coordinate_element=lang.AddressOf(lang.Symbol(ir.coordinate_element))
+        coordinate_element=lang.AddressOf(lang.Symbol(ir.coordinate_element)))
 
     return declaration, implementation
 
@@ -642,7 +642,7 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
-        scalar_type = self.backend.access.parameters["scalar_type"]
+        scalar_type = self.backend.access.options["scalar_type"]
         iq = create_quadrature_index(lang, quadrature_rule)
 
         for blockdata in blocklist:

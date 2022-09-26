@@ -397,12 +397,12 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         tensor_factors = None
         tensor_perm = None
         if (
-            basix_element.has_tensor_product_factorisation
+            element.has_tensor_product_factorisation
             # TODO: allow for element made from multiple tensor parts
-            and len(basix_element.get_tensor_product_representation()) == 1
+            and len(element.get_tensor_product_representation()) == 1
             and quadrature_rule.has_tensor_factors
         ):
-            factors = basix_element.get_tensor_product_representation()
+            factors = element.get_tensor_product_representation()
 
             tensor_factors = []
             for i, j in enumerate(factors[0][0]):

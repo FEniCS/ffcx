@@ -235,8 +235,8 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        batch_size = self.parameters["batch_size"]
-        value_type = scalar_to_value_type(self.parameters["scalar_type"])
+        batch_size = self.options["batch_size"]
+        value_type = scalar_to_value_type(self.options["scalar_type"])
         value_type = batched_value_type(value_type, batch_size)
 
         table_access = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
