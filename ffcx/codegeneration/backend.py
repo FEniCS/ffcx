@@ -5,8 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFCx specific pieces for the code generation phase."""
 
-import types
-
 import ffcx.codegeneration.C.cnodes
 from ffcx.codegeneration.access import FFCXBackendAccess
 from ffcx.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
