@@ -6,7 +6,7 @@
 
 import collections
 import logging
-from typing import List, Tuple
+from typing import Any, Dict, List, Set, Tuple
 import numpy
 import copy
 
@@ -26,7 +26,7 @@ from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.integral_type}")
     logger.info(f"--- name: {ir.name}")
@@ -38,7 +38,7 @@ def generator(ir, parameters):
     declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
 
     # Create FFCx C backend
-    backend = FFCXBackend(ir, parameters)
+    backend = FFCXBackend(ir, options)
 
     # Configure kernel generator
     ig = IntegralGenerator(ir, backend)
@@ -72,7 +72,7 @@ def generator(ir, parameters):
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
-    if parameters["tabulate_tensor_void"]:
+    if options["tabulate_tensor_void"]:
         code["tabulate_tensor"] = ""
 
     code["result_needs_permuting"] = 0
@@ -85,13 +85,10 @@ def generator(ir, parameters):
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
-        scalar_type=parameters["scalar_type"],
-        geom_type=scalar_to_value_type(parameters["scalar_type"]),
-        np_scalar_type=cdtype_to_numpy(parameters["scalar_type"]),
-        coordinate_element=lang.AddressOf(lang.Symbol(ir.coordinate_element)),
-        result_needs_permuting=code["result_needs_permuting"],
-        result_permutations=code["result_permutations"],
-        result_permutations_init=code["result_permutations_init"])
+        scalar_type=options["scalar_type"],
+        geom_type=scalar_to_value_type(options["scalar_type"]),
+        np_scalar_type=cdtype_to_numpy(options["scalar_type"]),
+        coordinate_element=lang.AddressOf(lang.Symbol(ir.coordinate_element))
 
     return declaration, implementation
 
@@ -155,7 +152,7 @@ class IntegralGenerator(object):
         Returns the CNodes expression to access the value in the code.
         """
         lang = self.backend.language
-        batch_size = self.backend.access.parameters["batch_size"]
+        batch_size = self.backend.access.options["batch_size"]
         if batch_size > 1:
             if v._ufl_is_literal_:
                 if v not in self.literals:
@@ -200,11 +197,11 @@ class IntegralGenerator(object):
         assert not any(d for d in self.scopes.values())
 
         parts = []
-        scalar_type = self.backend.access.parameters["scalar_type"]
+        scalar_type = self.backend.access.options["scalar_type"]
         value_type = scalar_to_value_type(scalar_type)
-        alignment = self.ir.params['assume_aligned']
+        alignment = self.ir.options['assume_aligned']
         if alignment != -1:
-            scalar_type = self.backend.access.parameters["scalar_type"]
+            scalar_type = self.backend.access.options["scalar_type"]
             parts += [lang.VerbatimStatement(f"A = ({scalar_type}*)__builtin_assume_aligned(A, {alignment});"),
                       lang.VerbatimStatement(f"w = (const {scalar_type}*)__builtin_assume_aligned(w, {alignment});"),
                       lang.VerbatimStatement(f"c = (const {scalar_type}*)__builtin_assume_aligned(c, {alignment});"),
@@ -246,8 +243,8 @@ class IntegralGenerator(object):
                                           "Pre-definitions of modified terminals to enable unit-stride access")
 
         for literal in self.literals.keys():
-            scalar_type = self.backend.access.parameters["scalar_type"]
-            batch_size = self.backend.access.parameters["batch_size"]
+            scalar_type = self.backend.access.options["scalar_type"]
+            batch_size = self.backend.access.options["batch_size"]
             if batch_size > 1:
                 scalar_type += str(batch_size)
             values = self.backend.ufl_to_language.get(literal)
@@ -272,7 +269,7 @@ class IntegralGenerator(object):
         if self.ir.integral_type in skip:
             return parts
 
-        padlen = self.ir.params["padlen"]
+        padlen = self.ir.options["padlen"]
 
         # Loop over quadrature rules
         for quadrature_rule, integrand in self.ir.integrand.items():
@@ -293,7 +290,7 @@ class IntegralGenerator(object):
         parts = lang.commented_code_list(parts, "Quadrature rules")
         return parts
 
-    def generate_geometry_tables(self, float_type):
+    def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
         lang = self.backend.language
 
@@ -307,7 +304,7 @@ class IntegralGenerator(object):
             ufl.geometry.ReferenceNormal: "reference_facet_normals",
             ufl.geometry.FacetOrientation: "facet_orientation"
         }
-        cells = {t: set() for t in ufl_geometry.keys()}
+        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
@@ -330,7 +327,7 @@ class IntegralGenerator(object):
         parts = []
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-        padlen = self.ir.params["padlen"]
+        padlen = self.ir.options["padlen"]
         if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
@@ -436,8 +433,8 @@ class IntegralGenerator(object):
         intermediates = []
         quadrature_values = []
 
-        batch_size = self.backend.access.parameters["batch_size"]
-        scalar_type = self.backend.access.parameters["scalar_type"]
+        batch_size = self.backend.access.options["batch_size"]
+        scalar_type = self.backend.access.options["scalar_type"]
         if batch_size > 1:
             scalar_type += str(batch_size)
 
@@ -537,8 +534,9 @@ class IntegralGenerator(object):
 
         if intermediates:
             if use_symbol_array:
-                scalar_type = self.backend.access.parameters["scalar_type"]
-                batch_size = self.backend.access.parameters["batch_size"]
+                padlen = self.ir.options["padlen"]
+                scalar_type = self.backend.access.options["scalar_type"]
+                batch_size = self.backend.access.options["batch_size"]
                 if batch_size > 1:
                     scalar_type += str(batch_size)
                 declaration = [lang.ArrayDecl(scalar_type, symbol, len(intermediates))]
@@ -689,8 +687,8 @@ class IntegralGenerator(object):
                 key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
-                    scalar_type = self.backend.access.parameters["scalar_type"]
-                    batch_size = self.backend.access.parameters["batch_size"]
+                    scalar_type = self.backend.access.options["scalar_type"]
+                    batch_size = self.backend.access.options["batch_size"]
                     if batch_size > 1:
                         scalar_type += str(batch_size)
                     if iq.dim > 1:

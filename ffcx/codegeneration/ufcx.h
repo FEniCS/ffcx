@@ -186,6 +186,9 @@ extern "C"
     /// The map type for the element
     int map_type;
 
+    /// The Sobolev space for the element
+    int sobolev_space;
+
     /// Indicates whether or not this is the discontinuous version of the element
     bool discontinuous;
 

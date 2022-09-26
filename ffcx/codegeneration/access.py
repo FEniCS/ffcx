@@ -9,8 +9,8 @@ import logging
 import warnings
 
 import ufl
-from ffcx.element_interface import create_element, convert_element
 from basix.ufl_wrapper import BlockedElement
+from ffcx.element_interface import convert_element, create_element
 
 logger = logging.getLogger("ffcx")
 
@@ -18,14 +18,14 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendAccess(object):
     """FFCx specific cpp formatter class."""
 
-    def __init__(self, ir, language, symbols, parameters):
+    def __init__(self, ir, language, symbols, options):
 
-        # Store ir and parameters
+        # Store ir and options
         self.entitytype = ir.entitytype
         self.integral_type = ir.integral_type
         self.language = language
         self.symbols = symbols
-        self.parameters = parameters
+        self.options = options
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.

@@ -10,6 +10,7 @@ import logging
 import itertools
 
 import numpy
+
 import ufl
 from ffcx.element_interface import (create_quadrature, map_facet_points,
                                     reference_cell_vertices)

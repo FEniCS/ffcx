@@ -24,13 +24,13 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendDefinitions(object):
     """FFCx specific code definitions."""
 
-    def __init__(self, ir, language, symbols, parameters):
-        # Store ir and parameters
+    def __init__(self, ir, language, symbols, options):
+        # Store ir and options
         self.integral_type = ir.integral_type
         self.entitytype = ir.entitytype
         self.language = language
         self.symbols = symbols
-        self.parameters = parameters
+        self.options = options
 
         self.ir = ir
 
@@ -75,8 +75,8 @@ class FFCXBackendDefinitions(object):
         """Return definition code for coefficients."""
         lang = self.language
 
-        scalar_type = self.parameters["scalar_type"]
-        batch_size = self.parameters["batch_size"]
+        scalar_type = self.options["scalar_type"]
+        batch_size = self.options["batch_size"]
 
         if (batch_size > 1):
             scalar_type += str(batch_size)
@@ -173,8 +173,8 @@ class FFCXBackendDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        value_type = scalar_to_value_type(self.parameters["scalar_type"])
-        value_type = batched_value_type(value_type, self.parameters["batch_size"])
+        value_type = scalar_to_value_type(self.options["scalar_type"])
+        value_type = batched_value_type(value_type, self.options["batch_size"])
 
         code = []
         body = [lang.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]

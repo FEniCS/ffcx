@@ -61,6 +61,11 @@ jobs:
       #   run: |
       #     python -m mypy ffcx/
 
+      - name: isort checks (non-blocking)
+        continue-on-error: true
+        run: |
+          python3 -m isort --check .
+
       - name: Check documentation style
         run: |
           python -m pydocstyle .
