@@ -332,6 +332,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         "cell": "cell",
         "exterior_facet": "facet",
         "interior_facet": "facet",
+        "edge": "edge",
         "vertex": "vertex",
         "custom": "cell"
     }
@@ -385,6 +386,13 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                     # Currently only checking cell name as Basix element gets the geometric dimension wrong
                     # (broken by https://github.com/FEniCS/ffcx/pull/511)
                     if e_0.cell().cellname() in [facet_cell.cellname() for facet_cell in e_1.cell().facet_types()]:
+                        ir["mixed_dim"] = True
+
+        if itg_data.integral_type == "edge":
+            # FIXME : Needs more testing
+            for e_0 in unique_elements:
+                for e_1 in unique_elements:
+                    if e_0.cell().cellname() in [edge_cell.cellname() for edge_cell in e_1.cell().edge_types()]:
                         ir["mixed_dim"] = True
 
         # Create dimensions of primary indices, needed to reset the argument
@@ -565,7 +573,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     # it has to know their names for codegen phase
     ir["integral_names"] = {}
     ir["subdomain_ids"] = {}
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
+    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "edge")
     for integral_type in ufcx_integral_types:
         ir["subdomain_ids"][integral_type] = []
         ir["integral_names"][integral_type] = []

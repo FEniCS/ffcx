@@ -260,8 +260,10 @@ class IntegralGenerator(object):
         ufl_geometry = {
             ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
             ufl.geometry.CellFacetJacobian: "reference_facet_jacobian",
+            ufl.geometry.CellEdgeJacobian: "reference_edge_jacobian",
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
             ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
+            ufl.geometry.ReferenceEdgeVolume: "reference_edge_volume",
             ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
             ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
             ufl.geometry.ReferenceNormal: "reference_facet_normals",

@@ -127,6 +127,10 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
             # as a "cell" integral over element.cell()
             entity_points = map_integral_points(points, "cell",
                                                 element.cell(), 0)
+        elif element.cell().cellname() in [edge_cell.cellname() for edge_cell in cell.edge_types()] and is_mixed_dim:
+            # TODO / FIXME : In 3D-1D, integration over 1D edge should be a cell integral (cell of the 1D submesh) ?
+            entity_points = map_integral_points(points, "cell",
+                                                element.cell(), 0)
         else:
             raise RuntimeError(f"Domain cell and ufl element cell not compatible for {integral_type} integral")
 
@@ -188,7 +192,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, ent
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V"}[entitytype]
+    name += {"cell": "", "facet": "_F", "edge": "_E", "vertex": "_V"}[entitytype]
     name += f"_Q{quadrature_rule.id()}"
     return name
 

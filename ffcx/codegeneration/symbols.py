@@ -84,6 +84,9 @@ class FFCXBackendSymbols(object):
             if restriction == "-":
                 postfix = "[1]"
             return self.S("entity_local_index" + postfix)
+        elif entitytype == "edge":
+            # TODO : Does restriction make sense with edges (arbitrary number of cells) ?
+            return self.S("entity_local_index[0]")
         elif entitytype == "vertex":
             return self.S("entity_local_index[0]")
         else:

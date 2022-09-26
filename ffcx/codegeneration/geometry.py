@@ -11,12 +11,16 @@ import numpy
 def write_table(L, tablename, cellname, type: str):
     if tablename == "facet_edge_vertices":
         return facet_edge_vertices(L, tablename, cellname)
+    if tablename == "reference_edge_jacobian":
+        return reference_edge_jacobian(L, tablename, cellname, type)
     if tablename == "reference_facet_jacobian":
         return reference_facet_jacobian(L, tablename, cellname, type)
     if tablename == "reference_cell_volume":
         return reference_cell_volume(L, tablename, cellname, type)
     if tablename == "reference_facet_volume":
         return reference_facet_volume(L, tablename, cellname, type)
+    if tablename == "reference_edge_volume":
+        return reference_edge_volume(L, tablename, cellname, type)
     if tablename == "reference_edge_vectors":
         return reference_edge_vectors(L, tablename, cellname, type)
     if tablename == "facet_reference_edge_vectors":
@@ -49,6 +53,11 @@ def facet_edge_vertices(L, tablename, cellname):
     out = numpy.array(edge_vertices, dtype=int)
     return L.ArrayDecl("static const unsigned int", f"{cellname}_{tablename}", out.shape, out)
 
+def reference_edge_jacobian(L, tablename, cellname, type: str):
+    celltype = getattr(basix.CellType, cellname)
+    out = basix.cell.edge_jacobians(celltype)
+    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
+
 
 def reference_facet_jacobian(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
@@ -65,6 +74,14 @@ def reference_cell_volume(L, tablename, cellname, type: str):
 def reference_facet_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     volumes = basix.cell.facet_reference_volumes(celltype)
+    for i in volumes[1:]:
+        if not numpy.isclose(i, volumes[0]):
+            raise ValueError("Reference facet volume not supported for this cell type.")
+    return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", volumes[0])
+
+def reference_edge_volume(L, tablename, cellname, type: str):
+    celltype = getattr(basix.CellType, cellname)
+    volumes = basix.cell.edge_reference_volumes(celltype)
     for i in volumes[1:]:
         if not numpy.isclose(i, volumes[0]):
             raise ValueError("Reference facet volume not supported for this cell type.")

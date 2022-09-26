@@ -97,6 +97,15 @@ def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int,
                           for p in points], dtype=numpy.float64)
 
 
+def map_edge_points(points: numpy.typing.NDArray[numpy.float64], edge: int,
+                    cellname: str) -> numpy.typing.NDArray[numpy.float64]:
+    """Map points from a reference edge to a physical edge."""
+    geom = basix.geometry(basix.cell.string_to_type(cellname))
+    edge_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-3][edge]]
+    return numpy.asarray([edge_vertices[0] + sum((i - edge_vertices[0]) * j for i, j in zip(edge_vertices[1:], p))
+                        for p in points], dtype=numpy.float64)
+
+
 class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     """A quadrature element."""
 

@@ -32,7 +32,7 @@ def generator(ir, options):
 
     code = []
     cases = []
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
+    for itg_type in ("cell", "interior_facet", "exterior_facet", "edge"):
         cases += [(L.Symbol(itg_type), L.Return(len(ir.subdomain_ids[itg_type])))]
     code += [L.Switch("integral_type", cases, default=L.Return(0))]
     d["num_integrals"] = L.StatementList(code)
@@ -86,7 +86,7 @@ def generator(ir, options):
     cases = []
     code_ids = []
     cases_ids = []
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
+    for itg_type in ("cell", "interior_facet", "exterior_facet", "edge"):
         if len(ir.integral_names[itg_type]) > 0:
             code += [L.ArrayDecl(
                 "static ufcx_integral*", f"integrals_{itg_type}_{ir.name}",

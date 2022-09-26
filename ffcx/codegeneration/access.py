@@ -34,12 +34,15 @@ class FFCXBackendAccess(object):
                             ufl.geometry.Jacobian: self.jacobian,
                             ufl.geometry.CellCoordinate: self.cell_coordinate,
                             ufl.geometry.FacetCoordinate: self.facet_coordinate,
+                            ufl.geometry.EdgeCoordinate: self.edge_coordinate,
                             ufl.geometry.CellVertices: self.cell_vertices,
                             ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
                             ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
                             ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
+                            ufl.geometry.CellEdgeJacobian: self.cell_edge_jacobian,
                             ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
                             ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
+                            ufl.geometry.ReferenceEdgeVolume: self.reference_edge_volume,
                             ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
                             ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
                             ufl.geometry.ReferenceNormal: self.reference_normal,
@@ -172,6 +175,42 @@ class FFCXBackendAccess(object):
             # getting here
             raise RuntimeError("Expecting reference facet coordinate to be symbolically rewritten.")
 
+    # FIXME : Needs more testing !
+    def edge_coordinate(self, e, mt, tabledata, num_points):
+        L = self.language
+        if mt.global_derivatives:
+            raise RuntimeError("Not expecting derivatives of EdgeCoordinate.")
+        if mt.local_derivatives:
+            raise RuntimeError("Not expecting derivatives of EdgetCoordinate.")
+        if mt.averaged is not None:
+            raise RuntimeError("Not expecting average of EdgeCoordinate.")
+        if mt.restriction:
+            raise RuntimeError("Not expecting restriction of EdgeCoordinate.")
+
+        #if self.integral_type in ("interior_facet", "exterior_facet"):
+        if self.integral_type in ("edge"):
+            tdim, = mt.terminal.ufl_shape
+            if tdim == 0 or tdim == 1:
+                raise RuntimeError("Vertices and Edges have no edge coordinates.")
+            elif tdim == 2:
+                warnings.warn(
+                    "Vertex coordinate is always 0, should get rid of this in ufl geometry lowering."
+                )
+                return L.LiteralFloat(0.0)
+
+            Xf = self.points_table(num_points)
+            iq = self.symbols.quadrature_loop_index()
+            assert 0 <= mt.flat_component < (tdim - 2)
+            if num_points == 1:
+                index = mt.flat_component
+            else:
+                index = iq * (tdim - 2) + mt.flat_component
+            return Xf[index]
+        else:
+            # Xf should be computed from X or x symbolically instead of
+            # getting here
+            raise RuntimeError("Expecting reference edge coordinate to be symbolically rewritten.")
+
     def jacobian(self, e, mt, tabledata, num_points):
         if mt.averaged is not None:
             raise RuntimeError("Not expecting average of Jacobian.")
@@ -190,6 +229,14 @@ class FFCXBackendAccess(object):
         cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_facet_volume")
+        else:
+            raise RuntimeError(f"Unhandled cell types {cellname}.")
+
+    def reference_edge_volume(self, e, mt, tabledata, access):
+        L = self.language
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
+            return L.Symbol(f"{cellname}_reference_edge_volume")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
@@ -212,6 +259,18 @@ class FFCXBackendAccess(object):
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError("The reference facet jacobian doesn't make sense for interval cell.")
+        else:
+            raise RuntimeError(f"Unhandled cell types {cellname}.")
+
+    def cell_edge_jacobian(self, e, mt, tabledata, num_points):
+        L = self.language
+        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        if cellname in ("tetrahedron", "hexahedron"):
+            table = L.Symbol(f"{cellname}_reference_edge_jacobian")
+            edge = self.symbols.entity("edge", mt.restriction)
+            return table[edge][mt.component[0]][mt.component[1]]
+        elif cellname in ("interval", "triangle", "quadrilateral"):
+            raise RuntimeError("The reference edge jacobian doesn't make sense for interval and triangle/quadrilateral cells.")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
