@@ -2,7 +2,6 @@ import setuptools
 
 try:
     import pip
-
     from packaging import version
     if version.parse(pip.__version__) < version.parse("21.3"):
         # Issue with older version of pip https://github.com/pypa/pip/issues/7953

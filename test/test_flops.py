@@ -5,8 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 
-from ffcx.codegeneration.flop_count import count_flops
 import ufl
+from ffcx.codegeneration.flop_count import count_flops
 
 
 def create_form(degree):
@@ -29,10 +29,10 @@ def test_flops():
     dofs2 = (k2 + 1.) * (k2 + 2.) / 2.
 
     flops_1 = count_flops(a1)
-    assert(len(flops_1) == 2)
+    assert len(flops_1) == 2
 
     flops_2 = count_flops(a2)
-    assert(len(flops_2) == 2)
+    assert len(flops_2) == 2
 
     r = sum(flops_2, 0.) / sum(flops_1, 0.)
 

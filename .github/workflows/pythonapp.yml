@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
 
     env:
       CC: gcc-10
@@ -60,6 +60,11 @@ jobs:
       - name: Static check with mypy
         run: |
           python -m mypy ffcx/
+
+      - name: isort checks (non-blocking)
+        continue-on-error: true
+        run: |
+          python3 -m isort --check .
 
       - name: Check documentation style
         run: |

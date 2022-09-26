@@ -9,8 +9,8 @@ import logging
 import warnings
 
 import ufl
-from ffcx.element_interface import create_element
-from ufl.finiteelement import MixedElement
+from basix.ufl_wrapper import BlockedElement
+from ffcx.element_interface import convert_element, create_element
 
 logger = logging.getLogger("ffcx")
 
@@ -18,14 +18,14 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendAccess(object):
     """FFCx specific cpp formatter class."""
 
-    def __init__(self, ir, language, symbols, parameters):
+    def __init__(self, ir, language, symbols, options):
 
-        # Store ir and parameters
+        # Store ir and options
         self.entitytype = ir.entitytype
         self.integral_type = ir.integral_type
         self.language = language
         self.symbols = symbols
-        self.parameters = parameters
+        self.options = options
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
@@ -254,17 +254,17 @@ class FFCXBackendAccess(object):
         # Get properties of domain
         domain = mt.terminal.ufl_domain()
         gdim = domain.geometric_dimension()
-        coordinate_element = domain.ufl_coordinate_element()
+        coordinate_element = convert_element(domain.ufl_coordinate_element())
 
         # Get dimension and dofmap of scalar element
-        assert isinstance(coordinate_element, MixedElement)
+        assert isinstance(coordinate_element, BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
-        assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
+        scalar_element = create_element(ufl_scalar_element)
+        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
-        basix_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
-        num_scalar_dofs = basix_scalar_element.dim
+        vertex_scalar_dofs = scalar_element.entity_dofs[0]
+        num_scalar_dofs = scalar_element.dim
 
         # Get dof and component
         dof, = vertex_scalar_dofs[mt.component[0]]
@@ -278,7 +278,7 @@ class FFCXBackendAccess(object):
         domain = mt.terminal.ufl_domain()
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
-        coordinate_element = domain.ufl_coordinate_element()
+        coordinate_element = convert_element(domain.ufl_coordinate_element())
 
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             pass
@@ -288,18 +288,18 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         # Get dimension and dofmap of scalar element
-        assert isinstance(coordinate_element, MixedElement)
+        assert isinstance(coordinate_element, BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
-        assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
+        scalar_element = create_element(ufl_scalar_element)
+        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
-        basix_scalar_element = create_element(ufl_scalar_element)
-        vertex_scalar_dofs = basix_scalar_element.entity_dofs[0]
-        num_scalar_dofs = basix_scalar_element.dim
+        vertex_scalar_dofs = scalar_element.entity_dofs[0]
+        num_scalar_dofs = scalar_element.dim
 
         # Get edge vertices
         edge = mt.component[0]
-        vertex0, vertex1 = basix_scalar_element.reference_topology[1][edge]
+        vertex0, vertex1 = scalar_element.reference_topology[1][edge]
 
         # Get dofs and component
         dof0, = vertex_scalar_dofs[vertex0]
@@ -319,7 +319,7 @@ class FFCXBackendAccess(object):
         domain = mt.terminal.ufl_domain()
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
-        coordinate_element = domain.ufl_coordinate_element()
+        coordinate_element = convert_element(domain.ufl_coordinate_element())
 
         if cellname in ("tetrahedron", "hexahedron"):
             pass
@@ -330,13 +330,14 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         # Get dimension and dofmap of scalar element
-        assert isinstance(coordinate_element, MixedElement)
+        assert isinstance(coordinate_element, BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
-        assert ufl_scalar_element.family() in ("Lagrange", "Q", "S")
+        scalar_element = create_element(ufl_scalar_element)
+        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
-        basix_scalar_element = create_element(ufl_scalar_element)
-        num_scalar_dofs = basix_scalar_element.dim
+        scalar_element = create_element(ufl_scalar_element)
+        num_scalar_dofs = scalar_element.dim
 
         # Get edge vertices
         facet = self.symbols.entity("facet", mt.restriction)

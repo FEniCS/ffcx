@@ -10,15 +10,15 @@
 
 import logging
 
-import ffcx.codegeneration.finite_element_template as ufcx_finite_element
 import ffcx.codegeneration.basix_custom_element_template as ufcx_basix_custom_finite_element
+import ffcx.codegeneration.finite_element_template as ufcx_finite_element
 import ufl
 
 logger = logging.getLogger("ffcx")
 index_type = "int"
 
 
-def generator(ir, parameters):
+def generator(ir, options):
     """Generate UFC code for a finite element."""
     logger.info("Generating code for finite element:")
     logger.info(f"--- family: {ir.family}")
@@ -104,7 +104,7 @@ def generator(ir, parameters):
         fname for _, fname, _, _ in Formatter().parse(ufcx_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formattting dict"
+        d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_finite_element.factory.format_map(d)
@@ -120,6 +120,7 @@ def generate_custom_element(name, ir):
     d["factory_name"] = name
     d["cell_type"] = int(ir.cell_type)
     d["map_type"] = int(ir.map_type)
+    d["sobolev_space"] = int(ir.sobolev_space)
     d["highest_complete_degree"] = ir.highest_complete_degree
     d["highest_degree"] = ir.highest_degree
     d["discontinuous"] = "true" if ir.discontinuous else "false"
@@ -180,7 +181,7 @@ def generate_custom_element(name, ir):
         fname for _, fname, _, _ in Formatter().parse(ufcx_basix_custom_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formattting dict"
+        d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_basix_custom_finite_element.factory.format_map(d)

@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFCx specific pieces for the code generation phase."""
 
+import types
+
 import ffcx.codegeneration.C.cnodes
 from ffcx.codegeneration.access import FFCXBackendAccess
 from ffcx.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
@@ -15,12 +17,13 @@ from ffcx.codegeneration.symbols import FFCXBackendSymbols
 class FFCXBackend(object):
     """Class collecting all aspects of the FFCx backend."""
 
-    def __init__(self, ir, parameters):
+    def __init__(self, ir, options):
 
         # This is the seam where cnodes/C is chosen for the FFCx backend
         self.language = ffcx.codegeneration.C.cnodes
-        self.ufl_to_language = UFL2CNodesTranslatorCpp(
-            self.language, parameters["scalar_type"], parameters["batch_size"])
+        scalar_type = options["scalar_type"]
+        batch_size = options["batch_size"]
+        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type, batch_size)
 
         coefficient_numbering = ir.coefficient_numbering
         coefficient_offsets = ir.coefficient_offsets
@@ -29,6 +32,6 @@ class FFCXBackend(object):
         self.symbols = FFCXBackendSymbols(self.language, coefficient_numbering,
                                           coefficient_offsets, original_constant_offsets)
         self.definitions = FFCXBackendDefinitions(ir, self.language,
-                                                  self.symbols, parameters)
+                                                  self.symbols, options)
         self.access = FFCXBackendAccess(ir, self.language, self.symbols,
-                                        parameters)
+                                        options)

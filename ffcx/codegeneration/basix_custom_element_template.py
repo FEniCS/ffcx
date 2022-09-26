@@ -26,6 +26,7 @@ ufcx_basix_custom_finite_element {factory_name} =
   .x = {x},
   .M = {M},
   .map_type = {map_type},
+  .sobolev_space = {sobolev_space},
   .discontinuous = {discontinuous},
   .highest_complete_degree = {highest_complete_degree},
   .interpolation_nderivs = {interpolation_nderivs},

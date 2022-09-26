@@ -10,6 +10,7 @@ from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
                          Grad, Indexed, Jacobian, ReferenceGrad,
                          ReferenceValue, Restricted, SpatialCoordinate)
 from ufl.permutation import build_component_numbering
+
 from ...element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
