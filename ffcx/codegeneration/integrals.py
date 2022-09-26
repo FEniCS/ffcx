@@ -495,7 +495,7 @@ class IntegralGenerator(object):
 
         if intermediates:
             if use_symbol_array:
-                padlen = self.ir.params["padlen"]
+                padlen = self.ir.options["padlen"]
                 scalar_type = self.backend.access.options["scalar_type"]
                 batch_size = self.backend.access.options["batch_size"]
                 if batch_size > 1:
