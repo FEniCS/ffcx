@@ -9,6 +9,7 @@ import logging
 import typing
 
 import numpy
+
 import ufl
 import ufl.utils.derivativetuples
 from ffcx.element_interface import basix_index, convert_element, QuadratureElement

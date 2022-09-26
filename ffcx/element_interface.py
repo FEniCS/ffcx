@@ -8,14 +8,14 @@
 from __future__ import annotations
 
 import typing
-
 import warnings
+from functools import lru_cache
+
+import numpy
 
 import basix
-import numpy
-import ufl
 import basix.ufl_wrapper
-from functools import lru_cache
+import ufl
 
 
 def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
@@ -134,9 +134,9 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
         super().__init__(repr, "quadrature element", cellname, value_shape, degree, mapname=mapname)
 
-    def sobolev_space(self):
+    def basix_sobolev_space(self):
         """Return the underlying Sobolev space."""
-        return ufl.sobolevspace.L2
+        return basix.sobolev_spaces.L2
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
@@ -264,6 +264,11 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     def discontinuous(self) -> bool:
         """True if the discontinuous version of the element is used."""
         return False
+
+    @property
+    def map_type(self) -> basix.MapType:
+        """The Basix map type."""
+        return basix.MapType.identity
 
 
 class RealElement(basix.ufl_wrapper._BasixElementBase):
@@ -416,6 +421,11 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         """True if the discontinuous version of the element is used."""
         return False
 
-    def sobolev_space(self):
+    def basix_sobolev_space(self):
         """Return the underlying Sobolev space."""
-        return ufl.sobolevspace.Hinf
+        return basix.sobolev_spaces.Hinf
+
+    @property
+    def map_type(self) -> basix.MapType:
+        """The Basix map type."""
+        return basix.MapType.identity
