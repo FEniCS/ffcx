@@ -53,6 +53,7 @@ def facet_edge_vertices(L, tablename, cellname):
     out = numpy.array(edge_vertices, dtype=int)
     return L.ArrayDecl("static const unsigned int", f"{cellname}_{tablename}", out.shape, out)
 
+
 def reference_edge_jacobian(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.edge_jacobians(celltype)
@@ -78,6 +79,7 @@ def reference_facet_volume(L, tablename, cellname, type: str):
         if not numpy.isclose(i, volumes[0]):
             raise ValueError("Reference facet volume not supported for this cell type.")
     return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", volumes[0])
+
 
 def reference_edge_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)

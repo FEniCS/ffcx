@@ -103,7 +103,7 @@ def map_edge_points(points: numpy.typing.NDArray[numpy.float64], edge: int,
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     edge_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-3][edge]]
     return numpy.asarray([edge_vertices[0] + sum((i - edge_vertices[0]) * j for i, j in zip(edge_vertices[1:], p))
-                        for p in points], dtype=numpy.float64)
+                          for p in points], dtype=numpy.float64)
 
 
 class QuadratureElement(basix.ufl_wrapper._BasixElementBase):

@@ -187,7 +187,6 @@ class FFCXBackendAccess(object):
         if mt.restriction:
             raise RuntimeError("Not expecting restriction of EdgeCoordinate.")
 
-        #if self.integral_type in ("interior_facet", "exterior_facet"):
         if self.integral_type in ("edge"):
             tdim, = mt.terminal.ufl_shape
             if tdim == 0 or tdim == 1:
@@ -270,7 +269,7 @@ class FFCXBackendAccess(object):
             edge = self.symbols.entity("edge", mt.restriction)
             return table[edge][mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
-            raise RuntimeError("The reference edge jacobian doesn't make sense for interval and triangle/quadrilateral cells.")
+            raise RuntimeError("The reference edge jacobian doesn't make sense for 1D and 2D cells.")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
