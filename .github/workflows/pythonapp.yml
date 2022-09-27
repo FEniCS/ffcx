@@ -46,8 +46,8 @@ jobs:
 
       - name: Install FEniCS dependencies (Python)
         run: |
-          python -m pip install git+https://github.com/FEniCS/ufl.git@"${GITHUB_REF##*/}"
-          python -m pip install git+https://github.com/FEniCS/basix.git@"${GITHUB_REF##*/}"
+          python -m pip install git+https://github.com/FEniCS/ufl.git@"${{ github.ref_name }}"
+          python -m pip install git+https://github.com/FEniCS/basix.git@"${{ github.ref_name }}"
 
       - name: Install FFCx
         run: |
