@@ -20,6 +20,7 @@ import numpy.typing
 import basix.ufl_wrapper
 import ufl
 from ffcx.element_interface import convert_element, QuadratureElement
+from warnings import warn
 
 logger = logging.getLogger("ffcx")
 
@@ -149,6 +150,12 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         raise RuntimeError(f"Form ({form}) seems to be zero: cannot compile it.")
     if _has_custom_integrals(form):
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
+
+    # Set default spacing for coordinate elements to be equispaced
+    for n, i in enumerate(form._integrals):
+        element = i._ufl_domain._ufl_coordinate_element
+        if not isinstance(element, basix.ufl_wrapper._BasixElementBase):
+            warn("UFL coordinate elements using elements not created via Basix may not work with DOLFINx")
 
     # Check for complex mode
     complex_mode = "_Complex" in options["scalar_type"]
