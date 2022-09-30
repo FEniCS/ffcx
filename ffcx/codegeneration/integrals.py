@@ -77,7 +77,6 @@ def generator(ir, options):
 
     code["result_needs_permuting"] = 0
     code["result_permutations"] = "NULL"
-    code["result_permutations_init"] = ""
 
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
@@ -557,7 +556,10 @@ class IntegralGenerator(object):
                 return intermediates
             else:
                 if intermediates in quadrature_values:
-                    return intermediates[iq.global_idx()]
+                    if hasattr(intermediates, 'global_idx'):
+                        return intermediates[intermediates.global_idx]
+                    else:
+                        return intermediates[iq.global_idx()]
                 else:
                     return intermediates
         if iq.dim > 1:

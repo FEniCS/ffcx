@@ -364,7 +364,7 @@ class LiteralString(CExprLiteral):
 class Symbol(CExprTerminal):
     """A named symbol."""
 
-    __slots__ = ("name", )
+    # __slots__ = ("name", )
     precedence = PRECEDENCE.SYMBOL
 
     def __init__(self, name):

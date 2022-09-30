@@ -37,7 +37,7 @@ class MultiIndex:
         if self.dim == 1:
             return self.indices[0]
         else:
-            global_factors = [self.strides[i] * self.indices[i] for i in range(self.dim)]
+            global_factors = [self.strides[i] * self.indices[i] for i in range(self.dim) if self.ranges[i] != 1]
             return self.lang.Sum(global_factors)
 
     def local_idx(self, idx):

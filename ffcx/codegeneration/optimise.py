@@ -130,7 +130,6 @@ def transpose_tensor(lang, A, Ia, Ib, scalar_type):
 # C{Ic} = A{Ia} * B {Ib}
 def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type):
     code = []
-
     Ib = extract_multi_index(lang, B, indices, sizes)
     Ia = extract_multi_index(lang, A, indices, sizes)
 
@@ -198,7 +197,6 @@ def assign_add(lang, A, B, indices, sizes):
 
 
 def sum_factorise(lang, expression, scalar_type):
-    assert isinstance(expression, lang.NestedForRange)
     counter = 0
     indices = expression.indices
     sizes = expression.ranges

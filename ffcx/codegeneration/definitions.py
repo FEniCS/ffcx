@@ -9,7 +9,7 @@ import logging
 
 import ufl
 from ffcx.element_interface import create_element
-from ffcx.codegeneration.indices import create_quadrature_index, create_dof_index
+from ffcx.codegeneration.indices import MultiIndex, create_quadrature_index, create_dof_index
 from ffcx.codegeneration.C.cnodes import Symbol
 from ffcx.codegeneration.optimise import sum_factorise
 from ffcx.ir.elementtables import UniqueTableReference
@@ -229,6 +229,15 @@ class FFCXBackendDefinitions(object):
         ic = create_dof_index(lang, tabledata, "ic")
         assert ic.dim == iq.dim
 
+        # if table is pieciwise constant, update quadrature access
+        ranges = iq.ranges
+        for i in range(ic.dim):
+            factor = tabledata.tensor_factors[i]
+            if (factor.values.shape[2] == 1):
+                ranges[i] = 1
+        iq = MultiIndex(lang, iq.indices, ranges)
+        access.global_idx = iq.global_idx()
+
         # coordinate dofs is always 3d
         dim = 3
         offset = 0
@@ -240,9 +249,9 @@ class FFCXBackendDefinitions(object):
         value_type = batched_value_type(value_type, batch_size)
 
         table_access = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        
         dof_access = self.symbols.S("coordinate_dofs")
         dof_access = dof_access[ic.global_idx() * dim + begin + offset]
-
         code = []
         if iq.dim > 1:
             code += [lang.ArrayDecl(value_type, access, [iq.global_size()], values=[0.0])]
