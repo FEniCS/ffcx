@@ -51,7 +51,9 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
     elif isinstance(element, ufl.EnrichedElement):
         return basix.ufl_wrapper._create_enriched_element([create_element(e) for e in element._elements])
     elif element.family() == "Quadrature":
-        return QuadratureElement(element)
+        return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
+                                 degree=element.degree())
+
     elif element.family() == "Real":
         return RealElement(element)
     else:
@@ -101,34 +103,40 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     """A quadrature element."""
 
     _points: basix.ufl_wrapper._nda_f64
+    _weights: basix.ufl_wrapper._nda_f64
     _entity_counts: typing.List[int]
-    _family_name: str
     _cellname: str
 
-    def __init__(self, element: ufl.finiteelement.FiniteElementBase):
+    def __init__(
+        self, cellname: str, value_shape: typing.Tuple[int, ...], scheme: str = None, degree: int = None,
+        points: basix.ufl_wrapper._nda_f64 = None, weights: basix.ufl_wrapper._nda_f64 = None,
+        mapname: str = "identity"
+    ):
         """Initialise the element."""
-        self._points, _ = create_quadrature(element.cell().cellname(),
-                                            element.degree(), element.quadrature_scheme())
+        if scheme is not None:
+            assert degree is not None
+            assert points is None
+            assert weights is None
+            repr = f"QuadratureElement({cellname}, {scheme}, {degree})"
+            self._points, self._weights = create_quadrature(cellname, degree, scheme)
+        else:
+            assert degree is None
+            assert points is not None
+            assert weights is not None
+            self._points = points
+            self._weights = weights
+            repr = f"QuadratureElement({cellname}, {points}, {weights})"
+            degree = len(points)
 
-        self._cellname = element.cell().cellname()
-        self._family_name = element.family()
-        tdim = element.cell().topological_dimension()
-        self._entity_counts = []
-        if tdim >= 1:
-            self._entity_counts.append(element.cell().num_vertices())
-        if tdim >= 2:
-            self._entity_counts.append(element.cell().num_edges())
-        if tdim >= 3:
-            self._entity_counts.append(element.cell().num_facets())
-        self._entity_counts.append(1)
+        self._cellname = cellname
+        basix_cell = basix.cell.string_to_type(cellname)
+        self._entity_counts = [len(i) for i in basix.topology(basix_cell)]
 
-        super().__init__(
-            f"QuadratureElement({element})", "quadrature element", element.cell().cellname(), element.value_shape(),
-            element.degree())
+        super().__init__(repr, "quadrature element", cellname, value_shape, degree, mapname=mapname)
 
-    def sobolev_space(self):
+    def basix_sobolev_space(self):
         """Return the underlying Sobolev space."""
-        return ufl.sobolevspace.L2
+        return basix.sobolev_spaces.L2
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
@@ -230,7 +238,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     @property
     def family_name(self) -> str:
         """Family name of the element."""
-        return self._family_name
+        return "quadrature"
 
     @property
     def lagrange_variant(self) -> basix.LagrangeVariant:
@@ -256,6 +264,11 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     def discontinuous(self) -> bool:
         """True if the discontinuous version of the element is used."""
         return False
+
+    @property
+    def map_type(self) -> basix.MapType:
+        """The Basix map type."""
+        return basix.MapType.identity
 
 
 class RealElement(basix.ufl_wrapper._BasixElementBase):
@@ -408,6 +421,11 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         """True if the discontinuous version of the element is used."""
         return False
 
-    def sobolev_space(self):
+    def basix_sobolev_space(self):
         """Return the underlying Sobolev space."""
-        return ufl.sobolevspace.Hinf
+        return basix.sobolev_spaces.Hinf
+
+    @property
+    def map_type(self) -> basix.MapType:
+        """The Basix map type."""
+        return basix.MapType.identity
