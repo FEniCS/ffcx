@@ -1,3 +1,4 @@
+
 # Code generation format strings for UFC (Unified Form-assembly Code)
 # This code is released into the public domain.
 #
@@ -9,7 +10,6 @@ extern ufcx_integral {factory_name};
 
 factory = """
 // Code for integral {factory_name}
-
 void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
                                     const {scalar_type}* restrict w,
                                     const {scalar_type}* restrict c,
@@ -19,19 +19,13 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {{
 {tabulate_tensor}
 }}
-
 {enabled_coefficients_init}
-{result_permutations_init}
-
 ufcx_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
   .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
   .needs_facet_permutations = {needs_facet_permutations},
   .coordinate_element = {coordinate_element},
-  .result_needs_permuting = {result_needs_permuting},
-  .result_permutations = {result_permutations},
 }};
-
 // End of code for integral {factory_name}
 """

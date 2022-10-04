@@ -430,6 +430,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                     raise ValueError(f"Unsupported cell: {cellname}")
                 rule = QuadratureRule(points, weights)
             else:
+                degree = md["quadrature_degree"]
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
                     integral_type, cell, degree, scheme)
                 rule = QuadratureRule(points, weights, tensor_factors)
