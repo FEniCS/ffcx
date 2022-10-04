@@ -124,7 +124,7 @@ class IntegralIR(typing.NamedTuple):
     coefficient_numbering: typing.Dict[ufl.Coefficient, int]
     coefficient_offsets: typing.Dict[ufl.Coefficient, int]
     original_constant_offsets: typing.Dict[ufl.Constant, int]
-    params: dict
+    options: dict
     cell_shape: str
     unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
     unique_table_types: typing.Dict[str, str]
@@ -138,7 +138,7 @@ class IntegralIR(typing.NamedTuple):
 class ExpressionIR(typing.NamedTuple):
     name: str
     element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
-    params: dict
+    options: dict
     unique_tables: typing.Dict[str, numpy.typing.NDArray[numpy.float64]]
     unique_table_types: typing.Dict[str, str]
     integrand: typing.Dict[QuadratureRule, dict]
@@ -166,7 +166,7 @@ class DataIR(typing.NamedTuple):
     expressions: typing.List[ExpressionIR]
 
 
-def compute_ir(analysis: UFLData, object_names, prefix, parameters, visualise):
+def compute_ir(analysis: UFLData, object_names, prefix, options, visualise):
     """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
@@ -197,7 +197,7 @@ def compute_ir(analysis: UFLData, object_names, prefix, parameters, visualise):
 
     irs = [
         _compute_integral_ir(fd, i, analysis.element_numbers, integral_names, finite_element_names,
-                             parameters, visualise)
+                             options, visualise)
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
@@ -208,7 +208,7 @@ def compute_ir(analysis: UFLData, object_names, prefix, parameters, visualise):
         for (i, fd) in enumerate(analysis.form_data)
     ]
 
-    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, parameters, visualise, object_names,
+    ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, options, visualise, object_names,
                                              finite_element_names, dofmap_names)
                       for i, expr in enumerate(analysis.expressions)]
 
@@ -235,7 +235,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["cell_shape"] = element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["space_dimension"] = element.dim
+    ir["space_dimension"] = element.dim + element.num_global_support_dofs
     ir["element_type"] = element.ufcx_element_type
     ir["lagrange_variant"] = element.lagrange_variant
     ir["dpc_variant"] = element.dpc_variant
@@ -319,13 +319,13 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     ir["entity_closure_dofs"] = element.entity_closure_dofs
 
     ir["num_global_support_dofs"] = element.num_global_support_dofs
-    ir["num_element_support_dofs"] = element.dim - ir["num_global_support_dofs"]
+    ir["num_element_support_dofs"] = element.dim
 
     return DofMapIR(**ir)
 
 
 def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
-                         finite_element_names, parameters, visualise):
+                         finite_element_names, options, visualise):
     """Compute intermediate representation for form integrals."""
     _entity_types = {
         "cell": "cell",
@@ -364,7 +364,8 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
-        ir["element_dimensions"] = {element: element.dim for element in unique_elements}
+        ir["element_dimensions"] = {element: element.dim + element.num_global_support_dofs
+                                    for element in unique_elements}
 
         ir["element_ids"] = {
             element: i
@@ -479,7 +480,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         # Build more specific intermediate representation
         integral_ir = compute_integral_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
                                           ir["entitytype"], integrands, ir["tensor_shape"],
-                                          parameters, visualise)
+                                          options, visualise)
 
         ir.update(integral_ir)
 
@@ -531,7 +532,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         el = convert_element(convert_element(function.ufl_function_space().ufl_element()))
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
-        if cmap.variant() is None:
+        if not isinstance(cmap, basix.ufl_wrapper._BasixElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
         cmap = convert_element(cmap)
         family = cmap.family()
@@ -577,7 +578,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     return FormIR(**ir)
 
 
-def _compute_expression_ir(expression, index, prefix, analysis, parameters, visualise, object_names,
+def _compute_expression_ir(expression, index, prefix, analysis, options, visualise, object_names,
                            finite_element_names, dofmap_names):
     """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
@@ -602,7 +603,8 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
-    ir["element_dimensions"] = {element: element.dim for element in analysis.unique_elements}
+    ir["element_dimensions"] = {element: element.dim + element.num_global_support_dofs
+                                for element in analysis.unique_elements}
 
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
@@ -685,7 +687,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, parameters, visu
         assert len(ir["original_coefficient_positions"]) == 0 and len(ir["original_constant_offsets"]) == 0
 
     expression_ir = compute_integral_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
-                                        parameters, visualise)
+                                        options, visualise)
 
     ir.update(expression_ir)
 

@@ -34,14 +34,14 @@ class UFLData(typing.NamedTuple):
     expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64], ufl.core.expr.Expr]]
 
 
-def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UFLData:
+def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLData:
     """Analyze ufl object(s).
 
-    Parameters
+    Options
     ----------
     ufl_objects
-    parameters
-      FFCx parameters. These parameters take priority over all other set parameters.
+    options
+      FFCx options. These options take priority over all other set options.
 
     Returns a data structure holding
     -------
@@ -82,14 +82,14 @@ def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UF
         else:
             raise TypeError("UFL objects not recognised.")
 
-    form_data = tuple(_analyze_form(form, parameters) for form in forms)
+    form_data = tuple(_analyze_form(form, options) for form in forms)
     for data in form_data:
         elements += [convert_element(e) for e in data.unique_sub_elements]
         coordinate_elements += [convert_element(e) for e in data.coordinate_elements]
 
     for original_expression, points in expressions:
         elements += [convert_element(e) for e in ufl.algorithms.extract_elements(original_expression)]
-        processed_expression = _analyze_expression(original_expression, parameters)
+        processed_expression = _analyze_expression(original_expression, options)
         processed_expressions += [(processed_expression, points, original_expression)]
 
     elements += ufl.algorithms.analysis.extract_sub_elements(elements)
@@ -108,7 +108,7 @@ def analyze_ufl_objects(ufl_objects: typing.List, parameters: typing.Dict) -> UF
                    unique_coordinate_elements=unique_coordinate_element_list, expressions=processed_expressions)
 
 
-def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict):
+def _analyze_expression(expression: ufl.core.expr.Expr, options: typing.Dict):
     """Analyzes and preprocesses expressions."""
     preserve_geometry_types = (ufl.classes.Jacobian, )
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
@@ -119,20 +119,20 @@ def _analyze_expression(expression: ufl.core.expr.Expr, parameters: typing.Dict)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
 
-    complex_mode = "_Complex" in parameters["scalar_type"]
+    complex_mode = "_Complex" in options["scalar_type"]
     if not complex_mode:
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
 
     return expression
 
 
-def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
-    Parameters
+    Options
     ----------
     form
-    parameters
+    options
 
     Returns
     -------
@@ -141,7 +141,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     Note
     ----
     The main workload of this function is extraction of unique/default metadata
-    from parameters, integral metadata or inherited from UFL
+    from options, integral metadata or inherited from UFL
     (in case of quadrature degree)
 
     """
@@ -153,8 +153,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        assert not isinstance(element, basix.ufl_wrapper._BasixElementBase)
-        if element._sub_element._variant is None:
+        if not isinstance(element, basix.ufl_wrapper._BasixElementBase) and element._sub_element._variant is None:
             sub_element = ufl.FiniteElement(
                 element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
                 variant="equispaced")
@@ -162,7 +161,7 @@ def _analyze_form(form: ufl.form.Form, parameters: typing.Dict) -> ufl.algorithm
             form._integrals[n]._ufl_domain._ufl_coordinate_element = equi_element
 
     # Check for complex mode
-    complex_mode = "_Complex" in parameters["scalar_type"]
+    complex_mode = "_Complex" in options["scalar_type"]
 
     # Compute form metadata
     form_data = ufl.algorithms.compute_form_data(

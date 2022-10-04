@@ -15,7 +15,7 @@ from pathlib import Path
 
 logger = logging.getLogger("ffcx")
 
-FFCX_DEFAULT_PARAMETERS = {
+FFCX_DEFAULT_OPTIONS = {
     "epsilon":
         (1e-14, "Machine precision, used for dropping zero terms in tables"),
     "scalar_type":
@@ -39,76 +39,76 @@ FFCX_DEFAULT_PARAMETERS = {
 
 
 @functools.lru_cache(maxsize=None)
-def _load_parameters():
-    """Load parameters from JSON files."""
+def _load_options():
+    """Load options from JSON files."""
     user_config_file = os.getenv("XDG_CONFIG_HOME", default=Path.home().joinpath(".config")) \
-        / Path("ffcx", "ffcx_parameters.json")
+        / Path("ffcx", "ffcx_options.json")
     try:
         with open(user_config_file) as f:
-            user_parameters = json.load(f)
+            user_options = json.load(f)
     except FileNotFoundError:
-        user_parameters = {}
+        user_options = {}
 
-    pwd_config_file = Path.cwd().joinpath("ffcx_parameters.json")
+    pwd_config_file = Path.cwd().joinpath("ffcx_options.json")
     try:
         with open(pwd_config_file) as f:
-            pwd_parameters = json.load(f)
+            pwd_options = json.load(f)
     except FileNotFoundError:
-        pwd_parameters = {}
+        pwd_options = {}
 
-    return (user_parameters, pwd_parameters)
+    return (user_options, pwd_options)
 
 
-def get_parameters(priority_parameters: Optional[dict] = None) -> dict:
-    """Return (a copy of) the merged parameter values for FFCX.
+def get_options(priority_options: Optional[dict] = None) -> dict:
+    """Return (a copy of) the merged option values for FFCX.
 
-    Parameters
+    Options
     ----------
-      priority_parameters:
-        take priority over all other parameter values (see notes)
+      priority_options:
+        take priority over all other option values (see notes)
 
     Returns
     -------
-      dict: merged parameter values
+      dict: merged option values
 
     Notes
     -----
-    This function sets the log level from the merged parameter values prior to
+    This function sets the log level from the merged option values prior to
     returning.
 
-    The `ffcx_parameters.json` files are cached on the first call. Subsequent
+    The `ffcx_options.json` files are cached on the first call. Subsequent
     calls to this function use this cache.
 
-    Priority ordering of parameters from highest to lowest is:
+    Priority ordering of options from highest to lowest is:
 
-    -  **priority_parameters** (API and command line parameters)
-    -  **$PWD/ffcx_parameters.json** (local parameters)
-    -  **$XDG_CONFIG_HOME/ffcx/ffcx_parameters.json** (user parameters)
-    -  **FFCX_DEFAULT_PARAMETERS** in `ffcx.parameters`
+    -  **priority_options** (API and command line options)
+    -  **$PWD/ffcx_options.json** (local options)
+    -  **$XDG_CONFIG_HOME/ffcx/ffcx_options.json** (user options)
+    -  **FFCX_DEFAULT_OPTIONS** in `ffcx.options`
 
     `XDG_CONFIG_HOME` is `~/.config/` if the environment variable is not set.
 
-    Example `ffcx_parameters.json` file:
+    Example `ffcx_options.json` file:
 
       { "assume_aligned": 32, "epsilon": 1e-7 }
 
     """
-    parameters: Dict[str, Any] = {}
+    options: Dict[str, Any] = {}
 
-    for param, (value, _) in FFCX_DEFAULT_PARAMETERS.items():
-        parameters[param] = value
+    for opt, (value, _) in FFCX_DEFAULT_OPTIONS.items():
+        options[opt] = value
 
-    # NOTE: _load_parameters uses functools.lru_cache
-    user_parameters, pwd_parameters = _load_parameters()
+    # NOTE: _load_options uses functools.lru_cache
+    user_options, pwd_options = _load_options()
 
-    parameters.update(user_parameters)
-    parameters.update(pwd_parameters)
-    if priority_parameters is not None:
-        parameters.update(priority_parameters)
+    options.update(user_options)
+    options.update(pwd_options)
+    if priority_options is not None:
+        options.update(priority_options)
 
-    logger.setLevel(parameters["verbosity"])
+    logger.setLevel(options["verbosity"])
 
-    logger.info("Final parameter values")
-    logger.info(pprint.pformat(parameters))
+    logger.info("Final option values")
+    logger.info(pprint.pformat(options))
 
-    return parameters
+    return options
