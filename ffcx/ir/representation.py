@@ -395,7 +395,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
-            degree = md["quadrature_degree"]
 
             if scheme == "custom":
                 points = numpy.asarray(md["quadrature_points"])
@@ -411,6 +410,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 # scheme have some properties that other schemes lack, e.g., the
                 # mass matrix is a simple diagonal matrix. This may be
                 # prescribed in certain cases.
+                degree = md["quadrature_degree"]
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
