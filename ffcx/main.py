@@ -16,7 +16,6 @@ import re
 import string
 
 import ufl
-
 from ffcx import __version__ as FFCX_VERSION
 from ffcx import compiler, formatting
 from ffcx.options import FFCX_DEFAULT_OPTIONS, get_options

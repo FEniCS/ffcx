@@ -5,10 +5,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import basix
 import cffi
-import ffcx.codegeneration.jit
 import numpy as np
+
+import basix
+import ffcx.codegeneration.jit
 import ufl
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 

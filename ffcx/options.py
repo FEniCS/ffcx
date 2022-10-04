@@ -10,8 +10,8 @@ import logging
 import os
 import os.path
 import pprint
-from typing import Optional, Dict, Any
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("ffcx")
 

@@ -11,6 +11,7 @@ import logging
 import typing
 
 import numpy
+
 import ufl
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph

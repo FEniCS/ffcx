@@ -9,8 +9,8 @@ import logging
 import warnings
 
 import ufl
-from ffcx.element_interface import create_element, convert_element
 from basix.ufl_wrapper import BlockedElement
+from ffcx.element_interface import convert_element, create_element
 
 logger = logging.getLogger("ffcx")
 
