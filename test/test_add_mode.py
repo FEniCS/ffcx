@@ -17,11 +17,9 @@ from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
                              "float",
                              "long double",
                              "double _Complex",
-                             "float _Complex",
-                             "_Float16"
+                             "float _Complex"
                          ])
 def test_additive_facet_integral(mode, compile_args):
-    compile_args += ['-msse2', '-mfp16-format=ieee']
     cell = ufl.triangle
     element = ufl.FiniteElement("Lagrange", cell, 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
