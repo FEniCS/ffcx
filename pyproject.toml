@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 minversion = "6.0"
 addopts = "-ra"
 testpaths = [
-    "tests"
+    "test"
 ]
 norecursedirs = [
     "libs",
