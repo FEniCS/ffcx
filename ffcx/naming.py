@@ -115,6 +115,8 @@ def cdtype_to_numpy(cdtype: str):
         return "complex64"
     elif cdtype == "long double":
         return "longdouble"
+    elif cdtype == "_Float16":
+        return "float16"
     else:
         raise RuntimeError(f"Unknown NumPy type for: {cdtype}")
 
