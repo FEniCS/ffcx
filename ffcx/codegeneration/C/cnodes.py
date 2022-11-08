@@ -1435,11 +1435,12 @@ class ArrayDecl(CStatement):
 
 
 class Scope(CStatement):
-    __slots__ = ("body", )
+    __slots__ = ("body", "name")
     is_scoped = True
 
-    def __init__(self, body):
+    def __init__(self, body, name=None):
         self.body = as_cstatement(body)
+        self.name = name
 
     def cs_format(self, precision=None):
         return ("{", Indented(self.body.cs_format(precision)), "}")

@@ -142,7 +142,7 @@ def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type):
     if isinstance(C, lang.Symbol):
         code += [lang.ArrayDecl(scalar_type, C, [Ic.global_size()], values=0.0)]
 
-    use_gemm = True
+    use_gemm = False
     if use_gemm:
         Jb = Ib.intersection(Ic)
         Ib_ = Ik.union(Jb)
@@ -196,7 +196,7 @@ def assign_add(lang, A, B, indices, sizes):
     return code
 
 
-def sum_factorise(lang, expression, scalar_type):
+def sum_factorise(lang, expression, scalar_type, name, access=""):
     counter = 0
     indices = expression.indices
     sizes = expression.ranges
@@ -215,13 +215,12 @@ def sum_factorise(lang, expression, scalar_type):
             B = term.args[0]
             tables = term.args[1]
             for phi in tables.args[:-1]:
-                C = lang.Symbol(f"temp{counter}")
+                C = lang.Symbol(f"temp{counter}{access}")
                 t_code, B = tensor_contraction(lang, phi, B, C, indices, sizes, scalar_type)
                 counter += 1
                 code += t_code
             phi = tables.args[-1]
             t_code, B = tensor_contraction(lang, phi, B, expr.lhs, indices, sizes, scalar_type)
             code += t_code
-        code = lang.Scope(code)
-
+        code = lang.Scope(code, name)
         return code

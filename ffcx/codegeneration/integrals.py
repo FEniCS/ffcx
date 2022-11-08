@@ -21,6 +21,7 @@ from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockData
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.codegeneration.indices import MultiIndex
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
@@ -253,6 +254,12 @@ class IntegralGenerator(object):
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
+
+        # bodies = collections.defaultdict(list)
+        # for part in parts:
+        #     if isinstance(part, lang.Scope):
+        #         if part.name == "jacobian":
+        #             print(part.name)
 
         return lang.StatementList(parts)
 
@@ -565,7 +572,43 @@ class IntegralGenerator(object):
         if iq.dim > 1:
             intermediates = substitute_acess(intermediates, quadrature_values)
 
-        return pre_definitions, parts, intermediates
+        array_decl = []
+        scopes = collections.defaultdict(list)
+        for part in parts:
+            if isinstance(part, lang.ArrayDecl):
+                array_decl += [part]
+            if isinstance(part, lang.Scope):
+                scopes[part.name] += [part]
+
+        loops = []
+        for name in scopes:
+            section = scopes[name]
+            loops = collections.defaultdict(list)
+            for scope in section:
+                i = 0
+                for statement in scope.body.statements:
+                    if isinstance(statement, lang.ArrayDecl):
+                        array_decl += [statement]
+                    elif isinstance(statement, lang.NestedForRange):
+                        loops[i] += [statement]
+                        i = i + 1
+            for index in loops:
+                fused = []
+                bodies = collections.defaultdict(list)
+                indices = collections.defaultdict(MultiIndex)
+                loop_list = loops[index]
+                for loop in loop_list:
+                    index_set = tuple(loop.indices)
+                    hash_ = hash(index_set)
+                    bodies[hash_] += [loop.body()]
+                    indices[hash_] = loop.multi_indices[0]
+                for key in indices.keys():
+                    body = bodies[key]
+                    index = indices[key]
+                    fused += [lang.NestedForRange([index], body)]
+                array_decl += fused
+
+        return pre_definitions, array_decl, intermediates
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
@@ -746,7 +789,7 @@ class IntegralGenerator(object):
         if iq.dim > 1:
             B_indices.insert(0, iq)
 
-        body = sum_factorise(lang, lang.NestedForRange(B_indices, body), scalar_type)
+        body = sum_factorise(lang, lang.NestedForRange(B_indices, body), scalar_type, "summation")
 
         quadparts += pre_loop
         quadparts += hoist_code
