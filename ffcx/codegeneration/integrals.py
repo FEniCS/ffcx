@@ -598,8 +598,11 @@ class IntegralGenerator(object):
                 indices = collections.defaultdict(MultiIndex)
                 loop_list = loops[index]
                 for loop in loop_list:
-                    index_set = tuple(loop.indices)
+                    index_set = loop.multi_indices[0]
+                    print(index_set)
+                    # print(loop.multi_indices[0].global_idx)
                     hash_ = hash(index_set)
+                    print(hash_)
                     bodies[hash_] += [loop.body()]
                     indices[hash_] = loop.multi_indices[0]
                 for key in indices.keys():
