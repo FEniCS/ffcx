@@ -108,8 +108,8 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     _cellname: str
 
     def __init__(
-        self, cellname: str, value_shape: typing.Tuple[int, ...], scheme: str = None, degree: int = None,
-        points: basix.ufl_wrapper._nda_f64 = None, weights: basix.ufl_wrapper._nda_f64 = None,
+        self, cellname: str, value_shape: typing.Tuple[int, ...], scheme: typing.Optional[str] = None, degree: typing.Optional[int] = None,
+        points: tpying.Optional[basix.ufl_wrapper._nda_f64] = None, weights: typing.Optional[basix.ufl_wrapper._nda_f64] = None,
         mapname: str = "identity"
     ):
         """Initialise the element."""
