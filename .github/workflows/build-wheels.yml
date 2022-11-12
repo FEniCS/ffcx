@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout FFCx
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.ffcx_ref }}
 
@@ -59,13 +59,13 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: artifact
           path: dist
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.5.0
+        uses: pypa/gh-action-pypi-publish@v1.5.1
         if: ${{ github.event.inputs.pypi_publish == 'true' }}
         with:
           user: __token__
@@ -73,7 +73,7 @@ jobs:
           repository_url: https://upload.pypi.org/legacy/
 
       - name: Publish to Test PyPI
-        uses: pypa/gh-action-pypi-publish@v1.5.0
+        uses: pypa/gh-action-pypi-publish@v1.5.1
         if: ${{ github.event.inputs.test_pypi_publish == 'true' }}
         with:
           user: __token__
