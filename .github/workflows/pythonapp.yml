@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', "3.11"]
 
     env:
       CC: gcc-10
@@ -28,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout FFCx
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -60,6 +60,12 @@ jobs:
       - name: Static check with mypy
         run: |
           python -m mypy ffcx/
+        if: matrix.python-version != '3.11'
+
+      - name: isort checks (non-blocking)
+        continue-on-error: true
+        run: |
+          python3 -m isort --check .
 
       - name: Check documentation style
         run: |
@@ -78,7 +84,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload pytest results
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
@@ -87,7 +93,7 @@ jobs:
         if: always()
 
       - name: Get UFL
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ./ufl
           repository: FEniCS/ufl
@@ -105,7 +111,7 @@ jobs:
           make html
 
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: doc-${{ matrix.os }}-${{ matrix.python-version }}
           path: doc/build/html/
@@ -114,7 +120,7 @@ jobs:
 
       - name: Checkout FEniCS/docs
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: "FEniCS/docs"
           path: "docs"

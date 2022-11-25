@@ -22,8 +22,9 @@ import numbers
 import typing
 import warnings
 
-import basix
 import numpy
+
+import basix
 import ufl
 from ffcx import naming
 from ffcx.analysis import UFLData
@@ -62,6 +63,7 @@ class CustomElementIR(typing.NamedTuple):
     x: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
     M: typing.List[typing.List[numpy.typing.NDArray[numpy.float64]]]
     map_type: basix.MapType
+    sobolev_space: basix.SobolevSpace
     interpolation_nderivs: int
     discontinuous: bool
     highest_complete_degree: int
@@ -274,6 +276,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     ir["x"] = basix_element.x
     ir["M"] = basix_element.M
     ir["map_type"] = basix_element.map_type
+    ir["sobolev_space"] = basix_element.sobolev_space
     ir["discontinuous"] = basix_element.discontinuous
     ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
     ir["highest_complete_degree"] = basix_element.highest_complete_degree
@@ -407,7 +410,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
-            degree = md["quadrature_degree"]
 
             if scheme == "custom":
                 points = md["quadrature_points"]
@@ -422,6 +424,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 # scheme have some properties that other schemes lack, e.g., the
                 # mass matrix is a simple diagonal matrix. This may be
                 # prescribed in certain cases.
+                degree = md["quadrature_degree"]
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
@@ -437,6 +440,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                     # Trapezoidal rule
                     return (numpy.array([[0.0], [1.0]]), numpy.array([1.0 / 2.0, 1.0 / 2.0]))
             else:
+                degree = md["quadrature_degree"]
                 points, weights = create_quadrature_points_and_weights(
                     integral_type, cell, degree, scheme)
 

@@ -9,9 +9,10 @@ import typing
 
 import numpy
 import numpy.typing
-import ufl
 
 import ffcx
+import ufl
+
 from .element_interface import convert_element
 
 

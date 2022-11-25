@@ -16,10 +16,11 @@ import typing
 
 import numpy
 import numpy.typing
-import ufl
-import basix.ufl_wrapper
 
-from ffcx.element_interface import convert_element
+import basix.ufl_wrapper
+import ufl
+from ffcx.element_interface import convert_element, QuadratureElement
+from warnings import warn
 
 logger = logging.getLogger("ffcx")
 
@@ -153,12 +154,8 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        if not isinstance(element, basix.ufl_wrapper._BasixElementBase) and element._sub_element._variant is None:
-            sub_element = ufl.FiniteElement(
-                element.family(), element.cell(), element.degree(), element.quadrature_scheme(),
-                variant="equispaced")
-            equi_element = ufl.VectorElement(sub_element)
-            form._integrals[n]._ufl_domain._ufl_coordinate_element = equi_element
+        if not isinstance(element, basix.ufl_wrapper._BasixElementBase) and element.degree() > 2:
+            warn("UFL coordinate elements using elements not created via Basix may not work with DOLFINx")
 
     # Check for complex mode
     complex_mode = "_Complex" in options["scalar_type"]
@@ -173,6 +170,17 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
+
+    # If form contains a quadrature element, use the custom quadrature scheme
+    custom_q = None
+    for e in form_data.unique_elements:
+        e = convert_element(e)
+        if isinstance(e, QuadratureElement):
+            if custom_q is None:
+                custom_q = e._points, e._weights
+            else:
+                assert numpy.allclose(e._points, custom_q[0])
+                assert numpy.allclose(e._weights, custom_q[1])
 
     # Determine unique quadrature degree, quadrature scheme and
     # precision per each integral data
@@ -205,25 +213,28 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         qr_default = "default"
 
         for i, integral in enumerate(integral_data.integrals):
-            # Extract quadrature degree
-            qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
-            pd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
-            if qd_metadata != qd_default:
-                qd = qd_metadata
-            else:
-                qd = pd_estimated
-
-            # Extract quadrature rule
-            qr = integral.metadata().get("quadrature_rule", qr_default)
-
-            logger.info(f"Integral {i}, integral group {id}:")
-            logger.info(f"--- quadrature rule: {qr}")
-            logger.info(f"--- quadrature degree: {qd}")
-            logger.info(f"--- precision: {p}")
-
-            # Update the old metadata
             metadata = integral.metadata()
-            metadata.update({"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})
+            if custom_q is None:
+                # Extract quadrature degree
+                qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
+                pd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
+                if qd_metadata != qd_default:
+                    qd = qd_metadata
+                else:
+                    qd = pd_estimated
+
+                # Extract quadrature rule
+                qr = integral.metadata().get("quadrature_rule", qr_default)
+
+                logger.info(f"Integral {i}, integral group {id}:")
+                logger.info(f"--- quadrature rule: {qr}")
+                logger.info(f"--- quadrature degree: {qd}")
+                logger.info(f"--- precision: {p}")
+
+                metadata.update({"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})
+            else:
+                metadata.update({"quadrature_points": custom_q[0], "quadrature_weights": custom_q[1],
+                                 "quadrature_rule": "custom", "precision": p})
 
             integral_data.integrals[i] = integral.reconstruct(metadata=metadata)
 

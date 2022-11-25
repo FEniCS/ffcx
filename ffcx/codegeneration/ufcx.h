@@ -10,8 +10,8 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 5
-#define UFCX_VERSION_MAINTENANCE 1
+#define UFCX_VERSION_MINOR 6
+#define UFCX_VERSION_MAINTENANCE 0
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
@@ -185,6 +185,9 @@ extern "C"
 
     /// The map type for the element
     int map_type;
+
+    /// The Sobolev space for the element
+    int sobolev_space;
 
     /// Indicates whether or not this is the discontinuous version of the element
     bool discontinuous;
