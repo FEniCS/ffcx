@@ -41,7 +41,7 @@ jobs:
       OMPI_MCA_hwloc_base_binding_policy: none
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install dependencies (Python)
         run: |
           python3 -m pip install --upgrade pip
@@ -63,13 +63,13 @@ jobs:
 
       - name: Get DOLFINx source (default branch/tag)
         if: github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
