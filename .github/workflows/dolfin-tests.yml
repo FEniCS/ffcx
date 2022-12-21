@@ -10,7 +10,7 @@ on:
     inputs:
       dolfinx_ref:
         description: "DOLFINx branch or tag"
-        default: "dokken/cmake_version_range"
+        default: "main"
         type: string
       basix_ref:
         description: "Basix branch or tag"
