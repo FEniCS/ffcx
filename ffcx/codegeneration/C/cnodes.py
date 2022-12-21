@@ -8,6 +8,7 @@ import logging
 import numbers
 
 import numpy
+
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
 from ffcx.codegeneration.C.format_value import (format_float, format_int,
                                                 format_value)
@@ -882,7 +883,7 @@ class Call(CExprOperator):
     def __init__(self, function, arguments=None):
         self.function = as_cexpr_or_string_symbol(function)
 
-        # Accept None, single, or multple arguments; literals or CExprs
+        # Accept None, single, or multiple arguments; literals or CExprs
         if arguments is None:
             arguments = ()
         elif not isinstance(arguments, (tuple, list)):
@@ -905,7 +906,7 @@ def Sqrt(x):
     return Call("sqrt", x)
 
 
-# Convertion function to expression nodes
+# Conversion function to expression nodes
 
 
 def _is_zero_valued(values):

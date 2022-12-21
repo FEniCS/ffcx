@@ -5,10 +5,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import basix
 import cffi
-import ffcx.codegeneration.jit
 import numpy as np
+
+import basix
+import ffcx.codegeneration.jit
 import ufl
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
@@ -172,7 +173,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
                                   [u.dx(1), u.dx(1), 0],
                                   [0, 0, 0]]))
 
-    # Get vectices of cell
+    # Get vertices of cell
     # Coords storage XYZXYZXYZ
     basix_c_e = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 1, False)
     coords = basix_c_e.points
