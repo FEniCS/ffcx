@@ -1,6 +1,24 @@
 Changelog
 =========
 
+
+0.5.0
+-----
+See: https://github.com/FEniCS/ffcx/compare/v0.5.0...v0.4.0 for details
+
+0.4.0
+-----
+See: https://github.com/FEniCS/ffcx/compare/v0.4.0...v0.3.0 for details
+
+0.3.0
+-----
+See: https://github.com/FEniCS/ffcx/compare/v0.3.0...v0.2.0 for details
+
+0.2.0
+-----
+
+- No changes
+
 0.1.0
 -----
 Alpha release of ffcx
