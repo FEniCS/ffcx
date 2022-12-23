@@ -272,15 +272,6 @@ extern "C"
   /// (one permutation for each cell adjacent to the facet).
 
   /// Tabulate integral into tensor A with compiled
-  /// quadrature rule and half precision
-  ///
-  typedef void(ufcx_tabulate_tensor_float16)(
-      _Float16* restrict A, const _Float16* restrict w,
-      const _Float16* restrict c, const _Float16* restrict coordinate_dofs,
-      const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
-
-  /// Tabulate integral into tensor A with compiled
   /// quadrature rule and single precision
   ///
   typedef void(ufcx_tabulate_tensor_float32)(
@@ -332,7 +323,6 @@ extern "C"
   typedef struct ufcx_integral
   {
     const bool* enabled_coefficients;
-    ufcx_tabulate_tensor_float16* tabulate_tensor_float16;
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
     ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
@@ -354,7 +344,6 @@ extern "C"
     ///
     /// @see ufcx_tabulate_tensor
     ///
-    ufcx_tabulate_tensor_float16* tabulate_tensor_float16;
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
     ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
