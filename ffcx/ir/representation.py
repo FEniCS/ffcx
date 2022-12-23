@@ -315,11 +315,11 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     # FIXME: This does not work for prisms and pyramids
     num_dofs_per_entity = [i[0] for i in element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
-    
+
     if element.has_tensor_product_factorisation():
         representation = element.get_tensor_product_representation()
         permutation = representation[0][1]
-        inv_perm = numpy.argsort(permutation)       
+        inv_perm = numpy.argsort(permutation)
         ir["entity_dofs"] = [[[inv_perm[d] for d in e] for e in ent] for ent in element.entity_dofs]
         ir["entity_closure_dofs"] = [[[inv_perm[d] for d in e] for e in ent] for ent in element.entity_closure_dofs]
     else:
