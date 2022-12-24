@@ -179,7 +179,7 @@ class FFCXBackendAccess(object):
 
     def reference_cell_volume(self, e, mt, tabledata, access):
         L = self.language
-        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_cell_volume")
         else:
@@ -187,7 +187,7 @@ class FFCXBackendAccess(object):
 
     def reference_facet_volume(self, e, mt, tabledata, access):
         L = self.language
-        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_facet_volume")
         else:
@@ -195,7 +195,7 @@ class FFCXBackendAccess(object):
 
     def reference_normal(self, e, mt, tabledata, access):
         L = self.language
-        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_facet_normals")
             facet = self.symbols.entity("facet", mt.restriction)
@@ -205,7 +205,7 @@ class FFCXBackendAccess(object):
 
     def cell_facet_jacobian(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_facet_jacobian")
             facet = self.symbols.entity("facet", mt.restriction)
@@ -217,7 +217,7 @@ class FFCXBackendAccess(object):
 
     def reference_cell_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_edge_vectors")
             return table[mt.component[0]][mt.component[1]]
@@ -228,7 +228,7 @@ class FFCXBackendAccess(object):
 
     def reference_facet_edge_vectors(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_edge_vectors")
             facet = self.symbols.entity("facet", mt.restriction)
@@ -242,7 +242,7 @@ class FFCXBackendAccess(object):
 
     def facet_orientation(self, e, mt, tabledata, num_points):
         L = self.language
-        cellname = mt.terminal.ufl_domain().ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname not in ("interval", "triangle", "tetrahedron"):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
@@ -252,7 +252,7 @@ class FFCXBackendAccess(object):
 
     def cell_vertices(self, e, mt, tabledata, num_points):
         # Get properties of domain
-        domain = mt.terminal.ufl_domain()
+        domain = ufl.domain.extract_unique_domain(mt.terminal)
         gdim = domain.geometric_dimension()
         coordinate_element = convert_element(domain.ufl_coordinate_element())
 
@@ -275,7 +275,7 @@ class FFCXBackendAccess(object):
 
     def cell_edge_vectors(self, e, mt, tabledata, num_points):
         # Get properties of domain
-        domain = mt.terminal.ufl_domain()
+        domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
         coordinate_element = convert_element(domain.ufl_coordinate_element())
@@ -316,7 +316,7 @@ class FFCXBackendAccess(object):
         L = self.language
 
         # Get properties of domain
-        domain = mt.terminal.ufl_domain()
+        domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
         coordinate_element = convert_element(domain.ufl_coordinate_element())
