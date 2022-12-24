@@ -275,8 +275,7 @@ class IntegralGenerator(object):
                 if mt is not None:
                     t = type(mt.terminal)
                     if t in ufl_geometry:
-                        cells[t].add(
-                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
+                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
 
         parts = []
         for i, cell_list in cells.items():
