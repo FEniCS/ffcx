@@ -201,7 +201,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, ent
 def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement]:
     gd = mt.global_derivatives
     ld = mt.local_derivatives
-
+    domain = ufl.domain.extract_unique_domain(mt.terminal)
     # Extract element from FormArguments and relevant GeometricQuantities
     if isinstance(mt.terminal, ufl.classes.FormArgument):
         if gd and mt.reference_value:
@@ -217,7 +217,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
             raise RuntimeError("Not expecting reference value of x.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of x.")
-        element = convert_element(mt.terminal.ufl_domain().ufl_coordinate_element())
+        element = convert_element(domain.ufl_coordinate_element())
         if not ld:
             fc = mt.flat_component
         else:
@@ -230,7 +230,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
             raise RuntimeError("Not expecting reference value of J.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of J.")
-        element = convert_element(mt.terminal.ufl_domain().ufl_coordinate_element())
+        element = convert_element(domain.ufl_coordinate_element())
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
@@ -240,7 +240,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
 
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
-    gdim = mt.terminal.ufl_domain().geometric_dimension()
+    gdim = domain.geometric_dimension()
     local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
         ld, gdim)
 
