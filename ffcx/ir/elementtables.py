@@ -121,17 +121,17 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
 
     for entity in range(num_entities):
         # Map points according to relationship between domain cell and element cell
-        # FIXME Check equality of cell not just cell name (i.e. if cell == element.cell() etc.)
-        # Currently only checking cell name as Basix element gets the geometric dimension wrong
-        # (broken by https://github.com/FEniCS/ffcx/pull/511)
-        if cell.cellname() == element.cell().cellname():
-            entity_points = map_integral_points(points, integral_type,
-                                                cell, entity)
-        elif element.cell().cellname() in [facet_cell.cellname() for facet_cell in cell.facet_types()] and is_mixed_dim:
-            # In this case we have a facet element. `points` should be mapped in the same way
-            # as a "cell" integral over element.cell()
-            entity_points = map_integral_points(points, "cell",
-                                                element.cell(), 0)
+        if cell == element.cell():
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+        elif is_mixed_dim and element.cell() in cell.facet_types():
+            # If we have a mixed dimensional integral and the element cell is a facet
+            # of the domain cell, then we have a facet element. Note the latter check
+            # is required to distinguish between the element of codim 0 and the element
+            # of codim 1 in a mixed dimensional integral.
+            #
+            # For the facet element, we can just return `points`, as these were generated
+            # on the reference cell corresponding to the facets of the domain cell.
+            entity_points = numpy.asarray(points)
         else:
             raise RuntimeError(f"Domain cell and ufl element cell not compatible for {integral_type} integral")
 
