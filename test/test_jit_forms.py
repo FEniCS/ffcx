@@ -738,9 +738,6 @@ def test_cell_facet_coeff_form(mode, expected_result, permutation, compile_args)
         forms, options={'scalar_type': mode},
         cffi_extra_compile_args=compile_args)
 
-    with open("code.c", "w") as f:
-        f.write(code[1])
-
     ffi = module.ffi
     form0 = compiled_forms[0]
 
