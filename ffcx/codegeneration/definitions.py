@@ -122,7 +122,7 @@ class FFCXBackendDefinitions(object):
         L = self.language
 
         # Get properties of domain
-        domain = mt.terminal.ufl_domain()
+        domain = ufl.domain.extract_unique_domain(mt.terminal)
         coordinate_element = domain.ufl_coordinate_element()
         num_scalar_dofs = create_element(coordinate_element).sub_element.dim
 
