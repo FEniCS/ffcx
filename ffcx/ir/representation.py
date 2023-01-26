@@ -534,7 +534,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
         name = object_names.get(id(function), str(function))
         if not str(name).isidentifier():
-            raise RuntimeError(f"Function name \"{name}\" must be a valid object identifier.")
+            raise ValueError(f"Function name \"{name}\" must be a valid object identifier.")
         el = convert_element(convert_element(function.ufl_function_space().ufl_element()))
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
@@ -645,7 +645,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
     for function in tuple(original_coefficients) + tuple(arguments):
         name = object_names.get(id(function), str(function))
         if not str(name).isidentifier():
-            raise RuntimeError(f"Function name \"{name}\" must be a valid object identifier.")
+            raise ValueError(f"Function name \"{name}\" must be a valid object identifier.")
         el = convert_element(function.ufl_function_space().ufl_element())
         cmap = convert_element(function.ufl_function_space().ufl_domain().ufl_coordinate_element())
         family = cmap.family()

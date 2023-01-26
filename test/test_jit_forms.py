@@ -737,11 +737,10 @@ def test_invalid_function_name(compile_args):
     try:
         compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
             forms, cffi_extra_compile_args=compile_args)
-    except FileNotFoundError:
-        # Compilation fails with FileNotFoundError
+    except ValueError:
         pass
     except Exception:
-        raise RuntimeError("Compilation should fail with FileNotFoundError.")
+        raise RuntimeError("Compilation should fail with ValueError.")
 
     # Revert monkey patch for other tests
     ufl.Coefficient.__str__ = old_str

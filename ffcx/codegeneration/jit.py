@@ -143,11 +143,14 @@ def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_ex
 
         impl = _compile_objects(decl, elements, names, module_name, p, cache_dir,
                                 cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
-    except Exception:
-        # remove c file so that it will not timeout next time
-        c_filename = cache_dir.joinpath(module_name + ".c")
-        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        raise
+    except Exception as e:
+        try:
+            # remove c file so that it will not timeout next time
+            c_filename = cache_dir.joinpath(module_name + ".c")
+            os.replace(c_filename, c_filename.with_suffix(".c.failed"))
+        except Exception:
+            pass
+        raise e
 
     objects, module = _load_objects(cache_dir, module_name, names)
     # Pair up elements with dofmaps
@@ -185,11 +188,14 @@ def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_co
 
         impl = _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
                                 cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
-    except Exception:
-        # remove c file so that it will not timeout next time
-        c_filename = cache_dir.joinpath(module_name + ".c")
-        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        raise
+    except Exception as e:
+        try:
+            # remove c file so that it will not timeout next time
+            c_filename = cache_dir.joinpath(module_name + ".c")
+            os.replace(c_filename, c_filename.with_suffix(".c.failed"))
+        except Exception:
+            pass
+        raise e
 
     obj, module = _load_objects(cache_dir, module_name, form_names)
     return obj, module, (decl, impl)
@@ -230,11 +236,14 @@ def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, c
 
         impl = _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
                                 cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
-    except Exception:
-        # remove c file so that it will not timeout next time
-        c_filename = cache_dir.joinpath(module_name + ".c")
-        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        raise
+    except Exception as e:
+        try:
+            # remove c file so that it will not timeout next time
+            c_filename = cache_dir.joinpath(module_name + ".c")
+            os.replace(c_filename, c_filename.with_suffix(".c.failed"))
+        except Exception:
+            pass
+        raise e
 
     obj, module = _load_objects(cache_dir, module_name, expr_names)
     return obj, module, (decl, impl)
