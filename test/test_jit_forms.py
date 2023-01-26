@@ -740,6 +740,8 @@ def test_invalid_function_name(compile_args):
     except FileNotFoundError:
         # Compilation fails with FileNotFoundError
         pass
+    except:
+        raise RuntimeError("Compilation should fail with FileNotFoundError.")
 
     # Revert monkey patch for other tests
     ufl.Coefficient.__str__ = old_str
