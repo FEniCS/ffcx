@@ -601,7 +601,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
     expression = expression[0]
 
     try:
-        cell = expression.ufl_domain().ufl_cell()
+        cell = ufl.domain.extract_unique_domain(expression).ufl_cell()
     except AttributeError:
         # This case corresponds to a spatially constant expression
         # without any dependencies
