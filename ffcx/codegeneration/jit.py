@@ -21,6 +21,7 @@ import ffcx
 import ffcx.naming
 
 logger = logging.getLogger("ffcx")
+root_logger = logging.getLogger()
 
 # Get declarations directly from ufcx.h
 file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -275,6 +276,10 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, options, cach
 
     t0 = time.time()
     f = io.StringIO()
+    # Temporarily set root logger handlers to string buffer only
+    # since CFFI logs into root logger
+    old_handlers = root_logger.handlers.copy()
+    root_logger.handlers = [logging.StreamHandler(f)]
     with redirect_stdout(f):
         ffibuilder.compile(tmpdir=cache_dir, verbose=True, debug=cffi_debug)
     s = f.getvalue()
@@ -289,6 +294,10 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, options, cach
     fd = open(ready_name, "x")
     fd.write(s)
     fd.close()
+
+    # Copy back the original handlers (in case someone is logging into
+    # root logger and has custom handlers)
+    root_logger.handlers = old_handlers
 
     return code_body
 
