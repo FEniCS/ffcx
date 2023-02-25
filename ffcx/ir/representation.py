@@ -60,9 +60,9 @@ class FormIR(typing.NamedTuple):
 class CustomElementIR(typing.NamedTuple):
     cell_type: basix.CellType
     value_shape: typing.Tuple[int, ...]
-    wcoeffs: npt..NDArray[np.float64]
-    x: typing.List[typing.List[npt..NDArray[np.float64]]]
-    M: typing.List[typing.List[npt..NDArray[np.float64]]]
+    wcoeffs: npt.NDArray[np.float64]
+    x: typing.List[typing.List[npt.NDArray[np.float64]]]
+    M: typing.List[typing.List[npt.NDArray[np.float64]]]
     map_type: basix.MapType
     sobolev_space: basix.SobolevSpace
     interpolation_nderivs: int
@@ -129,7 +129,7 @@ class IntegralIR(typing.NamedTuple):
     original_constant_offsets: typing.Dict[ufl.Constant, int]
     options: dict
     cell_shape: str
-    unique_tables: typing.Dict[str, npt..NDArray[np.float64]]
+    unique_tables: typing.Dict[str, npt.NDArray[np.float64]]
     unique_table_types: typing.Dict[str, str]
     integrand: typing.Dict[QuadratureRule, dict]
     name: str
@@ -142,7 +142,7 @@ class ExpressionIR(typing.NamedTuple):
     name: str
     element_dimensions: typing.Dict[ufl.FiniteElementBase, int]
     options: dict
-    unique_tables: typing.Dict[str, npt..NDArray[np.float64]]
+    unique_tables: typing.Dict[str, npt.NDArray[np.float64]]
     unique_table_types: typing.Dict[str, str]
     integrand: typing.Dict[QuadratureRule, dict]
     coefficient_numbering: typing.Dict[ufl.Coefficient, int]
@@ -152,7 +152,7 @@ class ExpressionIR(typing.NamedTuple):
     tensor_shape: typing.List[int]
     expression_shape: typing.List[int]
     original_constant_offsets: typing.Dict[ufl.Constant, int]
-    points: npt..NDArray[np.float64]
+    points: npt.NDArray[np.float64]
     coefficient_names: typing.List[str]
     constant_names: typing.List[str]
     needs_facet_permutations: bool
