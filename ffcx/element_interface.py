@@ -11,11 +11,12 @@ import typing
 import warnings
 from functools import lru_cache
 
-import numpy
 
 import basix
 import basix.ufl_wrapper
 import ufl
+import numpy as np
+import numpy.typing as npt
 
 
 def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
@@ -65,11 +66,11 @@ def basix_index(indices: typing.Tuple[int]) -> int:
     return basix.index(*indices)
 
 
-def create_quadrature(cellname, degree, rule) -> typing.Tuple[numpy.typing.NDArray[numpy.float64],
-                                                              numpy.typing.NDArray[numpy.float64]]:
+def create_quadrature(cellname, degree, rule) -> typing.Tuple[npt.NDArray[np.float64],
+                                                              npt.NDArray[np.float64]]:
     """Create a quadrature rule."""
     if cellname == "vertex":
-        return (numpy.ones((1, 0), dtype=numpy.float64), numpy.ones(1, dtype=numpy.float64))
+        return (np.ones((1, 0), dtype=np.float64), np.ones(1, dtype=np.float64))
 
     quadrature = basix.make_quadrature(
         basix.quadrature.string_to_type(rule), basix.cell.string_to_type(cellname), degree)
@@ -85,33 +86,31 @@ def create_quadrature(cellname, degree, rule) -> typing.Tuple[numpy.typing.NDArr
     return quadrature
 
 
-def reference_cell_vertices(cellname: str) -> numpy.typing.NDArray[numpy.float64]:
+def reference_cell_vertices(cellname: str) -> npt.NDArray[np.float64]:
     """Get the vertices of a reference cell."""
     return basix.geometry(basix.cell.string_to_type(cellname))
 
 
-def map_facet_points(points: numpy.typing.NDArray[numpy.float64], facet: int,
-                     cellname: str) -> numpy.typing.NDArray[numpy.float64]:
+def map_facet_points(points: npt.NDArray[np.float64], facet: int,
+                     cellname: str) -> npt.NDArray[np.float64]:
     """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
-    return numpy.asarray([facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
-                          for p in points], dtype=numpy.float64)
+    return np.asarray([facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
+                       for p in points], dtype=np.float64)
 
 
 class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
     """A quadrature element."""
 
-    _points: basix.ufl_wrapper._nda_f64
-    _weights: basix.ufl_wrapper._nda_f64
+    _points: npt.NDArray[np.float64]
+    _weights: npt.NDArray[np.float64]
     _entity_counts: typing.List[int]
     _cellname: str
 
-    def __init__(
-        self, cellname: str, value_shape: typing.Tuple[int, ...], scheme: typing.Optional[str] = None,
-        degree: typing.Optional[int] = None, points: typing.Optional[basix.ufl_wrapper._nda_f64] = None,
-        weights: typing.Optional[basix.ufl_wrapper._nda_f64] = None, mapname: str = "identity"
-    ):
+    def __init__(self, cellname: str, value_shape: typing.Tuple[int, ...], scheme: typing.Optional[str] = None,
+                 degree: typing.Optional[int] = None, points: typing.Optional[npt.NDArray[np.float64]] = None,
+                 weights: typing.Optional[npt.NDArray[np.float64]] = None, mapname: str = "identity"):
         """Initialise the element."""
         if scheme is not None:
             assert degree is not None
@@ -140,15 +139,13 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
-        return isinstance(other, QuadratureElement) and numpy.allclose(self._points, other._points)
+        return isinstance(other, QuadratureElement) and np.allclose(self._points, other._points)
 
     def __hash__(self) -> int:
         """Return a hash."""
         return super().__hash__()
 
-    def tabulate(
-        self, nderivs: int, points: basix.ufl_wrapper._nda_f64
-    ) -> basix.ufl_wrapper._nda_f64:
+    def tabulate(self, nderivs: int, points: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """Tabulate the basis functions of the element.
 
         Args:
@@ -163,7 +160,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
 
         if points.shape != self._points.shape:
             raise ValueError("Mismatch of tabulation points and element points.")
-        tables = numpy.asarray([numpy.eye(points.shape[0], points.shape[0])])
+        tables = np.asarray([np.eye(points.shape[0], points.shape[0])])
         return tables
 
     def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl_wrapper._BasixElementBase, int, int]:
@@ -231,7 +228,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         raise NotImplementedError()
 
     @property
-    def reference_geometry(self) -> basix.ufl_wrapper._nda_f64:
+    def reference_geometry(self) -> npt.NDArray[np.float64]:
         """Geometry of the reference element."""
         raise NotImplementedError()
 
@@ -305,9 +302,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         """Return a hash."""
         return super().__hash__()
 
-    def tabulate(
-        self, nderivs: int, points: basix.ufl_wrapper._nda_f64
-    ) -> basix.ufl_wrapper._nda_f64:
+    def tabulate(self, nderivs: int, points: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """Tabulate the basis functions of the element.
 
         Args:
@@ -317,7 +312,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         Returns:
             Tabulated basis functions
         """
-        out = numpy.zeros((nderivs + 1, len(points), 1))
+        out = np.zeros((nderivs + 1, len(points), 1))
         out[0, :] = 1.
         return out
 
@@ -329,6 +324,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
 
         Returns:
             component element, offset of the component, stride of the component
+
         """
         assert flat_component < self.value_size
         return self, 0, 1
@@ -387,7 +383,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         raise NotImplementedError()
 
     @property
-    def reference_geometry(self) -> basix.ufl_wrapper._nda_f64:
+    def reference_geometry(self) -> npt.NDArray[np.float64]:
         """Geometry of the reference element."""
         raise NotImplementedError()
 
