@@ -9,6 +9,7 @@ import logging
 import typing
 
 import numpy as np
+import numpy.typing as npt
 
 import ufl
 import ufl.utils.derivativetuples
@@ -37,7 +38,7 @@ class ModifiedTerminalElement(typing.NamedTuple):
 
 class UniqueTableReferenceT(typing.NamedTuple):
     name: str
-    values: np.NDArray[np.float64]
+    values: npt.NDArray[np.float64]
     offset: int
     block_size: int
     ttype: str
