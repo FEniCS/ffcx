@@ -113,4 +113,4 @@ def reference_facet_normals(L, tablename, cellname, type: str):
 def facet_orientation(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_orientations(celltype)
-    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
+    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", len(out), out)
