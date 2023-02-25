@@ -188,28 +188,20 @@ def compute_ir(analysis: UFLData, object_names, prefix, options, visualise):
             integral_names[(fd_index, itg_index)] = naming.integral_name(fd.original_form, itg_data.integral_type,
                                                                          fd_index, itg_data.subdomain_id, prefix)
 
-    ir_elements = [
-        _compute_element_ir(e, analysis.element_numbers, finite_element_names)
-        for e in analysis.unique_elements
-    ]
+    ir_elements = [_compute_element_ir(e, analysis.element_numbers, finite_element_names)
+                   for e in analysis.unique_elements]
 
-    ir_dofmaps = [
-        _compute_dofmap_ir(e, analysis.element_numbers, dofmap_names)
-        for e in analysis.unique_elements
-    ]
+    ir_dofmaps = [_compute_dofmap_ir(e, analysis.element_numbers, dofmap_names)
+                  for e in analysis.unique_elements]
 
-    irs = [
-        _compute_integral_ir(fd, i, analysis.element_numbers, integral_names, finite_element_names,
-                             options, visualise)
-        for (i, fd) in enumerate(analysis.form_data)
-    ]
+    irs = [_compute_integral_ir(fd, i, analysis.element_numbers, integral_names, finite_element_names,
+                                options, visualise)
+           for (i, fd) in enumerate(analysis.form_data)]
     ir_integrals = list(itertools.chain(*irs))
 
-    ir_forms = [
-        _compute_form_ir(fd, i, prefix, form_names, integral_names, analysis.element_numbers, finite_element_names,
-                         dofmap_names, object_names)
-        for (i, fd) in enumerate(analysis.form_data)
-    ]
+    ir_forms = [_compute_form_ir(fd, i, prefix, form_names, integral_names, analysis.element_numbers,
+                                 finite_element_names, dofmap_names, object_names)
+                for (i, fd) in enumerate(analysis.form_data)]
 
     ir_expressions = [_compute_expression_ir(expr, i, prefix, analysis, options, visualise, object_names,
                                              finite_element_names, dofmap_names)
