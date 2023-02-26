@@ -238,17 +238,17 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return "quadrature"
 
     @property
-    def lagrange_variant(self) -> basix.LagrangeVariant:
+    def lagrange_variant(self) -> typing.Union[basix.LagrangeVariant, None]:
         """Basix Lagrange variant used to initialise the element."""
         return None
 
     @property
-    def dpc_variant(self) -> basix.DPCVariant:
+    def dpc_variant(self) -> typing.Union[basix.DPCVariant, None]:
         """Basix DPC variant used to initialise the element."""
         return None
 
     @property
-    def element_family(self) -> basix.ElementFamily:
+    def element_family(self) -> typing.Union[basix.ElementFamily, None]:
         """Basix element family used to initialise the element."""
         return None
 
@@ -393,17 +393,17 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         return self._family_name
 
     @property
-    def lagrange_variant(self) -> basix.LagrangeVariant:
+    def lagrange_variant(self) -> typing.Union[basix.LagrangeVariant, None]:
         """Basix Lagrange variant used to initialise the element."""
         return None
 
     @property
-    def dpc_variant(self) -> basix.DPCVariant:
+    def dpc_variant(self) -> typing.Union[basix.DPCVariant, None]:
         """Basix DPC variant used to initialise the element."""
         return None
 
     @property
-    def element_family(self) -> basix.ElementFamily:
+    def element_family(self) -> typing.Union[basix.ElementFamily, None]:
         """Basix element family used to initialise the element."""
         return None
 
