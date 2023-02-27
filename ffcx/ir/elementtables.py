@@ -8,18 +8,20 @@
 import logging
 import typing
 
-import numpy
+import numpy as np
+import numpy.typing as npt
 
 import ufl
 import ufl.utils.derivativetuples
-from ffcx.element_interface import basix_index, convert_element, QuadratureElement
+from ffcx.element_interface import (QuadratureElement, basix_index,
+                                    convert_element)
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
 
 logger = logging.getLogger("ffcx")
 
-# Using same defaults as numpy.allclose
+# Using same defaults as np.allclose
 default_rtol = 1e-6
 default_atol = 1e-9
 
@@ -36,7 +38,7 @@ class ModifiedTerminalElement(typing.NamedTuple):
 
 class UniqueTableReferenceT(typing.NamedTuple):
     name: str
-    values: numpy.typing.NDArray[numpy.float64]
+    values: npt.NDArray[np.float64]
     offset: int
     block_size: int
     ttype: str
@@ -46,12 +48,12 @@ class UniqueTableReferenceT(typing.NamedTuple):
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
-    a = numpy.asarray(a)
-    b = numpy.asarray(b)
+    a = np.asarray(a)
+    b = np.asarray(b)
     if a.shape != b.shape:
         return False
     else:
-        return numpy.allclose(a, b, rtol=rtol, atol=atol)
+        return np.allclose(a, b, rtol=rtol, atol=atol)
 
 
 def clamp_table_small_numbers(table,
@@ -60,9 +62,9 @@ def clamp_table_small_numbers(table,
                               numbers=(-1.0, 0.0, 1.0)):
     """Clamp almost 0,1,-1 values to integers. Returns new table."""
     # Get shape of table and number of columns, defined as the last axis
-    table = numpy.asarray(table)
+    table = np.asarray(table)
     for n in numbers:
-        table[numpy.where(numpy.isclose(table, n, rtol=rtol, atol=atol))] = n
+        table[np.where(np.isclose(table, n, rtol=rtol, atol=atol))] = n
     return table
 
 
@@ -147,8 +149,8 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
         wsum = sum(weights)
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[1]
-            tbl = numpy.dot(tbl, weights) / wsum
-            tbl = numpy.reshape(tbl, (1, num_dofs))
+            tbl = np.dot(tbl, weights) / wsum
+            tbl = np.reshape(tbl, (1, num_dofs))
             component_tables[entity] = tbl
 
     # Loop over entities and fill table blockwise (each block = points x dofs)
@@ -156,7 +158,7 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
     assert len(component_tables) == num_entities
     num_points, num_dofs = component_tables[0].shape
     shape = (1, num_entities, num_points, num_dofs)
-    res = numpy.zeros(shape)
+    res = np.zeros(shape)
     for entity in range(num_entities):
         res[:, entity, :, :] = component_tables[entity]
 
@@ -253,8 +255,8 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
 def permute_quadrature_interval(points, reflections=0):
     output = points.copy()
     for p in output:
-        assert len(p) < 2 or numpy.isclose(p[1], 0)
-        assert len(p) < 3 or numpy.isclose(p[2], 0)
+        assert len(p) < 2 or np.isclose(p[1], 0)
+        assert len(p) < 3 or np.isclose(p[2], 0)
     for i in range(reflections):
         for n, p in enumerate(output):
             output[n] = [1 - p[0]]
@@ -264,7 +266,7 @@ def permute_quadrature_interval(points, reflections=0):
 def permute_quadrature_triangle(points, reflections=0, rotations=0):
     output = points.copy()
     for p in output:
-        assert len(p) < 3 or numpy.isclose(p[2], 0)
+        assert len(p) < 3 or np.isclose(p[2], 0)
     for i in range(rotations):
         for n, p in enumerate(output):
             output[n] = [p[1], 1 - p[0] - p[1]]
@@ -277,7 +279,7 @@ def permute_quadrature_triangle(points, reflections=0, rotations=0):
 def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     output = points.copy()
     for p in output:
-        assert len(p) < 3 or numpy.isclose(p[2], 0)
+        assert len(p) < 3 or np.isclose(p[2], 0)
     for i in range(rotations):
         for n, p in enumerate(output):
             output[n] = [p[1], 1 - p[0]]
@@ -351,7 +353,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                         integral_type, element, avg, entitytype, local_derivatives, flat_component, is_mixed_dim))
 
                 t = new_table[0]
-                t['array'] = numpy.vstack([td['array'] for td in new_table])
+                t['array'] = np.vstack([td['array'] for td in new_table])
             elif tdim == 3:
                 cell_type = cell.cellname()
                 if cell_type == "tetrahedron":
@@ -364,7 +366,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                                 cell, integral_type, element, avg, entitytype, local_derivatives,
                                 flat_component, is_mixed_dim))
                     t = new_table[0]
-                    t['array'] = numpy.vstack([td['array'] for td in new_table])
+                    t['array'] = np.vstack([td['array'] for td in new_table])
                 elif cell_type == "hexahedron":
                     new_table = []
                     for rot in range(4):
@@ -375,7 +377,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                                 cell, integral_type, element, avg, entitytype, local_derivatives,
                                 flat_component, is_mixed_dim))
                     t = new_table[0]
-                    t['array'] = numpy.vstack([td['array'] for td in new_table])
+                    t['array'] = np.vstack([td['array'] for td in new_table])
         else:
             t = get_ffcx_table_values(quadrature_rule.points, cell,
                                       integral_type, element, avg, entitytype,
@@ -426,39 +428,39 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
 
 def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
-    return (numpy.product(table.shape) == 0
-            or numpy.allclose(table, numpy.zeros(table.shape), rtol=rtol, atol=atol))
+    return (np.product(table.shape) == 0
+            or np.allclose(table, np.zeros(table.shape), rtol=rtol, atol=atol))
 
 
 def is_ones_table(table, rtol=default_rtol, atol=default_atol):
-    return numpy.allclose(table, numpy.ones(table.shape), rtol=rtol, atol=atol)
+    return np.allclose(table, np.ones(table.shape), rtol=rtol, atol=atol)
 
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
     _, num_entities, num_points, num_dofs = table.shape
-    Id = numpy.eye(num_points)
+    Id = np.eye(num_points)
     return (num_points == num_dofs and all(
-        numpy.allclose(table[0, i, :, :], Id, rtol=rtol, atol=atol) for i in range(num_entities)))
+        np.allclose(table[0, i, :, :], Id, rtol=rtol, atol=atol) for i in range(num_entities)))
 
 
 def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
     return not all(
-        numpy.allclose(table[0, :, :, :],
-                       table[i, :, :, :], rtol=rtol, atol=atol)
+        np.allclose(table[0, :, :, :],
+                    table[i, :, :, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[0]))
 
 
 def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
     return all(
-        numpy.allclose(table[0, :, 0, :],
-                       table[0, :, i, :], rtol=rtol, atol=atol)
+        np.allclose(table[0, :, 0, :],
+                    table[0, :, i, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[2]))
 
 
 def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
     return all(
-        numpy.allclose(table[0, 0, :, :],
-                       table[0, i, :, :], rtol=rtol, atol=atol)
+        np.allclose(table[0, 0, :, :],
+                    table[0, i, :, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[1]))
 
 
