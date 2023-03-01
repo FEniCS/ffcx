@@ -7,7 +7,7 @@
 import logging
 import numbers
 
-import numpy
+import numpy as np
 
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
 from ffcx.codegeneration.C.format_value import (format_float, format_int,
@@ -266,7 +266,7 @@ class LiteralFloat(CExprLiteral):
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        assert isinstance(value, (float, complex, int, numpy.number))
+        assert isinstance(value, (float, complex, int, np.number))
         self.value = value
 
     def ce_format(self, precision=None):
@@ -294,7 +294,7 @@ class LiteralInt(CExprLiteral):
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        assert isinstance(value, (int, numpy.number))
+        assert isinstance(value, (int, np.number))
         self.value = value
 
     def ce_format(self, precision=None):
@@ -922,7 +922,7 @@ def _is_zero_valued(values):
     elif isinstance(values, (numbers.Number, LiteralFloat)):
         return float(values) == 0.0
     else:
-        return numpy.count_nonzero(values) == 0
+        return np.count_nonzero(values) == 0
 
 
 def as_cexpr(node):
@@ -1275,7 +1275,7 @@ def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
             return str(x)
 
     tokens = ["{ "]
-    if numpy.product(values.shape) > 0:
+    if np.product(values.shape) > 0:
         sep = ", "
         fvalues = [formatter(v, precision) for v in values]
         for v in fvalues[:-1]:
@@ -1306,12 +1306,12 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision
         def formatter(x, p):
             return str(x)
 
-    values = numpy.asarray(values)
-    assert numpy.product(values.shape) == numpy.product(sizes)
+    values = np.asarray(values)
+    assert np.product(values.shape) == np.product(sizes)
     assert len(sizes) > 0
     assert len(values.shape) > 0
     assert len(sizes) == len(values.shape)
-    assert numpy.all(values.shape == sizes)
+    assert np.all(values.shape == sizes)
 
     r = len(sizes)
     assert r > 0
@@ -1373,7 +1373,7 @@ class ArrayDecl(CStatement):
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_cexpr.
         if isinstance(values, (list, tuple)):
-            self.values = numpy.asarray(values)
+            self.values = np.asarray(values)
         else:
             self.values = values
 
@@ -1408,7 +1408,7 @@ class ArrayDecl(CStatement):
                 formatter = format_float
             elif self.values.dtype.kind == "i":
                 formatter = format_int
-            elif self.values.dtype == numpy.bool_:
+            elif self.values.dtype == np.bool_:
                 def format_bool(x, precision=None):
                     return "true" if x is True else "false"
                 formatter = format_bool

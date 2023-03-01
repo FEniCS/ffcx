@@ -9,7 +9,7 @@ import hashlib
 import logging
 import itertools
 
-import numpy
+import numpy as np
 
 import ufl
 from ffcx.element_interface import (create_quadrature, map_facet_points,
@@ -20,7 +20,7 @@ logger = logging.getLogger("ffcx")
 
 class QuadratureRule:
     def __init__(self, points, weights, tensor_factors=None):
-        self.points = numpy.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
+        self.points = np.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
         self.weights = weights
         self.tensor_factors = tensor_factors
         self.has_tensor_factors = tensor_factors is not None
@@ -33,7 +33,7 @@ class QuadratureRule:
         return self._hash
 
     def __eq__(self, other):
-        return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
+        return np.allclose(self.points, other.points) and np.allclose(self.weights, other.weights)
 
     def id(self):
         """Return unique deterministic identifier.
@@ -70,11 +70,11 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
                 tensor_factors = [
                     create_quadrature("interval", degree, rule)
                     for _ in range(3)]
-            pts = numpy.array([
+            pts = np.array([
                 tuple(i[0] for i in p)
                 for p in itertools.product(*[f[0] for f in tensor_factors])
             ])
-            wts = numpy.array([
+            wts = np.array([
                 product(i for i in p)
                 for p in itertools.product(*[f[1] for f in tensor_factors])
             ])
@@ -119,11 +119,11 @@ def map_integral_points(points, integral_type, cell, entity):
     if entity_dim == tdim:
         assert points.shape[1] == tdim
         assert entity == 0
-        return numpy.asarray(points)
+        return np.asarray(points)
     elif entity_dim == tdim - 1:
         assert points.shape[1] == tdim - 1
-        return numpy.asarray(map_facet_points(points, entity, cell.cellname()))
+        return np.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
-        return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
+        return np.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
         raise RuntimeError(f"Can't map points from entity_dim={entity_dim}")
