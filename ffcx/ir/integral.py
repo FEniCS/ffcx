@@ -10,7 +10,7 @@ import itertools
 import logging
 import typing
 
-import numpy
+import numpy as np
 
 import ufl
 from ffcx.ir.analysis.factorization import compute_argument_factorization
@@ -97,7 +97,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
-        num_components = numpy.int32(numpy.prod(expression.ufl_shape))
+        num_components = np.int32(np.prod(expression.ufl_shape))
 
         if 'zeros' in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
@@ -119,7 +119,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                 for comp in S.nodes[target]["component"]:
                     assert expressions[comp] is None
                     expressions[comp] = S.nodes[target]["expression"]
-            expression = ufl.as_tensor(numpy.reshape(expressions, expression.ufl_shape))
+            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
