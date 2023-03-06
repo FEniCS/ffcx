@@ -136,7 +136,7 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
             #
             # For the facet element, we can just return `points`, as these were generated
             # on the reference cell corresponding to the facets of the integration domain cell.
-            entity_points = numpy.asarray(points)
+            entity_points = np.asarray(points)
         else:
             raise RuntimeError(f"Domain cell and ufl element cell not compatible for {integral_type} integral")
 
