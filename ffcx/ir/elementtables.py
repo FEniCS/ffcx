@@ -69,7 +69,7 @@ def clamp_table_small_numbers(table,
 
 
 def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
-                          derivative_counts, flat_component):
+                          derivative_counts, flat_component, is_mixed_dim):
     """Extract values from FFCx element table.
 
     Returns a 3D numpy array with axes
@@ -122,7 +122,24 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
     component_element, offset, stride = element.get_component_element(flat_component)
 
     for entity in range(num_entities):
-        entity_points = map_integral_points(points, integral_type, cell, entity)
+        # Map points according to relationship between domain cell and element cell
+        # FIXME Check equality of cell not just cell name (i.e. if cell == element.cell() etc.)
+        # Currently only checking cell name as Basix element gets the geometric dimension wrong
+        # (broken by https://github.com/FEniCS/ffcx/pull/511)
+        if cell.cellname() == element.cell().cellname():
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+        elif is_mixed_dim and element.cell().cellname() in [facet_cell.cellname() for facet_cell in cell.facet_types()]:
+            # If we have a mixed dimensional integral and the element cell is a facet
+            # of the domain cell, then we have a facet element. Note the latter check
+            # is required to distinguish between the element of codim 0 and the element
+            # of codim 1 in a mixed dimensional integral.
+            #
+            # For the facet element, we can just return `points`, as these were generated
+            # on the reference cell corresponding to the facets of the integration domain cell.
+            entity_points = np.asarray(points)
+        else:
+            raise RuntimeError(f"Domain cell and ufl element cell not compatible for {integral_type} integral")
+
         tbl = component_element.tabulate(deriv_order, entity_points)
         tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
@@ -273,7 +290,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 
 def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
-                           modified_terminals, existing_tables,
+                           modified_terminals, existing_tables, is_mixed_dim,
                            rtol=default_rtol, atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
@@ -322,17 +339,18 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         tdim = cell.topological_dimension()
 
-        if integral_type == "interior_facet":
+        # Interior facet and mixed dimensional integrals need permutations
+        if integral_type == "interior_facet" or is_mixed_dim:
             if tdim == 1:
                 t = get_ffcx_table_values(quadrature_rule.points, cell,
                                           integral_type, element, avg, entitytype,
-                                          local_derivatives, flat_component)
+                                          local_derivatives, flat_component, is_mixed_dim)
             elif tdim == 2:
                 new_table = []
                 for ref in range(2):
                     new_table.append(get_ffcx_table_values(
                         permute_quadrature_interval(quadrature_rule.points, ref), cell,
-                        integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                        integral_type, element, avg, entitytype, local_derivatives, flat_component, is_mixed_dim))
 
                 t = new_table[0]
                 t['array'] = np.vstack([td['array'] for td in new_table])
@@ -346,7 +364,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                                 permute_quadrature_triangle(
                                     quadrature_rule.points, ref, rot),
                                 cell, integral_type, element, avg, entitytype, local_derivatives,
-                                flat_component))
+                                flat_component, is_mixed_dim))
                     t = new_table[0]
                     t['array'] = np.vstack([td['array'] for td in new_table])
                 elif cell_type == "hexahedron":
@@ -356,13 +374,14 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
                             new_table.append(get_ffcx_table_values(
                                 permute_quadrature_quadrilateral(
                                     quadrature_rule.points, ref, rot),
-                                cell, integral_type, element, avg, entitytype, local_derivatives, flat_component))
+                                cell, integral_type, element, avg, entitytype, local_derivatives,
+                                flat_component, is_mixed_dim))
                     t = new_table[0]
                     t['array'] = np.vstack([td['array'] for td in new_table])
         else:
             t = get_ffcx_table_values(quadrature_rule.points, cell,
                                       integral_type, element, avg, entitytype,
-                                      local_derivatives, flat_component)
+                                      local_derivatives, flat_component, is_mixed_dim)
         # Clean up table
         tbl = clamp_table_small_numbers(t['array'], rtol=rtol, atol=atol)
         tabletype = analyse_table_type(tbl)

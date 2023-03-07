@@ -9,6 +9,7 @@ import logging
 
 import ufl
 from ffcx.element_interface import create_element
+from ffcx.ir.representation import IntegralIR
 from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
@@ -82,8 +83,18 @@ class FFCXBackendDefinitions(object):
 
         assert begin < end
 
+        # Check if we have a facet element from a mixed dimensional integral. This
+        # ensures it gets the correct permutation.
+        # FIXME Find a more robust way to check for a facet element
+        facet_element = False
+        if type(self.ir) == IntegralIR:  # FIXME Handle this properly
+            if self.ir.mixed_dim:
+                ufl_cell = mt.terminal.ufl_element().cell()
+                if ufl_cell.topological_dimension() == ufl_cell.geometric_dimension() - 1:
+                    facet_element = True
+
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
+        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction, facet_element)
         ic = self.symbols.coefficient_dof_sum_index()
 
         code = []

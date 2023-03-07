@@ -44,7 +44,7 @@ class BlockDataT(typing.NamedTuple):
 
 
 def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_shape,
-                        p, visualise):
+                        is_mixed_dim, p, visualise):
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -88,6 +88,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             entitytype,
             initial_terminals.values(),
             ir["unique_tables"],
+            is_mixed_dim,
             rtol=p["table_rtol"],
             atol=p["table_atol"])
 
@@ -260,7 +261,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
                                             "block_contributions": block_contributions}
 
         restrictions = [i.restriction for i in initial_terminals.values()]
-        ir["needs_facet_permutations"] = "+" in restrictions and "-" in restrictions
+        ir["needs_facet_permutations"] = ("+" in restrictions and "-" in restrictions) or is_mixed_dim
 
     return ir
 

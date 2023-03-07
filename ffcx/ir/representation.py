@@ -136,6 +136,7 @@ class IntegralIR(typing.NamedTuple):
     precision: int
     needs_facet_permutations: bool
     coordinate_element: str
+    mixed_dim: bool
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -368,6 +369,20 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             for i, element in enumerate(unique_elements)
         }
 
+        # If we have an exterior facet integral, and the cell of one element
+        # is the same as the facet of another, then we have a mixed dimensional
+        # integral
+        ir["mixed_dim"] = False
+        if itg_data.integral_type == "exterior_facet":
+            for e_0 in unique_elements:
+                for e_1 in unique_elements:
+                    # FIXME Check equality of cell not just cell name (i.e. if e_0.cell() in
+                    # e_1.cell().facet_types() etc.)
+                    # Currently only checking cell name as Basix element gets the geometric dimension wrong
+                    # (broken by https://github.com/FEniCS/ffcx/pull/511)
+                    if e_0.cell().cellname() in [facet_cell.cellname() for facet_cell in e_1.cell().facet_types()]:
+                        ir["mixed_dim"] = True
+
         # Create dimensions of primary indices, needed to reset the argument
         # 'A' given to tabulate_tensor() by the assembler.
         argument_dimensions = [
@@ -477,7 +492,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         # Build more specific intermediate representation
         integral_ir = compute_integral_ir(itg_data.domain.ufl_cell(), itg_data.integral_type,
                                           ir["entitytype"], integrands, ir["tensor_shape"],
-                                          options, visualise)
+                                          ir["mixed_dim"], options, visualise)
 
         ir.update(integral_ir)
 
@@ -688,7 +703,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
         assert len(ir["original_coefficient_positions"]) == 0 and len(ir["original_constant_offsets"]) == 0
 
     expression_ir = compute_integral_ir(cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape,
-                                        options, visualise)
+                                        False, options, visualise)
 
     ir.update(expression_ir)
 
