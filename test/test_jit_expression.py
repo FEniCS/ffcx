@@ -175,14 +175,17 @@ def test_elimiate_zero_tables_tensor(compile_args):
 
     # Get vertices of cell
     # Coords storage XYZXYZXYZ
-    basix_c_e = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 1, False)
+    basix_c_e = basix.create_element(basix.ElementFamily.P,
+                                     basix.cell.string_to_type(cell), 1,
+                                     discontinuous=False)
     coords = basix_c_e.points
 
     # Using same basix element for coordinate element and coefficient
     coeff_points = basix_c_e.points
 
     # Compile expression at interpolation points of second order Lagrange space
-    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 0, True)
+    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell),
+                                0, discontinuous=True)
     points = b_el.points
     obj, module, code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args)
