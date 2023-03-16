@@ -752,11 +752,7 @@ def test_interval_vertex_quadrature(compile_args):
     c_el = ufl.VectorElement("Lagrange", cell, 1)
     mesh = ufl.Mesh(c_el)
 
-    el = ufl.FiniteElement("Lagrange", mesh.ufl_cell(), 1)
-    V = ufl.FunctionSpace(mesh, el)
-
     x = ufl.SpatialCoordinate(mesh)
-    v = ufl.TestFunction(V)
     dx = ufl.Measure(
         "dx", metadata={"quadrature_rule": "vertex"})
     b = x[0] * dx
