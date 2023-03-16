@@ -416,7 +416,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                                        np.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]))
                 elif cellname == "interval":
                     # Trapezoidal rule
-                    return (np.array([[0.0], [1.0]]), np.array([1.0 / 2.0, 1.0 / 2.0]))
+                    points, weights = (np.array([[0.0], [1.0]]), np.array([1.0 / 2.0, 1.0 / 2.0]))
             else:
                 degree = md["quadrature_degree"]
                 points, weights = create_quadrature_points_and_weights(
