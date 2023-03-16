@@ -721,3 +721,26 @@ def test_complex_operations(compile_args):
     assert np.allclose(J_2, expected_result)
 
     assert np.allclose(J_1, J_2)
+
+
+def test_invalid_function_name(compile_args):
+    # Monkey patch to force invalid name
+    old_str = ufl.Coefficient.__str__
+    ufl.Coefficient.__str__ = lambda self: "invalid function name"
+
+    V = ufl.FiniteElement("Lagrange", ufl.triangle, 1)
+    u = ufl.Coefficient(V)
+    a = ufl.inner(u, u) * ufl.dx
+
+    forms = [a]
+
+    try:
+        compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+            forms, cffi_extra_compile_args=compile_args)
+    except ValueError:
+        pass
+    except Exception:
+        raise RuntimeError("Compilation should fail with ValueError.")
+
+    # Revert monkey patch for other tests
+    ufl.Coefficient.__str__ = old_str

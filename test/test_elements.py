@@ -20,7 +20,7 @@
 "Unit tests for FFCx"
 
 
-import numpy
+import numpy as np
 import pytest
 
 from ffcx.element_interface import create_element
@@ -43,8 +43,8 @@ def element_coords(cell):
 
 
 def random_point(shape):
-    w = numpy.random.random(len(shape))
-    return sum([numpy.array(shape[i]) * w[i] for i in range(len(shape))]) / sum(w)
+    w = np.random.random(len(shape))
+    return sum([np.array(shape[i]) * w[i] for i in range(len(shape))]) / sum(w)
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 3), (2, 6), (3, 10)])
@@ -192,7 +192,7 @@ supported (non-mixed) for low degrees"""
             basis = table[0]
             if sum(element.value_shape()) == 1:
                 for i, value in enumerate(basis[0]):
-                    assert numpy.isclose(value, reference[i](x))
+                    assert np.isclose(value, reference[i](x))
             else:
                 for i, ref in enumerate(reference):
-                    assert numpy.allclose(basis[0][i::len(reference)], ref(x))
+                    assert np.allclose(basis[0][i::len(reference)], ref(x))

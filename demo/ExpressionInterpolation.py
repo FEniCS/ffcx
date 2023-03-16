@@ -55,7 +55,7 @@ quadrature_points, _ = basix.make_quadrature(b_rule, b_cell, q_degree)
 
 # Get interpolation points for output space
 family = basix.finite_element.string_to_family("Lagrange", cell.cellname())
-b_element = basix.create_element(family, b_cell, 4, basix.LagrangeVariant.gll_warped, True)
+b_element = basix.create_element(family, b_cell, 4, basix.LagrangeVariant.gll_warped, discontinuous=True)
 interpolation_points = b_element.points
 
 # Create expressions that can be used for interpolation

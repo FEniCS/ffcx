@@ -45,7 +45,7 @@ def format_mt_name(basename, mt):
     # Format local derivatives
     if mt.local_derivatives:
         # Convert "listing" derivative multindex into "counting" representation
-        gdim = mt.terminal.ufl_domain().geometric_dimension()
+        gdim = ufl.domain.extract_unique_domain(mt.terminal).geometric_dimension()
         ld_counting = ufl.utils.derivativetuples.derivative_listing_to_counts(mt.local_derivatives, gdim)
         der = f"_d{''.join(map(str, ld_counting))}"
         access += der

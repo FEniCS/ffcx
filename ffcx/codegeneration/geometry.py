@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import numpy
+import numpy as np
 
 import basix
 
@@ -47,7 +47,7 @@ def facet_edge_vertices(L, tablename, cellname):
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
-    out = numpy.array(edge_vertices, dtype=int)
+    out = np.array(edge_vertices, dtype=int)
     return L.ArrayDecl("static const unsigned int", f"{cellname}_{tablename}", out.shape, out)
 
 
@@ -67,7 +67,7 @@ def reference_facet_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     volumes = basix.cell.facet_reference_volumes(celltype)
     for i in volumes[1:]:
-        if not numpy.isclose(i, volumes[0]):
+        if not np.isclose(i, volumes[0]):
             raise ValueError("Reference facet volume not supported for this cell type.")
     return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", volumes[0])
 
@@ -77,7 +77,7 @@ def reference_edge_vectors(L, tablename, cellname, type: str):
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
     edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
-    out = numpy.array(edge_vectors[cellname])
+    out = np.array(edge_vectors[cellname])
     return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
 
 
@@ -100,7 +100,7 @@ def facet_reference_edge_vectors(L, tablename, cellname, type: str):
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
-    out = numpy.array(edge_vectors)
+    out = np.array(edge_vectors)
     return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
 
 
@@ -113,4 +113,4 @@ def reference_facet_normals(L, tablename, cellname, type: str):
 def facet_orientation(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_orientations(celltype)
-    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
+    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", len(out), out)

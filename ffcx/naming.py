@@ -7,8 +7,8 @@
 import hashlib
 import typing
 
-import numpy
-import numpy.typing
+import numpy as np
+import numpy.typing as npt
 
 import ffcx
 import ufl
@@ -17,13 +17,13 @@ from .element_interface import convert_element
 
 
 def compute_signature(ufl_objects: typing.List[
-    typing.Union[ufl.Form,
-                 ufl.FiniteElementBase,
-                 typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64]]]], tag: str) -> str:
+    typing.Union[ufl.Form, ufl.FiniteElementBase,
+                 typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional
     'tag'.
+
     """
     object_signature = ""
     for ufl_object in ufl_objects:

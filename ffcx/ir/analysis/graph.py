@@ -7,7 +7,7 @@
 
 import logging
 
-import numpy
+import numpy as np
 
 import ufl
 from ffcx.ir.analysis.modified_terminals import is_modified_terminal
@@ -126,7 +126,7 @@ def rebuild_with_scalar_subexpressions(G):
     total_unique_symbols = value_numberer.symbol_count
 
     # Array to store the scalar subexpression in for each symbol
-    W = numpy.empty(total_unique_symbols, dtype=object)
+    W = np.empty(total_unique_symbols, dtype=object)
 
     # Iterate over each graph node in order
     for i, v in G.nodes.items():

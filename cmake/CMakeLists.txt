@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 
-project(ufcx VERSION 0.6.0 DESCRIPTION "UFCx interface header for finite element kernels"
+project(ufcx VERSION 0.7.0 DESCRIPTION "UFCx interface header for finite element kernels"
   LANGUAGES C
   HOMEPAGE_URL https://github.com/fenics/ffcx)
 include(GNUInstallDirs)
@@ -23,7 +23,7 @@ install(TARGETS ${PROJECT_NAME}
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${PROJECT_NAME}ConfigVersion.cmake"
                                  VERSION ${PROJECT_VERSION}
-                                 COMPATIBILITY SameMinorVersion)
+                                 COMPATIBILITY AnyNewerVersion)
 configure_package_config_file("${PROJECT_NAME}Config.cmake.in" "${PROJECT_NAME}Config.cmake"
   INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 install(EXPORT ${PROJECT_NAME}_Targets FILE ${PROJECT_NAME}Targets.cmake
