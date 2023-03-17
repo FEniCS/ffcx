@@ -23,8 +23,7 @@
 import numpy as np
 import pytest
 
-from ffcx.element_interface import convert_element
-from ufl import FiniteElement
+from basix.ufl import finite_element
 
 
 def element_coords(cell):
@@ -50,28 +49,28 @@ def random_point(shape):
 @pytest.mark.parametrize("degree, expected_dim", [(1, 3), (2, 6), (3, 10)])
 def test_continuous_lagrange(degree, expected_dim):
     "Test space dimensions of continuous Lagrange elements."
-    P = convert_element(FiniteElement("Lagrange", "triangle", degree))
+    P = finite_element("Lagrange", "triangle", degree)
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = convert_element(FiniteElement("Lagrange", "quadrilateral", degree))
+    P = finite_element("Lagrange", "quadrilateral", degree)
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral_spectral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = convert_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
+    P = finite_element("Lagrange", "quadrilateral", degree, variant="spectral")
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."
-    P = convert_element(FiniteElement("DG", "triangle", degree))
+    P = finite_element("DG", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -79,7 +78,7 @@ def test_discontinuous_lagrange(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
-    P = convert_element(FiniteElement("Regge", "triangle", degree))
+    P = finite_element("Regge", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -87,7 +86,7 @@ def test_regge(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def xtest_hhj(degree, expected_dim):
     "Test space dimensions of Hellan-Herrmann-Johnson element."
-    P = convert_element(FiniteElement("HHJ", "triangle", degree))
+    P = finite_element("HHJ", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -183,7 +182,7 @@ supported (non-mixed) for low degrees"""
     @pytest.mark.parametrize("family, cell, degree, reference", tests)
     def test_values(self, family, cell, degree, reference):
         # Create element
-        element = convert_element(FiniteElement(family, cell, degree))
+        element = finite_element(family, cell, degree)
 
         # Get some points and check basis function values at points
         points = [random_point(element_coords(cell)) for i in range(5)]
