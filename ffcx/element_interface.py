@@ -55,7 +55,7 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
     elif hasattr(ufl, "MixedElement") and isinstance(element, ufl.MixedElement):
         return basix.ufl.MixedElement([_cached_conversion(e) for e in element.sub_elements()])
     elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
-        return basix.ufl._create_enriched_element([_cached_conversion(e) for e in element._elements])
+        return basix.ufl.enriched_element([_cached_conversion(e) for e in element._elements])
     elif element.family() == "Quadrature":
         return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
                                  degree=element.degree())
