@@ -10,7 +10,7 @@ import warnings
 
 import ufl
 from basix.ufl import BlockedElement
-from ffcx.element_interface import convert_element, create_element
+from ffcx.element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
 
@@ -260,7 +260,7 @@ class FFCXBackendAccess(object):
         assert isinstance(coordinate_element, BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
-        scalar_element = create_element(ufl_scalar_element)
+        scalar_element = convert_element(ufl_scalar_element)
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
@@ -291,7 +291,7 @@ class FFCXBackendAccess(object):
         assert isinstance(coordinate_element, BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
-        scalar_element = create_element(ufl_scalar_element)
+        scalar_element = convert_element(ufl_scalar_element)
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
@@ -333,10 +333,10 @@ class FFCXBackendAccess(object):
         assert isinstance(coordinate_element, BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
-        scalar_element = create_element(ufl_scalar_element)
+        scalar_element = convert_element(ufl_scalar_element)
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
-        scalar_element = create_element(ufl_scalar_element)
+        scalar_element = convert_element(ufl_scalar_element)
         num_scalar_dofs = scalar_element.dim
 
         # Get edge vertices

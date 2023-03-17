@@ -23,11 +23,11 @@ def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._
     """Convert and element to a FFCx element."""
     if isinstance(element, basix.ufl._BasixElementBase):
         return element
-    return create_element(element)
+    return _cached_conversion(element)
 
 
 @lru_cache()
-def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._BasixElementBase:
+def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._BasixElementBase:
     """Create an FFCx element from a UFL element.
 
     Args:
@@ -38,19 +38,22 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._B
     """
     if isinstance(element, basix.ufl._BasixElementBase):
         return element
-    elif isinstance(element, ufl.VectorElement):
-        return basix.ufl.VectorElement(create_element(element.sub_elements()[0]), element.num_sub_elements())
-    elif isinstance(element, ufl.TensorElement):
+
+    warnings.warn("Use of elements created by UFL is deprecated. You should create elements directly using Basix.", DeprecationWarning)
+
+    if hasattr(ufl, "VectorElement") and isinstance(element, ufl.VectorElement):
+        return basix.ufl.VectorElement(_cached_conversion(element.sub_elements()[0]), element.num_sub_elements())
+    elif hasattr(ufl, "TensorElement") and isinstance(element, ufl.TensorElement):
         if len(element.symmetry()) == 0:
-            return basix.ufl.TensorElement(create_element(element.sub_elements()[0]), element._value_shape)
+            return basix.ufl.TensorElement(_cached_conversion(element.sub_elements()[0]), element._value_shape)
         else:
             assert element.symmetry()[(1, 0)] == (0, 1)
-            return basix.ufl.TensorElement(create_element(
+            return basix.ufl.TensorElement(_cached_conversion(
                 element.sub_elements()[0]), element._value_shape, symmetric=True)
-    elif isinstance(element, ufl.MixedElement):
-        return basix.ufl.MixedElement([create_element(e) for e in element.sub_elements()])
-    elif isinstance(element, ufl.EnrichedElement):
-        return basix.ufl._create_enriched_element([create_element(e) for e in element._elements])
+    elif hasattr(ufl, "MixedElement") and isinstance(element, ufl.MixedElement):
+        return basix.ufl.MixedElement([_cached_conversion(e) for e in element.sub_elements()])
+    elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
+        return basix.ufl._create_enriched_element([_cached_conversion(e) for e in element._elements])
     elif element.family() == "Quadrature":
         return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
                                  degree=element.degree())

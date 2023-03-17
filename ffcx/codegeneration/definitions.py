@@ -8,7 +8,7 @@
 import logging
 
 import ufl
-from ffcx.element_interface import create_element
+from ffcx.element_interface import convert_element
 from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
@@ -124,7 +124,7 @@ class FFCXBackendDefinitions(object):
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = create_element(coordinate_element).sub_element.dim
+        num_scalar_dofs = convert_element(coordinate_element).sub_element.dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
