@@ -426,7 +426,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                                        np.array([1. / 8., 1. / 8., 1. / 8., 1. / 8.,
                                                  1. / 8., 1. / 8., 1. / 8., 1. / 8.]))
                 else:
-                    raise RuntimeError(f"Verex scheme is not supported for cell: {cellname}")
+                    raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
             else:
                 degree = md["quadrature_degree"]
                 points, weights = create_quadrature_points_and_weights(
