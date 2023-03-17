@@ -47,7 +47,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         run: |
           python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git
+          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/ufl
       - name: Install UFL and Basix (specified branches/tags)
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -64,6 +64,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
+          ref: mscroggs/basix-element2
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v3
