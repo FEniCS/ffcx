@@ -39,7 +39,9 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
     if isinstance(element, basix.ufl._BasixElementBase):
         return element
 
-    warnings.warn("Use of elements created by UFL is deprecated. You should create elements directly using Basix.", DeprecationWarning)
+    warnings.warn(
+        "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
+        DeprecationWarning)
 
     if hasattr(ufl, "VectorElement") and isinstance(element, ufl.VectorElement):
         return basix.ufl.VectorElement(_cached_conversion(element.sub_elements()[0]), element.num_sub_elements())
