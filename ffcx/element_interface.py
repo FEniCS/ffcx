@@ -51,7 +51,7 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
         else:
             assert element.symmetry()[(1, 0)] == (0, 1)
             return basix.ufl.TensorElement(_cached_conversion(
-                element.sub_elements()[0]), element._value_shape, symmetric=True)
+                element.sub_elements()[0]), element._value_shape, symmetry=True)
     elif hasattr(ufl, "MixedElement") and isinstance(element, ufl.MixedElement):
         return basix.ufl.MixedElement([_cached_conversion(e) for e in element.sub_elements()])
     elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
