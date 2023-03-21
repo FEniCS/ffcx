@@ -27,10 +27,10 @@ logger = logging.getLogger("ffcx")
 
 class UFLData(typing.NamedTuple):
     form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]  # Tuple of ufl form data
-    unique_elements: typing.List[basix.ufl._BasixElementBase]  # List of unique elements
+    unique_elements: typing.List[basix.ufl._ElementBase]  # List of unique elements
     # Lookup table from each unique element to its index in `unique_elements`
-    element_numbers: typing.Dict[basix.ufl._BasixElementBase, int]
-    unique_coordinate_elements: typing.List[basix.ufl._BasixElementBase]  # List of unique coordinate elements
+    element_numbers: typing.Dict[basix.ufl._ElementBase, int]
+    unique_coordinate_elements: typing.List[basix.ufl._ElementBase]  # List of unique coordinate elements
     # List of ufl Expressions as tuples (expression, points, original_expression)
     expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
 
@@ -102,7 +102,7 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
     unique_coordinate_element_list = sorted(set(coordinate_elements), key=lambda x: repr(x))
 
     for e in unique_elements:
-        assert isinstance(e, basix.ufl._BasixElementBase)
+        assert isinstance(e, basix.ufl._ElementBase)
 
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
@@ -153,7 +153,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        if not isinstance(element, basix.ufl._BasixElementBase) and element.degree() > 2:
+        if not isinstance(element, basix.ufl._ElementBase) and element.degree() > 2:
             warn("UFL coordinate elements using elements not created via Basix may not work with DOLFINx")
 
     # Check for complex mode
