@@ -8,7 +8,6 @@ import numpy as np
 
 import ffcx
 import ffcx.codegeneration.jit
-import ufl
 import basix.ufl
 
 
