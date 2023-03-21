@@ -19,15 +19,15 @@ import numpy as np
 import numpy.typing as npt
 
 
-def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._BasixElementBase:
+def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
     """Convert and element to a FFCx element."""
-    if isinstance(element, basix.ufl._BasixElementBase):
+    if isinstance(element, basix.ufl._ElementBase):
         return element
     return _cached_conversion(element)
 
 
 @lru_cache()
-def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._BasixElementBase:
+def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
     """Create an FFCx element from a UFL element.
 
     Args:
@@ -36,7 +36,7 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
     Returns:
         A Basix finite element
     """
-    if isinstance(element, basix.ufl._BasixElementBase):
+    if isinstance(element, basix.ufl._ElementBase):
         return element
 
     warnings.warn(
@@ -105,7 +105,7 @@ def map_facet_points(points: npt.NDArray[np.float64], facet: int,
                        for p in points], dtype=np.float64)
 
 
-class QuadratureElement(basix.ufl._BasixElementBase):
+class QuadratureElement(basix.ufl._ElementBase):
     """A quadrature element."""
 
     _points: npt.NDArray[np.float64]
@@ -168,7 +168,7 @@ class QuadratureElement(basix.ufl._BasixElementBase):
         tables = np.asarray([np.eye(points.shape[0], points.shape[0])])
         return tables
 
-    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl._BasixElementBase, int, int]:
+    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl._ElementBase, int, int]:
         """Get element that represents a component of the element, and the offset and stride of the component.
 
         Args:
@@ -273,7 +273,7 @@ class QuadratureElement(basix.ufl._BasixElementBase):
         return basix.MapType.identity
 
 
-class RealElement(basix.ufl._BasixElementBase):
+class RealElement(basix.ufl._ElementBase):
     """A real element."""
 
     _family_name: str
@@ -321,7 +321,7 @@ class RealElement(basix.ufl._BasixElementBase):
         out[0, :] = 1.
         return out
 
-    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl._BasixElementBase, int, int]:
+    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl._ElementBase, int, int]:
         """Get element that represents a component of the element, and the offset and stride of the component.
 
         Args:
