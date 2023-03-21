@@ -44,16 +44,16 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
         DeprecationWarning)
 
     if hasattr(ufl, "VectorElement") and isinstance(element, ufl.VectorElement):
-        return basix.ufl.BlockedElement(_cached_conversion(element.sub_elements()[0]), (element.num_sub_elements(), ))
+        return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]), (element.num_sub_elements(), ))
     elif hasattr(ufl, "TensorElement") and isinstance(element, ufl.TensorElement):
         if len(element.symmetry()) == 0:
-            return basix.ufl.BlockedElement(_cached_conversion(element.sub_elements()[0]), element._value_shape)
+            return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]), element._value_shape)
         else:
             assert element.symmetry()[(1, 0)] == (0, 1)
-            return basix.ufl.BlockedElement(_cached_conversion(
+            return basix.ufl.blocked_element(_cached_conversion(
                 element.sub_elements()[0]), element._value_shape, symmetry=True)
     elif hasattr(ufl, "MixedElement") and isinstance(element, ufl.MixedElement):
-        return basix.ufl.MixedElement([_cached_conversion(e) for e in element.sub_elements()])
+        return basix.ufl.mixed_element([_cached_conversion(e) for e in element.sub_elements()])
     elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
         return basix.ufl.enriched_element([_cached_conversion(e) for e in element._elements])
     elif element.family() == "Quadrature":

@@ -17,13 +17,13 @@
 #
 # This demo illustrates use of finite element spaces defined over
 # simplicies embedded in higher dimensions
-from basix.ufl import MixedElement, element
+from basix.ufl import mixed_element, element
 from ufl import TestFunctions, TrialFunctions, div, dx, inner
 
 # Define element over this domain
 V = element("RT", "triangle", 1, gdim=3)
 Q = element("DG", "triangle", 0, gdim=3)
-element = MixedElement([V, Q])
+element = mixed_element([V, Q])
 
 (u, p) = TrialFunctions(element)
 (v, q) = TestFunctions(element)

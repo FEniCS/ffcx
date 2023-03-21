@@ -25,7 +25,7 @@ DG = basix.ufl.element("DG", "triangle", 0, rank=1)
 CG = basix.ufl.element("Lagrange", "triangle", 2)
 RT = basix.ufl.element("RT", "triangle", 3)
 
-element = basix.ufl.MixedElement([DG, CG, RT])
+element = basix.ufl.mixed_element([DG, CG, RT])
 
 f, g, h = Coefficients(element)
 
