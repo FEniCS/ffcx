@@ -14,9 +14,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-from ufl import FiniteElement, TestFunction, TrialFunction, dx, inner, triangle
+import basix.ufl
+from ufl import TestFunction, TrialFunction, dx, inner
 
-element = FiniteElement("N1curl", triangle, 1)
+element = basix.ufl.element("N1curl", "triangle", 1)
 
 v = TestFunction(element)
 u = TrialFunction(element)

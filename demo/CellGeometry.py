@@ -1,12 +1,12 @@
 # Copyright (C) 2013 Martin S. Alnaes
 #
 # A functional M involving a bunch of cell geometry quantities.
+from basix.ufl import element
 from ufl import (CellVolume, Circumradius, Coefficient, FacetArea, FacetNormal,
-                 FiniteElement, SpatialCoordinate, ds, dx, tetrahedron)
+                 SpatialCoordinate, ds, dx, tetrahedron)
 
 cell = tetrahedron
-
-V = FiniteElement("CG", cell, 1)
+V = element("CG", cell.cellname(), 1)
 u = Coefficient(V)
 
 # TODO: Add all geometry for all cell types to this and other demo files, need for regression test.

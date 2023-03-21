@@ -19,10 +19,11 @@
 # Last changed: 2011-03-08
 #
 # Simple example of a form defined over exterior and interior facets.
-from ufl import (FacetNormal, FiniteElement, TestFunction, TrialFunction, avg,
-                 ds, dS, grad, inner, jump, triangle)
+import basix.ufl
+from ufl import (FacetNormal, TestFunction, TrialFunction, avg, ds, dS, grad,
+                 inner, jump, triangle)
 
-element = FiniteElement("Discontinuous Lagrange", triangle, 1)
+element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
 
 u = TrialFunction(element)
 v = TestFunction(element)

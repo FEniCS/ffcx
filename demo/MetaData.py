@@ -16,11 +16,11 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Test form for metadata.
-from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction,
-                 VectorElement, dx, grad, inner, triangle)
+import basix.ufl
+from ufl import Coefficient, TestFunction, TrialFunction, dx, grad, inner
 
-element = FiniteElement("Lagrange", triangle, 1)
-vector_element = VectorElement("Lagrange", triangle, 1)
+element = basix.ufl.element("Lagrange", "triangle", 1)
+vector_element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
 
 
 u = TrialFunction(element)

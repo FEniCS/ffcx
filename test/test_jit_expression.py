@@ -9,6 +9,7 @@ import cffi
 import numpy as np
 
 import basix
+import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
@@ -38,7 +39,7 @@ def test_matvec(compile_args):
     of user specified vector-valued finite element function (in P1 space).
 
     """
-    e = ufl.VectorElement("P", "triangle", 1)
+    e = basix.ufl.element("P", "triangle", 1, rank=1)
     mesh = ufl.Mesh(e)
     V = ufl.FunctionSpace(mesh, e)
     f = ufl.Coefficient(V)
@@ -102,7 +103,7 @@ def test_rank1(compile_args):
     and evaluates expression [u_y, u_x] + grad(u_x) at specified points.
 
     """
-    e = ufl.VectorElement("P", "triangle", 1)
+    e = basix.ufl.element("P", "triangle", 1, rank=1)
     mesh = ufl.Mesh(e)
 
     V = ufl.FunctionSpace(mesh, e)
@@ -163,10 +164,10 @@ def test_elimiate_zero_tables_tensor(compile_args):
     Test elimination of tensor-valued expressions with zero tables
     """
     cell = "tetrahedron"
-    c_el = ufl.VectorElement("P", cell, 1)
+    c_el = basix.ufl.element("P", cell, 1, rank=1)
     mesh = ufl.Mesh(c_el)
 
-    e = ufl.FiniteElement("CG", cell, 1)
+    e = basix.ufl.element("CG", cell, 1)
     V = ufl.FunctionSpace(mesh, e)
     u = ufl.Coefficient(V)
     expr = ufl.sym(ufl.as_tensor([[u, u.dx(0).dx(0), 0],

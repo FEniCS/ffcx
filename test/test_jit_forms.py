@@ -9,6 +9,7 @@ import pytest
 import sympy
 from sympy.abc import x, y, z
 
+import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
@@ -23,9 +24,8 @@ from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
          dtype=np.complex128)),
 ])
 def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
-    kappa = ufl.Constant(cell, shape=(2, 2))
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    kappa = ufl.Constant(ufl.triangle, shape=(2, 2))
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
 
     a = ufl.tr(kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
@@ -96,8 +96,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
          dtype=np.complex64)),
 ])
 def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.dx
     L = ufl.conj(v) * ufl.dx
@@ -149,8 +148,7 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
      - (1.0j / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.complex128)),
 ])
 def test_helmholtz_form_2d(mode, expected_result, compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     if mode == "double":
         k = 1.0
@@ -205,8 +203,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
          dtype=np.complex128)),
 ])
 def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
-    cell = ufl.tetrahedron
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "tetrahedron", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
@@ -242,8 +239,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
 
 
 def test_form_coefficient(compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TestFunction(element), ufl.TrialFunction(element)
     g = ufl.Coefficient(element)
     a = g * ufl.inner(u, v) * ufl.dx
@@ -278,8 +274,7 @@ def test_form_coefficient(compile_args):
 
 
 def test_subdomains(compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a0 = ufl.inner(u, v) * ufl.dx + ufl.inner(u, v) * ufl.dx(2)
     a1 = ufl.inner(u, v) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx
@@ -313,8 +308,7 @@ def test_subdomains(compile_args):
 
 @pytest.mark.parametrize("mode", ["double", "double _Complex"])
 def test_interior_facet_integral(mode, compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a0 = ufl.inner(ufl.jump(ufl.grad(u)), ufl.jump(ufl.grad(v))) * ufl.dS
     forms = [a0]
@@ -359,10 +353,9 @@ def test_interior_facet_integral(mode, compile_args):
 
 @pytest.mark.parametrize("mode", ["double", "double _Complex"])
 def test_conditional(mode, compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
-    x = ufl.SpatialCoordinate(cell)
+    x = ufl.SpatialCoordinate(ufl.triangle)
     condition = ufl.Or(ufl.ge(ufl.real(x[0] + x[1]), 0.1),
                        ufl.ge(ufl.real(x[1] + x[1]**2), 0.1))
     c1 = ufl.conditional(condition, 2.0, 1.0)
@@ -417,10 +410,10 @@ def test_conditional(mode, compile_args):
 
 
 def test_custom_quadrature(compile_args):
-    ve = ufl.VectorElement("P", "triangle", 1)
+    ve = basix.ufl.element("P", "triangle", 1, rank=1)
     mesh = ufl.Mesh(ve)
 
-    e = ufl.FiniteElement("P", mesh.ufl_cell(), 2)
+    e = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
     V = ufl.FunctionSpace(mesh, e)
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
 
@@ -455,7 +448,7 @@ def test_custom_quadrature(compile_args):
 
 
 def test_curl_curl(compile_args):
-    V = ufl.FiniteElement("N1curl", "triangle", 2)
+    V = basix.ufl.element("N1curl", "triangle", 2)
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     a = ufl.inner(ufl.curl(u), ufl.curl(v)) * ufl.dx
 
@@ -508,8 +501,7 @@ def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lamb
 @pytest.mark.parametrize("order", [1, 2, 3])
 def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_triangle_symbolic(order, fun=sym_fun)
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, order)
+    element = basix.ufl.element("Lagrange", "triangle", order)
     v = ufl.TestFunction(element)
 
     a = ufl_fun(v) * ufl.dx
@@ -600,8 +592,7 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
 @pytest.mark.parametrize("order", [1, 2, 3])
 def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_tetrahedron_symbolic(order, fun=sym_fun)
-    cell = ufl.tetrahedron
-    element = ufl.FiniteElement("Lagrange", cell, order)
+    element = basix.ufl.element("Lagrange", "tetrahedron", order)
     v = ufl.TestFunction(element)
 
     a = ufl_fun(v) * ufl.dx
@@ -639,8 +630,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
 
 
 def test_prism(compile_args):
-    cell = ufl.prism
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "prism", 1)
     v = ufl.TestFunction(element)
 
     L = v * ufl.dx
@@ -672,10 +662,10 @@ def test_prism(compile_args):
 
 def test_complex_operations(compile_args):
     mode = "double _Complex"
-    cell = ufl.triangle
-    c_element = ufl.VectorElement("Lagrange", cell, 1)
+    cell = "triangle"
+    c_element = basix.ufl.element("Lagrange", cell, 1, rank=1)
     mesh = ufl.Mesh(c_element)
-    element = ufl.VectorElement("DG", cell, 0)
+    element = basix.ufl.element("DG", cell, 0, rank=1)
     V = ufl.FunctionSpace(mesh, element)
     u = ufl.Coefficient(V)
     J1 = ufl.real(u)[0] * ufl.imag(u)[1] * ufl.conj(u)[0] * ufl.dx
@@ -728,7 +718,7 @@ def test_invalid_function_name(compile_args):
     old_str = ufl.Coefficient.__str__
     ufl.Coefficient.__str__ = lambda self: "invalid function name"
 
-    V = ufl.FiniteElement("Lagrange", ufl.triangle, 1)
+    V = basix.ufl.element("Lagrange", "triangle", 1)
     u = ufl.Coefficient(V)
     a = ufl.inner(u, u) * ufl.dx
 
@@ -748,8 +738,7 @@ def test_invalid_function_name(compile_args):
 
 def test_interval_vertex_quadrature(compile_args):
 
-    cell = ufl.interval
-    c_el = ufl.VectorElement("Lagrange", cell, 1)
+    c_el = basix.ufl.element("Lagrange", "interval", 1, rank=1)
     mesh = ufl.Mesh(c_el)
 
     x = ufl.SpatialCoordinate(mesh)

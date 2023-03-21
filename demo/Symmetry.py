@@ -1,7 +1,7 @@
-from ufl import (TensorElement, TestFunction, TrialFunction, dx, grad, inner,
-                 triangle)
+from basix.ufl import element
+from ufl import TestFunction, TrialFunction, dx, grad, inner
 
-P1 = TensorElement("CG", triangle, 1, (2, 2), symmetry={(1, 0): (0, 1)})
+P1 = element("CG", "triangle", 1, shape=(2, 2), symmetry=True)
 
 u = TrialFunction(P1)
 v = TestFunction(P1)

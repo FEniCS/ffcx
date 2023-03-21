@@ -16,10 +16,11 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Test all algebra operators on Coefficients.
-from ufl import (Coefficient, FiniteElement, acos, asin, atan, bessel_J,
-                 bessel_Y, cos, dx, erf, exp, ln, sin, sqrt, tan, triangle)
+import basix.ufl
+from ufl import (Coefficient, acos, asin, atan, bessel_J, bessel_Y, cos, dx,
+                 erf, exp, ln, sin, sqrt, tan)
 
-element = FiniteElement("Lagrange", triangle, 1)
+element = basix.ufl.element("Lagrange", "triangle", 1)
 
 c0 = Coefficient(element)
 c1 = Coefficient(element)
