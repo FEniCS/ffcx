@@ -49,7 +49,8 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
         DeprecationWarning)
 
     if hasattr(ufl, "VectorElement") and isinstance(element, ufl.VectorElement):
-        return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]), shape=(element.num_sub_elements(), ))
+        return basix.ufl.blocked_element(
+            _cached_conversion(element.sub_elements()[0]), shape=(element.num_sub_elements(), ))
     elif hasattr(ufl, "TensorElement") and isinstance(element, ufl.TensorElement):
         if len(element.symmetry()) == 0:
             return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]), shape=element._value_shape)
