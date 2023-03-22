@@ -25,7 +25,7 @@ from ufl import TestFunctions, TrialFunctions, div, dx, grad, inner
 P1 = element("Lagrange", "triangle", 1)
 B = element("Bubble", "triangle", 3)
 V = blocked_element(enriched_element([P1, B]), shape=(2, ))
-Q = element("CG", "triangle", 1)
+Q = element("P", "triangle", 1)
 
 Mini = mixed_element([V, Q])
 (u, p) = TrialFunctions(Mini)

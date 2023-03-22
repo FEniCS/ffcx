@@ -167,7 +167,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
     c_el = basix.ufl.element("P", cell, 1, rank=1)
     mesh = ufl.Mesh(c_el)
 
-    e = basix.ufl.element("CG", cell, 1)
+    e = basix.ufl.element("P", cell, 1)
     V = ufl.FunctionSpace(mesh, e)
     u = ufl.Coefficient(V)
     expr = ufl.sym(ufl.as_tensor([[u, u.dx(0).dx(0), 0],

@@ -8,12 +8,12 @@ from ufl import (Coefficient, FacetNormal, Identity, TestFunctions,
                  tetrahedron, tr)
 
 REG = element("Regge", "tetrahedron", 1)
-CG = element("Lagrange", "tetrahedron", 2)
-mixed_element = mixed_element([REG, CG])
+P = element("Lagrange", "tetrahedron", 2)
+mixed_element = mixed_element([REG, P])
 
 (sigma, u) = TrialFunctions(mixed_element)
 (tau, v) = TestFunctions(mixed_element)
-f = Coefficient(CG)
+f = Coefficient(P)
 
 
 def S(mu):

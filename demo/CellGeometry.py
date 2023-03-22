@@ -6,7 +6,7 @@ from ufl import (CellVolume, Circumradius, Coefficient, FacetArea, FacetNormal,
                  SpatialCoordinate, ds, dx, tetrahedron)
 
 cell = tetrahedron
-V = element("CG", cell.cellname(), 1)
+V = element("P", cell.cellname(), 1)
 u = Coefficient(V)
 
 # TODO: Add all geometry for all cell types to this and other demo files, need for regression test.

@@ -17,9 +17,9 @@ N = FacetNormal(cell)
 x = SpatialCoordinate(cell)
 
 # Elements
-u_element = element("CG", cell.cellname(), 2, rank=1)
-p_element = element("CG", cell.cellname(), 1)
-A_element = element("CG", cell.cellname(), 1, rank=2)
+u_element = element("P", cell.cellname(), 2, rank=1)
+p_element = element("P", cell.cellname(), 1)
+A_element = element("P", cell.cellname(), 1, rank=2)
 
 # Test and trial functions
 v = TestFunction(u_element)

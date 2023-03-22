@@ -8,12 +8,12 @@ from ufl import (Coefficient, FacetNormal, TestFunctions, TrialFunctions, dot,
                  dS, ds, dx, grad, inner, jump, triangle)
 
 HHJ = element('HHJ', "triangle", 2)
-CG = element('CG', "triangle", 3)
-mixed_element = mixed_element([HHJ, CG])
+P = element('P', "triangle", 3)
+mixed_element = mixed_element([HHJ, P])
 
 (sigma, u) = TrialFunctions(mixed_element)
 (tau, v) = TestFunctions(mixed_element)
-f = Coefficient(CG)
+f = Coefficient(P)
 
 
 def b(sigma, v):

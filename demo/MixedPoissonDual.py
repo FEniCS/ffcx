@@ -24,15 +24,15 @@ from basix.ufl import mixed_element, element
 from ufl import Coefficient, TestFunctions, TrialFunctions, dot, ds, dx, grad
 
 DRT = element("Discontinuous RT", "triangle", 2)
-CG = element("CG", "triangle", 3)
-W = mixed_element([DRT, CG])
+P = element("P", "triangle", 3)
+W = mixed_element([DRT, P])
 
 (sigma, u) = TrialFunctions(W)
 (tau, v) = TestFunctions(W)
 
-CG1 = element("CG", "triangle", 1)
-f = Coefficient(CG1)
-g = Coefficient(CG1)
+P1 = element("P", "triangle", 1)
+f = Coefficient(P1)
+g = Coefficient(P1)
 
 a = (dot(sigma, tau) + dot(grad(u), tau) + dot(sigma, grad(v))) * dx
 L = - f * v * dx - g * v * ds

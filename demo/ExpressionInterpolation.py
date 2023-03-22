@@ -29,7 +29,7 @@ v_el = element("Lagrange", cell, 1, rank=1)
 mesh = Mesh(v_el)
 
 # Define mixed function space
-el = element("CG", cell, 2)
+el = element("P", cell, 2)
 el_int = element("Discontinuous Lagrange", cell, 1, rank=1)
 me = mixed_element([el, el_int])
 V = FunctionSpace(mesh, me)
