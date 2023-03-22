@@ -9,7 +9,7 @@ import logging
 import warnings
 
 import ufl
-from basix.ufl import BlockedElement
+from basix.ufl import _BlockedElement
 from ffcx.element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
@@ -257,7 +257,7 @@ class FFCXBackendAccess(object):
         coordinate_element = convert_element(domain.ufl_coordinate_element())
 
         # Get dimension and dofmap of scalar element
-        assert isinstance(coordinate_element, BlockedElement)
+        assert isinstance(coordinate_element, _BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         scalar_element = convert_element(ufl_scalar_element)
@@ -288,7 +288,7 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         # Get dimension and dofmap of scalar element
-        assert isinstance(coordinate_element, BlockedElement)
+        assert isinstance(coordinate_element, _BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         scalar_element = convert_element(ufl_scalar_element)
@@ -330,7 +330,7 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         # Get dimension and dofmap of scalar element
-        assert isinstance(coordinate_element, BlockedElement)
+        assert isinstance(coordinate_element, _BlockedElement)
         assert coordinate_element.value_shape() == (gdim, )
         ufl_scalar_element, = set(coordinate_element.sub_elements())
         scalar_element = convert_element(ufl_scalar_element)
