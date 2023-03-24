@@ -744,3 +744,38 @@ def test_invalid_function_name(compile_args):
 
     # Revert monkey patch for other tests
     ufl.Coefficient.__str__ = old_str
+
+
+def test_interval_vertex_quadrature(compile_args):
+
+    cell = ufl.interval
+    c_el = ufl.VectorElement("Lagrange", cell, 1)
+    mesh = ufl.Mesh(c_el)
+
+    x = ufl.SpatialCoordinate(mesh)
+    dx = ufl.Measure(
+        "dx", metadata={"quadrature_rule": "vertex"})
+    b = x[0] * dx
+
+    forms = [b]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args)
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+    assert form0.num_integrals(module.lib.cell) == 1
+
+    default_integral = form0.integrals(module.lib.cell)[0]
+    J = np.zeros(1, dtype=np.float64)
+    a = np.pi
+    b = np.exp(1)
+    coords = np.array([a, 0.0, 0.0,
+
+                       b, 0.0, 0.0], dtype=np.float64)
+
+    kernel = getattr(default_integral, "tabulate_tensor_float64")
+    kernel(ffi.cast('double *', J.ctypes.data),
+           ffi.NULL,
+           ffi.NULL,
+           ffi.cast('double *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    assert np.isclose(J[0], (0.5 * a + 0.5 * b) * np.abs(b - a))

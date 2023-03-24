@@ -417,7 +417,17 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                                        np.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]))
                 elif cellname == "interval":
                     # Trapezoidal rule
-                    return (np.array([[0.0], [1.0]]), np.array([1.0 / 2.0, 1.0 / 2.0]))
+                    points, weights = (np.array([[0.0], [1.0]]), np.array([1.0 / 2.0, 1.0 / 2.0]))
+                elif cellname == "quadrilateral":
+                    points, weights = (np.array([[0., 0], [1., 0.], [0., 1.], [1., 1]]),
+                                       np.array([1. / 4., 1. / 4., 1. / 4., 1. / 4.]))
+                elif cellname == "hexahedron":
+                    points, weights = (np.array([[0., 0., 0.], [1., 0., 0.], [0., 1., 0.], [1., 1., 0.],
+                                                 [0., 0., 1.], [1., 0., 1.], [0., 1., 1.], [1., 1., 1.]]),
+                                       np.array([1. / 8., 1. / 8., 1. / 8., 1. / 8.,
+                                                 1. / 8., 1. / 8., 1. / 8., 1. / 8.]))
+                else:
+                    raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
             else:
                 degree = md["quadrature_degree"]
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
