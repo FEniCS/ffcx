@@ -128,7 +128,7 @@ def transpose_tensor(lang, A, Ia, Ib, scalar_type):
 # Let A, B, C be nd-tensors, this function generates code
 # for computing the tensor contraction
 # C{Ic} = A{Ia} * B {Ib}
-def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type):
+def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type, optimise=True):
     code = []
     Ib = extract_multi_index(lang, B, indices, sizes)
     Ia = extract_multi_index(lang, A, indices, sizes)
@@ -142,8 +142,7 @@ def tensor_contraction(lang, A, B, C, indices, sizes, scalar_type):
     if isinstance(C, lang.Symbol):
         code += [lang.ArrayDecl(scalar_type, C, [Ic.global_size()], values=0.0)]
 
-    use_gemm = True
-    if use_gemm:
+    if optimise:
         Jb = Ib.intersection(Ic)
         Ib_ = Ik.union(Jb)
         Iu = Ia.union(Ib_)
@@ -196,7 +195,7 @@ def assign_add(lang, A, B, indices, sizes):
     return code
 
 
-def sum_factorise(lang, expression, scalar_type):
+def sum_factorise(lang, expression, scalar_type, optimise=True):
     counter = 0
     indices = expression.indices
     sizes = expression.ranges
@@ -204,23 +203,36 @@ def sum_factorise(lang, expression, scalar_type):
         return expression
     else:
         code = []
-        expr = expression.body().expr
-        assert isinstance(expr.rhs, (lang.Sum, lang.Product))
-        if isinstance(expr.rhs, lang.Product):
-            terms = [expr.rhs]
-        else:
-            terms = expr.rhs.args
+
+        try:
+            expr = expression.body().expr
+            assert isinstance(expr.rhs, (lang.Sum, lang.Product))
+            if isinstance(expr.rhs, lang.Product):
+                terms = [expr.rhs]
+            else:
+                terms = expr.rhs.args
+        except:
+            terms = []
+            for statement in expression.body().statements:
+                from IPython import embed
+                embed()
+                expr = statement.expr
+                terms += expr.rhs.args
+            print(terms)
+
+            
+
 
         for term in terms:
             B = term.args[0]
             tables = term.args[1]
             for phi in tables.args[:-1]:
                 C = lang.Symbol(f"temp{counter}")
-                t_code, B = tensor_contraction(lang, phi, B, C, indices, sizes, scalar_type)
+                t_code, B = tensor_contraction(lang, phi, B, C, indices, sizes, scalar_type, optimise)
                 counter += 1
                 code += t_code
             phi = tables.args[-1]
-            t_code, B = tensor_contraction(lang, phi, B, expr.lhs, indices, sizes, scalar_type)
+            t_code, B = tensor_contraction(lang, phi, B, expr.lhs, indices, sizes, scalar_type, optimise)
             code += t_code
         code = lang.Scope(code)
 

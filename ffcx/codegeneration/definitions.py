@@ -258,7 +258,7 @@ class FFCXBackendDefinitions(object):
             lhs = lang.Product([dof_access, table_access])
             body = [lang.AssignAdd(access[iq.global_idx()], lhs)]
             loop = lang.NestedForRange([iq, ic], body)
-            code += [sum_factorise(lang, loop, value_type)]
+            code += [sum_factorise(lang, loop, value_type, False)]
         else:
             code += [lang.VariableDecl(value_type, access, 0.0)]
             body = [lang.AssignAdd(access, dof_access * table_access)]
