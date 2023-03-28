@@ -23,7 +23,7 @@ from ufl import (Coefficient, Constant, Mesh, TestFunction,
                  TrialFunction, dx, grad, inner)
 import basix.ufl
 
-mesh = Mesh(element('P', "triangle", 2, rank=1))
+mesh = Mesh(basix.ufl.element('P', "triangle", 2, rank=1))
 
 e = basix.ufl.element("Lagrange", "triangle", 2)
 
