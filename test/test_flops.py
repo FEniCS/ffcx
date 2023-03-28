@@ -6,12 +6,13 @@
 
 
 import ufl
+import basix.ufl
 from ffcx.codegeneration.flop_count import count_flops
 
 
 def create_form(degree):
-    mesh = ufl.Mesh(ufl.VectorElement("Lagrange", "triangle", 1))
-    element = ufl.FiniteElement("Lagrange", ufl.triangle, degree)
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    element = basix.ufl.element("Lagrange", "triangle", degree)
     V = ufl.FunctionSpace(mesh, element)
 
     u = ufl.TrialFunction(V)

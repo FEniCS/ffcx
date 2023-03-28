@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import ffcx.codegeneration.jit
+import basix.ufl
 import ufl
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
@@ -21,8 +22,7 @@ from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
                              "float _Complex"
                          ])
 def test_additive_facet_integral(mode, compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.ds
     forms = [a]
@@ -70,8 +70,7 @@ def test_additive_facet_integral(mode, compile_args):
 
 @pytest.mark.parametrize("mode", ["double", "float", "long double", "double _Complex", "float _Complex"])
 def test_additive_cell_integral(mode, compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]

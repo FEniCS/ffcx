@@ -26,6 +26,7 @@ import numpy as np
 import numpy.typing as npt
 
 import basix
+import basix.ufl
 import ufl
 from ffcx import naming
 from ffcx.analysis import UFLData
@@ -541,7 +542,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         el = convert_element(convert_element(function.ufl_function_space().ufl_element()))
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
-        if not isinstance(cmap, basix.ufl_wrapper._BasixElementBase) and cmap.variant() is None:
+        if not isinstance(cmap, basix.ufl._ElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
         cmap = convert_element(cmap)
         family = cmap.family()

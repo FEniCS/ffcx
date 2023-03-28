@@ -13,21 +13,21 @@ from functools import lru_cache
 
 
 import basix
-import basix.ufl_wrapper
+import basix.ufl
 import ufl
 import numpy as np
 import numpy.typing as npt
 
 
-def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
+def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
     """Convert and element to a FFCx element."""
-    if isinstance(element, basix.ufl_wrapper._BasixElementBase):
+    if isinstance(element, basix.ufl._ElementBase):
         return element
-    return create_element(element)
+    return _cached_conversion(element)
 
 
 @lru_cache()
-def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wrapper._BasixElementBase:
+def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
     """Create an FFCx element from a UFL element.
 
     Args:
@@ -36,29 +36,34 @@ def create_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl_wr
     Returns:
         A Basix finite element
     """
-    if isinstance(element, basix.ufl_wrapper._BasixElementBase):
+    if isinstance(element, basix.ufl._ElementBase):
         return element
-    elif isinstance(element, ufl.VectorElement):
-        return basix.ufl_wrapper.VectorElement(create_element(element.sub_elements()[0]), element.num_sub_elements())
-    elif isinstance(element, ufl.TensorElement):
-        if len(element.symmetry()) == 0:
-            return basix.ufl_wrapper.TensorElement(create_element(element.sub_elements()[0]), element._value_shape)
-        else:
-            assert element.symmetry()[(1, 0)] == (0, 1)
-            return basix.ufl_wrapper.TensorElement(create_element(
-                element.sub_elements()[0]), element._value_shape, symmetric=True)
-    elif isinstance(element, ufl.MixedElement):
-        return basix.ufl_wrapper.MixedElement([create_element(e) for e in element.sub_elements()])
-    elif isinstance(element, ufl.EnrichedElement):
-        return basix.ufl_wrapper._create_enriched_element([create_element(e) for e in element._elements])
     elif element.family() == "Quadrature":
         return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
                                  degree=element.degree())
-
     elif element.family() == "Real":
         return RealElement(element)
+
+    warnings.warn(
+        "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
+        DeprecationWarning)
+
+    if hasattr(ufl, "VectorElement") and isinstance(element, ufl.VectorElement):
+        return basix.ufl.blocked_element(
+            _cached_conversion(element.sub_elements()[0]), shape=(element.num_sub_elements(), ))
+    elif hasattr(ufl, "TensorElement") and isinstance(element, ufl.TensorElement):
+        if len(element.symmetry()) == 0:
+            return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]), shape=element._value_shape)
+        else:
+            assert element.symmetry()[(1, 0)] == (0, 1)
+            return basix.ufl.blocked_element(_cached_conversion(
+                element.sub_elements()[0]), element._value_shape, symmetry=True)
+    elif hasattr(ufl, "MixedElement") and isinstance(element, ufl.MixedElement):
+        return basix.ufl.mixed_element([_cached_conversion(e) for e in element.sub_elements()])
+    elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
+        return basix.ufl.enriched_element([_cached_conversion(e) for e in element._elements])
     else:
-        return basix.ufl_wrapper.convert_ufl_element(element)
+        return basix.ufl.convert_ufl_element(element)
 
 
 def basix_index(indices: typing.Tuple[int]) -> int:
@@ -100,7 +105,7 @@ def map_facet_points(points: npt.NDArray[np.float64], facet: int,
                        for p in points], dtype=np.float64)
 
 
-class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
+class QuadratureElement(basix.ufl._ElementBase):
     """A quadrature element."""
 
     _points: npt.NDArray[np.float64]
@@ -163,7 +168,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         tables = np.asarray([np.eye(points.shape[0], points.shape[0])])
         return tables
 
-    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl_wrapper._BasixElementBase, int, int]:
+    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl._ElementBase, int, int]:
         """Get element that represents a component of the element, and the offset and stride of the component.
 
         Args:
@@ -268,7 +273,7 @@ class QuadratureElement(basix.ufl_wrapper._BasixElementBase):
         return basix.MapType.identity
 
 
-class RealElement(basix.ufl_wrapper._BasixElementBase):
+class RealElement(basix.ufl._ElementBase):
     """A real element."""
 
     _family_name: str
@@ -316,7 +321,7 @@ class RealElement(basix.ufl_wrapper._BasixElementBase):
         out[0, :] = 1.
         return out
 
-    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl_wrapper._BasixElementBase, int, int]:
+    def get_component_element(self, flat_component: int) -> typing.Tuple[basix.ufl._ElementBase, int, int]:
         """Get element that represents a component of the element, and the offset and stride of the component.
 
         Args:

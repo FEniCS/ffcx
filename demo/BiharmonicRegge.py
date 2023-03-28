@@ -2,17 +2,18 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # Biharmonic equation in Regge formulation.
-from ufl import (Coefficient, FacetNormal, FiniteElement, Identity,
-                 TestFunctions, TrialFunctions, dot, dS, ds, dx, grad, inner,
-                 jump, tetrahedron, tr)
+import basix.ufl
+from ufl import (Coefficient, FacetNormal, Identity, TestFunctions,
+                 TrialFunctions, dot, dS, ds, dx, grad, inner, jump,
+                 tetrahedron, tr)
 
-REG = FiniteElement('Regge', tetrahedron, 1)
-CG = FiniteElement('Lagrange', tetrahedron, 2)
-mixed_element = REG * CG
+REG = basix.ufl.element("Regge", "tetrahedron", 1)
+P = basix.ufl.element("Lagrange", "tetrahedron", 2)
+mixed_element = basix.ufl.mixed_element([REG, P])
 
 (sigma, u) = TrialFunctions(mixed_element)
 (tau, v) = TestFunctions(mixed_element)
-f = Coefficient(CG)
+f = Coefficient(P)
 
 
 def S(mu):

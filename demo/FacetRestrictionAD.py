@@ -14,10 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction, avg,
-                 derivative, dot, dS, dx, grad, inner, triangle)
+import basix.ufl
+from ufl import (Coefficient, TestFunction, TrialFunction, avg, derivative,
+                 dot, dS, dx, grad, inner)
 
-element = FiniteElement("Discontinuous Lagrange", triangle, 1)
+element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
 
 v = TestFunction(element)
 w = Coefficient(element)

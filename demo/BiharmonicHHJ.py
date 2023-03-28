@@ -3,16 +3,17 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Biharmonic equation in Hellan-Herrmann-Johnson (HHJ)
 # formulation.
-from ufl import (Coefficient, FacetNormal, FiniteElement, TestFunctions,
-                 TrialFunctions, dot, dS, ds, dx, grad, inner, jump, triangle)
+import basix.ufl
+from ufl import (Coefficient, FacetNormal, TestFunctions, TrialFunctions, dot,
+                 dS, ds, dx, grad, inner, jump, triangle)
 
-HHJ = FiniteElement('HHJ', triangle, 2)
-CG = FiniteElement('CG', triangle, 3)
-mixed_element = HHJ * CG
+HHJ = basix.ufl.element('HHJ', "triangle", 2)
+P = basix.ufl.element('P', "triangle", 3)
+mixed_element = basix.ufl.mixed_element([HHJ, P])
 
 (sigma, u) = TrialFunctions(mixed_element)
 (tau, v) = TestFunctions(mixed_element)
-f = Coefficient(CG)
+f = Coefficient(P)
 
 
 def b(sigma, v):

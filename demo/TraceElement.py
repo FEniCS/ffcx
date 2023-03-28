@@ -14,8 +14,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-from ufl import FiniteElement, TestFunction, avg, ds, dS
+import basix.ufl
+from ufl import TestFunction, avg, ds, dS
 
-element = FiniteElement("HDiv Trace", "triangle", 0)
+element = basix.ufl.element("HDiv Trace", "triangle", 0)
 v = TestFunction(element)
 L = v * ds + avg(v) * dS
