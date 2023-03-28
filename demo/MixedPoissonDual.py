@@ -30,7 +30,7 @@ W = basix.ufl.mixed_element([DRT, P])
 (sigma, u) = TrialFunctions(W)
 (tau, v) = TestFunctions(W)
 
-P1 = element("P", "triangle", 1)
+P1 = basix.ufl.element("P", "triangle", 1)
 f = Coefficient(P1)
 g = Coefficient(P1)
 
