@@ -21,11 +21,11 @@
 # Compile this form with FFCx: ffcx Poisson.ufl
 from ufl import (Coefficient, Constant, Mesh, TestFunction,
                  TrialFunction, dx, grad, inner)
-from basix.ufl import element
+import basix.ufl
 
 mesh = Mesh(element('P', "triangle", 2, rank=1))
 
-e = element("Lagrange", "triangle", 2)
+e = basix.ufl.element("Lagrange", "triangle", 2)
 
 u = TrialFunction(e)
 v = TestFunction(e)

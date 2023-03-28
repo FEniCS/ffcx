@@ -19,19 +19,19 @@
 # a set of interpolation points
 
 import basix
-from basix.ufl import mixed_element, element
+import basix.ufl
 from ffcx.element_interface import QuadratureElement
 from ufl import Coefficient, FunctionSpace, Mesh, grad
 
 # Define mesh
 cell = "triangle"
-v_el = element("Lagrange", cell, 1, rank=1)
+v_el = basix.ufl.element("Lagrange", cell, 1, rank=1)
 mesh = Mesh(v_el)
 
 # Define mixed function space
-el = element("P", cell, 2)
-el_int = element("Discontinuous Lagrange", cell, 1, rank=1)
-me = mixed_element([el, el_int])
+el = basix.ufl.element("P", cell, 2)
+el_int = basix.ufl.element("Discontinuous Lagrange", cell, 1, rank=1)
+me = basix.ufl.mixed_element([el, el_int])
 V = FunctionSpace(mesh, me)
 u = Coefficient(V)
 

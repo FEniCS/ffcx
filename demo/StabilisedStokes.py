@@ -17,13 +17,13 @@
 #
 # The bilinear form a(u, v) and Linear form L(v) for the Stokes
 # equations using a mixed formulation (equal-order stabilized).
-from basix.ufl import mixed_element, element
+import basix.ufl
 from ufl import (Coefficient, TestFunctions, TrialFunctions, div, dot, dx,
                  grad, inner)
 
-vector = element("Lagrange", "triangle", 1, rank=1)
-scalar = element("Lagrange", "triangle", 1)
-system = mixed_element([vector, scalar])
+vector = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
+scalar = basix.ufl.element("Lagrange", "triangle", 1)
+system = basix.ufl.mixed_element([vector, scalar])
 
 (u, p) = TrialFunctions(system)
 (v, q) = TestFunctions(system)

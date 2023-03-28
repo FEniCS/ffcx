@@ -23,7 +23,7 @@
 import numpy as np
 import pytest
 
-from basix.ufl import element
+import basix.ufl
 
 
 def element_coords(cell):
@@ -49,28 +49,28 @@ def random_point(shape):
 @pytest.mark.parametrize("degree, expected_dim", [(1, 3), (2, 6), (3, 10)])
 def test_continuous_lagrange(degree, expected_dim):
     "Test space dimensions of continuous Lagrange elements."
-    P = element("Lagrange", "triangle", degree)
+    P = basix.ufl.element("Lagrange", "triangle", degree)
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = element("Lagrange", "quadrilateral", degree)
+    P = basix.ufl.element("Lagrange", "quadrilateral", degree)
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral_spectral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = element("Lagrange", "quadrilateral", degree, variant="spectral")
+    P = basix.ufl.element("Lagrange", "quadrilateral", degree, variant="spectral")
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."
-    P = element("DG", "triangle", degree)
+    P = basix.ufl.element("DG", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -78,7 +78,7 @@ def test_discontinuous_lagrange(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
-    P = element("Regge", "triangle", degree)
+    P = basix.ufl.element("Regge", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -86,7 +86,7 @@ def test_regge(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def xtest_hhj(degree, expected_dim):
     "Test space dimensions of Hellan-Herrmann-Johnson element."
-    P = element("HHJ", "triangle", degree)
+    P = basix.ufl.element("HHJ", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -182,7 +182,7 @@ supported (non-mixed) for low degrees"""
     @pytest.mark.parametrize("family, cell, degree, reference", tests)
     def test_values(self, family, cell, degree, reference):
         # Create element
-        e = element(family, cell, degree)
+        e = basix.ufl.element(family, cell, degree)
 
         # Get some points and check basis function values at points
         points = [random_point(element_coords(cell)) for i in range(5)]

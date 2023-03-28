@@ -3,7 +3,7 @@
 # Date: 2008-12-22
 #
 
-from basix.ufl import element
+import basix.ufl
 # Modified by Garth N. Wells, 2009
 from ufl import (Coefficient, Constant, FacetNormal, Identity,
                  SpatialCoordinate, TestFunction, TrialFunction, derivative,
@@ -17,9 +17,9 @@ N = FacetNormal(cell)
 x = SpatialCoordinate(cell)
 
 # Elements
-u_element = element("P", cell.cellname(), 2, rank=1)
-p_element = element("P", cell.cellname(), 1)
-A_element = element("P", cell.cellname(), 1, rank=2)
+u_element = basix.ufl.element("P", cell.cellname(), 2, rank=1)
+p_element = basix.ufl.element("P", cell.cellname(), 1)
+A_element = basix.ufl.element("P", cell.cellname(), 1, rank=2)
 
 # Test and trial functions
 v = TestFunction(u_element)
