@@ -403,7 +403,12 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 # scheme have some properties that other schemes lack, e.g., the
                 # mass matrix is a simple diagonal matrix. This may be
                 # prescribed in certain cases.
+
                 degree = md["quadrature_degree"]
+                if integral_type != "cell":
+                    facet_types = cell.facet_types()
+                    assert len(facet_types) == 1
+                    cellname = facet_types[0].cellname()
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
