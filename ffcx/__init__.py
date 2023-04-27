@@ -10,14 +10,13 @@ FFCx compiles finite element variational forms into C code.
 
 """
 
+import importlib.metadata
 import logging
-
-import pkg_resources
 
 # Import default options
 from ffcx.options import get_options  # noqa: F401
 
-__version__ = pkg_resources.get_distribution("fenics-ffcx").version
+__version__ = importlib.metadata.version("fenics-ffcx")
 
 logging.basicConfig()
 logger = logging.getLogger("ffcx")
