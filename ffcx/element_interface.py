@@ -138,6 +138,10 @@ class QuadratureElement(basix.ufl._ElementBase):
 
         super().__init__(repr, "quadrature element", cellname, value_shape, degree, mapname=mapname)
 
+    def reconstruct(self, **kwargs):
+        """Create an element that is the same as this element except for any values passed in as kwargs."""
+        raise NotImplementedError()
+
     def basix_sobolev_space(self):
         """Return the underlying Sobolev space."""
         return basix.sobolev_spaces.L2
@@ -298,6 +302,10 @@ class RealElement(basix.ufl._ElementBase):
         super().__init__(
             f"RealElement({element})", "real element", element.cell().cellname(), element.value_shape(),
             element.degree())
+
+    def reconstruct(self, **kwargs):
+        """Create an element that is the same as this element except for any values passed in as kwargs."""
+        raise NotImplementedError()
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
