@@ -12,7 +12,6 @@ import numpy as np
 import numpy.typing as npt
 
 import ufl
-import ufl.utils.derivativetuples
 from ffcx.element_interface import (QuadratureElement, basix_index,
                                     convert_element)
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
@@ -229,8 +228,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     gdim = domain.geometric_dimension()
-    local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
-        ld, gdim)
+    local_derivatives = tuple(ld.count(i) for i in range(gdim)
 
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
