@@ -31,7 +31,7 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 class ModifiedTerminalElement(typing.NamedTuple):
     element: ufl.FiniteElementBase
     averaged: str
-    local_derivatives: typing.Tuple[int]
+    local_derivatives: typing.Tuple[int, ...]
     fc: int
 
 
@@ -228,7 +228,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     gdim = domain.geometric_dimension()
-    local_derivatives = tuple(ld.count(i) for i in range(gdim))
+    local_derivatives: typing.Tuple[int, ...] = tuple(ld.count(i) for i in range(gdim))
 
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
