@@ -114,7 +114,7 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension()
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
-    num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
+    num_entities = cell.num_sub_entities(entity_dim)
 
     # Extract arrays for the right scalar component
     component_tables = []
