@@ -262,7 +262,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
 
 def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement):
     """Compute intermediate representation of a custom Basix element."""
-    ir = {}
+    ir: typing.Dict[str, typing.Any] = {}
     ir["cell_type"] = basix_element.cell_type
     ir["value_shape"] = basix_element.value_shape
     ir["wcoeffs"] = basix_element.wcoeffs
