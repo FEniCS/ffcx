@@ -825,3 +825,49 @@ def test_facet_vertex_quadrature(compile_args):
 
     # Compare custom quadrature with vertex quadrature
     assert np.isclose(solutions[0], solutions[1])
+
+
+def test_manifold_derivatives(compile_args):
+    """
+    Test higher order derivatives on manifolds
+    """
+
+    c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(2,), gdim=2)
+    mesh = ufl.Mesh(c_el)
+
+    x = ufl.SpatialCoordinate(mesh)
+    dx = ufl.Measure("dx", domain=mesh)
+    order = 4
+    el = basix.ufl.element("Lagrange", "interval", order, gdim=2)
+    V = ufl.FunctionSpace(mesh, el)
+
+    u = ufl.Coefficient(V)
+    d = 5.3
+    f_ex = d*order*(order-1)*x[0]**(order-2)
+    expr = u.dx(0).dx(0) - f_ex
+    J = expr*expr * dx
+
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        [J], cffi_extra_compile_args=compile_args)
+
+    default_integral = compiled_forms[0].integrals(module.lib.cell)[0]
+    scale = 2.5
+    coords = np.array([0.0, 0.0, 0.0, scale, 0.0, 0.0], dtype=np.float64)
+    dof_coords = el.element.points.reshape(-1)
+    dof_coords *= scale
+    
+    w = np.array([d*d_c**order for d_c in dof_coords], dtype=np.float64)
+    c = np.array([], dtype=np.float64)
+    perm = np.array([0], dtype=np.uint8)
+
+    ffi = module.ffi    
+    J = np.zeros(1, dtype=np.float64)
+    kernel = getattr(default_integral, "tabulate_tensor_float64")
+    kernel(ffi.cast('double *', J.ctypes.data),
+           ffi.cast('double  *', w.ctypes.data),
+           ffi.cast('double  *', c.ctypes.data),
+           ffi.cast('double  *', coords.ctypes.data), ffi.NULL,
+           ffi.cast('uint8_t *', perm.ctypes.data))
+
+    assert np.isclose(J[0], 0.0)
+
