@@ -843,8 +843,8 @@ def test_manifold_derivatives(compile_args):
 
     u = ufl.Coefficient(V)
     d = 5.3
-    f_ex = d * order * (order - 1) * x[0]**(order - 2)
-    expr = u.dx(0).dx(0) - f_ex
+    f_ex = d * order * (order - 1) * x[1]**(order - 2)
+    expr = u.dx(1).dx(1) - f_ex
     J = expr * expr * dx
 
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
@@ -852,7 +852,7 @@ def test_manifold_derivatives(compile_args):
 
     default_integral = compiled_forms[0].integrals(module.lib.cell)[0]
     scale = 2.5
-    coords = np.array([0.0, 0.0, 0.0, scale, 0.0, 0.0], dtype=np.float64)
+    coords = np.array([0.0, 0.0, 0.0, 0.0, scale, 0.0], dtype=np.float64)
     dof_coords = el.element.points.reshape(-1)
     dof_coords *= scale
 
