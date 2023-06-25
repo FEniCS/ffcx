@@ -23,7 +23,8 @@ def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._
     """Convert and element to a FFCx element."""
     if isinstance(element, basix.ufl._ElementBase):
         return element
-    return _cached_conversion(element)
+    else:
+        return _cached_conversion(element)
 
 
 @lru_cache()
@@ -56,8 +57,8 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
             return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]), shape=element._value_shape)
         else:
             assert element.symmetry()[(1, 0)] == (0, 1)
-            return basix.ufl.blocked_element(_cached_conversion(
-                element.sub_elements()[0]), element._value_shape, symmetry=True)
+            return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]),
+                                             element._value_shape, symmetry=True)
     elif hasattr(ufl, "MixedElement") and isinstance(element, ufl.MixedElement):
         return basix.ufl.mixed_element([_cached_conversion(e) for e in element.sub_elements()])
     elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
@@ -76,19 +77,9 @@ def create_quadrature(cellname, degree, rule) -> typing.Tuple[npt.NDArray[np.flo
     """Create a quadrature rule."""
     if cellname == "vertex":
         return (np.ones((1, 0), dtype=np.float64), np.ones(1, dtype=np.float64))
-
-    quadrature = basix.make_quadrature(
-        basix.quadrature.string_to_type(rule), basix.cell.string_to_type(cellname), degree)
-
-    # The quadrature degree from UFL can be very high for some
-    # integrals.  Print warning if number of quadrature points
-    # exceeds 100.
-    num_points = quadrature[1].size
-    if num_points >= 100:
-        warnings.warn(
-            f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
-            "to reduce number.")
-    return quadrature
+    else:
+        return basix.make_quadrature(basix.quadrature.string_to_type(rule),
+                                     basix.cell.string_to_type(cellname), degree)
 
 
 def reference_cell_vertices(cellname: str) -> npt.NDArray[np.float64]:
@@ -96,8 +87,7 @@ def reference_cell_vertices(cellname: str) -> npt.NDArray[np.float64]:
     return basix.geometry(basix.cell.string_to_type(cellname))
 
 
-def map_facet_points(points: npt.NDArray[np.float64], facet: int,
-                     cellname: str) -> npt.NDArray[np.float64]:
+def map_facet_points(points: npt.NDArray[np.float64], facet: int, cellname: str) -> npt.NDArray[np.float64]:
     """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
