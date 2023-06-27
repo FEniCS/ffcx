@@ -99,6 +99,7 @@ jobs:
         with:
           path: ./ufl
           repository: FEniCS/ufl
+          ref: main
 
       - name: Run FFCx and UFL demos
         run: |
