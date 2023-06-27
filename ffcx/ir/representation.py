@@ -410,9 +410,8 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                     assert len(facet_types) == 1
                     cellname = facet_types[0].cellname()
                 if degree > 1:
-                    warnings.warn(
-                        "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
-                        format(degree))
+                    warnings.warn("Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
+                                  format(degree))
                 if cellname == "tetrahedron":
                     points, weights = (np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
                                                  [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
