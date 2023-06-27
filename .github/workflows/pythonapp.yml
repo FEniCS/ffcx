@@ -99,7 +99,6 @@ jobs:
         with:
           path: ./ufl
           repository: FEniCS/ufl
-          ref: mscroggs/cell
 
       - name: Run FFCx and UFL demos
         run: |
