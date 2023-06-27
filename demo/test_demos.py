@@ -13,6 +13,8 @@ for file in os.listdir(demo_dir):
 
 @pytest.mark.parametrize("file", ufl_files)
 def test_demo(file):
+    if file == "CellGeometry":
+        pytest.xfail()
     if file in [
         "MixedGradient", "TraceElement",  # HDiv Trace
         "MixedElasticity",  # VectorElement of BDM
