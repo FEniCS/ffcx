@@ -481,7 +481,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         _offset = 0
         for constant in form_data.original_form.constants():
             original_constant_offsets[constant] = _offset
-            _offset += np.product(constant.ufl_shape, dtype=int)
+            _offset += np.prod(constant.ufl_shape, dtype=int)
 
         ir["original_constant_offsets"] = original_constant_offsets
         ir["precision"] = itg_data.metadata["precision"]

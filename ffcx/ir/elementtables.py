@@ -407,7 +407,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
 
 def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
-    return (np.product(table.shape) == 0
+    return (np.prod(table.shape) == 0
             or np.allclose(table, np.zeros(table.shape), rtol=rtol, atol=atol))
 
 
