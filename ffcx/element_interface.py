@@ -27,7 +27,6 @@ def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._
         return _cached_conversion(element)
 
 
-@lru_cache()
 def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
     """Create an FFCx element from a UFL element.
 
@@ -37,18 +36,12 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
     Returns:
         A Basix finite element
     """
-    if isinstance(element, basix.ufl._ElementBase):
-        return element
-    elif element.family() == "Quadrature":
-        return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
-                                 degree=element.degree())
-    elif element.family() == "Real":
-        return RealElement(element)
-
     warnings.warn(
         "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
         DeprecationWarning)
 
+    # Tackle compositional elements, e.g. VectorElement first, then elements
+    # implemented by FFCx, then finally elements convertible by Basix.
     if hasattr(ufl, "VectorElement") and isinstance(element, ufl.VectorElement):
         return basix.ufl.blocked_element(
             _cached_conversion(element.sub_elements()[0]), shape=(element.num_sub_elements(), ))
@@ -63,6 +56,11 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
         return basix.ufl.mixed_element([_cached_conversion(e) for e in element.sub_elements()])
     elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
         return basix.ufl.enriched_element([_cached_conversion(e) for e in element._elements])
+    elif element.family() == "Quadrature":
+        return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
+                                 degree=element.degree())
+    elif element.family() == "Real":
+        return RealElement(element)
     else:
         return basix.ufl.convert_ufl_element(element)
 
