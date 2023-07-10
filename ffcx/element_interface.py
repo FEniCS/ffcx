@@ -133,7 +133,8 @@ class QuadratureElement(basix.ufl._ElementBase):
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
-        return isinstance(other, QuadratureElement) and np.allclose(self._points, other._points)
+        return isinstance(other, QuadratureElement) and np.allclose(self._points, other._points) and \
+            np.allclose(self._weights, other._weights)
 
     def __hash__(self) -> int:
         """Return a hash."""
