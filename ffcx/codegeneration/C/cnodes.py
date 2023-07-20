@@ -10,8 +10,7 @@ import numbers
 import numpy as np
 
 from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
-from ffcx.codegeneration.C.format_value import (format_float, format_int,
-                                                format_value)
+from ffcx.codegeneration.C.format_value import format_float, format_int, format_value
 from ffcx.codegeneration.C.precedence import PRECEDENCE
 
 logger = logging.getLogger("ffcx")
@@ -32,18 +31,21 @@ logger = logging.getLogger("ffcx")
 
 
 def is_zero_cexpr(cexpr):
-    return ((isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0)
-            or (isinstance(cexpr, LiteralInt) and cexpr.value == 0))
+    return (isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0) or (
+        isinstance(cexpr, LiteralInt) and cexpr.value == 0
+    )
 
 
 def is_one_cexpr(cexpr):
-    return ((isinstance(cexpr, LiteralFloat) and cexpr.value == 1.0)
-            or (isinstance(cexpr, LiteralInt) and cexpr.value == 1))
+    return (isinstance(cexpr, LiteralFloat) and cexpr.value == 1.0) or (
+        isinstance(cexpr, LiteralInt) and cexpr.value == 1
+    )
 
 
 def is_negative_one_cexpr(cexpr):
-    return ((isinstance(cexpr, LiteralFloat) and cexpr.value == -1.0)
-            or (isinstance(cexpr, LiteralInt) and cexpr.value == -1))
+    return (isinstance(cexpr, LiteralFloat) and cexpr.value == -1.0) or (
+        isinstance(cexpr, LiteralInt) and cexpr.value == -1
+    )
 
 
 def float_product(factors):
@@ -58,6 +60,8 @@ def float_product(factors):
             if is_zero_cexpr(f):
                 return f
         return Product(factors)
+
+
 # CNode core
 
 
@@ -76,6 +80,7 @@ class CNode(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 # CExpr base classes
 
@@ -261,7 +266,7 @@ class Null(CExprLiteral):
 class LiteralFloat(CExprLiteral):
     """A floating point literal value."""
 
-    __slots__ = ("value", )
+    __slots__ = ("value",)
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
@@ -289,7 +294,7 @@ class LiteralFloat(CExprLiteral):
 class LiteralInt(CExprLiteral):
     """An integer literal value."""
 
-    __slots__ = ("value", )
+    __slots__ = ("value",)
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
@@ -323,11 +328,11 @@ class LiteralInt(CExprLiteral):
 class LiteralBool(CExprLiteral):
     """A boolean literal value."""
 
-    __slots__ = ("value", )
+    __slots__ = ("value",)
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        assert isinstance(value, (bool, ))
+        assert isinstance(value, (bool,))
         self.value = value
 
     def ce_format(self, precision=None):
@@ -345,16 +350,16 @@ class LiteralBool(CExprLiteral):
 class LiteralString(CExprLiteral):
     """A boolean literal value."""
 
-    __slots__ = ("value", )
+    __slots__ = ("value",)
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        assert isinstance(value, (str, ))
+        assert isinstance(value, (str,))
         assert '"' not in value
         self.value = value
 
     def ce_format(self, precision=None):
-        return '"%s"' % (self.value, )
+        return '"%s"' % (self.value,)
 
     def __eq__(self, other):
         return isinstance(other, LiteralString) and self.value == other.value
@@ -363,7 +368,7 @@ class LiteralString(CExprLiteral):
 class Symbol(CExprTerminal):
     """A named symbol."""
 
-    __slots__ = ("name", )
+    __slots__ = ("name",)
     precedence = PRECEDENCE.SYMBOL
 
     def __init__(self, name):
@@ -385,10 +390,11 @@ class Symbol(CExprTerminal):
 
 # CExprOperator base classes
 
+
 class UnaryOp(CExprOperator):
     """Base class for unary operators."""
 
-    __slots__ = ("arg", )
+    __slots__ = ("arg",)
 
     def __init__(self, arg):
         self.arg = as_cexpr(arg)
@@ -408,7 +414,7 @@ class PrefixUnaryOp(UnaryOp):
     def ce_format(self, precision=None):
         arg = self.arg.ce_format(precision)
         if self.arg.precedence >= self.precedence:
-            arg = '(' + arg + ')'
+            arg = "(" + arg + ")"
         return self.op + arg
 
     def __eq__(self, other):
@@ -423,7 +429,7 @@ class PostfixUnaryOp(UnaryOp):
     def ce_format(self, precision=None):
         arg = self.arg.ce_format(precision)
         if self.arg.precedence >= self.precedence:
-            arg = '(' + arg + ')'
+            arg = "(" + arg + ")"
         return arg + self.op
 
     def __eq__(self, other):
@@ -444,15 +450,19 @@ class BinOp(CExprOperator):
 
         # Apply parentheses
         if self.lhs.precedence >= self.precedence:
-            lhs = '(' + lhs + ')'
+            lhs = "(" + lhs + ")"
         if self.rhs.precedence >= self.precedence:
-            rhs = '(' + rhs + ')'
+            rhs = "(" + rhs + ")"
 
         # Return combined string
         return lhs + (" " + self.op + " ") + rhs
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.lhs == other.lhs and self.rhs == other.rhs)
+        return (
+            isinstance(other, type(self))
+            and self.lhs == other.lhs
+            and self.rhs == other.rhs
+        )
 
     def __hash__(self):
         return hash(self.ce_format())
@@ -464,7 +474,7 @@ class BinOp(CExprOperator):
 class NaryOp(CExprOperator):
     """Base class for special n-ary operators."""
 
-    __slots__ = ("args", )
+    __slots__ = ("args",)
 
     def __init__(self, args):
         self.args = [as_cexpr(arg) for arg in args]
@@ -476,7 +486,7 @@ class NaryOp(CExprOperator):
         # Apply parentheses
         for i in range(len(args)):
             if self.args[i].precedence >= self.precedence:
-                args[i] = '(' + args[i] + ')'
+                args[i] = "(" + args[i] + ")"
 
         # Return combined string
         op = " " + self.op + " "
@@ -486,8 +496,11 @@ class NaryOp(CExprOperator):
         return s
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and len(self.args) == len(other.args)
-                and all(a == b for a, b in zip(self.args, other.args)))
+        return (
+            isinstance(other, type(self))
+            and len(self.args) == len(other.args)
+            and all(a == b for a, b in zip(self.args, other.args))
+        )
 
     def flops(self):
         flops = len(self.args) - 1
@@ -716,6 +729,7 @@ class AssignDiv(AssignOp):
     __slots__ = ()
     op = "/="
 
+
 # CExpr operators
 
 
@@ -763,7 +777,7 @@ class FlattenedArray(object):
 
     def __getitem__(self, indices):
         if not isinstance(indices, (list, tuple)):
-            indices = (indices, )
+            indices = (indices,)
         n = len(indices)
         if n == 0:
             # Handle scalar case, allowing dims=() and indices=() for A[0]
@@ -773,7 +787,7 @@ class FlattenedArray(object):
         else:
             i, s = (indices[0], self.strides[0])
             literal_one = LiteralInt(1)
-            flat = (i if s == literal_one else s * i)
+            flat = i if s == literal_one else s * i
             if self.offset is not None:
                 flat = self.offset + flat
             for i, s in zip(indices[1:n], self.strides[1:n]):
@@ -796,11 +810,11 @@ class ArrayAccess(CExprOperator):
         elif isinstance(array, ArrayDecl):
             self.array = array.symbol
         else:
-            raise ValueError("Unexpected array type %s." % (type(array).__name__, ))
+            raise ValueError("Unexpected array type %s." % (type(array).__name__,))
 
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
-            indices = (indices, )
+            indices = (indices,)
         self.indices = tuple(as_cexpr_or_string_symbol(i) for i in indices)
 
         # Early error checking for negative array dimensions
@@ -812,8 +826,10 @@ class ArrayAccess(CExprOperator):
             if len(self.indices) != len(array.sizes):
                 raise ValueError("Invalid number of indices.")
             ints = (int, LiteralInt)
-            if any((isinstance(i, ints) and isinstance(d, ints) and int(i) >= int(d))
-                   for i, d in zip(self.indices, array.sizes)):
+            if any(
+                (isinstance(i, ints) and isinstance(d, ints) and int(i) >= int(d))
+                for i, d in zip(self.indices, array.sizes)
+            ):
                 raise ValueError("Index value >= array dimension.")
 
     def __getitem__(self, indices):
@@ -821,7 +837,7 @@ class ArrayAccess(CExprOperator):
         if isinstance(indices, list):
             indices = tuple(indices)
         elif not isinstance(indices, tuple):
-            indices = (indices, )
+            indices = (indices,)
         return ArrayAccess(self.array, self.indices + indices)
 
     def ce_format(self, precision=None):
@@ -831,8 +847,11 @@ class ArrayAccess(CExprOperator):
         return s
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.array == other.array
-                and self.indices == other.indices)
+        return (
+            isinstance(other, type(self))
+            and self.array == other.array
+            and self.indices == other.indices
+        )
 
     def __hash__(self):
         return hash(self.ce_format())
@@ -858,18 +877,22 @@ class Conditional(CExprOperator):
 
         # Apply parentheses
         if self.condition.precedence >= self.precedence:
-            c = '(' + c + ')'
+            c = "(" + c + ")"
         if self.true.precedence >= self.precedence:
-            t = '(' + t + ')'
+            t = "(" + t + ")"
         if self.false.precedence >= self.precedence:
-            f = '(' + f + ')'
+            f = "(" + f + ")"
 
         # Return combined string
         return c + " ? " + t + " : " + f
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.condition == other.condition
-                and self.true == other.true and self.false == other.false)
+        return (
+            isinstance(other, type(self))
+            and self.condition == other.condition
+            and self.true == other.true
+            and self.false == other.false
+        )
 
     def flops(self):
         raise NotImplementedError("Flop count is not implemented for conditionals")
@@ -887,7 +910,7 @@ class Call(CExprOperator):
         if arguments is None:
             arguments = ()
         elif not isinstance(arguments, (tuple, list)):
-            arguments = (arguments, )
+            arguments = (arguments,)
         self.arguments = [as_cexpr(arg) for arg in arguments]
 
     def ce_format(self, precision=None):
@@ -895,15 +918,14 @@ class Call(CExprOperator):
         return self.function.ce_format(precision) + "(" + args + ")"
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.function == other.function
-                and self.arguments == other.arguments)
+        return (
+            isinstance(other, type(self))
+            and self.function == other.function
+            and self.arguments == other.arguments
+        )
 
     def flops(self):
         return 1
-
-
-def Sqrt(x):
-    return Call("sqrt", x)
 
 
 # Conversion function to expression nodes
@@ -934,7 +956,7 @@ def as_cexpr(node):
     elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
     elif isinstance(node, str):
-        raise RuntimeError("Got string for CExpr, this is ambiguous: %s" % (node, ))
+        raise RuntimeError("Got string for CExpr, this is ambiguous: %s" % (node,))
     else:
         raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
 
@@ -1005,7 +1027,9 @@ class CStatement(CNode):
 
     def cs_format(self, precision=None):
         """Return S: string | list(S) | Indented(S)."""
-        raise NotImplementedError("Missing implementation of cs_format() in CStatement.")
+        raise NotImplementedError(
+            "Missing implementation of cs_format() in CStatement."
+        )
 
     def __str__(self):
         try:
@@ -1022,27 +1046,10 @@ class CStatement(CNode):
 # Statements
 
 
-class VerbatimStatement(CStatement):
-    """Wraps a source code string to be pasted verbatim into the source code."""
-
-    __slots__ = ("codestring", )
-    is_scoped = False
-
-    def __init__(self, codestring):
-        assert isinstance(codestring, str)
-        self.codestring = codestring
-
-    def cs_format(self, precision=None):
-        return self.codestring
-
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.codestring == other.codestring)
-
-
 class Statement(CStatement):
     """Make an expression into a statement."""
 
-    __slots__ = ("expr", )
+    __slots__ = ("expr",)
     is_scoped = False
 
     def __init__(self, expr):
@@ -1052,7 +1059,7 @@ class Statement(CStatement):
         return self.expr.ce_format(precision) + ";"
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.expr == other.expr)
+        return isinstance(other, type(self)) and self.expr == other.expr
 
     def flops(self):
         # print(self.expr.rhs.flops())
@@ -1062,7 +1069,7 @@ class Statement(CStatement):
 class StatementList(CStatement):
     """A simple sequence of statements. No new scopes are introduced."""
 
-    __slots__ = ("statements", )
+    __slots__ = ("statements",)
 
     def __init__(self, statements):
         self.statements = [as_cstatement(st) for st in statements]
@@ -1075,7 +1082,7 @@ class StatementList(CStatement):
         return [st.cs_format(precision) for st in self.statements]
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.statements == other.statements)
+        return isinstance(other, type(self)) and self.statements == other.statements
 
     def flops(self):
         flops = 0
@@ -1116,7 +1123,7 @@ class Continue(CStatement):
 
 
 class Return(CStatement):
-    __slots__ = ("value", )
+    __slots__ = ("value",)
     is_scoped = True
 
     def __init__(self, value=None):
@@ -1129,10 +1136,10 @@ class Return(CStatement):
         if self.value is None:
             return "return;"
         else:
-            return "return %s;" % (self.value.ce_format(precision), )
+            return "return %s;" % (self.value.ce_format(precision),)
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.value == other.value)
+        return isinstance(other, type(self)) and self.value == other.value
 
     def flops(self):
         return 0
@@ -1141,7 +1148,7 @@ class Return(CStatement):
 class Comment(CStatement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
 
-    __slots__ = ("comment", )
+    __slots__ = ("comment",)
     is_scoped = True
 
     def __init__(self, comment):
@@ -1153,7 +1160,7 @@ class Comment(CStatement):
         return ["// " + line.strip() for line in lines]
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.comment == other.comment)
+        return isinstance(other, type(self)) and self.comment == other.comment
 
     def flops(self):
         return 0
@@ -1179,7 +1186,7 @@ def commented_code_list(code, comments):
 class Pragma(CStatement):
     """Pragma comments used for compiler-specific annotations."""
 
-    __slots__ = ("comment", )
+    __slots__ = ("comment",)
     is_scoped = True
 
     def __init__(self, comment):
@@ -1191,7 +1198,7 @@ class Pragma(CStatement):
         return "#pragma " + self.comment
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.comment == other.comment)
+        return isinstance(other, type(self)) and self.comment == other.comment
 
     def flops(self):
         return 0
@@ -1207,7 +1214,6 @@ class VariableDecl(CStatement):
     is_scoped = False
 
     def __init__(self, typename, symbol, value=None):
-
         # No type system yet, just using strings
         assert isinstance(typename, str)
         self.typename = typename
@@ -1226,8 +1232,12 @@ class VariableDecl(CStatement):
         return code + ";"
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.typename == other.typename
-                and self.symbol == other.symbol and self.value == other.value)
+        return (
+            isinstance(other, type(self))
+            and self.typename == other.typename
+            and self.symbol == other.symbol
+            and self.value == other.value
+        )
 
     def flops(self):
         if self.value is not None:
@@ -1305,13 +1315,18 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision
     r = len(sizes)
     assert r > 0
     if r == 1:
-        return [build_1d_initializer_list(values, formatter, padlen=padlen, precision=precision)]
+        return [
+            build_1d_initializer_list(
+                values, formatter, padlen=padlen, precision=precision
+            )
+        ]
     else:
         # Render all sublists
         parts = []
         for val in values:
             sublist = build_initializer_lists(
-                val, sizes[1:], level + 1, formatter, padlen=padlen, precision=precision)
+                val, sizes[1:], level + 1, formatter, padlen=padlen, precision=precision
+            )
             parts.append(sublist)
         # Add comma after last line in each part except the last one
         for part in parts[:-1]:
@@ -1357,7 +1372,7 @@ class ArrayDecl(CStatement):
             self.symbol = as_symbol(symbol)
 
         if isinstance(sizes, int):
-            sizes = (sizes, )
+            sizes = (sizes,)
         self.sizes = tuple(sizes)
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_cexpr.
@@ -1370,13 +1385,15 @@ class ArrayDecl(CStatement):
 
     def cs_format(self, precision=None):
         if not all(self.sizes):
-            raise RuntimeError(f"Detected an array {self.symbol} dimension of zero. This is not valid in C.")
+            raise RuntimeError(
+                f"Detected an array {self.symbol} dimension of zero. This is not valid in C."
+            )
 
         # Pad innermost array dimension
         sizes = pad_innermost_dim(self.sizes, self.padlen)
 
         # Add brackets
-        brackets = ''.join("[%d]" % n for n in sizes)
+        brackets = "".join("[%d]" % n for n in sizes)
 
         # Join declaration
         decl = self.typename + " " + self.symbol.name + brackets
@@ -1398,13 +1415,21 @@ class ArrayDecl(CStatement):
             elif self.values.dtype.kind == "i":
                 formatter = format_int
             elif self.values.dtype == np.bool_:
+
                 def format_bool(x, precision=None):
                     return "true" if x is True else "false"
+
                 formatter = format_bool
             else:
                 formatter = format_value
             initializer_lists = build_initializer_lists(
-                self.values, self.sizes, 0, formatter, padlen=self.padlen, precision=precision)
+                self.values,
+                self.sizes,
+                0,
+                formatter,
+                padlen=self.padlen,
+                precision=precision,
+            )
             if len(initializer_lists) == 1:
                 return decl + " = " + initializer_lists[0] + ";"
             else:
@@ -1413,8 +1438,9 @@ class ArrayDecl(CStatement):
 
     def __eq__(self, other):
         attributes = ("typename", "symbol", "sizes", "padlen", "values")
-        return (isinstance(other, type(self))
-                and all(getattr(self, name) == getattr(self, name) for name in attributes))
+        return isinstance(other, type(self)) and all(
+            getattr(self, name) == getattr(self, name) for name in attributes
+        )
 
     def flops(self):
         return 0
@@ -1424,7 +1450,7 @@ class ArrayDecl(CStatement):
 
 
 class Scope(CStatement):
-    __slots__ = ("body", )
+    __slots__ = ("body",)
     is_scoped = True
 
     def __init__(self, body):
@@ -1434,7 +1460,7 @@ class Scope(CStatement):
         return ("{", Indented(self.body.cs_format(precision)), "}")
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.body == other.body)
+        return isinstance(other, type(self)) and self.body == other.body
 
     def flops(self):
         return 0
@@ -1444,7 +1470,7 @@ def _is_simple_if_body(body):
     if isinstance(body, StatementList):
         if len(body.statements) > 1:
             return False
-        body, = body.statements
+        (body,) = body.statements
     return isinstance(body, (Return, AssignOp, Break, Continue))
 
 
@@ -1465,8 +1491,11 @@ class If(CStatement):
             return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.condition == other.condition
-                and self.body == other.body)
+        return (
+            isinstance(other, type(self))
+            and self.condition == other.condition
+            and self.body == other.body
+        )
 
 
 class ElseIf(CStatement):
@@ -1486,12 +1515,15 @@ class ElseIf(CStatement):
             return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.condition == other.condition
-                and self.body == other.body)
+        return (
+            isinstance(other, type(self))
+            and self.condition == other.condition
+            and self.body == other.body
+        )
 
 
 class Else(CStatement):
-    __slots__ = ("body", )
+    __slots__ = ("body",)
     is_scoped = True
 
     def __init__(self, body):
@@ -1506,7 +1538,7 @@ class Else(CStatement):
             return (statement, "{", body_fmt, "}")
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and self.body == other.body)
+        return isinstance(other, type(self)) and self.body == other.body
 
 
 def is_simple_inner_loop(code):
@@ -1563,8 +1595,9 @@ class Switch(CStatement):
 
     def __eq__(self, other):
         attributes = ("arg", "cases", "default", "autobreak", "autoscope")
-        return (isinstance(other, type(self))
-                and all(getattr(self, name) == getattr(self, name) for name in attributes))
+        return isinstance(other, type(self)) and all(
+            getattr(self, name) == getattr(self, name) for name in attributes
+        )
 
 
 class ForRange(CStatement):
@@ -1603,8 +1636,9 @@ class ForRange(CStatement):
 
     def __eq__(self, other):
         attributes = ("index", "begin", "end", "body", "index_type")
-        return (isinstance(other, type(self))
-                and all(getattr(self, name) == getattr(self, name) for name in attributes))
+        return isinstance(other, type(self)) and all(
+            getattr(self, name) == getattr(self, name) for name in attributes
+        )
 
     def flops(self):
         return (self.end.value - self.begin.value) * self.body.flops()
@@ -1626,8 +1660,10 @@ def as_cstatement(node):
             # Special case for using assignment expressions as statements
             return Statement(node)
         else:
-            raise RuntimeError("Trying to create a statement of CExprOperator type %s:\n%s" %
-                               (type(node), str(node)))
+            raise RuntimeError(
+                "Trying to create a statement of CExprOperator type %s:\n%s"
+                % (type(node), str(node))
+            )
     elif isinstance(node, list):
         # Convenience case for list of statements
         if len(node) == 1:
@@ -1637,6 +1673,8 @@ def as_cstatement(node):
             return StatementList(node)
     elif isinstance(node, str):
         # Backdoor for flexibility in code generation to allow verbatim pasted statements
-        return VerbatimStatement(node)
+        raise RuntimeError("Unexpected string in code.", node)
     else:
-        raise RuntimeError("Unexpected CStatement type %s:\n%s" % (type(node), str(node)))
+        raise RuntimeError(
+            "Unexpected CStatement type %s:\n%s" % (type(node), str(node))
+        )

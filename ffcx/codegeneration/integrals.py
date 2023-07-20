@@ -35,6 +35,7 @@ def generator(ir, options):
 
     # Create FFCx C backend
     backend = FFCXBackend(ir, options)
+    # backend = FFCXCPPBackend(ir, options)
 
     # Configure kernel generator
     ig = IntegralGenerator(ir, backend)
@@ -42,8 +43,10 @@ def generator(ir, options):
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
 
+    from ffcx.codegeneration.c_implementation import cs_format
+
     # Format code as string
-    body = format_indented_lines(parts.cs_format(ir.precision), 1)
+    body = format_indented_lines(cs_format(parts), 1)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
@@ -58,8 +61,11 @@ def generator(ir, options):
     L = backend.language
     if len(ir.enabled_coefficients) > 0:
         code["enabled_coefficients_init"] = L.ArrayDecl(
-            "bool", f"enabled_coefficients_{ir.name}", values=ir.enabled_coefficients,
-            sizes=len(ir.enabled_coefficients))
+            "bool",
+            f"enabled_coefficients_{ir.name}",
+            values=ir.enabled_coefficients,
+            sizes=len(ir.enabled_coefficients),
+        )
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""
@@ -80,7 +86,8 @@ def generator(ir, options):
         scalar_type=options["scalar_type"],
         geom_type=scalar_to_value_type(options["scalar_type"]),
         np_scalar_type=cdtype_to_numpy(options["scalar_type"]),
-        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
+        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)),
+    )
 
     return declaration, implementation
 
@@ -114,7 +121,9 @@ class IntegralGenerator(object):
     def init_scopes(self):
         """Initialize variable scope dicts."""
         # Reset variables, separate sets for each quadrature rule
-        self.scopes = {quadrature_rule: {} for quadrature_rule in self.ir.integrand.keys()}
+        self.scopes = {
+            quadrature_rule: {} for quadrature_rule in self.ir.integrand.keys()
+        }
         self.scopes[None] = {}
 
     def set_var(self, quadrature_rule, v, vaccess):
@@ -155,7 +164,7 @@ class IntegralGenerator(object):
         return L.Symbol(name)
 
     def get_temp_symbol(self, tempname, key):
-        key = (tempname, ) + key
+        key = (tempname,) + key
         s = self.shared_symbols.get(key)
         defined = s is not None
         if not defined:
@@ -179,13 +188,6 @@ class IntegralGenerator(object):
         parts = []
         scalar_type = self.backend.access.options["scalar_type"]
         value_type = scalar_to_value_type(scalar_type)
-        alignment = self.ir.options['assume_aligned']
-        if alignment != -1:
-            scalar_type = self.backend.access.options["scalar_type"]
-            parts += [L.VerbatimStatement(f"A = ({scalar_type}*)__builtin_assume_aligned(A, {alignment});"),
-                      L.VerbatimStatement(f"w = (const {scalar_type}*)__builtin_assume_aligned(w, {alignment});"),
-                      L.VerbatimStatement(f"c = (const {scalar_type}*)__builtin_assume_aligned(c, {alignment});"),
-                      L.VerbatimStatement(f"coordinate_dofs = (const {value_type}*)__builtin_assume_aligned(coordinate_dofs, {alignment});")]  # noqa
 
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables(value_type)
@@ -217,8 +219,10 @@ class IntegralGenerator(object):
             all_quadparts += quadparts
             all_predefinitions.update(pre_definitions)
 
-        parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
-                                       "Pre-definitions of modified terminals to enable unit-stride access")
+        parts += L.commented_code_list(
+            self.fuse_loops(all_predefinitions),
+            "Pre-definitions of modified terminals to enable unit-stride access",
+        )
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
@@ -246,8 +250,15 @@ class IntegralGenerator(object):
 
             # Generate quadrature weights array
             wsym = self.backend.symbols.weights_table(quadrature_rule)
-            parts += [L.ArrayDecl(f"static const {value_type}", wsym, num_points,
-                                  quadrature_rule.weights, padlen=padlen)]
+            parts += [
+                L.ArrayDecl(
+                    f"static const {value_type}",
+                    wsym,
+                    num_points,
+                    quadrature_rule.weights,
+                    padlen=padlen,
+                )
+            ]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
@@ -265,7 +276,7 @@ class IntegralGenerator(object):
             ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
             ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
             ufl.geometry.ReferenceNormal: "reference_facet_normals",
-            ufl.geometry.FacetOrientation: "facet_orientation"
+            ufl.geometry.FacetOrientation: "facet_orientation",
         }
         cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
 
@@ -275,7 +286,11 @@ class IntegralGenerator(object):
                 if mt is not None:
                     t = type(mt.terminal)
                     if t in ufl_geometry:
-                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
+                        cells[t].add(
+                            ufl.domain.extract_unique_domain(mt.terminal)
+                            .ufl_cell()
+                            .cellname()
+                        )
 
         parts = []
         for i, cell_list in cells.items():
@@ -293,7 +308,9 @@ class IntegralGenerator(object):
         padlen = self.ir.options["padlen"]
         if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
-            table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
+            table_names = [
+                name for name in sorted(tables) if table_types[name] in piecewise_ttypes
+            ]
         else:
             # Define all tables
             table_names = sorted(tables)
@@ -303,9 +320,13 @@ class IntegralGenerator(object):
             parts += self.declare_table(name, table, padlen, float_type)
 
         # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, [
-            "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [permutation][entities][points][dofs]"])
+        parts = L.commented_code_list(
+            parts,
+            [
+                "Precomputed values of basis functions and precomputations",
+                "FE* dimensions: [permutation][entities][points][dofs]",
+            ],
+        )
         return parts
 
     def declare_table(self, name, table, padlen, value_type: str):
@@ -316,7 +337,11 @@ class IntegralGenerator(object):
 
         """
         L = self.backend.language
-        return [L.ArrayDecl(f"static const {value_type}", name, table.shape, table, padlen=padlen)]
+        return [
+            L.ArrayDecl(
+                f"static const {value_type}", name, table.shape, table, padlen=padlen
+            )
+        ]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
@@ -324,7 +349,10 @@ class IntegralGenerator(object):
         # Generate varying partition
         pre_definitions, body = self.generate_varying_partition(quadrature_rule)
 
-        body = L.commented_code_list(body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
+        body = L.commented_code_list(
+            body,
+            f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}",
+        )
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
@@ -350,10 +378,16 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}")
-        pre_definitions, parts = self.generate_partition(arraysymbol, F, "piecewise", None)
-        assert len(pre_definitions) == 0, "Quadrature independent code should have not pre-definitions"
+        pre_definitions, parts = self.generate_partition(
+            arraysymbol, F, "piecewise", None
+        )
+        assert (
+            len(pre_definitions) == 0
+        ), "Quadrature independent code should have not pre-definitions"
         parts = L.commented_code_list(
-            parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
+            parts,
+            f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}",
+        )
 
         return parts
 
@@ -364,8 +398,12 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}")
-        pre_definitions, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
-        parts = L.commented_code_list(parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
+        pre_definitions, parts = self.generate_partition(
+            arraysymbol, F, "varying", quadrature_rule
+        )
+        parts = L.commented_code_list(
+            parts, f"Varying computations for quadrature rule {quadrature_rule.id()}"
+        )
 
         return pre_definitions, parts
 
@@ -379,10 +417,10 @@ class IntegralGenerator(object):
         use_symbol_array = True
 
         for i, attr in F.nodes.items():
-            if attr['status'] != mode:
+            if attr["status"] != mode:
                 continue
-            v = attr['expression']
-            mt = attr.get('mt')
+            v = attr["expression"]
+            mt = attr.get("mt")
 
             # Generate code only if the expression is not already in
             # cache
@@ -393,11 +431,15 @@ class IntegralGenerator(object):
                     # All finite element based terminals have table
                     # data, as well as some, but not all, of the
                     # symbolic geometric terminals
-                    tabledata = attr.get('tr')
+                    tabledata = attr.get("tr")
 
                     # Backend specific modified terminal translation
-                    vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
-                    predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                    vaccess = self.backend.access.get(
+                        mt.terminal, mt, tabledata, quadrature_rule
+                    )
+                    predef, vdef = self.backend.definitions.get(
+                        mt.terminal, mt, tabledata, quadrature_rule, vaccess
+                    )
                     if predef:
                         access = predef[0].symbol.name
                         pre_definitions[str(access)] = predef
@@ -412,7 +454,7 @@ class IntegralGenerator(object):
                     # get parent operand
                     pid = F.in_edges[i][0] if F.in_edges[i] else -1
                     if pid and pid > i:
-                        parent_exp = F.nodes.get(pid)['expression']
+                        parent_exp = F.nodes.get(pid)["expression"]
                     else:
                         parent_exp = None
 
@@ -447,7 +489,9 @@ class IntegralGenerator(object):
                         else:
                             scalar_type = self.backend.access.options["scalar_type"]
                             vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                            intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
+                            intermediates.append(
+                                L.VariableDecl(f"const {scalar_type}", vaccess, vexpr)
+                            )
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
@@ -460,8 +504,14 @@ class IntegralGenerator(object):
         if intermediates:
             if use_symbol_array:
                 padlen = self.ir.options["padlen"]
-                parts += [L.ArrayDecl(self.backend.access.options["scalar_type"],
-                                      symbol, len(intermediates), padlen=padlen)]
+                parts += [
+                    L.ArrayDecl(
+                        self.backend.access.options["scalar_type"],
+                        symbol,
+                        len(intermediates),
+                        padlen=padlen,
+                    )
+                ]
             parts += intermediates
         return pre_definitions, parts
 
@@ -469,9 +519,11 @@ class IntegralGenerator(object):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
         preparts = []
         quadparts = []
-        blocks = [(blockmap, blockdata)
-                  for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions]
+        blocks = [
+            (blockmap, blockdata)
+            for blockmap, contributions in sorted(block_contributions.items())
+            for blockdata in contributions
+        ]
 
         block_groups = collections.defaultdict(list)
 
@@ -489,7 +541,8 @@ class IntegralGenerator(object):
 
         for blockmap in block_groups:
             block_preparts, block_quadparts = self.generate_block_parts(
-                quadrature_rule, blockmap, block_groups[blockmap])
+                quadrature_rule, blockmap, block_groups[blockmap]
+            )
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -512,7 +565,9 @@ class IntegralGenerator(object):
             #       Not using self.backend.access.argument() here
             #       now because it assumes too much about indices.
 
-            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
+            table = self.backend.symbols.element_table(
+                td, self.ir.entitytype, mt.restriction
+            )
 
             assert td.ttype != "zeros"
 
@@ -524,7 +579,12 @@ class IntegralGenerator(object):
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):
+    def generate_block_parts(
+        self,
+        quadrature_rule: QuadratureRule,
+        blockmap: Tuple,
+        blocklist: List[BlockDataT],
+    ):
         """Generate and return code parts for a given block.
 
         Returns parts occurring before, inside, and after the quadrature
@@ -549,7 +609,9 @@ class IntegralGenerator(object):
 
         # Override dof index with quadrature loop index for arguments
         # with quadrature element, to index B like B[iq*num_dofs + iq]
-        arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
+        arg_indices = tuple(
+            self.backend.symbols.argument_loop_index(i) for i in range(block_rank)
+        )
         B_indices = []
         for i in range(block_rank):
             B_indices.append(arg_indices[i])
@@ -558,10 +620,14 @@ class IntegralGenerator(object):
         for blockdata in blocklist:
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
-                raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
+                raise RuntimeError(
+                    "Not expecting zero arguments to be left in dofblock generation."
+                )
 
             if len(blockdata.factor_indices_comp_indices) > 1:
-                raise RuntimeError("Code generation for non-scalar integrals unsupported")
+                raise RuntimeError(
+                    "Code generation for non-scalar integrals unsupported"
+                )
 
             # We have scalar integrand here, take just the factor index
             factor_index = blockdata.factor_indices_comp_indices[0][0]
@@ -569,7 +635,7 @@ class IntegralGenerator(object):
             # Get factor expression
             F = self.ir.integrand[quadrature_rule]["factorization"]
 
-            v = F.nodes[factor_index]['expression']
+            v = F.nodes[factor_index]["expression"]
             f = self.get_var(quadrature_rule, v)
 
             # Quadrature weight was removed in representation, add it back now
@@ -599,7 +665,9 @@ class IntegralGenerator(object):
             A = L.FlattenedArray(Asym, dims=A_shape)
 
             # Fetch code to access modified arguments
-            arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+            arg_factors = self.get_arg_factors(
+                blockdata, block_rank, quadrature_rule, iq, B_indices
+            )
 
             B_rhs = L.float_product([fw] + arg_factors)
 
@@ -632,7 +700,14 @@ class IntegralGenerator(object):
                     if len(rhs.args) <= 2:
                         keep[indices].append(rhs)
                     else:
-                        varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
+                        varying = next(
+                            (
+                                x
+                                for x in rhs.args
+                                if hasattr(x, "indices") and (ind in x.indices)
+                            ),
+                            None,
+                        )
                         if varying:
                             invariant = [x for x in rhs.args if x is not varying]
                             hoist_rhs[varying].append(invariant)
@@ -650,7 +725,7 @@ class IntegralGenerator(object):
 
                     lhs = None
                     for h in hoist:
-                        if (h.rhs == sum):
+                        if h.rhs == sum:
                             lhs = h.lhs
                             break
                     if lhs:
@@ -659,12 +734,16 @@ class IntegralGenerator(object):
                         t = self.new_temp_symbol("t")
                         scalar_type = self.backend.access.options["scalar_type"]
                         pre_loop.append(L.ArrayDecl(scalar_type, t, blockdims[0]))
-                        keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
+                        keep[indices].append(
+                            L.float_product([statement, t[B_indices[0]]])
+                        )
                         hoist.append(L.Assign(t[B_indices[i - 1]], sum))
             else:
                 keep[indices] = rhs_expressions[indices]
 
-        hoist_code: List[CNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
+        hoist_code: List[CNode] = (
+            [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
+        )
 
         body: List[CNode] = []
 
