@@ -32,10 +32,7 @@ def generator(ir, options):
         f"case {itg_type}:\n return {len(ir.subdomain_ids[itg_type])};"
         for itg_type in ("cell", "interior_facet", "exterior_facet")
     )
-    code = f"""switch (integral_type)
-    {{
-    {cases}
-    }}"""
+    code = "switch (integral_type)\n{\n" + cases + "}\nreturn -1;\n"
     d["num_integrals"] = code
 
     if len(ir.original_coefficient_position) > 0:

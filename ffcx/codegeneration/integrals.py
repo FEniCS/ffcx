@@ -17,6 +17,7 @@ from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.c_implementation import c_format
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -41,8 +42,6 @@ def generator(ir, options):
 
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
-
-    from ffcx.codegeneration.c_implementation import c_format
 
     # Format code as string
     code = c_format(parts)
