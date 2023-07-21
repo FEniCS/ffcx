@@ -133,8 +133,6 @@ def generate_custom_element(name, ir):
     d["discontinuous"] = "true" if ir.discontinuous else "false"
     d["interpolation_nderivs"] = ir.interpolation_nderivs
 
-    import ffcx.codegeneration.C.cnodes as L
-
     d["value_shape_length"] = len(ir.value_shape)
     if len(ir.value_shape) > 0:
         d["value_shape"] = f"value_shape_{name}"

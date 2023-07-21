@@ -40,7 +40,7 @@ class PRECEDENCE:
     LOWEST = 15
 
 
-"""Intended as a minimal generic language description. 
+"""Intended as a minimal generic language description.
 Formatting is done later, depending on the target language.
 
 Supported:
@@ -653,11 +653,11 @@ def flattened_indices(indices, shape):
     """Return a flattened indexing expression.
 
     Given a tuple of indices and a shape tuple, return
-    a CNode expression for flattened indexing into multidimensional
+    a LNode expression for flattened indexing into multidimensional
     array.
 
     Indices and shape entries can be int values, str symbol names, or
-    CNode expressions.
+    LlNode expressions.
 
     """
     n = len(shape)

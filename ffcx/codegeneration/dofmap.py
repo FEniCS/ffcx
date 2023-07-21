@@ -11,8 +11,6 @@ import logging
 import typing
 
 import ffcx.codegeneration.dofmap_template as ufcx_dofmap
-from ffcx.codegeneration.c_implementation import c_format
-
 
 logger = logging.getLogger("ffcx")
 
@@ -59,8 +57,6 @@ def generator(ir, options):
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
-
-    import ffcx.codegeneration.lnodes as L
 
     num_entity_dofs = ir.num_entity_dofs + [0, 0, 0, 0]
     num_entity_dofs = num_entity_dofs[:4]

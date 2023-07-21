@@ -45,7 +45,8 @@ def generator(ir, options):
     from ffcx.codegeneration.c_implementation import c_format
 
     # Format code as string
-    body = format_indented_lines(c_format(parts), 1)
+    code = c_format(parts)
+    body = format_indented_lines(code, 1)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
@@ -124,7 +125,7 @@ class IntegralGenerator(object):
         Scope is determined by quadrature_rule which identifies the
         quadrature loop scope or None if outside quadrature loops.
 
-        v is the ufl expression and vaccess is the CNodes
+        v is the ufl expression and vaccess is the LNodes
         expression to access the value in the code.
 
         """
@@ -139,7 +140,7 @@ class IntegralGenerator(object):
         If v is not found in quadrature loop scope, the piecewise
         scope (None) is checked.
 
-        Returns the CNodes expression to access the value in the code.
+        Returns the LNodes expression to access the value in the code.
         """
         if v._ufl_is_literal_:
             return self.backend.ufl_to_language.get(v)
@@ -475,7 +476,6 @@ class IntegralGenerator(object):
 
         if intermediates:
             if use_symbol_array:
-                padlen = self.ir.options["padlen"]
                 parts += [
                     L.ArrayDecl(
                         self.backend.access.options["scalar_type"],
@@ -566,8 +566,8 @@ class IntegralGenerator(object):
         """
 
         # The parts to return
-        preparts: List[CNode] = []
-        quadparts: List[CNode] = []
+        preparts = []
+        quadparts = []
 
         # RHS expressions grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
@@ -655,9 +655,9 @@ class IntegralGenerator(object):
         # List of statements to keep in the inner loop
         keep = collections.defaultdict(list)
         # List of temporary array declarations
-        pre_loop: List[CNode] = []
+        pre_loop = []
         # List of loop invariant expressions to hoist
-        hoist: List[BinOp] = []
+        hoist = []
 
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
@@ -711,11 +711,11 @@ class IntegralGenerator(object):
             else:
                 keep[indices] = rhs_expressions[indices]
 
-        hoist_code: List[CNode] = (
+        hoist_code = (
             [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
         )
 
-        body: List[CNode] = []
+        body = []
 
         for indices in keep:
             sum = L.Sum(keep[indices])
