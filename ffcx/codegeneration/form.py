@@ -10,6 +10,7 @@
 import logging
 
 from ffcx.codegeneration import form_template
+from ffcx.codegeneration.c_implementation import c_format
 
 logger = logging.getLogger("ffcx")
 
@@ -35,7 +36,7 @@ def generator(ir, options):
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
         cases += [(L.Symbol(itg_type), L.Return(len(ir.subdomain_ids[itg_type])))]
     code += [L.Switch("integral_type", cases, default=L.Return(0))]
-    d["num_integrals"] = L.StatementList(code)
+    d["num_integrals"] = c_format(L.StatementList(code))
 
     if len(ir.original_coefficient_position) > 0:
         d["original_coefficient_position_init"] = L.ArrayDecl(
@@ -133,12 +134,13 @@ def generator(ir, options):
 
     code += [L.Switch("integral_type", cases, default=L.Return(L.Null()))]
     code_ids += [L.Switch("integral_type", cases_ids, default=L.Return(L.Null()))]
-    d["integrals"] = L.StatementList(code)
 
-    d["integral_ids"] = L.StatementList(code_ids)
+    d["integrals"] = c_format(L.StatementList(code))
+
+    d["integral_ids"] = c_format(L.StatementList(code_ids))
 
     code = []
-    function_name = L.Symbol("function_name")
+    function_name = c_format(L.Symbol("function_name"))
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated
@@ -167,8 +169,6 @@ def generator(ir, options):
     code += ["return NULL;\n"]
 
     d["functionspace"] = "\n".join(code)
-
-    print(d["functionspace"])
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

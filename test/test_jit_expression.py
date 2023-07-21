@@ -50,7 +50,7 @@ def test_matvec(compile_args):
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
     obj, module, code = ffcx.codegeneration.jit.compile_expressions(
-        [(expr, points)], cffi_extra_compile_args=compile_args)
+        [(expr, points)], cffi_extra_compile_args=compile_args, cache_dir=".")
 
     ffi = cffi.FFI()
     expression = obj[0]

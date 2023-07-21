@@ -18,6 +18,7 @@ from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -35,7 +36,6 @@ def generator(ir, options):
 
     # Create FFCx C backend
     backend = FFCXBackend(ir, options)
-    # backend = FFCXCPPBackend(ir, options)
 
     # Configure kernel generator
     ig = IntegralGenerator(ir, backend)
@@ -43,22 +43,16 @@ def generator(ir, options):
     # Generate code ast for the tabulate_tensor body
     parts = ig.generate()
 
-    from ffcx.codegeneration.c_implementation import cs_format
+    from ffcx.codegeneration.c_implementation import c_format
 
     # Format code as string
-    body = format_indented_lines(cs_format(parts), 1)
+    body = format_indented_lines(c_format(parts), 1)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
     code["class_type"] = ir.integral_type + "_integral"
     code["name"] = ir.name
-    code["members"] = ""
-    code["constructor"] = ""
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = ""
 
-    L = backend.language
     if len(ir.enabled_coefficients) > 0:
         code["enabled_coefficients_init"] = L.ArrayDecl(
             "bool",
@@ -69,7 +63,7 @@ def generator(ir, options):
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""
-        code["enabled_coefficients"] = L.Null()
+        code["enabled_coefficients"] = "NULL"
 
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
@@ -86,7 +80,7 @@ def generator(ir, options):
         scalar_type=options["scalar_type"],
         geom_type=scalar_to_value_type(options["scalar_type"]),
         np_scalar_type=cdtype_to_numpy(options["scalar_type"]),
-        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)),
+        coordinate_element=ir.coordinate_element,
     )
 
     return declaration, implementation
@@ -98,7 +92,6 @@ class IntegralGenerator(object):
         self.ir = ir
 
         # Backend specific plugin with attributes
-        # - language: for translating ufl operators to target language
         # - symbols: for translating ufl operators to target language
         # - definitions: for defining backend specific variables
         # - access: for accessing backend specific variables
@@ -158,7 +151,6 @@ class IntegralGenerator(object):
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        L = self.backend.language
         name = "%s%d" % (basename, self.symbol_counters[basename])
         self.symbol_counters[basename] += 1
         return L.Symbol(name)
@@ -179,7 +171,6 @@ class IntegralGenerator(object):
         context that matches a suitable version of the UFC
         tabulate_tensor signatures.
         """
-        L = self.backend.language
 
         # Assert that scopes are empty: expecting this to be called only
         # once
@@ -232,7 +223,6 @@ class IntegralGenerator(object):
 
     def generate_quadrature_tables(self, value_type: str) -> List[str]:
         """Generate static tables of quadrature points and weights."""
-        L = self.backend.language
 
         parts: List[str] = []
 
@@ -241,8 +231,6 @@ class IntegralGenerator(object):
         skip = ufl.custom_integral_types + ufl.measure.point_integral_types
         if self.ir.integral_type in skip:
             return parts
-
-        padlen = self.ir.options["padlen"]
 
         # Loop over quadrature rules
         for quadrature_rule, integrand in self.ir.integrand.items():
@@ -256,7 +244,6 @@ class IntegralGenerator(object):
                     wsym,
                     num_points,
                     quadrature_rule.weights,
-                    padlen=padlen,
                 )
             ]
 
@@ -266,7 +253,6 @@ class IntegralGenerator(object):
 
     def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
-        L = self.backend.language
 
         ufl_geometry = {
             ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
@@ -301,7 +287,6 @@ class IntegralGenerator(object):
 
     def generate_element_tables(self, float_type: str):
         """Generate static tables with precomputed element basisfunction values in quadrature points."""
-        L = self.backend.language
         parts = []
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
@@ -336,16 +321,10 @@ class IntegralGenerator(object):
         these rotations.
 
         """
-        L = self.backend.language
-        return [
-            L.ArrayDecl(
-                f"static const {value_type}", name, table.shape, table, padlen=padlen
-            )
-        ]
+        return [L.ArrayDecl(f"static const {value_type}", name, table.shape, table)]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
-        L = self.backend.language
         # Generate varying partition
         pre_definitions, body = self.generate_varying_partition(quadrature_rule)
 
@@ -372,8 +351,6 @@ class IntegralGenerator(object):
         return pre_definitions, preparts, quadparts
 
     def generate_piecewise_partition(self, quadrature_rule):
-        L = self.backend.language
-
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
@@ -392,8 +369,6 @@ class IntegralGenerator(object):
         return parts
 
     def generate_varying_partition(self, quadrature_rule):
-        L = self.backend.language
-
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
@@ -408,8 +383,6 @@ class IntegralGenerator(object):
         return pre_definitions, parts
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
-        L = self.backend.language
-
         definitions = dict()
         pre_definitions = dict()
         intermediates = []
@@ -509,7 +482,6 @@ class IntegralGenerator(object):
                         self.backend.access.options["scalar_type"],
                         symbol,
                         len(intermediates),
-                        padlen=padlen,
                     )
                 ]
             parts += intermediates
@@ -593,7 +565,6 @@ class IntegralGenerator(object):
         Should be called with quadrature_rule=None for
         quadloop-independent blocks.
         """
-        L = self.backend.language
 
         # The parts to return
         preparts: List[CNode] = []
@@ -771,7 +742,6 @@ class IntegralGenerator(object):
         determine how many loops should fuse at a time.
 
         """
-        L = self.backend.language
 
         loops = collections.defaultdict(list)
         pre_loop = []

@@ -273,8 +273,8 @@ class LiteralFloat(CExprLiteral):
         assert isinstance(value, (float, complex, int, np.number))
         self.value = value
 
-    def ce_format(self, precision=None):
-        return format_float(self.value, precision)
+    # def ce_format(self, precision=None):
+    #     return format_float(self.value, precision)
 
     def __eq__(self, other):
         return isinstance(other, LiteralFloat) and self.value == other.value
@@ -325,44 +325,44 @@ class LiteralInt(CExprLiteral):
         return hash(self.ce_format())
 
 
-class LiteralBool(CExprLiteral):
-    """A boolean literal value."""
+# class LiteralBool(CExprLiteral):
+#     """A boolean literal value."""
 
-    __slots__ = ("value",)
-    precedence = PRECEDENCE.LITERAL
+#     __slots__ = ("value",)
+#     precedence = PRECEDENCE.LITERAL
 
-    def __init__(self, value):
-        assert isinstance(value, (bool,))
-        self.value = value
+#     def __init__(self, value):
+#         assert isinstance(value, (bool,))
+#         self.value = value
 
-    def ce_format(self, precision=None):
-        return "true" if self.value else "false"
+#     def ce_format(self, precision=None):
+#         return "true" if self.value else "false"
 
-    def __eq__(self, other):
-        return isinstance(other, LiteralBool) and self.value == other.value
+#     def __eq__(self, other):
+#         return isinstance(other, LiteralBool) and self.value == other.value
 
-    def __bool__(self):
-        return bool(self.value)
+#     def __bool__(self):
+#         return bool(self.value)
 
-    __nonzero__ = __bool__
+#     __nonzero__ = __bool__
 
 
-class LiteralString(CExprLiteral):
-    """A boolean literal value."""
+# class LiteralString(CExprLiteral):
+#     """A boolean literal value."""
 
-    __slots__ = ("value",)
-    precedence = PRECEDENCE.LITERAL
+#     __slots__ = ("value",)
+#     precedence = PRECEDENCE.LITERAL
 
-    def __init__(self, value):
-        assert isinstance(value, (str,))
-        assert '"' not in value
-        self.value = value
+#     def __init__(self, value):
+#         assert isinstance(value, (str,))
+#         assert '"' not in value
+#         self.value = value
 
-    def ce_format(self, precision=None):
-        return '"%s"' % (self.value,)
+#     def ce_format(self, precision=None):
+#         return '"%s"' % (self.value,)
 
-    def __eq__(self, other):
-        return isinstance(other, LiteralString) and self.value == other.value
+#     def __eq__(self, other):
+#         return isinstance(other, LiteralString) and self.value == other.value
 
 
 class Symbol(CExprTerminal):
@@ -479,21 +479,21 @@ class NaryOp(CExprOperator):
     def __init__(self, args):
         self.args = [as_cexpr(arg) for arg in args]
 
-    def ce_format(self, precision=None):
-        # Format children
-        args = [arg.ce_format(precision) for arg in self.args]
+    # def ce_format(self, precision=None):
+    #     # Format children
+    #     args = [arg.ce_format(precision) for arg in self.args]
 
-        # Apply parentheses
-        for i in range(len(args)):
-            if self.args[i].precedence >= self.precedence:
-                args[i] = "(" + args[i] + ")"
+    #     # Apply parentheses
+    #     for i in range(len(args)):
+    #         if self.args[i].precedence >= self.precedence:
+    #             args[i] = "(" + args[i] + ")"
 
-        # Return combined string
-        op = " " + self.op + " "
-        s = args[0]
-        for i in range(1, len(args)):
-            s += op + args[i]
-        return s
+    #     # Return combined string
+    #     op = " " + self.op + " "
+    #     s = args[0]
+    #     for i in range(1, len(args)):
+    #         s += op + args[i]
+    #     return s
 
     def __eq__(self, other):
         return (
@@ -518,10 +518,10 @@ class AddressOf(PrefixUnaryOp):
     op = "&"
 
 
-class SizeOf(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.SIZEOF
-    op = "sizeof"
+# class SizeOf(PrefixUnaryOp):
+#     __slots__ = ()
+#     precedence = PRECEDENCE.SIZEOF
+#     op = "sizeof"
 
 
 class Neg(PrefixUnaryOp):
@@ -548,32 +548,32 @@ class BitNot(PrefixUnaryOp):
     op = "~"
 
 
-class PreIncrement(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.PRE_INC
-    sideeffect = True
-    op = "++"
+# class PreIncrement(PrefixUnaryOp):
+#     __slots__ = ()
+#     precedence = PRECEDENCE.PRE_INC
+#     sideeffect = True
+#     op = "++"
 
 
-class PreDecrement(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.PRE_DEC
-    sideeffect = True
-    op = "--"
+# class PreDecrement(PrefixUnaryOp):
+#     __slots__ = ()
+#     precedence = PRECEDENCE.PRE_DEC
+#     sideeffect = True
+#     op = "--"
 
 
-class PostIncrement(PostfixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.POST_INC
-    sideeffect = True
-    op = "++"
+# class PostIncrement(PostfixUnaryOp):
+#     __slots__ = ()
+#     precedence = PRECEDENCE.POST_INC
+#     sideeffect = True
+#     op = "++"
 
 
-class PostDecrement(PostfixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.POST_DEC
-    sideeffect = True
-    op = "--"
+# class PostDecrement(PostfixUnaryOp):
+#     __slots__ = ()
+#     precedence = PRECEDENCE.POST_DEC
+#     sideeffect = True
+#     op = "--"
 
 
 # CExpr binary operators
@@ -949,8 +949,6 @@ def as_cexpr(node):
     """
     if isinstance(node, CExpr):
         return node
-    elif isinstance(node, bool):
-        return LiteralBool(node)
     elif isinstance(node, numbers.Integral):
         return LiteralInt(node)
     elif isinstance(node, numbers.Real):
@@ -1613,26 +1611,26 @@ class ForRange(CStatement):
         self.body = as_cstatement(body)
         self.index_type = index_type
 
-    def cs_format(self, precision=None):
-        indextype = self.index_type
-        index = self.index.ce_format(precision)
-        begin = self.begin.ce_format(precision)
-        end = self.end.ce_format(precision)
+    # def cs_format(self, precision=None):
+    #     indextype = self.index_type
+    #     index = self.index.ce_format(precision)
+    #     begin = self.begin.ce_format(precision)
+    #     end = self.end.ce_format(precision)
 
-        init = indextype + " " + index + " = " + begin
-        check = index + " < " + end
-        update = "++" + index
+    #     init = indextype + " " + index + " = " + begin
+    #     check = index + " < " + end
+    #     update = "++" + index
 
-        prelude = "for (" + init + "; " + check + "; " + update + ")"
-        body = Indented(self.body.cs_format(precision))
+    #     prelude = "for (" + init + "; " + check + "; " + update + ")"
+    #     body = Indented(self.body.cs_format(precision))
 
-        # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
-        if is_simple_inner_loop(self.body):
-            code = (prelude, body)
-        else:
-            code = (prelude, "{", body, "}")
+    #     # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
+    #     if is_simple_inner_loop(self.body):
+    #         code = (prelude, body)
+    #     else:
+    #         code = (prelude, "{", body, "}")
 
-        return code
+    #     return code
 
     def __eq__(self, other):
         attributes = ("index", "begin", "end", "body", "index_type")

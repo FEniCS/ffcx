@@ -71,7 +71,7 @@ def build_initializer_lists(values, sizes, level, formatter, precision=None):
 def format_statement_list(slist):
     output = ""
     for s in slist.statements:
-        output += cs_format(s)
+        output += c_format(s)
     return output
 
 
@@ -80,49 +80,177 @@ def format_comment(c):
 
 
 def format_array_decl(arr):
+    symbol = c_format(arr.symbol)
     dims = "".join([f"[{i}]" for i in arr.sizes])
     if arr.values is None:
         vals = "{}"
     else:
         vals = "\n".join(build_initializer_lists(arr.values, arr.sizes, 0, str))
-    return f"{arr.typename} {arr.symbol}{dims} = {vals};\n"
+    return f"{arr.typename} {symbol}{dims} = {vals};\n"
+
+
+def format_array_access(arr):
+    name = c_format(arr.array)
+    indices = f"[{']['.join(c_format(i) for i in arr.indices)}]"
+    return f"{name}{indices}"
 
 
 def format_variable_decl(v):
-    return f"{v.typename} {v.symbol} = {v.value};\n"
+    val = c_format(v.value)
+    symbol = c_format(v.symbol)
+    return f"{v.typename} {symbol} = {val};\n"
+
+
+def format_nary_op(oper):
+    # Format children
+    args = [c_format(arg) for arg in oper.args]
+
+    # Apply parentheses
+    for i in range(len(args)):
+        if oper.args[i].precedence >= oper.precedence:
+            args[i] = "(" + args[i] + ")"
+
+    # Return combined string
+    return f" {oper.op} ".join(args)
+
+
+def format_binary_op(oper):
+    # Format children
+    lhs = c_format(oper.lhs)
+    rhs = c_format(oper.rhs)
+
+    # Apply parentheses
+    if oper.lhs.precedence >= oper.precedence:
+        lhs = f"({lhs})"
+    if oper.rhs.precedence >= oper.precedence:
+        rhs = f"({rhs})"
+
+    # Return combined string
+    return f"{lhs} {oper.op} {rhs}"
+
+
+def format_literal_float(val):
+    return f"{val.value}"
+
+
+def format_literal_int(val):
+    return f"{val.value}"
 
 
 def format_for_range(r):
-    output = f"for (int {r.index} = {r.begin}; {r.index} < {r.end}; ++{r.index})\n"
+    begin = c_format(r.begin)
+    end = c_format(r.end)
+    index = c_format(r.index)
+    output = f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
     output += "{\n"
-    output += cs_format(r.body)
+    body = c_format(r.body)
+    for line in body.split("\n"):
+        if len(line) > 0:
+            output += f"  {line}\n"
     output += "}\n"
     return output
 
 
 def format_statement(s):
-    return cs_format(s.expr)
+    return c_format(s.expr)
 
 
 def format_assign(expr):
-    return f"{expr.lhs} {expr.op} {expr.rhs};\n"
+    rhs = c_format(expr.rhs)
+    lhs = c_format(expr.lhs)
+    return f"{lhs} {expr.op} {rhs};\n"
+
+
+def format_conditional(s):
+    # Format children
+    c = c_format(s.condition)
+    t = c_format(s.true)
+    f = c_format(s.false)
+
+    # Apply parentheses
+    if s.condition.precedence >= s.precedence:
+        c = "(" + c + ")"
+    if s.true.precedence >= s.precedence:
+        t = "(" + t + ")"
+    if s.false.precedence >= s.precedence:
+        f = "(" + f + ")"
+
+    # Return combined string
+    return c + " ? " + t + " : " + f
+
+
+def format_symbol(s):
+    return f"{s.name}"
+
+
+def format_call(c):
+    args = ",".join(c_format(arg) for arg in c.args)
+    return f"{c.function}({args})"
+
+
+def format_switch(s):
+    cases = ""
+    for case in s.cases:
+        cases += "case " + c_format(case[0]) + ":\n"
+        casebody = c_format(case[1])
+        if s.autoscope:
+            casebody = f"{{{casebody}}}\n"
+        if s.autobreak:
+            casebody = f"{casebody}\n break;\n"
+        cases += casebody
+
+    if s.default is not None:
+        cases += "default:\n"
+        casebody = c_format(s.default)
+        if s.autoscope:
+            casebody = "{" + casebody + "}\n"
+        cases += casebody
+
+        return f"switch ({c_format(s.arg)})\n{{ {cases} }}\n"
+
+
+def format_return(v):
+    return f"return {c_format(v.value)};\n"
 
 
 c_impl = {
     "StatementList": format_statement_list,
     "Comment": format_comment,
     "ArrayDecl": format_array_decl,
+    "ArrayAccess": format_array_access,
     "VariableDecl": format_variable_decl,
     "ForRange": format_for_range,
     "Statement": format_statement,
     "Assign": format_assign,
     "AssignAdd": format_assign,
+    "Product": format_nary_op,
+    "Sum": format_nary_op,
+    "Add": format_binary_op,
+    "Mul": format_binary_op,
+    "Div": format_binary_op,
+    "LiteralFloat": format_literal_float,
+    "LiteralInt": format_literal_int,
+    "Symbol": format_symbol,
+    "Conditional": format_conditional,
+    "Call": format_call,
+    "MathFunction": format_call,
+    "Switch": format_switch,
+    "Return": format_return,
+    "Null": lambda x: "NULL",
+    "And": format_binary_op,
+    "Or": format_binary_op,
+    "NE": format_binary_op,
+    "EQ": format_binary_op,
+    "GE": format_binary_op,
+    "LE": format_binary_op,
+    "GT": format_binary_op,
+    "LT": format_binary_op,
 }
 
 
-def cs_format(s):
+def c_format(s):
     name = s.__class__.__name__
     try:
         return c_impl[name](s)
     except KeyError:
-        raise RuntimeError("Unknown statement: ", type(s))
+        raise RuntimeError("Unknown statement: ", name)

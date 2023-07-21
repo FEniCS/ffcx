@@ -19,9 +19,8 @@ class FFCXBackend(object):
 
     def __init__(self, ir, options):
         # This is the seam where cnodes/C is chosen for the FFCx backend
-        self.language: types.ModuleType = ffcx.codegeneration.C.cnodes
         scalar_type = options["scalar_type"]
-        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type)
+        self.ufl_to_language = UFL2CNodesTranslatorCpp(scalar_type)
 
         coefficient_numbering = ir.coefficient_numbering
         coefficient_offsets = ir.coefficient_offsets
@@ -29,38 +28,9 @@ class FFCXBackend(object):
         original_constant_offsets = ir.original_constant_offsets
 
         self.symbols = FFCXBackendSymbols(
-            self.language,
             coefficient_numbering,
             coefficient_offsets,
             original_constant_offsets,
         )
-        self.definitions = FFCXBackendDefinitions(
-            ir, self.language, self.symbols, options
-        )
-        self.access = FFCXBackendAccess(ir, self.language, self.symbols, options)
-
-
-class FFCXCPPBackend(object):
-    """Class collecting all aspects of the FFCx backend."""
-
-    def __init__(self, ir, options):
-        # This is where c++ is chosen for the FFCx backend
-        self.language: types.ModuleType = ffcx.codegeneration.C.cnodes
-        scalar_type = options["scalar_type"]
-        self.ufl_to_language = UFL2CNodesTranslatorCpp(self.language, scalar_type)
-
-        coefficient_numbering = ir.coefficient_numbering
-        coefficient_offsets = ir.coefficient_offsets
-
-        original_constant_offsets = ir.original_constant_offsets
-
-        self.symbols = FFCXBackendSymbols(
-            self.language,
-            coefficient_numbering,
-            coefficient_offsets,
-            original_constant_offsets,
-        )
-        self.definitions = FFCXBackendDefinitions(
-            ir, self.language, self.symbols, options
-        )
-        self.access = FFCXBackendAccess(ir, self.language, self.symbols, options)
+        self.definitions = FFCXBackendDefinitions(ir, self.symbols, options)
+        self.access = FFCXBackendAccess(ir, self.symbols, options)

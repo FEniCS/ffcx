@@ -7,6 +7,7 @@
 
 import logging
 import ufl
+import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -60,10 +61,12 @@ def format_mt_name(basename, mt):
 class FFCXBackendSymbols(object):
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, language, coefficient_numbering, coefficient_offsets,
-                 original_constant_offsets):
-        self.L = language
-        self.S = self.L.Symbol
+    def __init__(
+        self,
+        coefficient_numbering,
+        coefficient_offsets,
+        original_constant_offsets,
+    ):
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
 
@@ -71,90 +74,92 @@ class FFCXBackendSymbols(object):
 
     def element_tensor(self):
         """Symbol for the element tensor itself."""
-        return self.S("A")
+        return L.Symbol("A")
 
     def entity(self, entitytype, restriction):
         """Entity index for lookup in element tables."""
         if entitytype == "cell":
             # Always 0 for cells (even with restriction)
-            return self.L.LiteralInt(0)
+            return L.LiteralInt(0)
         elif entitytype == "facet":
             postfix = "[0]"
             if restriction == "-":
                 postfix = "[1]"
-            return self.S("entity_local_index" + postfix)
+            return L.Symbol("entity_local_index" + postfix)
         elif entitytype == "vertex":
-            return self.S("entity_local_index[0]")
+            return L.Symbol("entity_local_index[0]")
         else:
             logging.exception(f"Unknown entitytype {entitytype}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
-        return self.S(indices[iarg])
+        return L.Symbol(indices[iarg])
 
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
-        return self.S("ic")
+        return L.Symbol("ic")
 
     def quadrature_loop_index(self):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
-        return self.S("iq")
+        return L.Symbol("iq")
 
     def quadrature_permutation(self, index):
         """Quadrature permutation, as input to the function."""
-        return self.S("quadrature_permutation")[index]
+        return L.Symbol("quadrature_permutation")[index]
 
     def custom_weights_table(self):
         """Table for chunk of custom quadrature weights (including cell measure scaling)."""
-        return self.S("weights_chunk")
+        return L.Symbol("weights_chunk")
 
     def custom_points_table(self):
         """Table for chunk of custom quadrature points (physical coordinates)."""
-        return self.S("points_chunk")
+        return L.Symbol("points_chunk")
 
     def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
-        return self.S(f"weights_{quadrature_rule.id()}")
+        return L.Symbol(f"weights_{quadrature_rule.id()}")
 
     def points_table(self, quadrature_rule):
         """Table of quadrature points (points on the reference integration entity)."""
-        return self.S(f"points_{quadrature_rule.id()}")
+        return L.Symbol(f"points_{quadrature_rule.id()}")
 
     def x_component(self, mt):
         """Physical coordinate component."""
-        return self.S(format_mt_name("x", mt))
+        return L.Symbol(format_mt_name("x", mt))
 
     def J_component(self, mt):
         """Jacobian component."""
         # FIXME: Add domain number!
-        return self.S(format_mt_name("J", mt))
+        return L.Symbol(format_mt_name("J", mt))
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
         offset = 0
         if restriction == "-":
             offset = num_scalar_dofs * 3
-        vc = self.S("coordinate_dofs")
+        vc = L.Symbol("coordinate_dofs")
         return vc[3 * dof + component + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
         return [
             self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
-            for dof in range(num_scalar_dofs) for component in range(gdim)
+            for dof in range(num_scalar_dofs)
+            for component in range(gdim)
         ]
 
     def coefficient_dof_access(self, coefficient, dof_index):
         offset = self.coefficient_offsets[coefficient]
-        w = self.S("w")
+        w = L.Symbol("w")
         return w[offset + dof_index]
 
-    def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
-                                       block_size, dof_offset):
+    def coefficient_dof_access_blocked(
+        self, coefficient: ufl.Coefficient, index, block_size, dof_offset
+    ):
         coeff_offset = self.coefficient_offsets[coefficient]
-        w = self.S("w")
-        _w = self.S(f"_w_{coeff_offset}_{dof_offset}")
+        w = L.Symbol("w")
+        _w = L.Symbol(f"_w_{coeff_offset}_{dof_offset}")
         unit_stride_access = _w[index]
         original_access = w[coeff_offset + index * block_size + dof_offset]
         return unit_stride_access, original_access
@@ -162,16 +167,16 @@ class FFCXBackendSymbols(object):
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
-        return self.S(format_mt_name("w%d" % (c, ), mt))
+        return L.Symbol(format_mt_name("w%d" % (c,), mt))
 
     def constant_index_access(self, constant, index):
         offset = self.original_constant_offsets[constant]
-        c = self.S("c")
+        c = L.Symbol("c")
 
         return c[offset + index]
 
     def named_table(self, name):
-        return self.S(name)
+        return L.Symbol(name)
 
     def element_table(self, tabledata, entitytype, restriction):
         entity = self.entity(entitytype, restriction)

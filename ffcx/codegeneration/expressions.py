@@ -12,10 +12,11 @@ from typing import Any, DefaultDict, Dict, Set
 import ufl
 from ffcx.codegeneration import expressions_template, geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.cnodes import CNode
+from ffcx.codegeneration.c_implementation import c_format
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representation import ExpressionIR
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -34,7 +35,6 @@ def generator(ir, options):
     )
 
     backend = FFCXBackend(ir, options)
-    L = backend.language
     eg = ExpressionGenerator(ir, backend)
 
     d = {}
@@ -43,42 +43,36 @@ def generator(ir, options):
 
     parts = eg.generate()
 
-    body = format_indented_lines(parts.cs_format(), 1)
+    body = format_indented_lines(c_format(parts), 1)
     d["tabulate_expression"] = body
 
     if len(ir.original_coefficient_positions) > 0:
         d[
             "original_coefficient_positions"
         ] = f"original_coefficient_positions_{ir.name}"
-        d["original_coefficient_positions_init"] = L.ArrayDecl(
-            "static int",
-            f"original_coefficient_positions_{ir.name}",
-            values=ir.original_coefficient_positions,
-            sizes=len(ir.original_coefficient_positions),
-        )
+        n = len(ir.original_coefficient_positions)
+        originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
+        d[
+            "original_coefficient_positions_init"
+        ] = f"static int original_coefficient_positions_{ir.name}[{n}] = {{{originals}}};"
+
     else:
-        d["original_coefficient_positions"] = L.Null()
+        d["original_coefficient_positions"] = "NULL"
         d["original_coefficient_positions_init"] = ""
 
-    d["points_init"] = L.ArrayDecl(
-        "static double",
-        f"points_{ir.name}",
-        values=ir.points.flatten(),
-        sizes=ir.points.size,
-    )
-    d["points"] = L.Symbol(f"points_{ir.name}")
+    points = ", ".join(str(p) for p in ir.points.flatten())
+    n = ir.points.size
+    d["points_init"] = f"static double points_{ir.name}[{n}] = {{{points}}};"
+    d["points"] = f"points_{ir.name}"
 
     if len(ir.expression_shape) > 0:
-        d["value_shape_init"] = L.ArrayDecl(
-            "static int",
-            f"value_shape_{ir.name}",
-            values=ir.expression_shape,
-            sizes=len(ir.expression_shape),
-        )
+        n = len(ir.expression_shape)
+        shape = ", ".join(str(i) for i in ir.expression_shape)
+        d["value_shape_init"] = f"static int value_shape_{ir.name}[{n}] = {{{shape}}};"
         d["value_shape"] = f"value_shape_{ir.name}"
     else:
         d["value_shape_init"] = ""
-        d["value_shape"] = L.Null()
+        d["value_shape"] = "NULL"
 
     d["num_components"] = len(ir.expression_shape)
     d["num_coefficients"] = len(ir.coefficient_numbering)
@@ -92,28 +86,27 @@ def generator(ir, options):
     d["rank"] = len(ir.tensor_shape)
 
     if len(ir.coefficient_names) > 0:
-        d["coefficient_names_init"] = L.ArrayDecl(
-            "static const char*",
-            f"coefficient_names_{ir.name}",
-            values=ir.coefficient_names,
-            sizes=len(ir.coefficient_names),
-        )
+        names = ", ".join(f'"{name}"' for name in ir.coefficient_names)
+        n = len(ir.coefficient_names)
+        d[
+            "coefficient_names_init"
+        ] = f"static const char* coefficient_names_{ir.name}[{n}] = {{{names}}};"
+
         d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
         d["coefficient_names_init"] = ""
-        d["coefficient_names"] = L.Null()
+        d["coefficient_names"] = "NULL"
 
     if len(ir.constant_names) > 0:
-        d["constant_names_init"] = L.ArrayDecl(
-            "static const char*",
-            f"constant_names_{ir.name}",
-            values=ir.constant_names,
-            sizes=len(ir.constant_names),
-        )
+        names = ", ".join(f'"{name}"' for name in ir.constant_names)
+        n = len(ir.constant_names)
+        d[
+            "constant_names_init"
+        ] = f"static const char* constant_names_{ir.name}[{n}] = {{{names}}};"
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
-        d["constant_names"] = L.Null()
+        d["constant_names"] = "NULL"
 
     code = []
 
@@ -135,17 +128,17 @@ def generator(ir, options):
 
     if len(ir.function_spaces) > 0:
         d["function_spaces"] = f"function_spaces_{ir.name}"
-        d["function_spaces_init"] = L.ArrayDecl(
-            "ufcx_function_space*",
-            f"function_spaces_{ir.name}",
-            values=[
-                L.AddressOf(L.Symbol(f"function_space_{name}_{ir.name_from_uflfile}"))
-                for (name, _) in ir.function_spaces.items()
-            ],
-            sizes=len(ir.function_spaces),
+        fs_list = ", ".join(
+            f"&function_space_{name}_{ir.name_from_uflfile}"
+            for (name, _) in ir.function_spaces.items()
         )
+        n = len(ir.function_spaces.items())
+        d[
+            "function_spaces_init"
+        ] = f"ufcx_function_space* function_spaces_{ir.name}[{n}] = {{{fs_list}}};"
+        print(d["function_spaces_init"])
     else:
-        d["function_spaces"] = L.Null()
+        d["function_spaces"] = "NULL"
         d["function_spaces_init"] = ""
 
     # Check that no keys are redundant or have been missed
@@ -182,8 +175,6 @@ class ExpressionGenerator:
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):
-        L = self.backend.language
-
         parts = []
         scalar_type = self.backend.access.options["scalar_type"]
         value_type = scalar_to_value_type(scalar_type)
@@ -208,7 +199,6 @@ class ExpressionGenerator:
 
     def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
-        L = self.backend.language
 
         # Currently we only support circumradius
         ufl_geometry = {
@@ -237,19 +227,14 @@ class ExpressionGenerator:
 
     def generate_element_tables(self, float_type: str):
         """Generate tables of FE basis evaluated at specified points."""
-        L = self.backend.language
         parts = []
 
         tables = self.ir.unique_tables
-
-        padlen = self.ir.options["padlen"]
         table_names = sorted(tables)
 
         for name in table_names:
             table = tables[name]
-            decl = L.ArrayDecl(
-                f"static const {float_type}", name, table.shape, table, padlen=padlen
-            )
+            decl = L.ArrayDecl(f"static const {float_type}", name, table.shape, table)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -268,7 +253,6 @@ class ExpressionGenerator:
         In the context of expressions quadrature loop is not accumulated.
 
         """
-        L = self.backend.language
 
         # Generate varying partition
         body = self.generate_varying_partition()
@@ -294,7 +278,6 @@ class ExpressionGenerator:
 
     def generate_varying_partition(self):
         """Generate factors of blocks which are not cellwise constant."""
-        L = self.backend.language
 
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
@@ -309,7 +292,6 @@ class ExpressionGenerator:
 
     def generate_piecewise_partition(self):
         """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
-        L = self.backend.language
 
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
@@ -350,7 +332,6 @@ class ExpressionGenerator:
 
     def generate_block_parts(self, blockmap, blockdata):
         """Generate and return code parts for a given block."""
-        L = self.backend.language
 
         # The parts to return
         preparts = []
@@ -457,7 +438,6 @@ class ExpressionGenerator:
             Indices used to index element tables
 
         """
-        L = self.backend.language
 
         arg_factors = []
         for i in range(block_rank):
@@ -482,7 +462,6 @@ class ExpressionGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        L = self.backend.language
         name = "%s%d" % (basename, self.symbol_counters[basename])
         self.symbol_counters[basename] += 1
         return L.Symbol(name)
@@ -495,7 +474,6 @@ class ExpressionGenerator:
 
     def generate_partition(self, symbol, F, mode):
         """Generate computations of factors of blocks."""
-        L = self.backend.language
 
         definitions = []
         pre_definitions = dict()

@@ -24,7 +24,7 @@ def format_float(x, precision=None):
         else:
             s = "{:.{prec}}".format(float(x), prec=precision)
     else:
-        s = repr(float(x))
+        s = repr(x)
     for r, v in _subs:
         s = r.sub(v, s)
     return s
@@ -55,5 +55,4 @@ def format_value(value, precision=None):
     elif hasattr(value, "ce_format"):
         return value.ce_format()
     else:
-        raise RuntimeError("Unexpected type %s:\n%s" % (type(value),
-                                                        str(value)))
+        raise RuntimeError("Unexpected type %s:\n%s" % (type(value), str(value)))

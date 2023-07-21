@@ -43,11 +43,15 @@ def generate_code(ir, options) -> CodeBlocks:
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
+    print("Lang = ", options["language"])
+
     # Generate code for finite_elements
     code_finite_elements = [
         finite_element_generator(element_ir, options) for element_ir in ir.elements
     ]
+
     code_dofmaps = [dofmap_generator(dofmap_ir, options) for dofmap_ir in ir.dofmaps]
+
     code_integrals = [
         integral_generator(integral_ir, options) for integral_ir in ir.integrals
     ]

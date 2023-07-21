@@ -10,6 +10,7 @@ import logging
 import ufl
 from ffcx.element_interface import convert_element
 from ffcx.naming import scalar_to_value_type
+from ffcx.codegeneration import lnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -17,11 +18,10 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendDefinitions(object):
     """FFCx specific code definitions."""
 
-    def __init__(self, ir, language, symbols, options):
+    def __init__(self, ir, symbols, options):
         # Store ir and options
         self.integral_type = ir.integral_type
         self.entitytype = ir.entitytype
-        self.language = language
         self.symbols = symbols
         self.options = options
 
@@ -29,21 +29,23 @@ class FFCXBackendDefinitions(object):
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
-        self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
-                            ufl.constant.Constant: self.constant,
-                            ufl.geometry.Jacobian: self.jacobian,
-                            ufl.geometry.CellVertices: self._expect_physical_coords,
-                            ufl.geometry.FacetEdgeVectors: self._expect_physical_coords,
-                            ufl.geometry.CellEdgeVectors: self._expect_physical_coords,
-                            ufl.geometry.CellFacetJacobian: self._expect_table,
-                            ufl.geometry.ReferenceCellVolume: self._expect_table,
-                            ufl.geometry.ReferenceFacetVolume: self._expect_table,
-                            ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
-                            ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
-                            ufl.geometry.ReferenceNormal: self._expect_table,
-                            ufl.geometry.CellOrientation: self._pass,
-                            ufl.geometry.FacetOrientation: self._expect_table,
-                            ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
+        self.call_lookup = {
+            ufl.coefficient.Coefficient: self.coefficient,
+            ufl.constant.Constant: self.constant,
+            ufl.geometry.Jacobian: self.jacobian,
+            ufl.geometry.CellVertices: self._expect_physical_coords,
+            ufl.geometry.FacetEdgeVectors: self._expect_physical_coords,
+            ufl.geometry.CellEdgeVectors: self._expect_physical_coords,
+            ufl.geometry.CellFacetJacobian: self._expect_table,
+            ufl.geometry.ReferenceCellVolume: self._expect_table,
+            ufl.geometry.ReferenceFacetVolume: self._expect_table,
+            ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
+            ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
+            ufl.geometry.ReferenceNormal: self._expect_table,
+            ufl.geometry.CellOrientation: self._pass,
+            ufl.geometry.FacetOrientation: self._expect_table,
+            ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
+        }
 
     def get(self, t, mt, tabledata, quadrature_rule, access):
         # Call appropriate handler, depending on the type of t
@@ -64,8 +66,6 @@ class FFCXBackendDefinitions(object):
 
     def coefficient(self, t, mt, tabledata, quadrature_rule, access):
         """Return definition code for coefficients."""
-        L = self.language
-
         ttype = tabledata.ttype
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
@@ -95,15 +95,21 @@ class FFCXBackendDefinitions(object):
             # In turn, it results in noticeably reduced performance.
             # In this case, we create temp arrays outside the quadrature to store the coefficients and
             # have a sequential access pattern.
-            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
+            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(
+                mt.terminal, ic, bs, begin
+            )
 
             # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
-                pre_code += [L.ArrayDecl(self.options["scalar_type"], dof_access.array, num_dofs)]
+                pre_code += [
+                    L.ArrayDecl(self.options["scalar_type"], dof_access.array, num_dofs)
+                ]
                 pre_body = L.Assign(dof_access, dof_access_map)
                 pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
+            dof_access = self.symbols.coefficient_dof_access(
+                mt.terminal, ic * bs + begin
+            )
 
         body = [L.AssignAdd(access, dof_access * FE[ic])]
         code += [L.VariableDecl(self.options["scalar_type"], access, 0.0)]
@@ -117,9 +123,10 @@ class FFCXBackendDefinitions(object):
         # via symbol c[], i.e. as passed into the kernel.
         return [], []
 
-    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, quadrature_rule, access):
+    def _define_coordinate_dofs_lincomb(
+        self, e, mt, tabledata, quadrature_rule, access
+    ):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
-        L = self.language
 
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -140,7 +147,7 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = self.symbols.S("coordinate_dofs")
+        dof_access = L.Symbol("coordinate_dofs")
 
         # coordinate dofs is always 3d
         dim = 3
@@ -172,14 +179,20 @@ class FFCXBackendDefinitions(object):
         if self.integral_type in ufl.custom_integral_types:
             # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
-                logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
+                logging.exception(
+                    "FIXME: Jacobian in custom integrals is not implemented."
+                )
             return []
         else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+            return self._define_coordinate_dofs_lincomb(
+                e, mt, tabledata, quadrature_rule, access
+            )
 
     def jacobian(self, e, mt, tabledata, quadrature_rule, access):
         """Return definition code for the Jacobian of x(X)."""
-        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+        return self._define_coordinate_dofs_lincomb(
+            e, mt, tabledata, quadrature_rule, access
+        )
 
     def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
         """Return quantities referring to constant tables defined in the generated code."""

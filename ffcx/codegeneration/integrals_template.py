@@ -27,7 +27,7 @@ ufcx_integral {factory_name} =
   .enabled_coefficients = {enabled_coefficients},
   .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
   .needs_facet_permutations = {needs_facet_permutations},
-  .coordinate_element = {coordinate_element},
+  .coordinate_element = &{coordinate_element},
 }};
 
 // End of code for integral {factory_name}
