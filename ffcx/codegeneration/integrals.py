@@ -12,7 +12,6 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.cnodes import BinOp, CNode
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
@@ -54,12 +53,12 @@ def generator(ir, options):
     code["name"] = ir.name
 
     if len(ir.enabled_coefficients) > 0:
-        code["enabled_coefficients_init"] = L.ArrayDecl(
-            "bool",
-            f"enabled_coefficients_{ir.name}",
-            values=ir.enabled_coefficients,
-            sizes=len(ir.enabled_coefficients),
-        )
+        vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
+        n = len(ir.enabled_coefficients)
+        code[
+            "enabled_coefficients_init"
+        ] = f"bool enabled_coefficients_{ir.name}[{n}] = {{{vals}}};"
+
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""

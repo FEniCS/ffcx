@@ -10,7 +10,6 @@
 import logging
 
 from ffcx.codegeneration import form_template
-from ffcx.codegeneration.c_implementation import c_format
 
 logger = logging.getLogger("ffcx")
 
@@ -21,8 +20,6 @@ def generator(ir, options):
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
 
-    import ffcx.codegeneration.C.cnodes as L
-
     d = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
@@ -31,66 +28,66 @@ def generator(ir, options):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    code = []
-    cases = []
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        cases += [(L.Symbol(itg_type), L.Return(len(ir.subdomain_ids[itg_type])))]
-    code += [L.Switch("integral_type", cases, default=L.Return(0))]
-    d["num_integrals"] = c_format(L.StatementList(code))
+    cases = "\n".join(
+        f"case {itg_type}:\n return {len(ir.subdomain_ids[itg_type])};"
+        for itg_type in ("cell", "interior_facet", "exterior_facet")
+    )
+    code = f"""switch (integral_type)
+    {{
+    {cases}
+    }}"""
+    d["num_integrals"] = code
 
     if len(ir.original_coefficient_position) > 0:
-        d["original_coefficient_position_init"] = L.ArrayDecl(
-            "int",
-            f"original_coefficient_position_{ir.name}",
-            values=ir.original_coefficient_position,
-            sizes=len(ir.original_coefficient_position),
-        )
+        n = len(ir.original_coefficient_position)
+        vals = ", ".join(str(i) for i in ir.original_coefficient_position)
+        d[
+            "original_coefficient_position_init"
+        ] = f"int original_coefficient_position_{ir.name}[{n}] = {{{vals}}};\n"
+
         d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
-        d["original_coefficient_position"] = L.Null()
+        d["original_coefficient_position"] = "NULL"
 
     cnames = ir.coefficient_names
     assert ir.num_coefficients == len(cnames)
-    names = L.Symbol("names")
     if len(cnames) == 0:
-        code = [L.Return(L.Null())]
+        code = "return NULL;"
     else:
-        code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
-        code += [L.Return(names)]
-    d["coefficient_name_map"] = L.StatementList(code)
+        cnames_str = ", ".join('"{name}"' for name in cnames)
+        code = f"static const char* names[{len(cnames)}]= {{{cnames_str}}};\n"
+        code += "return names;\n"
+    d["coefficient_name_map"] = code
 
     cstnames = ir.constant_names
-    names = L.Symbol("names")
     if len(cstnames) == 0:
-        code = [L.Return(L.Null())]
+        code = "return NULL;\n"
     else:
-        code = [L.ArrayDecl("static const char*", names, len(cstnames), cstnames)]
-        code += [L.Return(names)]
-    d["constant_name_map"] = L.StatementList(code)
+        cstnames_str = ", ".join('"{name}"' for name in cstnames)
+        code = f"static const char* names[{len(cstnames)}] = {{{cstnames_str}}};\n"
+        code += "return names;\n"
+    d["constant_name_map"] = code
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
-        d["finite_elements_init"] = L.ArrayDecl(
-            "ufcx_finite_element*",
-            f"finite_elements_{ir.name}",
-            values=[L.AddressOf(L.Symbol(el)) for el in ir.finite_elements],
-            sizes=len(ir.finite_elements),
-        )
+        elems = ", ".join(f"&{el}" for el in ir.finite_elements)
+        n = len(ir.finite_elements)
+        d[
+            "finite_elements_init"
+        ] = f"ufcx_finite_element* finite_elements_{ir.name}[{n}] = {{{elems}}};"
+
     else:
-        d["finite_elements"] = L.Null()
+        d["finite_elements"] = "NULL"
         d["finite_elements_init"] = ""
 
     if len(ir.dofmaps) > 0:
         d["dofmaps"] = f"dofmaps_{ir.name}"
-        d["dofmaps_init"] = L.ArrayDecl(
-            "ufcx_dofmap*",
-            f"dofmaps_{ir.name}",
-            values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.dofmaps],
-            sizes=len(ir.dofmaps),
-        )
+        n = len(ir.dofmaps)
+        vals = ", ".join(f"&{dm}" for dm in ir.dofmaps)
+        d["dofmaps_init"] = f"ufcx_dofmap* dofmaps_{ir.name}[{n}] = {{{vals}}};"
     else:
-        d["dofmaps"] = L.Null()
+        d["dofmaps"] = "NULL"
         d["dofmaps_init"] = ""
 
     code = []
@@ -99,48 +96,36 @@ def generator(ir, options):
     cases_ids = []
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
         if len(ir.integral_names[itg_type]) > 0:
+            vals = ", ".join(f"&{itg}" for itg in ir.integral_names[itg_type])
+            n = len(ir.integral_names[itg_type])
             code += [
-                L.ArrayDecl(
-                    "static ufcx_integral*",
-                    f"integrals_{itg_type}_{ir.name}",
-                    values=[
-                        L.AddressOf(L.Symbol(itg))
-                        for itg in ir.integral_names[itg_type]
-                    ],
-                    sizes=len(ir.integral_names[itg_type]),
-                )
+                f"static ufcx_integral* integrals_{itg_type}_{ir.name}[{n}] = {{{vals}}};"
             ]
-            cases.append(
-                (
-                    L.Symbol(itg_type),
-                    L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}")),
-                )
-            )
+            cases.append(f"case {itg_type}:")
+            cases.append(f"return integrals_{itg_type}_{ir.name};")
 
+            vals = ", ".join(str(i) for i in ir.subdomain_ids[itg_type])
+            n = len(ir.subdomain_ids[itg_type])
             code_ids += [
-                L.ArrayDecl(
-                    "static int",
-                    f"integral_ids_{itg_type}_{ir.name}",
-                    values=ir.subdomain_ids[itg_type],
-                    sizes=len(ir.subdomain_ids[itg_type]),
-                )
+                f"static int integral_ids_{itg_type}_{ir.name}[{n}] = {{{vals}}};"
             ]
-            cases_ids.append(
-                (
-                    L.Symbol(itg_type),
-                    L.Return(L.Symbol(f"integral_ids_{itg_type}_{ir.name}")),
-                )
-            )
+            cases_ids.append(f"case {itg_type}:")
+            cases_ids.append(f"return integral_ids_{itg_type}_{ir.name};")
 
-    code += [L.Switch("integral_type", cases, default=L.Return(L.Null()))]
-    code_ids += [L.Switch("integral_type", cases_ids, default=L.Return(L.Null()))]
+    code += ["switch (integral_type){"]
+    code += cases
+    code += ["default:"]
+    code += ["return NULL;}"]
+    code_ids += ["switch(integral_type){"]
+    code_ids += cases_ids
+    code_ids += ["default:"]
+    code_ids += ["return NULL;}"]
 
-    d["integrals"] = c_format(L.StatementList(code))
-
-    d["integral_ids"] = c_format(L.StatementList(code_ids))
+    d["integrals"] = "\n".join(code)
+    d["integral_ids"] = "\n".join(code_ids)
 
     code = []
-    function_name = c_format(L.Symbol("function_name"))
+    function_name = "function_name"
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated

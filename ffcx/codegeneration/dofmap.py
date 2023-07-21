@@ -18,44 +18,31 @@ logger = logging.getLogger("ffcx")
 
 
 def tabulate_entity_dofs(
-    L,
     entity_dofs: typing.List[typing.List[typing.List[int]]],
     num_dofs_per_entity: typing.List[int],
 ):
-    # Output argument array
-    dofs = L.Symbol("dofs")
-
-    # Input arguments
-    d = L.Symbol("d")
-    i = L.Symbol("i")
-
     # TODO: Removed check for (d <= tdim + 1)
     tdim = len(num_dofs_per_entity) - 1
 
     # Generate cases for each dimension:
-    all_cases = []
+    all_cases = "switch(d)\n{\n"
     for dim in range(tdim + 1):
         # Ignore if no entities for this dimension
         if num_dofs_per_entity[dim] == 0:
             continue
 
+        all_cases += f"case {dim}:\n"
         # Generate cases for each mesh entity
-        cases = []
+        all_cases += "  switch(i)\n{\n"
         for entity in range(len(entity_dofs[dim])):
-            casebody = []
+            all_cases += f"   case {entity}:\n"
             for j, dof in enumerate(entity_dofs[dim][entity]):
-                casebody += [L.Assign(dofs[j], dof)]
-            cases.append((entity, L.StatementList(casebody)))
+                all_cases += f"    dofs[{j}] = {dof};\n"
+            all_cases += "    break;\n"
+        all_cases += "}\n"
 
-        # Generate inner switch
-        # TODO: Removed check for (i <= num_entities-1)
-        inner_switch = L.Switch(i, cases, autoscope=False)
-        all_cases.append((dim, inner_switch))
-
-    if all_cases:
-        return L.Switch(d, all_cases, autoscope=False)
-    else:
-        return L.NoOp()
+    all_cases += "}\n"
+    return all_cases
 
 
 def generator(ir, options):
@@ -73,49 +60,36 @@ def generator(ir, options):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
 
-    import ffcx.codegeneration.C.cnodes as L
+    import ffcx.codegeneration.lnodes as L
 
     num_entity_dofs = ir.num_entity_dofs + [0, 0, 0, 0]
     num_entity_dofs = num_entity_dofs[:4]
+    ndofs = ", ".join(str(i) for i in num_entity_dofs)
     d["num_entity_dofs"] = f"num_entity_dofs_{ir.name}"
-    d["num_entity_dofs_init"] = c_format(
-        L.ArrayDecl(
-            "int", f"num_entity_dofs_{ir.name}", values=num_entity_dofs, sizes=4
-        )
-    )
+    d["num_entity_dofs_init"] = f"int num_entity_dofs_{ir.name}[4] = {{{ndofs}}};\n"
 
     num_entity_closure_dofs = ir.num_entity_closure_dofs + [0, 0, 0, 0]
     num_entity_closure_dofs = num_entity_closure_dofs[:4]
     d["num_entity_closure_dofs"] = f"num_entity_closure_dofs_{ir.name}"
-    d["num_entity_closure_dofs_init"] = c_format(
-        L.ArrayDecl(
-            "int",
-            f"num_entity_closure_dofs_{ir.name}",
-            values=num_entity_closure_dofs,
-            sizes=4,
-        )
-    )
+    ncdofs = ", ".join(str(i) for i in num_entity_closure_dofs)
+    d[
+        "num_entity_closure_dofs_init"
+    ] = f"int num_entity_closure_dofs_{ir.name}[4] = {{{ncdofs}}};\n"
 
     d["block_size"] = ir.block_size
 
     # Functions
-    d["tabulate_entity_dofs"] = tabulate_entity_dofs(
-        L, ir.entity_dofs, ir.num_entity_dofs
-    )
+    d["tabulate_entity_dofs"] = tabulate_entity_dofs(ir.entity_dofs, ir.num_entity_dofs)
 
     d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(
-        L, ir.entity_closure_dofs, ir.num_entity_closure_dofs
+        ir.entity_closure_dofs, ir.num_entity_closure_dofs
     )
 
     if len(ir.sub_dofmaps) > 0:
-        d["sub_dofmaps_initialization"] = c_format(
-            L.ArrayDecl(
-                "ufcx_dofmap*",
-                f"sub_dofmaps_{ir.name}",
-                values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.sub_dofmaps],
-                sizes=len(ir.sub_dofmaps),
-            )
-        )
+        vals = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
+        d[
+            "sub_dofmaps_initialization"
+        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{vals}}};\n"
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""

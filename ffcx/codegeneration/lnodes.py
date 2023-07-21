@@ -9,13 +9,6 @@ import numbers
 import numpy as np
 
 
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
-#
-# This file is part of FFCx.(https://www.fenicsproject.org)
-#
-# SPDX-License-Identifier:    LGPL-3.0-or-later
-
-
 class PRECEDENCE:
     """An enum-like class for operator precedence levels."""
 
@@ -326,6 +319,9 @@ class BinOp(LExprOperator):
             and self.lhs == other.lhs
             and self.rhs == other.rhs
         )
+
+    def __hash__(self):
+        return hash(self.lhs) + hash(self.rhs)
 
 
 class NaryOp(LExprOperator):

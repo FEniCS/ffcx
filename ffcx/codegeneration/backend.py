@@ -7,7 +7,6 @@
 
 import types
 
-import ffcx.codegeneration.C.cnodes
 from ffcx.codegeneration.access import FFCXBackendAccess
 from ffcx.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
 from ffcx.codegeneration.definitions import FFCXBackendDefinitions
