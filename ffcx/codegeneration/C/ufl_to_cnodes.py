@@ -153,11 +153,11 @@ class UFL2CNodesTranslatorCpp(object):
             ufl.algebra.Product: self.product,
             ufl.algebra.Sum: self.sum,
             ufl.algebra.Division: self.division,
-            ufl.algebra.Abs: self._cmath,
-            ufl.algebra.Power: self._cmath,
-            ufl.algebra.Real: self._cmath,
-            ufl.algebra.Imag: self._cmath,
-            ufl.algebra.Conj: self._cmath,
+            ufl.algebra.Abs: self.math_function,
+            ufl.algebra.Power: self.math_function,
+            ufl.algebra.Real: self.math_function,
+            ufl.algebra.Imag: self.math_function,
+            ufl.algebra.Conj: self.math_function,
             ufl.classes.GT: self.gt,
             ufl.classes.GE: self.ge,
             ufl.classes.EQ: self.eq,
@@ -168,22 +168,22 @@ class UFL2CNodesTranslatorCpp(object):
             ufl.classes.OrCondition: self.or_condition,
             ufl.classes.NotCondition: self.not_condition,
             ufl.classes.Conditional: self.conditional,
-            ufl.classes.MinValue: self._cmath,
-            ufl.classes.MaxValue: self._cmath,
-            ufl.mathfunctions.Sqrt: self._cmath,
-            ufl.mathfunctions.Ln: self._cmath,
-            ufl.mathfunctions.Exp: self._cmath,
-            ufl.mathfunctions.Cos: self._cmath,
-            ufl.mathfunctions.Sin: self._cmath,
-            ufl.mathfunctions.Tan: self._cmath,
-            ufl.mathfunctions.Cosh: self._cmath,
-            ufl.mathfunctions.Sinh: self._cmath,
-            ufl.mathfunctions.Tanh: self._cmath,
-            ufl.mathfunctions.Acos: self._cmath,
-            ufl.mathfunctions.Asin: self._cmath,
-            ufl.mathfunctions.Atan: self._cmath,
-            ufl.mathfunctions.Erf: self._cmath,
-            ufl.mathfunctions.Atan2: self._cmath,
+            ufl.classes.MinValue: self.math_function,
+            ufl.classes.MaxValue: self.math_function,
+            ufl.mathfunctions.Sqrt: self.math_function,
+            ufl.mathfunctions.Ln: self.math_function,
+            ufl.mathfunctions.Exp: self.math_function,
+            ufl.mathfunctions.Cos: self.math_function,
+            ufl.mathfunctions.Sin: self.math_function,
+            ufl.mathfunctions.Tan: self.math_function,
+            ufl.mathfunctions.Cosh: self.math_function,
+            ufl.mathfunctions.Sinh: self.math_function,
+            ufl.mathfunctions.Tanh: self.math_function,
+            ufl.mathfunctions.Acos: self.math_function,
+            ufl.mathfunctions.Asin: self.math_function,
+            ufl.mathfunctions.Atan: self.math_function,
+            ufl.mathfunctions.Erf: self.math_function,
+            ufl.mathfunctions.Atan2: self.math_function,
             ufl.mathfunctions.MathFunction: self.math_function,
             ufl.mathfunctions.BesselJ: self.bessel_j,
             ufl.mathfunctions.BesselY: self.bessel_y,
@@ -265,20 +265,20 @@ class UFL2CNodesTranslatorCpp(object):
 
     # === Formatting rules for cmath functions ===
 
-    def math_function(self, o, op):
+    def math_function(self, o, *args):
         # Fallback for unhandled MathFunction subclass:
         # attempting to just call it.
-        return Language.MathFunction(o._name, op)
+        return Language.MathFunction(o._ufl_handler_name_, args)
 
-    def _cmath(self, o, *args):
-        k = o._ufl_handler_name_
-        try:
-            name = math_table[self.scalar_type].get(k)
-        except Exception as e:
-            raise type(e)("Math function not found:", self.scalar_type, k)
-        if name is None:
-            raise RuntimeError("Not supported in current scalar mode")
-        return Language.MathFunction(name, args)
+    # def math_function(self, o, *args):
+    #     k = o._ufl_handler_name_
+    #     try:
+    #         name = math_table[self.scalar_type].get(k)
+    #     except Exception as e:
+    #         raise type(e)("Math function not found:", self.scalar_type, k)
+    #     if name is None:
+    #         raise RuntimeError("Not supported in current scalar mode")
+    #     return Language.MathFunction(name, args)
 
     # === Formatting rules for bessel functions ===
     # Some Bessel functions exist in gcc, as XSI extensions

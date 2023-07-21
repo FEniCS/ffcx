@@ -184,8 +184,12 @@ def format_symbol(s):
 
 
 def format_math_function(c):
-    args = ",".join(c_format(arg) for arg in c.args)
-    return f"{c.function}({args})"
+    # A few translations to get tests working - need to do properly.
+    # Depending on dtype...
+    math_table = {"power": "pow", "real": "creal", "imag": "cimag", "abs": "fabs"}
+    func = math_table.get(c.function, c.function)
+    args = ", ".join(c_format(arg) for arg in c.args)
+    return f"{func}({args})"
 
 
 c_impl = {
