@@ -171,7 +171,6 @@ class IntegralGenerator(object):
         context that matches a suitable version of the UFC
         tabulate_tensor signatures.
         """
-
         # Assert that scopes are empty: expecting this to be called only
         # once
         assert not any(d for d in self.scopes.values())
@@ -223,7 +222,6 @@ class IntegralGenerator(object):
 
     def generate_quadrature_tables(self, value_type: str) -> List[str]:
         """Generate static tables of quadrature points and weights."""
-
         parts: List = []
 
         # No quadrature tables for custom (given argument) or point
@@ -253,7 +251,6 @@ class IntegralGenerator(object):
 
     def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
-
         ufl_geometry = {
             ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
             ufl.geometry.CellFacetJacobian: "reference_facet_jacobian",
@@ -564,7 +561,6 @@ class IntegralGenerator(object):
         Should be called with quadrature_rule=None for
         quadloop-independent blocks.
         """
-
         # The parts to return
         preparts: List = []
         quadparts: List = []
@@ -737,7 +733,6 @@ class IntegralGenerator(object):
         determine how many loops should fuse at a time.
 
         """
-
         loops = collections.defaultdict(list)
         pre_loop = []
         for access, definition in definitions.items():

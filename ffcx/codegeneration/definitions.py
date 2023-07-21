@@ -127,7 +127,6 @@ class FFCXBackendDefinitions(object):
         self, e, mt, tabledata, quadrature_rule, access
     ):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
-
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         coordinate_element = domain.ufl_coordinate_element()

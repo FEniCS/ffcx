@@ -104,6 +104,7 @@ class LNode(object):
 
 class LExpr(LNode):
     """Base class for all expressions.
+
     All subtypes should define a 'precedence' class attribute.
     """
 
@@ -431,7 +432,7 @@ class Product(NaryOp):
 
 
 class MathFunction(LExprOperator):
-    """A Math Function, with any arguments"""
+    """A Math Function, with any arguments."""
 
     precedence = PRECEDENCE.HIGHEST
 
