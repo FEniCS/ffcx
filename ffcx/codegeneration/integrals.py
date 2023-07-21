@@ -224,7 +224,7 @@ class IntegralGenerator(object):
     def generate_quadrature_tables(self, value_type: str) -> List[str]:
         """Generate static tables of quadrature points and weights."""
 
-        parts: List[str] = []
+        parts: List = []
 
         # No quadrature tables for custom (given argument) or point
         # (evaluation in single vertex)
@@ -566,8 +566,8 @@ class IntegralGenerator(object):
         """
 
         # The parts to return
-        preparts = []
-        quadparts = []
+        preparts: List = []
+        quadparts: List = []
 
         # RHS expressions grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
@@ -655,9 +655,9 @@ class IntegralGenerator(object):
         # List of statements to keep in the inner loop
         keep = collections.defaultdict(list)
         # List of temporary array declarations
-        pre_loop = []
+        pre_loop: List = []
         # List of loop invariant expressions to hoist
-        hoist = []
+        hoist: List = []
 
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
@@ -688,10 +688,7 @@ class IntegralGenerator(object):
                 # floating point operations (factorize expressions by
                 # grouping)
                 for statement in hoist_rhs:
-                    sum = []
-                    for rhs in hoist_rhs[statement]:
-                        sum.append(L.float_product(rhs))
-                    sum = L.Sum(sum)
+                    sum = L.Sum(L.float_product(rhs) for rhs in hoist_rhs[statement])
 
                     lhs = None
                     for h in hoist:
@@ -715,11 +712,10 @@ class IntegralGenerator(object):
             [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
         )
 
-        body = []
+        body: List = []
 
         for indices in keep:
-            sum = L.Sum(keep[indices])
-            body.append(L.AssignAdd(A[indices], sum))
+            body.append(L.AssignAdd(A[indices], L.Sum(keep[indices])))
 
         for i in reversed(range(block_rank)):
             body = [L.ForRange(B_indices[i], 0, blockdims[i], body=body)]
