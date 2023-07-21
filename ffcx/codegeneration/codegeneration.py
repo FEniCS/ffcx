@@ -43,8 +43,6 @@ def generate_code(ir, options) -> CodeBlocks:
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
-    print("Lang = ", options["language"])
-
     # Generate code for finite_elements
     code_finite_elements = [
         finite_element_generator(element_ir, options) for element_ir in ir.elements

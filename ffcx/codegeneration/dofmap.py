@@ -104,7 +104,6 @@ def generator(ir, options):
     ), "Mismatch between keys in template and in formatting dict."
 
     # Format implementation code
-    print(d)
     implementation = ufcx_dofmap.factory.format_map(d)
 
     # Format declaration

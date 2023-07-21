@@ -136,7 +136,7 @@ math_table = {
 
 
 class UFL2CNodesTranslatorCpp(object):
-    """UFL to CNodes translator class."""
+    """UFL to LNodes translator class."""
 
     def __init__(self, scalar_type="double"):
         self.force_floats = False
@@ -185,8 +185,8 @@ class UFL2CNodesTranslatorCpp(object):
             ufl.mathfunctions.Erf: self.math_function,
             ufl.mathfunctions.Atan2: self.math_function,
             ufl.mathfunctions.MathFunction: self.math_function,
-            ufl.mathfunctions.BesselJ: self.bessel_j,
-            ufl.mathfunctions.BesselY: self.bessel_y,
+            ufl.mathfunctions.BesselJ: self.math_function,
+            ufl.mathfunctions.BesselY: self.math_function,
         }
 
     def get(self, o, *args):
@@ -196,10 +196,6 @@ class UFL2CNodesTranslatorCpp(object):
             return self.call_lookup[otype](o, *args)
         else:
             raise RuntimeError(f"Missing C formatting rule for expr type {otype}.")
-
-    def expr(self, o, *args):
-        """Raise generic fallback with error message for missing rules."""
-        raise RuntimeError(f"Missing C formatting rule for expr type {o._ufl_class_}.")
 
     # === Formatting rules for scalar literals ===
 
@@ -269,37 +265,3 @@ class UFL2CNodesTranslatorCpp(object):
         # Fallback for unhandled MathFunction subclass:
         # attempting to just call it.
         return Language.MathFunction(o._ufl_handler_name_, args)
-
-    # def math_function(self, o, *args):
-    #     k = o._ufl_handler_name_
-    #     try:
-    #         name = math_table[self.scalar_type].get(k)
-    #     except Exception as e:
-    #         raise type(e)("Math function not found:", self.scalar_type, k)
-    #     if name is None:
-    #         raise RuntimeError("Not supported in current scalar mode")
-    #     return Language.MathFunction(name, args)
-
-    # === Formatting rules for bessel functions ===
-    # Some Bessel functions exist in gcc, as XSI extensions
-    # but not all.
-
-    def bessel_j(self, o, n, v):
-        assert "complex" not in self.scalar_type
-        n = int(float(n))
-        if n == 0:
-            return Language.Call("j0", v)
-        elif n == 1:
-            return Language.Call("j1", v)
-        else:
-            return Language.Call("jn", (n, v))
-
-    def bessel_y(self, o, n, v):
-        assert "complex" not in self.scalar_type
-        n = int(float(n))
-        if n == 0:
-            return Language.Call("y0", v)
-        elif n == 1:
-            return Language.Call("y1", v)
-        else:
-            return Language.Call("yn", (n, v))
