@@ -183,34 +183,9 @@ def format_symbol(s):
     return f"{s.name}"
 
 
-def format_call(c):
+def format_math_function(c):
     args = ",".join(c_format(arg) for arg in c.args)
     return f"{c.function}({args})"
-
-
-def format_switch(s):
-    cases = ""
-    for case in s.cases:
-        cases += "case " + c_format(case[0]) + ":\n"
-        casebody = c_format(case[1])
-        if s.autoscope:
-            casebody = f"{{{casebody}}}\n"
-        if s.autobreak:
-            casebody = f"{casebody}\n break;\n"
-        cases += casebody
-
-    if s.default is not None:
-        cases += "default:\n"
-        casebody = c_format(s.default)
-        if s.autoscope:
-            casebody = "{" + casebody + "}\n"
-        cases += casebody
-
-        return f"switch ({c_format(s.arg)})\n{{ {cases} }}\n"
-
-
-def format_return(v):
-    return f"return {c_format(v.value)};\n"
 
 
 c_impl = {
@@ -232,11 +207,7 @@ c_impl = {
     "LiteralInt": format_literal_int,
     "Symbol": format_symbol,
     "Conditional": format_conditional,
-    "Call": format_call,
-    "MathFunction": format_call,
-    "Switch": format_switch,
-    "Return": format_return,
-    "Null": lambda x: "NULL",
+    "MathFunction": format_math_function,
     "And": format_binary_op,
     "Or": format_binary_op,
     "NE": format_binary_op,
