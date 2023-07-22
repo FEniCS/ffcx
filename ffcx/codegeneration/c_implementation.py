@@ -194,6 +194,10 @@ class CFormatter(object):
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
+    def format_not(self, val):
+        arg = self.c_format(val.arg)
+        return f"{val.op}({arg})"
+
     def format_literal_float(self, val) -> str:
         return f"{val.value}"
 
@@ -244,7 +248,13 @@ class CFormatter(object):
     def format_math_function(self, c) -> str:
         # A few translations to get tests working - need to do properly.
         # Depending on dtype...
-        math_table = {"power": "pow", "abs": "fabs"}
+        math_table = {
+            "power": "pow",
+            "abs": "fabs",
+            "ln": "log",
+            "bessel_j": "jn",
+            "bessel_y": "yn",
+        }
         if "_Complex" in self.scalar_type:
             math_table = {
                 "power": "cpow",
@@ -269,8 +279,10 @@ class CFormatter(object):
         "Product": format_nary_op,
         "Sum": format_nary_op,
         "Add": format_binary_op,
+        "Sub": format_binary_op,
         "Mul": format_binary_op,
         "Div": format_binary_op,
+        "Not": format_not,
         "LiteralFloat": format_literal_float,
         "LiteralInt": format_literal_int,
         "Symbol": format_symbol,
