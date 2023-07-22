@@ -5,7 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numbers
-
+import ufl
 import numpy as np
 
 
@@ -859,3 +859,68 @@ def as_statement(node):
         raise RuntimeError(
             "Unexpected CStatement type %s:\n%s" % (type(node), str(node))
         )
+
+
+class UFL2LNodes(object):
+    """UFL to LNodes translator class."""
+
+    def __init__(self):
+        self.force_floats = False
+        self.enable_strength_reduction = False
+
+        # Lookup table for handler to call when the "get" method (below) is
+        # called, depending on the first argument type.
+        self.call_lookup = {
+            ufl.constantvalue.IntValue: lambda x: LiteralInt(int(x)),
+            ufl.constantvalue.FloatValue: lambda x: LiteralFloat(float(x)),
+            ufl.constantvalue.ComplexValue: lambda x: LiteralFloat(x.value()),
+            ufl.constantvalue.Zero: lambda x: LiteralFloat(0.0),
+            ufl.algebra.Product: lambda x, a, b: Product([a, b]),
+            ufl.algebra.Sum: lambda x, a, b: Add(a, b),
+            ufl.algebra.Division: lambda x, a, b: Div(a, b),
+            ufl.algebra.Abs: self.math_function,
+            ufl.algebra.Power: self.math_function,
+            ufl.algebra.Real: self.math_function,
+            ufl.algebra.Imag: self.math_function,
+            ufl.algebra.Conj: self.math_function,
+            ufl.classes.GT: lambda x, a, b: GT(a, b),
+            ufl.classes.GE: lambda x, a, b: GE(a, b),
+            ufl.classes.EQ: lambda x, a, b: EQ(a, b),
+            ufl.classes.NE: lambda x, a, b: NE(a, b),
+            ufl.classes.LT: lambda x, a, b: LT(a, b),
+            ufl.classes.LE: lambda x, a, b: LE(a, b),
+            ufl.classes.AndCondition: lambda x, a, b: And(a, b),
+            ufl.classes.OrCondition: lambda x, a, b: Or(a, b),
+            ufl.classes.NotCondition: lambda x, a: Not(a),
+            ufl.classes.Conditional: lambda x, c, t, f: Conditional(c, t, f),
+            ufl.classes.MinValue: self.math_function,
+            ufl.classes.MaxValue: self.math_function,
+            ufl.mathfunctions.Sqrt: self.math_function,
+            ufl.mathfunctions.Ln: self.math_function,
+            ufl.mathfunctions.Exp: self.math_function,
+            ufl.mathfunctions.Cos: self.math_function,
+            ufl.mathfunctions.Sin: self.math_function,
+            ufl.mathfunctions.Tan: self.math_function,
+            ufl.mathfunctions.Cosh: self.math_function,
+            ufl.mathfunctions.Sinh: self.math_function,
+            ufl.mathfunctions.Tanh: self.math_function,
+            ufl.mathfunctions.Acos: self.math_function,
+            ufl.mathfunctions.Asin: self.math_function,
+            ufl.mathfunctions.Atan: self.math_function,
+            ufl.mathfunctions.Erf: self.math_function,
+            ufl.mathfunctions.Atan2: self.math_function,
+            ufl.mathfunctions.MathFunction: self.math_function,
+            ufl.mathfunctions.BesselJ: self.math_function,
+            ufl.mathfunctions.BesselY: self.math_function,
+        }
+
+    def get(self, o, *args):
+        # Call appropriate handler, depending on the type of o
+        otype = type(o)
+        if otype in self.call_lookup:
+            return self.call_lookup[otype](o, *args)
+        else:
+            raise RuntimeError(f"Missing C formatting rule for expr type {otype}.")
+
+    def math_function(self, o, *args):
+        return MathFunction(o._ufl_handler_name_, args)

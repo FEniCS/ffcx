@@ -12,7 +12,7 @@ from typing import Any, DefaultDict, Dict, Set
 import ufl
 from ffcx.codegeneration import expressions_template, geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.c_implementation import c_format
+from ffcx.codegeneration.c_implementation import CFormatter
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representation import ExpressionIR
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
@@ -43,7 +43,8 @@ def generator(ir, options):
 
     parts = eg.generate()
 
-    body = format_indented_lines(c_format(parts), 1)
+    CF = CFormatter(options["scalar_type"])
+    body = format_indented_lines(CF.c_format(parts), 1)
     d["tabulate_expression"] = body
 
     if len(ir.original_coefficient_positions) > 0:

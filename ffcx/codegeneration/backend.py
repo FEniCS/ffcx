@@ -6,7 +6,7 @@
 """Collection of FFCx specific pieces for the code generation phase."""
 
 from ffcx.codegeneration.access import FFCXBackendAccess
-from ffcx.codegeneration.C.ufl_to_cnodes import UFL2CNodesTranslatorCpp
+from ffcx.codegeneration.lnodes import UFL2LNodes
 from ffcx.codegeneration.definitions import FFCXBackendDefinitions
 from ffcx.codegeneration.symbols import FFCXBackendSymbols
 
@@ -15,8 +15,7 @@ class FFCXBackend(object):
     """Class collecting all aspects of the FFCx backend."""
 
     def __init__(self, ir, options):
-        scalar_type = options["scalar_type"]
-        self.ufl_to_language = UFL2CNodesTranslatorCpp(scalar_type)
+        self.ufl_to_language = UFL2LNodes()
 
         coefficient_numbering = ir.coefficient_numbering
         coefficient_offsets = ir.coefficient_offsets

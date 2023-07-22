@@ -17,7 +17,7 @@ from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
-from ffcx.codegeneration.c_implementation import c_format
+from ffcx.codegeneration.c_implementation import CFormatter
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -44,7 +44,8 @@ def generator(ir, options):
     parts = ig.generate()
 
     # Format code as string
-    code = c_format(parts)
+    CF = CFormatter(options["scalar_type"])
+    code = CF.c_format(parts)
     body = format_indented_lines(code, 1)
 
     # Generate generic FFCx code snippets and add specific parts
