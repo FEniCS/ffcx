@@ -27,4 +27,4 @@ v = TestFunction(element)
 f = Coefficient(element)
 
 a = inner(grad(u), grad(v)) * dx
-L = f * v * dx
+L = inner(f, v) * dx

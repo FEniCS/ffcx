@@ -28,6 +28,8 @@ math_table = {
         "atan_2": "atan2",
         "min_value": "fmin",
         "max_value": "fmax",
+        "bessel_y": "yn",
+        "bessel_j": "jn",
     },
     "float": {
         "sqrt": "sqrtf",
@@ -51,6 +53,8 @@ math_table = {
         "atan_2": "atan2f",
         "min_value": "fminf",
         "max_value": "fmaxf",
+        "bessel_y": "yn",
+        "bessel_j": "jn",
     },
     "long double": {
         "sqrt": "sqrtl",
@@ -98,6 +102,8 @@ math_table = {
         "conj": "conj",
         "max_value": "fmax",
         "min_value": "fmin",
+        "bessel_y": "yn",
+        "bessel_j": "jn",
     },
     "float _Complex": {
         "sqrt": "csqrtf",
@@ -122,6 +128,8 @@ math_table = {
         "conj": "conjf",
         "max_value": "fmaxf",
         "min_value": "fminf",
+        "bessel_y": "yn",
+        "bessel_j": "jn",
     },
 }
 
@@ -131,7 +139,7 @@ def build_initializer_lists(values):
     if len(values.shape) == 1:
         arr += ", ".join(str(v) for v in values)
     elif len(values.shape) > 1:
-        arr += ", \n".join(build_initializer_lists(v) for v in values)
+        arr += ",\n".join(build_initializer_lists(v) for v in values)
     arr += "}"
     return arr
 
@@ -141,10 +149,7 @@ class CFormatter(object):
         self.scalar_type = scalar
 
     def format_statement_list(self, slist) -> str:
-        output = ""
-        for s in slist.statements:
-            output += self.c_format(s)
-        return output
+        return "".join(self.c_format(s) for s in slist.statements)
 
     def format_comment(self, c) -> str:
         return "// " + c.comment + "\n"
@@ -194,7 +199,7 @@ class CFormatter(object):
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    def format_not(self, val):
+    def format_not(self, val) -> str:
         arg = self.c_format(val.arg)
         return f"{val.op}({arg})"
 
@@ -246,23 +251,10 @@ class CFormatter(object):
         return f"{s.name}"
 
     def format_math_function(self, c) -> str:
-        # A few translations to get tests working - need to do properly.
-        # Depending on dtype...
-        math_table = {
-            "power": "pow",
-            "abs": "fabs",
-            "ln": "log",
-            "bessel_j": "jn",
-            "bessel_y": "yn",
-        }
-        if "_Complex" in self.scalar_type:
-            math_table = {
-                "power": "cpow",
-                "real": "creal",
-                "imag": "cimag",
-                "abs": "cabs",
-            }
-        func = math_table.get(c.function, c.function)
+        # Get a table of functions for this scalar type, if available
+        dtype_math_table = math_table.get(self.scalar_type, {})
+        # Get a function from the table, if available, else just use bare name
+        func = dtype_math_table.get(c.function, c.function)
         args = ", ".join(self.c_format(arg) for arg in c.args)
         return f"{func}({args})"
 
