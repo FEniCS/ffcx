@@ -10,37 +10,34 @@
 import logging
 import typing
 
-import ffcx.codegeneration.dofmap_template as ufcx_dofmap
+import ffcx.codegeneration.C.dofmap_template as ufcx_dofmap
 
 logger = logging.getLogger("ffcx")
 
 
-def tabulate_entity_dofs(
-    entity_dofs: typing.List[typing.List[typing.List[int]]],
-    num_dofs_per_entity: typing.List[int],
-):
+def tabulate_entity_dofs(entity_dofs: typing.List[typing.List[typing.List[int]]],
+                         num_dofs_per_entity: typing.List[int]):
+
     # TODO: Removed check for (d <= tdim + 1)
     tdim = len(num_dofs_per_entity) - 1
 
     # Generate cases for each dimension:
-    all_cases = "switch(d)\n{\n"
     for dim in range(tdim + 1):
         # Ignore if no entities for this dimension
         if num_dofs_per_entity[dim] == 0:
             continue
 
-        all_cases += f"case {dim}:\n"
         # Generate cases for each mesh entity
-        all_cases += "  switch(i)\n{\n"
+        cases = "switch(d)\n{\n"
         for entity in range(len(entity_dofs[dim])):
-            all_cases += f"   case {entity}:\n"
-            for j, dof in enumerate(entity_dofs[dim][entity]):
-                all_cases += f"    dofs[{j}] = {dof};\n"
-            all_cases += "    break;\n"
-        all_cases += "}\n"
+            cases += f"  case {entity}:\n   switch(i)\n   {{\n"
+            for (j, dof) in enumerate(entity_dofs[dim][entity]):
+                cases += f"    case {j}:\n    {{\n     dofs[{j}] = {dof};\n"
+                cases += "     break;\n    }\n"
+            cases += "  }\n"
+        cases += "}\n"
 
-    all_cases += "}\n"
-    return all_cases
+    return cases
 
 
 def generator(ir, options):
@@ -53,39 +50,31 @@ def generator(ir, options):
 
     # Attributes
     d["factory_name"] = ir.name
-    d["signature"] = f'"{ir.signature}"'
+    d["signature"] = f"\"{ir.signature}\""
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
 
     num_entity_dofs = ir.num_entity_dofs + [0, 0, 0, 0]
-    num_entity_dofs = num_entity_dofs[:4]
-    ndofs = ", ".join(str(i) for i in num_entity_dofs)
+    num_entity_dofs = num_entity_dofs[: 4]
     d["num_entity_dofs"] = f"num_entity_dofs_{ir.name}"
-    d["num_entity_dofs_init"] = f"int num_entity_dofs_{ir.name}[4] = {{{ndofs}}};\n"
+    d["num_entity_dofs_init"] = \
+        f"int num_entity_dofs_{ir.name}[4] = {{{', '.join(str(i) for i in num_entity_dofs)}}};"
 
     num_entity_closure_dofs = ir.num_entity_closure_dofs + [0, 0, 0, 0]
     num_entity_closure_dofs = num_entity_closure_dofs[:4]
     d["num_entity_closure_dofs"] = f"num_entity_closure_dofs_{ir.name}"
-    ncdofs = ", ".join(str(i) for i in num_entity_closure_dofs)
-    d[
-        "num_entity_closure_dofs_init"
-    ] = f"int num_entity_closure_dofs_{ir.name}[4] = {{{ncdofs}}};\n"
-
+    d["num_entity_closure_dofs_init"] = \
+        f"int num_entity_closure_dofs_{ir.name}[4] = {{{', '.join(str(i) for i in num_entity_closure_dofs)}}};"
     d["block_size"] = ir.block_size
 
     # Functions
     d["tabulate_entity_dofs"] = tabulate_entity_dofs(ir.entity_dofs, ir.num_entity_dofs)
-
-    d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(
-        ir.entity_closure_dofs, ir.num_entity_closure_dofs
-    )
+    d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(ir.entity_closure_dofs, ir.num_entity_closure_dofs)
 
     if len(ir.sub_dofmaps) > 0:
-        vals = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
-        d[
-            "sub_dofmaps_initialization"
-        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{vals}}};\n"
+        sub_dofmaps = ", ".join(f"&{dm}" for dm in ir.sub_dofmaps)
+        d["sub_dofmaps_initialization"] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{sub_dofmaps}}};"
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""
@@ -93,15 +82,11 @@ def generator(ir, options):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-
-    fields = [
-        fname for _, fname, _, _ in Formatter().parse(ufcx_dofmap.factory) if fname
-    ]
+    fields = [fname for _, fname, _, _ in Formatter().parse(ufcx_dofmap.factory) if fname]
     # Remove square brackets from any field names
     fields = [f.split("[")[0] for f in fields]
     assert set(fields) == set(
-        d.keys()
-    ), "Mismatch between keys in template and in formatting dict."
+        d.keys()), "Mismatch between keys in template and in formatting dict."
 
     # Format implementation code
     implementation = ufcx_dofmap.factory.format_map(d)

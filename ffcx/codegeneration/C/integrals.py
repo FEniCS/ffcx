@@ -7,7 +7,7 @@
 import logging
 
 from ffcx.codegeneration.integral_generator import IntegralGenerator
-from ffcx.codegeneration import integrals_template as ufcx_integrals
+from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type

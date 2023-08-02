@@ -14,11 +14,11 @@ UFC function from an intermediate representation (IR).
 import logging
 import typing
 
-from ffcx.codegeneration.dofmap import generator as dofmap_generator
+from ffcx.codegeneration.C.dofmap import generator as dofmap_generator
 from ffcx.codegeneration.expressions import generator as expression_generator
-from ffcx.codegeneration.finite_element import generator as finite_element_generator
-from ffcx.codegeneration.form import generator as form_generator
-from ffcx.codegeneration.integrals import generator as integral_generator
+from ffcx.codegeneration.C.finite_element import generator as finite_element_generator
+from ffcx.codegeneration.C.form import generator as form_generator
+from ffcx.codegeneration.C.integrals import generator as integral_generator
 
 logger = logging.getLogger("ffcx")
 
