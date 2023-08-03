@@ -15,7 +15,7 @@ import logging
 import typing
 
 from ffcx.codegeneration.C.dofmap import generator as dofmap_generator
-from ffcx.codegeneration.expressions import generator as expression_generator
+from ffcx.codegeneration.C.expressions import generator as expression_generator
 from ffcx.codegeneration.C.finite_element import generator as finite_element_generator
 from ffcx.codegeneration.C.form import generator as form_generator
 from ffcx.codegeneration.C.integrals import generator as integral_generator
