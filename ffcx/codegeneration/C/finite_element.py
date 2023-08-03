@@ -10,7 +10,7 @@
 
 import logging
 
-import ffcx.codegeneration.basix_custom_element_template as ufcx_basix_custom_finite_element
+import ffcx.codegeneration.C.basix_custom_element_template as ufcx_basix_custom_finite_element
 import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
 import ufl
 

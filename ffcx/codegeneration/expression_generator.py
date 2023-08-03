@@ -12,7 +12,6 @@ from typing import Any, DefaultDict, Dict, Set
 import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.cnodes import CNode
 from ffcx.ir.representation import ExpressionIR
 from ffcx.naming import scalar_to_value_type
 
@@ -27,7 +26,7 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scope: Dict[Any, CNode] = {}
+        self.scope = {}
         self._ufl_names: Set[Any] = set()
         self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
         self.shared_symbols: Dict[Any, Any] = {}
