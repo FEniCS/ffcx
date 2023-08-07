@@ -60,7 +60,7 @@ def reference_facet_jacobian(L, tablename, cellname, type: str):
 def reference_cell_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.volume(celltype)
-    return L.VariableDecl(f"{cellname}_{tablename}", values=out, const=True)
+    return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", out)
 
 
 def reference_facet_volume(L, tablename, cellname, type: str):
@@ -69,7 +69,7 @@ def reference_facet_volume(L, tablename, cellname, type: str):
     for i in volumes[1:]:
         if not np.isclose(i, volumes[0]):
             raise ValueError("Reference facet volume not supported for this cell type.")
-    return L.VariableDecl(f"{cellname}_{tablename}", f"{type}", volumes[0], const=True)
+    return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", volumes[0])
 
 
 def reference_edge_vectors(L, tablename, cellname, type: str):
