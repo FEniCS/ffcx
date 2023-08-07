@@ -267,6 +267,10 @@ class QuadratureElement(basix.ufl._ElementBase):
         """The Basix map type."""
         return basix.MapType.identity
 
+    @property
+    def polyset_type(self) -> basix.PolysetType:
+        """The polyset type of the element."""
+        raise NotImplementedError()
 
 class RealElement(basix.ufl._ElementBase):
     """A real element."""
