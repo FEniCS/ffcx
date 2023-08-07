@@ -22,21 +22,22 @@ def tabulate_entity_dofs(entity_dofs: typing.List[typing.List[typing.List[int]]]
     tdim = len(num_dofs_per_entity) - 1
 
     # Generate cases for each dimension:
+    cases = "switch(d)\n{\n"
     for dim in range(tdim + 1):
         # Ignore if no entities for this dimension
         if num_dofs_per_entity[dim] == 0:
             continue
-
+        cases += f"  case {dim}:\n"
+        cases += "   switch(i)\n   {\n"
         # Generate cases for each mesh entity
-        cases = "switch(d)\n{\n"
         for entity in range(len(entity_dofs[dim])):
-            cases += f"  case {entity}:\n   switch(i)\n   {{\n"
+            cases += f"  case {entity}:\n"
             for (j, dof) in enumerate(entity_dofs[dim][entity]):
-                cases += f"    case {j}:\n    {{\n     dofs[{j}] = {dof};\n"
-                cases += "     break;\n    }\n"
-            cases += "  }\n"
-        cases += "}\n"
+                cases += f"     dofs[{j}] = {dof};\n"
+            cases += "     break;\n"
 
+        cases += "  }\n"
+    cases += "}\n"
     return cases
 
 

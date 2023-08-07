@@ -281,9 +281,10 @@ class Symbol(LExprTerminal):
 
     precedence = PRECEDENCE.SYMBOL
 
-    def __init__(self, name):
+    def __init__(self, name, dtype=None):
         assert isinstance(name, str)
         self.name = name
+        self.dtype = dtype
 
     def __eq__(self, other):
         return isinstance(other, Symbol) and self.name == other.name

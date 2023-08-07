@@ -172,11 +172,7 @@ class FFCXBackendSymbols(object):
     def constant_index_access(self, constant, index):
         offset = self.original_constant_offsets[constant]
         c = L.Symbol("c")
-
         return c[offset + index]
-
-    def named_table(self, name):
-        return L.Symbol(name)
 
     def element_table(self, tabledata, entitytype, restriction):
         entity = self.entity(entitytype, restriction)
@@ -199,4 +195,4 @@ class FFCXBackendSymbols(object):
             qp = 0
 
         # Return direct access to element table
-        return self.named_table(tabledata.name)[qp][entity][iq]
+        return L.Symbol(tabledata.name)[qp][entity][iq]

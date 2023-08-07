@@ -380,8 +380,6 @@ class IntegralGenerator(object):
                         j = len(intermediates)
                         if use_symbol_array:
                             vaccess = symbol[j]
-                            print('assign ', vaccess.array.name, [v.value for v in vaccess.indices], vexpr)
-
                             intermediates.append(L.Assign(vaccess, vexpr))
                         else:
                             scalar_type = self.backend.access.options["scalar_type"]
