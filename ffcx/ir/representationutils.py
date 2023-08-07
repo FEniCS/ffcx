@@ -44,18 +44,18 @@ class QuadratureRule:
         return self.hash_obj.hexdigest()[-3:]
 
 
-def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
+def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elements):
     """Create quadrature rule and return points and weights."""
     if integral_type == "cell":
-        return create_quadrature(cell.cellname(), degree, rule)
+        return create_quadrature(cell.cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:
         facet_types = cell.facet_types()
         # Raise exception for cells with more than one facet type e.g. prisms
         if len(facet_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        return create_quadrature(facet_types[0].cellname(), degree, rule)
+        return create_quadrature(facet_types[0].cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.point_integral_types:
-        return create_quadrature("vertex", degree, rule)
+        return create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
         return (None, None)
 

@@ -71,15 +71,19 @@ def basix_index(indices: typing.Tuple[int]) -> int:
     return basix.index(*indices)
 
 
-def create_quadrature(cellname, degree, rule) -> typing.Tuple[npt.NDArray[np.float64],
-                                                              npt.NDArray[np.float64]]:
+def create_quadrature(
+    cellname: str, degree: int, rule: str, elements: typing.List[basix.ufl._ElementBase]
+) -> typing.Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Create a quadrature rule."""
     if cellname == "vertex":
         return (np.ones((1, 0), dtype=np.float64), np.ones(1, dtype=np.float64))
     else:
+        celltype = basix.cell.string_to_type(cellname)
+        polyset_type = basix.PolysetType.standard
+        for e in elements:
+            polyset_type = basix.polyset_superset(celltype, polyset_type, e.polyset_type)
         return basix.quadrature.make_quadrature(
-            basix.cell.string_to_type(cellname), degree,
-            rule=basix.quadrature.string_to_type(rule))
+            celltype, degree, rule=basix.quadrature.string_to_type(rule), polyset_type=polyset_type)
 
 
 def reference_cell_vertices(cellname: str) -> npt.NDArray[np.float64]:
@@ -112,7 +116,7 @@ class QuadratureElement(basix.ufl._ElementBase):
             assert points is None
             assert weights is None
             repr = f"QuadratureElement({cellname}, {scheme}, {degree})"
-            self._points, self._weights = create_quadrature(cellname, degree, scheme)
+            self._points, self._weights = create_quadrature(cellname, degree, scheme, [])
         else:
             assert degree is None
             assert points is not None
