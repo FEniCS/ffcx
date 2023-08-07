@@ -773,29 +773,36 @@ class ArrayDecl(Statement):
 
     is_scoped = False
 
-    def __init__(self, typename, symbol, sizes=None, values=None):
-        assert isinstance(typename, str)
+    def __init__(self, symbol, typename=None, sizes=None, values=None, const=False):
+        self.symbol = as_symbol(symbol)
+
+        if typename is None:
+            assert values is not None
+            if values.dtype == np.float64:
+                typename = "double"
+            elif values.dtype == np.float32:
+                typename = "float"
+            else:
+                raise RuntimeError
         self.typename = typename
 
-        if isinstance(symbol, FlattenedArray):
-            if sizes is None:
-                assert symbol.dims is not None
-                sizes = symbol.dims
-            elif symbol.dims is not None:
-                assert symbol.dims == sizes
-            self.symbol = symbol.array
-        else:
-            self.symbol = as_symbol(symbol)
-
+        if sizes is None:
+            assert values is not None
+            sizes = values.shape
         if isinstance(sizes, int):
             sizes = (sizes,)
         self.sizes = tuple(sizes)
+
+        if values is None:
+            assert typename and sizes
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_lexpr.
         if isinstance(values, (list, tuple)):
             self.values = np.asarray(values)
         else:
             self.values = values
+
+        self.const = const
 
     def __eq__(self, other):
         attributes = ("typename", "symbol", "sizes", "padlen", "values")
@@ -875,9 +882,9 @@ class UFL2LNodes(object):
             ufl.constantvalue.FloatValue: lambda x: LiteralFloat(float(x)),
             ufl.constantvalue.ComplexValue: lambda x: LiteralFloat(x.value()),
             ufl.constantvalue.Zero: lambda x: LiteralFloat(0.0),
-            ufl.algebra.Product: lambda x, a, b: Product([a, b]),
-            ufl.algebra.Sum: lambda x, a, b: Add(a, b),
-            ufl.algebra.Division: lambda x, a, b: Div(a, b),
+            ufl.algebra.Product: lambda x, a, b: a * b,
+            ufl.algebra.Sum: lambda x, a, b: a + b,
+            ufl.algebra.Division: lambda x, a, b: a / b,
             ufl.algebra.Abs: self.math_function,
             ufl.algebra.Power: self.math_function,
             ufl.algebra.Real: self.math_function,

@@ -161,7 +161,9 @@ class CFormatter(object):
             vals = "{}"
         else:
             vals = build_initializer_lists(arr.values)
-        return f"{arr.typename} {symbol}{dims} = {vals};\n"
+        cstr = "static const" if arr.const else ""
+
+        return f"{cstr} {arr.typename} {symbol}{dims} = {vals};\n"
 
     def format_array_access(self, arr) -> str:
         name = self.c_format(arr.array)
@@ -198,6 +200,10 @@ class CFormatter(object):
 
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
+
+    def format_neg(self, val) -> str:
+        arg = self.c_format(val.arg)
+        return f"-{arg}"
 
     def format_not(self, val) -> str:
         arg = self.c_format(val.arg)
@@ -269,6 +275,7 @@ class CFormatter(object):
         "Assign": format_assign,
         "AssignAdd": format_assign,
         "Product": format_nary_op,
+        "Neg": format_neg,
         "Sum": format_nary_op,
         "Add": format_binary_op,
         "Sub": format_binary_op,

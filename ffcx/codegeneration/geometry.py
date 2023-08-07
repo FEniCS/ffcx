@@ -48,19 +48,19 @@ def facet_edge_vertices(L, tablename, cellname):
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
     out = np.array(edge_vertices, dtype=int)
-    return L.ArrayDecl("static const unsigned int", f"{cellname}_{tablename}", out.shape, out)
+    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
 
 
 def reference_facet_jacobian(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_jacobians(celltype)
-    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
+    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
 
 
 def reference_cell_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.volume(celltype)
-    return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", out)
+    return L.VariableDecl(f"{cellname}_{tablename}", values=out, const=True)
 
 
 def reference_facet_volume(L, tablename, cellname, type: str):
@@ -69,7 +69,7 @@ def reference_facet_volume(L, tablename, cellname, type: str):
     for i in volumes[1:]:
         if not np.isclose(i, volumes[0]):
             raise ValueError("Reference facet volume not supported for this cell type.")
-    return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", volumes[0])
+    return L.VariableDecl(f"{cellname}_{tablename}", f"{type}", volumes[0], const=True)
 
 
 def reference_edge_vectors(L, tablename, cellname, type: str):
@@ -78,7 +78,7 @@ def reference_edge_vectors(L, tablename, cellname, type: str):
     geometry = basix.geometry(celltype)
     edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
     out = np.array(edge_vectors[cellname])
-    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
+    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
 
 
 def facet_reference_edge_vectors(L, tablename, cellname, type: str):
@@ -101,16 +101,16 @@ def facet_reference_edge_vectors(L, tablename, cellname, type: str):
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
     out = np.array(edge_vectors)
-    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
+    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
 
 
 def reference_facet_normals(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_outward_normals(celltype)
-    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", out.shape, out)
+    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
 
 
 def facet_orientation(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
-    out = basix.cell.facet_orientations(celltype)
-    return L.ArrayDecl(f"static const {type}", f"{cellname}_{tablename}", len(out), out)
+    out = np.array(basix.cell.facet_orientations(celltype))
+    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)

@@ -162,17 +162,12 @@ class IntegralGenerator(object):
 
         # Loop over quadrature rules
         for quadrature_rule, integrand in self.ir.integrand.items():
-            num_points = quadrature_rule.weights.shape[0]
 
             # Generate quadrature weights array
             wsym = self.backend.symbols.weights_table(quadrature_rule)
             parts += [
                 L.ArrayDecl(
-                    f"static const {value_type}",
-                    wsym,
-                    num_points,
-                    quadrature_rule.weights,
-                )
+                    wsym, values=quadrature_rule.weights, const=True)
             ]
 
         # Add leading comment if there are any tables
@@ -248,7 +243,7 @@ class IntegralGenerator(object):
         these rotations.
 
         """
-        return [L.ArrayDecl(f"static const {value_type}", name, table.shape, table)]
+        return [L.ArrayDecl(name, values=table, const=True)]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
@@ -385,6 +380,8 @@ class IntegralGenerator(object):
                         j = len(intermediates)
                         if use_symbol_array:
                             vaccess = symbol[j]
+                            print('assign ', vaccess.array.name, [v.value for v in vaccess.indices], vexpr)
+
                             intermediates.append(L.Assign(vaccess, vexpr))
                         else:
                             scalar_type = self.backend.access.options["scalar_type"]
@@ -405,9 +402,9 @@ class IntegralGenerator(object):
             if use_symbol_array:
                 parts += [
                     L.ArrayDecl(
-                        self.backend.access.options["scalar_type"],
                         symbol,
-                        len(intermediates),
+                        typename=self.backend.access.options["scalar_type"],
+                        sizes=len(intermediates),
                     )
                 ]
             parts += intermediates
@@ -626,7 +623,7 @@ class IntegralGenerator(object):
                     else:
                         t = self.new_temp_symbol("t")
                         scalar_type = self.backend.access.options["scalar_type"]
-                        pre_loop.append(L.ArrayDecl(scalar_type, t, blockdims[0]))
+                        pre_loop.append(L.ArrayDecl(t, typename=scalar_type, sizes=blockdims[0]))
                         keep[indices].append(
                             L.float_product([statement, t[B_indices[0]]])
                         )

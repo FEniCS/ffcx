@@ -14,11 +14,7 @@ UFC function from an intermediate representation (IR).
 import logging
 import typing
 
-from ffcx.codegeneration.C.dofmap import generator as dofmap_generator
-from ffcx.codegeneration.C.expressions import generator as expression_generator
-from ffcx.codegeneration.C.finite_element import generator as finite_element_generator
-from ffcx.codegeneration.C.form import generator as form_generator
-from ffcx.codegeneration.C.integrals import generator as integral_generator
+from importlib import import_module
 
 logger = logging.getLogger("ffcx")
 
@@ -42,6 +38,13 @@ def generate_code(ir, options) -> CodeBlocks:
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
+
+    lang = options.get("language", "C")
+    finite_element_generator = import_module(f"ffcx.codegeneration.{lang}.finite_element").generator
+    dofmap_generator = import_module(f"ffcx.codegeneration.{lang}.dofmap").generator
+    integral_generator = import_module(f"ffcx.codegeneration.{lang}.integrals").generator
+    form_generator = import_module(f"ffcx.codegeneration.{lang}.form").generator
+    expression_generator = import_module(f"ffcx.codegeneration.{lang}.expressions").generator
 
     # Generate code for finite_elements
     code_finite_elements = [

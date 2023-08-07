@@ -14,6 +14,7 @@ from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.ir.representation import ExpressionIR
 from ffcx.naming import scalar_to_value_type
+import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -26,14 +27,13 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scope = {}
+        self.scope: Dict = {}
         self._ufl_names: Set[Any] = set()
         self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
         self.shared_symbols: Dict[Any, Any] = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):
-        L = self.backend.language
 
         parts = []
         scalar_type = self.backend.access.options["scalar_type"]
@@ -59,7 +59,6 @@ class ExpressionGenerator:
 
     def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
-        L = self.backend.language
 
         # Currently we only support circumradius
         ufl_geometry = {
@@ -84,18 +83,15 @@ class ExpressionGenerator:
 
     def generate_element_tables(self, float_type: str):
         """Generate tables of FE basis evaluated at specified points."""
-        L = self.backend.language
         parts = []
 
         tables = self.ir.unique_tables
-
-        padlen = self.ir.options["padlen"]
         table_names = sorted(tables)
 
         for name in table_names:
             table = tables[name]
             decl = L.ArrayDecl(
-                f"static const {float_type}", name, table.shape, table, padlen=padlen)
+                name, typename=f"{float_type}", sizes=table.shape, values=table, const=True)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -111,7 +107,6 @@ class ExpressionGenerator:
         In the context of expressions quadrature loop is not accumulated.
 
         """
-        L = self.backend.language
 
         # Generate varying partition
         body = self.generate_varying_partition()
@@ -137,7 +132,6 @@ class ExpressionGenerator:
 
     def generate_varying_partition(self):
         """Generate factors of blocks which are not cellwise constant."""
-        L = self.backend.language
 
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
@@ -150,7 +144,6 @@ class ExpressionGenerator:
 
     def generate_piecewise_partition(self):
         """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
-        L = self.backend.language
 
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
@@ -187,7 +180,6 @@ class ExpressionGenerator:
 
     def generate_block_parts(self, blockmap, blockdata):
         """Generate and return code parts for a given block."""
-        L = self.backend.language
 
         # The parts to return
         preparts = []
@@ -287,7 +279,6 @@ class ExpressionGenerator:
             Indices used to index element tables
 
         """
-        L = self.backend.language
 
         arg_factors = []
         for i in range(block_rank):
@@ -308,7 +299,6 @@ class ExpressionGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        L = self.backend.language
         name = "%s%d" % (basename, self.symbol_counters[basename])
         self.symbol_counters[basename] += 1
         return L.Symbol(name)
@@ -321,7 +311,6 @@ class ExpressionGenerator:
 
     def generate_partition(self, symbol, F, mode):
         """Generate computations of factors of blocks."""
-        L = self.backend.language
 
         definitions = []
         pre_definitions = dict()
@@ -410,6 +399,6 @@ class ExpressionGenerator:
         if intermediates:
             if use_symbol_array:
                 scalar_type = self.backend.access.options["scalar_type"]
-                parts += [L.ArrayDecl(scalar_type, symbol, len(intermediates))]
+                parts += [L.ArrayDecl(symbol, typename=scalar_type, sizes=len(intermediates))]
             parts += intermediates
         return parts
