@@ -30,7 +30,8 @@ ufcx_basix_custom_finite_element {factory_name} =
   .discontinuous = {discontinuous},
   .highest_complete_degree = {highest_complete_degree},
   .interpolation_nderivs = {interpolation_nderivs},
-  .highest_degree = {highest_degree}
+  .highest_degree = {highest_degree},
+  .polyset_type = {polyset_type}
 }};
 
 // End of code for custom element {factory_name}

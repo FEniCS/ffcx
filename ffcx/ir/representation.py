@@ -70,7 +70,7 @@ class CustomElementIR(typing.NamedTuple):
     discontinuous: bool
     highest_complete_degree: int
     highest_degree: int
-
+    polyset_type: basix.PolysetType
 
 class ElementIR(typing.NamedTuple):
     id: int
@@ -274,6 +274,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
     ir["highest_complete_degree"] = basix_element.highest_complete_degree
     ir["highest_degree"] = basix_element.highest_degree
+    ir["polyset_type"] = basix_element.polyset_type
 
     return CustomElementIR(**ir)
 

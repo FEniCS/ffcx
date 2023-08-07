@@ -200,6 +200,9 @@ extern "C"
 
     /// The highest degree of a polynomial in the element
     int highest_degree;
+
+    /// The polyset type of the element
+    int polyset_type;
   } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
