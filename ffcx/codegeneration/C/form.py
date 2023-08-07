@@ -58,7 +58,7 @@ def generator(ir, options):
         code = "return NULL;"
     else:
         names = ", ".join(f'"{name}"' for name in cstnames)
-        code = "static const char* names[] = {{{names}}};\n"
+        code = f"static const char* names[] = {{{names}}};\n"
         code += "return names;\n"
     d["constant_name_map"] = code
 
