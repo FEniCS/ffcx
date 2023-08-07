@@ -59,7 +59,6 @@ class ExpressionGenerator:
 
     def generate_geometry_tables(self, float_type: str):
         """Generate static tables of geometry data."""
-
         # Currently we only support circumradius
         ufl_geometry = {
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
@@ -107,7 +106,6 @@ class ExpressionGenerator:
         In the context of expressions quadrature loop is not accumulated.
 
         """
-
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
@@ -132,7 +130,6 @@ class ExpressionGenerator:
 
     def generate_varying_partition(self):
         """Generate factors of blocks which are not cellwise constant."""
-
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
@@ -144,7 +141,6 @@ class ExpressionGenerator:
 
     def generate_piecewise_partition(self):
         """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
-
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
@@ -180,7 +176,6 @@ class ExpressionGenerator:
 
     def generate_block_parts(self, blockmap, blockdata):
         """Generate and return code parts for a given block."""
-
         # The parts to return
         preparts = []
         quadparts = []
@@ -279,7 +274,6 @@ class ExpressionGenerator:
             Indices used to index element tables
 
         """
-
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -311,7 +305,6 @@ class ExpressionGenerator:
 
     def generate_partition(self, symbol, F, mode):
         """Generate computations of factors of blocks."""
-
         definitions = []
         pre_definitions = dict()
         intermediates = []
