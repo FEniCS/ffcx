@@ -272,6 +272,7 @@ class QuadratureElement(basix.ufl._ElementBase):
         """The polyset type of the element."""
         raise NotImplementedError()
 
+
 class RealElement(basix.ufl._ElementBase):
     """A real element."""
 

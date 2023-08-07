@@ -72,6 +72,7 @@ class CustomElementIR(typing.NamedTuple):
     highest_degree: int
     polyset_type: basix.PolysetType
 
+
 class ElementIR(typing.NamedTuple):
     id: int
     name: str
