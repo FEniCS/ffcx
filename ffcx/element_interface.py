@@ -77,7 +77,7 @@ def create_quadrature(cellname, degree, rule) -> typing.Tuple[npt.NDArray[np.flo
     if cellname == "vertex":
         return (np.ones((1, 0), dtype=np.float64), np.ones(1, dtype=np.float64))
     else:
-        return basix.quadrature.make_quadrature(
+        return basix.make_quadrature(
             basix.cell.string_to_type(cellname), degree,
             rule=basix.quadrature.string_to_type(rule))
 
