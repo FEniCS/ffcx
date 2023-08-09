@@ -15,8 +15,11 @@ import ffcx.codegeneration.dofmap_template as ufcx_dofmap
 logger = logging.getLogger("ffcx")
 
 
-def tabulate_entity_dofs(L, entity_dofs: typing.List[typing.List[typing.List[int]]],
-                         num_dofs_per_entity: typing.List[int]):
+def tabulate_entity_dofs(
+    L,
+    entity_dofs: typing.List[typing.List[typing.List[int]]],
+    num_dofs_per_entity: typing.List[int],
+):
     # Output argument array
     dofs = L.Symbol("dofs")
 
@@ -30,7 +33,6 @@ def tabulate_entity_dofs(L, entity_dofs: typing.List[typing.List[typing.List[int
     # Generate cases for each dimension:
     all_cases = []
     for dim in range(tdim + 1):
-
         # Ignore if no entities for this dimension
         if num_dofs_per_entity[dim] == 0:
             continue
@@ -39,7 +41,7 @@ def tabulate_entity_dofs(L, entity_dofs: typing.List[typing.List[typing.List[int
         cases = []
         for entity in range(len(entity_dofs[dim])):
             casebody = []
-            for (j, dof) in enumerate(entity_dofs[dim][entity]):
+            for j, dof in enumerate(entity_dofs[dim][entity]):
                 casebody += [L.Assign(dofs[j], dof)]
             cases.append((entity, L.StatementList(casebody)))
 
@@ -64,7 +66,7 @@ def generator(ir, options):
 
     # Attributes
     d["factory_name"] = ir.name
-    d["signature"] = f"\"{ir.signature}\""
+    d["signature"] = f'"{ir.signature}"'
     d["num_global_support_dofs"] = ir.num_global_support_dofs
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
@@ -72,27 +74,84 @@ def generator(ir, options):
     import ffcx.codegeneration.C.cnodes as L
 
     num_entity_dofs = ir.num_entity_dofs + [0, 0, 0, 0]
-    num_entity_dofs = num_entity_dofs[: 4]
+    num_entity_dofs = num_entity_dofs[:4]
     d["num_entity_dofs"] = f"num_entity_dofs_{ir.name}"
-    d["num_entity_dofs_init"] = L.ArrayDecl("int", f"num_entity_dofs_{ir.name}",
-                                            values=num_entity_dofs, sizes=4)
+    d["num_entity_dofs_init"] = L.ArrayDecl(
+        "int", f"num_entity_dofs_{ir.name}", values=num_entity_dofs, sizes=4
+    )
 
     num_entity_closure_dofs = ir.num_entity_closure_dofs + [0, 0, 0, 0]
     num_entity_closure_dofs = num_entity_closure_dofs[:4]
     d["num_entity_closure_dofs"] = f"num_entity_closure_dofs_{ir.name}"
-    d["num_entity_closure_dofs_init"] = L.ArrayDecl("int", f"num_entity_closure_dofs_{ir.name}",
-                                                    values=num_entity_closure_dofs, sizes=4)
+    d["num_entity_closure_dofs_init"] = L.ArrayDecl(
+        "int",
+        f"num_entity_closure_dofs_{ir.name}",
+        values=num_entity_closure_dofs,
+        sizes=4,
+    )
+
+    flattened_entity_dofs = []
+    entity_dof_offsets = [0]
+    for dim in ir.entity_dofs:
+        for ent in dim:
+            for v in ent:
+                flattened_entity_dofs.append(v)
+            entity_dof_offsets.append(len(flattened_entity_dofs))
+    d["entity_dofs"] = f"entity_dofs_{ir.name}"
+    d["entity_dofs_init"] = L.ArrayDecl(
+        "static const int",
+        f"entity_dofs_{ir.name}",
+        values=flattened_entity_dofs,
+        sizes=len(flattened_entity_dofs),
+    )
+    d["entity_dof_offsets"] = f"entity_dof_offsets_{ir.name}"
+    d["entity_dof_offsets_init"] = L.ArrayDecl(
+        "static const int",
+        f"entity_dof_offsets_{ir.name}",
+        values=entity_dof_offsets,
+        sizes=len(entity_dof_offsets),
+    )
+
+    # Closure
+    flattened_entity_closure_dofs = []
+    entity_closure_dof_offsets = [0]
+    for dim in ir.entity_closure_dofs:
+        for ent in dim:
+            for v in ent:
+                flattened_entity_closure_dofs.append(v)
+            entity_closure_dof_offsets.append(len(flattened_entity_closure_dofs))
+    d["entity_closure_dofs"] = f"entity_closure_dofs_{ir.name}"
+    d["entity_closure_dofs_init"] = L.ArrayDecl(
+        "static const int",
+        f"entity_closure_dofs_{ir.name}",
+        values=flattened_entity_closure_dofs,
+        sizes=len(flattened_entity_closure_dofs),
+    )
+    d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
+    d["entity_closure_dof_offsets_init"] = L.ArrayDecl(
+        "static const int",
+        f"entity_closure_dof_offsets_{ir.name}",
+        values=entity_closure_dof_offsets,
+        sizes=len(entity_closure_dof_offsets),
+    )
 
     d["block_size"] = ir.block_size
 
     # Functions
-    d["tabulate_entity_dofs"] = tabulate_entity_dofs(L, ir.entity_dofs, ir.num_entity_dofs)
-    d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(L, ir.entity_closure_dofs, ir.num_entity_closure_dofs)
+    d["tabulate_entity_dofs"] = tabulate_entity_dofs(
+        L, ir.entity_dofs, ir.num_entity_dofs
+    )
+    d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(
+        L, ir.entity_closure_dofs, ir.num_entity_closure_dofs
+    )
 
     if len(ir.sub_dofmaps) > 0:
         d["sub_dofmaps_initialization"] = L.ArrayDecl(
-            "ufcx_dofmap*", f"sub_dofmaps_{ir.name}",
-            values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.sub_dofmaps], sizes=len(ir.sub_dofmaps))
+            "ufcx_dofmap*",
+            f"sub_dofmaps_{ir.name}",
+            values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.sub_dofmaps],
+            sizes=len(ir.sub_dofmaps),
+        )
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""
@@ -100,11 +159,15 @@ def generator(ir, options):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-    fields = [fname for _, fname, _, _ in Formatter().parse(ufcx_dofmap.factory) if fname]
+
+    fields = [
+        fname for _, fname, _, _ in Formatter().parse(ufcx_dofmap.factory) if fname
+    ]
     # Remove square brackets from any field names
     fields = [f.split("[")[0] for f in fields]
     assert set(fields) == set(
-        d.keys()), "Mismatch between keys in template and in formatting dict."
+        d.keys()
+    ), "Mismatch between keys in template and in formatting dict."
 
     # Format implementation code
     implementation = ufcx_dofmap.factory.format_map(d)

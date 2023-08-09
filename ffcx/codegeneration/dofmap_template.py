@@ -26,6 +26,14 @@ void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int 
 
 {num_entity_closure_dofs_init}
 
+{entity_dofs_init}
+
+{entity_dof_offsets_init}
+
+{entity_closure_dofs_init}
+
+{entity_closure_dof_offsets_init}
+
 ufcx_dofmap {factory_name} =
 {{
   .signature = {signature},
@@ -33,6 +41,10 @@ ufcx_dofmap {factory_name} =
   .num_element_support_dofs = {num_element_support_dofs},
   .block_size = {block_size},
   .num_entity_dofs = {num_entity_dofs},
+  .entity_dofs = {entity_dofs},
+  .entity_dof_offsets = {entity_dof_offsets},
+  .entity_closure_dofs = {entity_closure_dofs},
+  .entity_closure_dof_offsets = {entity_closure_dof_offsets},
   .tabulate_entity_dofs = tabulate_entity_dofs_{factory_name},
   .num_entity_closure_dofs = {num_entity_closure_dofs},
   .tabulate_entity_closure_dofs = tabulate_entity_closure_dofs_{factory_name},

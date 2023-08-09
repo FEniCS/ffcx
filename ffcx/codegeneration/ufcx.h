@@ -15,11 +15,12 @@
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
-#define UFCX_VERSION                                                            \
+#define UFCX_VERSION                                                           \
   UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE
 #else
-#define UFCX_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".dev0"
+#define UFCX_VERSION                                                           \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".de" \
+                     "v0"
 #endif
 
 #include <stdbool.h>
@@ -70,7 +71,8 @@ extern "C"
 
   /// Forward declarations
   typedef struct ufcx_finite_element ufcx_finite_element;
-  typedef struct ufcx_basix_custom_finite_element ufcx_basix_custom_finite_element;
+  typedef struct ufcx_basix_custom_finite_element
+      ufcx_basix_custom_finite_element;
   typedef struct ufcx_dofmap ufcx_dofmap;
   typedef struct ufcx_function_space ufcx_function_space;
 
@@ -130,7 +132,8 @@ extern "C"
     /// Basix identifier of the cell shape
     int basix_cell;
 
-    /// Indicates whether or not this is the discontinuous version of the element
+    /// Indicates whether or not this is the discontinuous version of the
+    /// element
     bool discontinuous;
 
     /// The Lagrange variant to be passed to Basix's create_element function
@@ -189,7 +192,8 @@ extern "C"
     /// The Sobolev space for the element
     int sobolev_space;
 
-    /// Indicates whether or not this is the discontinuous version of the element
+    /// Indicates whether or not this is the discontinuous version of the
+    /// element
     bool discontinuous;
 
     /// The highest degree full polynomial space contained in this element
@@ -219,15 +223,23 @@ extern "C"
     int block_size;
 
     /// Number of dofs associated with each cell entity of dimension d
-    int *num_entity_dofs;
+    int* num_entity_dofs;
+
+    /// @brief New interface
+    int* entity_dofs;
+    int* entity_dof_offsets;
+    int* entity_closure_dofs;
+    int* entity_closure_dof_offsets;
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
 
-    /// Number of dofs associated with the closure of each cell entity of dimension d
-    int *num_entity_closure_dofs;
+    /// Number of dofs associated with the closure of each cell entity of
+    /// dimension d
+    int* num_entity_closure_dofs;
 
-    /// Tabulate the local-to-local mapping of dofs on the closure of entity (d, i)
+    /// Tabulate the local-to-local mapping of dofs on the closure of entity (d,
+    /// i)
     void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
 
     /// Number of sub dofmaps (for a mixed element)
@@ -271,8 +283,8 @@ extern "C"
   /// null pointer can be passed. For interior facets the array will have size 2
   /// (one permutation for each cell adjacent to the facet).
   typedef void(ufcx_tabulate_tensor_float32)(
-      float* restrict A, const float* restrict w,
-      const float* restrict c, const float* restrict coordinate_dofs,
+      float* restrict A, const float* restrict w, const float* restrict c,
+      const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -281,8 +293,8 @@ extern "C"
   ///
   /// @see ufcx_tabulate_tensor_single
   typedef void(ufcx_tabulate_tensor_float64)(
-      double* restrict A, const double* restrict w,
-      const double* restrict c, const double* restrict coordinate_dofs,
+      double* restrict A, const double* restrict w, const double* restrict c,
+      const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
@@ -292,7 +304,8 @@ extern "C"
   /// @see ufcx_tabulate_tensor_single
   typedef void(ufcx_tabulate_tensor_longdouble)(
       long double* restrict A, const long double* restrict w,
-      const long double* restrict c, const long double* restrict coordinate_dofs,
+      const long double* restrict c,
+      const long double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
