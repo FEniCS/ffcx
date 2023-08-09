@@ -26,6 +26,7 @@ class IntegralGenerator(object):
         # - definitions: for defining backend specific variables
         # - access: for accessing backend specific variables
         self.backend = backend
+        self.ufl_to_language = L.UFL2LNodes()
 
         # Set of operator names code has been generated for, used in the
         # end for selecting necessary includes
@@ -73,7 +74,7 @@ class IntegralGenerator(object):
         Returns the LNodes expression to access the value in the code.
         """
         if v._ufl_is_literal_:
-            return self.backend.ufl_to_language.get(v)
+            return self.ufl_to_language.get(v)
         f = self.scopes[quadrature_rule].get(v)
         if f is None:
             f = self.scopes[None].get(v)
@@ -321,7 +322,7 @@ class IntegralGenerator(object):
             # cache
             if not self.get_var(quadrature_rule, v):
                 if v._ufl_is_literal_:
-                    vaccess = self.backend.ufl_to_language.get(v)
+                    vaccess = self.ufl_to_language.get(v)
                 elif mt is not None:
                     # All finite element based terminals have table
                     # data, as well as some, but not all, of the
@@ -355,7 +356,7 @@ class IntegralGenerator(object):
 
                     # Mapping UFL operator to target language
                     self._ufl_names.add(v._ufl_handler_name_)
-                    vexpr = self.backend.ufl_to_language.get(v, *vops)
+                    vexpr = self.ufl_to_language.get(v, *vops)
 
                     # Create a new intermediate for each subexpression
                     # except boolean conditions and its childs

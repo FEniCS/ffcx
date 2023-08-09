@@ -15,7 +15,7 @@ from ffcx.codegeneration import lnodes as L
 logger = logging.getLogger("ffcx")
 
 
-class FFCXBackendDefinitions(object):
+class FFCXDefinitions(object):
     """FFCx specific code definitions."""
 
     def __init__(self, ir, symbols, options):

@@ -58,19 +58,13 @@ def format_mt_name(basename, mt):
     return access
 
 
-class FFCXBackendSymbols(object):
+class FFCXSymbols(object):
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(
-        self,
-        coefficient_numbering,
-        coefficient_offsets,
-        original_constant_offsets,
-    ):
-        self.coefficient_numbering = coefficient_numbering
-        self.coefficient_offsets = coefficient_offsets
-
-        self.original_constant_offsets = original_constant_offsets
+    def __init__(self, ir):
+        self.coefficient_numbering = ir.coefficient_numbering
+        self.coefficient_offsets = ir.coefficient_offsets
+        self.original_constant_offsets = ir.original_constant_offsets
 
     def element_tensor(self):
         """Symbol for the element tensor itself."""

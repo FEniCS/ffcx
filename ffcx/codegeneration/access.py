@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """FFCx/UFC specific variable access."""
 
-import logging
 import warnings
 
 import ufl
@@ -13,11 +12,8 @@ import basix.ufl
 from ffcx.element_interface import convert_element
 import ffcx.codegeneration.lnodes as L
 
-logger = logging.getLogger("ffcx")
 
-
-class FFCXBackendAccess(object):
-    """FFCx specific cpp formatter class."""
+class FFCXAccess(object):
 
     def __init__(self, ir, symbols, options):
         # Store ir and options

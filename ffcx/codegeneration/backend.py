@@ -5,27 +5,15 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFCx specific pieces for the code generation phase."""
 
-from ffcx.codegeneration.access import FFCXBackendAccess
-from ffcx.codegeneration.lnodes import UFL2LNodes
-from ffcx.codegeneration.definitions import FFCXBackendDefinitions
-from ffcx.codegeneration.symbols import FFCXBackendSymbols
+from ffcx.codegeneration.access import FFCXAccess
+from ffcx.codegeneration.definitions import FFCXDefinitions
+from ffcx.codegeneration.symbols import FFCXSymbols
 
 
 class FFCXBackend(object):
     """Class collecting all aspects of the FFCx backend."""
 
     def __init__(self, ir, options):
-        self.ufl_to_language = UFL2LNodes()
-
-        coefficient_numbering = ir.coefficient_numbering
-        coefficient_offsets = ir.coefficient_offsets
-
-        original_constant_offsets = ir.original_constant_offsets
-
-        self.symbols = FFCXBackendSymbols(
-            coefficient_numbering,
-            coefficient_offsets,
-            original_constant_offsets,
-        )
-        self.definitions = FFCXBackendDefinitions(ir, self.symbols, options)
-        self.access = FFCXBackendAccess(ir, self.symbols, options)
+        self.symbols = FFCXSymbols(ir)
+        self.definitions = FFCXDefinitions(ir, self.symbols, options)
+        self.access = FFCXAccess(ir, self.symbols, options)
