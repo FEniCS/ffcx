@@ -462,6 +462,11 @@ extern "C"
     /// Get an integral on sub domain subdomain_id
     ufcx_integral** (*integrals)(ufcx_integral_type);
 
+    /// New interface, static data, no function calls
+    ufcx_integral* form_integrals;
+    int* form_integral_ids;
+    int* form_integral_offsets;
+
   } ufcx_form;
 
   // FIXME: Formalise a UFCX 'function space'
