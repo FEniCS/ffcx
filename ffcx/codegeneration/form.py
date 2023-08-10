@@ -102,21 +102,21 @@ def generator(ir, options):
 
     d["form_integrals_init"] = L.ArrayDecl(
         "static ufcx_integral*",
-        f"integrals_{ir.name}",
+        f"form_integrals_{ir.name}",
         values=integrals,
         sizes=len(integrals),
     )
 
     d["form_integral_ids_init"] = L.ArrayDecl(
         "int",
-        f"integral_ids_{ir.name}",
+        f"form_integral_ids_{ir.name}",
         values=integral_ids,
         sizes=len(integral_ids),
     )
 
     d["form_integral_offsets_init"] = L.ArrayDecl(
         "int",
-        f"integral_offsets_{ir.name}",
+        f"form_integral_offsets_{ir.name}",
         values=integral_offsets,
         sizes=len(integral_offsets),
     )

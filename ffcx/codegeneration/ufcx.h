@@ -463,7 +463,7 @@ extern "C"
     ufcx_integral** (*integrals)(ufcx_integral_type);
 
     /// New interface, static data, no function calls
-    ufcx_integral* form_integrals;
+    ufcx_integral** form_integrals;
     int* form_integral_ids;
     int* form_integral_offsets;
 
