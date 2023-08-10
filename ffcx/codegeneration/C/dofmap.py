@@ -67,9 +67,45 @@ def generator(ir, options):
     num_entity_closure_dofs = ir.num_entity_closure_dofs + [0, 0, 0, 0]
     num_entity_closure_dofs = num_entity_closure_dofs[:4]
     d["num_entity_closure_dofs"] = f"num_entity_closure_dofs_{ir.name}"
+    values = ", ".join(str(i) for i in num_entity_closure_dofs)
     d[
         "num_entity_closure_dofs_init"
-    ] = f"int num_entity_closure_dofs_{ir.name}[4] = {{{', '.join(str(i) for i in num_entity_closure_dofs)}}};"
+    ] = f"int num_entity_closure_dofs_{ir.name}[] = {{{values}}};"
+
+    flattened_entity_dofs = []
+    entity_dof_offsets = [0]
+    for dim in ir.entity_dofs:
+        for ent in dim:
+            for v in ent:
+                flattened_entity_dofs.append(v)
+            entity_dof_offsets.append(len(flattened_entity_dofs))
+    d["entity_dofs"] = f"entity_dofs_{ir.name}"
+    values = ", ".join(str(i) for i in flattened_entity_dofs)
+    d["entity_dofs_init"] = f"int entity_dofs_{ir.name}[] = {{{values}}};"
+
+    d["entity_dof_offsets"] = f"entity_dof_offsets_{ir.name}"
+    values = ", ".join(str(i) for i in entity_dof_offsets)
+    d["entity_dof_offsets_init"] = f"int entity_dof_offsets_{ir.name}[] = {{{values}}};"
+
+    # Closure
+    flattened_entity_closure_dofs = []
+    entity_closure_dof_offsets = [0]
+    for dim in ir.entity_closure_dofs:
+        for ent in dim:
+            for v in ent:
+                flattened_entity_closure_dofs.append(v)
+            entity_closure_dof_offsets.append(len(flattened_entity_closure_dofs))
+    d["entity_closure_dofs"] = f"entity_closure_dofs_{ir.name}"
+    values = ", ".join(str(i) for i in flattened_entity_closure_dofs)
+    d[
+        "entity_closure_dofs_init"
+    ] = f"int entity_closure_dofs_{ir.name}[] = {{{values}}};"
+    d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
+    values = ", ".join(str(i) for i in entity_closure_dof_offsets)
+    d[
+        "entity_closure_dof_offsets_init"
+    ] = f"int entity_closure_dof_offsets_{ir.name}[] = {{{values}}};"
+
     d["block_size"] = ir.block_size
 
     # Functions
@@ -79,10 +115,10 @@ def generator(ir, options):
     )
 
     if len(ir.sub_dofmaps) > 0:
-        sub_dofmaps = ", ".join(f"&{dm}" for dm in ir.sub_dofmaps)
+        values = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
         d[
             "sub_dofmaps_initialization"
-        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{sub_dofmaps}}};"
+        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{values}}};"
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""
