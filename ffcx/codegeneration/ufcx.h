@@ -222,14 +222,20 @@ extern "C"
     /// Return the block size for a VectorElement or TensorElement
     int block_size;
 
+    /// Flattened list of dofs associated with each entity
+    int* entity_dofs;
+
+    /// Offset for dofs of each entity in entity_dofs
+    int* entity_dof_offsets;
+
+    /// Flattened list of closure dofs associated with each entity
+    int* entity_closure_dofs;
+
+    /// Offset for closure dofs of each entity in entity_closure_dofs
+    int* entity_closure_dof_offsets;
+
     /// Number of dofs associated with each cell entity of dimension d
     int* num_entity_dofs;
-
-    /// @brief New interface
-    int* entity_dofs;
-    int* entity_dof_offsets;
-    int* entity_closure_dofs;
-    int* entity_closure_dof_offsets;
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
     void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);

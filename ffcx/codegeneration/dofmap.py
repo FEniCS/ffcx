@@ -99,14 +99,14 @@ def generator(ir, options):
             entity_dof_offsets.append(len(flattened_entity_dofs))
     d["entity_dofs"] = f"entity_dofs_{ir.name}"
     d["entity_dofs_init"] = L.ArrayDecl(
-        "static const int",
+        "int",
         f"entity_dofs_{ir.name}",
         values=flattened_entity_dofs,
         sizes=len(flattened_entity_dofs),
     )
     d["entity_dof_offsets"] = f"entity_dof_offsets_{ir.name}"
     d["entity_dof_offsets_init"] = L.ArrayDecl(
-        "static const int",
+        "int",
         f"entity_dof_offsets_{ir.name}",
         values=entity_dof_offsets,
         sizes=len(entity_dof_offsets),
@@ -122,14 +122,14 @@ def generator(ir, options):
             entity_closure_dof_offsets.append(len(flattened_entity_closure_dofs))
     d["entity_closure_dofs"] = f"entity_closure_dofs_{ir.name}"
     d["entity_closure_dofs_init"] = L.ArrayDecl(
-        "static const int",
+        "int",
         f"entity_closure_dofs_{ir.name}",
         values=flattened_entity_closure_dofs,
         sizes=len(flattened_entity_closure_dofs),
     )
     d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
     d["entity_closure_dof_offsets_init"] = L.ArrayDecl(
-        "static const int",
+        "int",
         f"entity_closure_dof_offsets_{ir.name}",
         values=entity_closure_dof_offsets,
         sizes=len(entity_closure_dof_offsets),
