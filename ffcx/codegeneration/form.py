@@ -117,8 +117,8 @@ def generator(ir, options):
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
     else:
         d["form_integrals_init"] = ""
-        d["form_integals"] = "NULL"
-        d["form_integrals_ids_init"] = ""
+        d["form_integrals"] = "NULL"
+        d["form_integral_ids_init"] = ""
         d["form_integral_ids"] = "NULL"
 
     d["form_integral_offsets_init"] = L.ArrayDecl(
