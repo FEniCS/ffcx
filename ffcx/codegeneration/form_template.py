@@ -75,8 +75,8 @@ ufcx_form {factory_name} =
 
   .integrals = integrals_{factory_name},
 
-  .form_integrals = form_integrals_{factory_name},
-  .form_integral_ids = form_integral_ids_{factory_name},
+  .form_integrals = {form_integrals},
+  .form_integral_ids = {form_integral_ids},
   .form_integral_offsets = form_integral_offsets_{factory_name}
 }};
 

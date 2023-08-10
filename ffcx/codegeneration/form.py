@@ -100,19 +100,26 @@ def generator(ir, options):
         integral_ids += ir.subdomain_ids[itg_type]
         integral_offsets.append(len(integrals))
 
-    d["form_integrals_init"] = L.ArrayDecl(
-        "static ufcx_integral*",
-        f"form_integrals_{ir.name}",
-        values=integrals,
-        sizes=len(integrals),
-    )
-
-    d["form_integral_ids_init"] = L.ArrayDecl(
-        "int",
-        f"form_integral_ids_{ir.name}",
-        values=integral_ids,
-        sizes=len(integral_ids),
-    )
+    if len(integrals) > 0:
+        d["form_integrals_init"] = L.ArrayDecl(
+            "static ufcx_integral*",
+            f"form_integrals_{ir.name}",
+            values=integrals,
+            sizes=len(integrals),
+        )
+        d["form_integrals"] = f"form_integrals_{ir.name}"
+        d["form_integral_ids_init"] = L.ArrayDecl(
+            "int",
+            f"form_integral_ids_{ir.name}",
+            values=integral_ids,
+            sizes=len(integral_ids),
+        )
+        d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
+    else:
+        d["form_integrals_init"] = ""
+        d["form_integals"] = "NULL"
+        d["form_integrals_ids_init"] = ""
+        d["form_integral_ids"] = "NULL"
 
     d["form_integral_offsets_init"] = L.ArrayDecl(
         "int",
