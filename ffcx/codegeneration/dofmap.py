@@ -8,7 +8,6 @@
 # old implementation in FFC
 
 import logging
-import typing
 
 import ffcx.codegeneration.dofmap_template as ufcx_dofmap
 
