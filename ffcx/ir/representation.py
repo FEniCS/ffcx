@@ -18,7 +18,6 @@ representation under the key "foo".
 
 import itertools
 import logging
-import numbers
 import typing
 import warnings
 
@@ -578,7 +577,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
             raise ValueError("Integral subdomain IDs must be non-negative.")
         ir["subdomain_ids"][integral_type][itg_index] = subdomain_ids
         ir["integral_names"][integral_type][itg_index] = integral_names[(form_id, itg_index)]
-  
+
     return FormIR(**ir)
 
 
