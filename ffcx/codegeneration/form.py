@@ -33,7 +33,10 @@ def generator(ir, options):
     code = []
     cases = []
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        cases += [(L.Symbol(itg_type), L.Return(len(ir.subdomain_ids[itg_type])))]
+        num_integrals = 0
+        for ids in ir.subdomain_ids[itg_type].values():
+            num_integrals += len(ids)
+        cases += [(L.Symbol(itg_type), L.Return(num_integrals))]
     code += [L.Switch("integral_type", cases, default=L.Return(0))]
     d["num_integrals"] = L.StatementList(code)
 
