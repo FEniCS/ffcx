@@ -52,7 +52,7 @@ b_cell = basix.cell.string_to_type(cell)
 
 # Find quadrature points for quadrature element
 b_rule = basix.quadrature.string_to_type(q_rule)
-quadrature_points, _ = basix.make_quadrature(b_rule, b_cell, q_degree)
+quadrature_points, _ = basix.quadrature.make_quadrature(b_cell, q_degree, rule=b_rule)
 
 # Get interpolation points for output space
 family = basix.finite_element.string_to_family("Lagrange", cell)
