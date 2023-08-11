@@ -15,47 +15,6 @@ import ffcx.codegeneration.dofmap_template as ufcx_dofmap
 logger = logging.getLogger("ffcx")
 
 
-def tabulate_entity_dofs(
-    L,
-    entity_dofs: typing.List[typing.List[typing.List[int]]],
-    num_dofs_per_entity: typing.List[int],
-):
-    # Output argument array
-    dofs = L.Symbol("dofs")
-
-    # Input arguments
-    d = L.Symbol("d")
-    i = L.Symbol("i")
-
-    # TODO: Removed check for (d <= tdim + 1)
-    tdim = len(num_dofs_per_entity) - 1
-
-    # Generate cases for each dimension:
-    all_cases = []
-    for dim in range(tdim + 1):
-        # Ignore if no entities for this dimension
-        if num_dofs_per_entity[dim] == 0:
-            continue
-
-        # Generate cases for each mesh entity
-        cases = []
-        for entity in range(len(entity_dofs[dim])):
-            casebody = []
-            for j, dof in enumerate(entity_dofs[dim][entity]):
-                casebody += [L.Assign(dofs[j], dof)]
-            cases.append((entity, L.StatementList(casebody)))
-
-        # Generate inner switch
-        # TODO: Removed check for (i <= num_entities-1)
-        inner_switch = L.Switch(i, cases, autoscope=False)
-        all_cases.append((dim, inner_switch))
-
-    if all_cases:
-        return L.Switch(d, all_cases, autoscope=False)
-    else:
-        return L.NoOp()
-
-
 def generator(ir, options):
     """Generate UFC code for a dofmap."""
     logger.info("Generating code for dofmap:")
@@ -72,23 +31,6 @@ def generator(ir, options):
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
 
     import ffcx.codegeneration.C.cnodes as L
-
-    num_entity_dofs = ir.num_entity_dofs + [0, 0, 0, 0]
-    num_entity_dofs = num_entity_dofs[:4]
-    d["num_entity_dofs"] = f"num_entity_dofs_{ir.name}"
-    d["num_entity_dofs_init"] = L.ArrayDecl(
-        "int", f"num_entity_dofs_{ir.name}", values=num_entity_dofs, sizes=4
-    )
-
-    num_entity_closure_dofs = ir.num_entity_closure_dofs + [0, 0, 0, 0]
-    num_entity_closure_dofs = num_entity_closure_dofs[:4]
-    d["num_entity_closure_dofs"] = f"num_entity_closure_dofs_{ir.name}"
-    d["num_entity_closure_dofs_init"] = L.ArrayDecl(
-        "int",
-        f"num_entity_closure_dofs_{ir.name}",
-        values=num_entity_closure_dofs,
-        sizes=4,
-    )
 
     flattened_entity_dofs = []
     entity_dof_offsets = [0]
@@ -136,14 +78,6 @@ def generator(ir, options):
     )
 
     d["block_size"] = ir.block_size
-
-    # Functions
-    d["tabulate_entity_dofs"] = tabulate_entity_dofs(
-        L, ir.entity_dofs, ir.num_entity_dofs
-    )
-    d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(
-        L, ir.entity_closure_dofs, ir.num_entity_closure_dofs
-    )
 
     if len(ir.sub_dofmaps) > 0:
         d["sub_dofmaps_initialization"] = L.ArrayDecl(
