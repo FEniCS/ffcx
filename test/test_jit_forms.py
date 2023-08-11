@@ -870,3 +870,26 @@ def test_manifold_derivatives(compile_args):
            ffi.cast('uint8_t *', perm.ctypes.data))
 
     assert np.isclose(J[0], 0.0)
+
+
+def test_integral_grouping(compile_args):
+    """
+    We group integrals with common integrands to avoid duplicated integration kernels.
+    This means that `inner(u, v)*dx((1,2,3))  + inner(grad(u), grad(v))*dx(2) + inner(u,v)*dx`
+    is grouped as
+    1. `inner(u,v)*dx(("everywhere", 1, 3))`
+    2. `(inner(grad(u), grad(v)) + inner(u, v))*dx(2)`
+    Each of the forms has one generated `tabulate_tensor_*` function, which is referred to multiple times in
+    `integrals_` and `integral_ids_`
+    """
+    mesh = ufl.Mesh(ufl.VectorElement("Lagrange", ufl.triangle, 1))
+    V = ufl.FunctionSpace(mesh, ufl.FiniteElement("Lagrange", ufl.triangle, 1))
+    u = ufl.TrialFunction(V)
+    v = ufl.TestFunction(V)
+    a = ufl.inner(u, v)*ufl.dx((1, 2, 3)) + ufl.inner(ufl.grad(u), ufl.grad(v))*ufl.dx(2) + ufl.inner(u, v)*ufl.dx
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        [a], cffi_extra_compile_args=compile_args)
+    num_integrals = compiled_forms[0].num_integrals(module.lib.cell)
+    assert num_integrals == 4
+    unique_integrals = set([compiled_forms[0].form_integrals[i] for i in range(num_integrals)])
+    assert len(unique_integrals) == 2
