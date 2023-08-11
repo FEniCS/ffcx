@@ -24,6 +24,9 @@ factory = """
 {original_coefficient_position_init}
 {dofmaps_init}
 {finite_elements_init}
+{form_integral_offsets_init}
+{form_integrals_init}
+{form_integral_ids_init}
 
 // Return a list of the coefficient names.
 const char** coefficient_name_{factory_name}(void)
@@ -70,7 +73,11 @@ ufcx_form {factory_name} =
   .integral_ids = integral_ids_{factory_name},
   .num_integrals = num_integrals_{factory_name},
 
-  .integrals = integrals_{factory_name}
+  .integrals = integrals_{factory_name},
+
+  .form_integrals = {form_integrals},
+  .form_integral_ids = {form_integral_ids},
+  .form_integral_offsets = form_integral_offsets_{factory_name}
 }};
 
 // Alias name
