@@ -562,35 +562,23 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
     ir["name_from_uflfile"] = f"form_{prefix}_{form_name}"
 
     # Store names of integrals and subdomain_ids for this form, grouped
-    # by integral types Since form points to all integrals it contains,
+    # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
     ir["integral_names"] = {}
     ir["subdomain_ids"] = {}
     ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
-    for integral_type in ufcx_integral_types:
-        ir["subdomain_ids"][integral_type] = []
-        ir["integral_names"][integral_type] = []
-
-        for itg_index, itg_data in enumerate(form_data.integral_data):
-            if (itg_data.integral_type == integral_type):
-                if itg_data.subdomain_id == "otherwise":
-                    # UFL is using "otherwise" for default integrals
-                    # (over whole mesh) but FFCx needs integers, so
-                    # otherwise = -1
-                    if len(ir["subdomain_ids"][integral_type]) > 0 and ir["subdomain_ids"][integral_type][0] == -1:
-                        raise ValueError("Only one default ('otherwise') integral allowed.")
-
-                    # Put default integral as first
-                    ir["subdomain_ids"][integral_type] = [-1] + ir["subdomain_ids"][integral_type]
-                    ir["integral_names"][integral_type] = [
-                        integral_names[(form_id, itg_index)]] + ir["integral_names"][integral_type]
-                elif itg_data.subdomain_id < 0:
-                    raise ValueError("Integral subdomain ID must be non-negative.")
-                else:
-                    assert isinstance(itg_data.subdomain_id, numbers.Integral)
-                    ir["subdomain_ids"][integral_type] += [itg_data.subdomain_id]
-                    ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
-
+    ir["subdomain_ids"] = {itg_type: {} for itg_type in ufcx_integral_types}
+    ir["integral_names"] = {itg_type: {} for itg_type in ufcx_integral_types}
+    for itg_index, itg_data in enumerate(form_data.integral_data):
+        # UFL is using "otherwise" for default integrals (over whole mesh)
+        # but FFCx needs integers, so otherwise = -1
+        integral_type = itg_data.integral_type
+        subdomain_ids = set(sid if sid != "otherwise" else -1 for sid in itg_data.subdomain_id)
+        if min(subdomain_ids) < -1:
+            raise ValueError("Integral subdomain IDs must be non-negative.")
+        ir["subdomain_ids"][integral_type][itg_index] = subdomain_ids
+        ir["integral_names"][integral_type][itg_index] = integral_names[(form_id, itg_index)]
+  
     return FormIR(**ir)
 
 
