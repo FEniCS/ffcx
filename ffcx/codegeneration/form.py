@@ -88,7 +88,7 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
+    for itg_type in ("cell", "exterior_facet", "interior_facet"):
         integrals += [L.AddressOf(L.Symbol(itg)) for itg in ir.integral_names[itg_type]]
         integral_ids += ir.subdomain_ids[itg_type]
         integral_offsets.append(len(integrals))
