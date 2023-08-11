@@ -886,7 +886,7 @@ def test_integral_grouping(compile_args):
     V = ufl.FunctionSpace(mesh, ufl.FiniteElement("Lagrange", ufl.triangle, 1))
     u = ufl.TrialFunction(V)
     v = ufl.TestFunction(V)
-    a = ufl.inner(u, v)*ufl.dx((1, 2, 3)) + ufl.inner(ufl.grad(u), ufl.grad(v))*ufl.dx(2) + ufl.inner(u, v)*ufl.dx
+    a = ufl.inner(u, v) * ufl.dx((1, 2, 3)) + ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
         [a], cffi_extra_compile_args=compile_args)
     num_integrals = compiled_forms[0].num_integrals(module.lib.cell)
