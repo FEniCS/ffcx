@@ -70,6 +70,7 @@ class CustomElementIR(typing.NamedTuple):
     discontinuous: bool
     highest_complete_degree: int
     highest_degree: int
+    polyset_type: basix.PolysetType
 
 
 class ElementIR(typing.NamedTuple):
@@ -274,6 +275,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
     ir["highest_complete_degree"] = basix_element.highest_complete_degree
     ir["highest_degree"] = basix_element.highest_degree
+    ir["polyset_type"] = basix_element.polyset_type
 
     return CustomElementIR(**ir)
 
@@ -435,7 +437,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             else:
                 degree = md["quadrature_degree"]
                 points, weights = create_quadrature_points_and_weights(
-                    integral_type, cell, degree, scheme)
+                    integral_type, cell, degree, scheme, [convert_element(e) for e in form_data.argument_elements])
 
             points = np.asarray(points)
             weights = np.asarray(weights)
