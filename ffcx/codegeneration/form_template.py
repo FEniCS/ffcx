@@ -40,21 +40,6 @@ const char** constant_name_{factory_name}(void)
 {constant_name_map}
 }}
 
-int* integral_ids_{factory_name}(ufcx_integral_type integral_type)
-{{
-{integral_ids}
-}}
-
-int num_integrals_{factory_name}(ufcx_integral_type integral_type)
-{{
-{num_integrals}
-}}
-
-ufcx_integral** integrals_{factory_name}(ufcx_integral_type integral_type)
-{{
-{integrals}
-}}
-
 ufcx_form {factory_name} =
 {{
 
@@ -69,11 +54,6 @@ ufcx_form {factory_name} =
 
   .finite_elements = {finite_elements},
   .dofmaps = {dofmaps},
-
-  .integral_ids = integral_ids_{factory_name},
-  .num_integrals = num_integrals_{factory_name},
-
-  .integrals = integrals_{factory_name},
 
   .form_integrals = {form_integrals},
   .form_integral_ids = {form_integral_ids},
