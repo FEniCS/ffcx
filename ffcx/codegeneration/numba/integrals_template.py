@@ -5,17 +5,8 @@
 
 factory = """
 # Code for integral {factory_name}
+import numba
 
-c_signature = numba.types.void(
-    numba.types.CPointer(numba.typeof(default_scalar_type())),
-    numba.types.CPointer(numba.typeof(default_scalar_type())),
-    numba.types.CPointer(numba.typeof(default_scalar_type())),
-    numba.types.CPointer(numba.typeof(default_real_type())),
-    numba.types.CPointer(numba.types.int32),
-    numba.types.CPointer(numba.types.int32))
-
-
-@numba.cfunc(c_signature, nopython=True)
 def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs, _entity_local_index, _quadrature_permutation):
 {tabulate_tensor}
 
