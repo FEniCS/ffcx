@@ -456,15 +456,6 @@ extern "C"
     ///        Coefficient number j=i-r if r+j <= i < r+n
     ufcx_dofmap** dofmaps;
 
-    /// All ids for integrals
-    int* (*integral_ids)(ufcx_integral_type);
-
-    /// Number of integrals
-    int (*num_integrals)(ufcx_integral_type);
-
-    /// Get an integral on sub domain subdomain_id
-    ufcx_integral** (*integrals)(ufcx_integral_type);
-
     /// List of cell, interior facet and exterior facet integrals
     ufcx_integral** form_integrals;
 

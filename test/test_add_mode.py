@@ -13,21 +13,17 @@ import ufl
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
 
-@pytest.mark.parametrize("mode",
-                         [
-                             "double",
-                             "float",
-                             "long double",
-                             "double _Complex",
-                             "float _Complex"
-                         ])
+@pytest.mark.parametrize(
+    "mode", ["double", "float", "long double", "double _Complex", "float _Complex"]
+)
 def test_additive_facet_integral(mode, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(u, v) * ufl.ds
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={"scalar_type": mode}, cffi_extra_compile_args=compile_args
+    )
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -35,11 +31,14 @@ def test_additive_facet_integral(mode, compile_args):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    assert form0.num_integrals(module.lib.exterior_facet) == 1
-    ids = form0.integral_ids(module.lib.exterior_facet)
-    assert ids[0] == -1
+    integral_offsets = form0.form_integral_offsets
+    ex = module.lib.exterior_facet
+    num_integrals = integral_offsets[ex + 1] - integral_offsets[ex]
+    assert num_integrals == 1
+    integral_id = form0.form_integral_ids[integral_offsets[ex]]
+    assert integral_id == -1
 
-    default_integral = form0.integrals(module.lib.exterior_facet)[0]
+    default_integral = form0.form_integrals[integral_offsets[ex]]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -50,32 +49,38 @@ def test_additive_facet_integral(mode, compile_args):
 
     geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
-    coords = np.array([0.0, 2.0, 0.0,
-                       np.sqrt(3.0), -1.0, 0.0,
-                       -np.sqrt(3.0), -1.0, 0.0], dtype=np_gtype)
+    coords = np.array(
+        [0.0, 2.0, 0.0, np.sqrt(3.0), -1.0, 0.0, -np.sqrt(3.0), -1.0, 0.0],
+        dtype=np_gtype,
+    )
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
     for i in range(3):
         facets[0] = i
-        kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-               ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-               ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-               ffi.cast(f'{geom_type} *', coords.ctypes.data),
-               ffi.cast('int *', facets.ctypes.data),
-               ffi.cast('uint8_t *', perm.ctypes.data))
+        kernel(
+            ffi.cast("{type} *".format(type=mode), A.ctypes.data),
+            ffi.cast("{type} *".format(type=mode), w.ctypes.data),
+            ffi.cast("{type} *".format(type=mode), c.ctypes.data),
+            ffi.cast(f"{geom_type} *", coords.ctypes.data),
+            ffi.cast("int *", facets.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+        )
 
         assert np.isclose(A.sum(), np.sqrt(12) * (i + 1))
 
 
-@pytest.mark.parametrize("mode", ["double", "float", "long double", "double _Complex", "float _Complex"])
+@pytest.mark.parametrize(
+    "mode", ["double", "float", "long double", "double _Complex", "float _Complex"]
+)
 def test_additive_cell_integral(mode, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={"scalar_type": mode}, cffi_extra_compile_args=compile_args
+    )
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -83,11 +88,14 @@ def test_additive_cell_integral(mode, compile_args):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    assert form0.num_integrals(module.lib.cell) == 1
-    ids = form0.integral_ids(module.lib.cell)
-    assert ids[0] == -1
+    offsets = form0.form_integral_offsets
+    cell = module.lib.cell
+    num_integrals = offsets[cell + 1] - offsets[cell]
+    assert num_integrals == 1
+    integral_id = form0.form_integral_ids[offsets[cell]]
+    assert integral_id == -1
 
-    default_integral = form0.integrals(0)[0]
+    default_integral = form0.form_integrals[offsets[cell]]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -96,22 +104,31 @@ def test_additive_cell_integral(mode, compile_args):
 
     geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
-    coords = np.array([0.0, 2.0, 0.0,
-                       np.sqrt(3.0), -1.0, 0.0,
-                       -np.sqrt(3.0), -1.0, 0.0], dtype=np_gtype)
+    coords = np.array(
+        [0.0, 2.0, 0.0, np.sqrt(3.0), -1.0, 0.0, -np.sqrt(3.0), -1.0, 0.0],
+        dtype=np_gtype,
+    )
 
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
 
-    kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    kernel(
+        ffi.cast("{type} *".format(type=mode), A.ctypes.data),
+        ffi.cast("{type} *".format(type=mode), w.ctypes.data),
+        ffi.cast("{type} *".format(type=mode), c.ctypes.data),
+        ffi.cast(f"{geom_type} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+    )
 
     A0 = np.array(A)
     for i in range(3):
-        kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-               ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-               ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-               ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+        kernel(
+            ffi.cast("{type} *".format(type=mode), A.ctypes.data),
+            ffi.cast("{type} *".format(type=mode), w.ctypes.data),
+            ffi.cast("{type} *".format(type=mode), c.ctypes.data),
+            ffi.cast(f"{geom_type} *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+        )
 
         assert np.all(np.isclose(A, (i + 2) * A0))

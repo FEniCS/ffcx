@@ -28,12 +28,6 @@ def generator(ir, options):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    code = "switch(integral_type)\n{\n"
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        code += f"case {itg_type}: return {len(ir.subdomain_ids[itg_type])};\n"
-    code += "default: return 0;\n}\n"
-    d["num_integrals"] = code
-
     if len(ir.original_coefficient_position) > 0:
         orig_coeff = ', '.join(str(i) for i in ir.original_coefficient_position)
         d["original_coefficient_position_init"] = \
@@ -81,7 +75,7 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
+    for itg_type in ("cell", "exterior_facet", "interior_facet"):
         integrals += ir.integral_names[itg_type]
         integral_ids += ir.subdomain_ids[itg_type]
         integral_offsets.append(len(integrals))
@@ -140,6 +134,15 @@ def generator(ir, options):
     fields = [
         fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
     ]
+
+    for f in fields:
+        if f not in d.keys():
+            print(f, "not in d.keys()")
+
+    for f in d.keys():
+        if f not in fields:
+            print(f, "not in fields")
+
     assert set(fields) == set(
         d.keys()
     ), "Mismatch between keys in template and in formatting dict"
