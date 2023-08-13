@@ -200,6 +200,9 @@ extern "C"
 
     /// The highest degree of a polynomial in the element
     int highest_degree;
+
+    /// The polyset type of the element
+    int polyset_type;
   } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
@@ -461,6 +464,15 @@ extern "C"
 
     /// Get an integral on sub domain subdomain_id
     ufcx_integral** (*integrals)(ufcx_integral_type);
+
+    /// List of cell, interior facet and exterior facet integrals
+    ufcx_integral** form_integrals;
+
+    /// IDs for each integral in form_integrals list
+    int* form_integral_ids;
+
+    /// Offsets for cell, interior facet and exterior facet integrals in form_integrals list
+    int* form_integral_offsets;
 
   } ufcx_form;
 

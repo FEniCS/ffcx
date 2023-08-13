@@ -23,7 +23,7 @@ def generator(ir, options):
     d = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
-    d["signature"] = f"\"{ir.signature}\""
+    d["signature"] = f'"{ir.signature}"'
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
@@ -78,39 +78,50 @@ def generator(ir, options):
         d["dofmaps"] = "NULL"
         d["dofmaps_init"] = ""
 
-    code = ""
-    code_ids = ""
-    cases = "switch(integral_type)\n{\n"
-    cases_ids = "switch(integral_type)\n{\n"
+    integrals = []
+    integral_ids = []
+    integral_offsets = [0]
     for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        if len(ir.integral_names[itg_type]) > 0:
-            integrals = ", ".join(f"&{itg}" for itg in ir.integral_names[itg_type])
-            code += f"static ufcx_integral* integrals_{itg_type}_{ir.name}[] = {{{integrals}}};\n"
-            cases += f"case {itg_type}:\n"
-            cases += f"   return integrals_{itg_type}_{ir.name};\n"
+        integrals += ir.integral_names[itg_type]
+        integral_ids += ir.subdomain_ids[itg_type]
+        integral_offsets.append(len(integrals))
 
-            integral_ids = ", ".join(str(i) for i in ir.subdomain_ids[itg_type])
-            code_ids += f"static int integral_ids_{itg_type}_{ir.name}[] = {{{integral_ids}}};\n"
-            cases_ids += f"case {itg_type}:\n"
-            cases_ids += f"   return integral_ids_{itg_type}_{ir.name};\n"
-    cases += "default:\n   return NULL;\n}\n"
-    cases_ids += "default:\n   return 0;\n}\n"
+    if len(integrals) > 0:
+        integrals_str = ", ".join(f"&{itg}" for itg in integrals)
+        integral_ids_str = ", ".join(str(i) for i in integral_ids)
+        d["form_integrals_init"] = \
+            f"static ufcx_integral* form_integrals_{ir.name}[] = {{{integrals_str}}};"
+        d["form_integrals"] = f"form_integrals_{ir.name}"
+        d["form_integral_ids_init"] = \
+            f"int form_integral_ids_{ir.name}[] = {{{integral_ids_str}}};"
+        d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
+    else:
+        d["form_integrals_init"] = ""
+        d["form_integrals"] = "NULL"
+        d["form_integral_ids_init"] = ""
+        d["form_integral_ids"] = "NULL"
 
-    code += cases
-    code_ids += cases_ids
-    d["integrals"] = code
-    d["integral_ids"] = code_ids
+    offsets = ", ".join(str(i) for i in integral_offsets)
+    d["form_integral_offsets_init"] = \
+        f"int form_integral_offsets_{ir.name}[] = {{{offsets}}};"
 
     code = []
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated
-    for (name, (element, dofmap, cmap_family, cmap_degree, cmap_celltype, cmap_variant)) in ir.function_spaces.items():
+    for name, (
+        element,
+        dofmap,
+        cmap_family,
+        cmap_degree,
+        cmap_celltype,
+        cmap_variant,
+    ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
-        code += [f".geometry_family = \"{cmap_family}\","]
+        code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
         code += [f".geometry_basix_variant = {int(cmap_variant)}"]
@@ -125,14 +136,20 @@ def generator(ir, options):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-    fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
+
+    fields = [
+        fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
+    ]
+    assert set(fields) == set(
+        d.keys()
+    ), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = form_template.factory.format_map(d)
 
     # Format declaration
-    declaration = form_template.declaration.format(factory_name=d["factory_name"],
-                                                   name_from_uflfile=d["name_from_uflfile"])
+    declaration = form_template.declaration.format(
+        factory_name=d["factory_name"], name_from_uflfile=d["name_from_uflfile"]
+    )
 
     return declaration, implementation
