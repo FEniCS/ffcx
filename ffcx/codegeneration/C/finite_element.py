@@ -124,7 +124,8 @@ def generate_custom_element(name, ir):
     d["value_shape_length"] = len(ir.value_shape)
     if len(ir.value_shape) > 0:
         d["value_shape"] = f"value_shape_{name}"
-        d["value_shape_init"] = f"int value_shape_{name}[] = {{{', '.join(ir.value_shape)}}};"
+        values = ', '.join(str(i) for i in ir.value_shape)
+        d["value_shape_init"] = f"int value_shape_{name}[] = {{{values}}};"
     else:
         d["value_shape"] = "NULL"
         d["value_shape_init"] = ""
@@ -133,7 +134,7 @@ def generate_custom_element(name, ir):
     d["wcoeffs_cols"] = ir.wcoeffs.shape[1]
     d["wcoeffs"] = f"wcoeffs_{name}"
     d["wcoeffs_init"] = f"double wcoeffs_{name}[{ir.wcoeffs.shape[0] * ir.wcoeffs.shape[1]}] = "
-    d["wcoeffs_init"] += "{" + ",".join([f" {i}" for row in ir.wcoeffs for i in row]) + "};"
+    d["wcoeffs_init"] += "{" + ", ".join([f" {i}" for row in ir.wcoeffs for i in row]) + "};"
 
     npts = []
     x = []
