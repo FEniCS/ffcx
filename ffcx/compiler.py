@@ -106,7 +106,6 @@ def compile_ufl_objects(
 
     # Stage 3: code generation
     cpu_time = time()
-    options["language"] = "C"
     code = generate_code(ir, options)
     _print_timing(3, time() - cpu_time)
 

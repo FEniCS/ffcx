@@ -29,6 +29,7 @@ parser.add_argument(
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
+parser.add_argument("--language", type=str, default="C", help="Target language")
 
 # Add all options from FFCx option system
 for opt_name, (opt_val, opt_desc) in FFCX_DEFAULT_OPTIONS.items():

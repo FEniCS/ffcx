@@ -40,6 +40,7 @@ def generate_code(ir, options) -> CodeBlocks:
     logger.info(79 * "*")
 
     lang = options.get("language", "C")
+    print(options)
     finite_element_generator = import_module(f"ffcx.codegeneration.{lang}.finite_element").generator
     dofmap_generator = import_module(f"ffcx.codegeneration.{lang}.dofmap").generator
     integral_generator = import_module(f"ffcx.codegeneration.{lang}.integrals").generator
