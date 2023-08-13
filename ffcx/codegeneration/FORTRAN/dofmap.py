@@ -10,7 +10,7 @@
 import logging
 import typing
 
-import ffcx.codegeneration.C.dofmap_template as ufcx_dofmap
+import ffcx.codegeneration.FORTRAN.dofmap_template as ufcx_dofmap
 
 logger = logging.getLogger("ffcx")
 

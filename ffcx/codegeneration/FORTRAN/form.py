@@ -9,7 +9,7 @@
 
 import logging
 
-from ffcx.codegeneration.C import form_template
+from ffcx.codegeneration.FORTRAN import form_template
 
 logger = logging.getLogger("ffcx")
 

@@ -146,6 +146,8 @@ class LExpr(LNode):
             return self
         if isinstance(other, Neg):
             return Add(self, other.arg)
+        if isinstance(self, LiteralInt) and isinstance(other, LiteralInt):
+            return LiteralInt(self.value - other.value)
         return Sub(self, other)
 
     def __rsub__(self, other):

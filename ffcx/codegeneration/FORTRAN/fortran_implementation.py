@@ -65,6 +65,10 @@ class FortranFormatter(object):
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
+    def format_neg(self, val):
+        arg = self.c_format(val.arg)
+        return f"-{arg}"
+
     def format_literal_float(self, val):
         return f"{val.value}"
 
@@ -77,9 +81,8 @@ class FortranFormatter(object):
         index = self.c_format(r.index)
         output = f"      DO {index} = {begin}, {end}\n"
         b = self.c_format(r.body).split("\n")
-        for line in b:
-            output += f"  {line}\n"
-        output += "      END DO\n"
+        output += "  " + "\n  ".join(b)
+        output += "    END DO\n"
         return output
 
     def format_statement(self, s):
@@ -121,6 +124,7 @@ class FortranFormatter(object):
         "Sub": format_binary_op,
         "Mul": format_binary_op,
         "Div": format_binary_op,
+        "Neg": format_neg,
         "LiteralFloat": format_literal_float,
         "LiteralInt": format_literal_int,
         "Symbol": format_symbol,
