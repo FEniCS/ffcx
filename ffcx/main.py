@@ -83,12 +83,18 @@ def main(args=None):
 
         # Write to file
 
-        suffix_map = {"C": (".h", ".c")}
+        suffix_map = {
+            "C": (".h", ".c"),
+            "c++": (".hpp", ".cpp"),
+            "FORTRAN": (None, ".f90"),
+            "numba": (None, "_numba.py"),
+        }
         head_suffix, main_suffix = suffix_map.get(options["language"], (".h", ".c"))
         output_dir = xargs.output_directory
-        filename = os.path.join(output_dir, prefix + head_suffix)
-        with open(filename, "w") as fd:
-            fd.write(code_header)
+        if head_suffix:
+            filename = os.path.join(output_dir, prefix + head_suffix)
+            with open(filename, "w") as fd:
+                fd.write(code_header)
         filename = os.path.join(output_dir, prefix + main_suffix)
         with open(filename, "w") as fd:
             fd.write(code_main)

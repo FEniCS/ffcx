@@ -19,13 +19,13 @@ ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name
 """
 
 factory = """
-// Code for form {factory_name}
+! Code for form {factory_name}
 
 {original_coefficient_position_init}
 {dofmaps_init}
 {finite_elements_init}
 
-// Return a list of the coefficient names.
+! Return a list of the coefficient names.
 const char** coefficient_name_{factory_name}(void)
 {{
 {coefficient_name_map}
@@ -52,26 +52,18 @@ ufcx_integral** integrals_{factory_name}(ufcx_integral_type integral_type)
 {integrals}
 }}
 
-ufcx_form {factory_name} =
-{{
+type (ufcx_form) :: {factory_name} 
+{factory_name} = ufcx_form({signature}, {rank}, {num_coefficients}, 
+      {num_constants},
+      {original_coefficient_position},
+      coefficient_name_{factory_name},
+      constant_name_{factory_name},
+      {finite_elements}, 
+      {dofmaps},
+      integral_ids_{factory_name},
+      num_integrals_{factory_name},
+      integrals_{factory_name})
 
-  .signature = {signature},
-  .rank = {rank},
-  .num_coefficients = {num_coefficients},
-  .num_constants = {num_constants},
-  .original_coefficient_position = {original_coefficient_position},
-
-  .coefficient_name_map = coefficient_name_{factory_name},
-  .constant_name_map = constant_name_{factory_name},
-
-  .finite_elements = {finite_elements},
-  .dofmaps = {dofmaps},
-
-  .integral_ids = integral_ids_{factory_name},
-  .num_integrals = num_integrals_{factory_name},
-
-  .integrals = integrals_{factory_name}
-}};
 
 // Alias name
 ufcx_form* {name_from_uflfile} = &{factory_name};
@@ -81,5 +73,5 @@ ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name
 {functionspace}
 }}
 
-// End of code for form {factory_name}
+! End of code for form {factory_name}
 """

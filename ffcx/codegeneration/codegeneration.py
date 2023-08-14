@@ -60,8 +60,6 @@ def generate_code(ir, options) -> CodeBlocks:
         finite_element_generator(element_ir, options) for element_ir in ir.elements
     ]
 
-    print(code_finite_elements)
-
     code_dofmaps = [dofmap_generator(dofmap_ir, options) for dofmap_ir in ir.dofmaps]
 
     code_integrals = [

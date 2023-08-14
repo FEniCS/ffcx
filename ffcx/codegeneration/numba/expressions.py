@@ -9,7 +9,6 @@ import logging
 from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
-from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 
@@ -39,7 +38,7 @@ def generator(ir, options):
     parts = eg.generate()
 
     CF = CFormatter(options["scalar_type"])
-    body = format_indented_lines(CF.c_format(parts), 1)
+    body = CF.c_format(parts)
     d["tabulate_expression"] = body
 
     if len(ir.original_coefficient_positions) > 0:
