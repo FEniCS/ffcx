@@ -20,7 +20,7 @@ import numpy.typing as npt
 
 import basix.ufl
 import ufl
-from ffcx.element_interface import QuadratureElement, convert_element
+from ffcx.element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
 
@@ -174,7 +174,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     custom_q = None
     for e in form_data.unique_elements:
         e = convert_element(e)
-        if isinstance(e, QuadratureElement):
+        if isinstance(e, basix.ufl._QuadratureElement):
             if custom_q is None:
                 custom_q = e._points, e._weights
             else:
