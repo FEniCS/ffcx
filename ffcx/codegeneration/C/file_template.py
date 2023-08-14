@@ -13,9 +13,17 @@ declaration_pre = """
 
 #pragma once
 #include <ufcx.h>
+
+#ifdef __cplusplus
+extern "C" {{
+#endif
 """
 
-declaration_post = ""
+declaration_post = """
+#ifdef __cplusplus
+}}
+#endif
+"""
 
 implementation_pre = """
 // This code conforms with the UFC specification version {ufcx_version}
@@ -32,13 +40,6 @@ implementation_pre = """
 #include <ufcx.h>
 {extra_c_includes}
 
-#ifdef __cplusplus
-extern "C" {{
-#endif
 """
 
-implementation_post = """
-#ifdef __cplusplus
-}}
-#endif
-"""
+implementation_post = ""
