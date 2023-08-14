@@ -26,11 +26,13 @@ class CodeBlocks(typing.NamedTuple):
     Blocks for elements, dofmaps, integrals, forms and expressions is stored
     """
 
+    file_pre: typing.List[typing.Tuple[str, str]]
     elements: typing.List[typing.Tuple[str, str]]
     dofmaps: typing.List[typing.Tuple[str, str]]
     integrals: typing.List[typing.Tuple[str, str]]
     forms: typing.List[typing.Tuple[str, str]]
     expressions: typing.List[typing.Tuple[str, str]]
+    file_post: typing.List[typing.Tuple[str, str]]
 
 
 def generate_code(ir, options) -> CodeBlocks:
@@ -40,11 +42,19 @@ def generate_code(ir, options) -> CodeBlocks:
     logger.info(79 * "*")
 
     lang = options.get("language", "C")
-    finite_element_generator = import_module(f"ffcx.codegeneration.{lang}.finite_element").generator
+    print(options)
+    finite_element_generator = import_module(
+        f"ffcx.codegeneration.{lang}.finite_element"
+    ).generator
     dofmap_generator = import_module(f"ffcx.codegeneration.{lang}.dofmap").generator
-    integral_generator = import_module(f"ffcx.codegeneration.{lang}.integrals").generator
+    integral_generator = import_module(
+        f"ffcx.codegeneration.{lang}.integrals"
+    ).generator
     form_generator = import_module(f"ffcx.codegeneration.{lang}.form").generator
-    expression_generator = import_module(f"ffcx.codegeneration.{lang}.expressions").generator
+    expression_generator = import_module(
+        f"ffcx.codegeneration.{lang}.expressions"
+    ).generator
+    file_generator = import_module(f"ffcx.codegeneration.{lang}.file").generator
 
     # Generate code for finite_elements
     code_finite_elements = [
@@ -62,10 +72,15 @@ def generate_code(ir, options) -> CodeBlocks:
     code_expressions = [
         expression_generator(expression_ir, options) for expression_ir in ir.expressions
     ]
+
+    code_file_pre, code_file_post = file_generator(options)
+
     return CodeBlocks(
+        file_pre=[code_file_pre],
         elements=code_finite_elements,
         dofmaps=code_dofmaps,
         integrals=code_integrals,
         forms=code_forms,
         expressions=code_expressions,
+        file_post=[code_file_post],
     )
