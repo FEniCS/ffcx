@@ -7,7 +7,6 @@
 
 import typing
 import warnings
-from functools import lru_cache
 
 import basix
 import basix.ufl
