@@ -98,7 +98,8 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
+    # NOTE: This ordering is dependent of the enums in dolfinx::fem::IntegralType
+    for itg_type in ("cell", "exterior_facet", "interior_facet"):
         for key, name in ir.integral_names[itg_type].items():
             for subdomain_id in ir.subdomain_ids[itg_type][key]:
                 integrals += [L.AddressOf(L.Symbol(name))]
