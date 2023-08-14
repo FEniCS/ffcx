@@ -1115,34 +1115,6 @@ class StatementList(CStatement):
 # Simple statements
 
 
-class Break(CStatement):
-    __slots__ = ()
-    is_scoped = True
-
-    def cs_format(self, precision=None):
-        return "break;"
-
-    def __eq__(self, other):
-        return isinstance(other, type(self))
-
-    def flops(self):
-        return 0
-
-
-class Continue(CStatement):
-    __slots__ = ()
-    is_scoped = True
-
-    def cs_format(self, precision=None):
-        return "continue;"
-
-    def __eq__(self, other):
-        return isinstance(other, type(self))
-
-    def flops(self):
-        return 0
-
-
 class Return(CStatement):
     __slots__ = ("value",)
     is_scoped = True
