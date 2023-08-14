@@ -23,7 +23,6 @@ def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._
         warnings.warn(
             "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
             DeprecationWarning)
-
         return basix.ufl.convert_ufl_element(element)
 
 
