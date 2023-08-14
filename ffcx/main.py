@@ -85,7 +85,7 @@ def main(args=None):
 
         suffix_map = {
             "C": (".h", ".c"),
-            "c++": (".hpp", ".cpp"),
+            "cpp": (".hpp", ".cpp"),
             "FORTRAN": (None, ".f90"),
             "numba": (None, "_numba.py"),
         }
