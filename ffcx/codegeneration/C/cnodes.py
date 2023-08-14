@@ -1264,7 +1264,7 @@ def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
             return str(x)
 
     tokens = ["{ "]
-    if np.product(values.shape) > 0:
+    if np.prod(values.shape) > 0:
         sep = ", "
         fvalues = [formatter(v, precision) for v in values]
         for v in fvalues[:-1]:
@@ -1296,7 +1296,7 @@ def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision
             return str(x)
 
     values = np.asarray(values)
-    assert np.product(values.shape) == np.product(sizes)
+    assert np.prod(values.shape) == np.prod(sizes)
     assert len(sizes) > 0
     assert len(values.shape) > 0
     assert len(sizes) == len(values.shape)

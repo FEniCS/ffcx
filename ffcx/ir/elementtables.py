@@ -12,7 +12,6 @@ import numpy as np
 import numpy.typing as npt
 
 import ufl
-import ufl.utils.derivativetuples
 from ffcx.element_interface import (QuadratureElement, basix_index,
                                     convert_element)
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
@@ -32,7 +31,7 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 class ModifiedTerminalElement(typing.NamedTuple):
     element: ufl.FiniteElementBase
     averaged: str
-    local_derivatives: typing.Tuple[int]
+    local_derivatives: typing.Tuple[int, ...]
     fc: int
 
 
@@ -110,12 +109,12 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
         else:
             # Make quadrature rule and get points and weights
             points, weights = create_quadrature_points_and_weights(
-                integral_type, cell, element.highest_degree(), "default")
+                integral_type, cell, element.highest_degree(), "default", [element])
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension()
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
-    num_entities = ufl.cell.num_cell_entities[cell.cellname()][entity_dim]
+    num_entities = cell.num_sub_entities(entity_dim)
 
     # Extract arrays for the right scalar component
     component_tables = []
@@ -228,9 +227,8 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
 
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
-    gdim = domain.geometric_dimension()
-    local_derivatives = ufl.utils.derivativetuples.derivative_listing_to_counts(
-        ld, gdim)
+    tdim = domain.topological_dimension()
+    local_derivatives: typing.Tuple[int, ...] = tuple(ld.count(i) for i in range(tdim))
 
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
@@ -409,7 +407,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
 
 def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
-    return (np.product(table.shape) == 0
+    return (np.prod(table.shape) == 0
             or np.allclose(table, np.zeros(table.shape), rtol=rtol, atol=atol))
 
 

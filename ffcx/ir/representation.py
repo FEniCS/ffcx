@@ -70,6 +70,7 @@ class CustomElementIR(typing.NamedTuple):
     discontinuous: bool
     highest_complete_degree: int
     highest_degree: int
+    polyset_type: basix.PolysetType
 
 
 class ElementIR(typing.NamedTuple):
@@ -262,7 +263,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
 
 def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement):
     """Compute intermediate representation of a custom Basix element."""
-    ir = {}
+    ir: typing.Dict[str, typing.Any] = {}
     ir["cell_type"] = basix_element.cell_type
     ir["value_shape"] = basix_element.value_shape
     ir["wcoeffs"] = basix_element.wcoeffs
@@ -274,6 +275,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
     ir["highest_complete_degree"] = basix_element.highest_complete_degree
     ir["highest_degree"] = basix_element.highest_degree
+    ir["polyset_type"] = basix_element.polyset_type
 
     return CustomElementIR(**ir)
 
@@ -403,11 +405,15 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 # scheme have some properties that other schemes lack, e.g., the
                 # mass matrix is a simple diagonal matrix. This may be
                 # prescribed in certain cases.
+
                 degree = md["quadrature_degree"]
+                if integral_type != "cell":
+                    facet_types = cell.facet_types()
+                    assert len(facet_types) == 1
+                    cellname = facet_types[0].cellname()
                 if degree > 1:
-                    warnings.warn(
-                        "Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
-                        format(degree))
+                    warnings.warn("Explicitly selected vertex quadrature (degree 1), but requested degree is {}.".
+                                  format(degree))
                 if cellname == "tetrahedron":
                     points, weights = (np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
                                                  [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]),
@@ -431,7 +437,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             else:
                 degree = md["quadrature_degree"]
                 points, weights = create_quadrature_points_and_weights(
-                    integral_type, cell, degree, scheme)
+                    integral_type, cell, degree, scheme, [convert_element(e) for e in form_data.argument_elements])
 
             points = np.asarray(points)
             weights = np.asarray(weights)
@@ -477,7 +483,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         _offset = 0
         for constant in form_data.original_form.constants():
             original_constant_offsets[constant] = _offset
-            _offset += np.product(constant.ufl_shape, dtype=int)
+            _offset += np.prod(constant.ufl_shape, dtype=int)
 
         ir["original_constant_offsets"] = original_constant_offsets
         ir["precision"] = itg_data.metadata["precision"]

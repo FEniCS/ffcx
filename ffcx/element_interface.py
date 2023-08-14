@@ -23,7 +23,8 @@ def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._
     """Convert and element to a FFCx element."""
     if isinstance(element, basix.ufl._ElementBase):
         return element
-    return _cached_conversion(element)
+    else:
+        return _cached_conversion(element)
 
 
 @lru_cache()
@@ -36,18 +37,12 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
     Returns:
         A Basix finite element
     """
-    if isinstance(element, basix.ufl._ElementBase):
-        return element
-    elif element.family() == "Quadrature":
-        return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
-                                 degree=element.degree())
-    elif element.family() == "Real":
-        return RealElement(element)
-
     warnings.warn(
         "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
         DeprecationWarning)
 
+    # Tackle compositional elements, e.g. VectorElement first, then elements
+    # implemented by FFCx, then finally elements convertible by Basix.
     if hasattr(ufl, "VectorElement") and isinstance(element, ufl.VectorElement):
         return basix.ufl.blocked_element(
             _cached_conversion(element.sub_elements()[0]), shape=(element.num_sub_elements(), ))
@@ -56,12 +51,17 @@ def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.uf
             return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]), shape=element._value_shape)
         else:
             assert element.symmetry()[(1, 0)] == (0, 1)
-            return basix.ufl.blocked_element(_cached_conversion(
-                element.sub_elements()[0]), element._value_shape, symmetry=True)
+            return basix.ufl.blocked_element(_cached_conversion(element.sub_elements()[0]),
+                                             element._value_shape, symmetry=True)
     elif hasattr(ufl, "MixedElement") and isinstance(element, ufl.MixedElement):
         return basix.ufl.mixed_element([_cached_conversion(e) for e in element.sub_elements()])
     elif hasattr(ufl, "EnrichedElement") and isinstance(element, ufl.EnrichedElement):
         return basix.ufl.enriched_element([_cached_conversion(e) for e in element._elements])
+    elif element.family() == "Quadrature":
+        return QuadratureElement(element.cell().cellname(), element.value_shape(), scheme=element.quadrature_scheme(),
+                                 degree=element.degree())
+    elif element.family() == "Real":
+        return RealElement(element)
     else:
         return basix.ufl.convert_ufl_element(element)
 
@@ -71,24 +71,19 @@ def basix_index(indices: typing.Tuple[int]) -> int:
     return basix.index(*indices)
 
 
-def create_quadrature(cellname, degree, rule) -> typing.Tuple[npt.NDArray[np.float64],
-                                                              npt.NDArray[np.float64]]:
+def create_quadrature(
+    cellname: str, degree: int, rule: str, elements: typing.List[basix.ufl._ElementBase]
+) -> typing.Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Create a quadrature rule."""
     if cellname == "vertex":
         return (np.ones((1, 0), dtype=np.float64), np.ones(1, dtype=np.float64))
-
-    quadrature = basix.make_quadrature(
-        basix.quadrature.string_to_type(rule), basix.cell.string_to_type(cellname), degree)
-
-    # The quadrature degree from UFL can be very high for some
-    # integrals.  Print warning if number of quadrature points
-    # exceeds 100.
-    num_points = quadrature[1].size
-    if num_points >= 100:
-        warnings.warn(
-            f"Number of integration points per cell is: {num_points}. Consider using 'quadrature_degree' "
-            "to reduce number.")
-    return quadrature
+    else:
+        celltype = basix.cell.string_to_type(cellname)
+        polyset_type = basix.PolysetType.standard
+        for e in elements:
+            polyset_type = basix.polyset_superset(celltype, polyset_type, e.polyset_type)
+        return basix.make_quadrature(
+            celltype, degree, rule=basix.quadrature.string_to_type(rule), polyset_type=polyset_type)
 
 
 def reference_cell_vertices(cellname: str) -> npt.NDArray[np.float64]:
@@ -96,8 +91,7 @@ def reference_cell_vertices(cellname: str) -> npt.NDArray[np.float64]:
     return basix.geometry(basix.cell.string_to_type(cellname))
 
 
-def map_facet_points(points: npt.NDArray[np.float64], facet: int,
-                     cellname: str) -> npt.NDArray[np.float64]:
+def map_facet_points(points: npt.NDArray[np.float64], facet: int, cellname: str) -> npt.NDArray[np.float64]:
     """Map points from a reference facet to a physical facet."""
     geom = basix.geometry(basix.cell.string_to_type(cellname))
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
@@ -122,7 +116,7 @@ class QuadratureElement(basix.ufl._ElementBase):
             assert points is None
             assert weights is None
             repr = f"QuadratureElement({cellname}, {scheme}, {degree})"
-            self._points, self._weights = create_quadrature(cellname, degree, scheme)
+            self._points, self._weights = create_quadrature(cellname, degree, scheme, [])
         else:
             assert degree is None
             assert points is not None
@@ -148,7 +142,8 @@ class QuadratureElement(basix.ufl._ElementBase):
 
     def __eq__(self, other) -> bool:
         """Check if two elements are equal."""
-        return isinstance(other, QuadratureElement) and np.allclose(self._points, other._points)
+        return isinstance(other, QuadratureElement) and np.allclose(self._points, other._points) and \
+            np.allclose(self._weights, other._weights)
 
     def __hash__(self) -> int:
         """Return a hash."""
@@ -247,17 +242,17 @@ class QuadratureElement(basix.ufl._ElementBase):
         return "quadrature"
 
     @property
-    def lagrange_variant(self) -> basix.LagrangeVariant:
+    def lagrange_variant(self) -> typing.Union[basix.LagrangeVariant, None]:
         """Basix Lagrange variant used to initialise the element."""
         return None
 
     @property
-    def dpc_variant(self) -> basix.DPCVariant:
+    def dpc_variant(self) -> typing.Union[basix.DPCVariant, None]:
         """Basix DPC variant used to initialise the element."""
         return None
 
     @property
-    def element_family(self) -> basix.ElementFamily:
+    def element_family(self) -> typing.Union[basix.ElementFamily, None]:
         """Basix element family used to initialise the element."""
         return None
 
@@ -275,6 +270,11 @@ class QuadratureElement(basix.ufl._ElementBase):
     def map_type(self) -> basix.MapType:
         """The Basix map type."""
         return basix.MapType.identity
+
+    @property
+    def polyset_type(self) -> basix.PolysetType:
+        """The polyset type of the element."""
+        raise NotImplementedError()
 
 
 class RealElement(basix.ufl._ElementBase):
@@ -406,17 +406,17 @@ class RealElement(basix.ufl._ElementBase):
         return self._family_name
 
     @property
-    def lagrange_variant(self) -> basix.LagrangeVariant:
+    def lagrange_variant(self) -> typing.Union[basix.LagrangeVariant, None]:
         """Basix Lagrange variant used to initialise the element."""
         return None
 
     @property
-    def dpc_variant(self) -> basix.DPCVariant:
+    def dpc_variant(self) -> typing.Union[basix.DPCVariant, None]:
         """Basix DPC variant used to initialise the element."""
         return None
 
     @property
-    def element_family(self) -> basix.ElementFamily:
+    def element_family(self) -> typing.Union[basix.ElementFamily, None]:
         """Basix element family used to initialise the element."""
         return None
 
