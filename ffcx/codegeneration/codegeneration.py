@@ -41,16 +41,24 @@ def generate_code(ir, options) -> CodeBlocks:
 
     lang = options.get("language", "C")
     print(options)
-    finite_element_generator = import_module(f"ffcx.codegeneration.{lang}.finite_element").generator
+    finite_element_generator = import_module(
+        f"ffcx.codegeneration.{lang}.finite_element"
+    ).generator
     dofmap_generator = import_module(f"ffcx.codegeneration.{lang}.dofmap").generator
-    integral_generator = import_module(f"ffcx.codegeneration.{lang}.integrals").generator
+    integral_generator = import_module(
+        f"ffcx.codegeneration.{lang}.integrals"
+    ).generator
     form_generator = import_module(f"ffcx.codegeneration.{lang}.form").generator
-    expression_generator = import_module(f"ffcx.codegeneration.{lang}.expressions").generator
+    expression_generator = import_module(
+        f"ffcx.codegeneration.{lang}.expressions"
+    ).generator
 
     # Generate code for finite_elements
     code_finite_elements = [
         finite_element_generator(element_ir, options) for element_ir in ir.elements
     ]
+
+    print(code_finite_elements)
 
     code_dofmaps = [dofmap_generator(dofmap_ir, options) for dofmap_ir in ir.dofmaps]
 

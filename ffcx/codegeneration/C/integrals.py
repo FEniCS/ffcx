@@ -40,6 +40,8 @@ def generator(ir, options):
     # Format code as string
     CF = CFormatter(options["scalar_type"])
     code = CF.c_format(parts)
+    print(code)
+    quit()
     body = format_indented_lines(code, 1)
 
     # Generate generic FFCx code snippets and add specific parts

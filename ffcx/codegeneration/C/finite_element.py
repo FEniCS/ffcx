@@ -18,98 +18,6 @@ logger = logging.getLogger("ffcx")
 index_type = "int"
 
 
-def generator(ir, options):
-    """Generate UFC code for a finite element."""
-    logger.info("Generating code for finite element:")
-    logger.info(f"--- family: {ir.family}")
-    logger.info(f"--- degree: {ir.degree}")
-    logger.info(f"--- value shape: {ir.value_shape}")
-    logger.info(f"--- name: {ir.name}")
-
-    d = {}
-    d["factory_name"] = ir.name
-    d["signature"] = f"\"{ir.signature}\""
-    d["geometric_dimension"] = ir.geometric_dimension
-    d["topological_dimension"] = ir.topological_dimension
-    d["cell_shape"] = ir.cell_shape
-    d["element_type"] = ir.element_type
-    d["space_dimension"] = ir.space_dimension
-    d["value_rank"] = len(ir.value_shape)
-    d["value_size"] = ufl.product(ir.value_shape)
-    d["reference_value_rank"] = len(ir.reference_value_shape)
-    d["reference_value_size"] = ufl.product(ir.reference_value_shape)
-    d["degree"] = ir.degree
-    d["family"] = f"\"{ir.family}\""
-    d["num_sub_elements"] = ir.num_sub_elements
-    d["block_size"] = ir.block_size
-    d["discontinuous"] = "true" if ir.discontinuous else "false"
-
-    if ir.lagrange_variant is None:
-        d["lagrange_variant"] = -1
-    else:
-        d["lagrange_variant"] = int(ir.lagrange_variant)
-
-    if ir.dpc_variant is None:
-        d["dpc_variant"] = -1
-    else:
-        d["dpc_variant"] = int(ir.dpc_variant)
-
-    if ir.basix_family is None:
-        d["basix_family"] = -1
-    else:
-        d["basix_family"] = int(ir.basix_family)
-    if ir.basix_cell is None:
-        d["basix_cell"] = -1
-    else:
-        d["basix_cell"] = int(ir.basix_cell)
-
-    if len(ir.value_shape) > 0:
-        d["value_shape"] = f"value_shape_{ir.name}"
-        d["value_shape_init"] = f"int value_shape_{ir.name}[] = {{{', '.join(str(i) for i in ir.value_shape)}}};"
-    else:
-        d["value_shape"] = "NULL"
-        d["value_shape_init"] = ""
-
-    if len(ir.reference_value_shape) > 0:
-        d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
-        d["reference_value_shape_init"] = \
-            f"int reference_value_shape_{ir.name}[] = {{{', '.join(str(i) for i in ir.reference_value_shape)}}};"
-    else:
-        d["reference_value_shape"] = "NULL"
-        d["reference_value_shape_init"] = ""
-
-    if len(ir.sub_elements) > 0:
-        d["sub_elements"] = f"sub_elements_{ir.name}"
-        sub_elements = ", ".join(f"&{el}" for el in ir.sub_elements)
-        d["sub_elements_init"] = f"ufcx_finite_element* sub_elements_{ir.name}[] = {{{sub_elements}}};"
-    else:
-        d["sub_elements"] = "NULL"
-        d["sub_elements_init"] = ""
-
-    if ir.custom_element is not None:
-        d["custom_element"] = f"&custom_element_{ir.name}"
-        d["custom_element_init"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element)
-    else:
-        d["custom_element"] = "NULL"
-        d["custom_element_init"] = ""
-
-    # Check that no keys are redundant or have been missed
-    from string import Formatter
-    fieldnames = [
-        fname for _, fname, _, _ in Formatter().parse(ufcx_finite_element.factory) if fname
-    ]
-    assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formatting dict"
-
-    # Format implementation code
-    implementation = ufcx_finite_element.factory.format_map(d)
-
-    # Format declaration
-    declaration = ufcx_finite_element.declaration.format(factory_name=ir.name)
-
-    return declaration, implementation
-
-
 def generate_custom_element(name, ir):
     d = {}
     d["factory_name"] = name
@@ -124,7 +32,7 @@ def generate_custom_element(name, ir):
     d["value_shape_length"] = len(ir.value_shape)
     if len(ir.value_shape) > 0:
         d["value_shape"] = f"value_shape_{name}"
-        values = ', '.join(str(i) for i in ir.value_shape)
+        values = ", ".join(str(i) for i in ir.value_shape)
         d["value_shape_init"] = f"int value_shape_{name}[] = {{{values}}};"
     else:
         d["value_shape"] = "NULL"
@@ -133,8 +41,12 @@ def generate_custom_element(name, ir):
     d["wcoeffs_rows"] = ir.wcoeffs.shape[0]
     d["wcoeffs_cols"] = ir.wcoeffs.shape[1]
     d["wcoeffs"] = f"wcoeffs_{name}"
-    d["wcoeffs_init"] = f"double wcoeffs_{name}[{ir.wcoeffs.shape[0] * ir.wcoeffs.shape[1]}] = "
-    d["wcoeffs_init"] += "{" + ", ".join([f" {i}" for row in ir.wcoeffs for i in row]) + "};"
+    d[
+        "wcoeffs_init"
+    ] = f"double wcoeffs_{name}[{ir.wcoeffs.shape[0] * ir.wcoeffs.shape[1]}] = "
+    d["wcoeffs_init"] += (
+        "{" + ", ".join([f" {i}" for row in ir.wcoeffs for i in row]) + "};"
+    )
 
     npts = []
     x = []
@@ -170,13 +82,122 @@ def generate_custom_element(name, ir):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
+
     fieldnames = [
-        fname for _, fname, _, _ in Formatter().parse(ufcx_basix_custom_finite_element.factory) if fname
+        fname
+        for _, fname, _, _ in Formatter().parse(
+            ufcx_basix_custom_finite_element.factory
+        )
+        if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formatting dict"
+        d.keys()
+    ), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_basix_custom_finite_element.factory.format_map(d)
 
     return implementation
+
+
+def generator(ir, options):
+    """Generate UFC code for a finite element."""
+    logger.info("Generating code for finite element:")
+    logger.info(f"--- family: {ir.family}")
+    logger.info(f"--- degree: {ir.degree}")
+    logger.info(f"--- value shape: {ir.value_shape}")
+    logger.info(f"--- name: {ir.name}")
+
+    d = {}
+    d["factory_name"] = ir.name
+    d["signature"] = f'"{ir.signature}"'
+    d["geometric_dimension"] = ir.geometric_dimension
+    d["topological_dimension"] = ir.topological_dimension
+    d["cell_shape"] = ir.cell_shape
+    d["element_type"] = ir.element_type
+    d["space_dimension"] = ir.space_dimension
+    d["value_rank"] = len(ir.value_shape)
+    d["value_size"] = ufl.product(ir.value_shape)
+    d["reference_value_rank"] = len(ir.reference_value_shape)
+    d["reference_value_size"] = ufl.product(ir.reference_value_shape)
+    d["degree"] = ir.degree
+    d["family"] = f'"{ir.family}"'
+    d["num_sub_elements"] = ir.num_sub_elements
+    d["block_size"] = ir.block_size
+    d["discontinuous"] = "true" if ir.discontinuous else "false"
+
+    if ir.lagrange_variant is None:
+        d["lagrange_variant"] = -1
+    else:
+        d["lagrange_variant"] = int(ir.lagrange_variant)
+
+    if ir.dpc_variant is None:
+        d["dpc_variant"] = -1
+    else:
+        d["dpc_variant"] = int(ir.dpc_variant)
+
+    if ir.basix_family is None:
+        d["basix_family"] = -1
+    else:
+        d["basix_family"] = int(ir.basix_family)
+    if ir.basix_cell is None:
+        d["basix_cell"] = -1
+    else:
+        d["basix_cell"] = int(ir.basix_cell)
+
+    if len(ir.value_shape) > 0:
+        d["value_shape"] = f"value_shape_{ir.name}"
+        d[
+            "value_shape_init"
+        ] = f"int value_shape_{ir.name}[] = {{{', '.join(str(i) for i in ir.value_shape)}}};"
+    else:
+        d["value_shape"] = "NULL"
+        d["value_shape_init"] = ""
+
+    if len(ir.reference_value_shape) > 0:
+        d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
+        d[
+            "reference_value_shape_init"
+        ] = f"int reference_value_shape_{ir.name}[] = {{{', '.join(str(i) for i in ir.reference_value_shape)}}};"
+    else:
+        d["reference_value_shape"] = "NULL"
+        d["reference_value_shape_init"] = ""
+
+    if len(ir.sub_elements) > 0:
+        d["sub_elements"] = f"sub_elements_{ir.name}"
+        sub_elements = ", ".join(f"&{el}" for el in ir.sub_elements)
+        d[
+            "sub_elements_init"
+        ] = f"ufcx_finite_element* sub_elements_{ir.name}[] = {{{sub_elements}}};"
+    else:
+        d["sub_elements"] = "NULL"
+        d["sub_elements_init"] = ""
+
+    if ir.custom_element is not None:
+        d["custom_element"] = f"&custom_element_{ir.name}"
+        d["custom_element_init"] = generate_custom_element(
+            f"custom_element_{ir.name}", ir.custom_element
+        )
+    else:
+        d["custom_element"] = "NULL"
+        d["custom_element_init"] = ""
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+
+    fieldnames = [
+        fname
+        for _, fname, _, _ in Formatter().parse(ufcx_finite_element.factory)
+        if fname
+    ]
+    assert set(fieldnames) == set(
+        d.keys()
+    ), "Mismatch between keys in template and in formatting dict"
+
+    # Format implementation code
+    implementation = ufcx_finite_element.factory.format_map(d)
+
+    # Format declaration
+    declaration = ufcx_finite_element.declaration.format(factory_name=ir.name)
+
+    return declaration, implementation
