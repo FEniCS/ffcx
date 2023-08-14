@@ -137,7 +137,7 @@ math_table = {
 def build_initializer_lists(values):
     arr = "{"
     if len(values.shape) == 1:
-        arr += ", ".join(str(v) for v in values)
+        return "{" + ", ".join(str(v) for v in values) + "}"
     elif len(values.shape) > 1:
         arr += ",\n".join(build_initializer_lists(v) for v in values)
     arr += "}"
@@ -161,9 +161,9 @@ class CFormatter(object):
             assert arr.const is False
             return f"{arr.typename} {symbol}{dims};\n"
 
-        cstr = "static const" if arr.const else ""
         vals = build_initializer_lists(arr.values)
-        return f"{cstr} {arr.typename} {symbol}{dims} = {vals};\n"
+        cstr = "static const " if arr.const else ""
+        return f"{cstr}{arr.typename} {symbol}{dims} = {vals};\n"
 
     def format_array_access(self, arr) -> str:
         name = self.c_format(arr.array)

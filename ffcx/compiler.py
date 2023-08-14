@@ -69,7 +69,6 @@ from time import time
 
 from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.codegeneration import generate_code
-from ffcx.formatting import format_code
 from ffcx.ir.representation import compute_ir
 
 logger = logging.getLogger("ffcx")
@@ -109,9 +108,12 @@ def compile_ufl_objects(
     code = generate_code(ir, options)
     _print_timing(3, time() - cpu_time)
 
-    # Stage 4: format code
+    # Stage 4: join code
     cpu_time = time()
-    code_h, code_c = format_code(code, options)
+    code_head = [c[0] for part in code for c in part]
+    code_head = "".join(code_head)
+    code_main = [c[1] for part in code for c in part]
+    code_main = "".join(code_main)
     _print_timing(4, time() - cpu_time)
 
-    return code_h, code_c
+    return (code_head, code_main)
