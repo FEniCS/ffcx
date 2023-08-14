@@ -5,12 +5,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Finite element interface."""
 
-from __future__ import annotations
-
 import typing
 import warnings
 from functools import lru_cache
-
 
 import basix
 import basix.ufl
@@ -24,24 +21,11 @@ def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._
     if isinstance(element, basix.ufl._ElementBase):
         return element
     else:
-        return _cached_conversion(element)
+        warnings.warn(
+            "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
+            DeprecationWarning)
 
-
-@lru_cache()
-def _cached_conversion(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
-    """Create an FFCx element from a UFL element.
-
-    Args:
-        element: A UFL finite element
-
-    Returns:
-        A Basix finite element
-    """
-    warnings.warn(
-        "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
-        DeprecationWarning)
-
-    return basix.ufl.convert_ufl_element(element)
+        return basix.ufl.convert_ufl_element(element)
 
 
 def basix_index(indices: typing.Tuple[int]) -> int:
