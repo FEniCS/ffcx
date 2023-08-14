@@ -1464,7 +1464,7 @@ def _is_simple_if_body(body):
         if len(body.statements) > 1:
             return False
         (body,) = body.statements
-    return isinstance(body, (Return, AssignOp, Break, Continue))
+    return isinstance(body, (Return, AssignOp))
 
 
 class If(CStatement):
