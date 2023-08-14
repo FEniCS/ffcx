@@ -9,7 +9,6 @@ import logging
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
 from ffcx.codegeneration.C.c_implementation import CFormatter
 
@@ -39,8 +38,7 @@ def generator(ir, options):
 
     # Format code as string
     CF = CFormatter(options["scalar_type"])
-    code = CF.c_format(parts)
-    body = format_indented_lines(code, 1)
+    body = CF.c_format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}

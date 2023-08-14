@@ -158,12 +158,12 @@ class CFormatter(object):
         symbol = self.c_format(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
         if arr.values is None:
-            vals = "{}"
-        else:
-            vals = build_initializer_lists(arr.values)
-        cstr = "static const" if arr.const else ""
+            assert arr.const is False
+            return f"{arr.typename} {symbol}{dims};\n"
 
-        return f"{cstr} {arr.typename} {symbol}{dims} = {vals};\n"
+        vals = build_initializer_lists(arr.values)
+        cstr = "static const " if arr.const else ""
+        return f"{cstr}{arr.typename} {symbol}{dims} = {vals};\n"
 
     def format_array_access(self, arr) -> str:
         name = self.c_format(arr.array)
