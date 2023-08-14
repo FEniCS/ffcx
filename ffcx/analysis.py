@@ -174,9 +174,9 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     custom_q = None
     for e in form_data.unique_elements:
         e = convert_element(e)
-        if isinstance(e, basix.ufl._QuadratureElement):
+        if e.has_custom_quadrature:
             if custom_q is None:
-                custom_q = e._points, e._weights
+                custom_q = e.custom_quadrature()
             else:
                 assert np.allclose(e._points, custom_q[0])
                 assert np.allclose(e._weights, custom_q[1])
