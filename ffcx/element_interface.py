@@ -87,7 +87,7 @@ def QuadratureElement(
         "ffcx.element_interface.QuadratureElement is deprecated and will be removed after December 2023. "
         "Use basix.ufl.quadrature_element instead.",
         DeprecationWarning)
-    basix.ufl.quadrature_element(
+    return basix.ufl.quadrature_element(
         cell=cellname, value_shape=value_shape, scheme=scheme, degree=degree, points=points, weights=weights,
         mapname=mapname)
 
@@ -98,4 +98,4 @@ def RealElement(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._Elem
         "ffcx.element_interface.RealElement is deprecated and will be removed after December 2023. "
         "Use basix.ufl.real_element instead.",
         DeprecationWarning)
-    basix.ufl.real_element(cell=element.cell().cellname(), value_shape=element.value_shape())
+    return basix.ufl.real_element(cell=element.cell().cellname(), value_shape=element.value_shape())
