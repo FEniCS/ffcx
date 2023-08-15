@@ -145,7 +145,7 @@ class FFCXDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = L.Symbol("coordinate_dofs")
+        dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
         # coordinate dofs is always 3d
         dim = 3

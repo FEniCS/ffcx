@@ -223,7 +223,7 @@ class FFCXAccess(object):
     def cell_facet_jacobian(self, e, mt, tabledata, num_points):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_jacobian")
+            table = L.Symbol(f"{cellname}_reference_facet_jacobian", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":

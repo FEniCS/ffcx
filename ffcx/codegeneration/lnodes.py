@@ -23,7 +23,6 @@ class PRECEDENCE:
 
     MUL = 4
     DIV = 4
-    MOD = 4
 
     ADD = 5
     SUB = 5
@@ -102,6 +101,18 @@ class DataType(Enum):
     REAL = 0
     SCALAR = 1
     INT = 2
+
+
+def merge_dtypes(dtype0, dtype1):
+    # Promote dtype to SCALAR or REAL if either argument matches
+    if DataType.SCALAR in (dtype0, dtype1):
+        return DataType.SCALAR
+    elif DataType.REAL in (dtype0, dtype1):
+        return DataType.REAL
+    elif (dtype0 == DataType.INT and dtype1 == DataType.INT):
+        return DataType.INT
+    else:
+        raise ValueError(f"Can't get dtype for binary operation with {dtype0, dtype1}")
 
 
 class LNode(object):
@@ -225,22 +236,6 @@ class LExpr(LNode):
     __floordiv__ = __div__
     __rfloordiv__ = __rdiv__
 
-    def __mod__(self, other):
-        other = as_lexpr(other)
-        if is_zero_lexpr(other):
-            raise ValueError("Division by zero!")
-        if is_zero_lexpr(self):
-            return self
-        return Mod(self, other)
-
-    def __rmod__(self, other):
-        other = as_lexpr(other)
-        if is_zero_lexpr(self):
-            raise ValueError("Division by zero!")
-        if is_zero_lexpr(other):
-            return other
-        return Mod(other, self)
-
 
 class LExprOperator(LExpr):
     """Base class for all expression operators."""
@@ -263,8 +258,12 @@ class LiteralFloat(LExprTerminal):
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        assert isinstance(value, (float, complex, int, np.number))
+        assert isinstance(value, (float, complex))
         self.value = value
+        if isinstance(value, complex):
+            self.dtype = DataType.SCALAR
+        else:
+            self.dtype = DataType.REAL
 
     def __eq__(self, other):
         return isinstance(other, LiteralFloat) and self.value == other.value
@@ -281,6 +280,7 @@ class LiteralInt(LExprTerminal):
     def __init__(self, value):
         assert isinstance(value, (int, np.number))
         self.value = value
+        self.dtype = DataType.INT
 
     def __eq__(self, other):
         return isinstance(other, LiteralInt) and self.value == other.value
@@ -339,6 +339,13 @@ class BinOp(LExprOperator):
         return hash(self.lhs) + hash(self.rhs)
 
 
+class ArithmeticBinOp(BinOp):
+    def __init__(self, lhs, rhs):
+        self.lhs = as_lexpr(lhs)
+        self.rhs = as_lexpr(rhs)
+        self.dtype = merge_dtypes(self.lhs.dtype, self.rhs.dtype)
+
+
 class NaryOp(LExprOperator):
     """Base class for special n-ary operators."""
 
@@ -357,6 +364,10 @@ class Neg(PrefixUnaryOp):
     precedence = PRECEDENCE.NEG
     op = "-"
 
+    def __init__(self, arg):
+        self.arg = as_lexpr(arg)
+        self.dtype = self.arg.dtype
+
 
 class Not(PrefixUnaryOp):
     precedence = PRECEDENCE.NOT
@@ -366,29 +377,24 @@ class Not(PrefixUnaryOp):
 # lexpr binary operators
 
 
-class Add(BinOp):
+class Add(ArithmeticBinOp):
     precedence = PRECEDENCE.ADD
     op = "+"
 
 
-class Sub(BinOp):
+class Sub(ArithmeticBinOp):
     precedence = PRECEDENCE.SUB
     op = "-"
 
 
-class Mul(BinOp):
+class Mul(ArithmeticBinOp):
     precedence = PRECEDENCE.MUL
     op = "*"
 
 
-class Div(BinOp):
+class Div(ArithmeticBinOp):
     precedence = PRECEDENCE.DIV
     op = "/"
-
-
-class Mod(BinOp):
-    precedence = PRECEDENCE.MOD
-    op = "%"
 
 
 class EQ(BinOp):
@@ -453,6 +459,7 @@ class MathFunction(LExprOperator):
     def __init__(self, func, args):
         self.function = func
         self.args = [as_lexpr(arg) for arg in args]
+        self.dtype = self.args[0].dtype
 
     def __eq__(self, other):
         return (
@@ -618,6 +625,7 @@ class Conditional(LExprOperator):
         self.condition = as_lexpr(condition)
         self.true = as_lexpr(true)
         self.false = as_lexpr(false)
+        self.dtype = merge_dtypes(self.true.dtype, self.false.dtype)
 
     def __eq__(self, other):
         return (
@@ -735,7 +743,6 @@ class VariableDecl(Statement):
 
     def __init__(self, symbol, value=None):
 
-        # Allow Symbol or just a string
         assert isinstance(symbol, Symbol)
         self.symbol = symbol
 
@@ -808,14 +815,13 @@ class ForRange(Statement):
 
     is_scoped = True
 
-    def __init__(self, index, begin, end, body, index_type="int"):
+    def __init__(self, index, begin, end, body):
         assert isinstance(index, Symbol)
         self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)
         assert isinstance(body, list)
         self.body = StatementList(body)
-        self.index_type = index_type
 
     def __eq__(self, other):
         attributes = ("index", "begin", "end", "body", "index_type")
