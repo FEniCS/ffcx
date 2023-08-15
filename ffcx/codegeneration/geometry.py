@@ -54,13 +54,15 @@ def facet_edge_vertices(L, tablename, cellname):
 def reference_facet_jacobian(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_jacobians(celltype)
-    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
+    arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
+    return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
 def reference_cell_volume(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.volume(celltype)
-    return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", out)
+    symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
+    return L.VariableDecl(f"static const {type}", symbol, out)
 
 
 def reference_facet_volume(L, tablename, cellname, type: str):
@@ -69,7 +71,8 @@ def reference_facet_volume(L, tablename, cellname, type: str):
     for i in volumes[1:]:
         if not np.isclose(i, volumes[0]):
             raise ValueError("Reference facet volume not supported for this cell type.")
-    return L.VariableDecl(f"static const {type}", f"{cellname}_{tablename}", volumes[0])
+    symbol = L.Symbol(f"{cellname}_{tablename}", L.DataType.REAL)
+    return L.VariableDecl(f"static const {type}", symbol, volumes[0])
 
 
 def reference_edge_vectors(L, tablename, cellname, type: str):
@@ -78,7 +81,8 @@ def reference_edge_vectors(L, tablename, cellname, type: str):
     geometry = basix.geometry(celltype)
     edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
     out = np.array(edge_vectors[cellname])
-    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
+    arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
+    return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
 def facet_reference_edge_vectors(L, tablename, cellname, type: str):

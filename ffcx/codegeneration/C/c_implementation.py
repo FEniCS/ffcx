@@ -148,7 +148,10 @@ def build_initializer_lists(values):
 class CFormatter(object):
     def __init__(self, scalar) -> None:
         self.scalar_type = scalar
-        self.real_type = scalar.split()[0]
+        if scalar == "long double":
+            self.real_type = "long double"
+        else:
+            self.real_type = scalar.split()[0]
 
     def format_statement_list(self, slist) -> str:
         return "".join(self.c_format(s) for s in slist.statements)
