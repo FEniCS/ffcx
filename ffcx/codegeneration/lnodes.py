@@ -733,10 +733,7 @@ class VariableDecl(Statement):
 
     is_scoped = False
 
-    def __init__(self, typename, symbol, value=None):
-        # No type system yet, just using strings
-        assert isinstance(typename, str)
-        self.typename = typename
+    def __init__(self, symbol, value=None):
 
         # Allow Symbol or just a string
         assert isinstance(symbol, Symbol)
