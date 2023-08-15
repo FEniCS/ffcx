@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import ffcx.codegeneration.lnodes as L
 
 math_table = {
     "double": {
@@ -147,6 +148,7 @@ def build_initializer_lists(values):
 class CFormatter(object):
     def __init__(self, scalar) -> None:
         self.scalar_type = scalar
+        self.real_type = scalar.split()[0]
 
     def format_statement_list(self, slist) -> str:
         return "".join(self.c_format(s) for s in slist.statements)
@@ -155,15 +157,23 @@ class CFormatter(object):
         return "// " + c.comment + "\n"
 
     def format_array_decl(self, arr) -> str:
+        dtype = arr.symbol.dtype
+        assert dtype is not None
+
+        if dtype == L.DataType.SCALAR:
+            typename = self.scalar_type
+        elif dtype == L.DataType.REAL:
+            typename = self.real_type
+
         symbol = self.c_format(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
         if arr.values is None:
             assert arr.const is False
-            return f"{arr.typename} {symbol}{dims};\n"
+            return f"{typename} {symbol}{dims};\n"
 
         vals = build_initializer_lists(arr.values)
         cstr = "static const " if arr.const else ""
-        return f"{cstr}{arr.typename} {symbol}{dims} = {vals};\n"
+        return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
     def format_array_access(self, arr) -> str:
         name = self.c_format(arr.array)
@@ -173,7 +183,12 @@ class CFormatter(object):
     def format_variable_decl(self, v) -> str:
         val = self.c_format(v.value)
         symbol = self.c_format(v.symbol)
-        return f"{v.typename} {symbol} = {val};\n"
+        assert v.symbol.dtype
+        if v.symbol.dtype == L.DataType.SCALAR:
+            typename = self.scalar_type
+        elif v.symbol.dtype == L.DataType.REAL:
+            typename = self.real_type
+        return f"{typename} {symbol} = {val};\n"
 
     def format_nary_op(self, oper) -> str:
         # Format children

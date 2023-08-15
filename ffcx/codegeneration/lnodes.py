@@ -7,6 +7,7 @@
 import numbers
 import ufl
 import numpy as np
+from enum import Enum
 
 
 class PRECEDENCE:
@@ -89,6 +90,15 @@ def float_product(factors):
             if is_zero_lexpr(f):
                 return f
         return Product(factors)
+
+
+class DataType(Enum):
+    """Representation of data types for variables in LNodes.
+    These should either be REAL (same type as geometry),
+    SCALAR (same type as tensor), or INT (for entity indices etc.)"""
+    REAL = 0
+    SCALAR = 1
+    INT = 2
 
 
 class LNode(object):
@@ -746,7 +756,8 @@ class VariableDecl(Statement):
         self.typename = typename
 
         # Allow Symbol or just a string
-        self.symbol = as_symbol(symbol)
+        assert isinstance(symbol, Symbol)
+        self.symbol = symbol
 
         if value is not None:
             value = as_lexpr(value)
@@ -774,19 +785,11 @@ class ArrayDecl(Statement):
 
     is_scoped = False
 
-    def __init__(self, symbol, typename=None, sizes=None, values=None, const=False):
-        self.symbol = as_symbol(symbol)
-
-        if typename is None:
-            assert values is not None
-            if values.dtype == np.float64:
-                typename = "double"
-            elif values.dtype == np.float32:
-                typename = "float"
-            else:
-                raise RuntimeError
-        self.typename = typename
-
+    def __init__(self, symbol, sizes=None, values=None, const=False):
+        assert isinstance(symbol, Symbol)
+        self.symbol = symbol
+        assert symbol.dtype
+        
         if sizes is None:
             assert values is not None
             sizes = values.shape
@@ -795,7 +798,7 @@ class ArrayDecl(Statement):
         self.sizes = tuple(sizes)
 
         if values is None:
-            assert typename and sizes
+            assert sizes is not None
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_lexpr.
         if isinstance(values, (list, tuple)):

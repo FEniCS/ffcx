@@ -79,60 +79,60 @@ class FFCXSymbols(object):
             postfix = "[0]"
             if restriction == "-":
                 postfix = "[1]"
-            return L.Symbol("entity_local_index" + postfix)
+            return L.Symbol("entity_local_index" + postfix, dtype=L.DataType.INT)
         elif entitytype == "vertex":
-            return L.Symbol("entity_local_index[0]")
+            return L.Symbol("entity_local_index[0]", dtype=L.DataType.INT)
         else:
             logging.exception(f"Unknown entitytype {entitytype}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
-        return L.Symbol(indices[iarg])
+        return L.Symbol(indices[iarg], dtype=L.DataType.INT)
 
     def coefficient_dof_sum_index(self):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
-        return L.Symbol("ic")
+        return L.Symbol("ic", dtype=L.DataType.INT)
 
     def quadrature_loop_index(self):
         """Reusing a single index name for all quadrature loops, assumed not to be nested."""
-        return L.Symbol("iq")
+        return L.Symbol("iq", dtype=L.DataType.INT)
 
     def quadrature_permutation(self, index):
         """Quadrature permutation, as input to the function."""
-        return L.Symbol("quadrature_permutation")[index]
+        return L.Symbol("quadrature_permutation", dtype-L.DataType.INT)[index]
 
     def custom_weights_table(self):
         """Table for chunk of custom quadrature weights (including cell measure scaling)."""
-        return L.Symbol("weights_chunk")
+        return L.Symbol("weights_chunk", dtype=L.DataType.REAL)
 
     def custom_points_table(self):
         """Table for chunk of custom quadrature points (physical coordinates)."""
-        return L.Symbol("points_chunk")
+        return L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
     def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
-        return L.Symbol(f"weights_{quadrature_rule.id()}")
+        return L.Symbol(f"weights_{quadrature_rule.id()}", dtype=L.DataType.REAL)
 
     def points_table(self, quadrature_rule):
         """Table of quadrature points (points on the reference integration entity)."""
-        return L.Symbol(f"points_{quadrature_rule.id()}")
+        return L.Symbol(f"points_{quadrature_rule.id()}", dtype=L.DataType.REAL)
 
     def x_component(self, mt):
         """Physical coordinate component."""
-        return L.Symbol(format_mt_name("x", mt))
+        return L.Symbol(format_mt_name("x", mt), dtype=L.DataType.REAL)
 
     def J_component(self, mt):
         """Jacobian component."""
         # FIXME: Add domain number!
-        return L.Symbol(format_mt_name("J", mt))
+        return L.Symbol(format_mt_name("J", mt), dtype=L.DataType.REAL)
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
         offset = 0
         if restriction == "-":
             offset = num_scalar_dofs * 3
-        vc = L.Symbol("coordinate_dofs")
+        vc = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
         return vc[3 * dof + component + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
@@ -145,15 +145,15 @@ class FFCXSymbols(object):
 
     def coefficient_dof_access(self, coefficient, dof_index):
         offset = self.coefficient_offsets[coefficient]
-        w = L.Symbol("w")
+        w = L.Symbol("w", dtype=L.DataType.SCALAR)
         return w[offset + dof_index]
 
     def coefficient_dof_access_blocked(
         self, coefficient: ufl.Coefficient, index, block_size, dof_offset
     ):
         coeff_offset = self.coefficient_offsets[coefficient]
-        w = L.Symbol("w")
-        _w = L.Symbol(f"_w_{coeff_offset}_{dof_offset}")
+        w = L.Symbol("w", dtype=L.DataType.SCALAR)
+        _w = L.Symbol(f"_w_{coeff_offset}_{dof_offset}", dtype=L.DataType.SCALAR)
         unit_stride_access = _w[index]
         original_access = w[coeff_offset + index * block_size + dof_offset]
         return unit_stride_access, original_access
@@ -161,11 +161,11 @@ class FFCXSymbols(object):
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
-        return L.Symbol(format_mt_name("w%d" % (c,), mt))
+        return L.Symbol(format_mt_name("w%d" % (c,), mt), dtype=L.DataType.SCALAR)
 
     def constant_index_access(self, constant, index):
         offset = self.original_constant_offsets[constant]
-        c = L.Symbol("c")
+        c = L.Symbol("c", dtype=L.DataType.SCALAR)
         return c[offset + index]
 
     def element_table(self, tabledata, entitytype, restriction):
@@ -189,4 +189,4 @@ class FFCXSymbols(object):
             qp = 0
 
         # Return direct access to element table
-        return L.Symbol(tabledata.name)[qp][entity][iq]
+        return L.Symbol(tabledata.name, dtype=L.DataType.REAL)[qp][entity][iq]
