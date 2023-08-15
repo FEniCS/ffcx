@@ -84,7 +84,7 @@ class IntegralGenerator(object):
         """Create a new code symbol named basename + running counter."""
         name = "%s%d" % (basename, self.symbol_counters[basename])
         self.symbol_counters[basename] += 1
-        return L.Symbol(name, dtype=L.DataType.REAL)
+        return L.Symbol(name, dtype=L.DataType.SCALAR)
 
     def get_temp_symbol(self, tempname, key):
         key = (tempname,) + key
@@ -278,7 +278,7 @@ class IntegralGenerator(object):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.REAL)
+        arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         pre_definitions, parts = self.generate_partition(
             arraysymbol, F, "piecewise", None
         )
@@ -296,7 +296,7 @@ class IntegralGenerator(object):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.REAL)
+        arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         pre_definitions, parts = self.generate_partition(
             arraysymbol, F, "varying", quadrature_rule
         )
