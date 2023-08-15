@@ -12,10 +12,10 @@ import logging
 
 import ffcx.codegeneration.C.basix_custom_element_template as ufcx_basix_custom_finite_element
 import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
+from ffcx.codegeneration.utils import scalar_to_value_type
 import ufl
 
 logger = logging.getLogger("ffcx")
-index_type = "int"
 
 
 def generator(ir, options):
@@ -88,7 +88,7 @@ def generator(ir, options):
 
     if ir.custom_element is not None:
         d["custom_element"] = f"&custom_element_{ir.name}"
-        d["custom_element_init"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element)
+        d["custom_element_init"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element, options)
     else:
         d["custom_element"] = "NULL"
         d["custom_element_init"] = ""
@@ -110,7 +110,10 @@ def generator(ir, options):
     return declaration, implementation
 
 
-def generate_custom_element(name, ir):
+def generate_custom_element(name, ir, options):
+    scalar_type = options["scalar_type"]
+    real_type = scalar_to_value_type(scalar_type)
+
     d = {}
     d["factory_name"] = name
     d["cell_type"] = int(ir.cell_type)
@@ -133,7 +136,7 @@ def generate_custom_element(name, ir):
     d["wcoeffs_rows"] = ir.wcoeffs.shape[0]
     d["wcoeffs_cols"] = ir.wcoeffs.shape[1]
     d["wcoeffs"] = f"wcoeffs_{name}"
-    d["wcoeffs_init"] = f"double wcoeffs_{name}[{ir.wcoeffs.shape[0] * ir.wcoeffs.shape[1]}] = "
+    d["wcoeffs_init"] = f"{real_type} wcoeffs_{name}[{ir.wcoeffs.shape[0] * ir.wcoeffs.shape[1]}] = "
     d["wcoeffs_init"] += "{" + ", ".join([f" {i}" for row in ir.wcoeffs for i in row]) + "};"
 
     npts = []
@@ -148,7 +151,7 @@ def generate_custom_element(name, ir):
     d["npts_init"] = f"int npts_{name}[{len(npts)}] = "
     d["npts_init"] += "{" + ",".join([f" {i}" for i in npts]) + "};"
     d["x"] = f"x_{name}"
-    d["x_init"] = f"double x_{name}[{len(x)}] = "
+    d["x_init"] = f"{real_type} x_{name}[{len(x)}] = "
     d["x_init"] += "{" + ",".join([f" {i}" for i in x]) + "};"
     ndofs = []
     M = []
@@ -165,7 +168,7 @@ def generate_custom_element(name, ir):
     d["ndofs_init"] = f"int ndofs_{name}[{len(ndofs)}] = "
     d["ndofs_init"] += "{" + ",".join([f" {i}" for i in ndofs]) + "};"
     d["M"] = f"M_{name}"
-    d["M_init"] = f"double M_{name}[{len(M)}] = "
+    d["M_init"] = f"{real_type} M_{name}[{len(M)}] = "
     d["M_init"] += "{" + ",".join([f" {i}" for i in M]) + "};"
 
     # Check that no keys are redundant or have been missed

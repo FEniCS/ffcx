@@ -564,8 +564,10 @@ class ArrayAccess(LExprOperator):
         # Typecheck array argument
         if isinstance(array, Symbol):
             self.array = array
+            self.dtype = array.dtype
         elif isinstance(array, ArrayDecl):
             self.array = array.symbol
+            self.dtype = array.symbol.dtype
         else:
             raise ValueError("Unexpected array type %s." % (type(array).__name__,))
 

@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.utils import scalar_to_value_type
 
 math_table = {
     "double": {
@@ -148,10 +149,7 @@ def build_initializer_lists(values):
 class CFormatter(object):
     def __init__(self, scalar) -> None:
         self.scalar_type = scalar
-        if scalar == "long double":
-            self.real_type = "long double"
-        else:
-            self.real_type = scalar.split()[0]
+        self.real_type = scalar_to_value_type(scalar)
 
     def format_statement_list(self, slist) -> str:
         return "".join(self.c_format(s) for s in slist.statements)
@@ -275,8 +273,12 @@ class CFormatter(object):
         return f"{s.name}"
 
     def format_math_function(self, c) -> str:
-        # Get a table of functions for this scalar type, if available
-        dtype_math_table = math_table.get(self.scalar_type, {})
+        # Get a table of functions for this type, if available
+        if c.args[0].dtype == L.DataType.REAL:
+            dtype_math_table = math_table.get(self.real_type, {})
+        elif c.args[0].dtype == L.DataType.SCALAR:
+            dtype_math_table = math_table.get(self.scalar_type, {})
+
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
         args = ", ".join(self.c_format(arg) for arg in c.args)
