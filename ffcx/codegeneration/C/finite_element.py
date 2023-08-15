@@ -15,10 +15,12 @@ import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
 import ufl
 
 logger = logging.getLogger("ffcx")
-index_type = "int"
 
 
-def generate_custom_element(name, ir):
+def generate_custom_element(name, ir, options):
+    # scalar_type = options["scalar_type"]
+    # real_type = scalar_to_value_type(scalar_type)
+
     d = {}
     d["factory_name"] = name
     d["cell_type"] = int(ir.cell_type)

@@ -110,10 +110,8 @@ def compile_ufl_objects(
 
     # Stage 4: join code
     cpu_time = time()
-    code_head = [c[0] for part in code for c in part]
-    code_head = "".join(code_head)
-    code_main = [c[1] for part in code for c in part]
-    code_main = "".join(code_main)
+    code_head = "".join(c[0] for part in code for c in part)
+    code_main = "".join(c[1] for part in code for c in part)
     _print_timing(4, time() - cpu_time)
 
     return (code_head, code_main)

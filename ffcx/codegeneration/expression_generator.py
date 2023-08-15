@@ -13,7 +13,7 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.ir.representation import ExpressionIR
-from ffcx.naming import scalar_to_value_type
+from ffcx.codegeneration.utils import scalar_to_value_type
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -90,8 +90,9 @@ class ExpressionGenerator:
 
         for name in table_names:
             table = tables[name]
+            symbol = L.Symbol(name, dtype=L.DataType.REAL)
             decl = L.ArrayDecl(
-                name, typename=f"{float_type}", sizes=table.shape, values=table, const=True)
+                symbol, sizes=table.shape, values=table, const=True)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -134,7 +135,7 @@ class ExpressionGenerator:
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}")
+        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "varying")
         parts = L.commented_code_list(
             parts, f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}")
@@ -145,7 +146,7 @@ class ExpressionGenerator:
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol("sp")
+        arraysymbol = L.Symbol("sp", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "piecewise")
         parts = L.commented_code_list(parts, "Unstructured piecewise computations")
         return parts
@@ -392,7 +393,6 @@ class ExpressionGenerator:
 
         if intermediates:
             if use_symbol_array:
-                scalar_type = self.backend.access.options["scalar_type"]
-                parts += [L.ArrayDecl(symbol, typename=scalar_type, sizes=len(intermediates))]
+                parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
         return parts

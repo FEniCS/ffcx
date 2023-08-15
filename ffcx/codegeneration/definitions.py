@@ -9,7 +9,7 @@ import logging
 
 import ufl
 from ffcx.element_interface import convert_element
-from ffcx.naming import scalar_to_value_type
+from ffcx.codegeneration.utils import scalar_to_value_type
 from ffcx.codegeneration import lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -102,9 +102,9 @@ class FFCXDefinitions(object):
             # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
                 pre_code += [
-                    L.ArrayDecl(dof_access.array, typename=self.options["scalar_type"], sizes=num_dofs)
+                    L.ArrayDecl(dof_access.array, sizes=num_dofs)
                 ]
-                pre_body = L.Assign(dof_access, dof_access_map)
+                pre_body = [L.Assign(dof_access, dof_access_map)]
                 pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
             dof_access = self.symbols.coefficient_dof_access(

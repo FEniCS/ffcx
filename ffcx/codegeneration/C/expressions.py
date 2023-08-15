@@ -10,7 +10,7 @@ from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.C.c_implementation import CFormatter
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -56,6 +56,10 @@ def generator(ir, options):
 
     points = ", ".join(str(p) for p in ir.points.flatten())
     n = ir.points.size
+
+    # scalar_type = options["scalar_type"]
+    # real_type = scalar_to_value_type(scalar_type)
+
     d["points_init"] = f"static double points_{ir.name}[{n}] = {{{points}}};"
     d["points"] = f"points_{ir.name}"
 
