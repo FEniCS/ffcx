@@ -87,7 +87,7 @@ def generator(ir, options):
 
     if ir.custom_element is not None:
         d["custom_element"] = f"&custom_element_{ir.name}"
-        d["custom_element_init"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element, options)
+        d["custom_element_init"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element)
     else:
         d["custom_element"] = "NULL"
         d["custom_element_init"] = ""
@@ -109,10 +109,7 @@ def generator(ir, options):
     return declaration, implementation
 
 
-def generate_custom_element(name, ir, options):
-    # scalar_type = options["scalar_type"]
-    # real_type = scalar_to_value_type(scalar_type)
-
+def generate_custom_element(name, ir):
     d = {}
     d["factory_name"] = name
     d["cell_type"] = int(ir.cell_type)
