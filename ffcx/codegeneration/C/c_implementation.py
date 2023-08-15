@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import warnings
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.utils import scalar_to_value_type
 
@@ -274,10 +275,14 @@ class CFormatter(object):
 
     def format_math_function(self, c) -> str:
         # Get a table of functions for this type, if available
-        if c.args[0].dtype == L.DataType.REAL:
-            dtype_math_table = math_table.get(self.real_type, {})
-        elif c.args[0].dtype == L.DataType.SCALAR:
-            dtype_math_table = math_table.get(self.scalar_type, {})
+        arg_type = self.scalar_type
+        if hasattr(c.args[0], "dtype"):
+            if c.args[0].dtype == L.DataType.REAL:
+                arg_type = self.real_type
+        else:
+            warnings.warn(f"Syntax item without dtype {c.args[0]}")
+
+        dtype_math_table = math_table.get(arg_type, {})
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
