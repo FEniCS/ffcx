@@ -30,13 +30,6 @@ def generator(ir, options):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    code = []
-    cases = []
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        cases += [(L.Symbol(itg_type), L.Return(len(ir.subdomain_ids[itg_type])))]
-    code += [L.Switch("integral_type", cases, default=L.Return(0))]
-    d["num_integrals"] = L.StatementList(code)
-
     if len(ir.original_coefficient_position) > 0:
         d["original_coefficient_position_init"] = L.ArrayDecl(
             "int",
@@ -95,6 +88,7 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
+    # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
         integrals += [L.AddressOf(L.Symbol(itg)) for itg in ir.integral_names[itg_type]]
         integral_ids += ir.subdomain_ids[itg_type]
@@ -127,51 +121,6 @@ def generator(ir, options):
         values=integral_offsets,
         sizes=len(integral_offsets),
     )
-
-    code = []
-    cases = []
-    code_ids = []
-    cases_ids = []
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        if len(ir.integral_names[itg_type]) > 0:
-            code += [
-                L.ArrayDecl(
-                    "static ufcx_integral*",
-                    f"integrals_{itg_type}_{ir.name}",
-                    values=[
-                        L.AddressOf(L.Symbol(itg))
-                        for itg in ir.integral_names[itg_type]
-                    ],
-                    sizes=len(ir.integral_names[itg_type]),
-                )
-            ]
-            cases.append(
-                (
-                    L.Symbol(itg_type),
-                    L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}")),
-                )
-            )
-
-            code_ids += [
-                L.ArrayDecl(
-                    "static int",
-                    f"integral_ids_{itg_type}_{ir.name}",
-                    values=ir.subdomain_ids[itg_type],
-                    sizes=len(ir.subdomain_ids[itg_type]),
-                )
-            ]
-            cases_ids.append(
-                (
-                    L.Symbol(itg_type),
-                    L.Return(L.Symbol(f"integral_ids_{itg_type}_{ir.name}")),
-                )
-            )
-
-    code += [L.Switch("integral_type", cases, default=L.Return(L.Null()))]
-    code_ids += [L.Switch("integral_type", cases_ids, default=L.Return(L.Null()))]
-    d["integrals"] = L.StatementList(code)
-
-    d["integral_ids"] = L.StatementList(code_ids)
 
     code = []
     function_name = L.Symbol("function_name")
