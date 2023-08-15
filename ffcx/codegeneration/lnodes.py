@@ -219,7 +219,7 @@ class LExpr(LNode):
             return other
         return Div(other, self)
 
-    # TODO: Error check types? Can't do that exactly as symbols here have no type.
+    # TODO: Error check types?
     __truediv__ = __div__
     __rtruediv__ = __rdiv__
     __floordiv__ = __div__
@@ -470,7 +470,8 @@ class AssignOp(BinOp):
     sideeffect = True
 
     def __init__(self, lhs, rhs):
-        BinOp.__init__(self, as_lexpr_or_string_symbol(lhs), rhs)
+        assert isinstance(lhs, LNode)
+        BinOp.__init__(self, lhs, rhs)
 
 
 class Assign(AssignOp):
@@ -574,7 +575,7 @@ class ArrayAccess(LExprOperator):
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
             indices = (indices,)
-        self.indices = tuple(as_lexpr_or_string_symbol(i) for i in indices)
+        self.indices = tuple(as_lexpr(i) for i in indices)
 
         # Early error checking for negative array dimensions
         if any(isinstance(i, int) and i < 0 for i in self.indices):
@@ -627,20 +628,10 @@ class Conditional(LExprOperator):
         )
 
 
-def _is_zero_valued(values):
-    if isinstance(values, (numbers.Integral, LiteralInt)):
-        return int(values) == 0
-    elif isinstance(values, (numbers.Number, LiteralFloat)):
-        return float(values) == 0.0
-    else:
-        return np.count_nonzero(values) == 0
-
-
 def as_lexpr(node):
     """Typechecks and wraps an object as a valid LExpr.
 
-    Accepts LExpr nodes, treats int and float as literals, and treats a
-    string as a symbol.
+    Accepts LExpr nodes, treats int and float as literals.
 
     """
     if isinstance(node, LExpr):
@@ -651,19 +642,6 @@ def as_lexpr(node):
         return LiteralFloat(node)
     else:
         raise RuntimeError("Unexpected LExpr type %s:\n%s" % (type(node), str(node)))
-
-
-def as_lexpr_or_string_symbol(node):
-    if isinstance(node, str):
-        return Symbol(node)
-    return as_lexpr(node)
-
-
-def as_symbol(symbol):
-    if isinstance(symbol, str):
-        symbol = Symbol(symbol)
-    assert isinstance(symbol, Symbol)
-    return symbol
 
 
 def flattened_indices(indices, shape):
@@ -834,10 +812,12 @@ class ForRange(Statement):
     is_scoped = True
 
     def __init__(self, index, begin, end, body, index_type="int"):
-        self.index = as_lexpr_or_string_symbol(index)
+        assert isinstance(index, Symbol)
+        self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)
-        self.body = as_statement(body)
+        assert isinstance(body, list)
+        self.body = StatementList(body)
         self.index_type = index_type
 
     def __eq__(self, other):
