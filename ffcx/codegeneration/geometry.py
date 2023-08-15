@@ -105,16 +105,19 @@ def facet_reference_edge_vectors(L, tablename, cellname, type: str):
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
     out = np.array(edge_vectors)
-    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
+    arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
+    return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
 def reference_facet_normals(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_outward_normals(celltype)
-    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
+    arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
+    return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
 def facet_orientation(L, tablename, cellname, type: str):
     celltype = getattr(basix.CellType, cellname)
     out = np.array(basix.cell.facet_orientations(celltype))
-    return L.ArrayDecl(f"{cellname}_{tablename}", values=out, const=True)
+    arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
+    return L.ArrayDecl(arr_symbol, values=out, const=True)
