@@ -13,7 +13,7 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.ir.representation import ExpressionIR
-from ffcx.naming import scalar_to_value_type
+from ffcx.codegeneration.utils import scalar_to_value_type
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")

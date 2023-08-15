@@ -13,7 +13,7 @@ from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 import ffcx.codegeneration.lnodes as L
-from ffcx.naming import scalar_to_value_type
+from ffcx.codegeneration.utils import scalar_to_value_type
 
 
 class IntegralGenerator(object):
