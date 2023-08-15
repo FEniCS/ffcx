@@ -88,6 +88,7 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
+    # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
         integrals += [L.AddressOf(L.Symbol(itg)) for itg in ir.integral_names[itg_type]]
         integral_ids += ir.subdomain_ids[itg_type]
