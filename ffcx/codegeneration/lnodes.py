@@ -94,8 +94,11 @@ def float_product(factors):
 
 class DataType(Enum):
     """Representation of data types for variables in LNodes.
-    These should either be REAL (same type as geometry),
-    SCALAR (same type as tensor), or INT (for entity indices etc.)"""
+
+    These can be REAL (same type as geometry),
+    SCALAR (same type as tensor), or INT (for entity indices etc.)
+    """
+
     REAL = 0
     SCALAR = 1
     INT = 2
