@@ -12,7 +12,7 @@ import basix
 import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 
 def float_to_type(name):
