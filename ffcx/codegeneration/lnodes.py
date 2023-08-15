@@ -789,7 +789,7 @@ class ArrayDecl(Statement):
         assert isinstance(symbol, Symbol)
         self.symbol = symbol
         assert symbol.dtype
-        
+
         if sizes is None:
             assert values is not None
             sizes = values.shape

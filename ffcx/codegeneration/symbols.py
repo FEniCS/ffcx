@@ -100,7 +100,7 @@ class FFCXSymbols(object):
 
     def quadrature_permutation(self, index):
         """Quadrature permutation, as input to the function."""
-        return L.Symbol("quadrature_permutation", dtype-L.DataType.INT)[index]
+        return L.Symbol("quadrature_permutation", dtype=L.DataType.INT)[index]
 
     def custom_weights_table(self):
         """Table for chunk of custom quadrature weights (including cell measure scaling)."""

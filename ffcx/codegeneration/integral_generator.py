@@ -401,7 +401,7 @@ class IntegralGenerator(object):
         if intermediates:
             if use_symbol_array:
                 parts += [
-                     L.ArrayDecl(
+                    L.ArrayDecl(
                         symbol,
                         sizes=len(intermediates),
                     )
