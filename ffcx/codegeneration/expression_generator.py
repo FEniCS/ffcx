@@ -13,7 +13,6 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.ir.representation import ExpressionIR
-from ffcx.codegeneration.utils import scalar_to_value_type
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -37,28 +36,19 @@ class ExpressionGenerator:
     def generate(self):
 
         parts = []
-        scalar_type = self.backend.access.options["scalar_type"]
-        value_type = scalar_to_value_type(scalar_type)
-
-        parts += self.generate_element_tables(value_type)
-        # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables(value_type)
+        parts += self.generate_element_tables()
+        parts += self.generate_geometry_tables()
         parts += self.generate_piecewise_partition()
 
-        all_preparts = []
-        all_quadparts = []
-
         preparts, quadparts = self.generate_quadrature_loop()
-        all_preparts += preparts
-        all_quadparts += quadparts
 
         # Collect parts before, during, and after quadrature loops
-        parts += all_preparts
-        parts += all_quadparts
+        parts += preparts
+        parts += quadparts
 
         return L.StatementList(parts)
 
-    def generate_geometry_tables(self, float_type: str):
+    def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
         # Currently we only support circumradius
         ufl_geometry = {
@@ -77,11 +67,11 @@ class ExpressionGenerator:
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c, float_type))
+                parts.append(geometry.write_table(L, ufl_geometry[i], c))
 
         return parts
 
-    def generate_element_tables(self, float_type: str):
+    def generate_element_tables(self):
         """Generate tables of FE basis evaluated at specified points."""
         parts = []
 
@@ -293,12 +283,6 @@ class ExpressionGenerator:
             arg_factors.append(arg_factor)
         return arg_factors
 
-    def new_temp_symbol(self, basename):
-        """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
-        self.symbol_counters[basename] += 1
-        return L.Symbol(name)
-
     def get_var(self, v):
         if v._ufl_is_literal_:
             return self.ufl_to_language.get(v)
@@ -374,9 +358,8 @@ class ExpressionGenerator:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
-                        scalar_type = self.backend.access.options["scalar_type"]
-                        vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                        intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
+                        vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
+                        intermediates.append(L.VariableDecl(vaccess, vexpr))
 
             # Store access node for future reference
             self.scope[v] = vaccess

@@ -13,7 +13,6 @@ from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import scalar_to_value_type
 
 
 class IntegralGenerator(object):
@@ -107,18 +106,16 @@ class IntegralGenerator(object):
         assert not any(d for d in self.scopes.values())
 
         parts = []
-        scalar_type = self.backend.access.options["scalar_type"]
-        value_type = scalar_to_value_type(scalar_type)
 
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables(value_type)
+        parts += self.generate_quadrature_tables()
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
-        parts += self.generate_element_tables(value_type)
+        parts += self.generate_element_tables()
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables(value_type)
+        parts += self.generate_geometry_tables()
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -151,7 +148,7 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self, value_type: str) -> List[str]:
+    def generate_quadrature_tables(self) -> List[str]:
         """Generate static tables of quadrature points and weights."""
         parts: List = []
 
@@ -175,7 +172,7 @@ class IntegralGenerator(object):
         parts = L.commented_code_list(parts, "Quadrature rules")
         return parts
 
-    def generate_geometry_tables(self, float_type: str):
+    def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
         ufl_geometry = {
             ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
@@ -204,16 +201,15 @@ class IntegralGenerator(object):
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c, float_type))
+                parts.append(geometry.write_table(L, ufl_geometry[i], c))
 
         return parts
 
-    def generate_element_tables(self, float_type: str):
+    def generate_element_tables(self):
         """Generate static tables with precomputed element basisfunction values in quadrature points."""
         parts = []
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
-        padlen = self.ir.options["padlen"]
         if self.ir.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [
@@ -225,7 +221,7 @@ class IntegralGenerator(object):
 
         for name in table_names:
             table = tables[name]
-            parts += self.declare_table(name, table, padlen, float_type)
+            parts += self.declare_table(name, table)
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(
@@ -237,7 +233,7 @@ class IntegralGenerator(object):
         )
         return parts
 
-    def declare_table(self, name, table, padlen, value_type: str):
+    def declare_table(self, name, table):
         """Declare a table.
 
         If the dof dimensions of the table have dof rotations, apply
@@ -384,10 +380,9 @@ class IntegralGenerator(object):
                             vaccess = symbol[j]
                             intermediates.append(L.Assign(vaccess, vexpr))
                         else:
-                            scalar_type = self.backend.access.options["scalar_type"]
                             vaccess = L.Symbol("%s_%d" % (symbol.name, j))
                             intermediates.append(
-                                L.VariableDecl(f"const {scalar_type}", vaccess, vexpr)
+                                L.VariableDecl(vaccess, vexpr)
                             )
 
                 # Store access node for future reference
@@ -547,8 +542,7 @@ class IntegralGenerator(object):
                 key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
-                    scalar_type = self.backend.access.options["scalar_type"]
-                    quadparts.append(L.VariableDecl(f"const {scalar_type}", fw, fw_rhs))
+                    quadparts.append(L.VariableDecl(fw, fw_rhs))
 
             assert not blockdata.transposed, "Not handled yet"
             A_shape = self.ir.tensor_shape

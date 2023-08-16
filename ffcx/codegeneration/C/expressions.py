@@ -57,9 +57,6 @@ def generator(ir, options):
     points = ", ".join(str(p) for p in ir.points.flatten())
     n = ir.points.size
 
-    # scalar_type = options["scalar_type"]
-    # real_type = scalar_to_value_type(scalar_type)
-
     d["points_init"] = f"static double points_{ir.name}[{n}] = {{{points}}};"
     d["points"] = f"points_{ir.name}"
 

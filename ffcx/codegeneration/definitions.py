@@ -9,7 +9,6 @@ import logging
 
 import ufl
 from ffcx.element_interface import convert_element
-from ffcx.codegeneration.utils import scalar_to_value_type
 from ffcx.codegeneration import lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -112,7 +111,7 @@ class FFCXDefinitions(object):
             )
 
         body = [L.AssignAdd(access, dof_access * FE[ic])]
-        code += [L.VariableDecl(self.options["scalar_type"], access, 0.0)]
+        code += [L.VariableDecl(access, 0.0)]
         code += [L.ForRange(ic, 0, num_dofs, body)]
 
         return pre_code, code
@@ -146,7 +145,7 @@ class FFCXDefinitions(object):
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = L.Symbol("coordinate_dofs")
+        dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
         # coordinate dofs is always 3d
         dim = 3
@@ -154,11 +153,9 @@ class FFCXDefinitions(object):
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        value_type = scalar_to_value_type(self.options["scalar_type"])
-
         code = []
         body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
-        code += [L.VariableDecl(f"{value_type}", access, 0.0)]
+        code += [L.VariableDecl(access, 0.0)]
         code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code

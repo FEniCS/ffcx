@@ -23,7 +23,6 @@ class PRECEDENCE:
 
     MUL = 4
     DIV = 4
-    MOD = 4
 
     ADD = 5
     SUB = 5
@@ -41,7 +40,7 @@ class PRECEDENCE:
     LOWEST = 15
 
 
-"""Intended as a minimal generic language description.
+"""LNodes is intended as a minimal generic language description.
 Formatting is done later, depending on the target language.
 
 Supported:
@@ -49,13 +48,13 @@ Supported:
  Range loops
  Simple arithmetic, +-*/
  Math operations
+ Logic conditions
  Comments
 Not supported:
  Pointers
  Function Calls
  Flow control (if, switch, while)
  Booleans
- Logical operations
  Strings
 """
 
@@ -102,6 +101,18 @@ class DataType(Enum):
     REAL = 0
     SCALAR = 1
     INT = 2
+
+
+def merge_dtypes(dtype0, dtype1):
+    # Promote dtype to SCALAR or REAL if either argument matches
+    if DataType.SCALAR in (dtype0, dtype1):
+        return DataType.SCALAR
+    elif DataType.REAL in (dtype0, dtype1):
+        return DataType.REAL
+    elif (dtype0 == DataType.INT and dtype1 == DataType.INT):
+        return DataType.INT
+    else:
+        raise ValueError(f"Can't get dtype for binary operation with {dtype0, dtype1}")
 
 
 class LNode(object):
@@ -187,6 +198,8 @@ class LExpr(LNode):
             return Neg(self)
         if is_negative_one_lexpr(self):
             return Neg(other)
+        if isinstance(self, LiteralInt) and isinstance(other, LiteralInt):
+            return LiteralInt(self.value * other.value)
         return Mul(self, other)
 
     def __rmul__(self, other):
@@ -227,22 +240,6 @@ class LExpr(LNode):
     __floordiv__ = __div__
     __rfloordiv__ = __rdiv__
 
-    def __mod__(self, other):
-        other = as_lexpr(other)
-        if is_zero_lexpr(other):
-            raise ValueError("Division by zero!")
-        if is_zero_lexpr(self):
-            return self
-        return Mod(self, other)
-
-    def __rmod__(self, other):
-        other = as_lexpr(other)
-        if is_zero_lexpr(self):
-            raise ValueError("Division by zero!")
-        if is_zero_lexpr(other):
-            return other
-        return Mod(other, self)
-
 
 class LExprOperator(LExpr):
     """Base class for all expression operators."""
@@ -265,8 +262,12 @@ class LiteralFloat(LExprTerminal):
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        assert isinstance(value, (float, complex, int, np.number))
+        assert isinstance(value, (float, complex))
         self.value = value
+        if isinstance(value, complex):
+            self.dtype = DataType.SCALAR
+        else:
+            self.dtype = DataType.REAL
 
     def __eq__(self, other):
         return isinstance(other, LiteralFloat) and self.value == other.value
@@ -283,6 +284,7 @@ class LiteralInt(LExprTerminal):
     def __init__(self, value):
         assert isinstance(value, (int, np.number))
         self.value = value
+        self.dtype = DataType.INT
 
     def __eq__(self, other):
         return isinstance(other, LiteralInt) and self.value == other.value
@@ -308,7 +310,7 @@ class Symbol(LExprTerminal):
         return hash(self.name)
 
 
-class UnaryOp(LExprOperator):
+class PrefixUnaryOp(LExprOperator):
     """Base class for unary operators."""
 
     def __init__(self, arg):
@@ -316,13 +318,6 @@ class UnaryOp(LExprOperator):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.arg == other.arg
-
-
-class PrefixUnaryOp(UnaryOp):
-    """Base class for prefix unary operators."""
-
-    def __eq__(self, other):
-        return isinstance(other, type(self))
 
 
 class BinOp(LExprOperator):
@@ -339,6 +334,13 @@ class BinOp(LExprOperator):
 
     def __hash__(self):
         return hash(self.lhs) + hash(self.rhs)
+
+
+class ArithmeticBinOp(BinOp):
+    def __init__(self, lhs, rhs):
+        self.lhs = as_lexpr(lhs)
+        self.rhs = as_lexpr(rhs)
+        self.dtype = merge_dtypes(self.lhs.dtype, self.rhs.dtype)
 
 
 class NaryOp(LExprOperator):
@@ -359,38 +361,38 @@ class Neg(PrefixUnaryOp):
     precedence = PRECEDENCE.NEG
     op = "-"
 
+    def __init__(self, arg):
+        self.arg = as_lexpr(arg)
+        self.dtype = self.arg.dtype
+
 
 class Not(PrefixUnaryOp):
     precedence = PRECEDENCE.NOT
     op = "!"
 
 
-# lexpr binary operators
+# Binary operators
+# Arithmetic operators preserve the dtype of their operands
+# The other operations (logical) do not need a dtype
 
-
-class Add(BinOp):
+class Add(ArithmeticBinOp):
     precedence = PRECEDENCE.ADD
     op = "+"
 
 
-class Sub(BinOp):
+class Sub(ArithmeticBinOp):
     precedence = PRECEDENCE.SUB
     op = "-"
 
 
-class Mul(BinOp):
+class Mul(ArithmeticBinOp):
     precedence = PRECEDENCE.MUL
     op = "*"
 
 
-class Div(BinOp):
+class Div(ArithmeticBinOp):
     precedence = PRECEDENCE.DIV
     op = "/"
-
-
-class Mod(BinOp):
-    precedence = PRECEDENCE.MOD
-    op = "%"
 
 
 class EQ(BinOp):
@@ -455,6 +457,7 @@ class MathFunction(LExprOperator):
     def __init__(self, func, args):
         self.function = func
         self.args = [as_lexpr(arg) for arg in args]
+        self.dtype = self.args[0].dtype
 
     def __eq__(self, other):
         return (
@@ -499,42 +502,29 @@ class AssignDiv(AssignOp):
 class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
 
-    def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
-        assert dummy is None, "Please use keyword arguments for strides or dims."
-
-        # Typecheck array argument
-        if isinstance(array, ArrayDecl):
-            self.array = array.symbol
-        elif isinstance(array, Symbol):
-            self.array = array
-        else:
-            assert isinstance(array, str)
-            self.array = Symbol(array)
+    def __init__(self, array, dims=None):
+        assert dims is not None
+        assert isinstance(array, Symbol)
+        self.array = array
 
         # Allow expressions or literals as strides or dims and offset
-        if strides is None:
-            assert dims is not None, "Please provide either strides or dims."
-            assert isinstance(dims, (list, tuple))
-            dims = tuple(as_lexpr(i) for i in dims)
-            self.dims = dims
-            n = len(dims)
-            literal_one = LiteralInt(1)
-            strides = [literal_one] * n
-            for i in range(n - 2, -1, -1):
-                s = strides[i + 1]
-                d = dims[i + 1]
-                if d == literal_one:
-                    strides[i] = s
-                elif s == literal_one:
-                    strides[i] = d
-                else:
-                    strides[i] = d * s
-        else:
-            self.dims = None
-            assert isinstance(strides, (list, tuple))
-            strides = tuple(as_lexpr(i) for i in strides)
+        assert isinstance(dims, (list, tuple))
+        dims = tuple(as_lexpr(i) for i in dims)
+        self.dims = dims
+        n = len(dims)
+        literal_one = LiteralInt(1)
+        strides = [literal_one] * n
+        for i in range(n - 2, -1, -1):
+            s = strides[i + 1]
+            d = dims[i + 1]
+            if d == literal_one:
+                strides[i] = s
+            elif s == literal_one:
+                strides[i] = d
+            else:
+                strides[i] = d * s
+
         self.strides = strides
-        self.offset = None if offset is None else as_lexpr(offset)
 
     def __getitem__(self, indices):
         if not isinstance(indices, (list, tuple)):
@@ -549,10 +539,8 @@ class FlattenedArray(object):
             i, s = (indices[0], self.strides[0])
             literal_one = LiteralInt(1)
             flat = i if s == literal_one else s * i
-            if self.offset is not None:
-                flat = self.offset + flat
             for i, s in zip(indices[1:n], self.strides[1:n]):
-                flat = flat + (i if s == literal_one else s * i)
+                flat = flat + s * i
         # Delay applying ArrayAccess until we have all indices
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
@@ -620,6 +608,7 @@ class Conditional(LExprOperator):
         self.condition = as_lexpr(condition)
         self.true = as_lexpr(true)
         self.false = as_lexpr(false)
+        self.dtype = merge_dtypes(self.true.dtype, self.false.dtype)
 
     def __eq__(self, other):
         return (
@@ -644,35 +633,6 @@ def as_lexpr(node):
         return LiteralFloat(node)
     else:
         raise RuntimeError("Unexpected LExpr type %s:\n%s" % (type(node), str(node)))
-
-
-def flattened_indices(indices, shape):
-    """Return a flattened indexing expression.
-
-    Given a tuple of indices and a shape tuple, return
-    a LNode expression for flattened indexing into multidimensional
-    array.
-
-    Indices and shape entries can be int values, str symbol names, or
-    LlNode expressions.
-
-    """
-    n = len(shape)
-    if n == 0:
-        # Scalar
-        return as_lexpr(0)
-    elif n == 1:
-        # Simple vector
-        return as_lexpr(indices[0])
-    else:
-        # 2d or higher
-        strides = [None] * (n - 2) + [shape[-1], 1]
-        for i in range(n - 3, -1, -1):
-            strides[i] = Mul(shape[i + 1], strides[i + 1])
-        result = indices[-1]
-        for i in range(n - 2, -1, -1):
-            result = Add(Mul(strides[i], indices[i]), result)
-        return result
 
 
 class Statement(LNode):
@@ -735,13 +695,10 @@ class VariableDecl(Statement):
 
     is_scoped = False
 
-    def __init__(self, typename, symbol, value=None):
-        # No type system yet, just using strings
-        assert isinstance(typename, str)
-        self.typename = typename
+    def __init__(self, symbol, value=None):
 
-        # Allow Symbol or just a string
         assert isinstance(symbol, Symbol)
+        assert symbol.dtype is not None
         self.symbol = symbol
 
         if value is not None:
@@ -813,17 +770,16 @@ class ForRange(Statement):
 
     is_scoped = True
 
-    def __init__(self, index, begin, end, body, index_type="int"):
+    def __init__(self, index, begin, end, body):
         assert isinstance(index, Symbol)
         self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)
         assert isinstance(body, list)
         self.body = StatementList(body)
-        self.index_type = index_type
 
     def __eq__(self, other):
-        attributes = ("index", "begin", "end", "body", "index_type")
+        attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
@@ -918,7 +874,7 @@ class UFL2LNodes(object):
         if otype in self.call_lookup:
             return self.call_lookup[otype](o, *args)
         else:
-            raise RuntimeError(f"Missing C formatting rule for expr type {otype}.")
+            raise RuntimeError(f"Missing lookup for expr type {otype}.")
 
     def math_function(self, o, *args):
         return MathFunction(o._ufl_handler_name_, args)
