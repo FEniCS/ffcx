@@ -40,7 +40,7 @@ class PRECEDENCE:
     LOWEST = 15
 
 
-"""Intended as a minimal generic language description.
+"""LNodes is intended as a minimal generic language description.
 Formatting is done later, depending on the target language.
 
 Supported:
@@ -48,13 +48,13 @@ Supported:
  Range loops
  Simple arithmetic, +-*/
  Math operations
+ Logic conditions
  Comments
 Not supported:
  Pointers
  Function Calls
  Flow control (if, switch, while)
  Booleans
- Logical operations
  Strings
 """
 
@@ -196,6 +196,8 @@ class LExpr(LNode):
             return Neg(self)
         if is_negative_one_lexpr(self):
             return Neg(other)
+        if isinstance(self, LiteralInt) and isinstance(other, LiteralInt):
+            return LiteralInt(self.value * other.value)
         return Mul(self, other)
 
     def __rmul__(self, other):
@@ -306,7 +308,7 @@ class Symbol(LExprTerminal):
         return hash(self.name)
 
 
-class UnaryOp(LExprOperator):
+class PrefixUnaryOp(LExprOperator):
     """Base class for unary operators."""
 
     def __init__(self, arg):
@@ -314,13 +316,6 @@ class UnaryOp(LExprOperator):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.arg == other.arg
-
-
-class PrefixUnaryOp(UnaryOp):
-    """Base class for prefix unary operators."""
-
-    def __eq__(self, other):
-        return isinstance(other, type(self))
 
 
 class BinOp(LExprOperator):
@@ -374,8 +369,9 @@ class Not(PrefixUnaryOp):
     op = "!"
 
 
-# lexpr binary operators
-
+# Binary operators
+# Arithmetic operators preserve the dtype of their operands
+# The other operations (logical) do not need a dtype
 
 class Add(ArithmeticBinOp):
     precedence = PRECEDENCE.ADD
@@ -504,42 +500,29 @@ class AssignDiv(AssignOp):
 class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
 
-    def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
-        assert dummy is None, "Please use keyword arguments for strides or dims."
-
-        # Typecheck array argument
-        if isinstance(array, ArrayDecl):
-            self.array = array.symbol
-        elif isinstance(array, Symbol):
-            self.array = array
-        else:
-            assert isinstance(array, str)
-            self.array = Symbol(array)
+    def __init__(self, array, dims=None):
+        assert dims is not None
+        assert isinstance(array, Symbol)
+        self.array = array
 
         # Allow expressions or literals as strides or dims and offset
-        if strides is None:
-            assert dims is not None, "Please provide either strides or dims."
-            assert isinstance(dims, (list, tuple))
-            dims = tuple(as_lexpr(i) for i in dims)
-            self.dims = dims
-            n = len(dims)
-            literal_one = LiteralInt(1)
-            strides = [literal_one] * n
-            for i in range(n - 2, -1, -1):
-                s = strides[i + 1]
-                d = dims[i + 1]
-                if d == literal_one:
-                    strides[i] = s
-                elif s == literal_one:
-                    strides[i] = d
-                else:
-                    strides[i] = d * s
-        else:
-            self.dims = None
-            assert isinstance(strides, (list, tuple))
-            strides = tuple(as_lexpr(i) for i in strides)
+        assert isinstance(dims, (list, tuple))
+        dims = tuple(as_lexpr(i) for i in dims)
+        self.dims = dims
+        n = len(dims)
+        literal_one = LiteralInt(1)
+        strides = [literal_one] * n
+        for i in range(n - 2, -1, -1):
+            s = strides[i + 1]
+            d = dims[i + 1]
+            if d == literal_one:
+                strides[i] = s
+            elif s == literal_one:
+                strides[i] = d
+            else:
+                strides[i] = d * s
+
         self.strides = strides
-        self.offset = None if offset is None else as_lexpr(offset)
 
     def __getitem__(self, indices):
         if not isinstance(indices, (list, tuple)):
@@ -554,10 +537,8 @@ class FlattenedArray(object):
             i, s = (indices[0], self.strides[0])
             literal_one = LiteralInt(1)
             flat = i if s == literal_one else s * i
-            if self.offset is not None:
-                flat = self.offset + flat
             for i, s in zip(indices[1:n], self.strides[1:n]):
-                flat = flat + (i if s == literal_one else s * i)
+                flat = flat + s * i
         # Delay applying ArrayAccess until we have all indices
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
@@ -652,35 +633,6 @@ def as_lexpr(node):
         raise RuntimeError("Unexpected LExpr type %s:\n%s" % (type(node), str(node)))
 
 
-def flattened_indices(indices, shape):
-    """Return a flattened indexing expression.
-
-    Given a tuple of indices and a shape tuple, return
-    a LNode expression for flattened indexing into multidimensional
-    array.
-
-    Indices and shape entries can be int values, str symbol names, or
-    LlNode expressions.
-
-    """
-    n = len(shape)
-    if n == 0:
-        # Scalar
-        return as_lexpr(0)
-    elif n == 1:
-        # Simple vector
-        return as_lexpr(indices[0])
-    else:
-        # 2d or higher
-        strides = [None] * (n - 2) + [shape[-1], 1]
-        for i in range(n - 3, -1, -1):
-            strides[i] = Mul(shape[i + 1], strides[i + 1])
-        result = indices[-1]
-        for i in range(n - 2, -1, -1):
-            result = Add(Mul(strides[i], indices[i]), result)
-        return result
-
-
 class Statement(LNode):
     """Make an expression into a statement."""
 
@@ -744,6 +696,7 @@ class VariableDecl(Statement):
     def __init__(self, symbol, value=None):
 
         assert isinstance(symbol, Symbol)
+        assert symbol.dtype is not None
         self.symbol = symbol
 
         if value is not None:
@@ -824,7 +777,7 @@ class ForRange(Statement):
         self.body = StatementList(body)
 
     def __eq__(self, other):
-        attributes = ("index", "begin", "end", "body", "index_type")
+        attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
@@ -919,7 +872,7 @@ class UFL2LNodes(object):
         if otype in self.call_lookup:
             return self.call_lookup[otype](o, *args)
         else:
-            raise RuntimeError(f"Missing C formatting rule for expr type {otype}.")
+            raise RuntimeError(f"Missing lookup for expr type {otype}.")
 
     def math_function(self, o, *args):
         return MathFunction(o._ufl_handler_name_, args)
