@@ -63,11 +63,17 @@ def generator(ir, options):
     else:
         d["basix_cell"] = int(ir.basix_cell)
 
-    vals = ", ".join(str(val) for val in ir.value_shape)
-    d["value_shape"] = f"(/ {vals} /)"
+    if (len(ir.value_shape) > 0):
+        vals = ", ".join(str(val) for val in ir.value_shape)
+        d["value_shape_init"] = f"{ir.name}%value_shape = (/ {vals} /)"
+    else:
+        d["value_shape_init"] = ""
 
-    vals = ", ".join(str(i) for i in ir.reference_value_shape)
-    d["reference_value_shape"] = f"(/ {vals} /)"
+    if (len(ir.reference_value_shape) > 0):
+        vals = ", ".join(str(i) for i in ir.reference_value_shape)
+        d["reference_value_shape_init"] = f"{ir.name}%reference_value_shape =(/ {vals} /)"
+    else:
+        d["reference_value_shape_init"] = ""
 
     if len(ir.sub_elements) > 0:
         d["sub_elements"] = f"sub_elements_{ir.name}"

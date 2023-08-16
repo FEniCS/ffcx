@@ -4,35 +4,21 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 declaration = """
-extern ufcx_dofmap {factory_name};
+type(ufcx_dofmap) :: {factory_name}
 """
 
 factory = """
-// Code for dofmap {factory_name}
+! Code for dofmap {factory_name}
 
-{sub_dofmaps_initialization}
-
-{entity_dofs_init}
-
-{entity_dof_offsets_init}
-
-{entity_closure_dofs_init}
-
-{entity_closure_dof_offsets_init}
-
-ufcx_dofmap {factory_name} =
-{{
-  .signature = {signature},
-  .num_global_support_dofs = {num_global_support_dofs},
-  .num_element_support_dofs = {num_element_support_dofs},
-  .block_size = {block_size},
-  .entity_dofs = {entity_dofs},
-  .entity_dof_offsets = {entity_dof_offsets},
-  .entity_closure_dofs = {entity_closure_dofs},
-  .entity_closure_dof_offsets = {entity_closure_dof_offsets},
-  .num_sub_dofmaps = {num_sub_dofmaps},
-  .sub_dofmaps = {sub_dofmaps}
-}};
-
-// End of code for dofmap {factory_name}
+{factory_name}%signature = {signature}
+{factory_name}%num_global_support_dofs = {num_global_support_dofs}
+{factory_name}%num_element_support_dofs = {num_element_support_dofs}
+{factory_name}%block_size = {block_size}
+{factory_name}%entity_dofs = {entity_dofs}
+{factory_name}%entity_dof_offsets = {entity_dof_offsets}
+{factory_name}%entity_closure_dofs = {entity_closure_dofs}
+{factory_name}%entity_closure_dof_offsets = {entity_closure_dof_offsets}
+{factory_name}%num_sub_dofmaps = {num_sub_dofmaps}
+{factory_name}%sub_dofmaps = {sub_dofmaps}
+! End of code for dofmap {factory_name}
 """

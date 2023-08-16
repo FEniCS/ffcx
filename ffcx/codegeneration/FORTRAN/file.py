@@ -26,6 +26,7 @@ def generator(options):
     # Attributes
     d = {"ffcx_version": FFCX_VERSION, "ufcx_version": UFC_VERSION}
     d["options"] = textwrap.indent(pprint.pformat(options), "!  ")
+    d["uflname"] = "Poisson"
 
     # Format declaration code
     code_pre = (

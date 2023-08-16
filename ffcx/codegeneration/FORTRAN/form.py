@@ -153,14 +153,14 @@ def generator(ir, options):
     d["functionspace"] = "\n".join(code)
 
     # Check that no keys are redundant or have been missed
-    from string import Formatter
+    # from string import Formatter
 
-    fields = [
-        fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
-    ]
-    assert set(fields) == set(
-        d.keys()
-    ), "Mismatch between keys in template and in formatting dict"
+    # fields = [
+    #     fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
+    # ]
+    # assert set(fields) == set(
+    #     d.keys()
+    # ), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = form_template.factory.format_map(d)

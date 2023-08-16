@@ -86,7 +86,7 @@ def main(args=None):
         suffix_map = {
             "C": (".h", ".c"),
             "cpp": (".hpp", ".cpp"),
-            "FORTRAN": (None, ".f90"),
+            "FORTRAN": (".f90h", ".f90"),
             "numba": (None, "_numba.py"),
         }
         head_suffix, main_suffix = suffix_map.get(options["language"], (".h", ".c"))
