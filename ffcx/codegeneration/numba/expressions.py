@@ -6,11 +6,11 @@
 
 import logging
 
-from ffcx.codegeneration.C import expressions_template
+from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
-from ffcx.codegeneration.C.c_implementation import CFormatter
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.numba.numba_implementation import NumbaFormatter
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -37,7 +37,7 @@ def generator(ir, options):
 
     parts = eg.generate()
 
-    CF = CFormatter(options["scalar_type"])
+    CF = NumbaFormatter(options["scalar_type"])
     body = CF.c_format(parts)
     d["tabulate_expression"] = body
 

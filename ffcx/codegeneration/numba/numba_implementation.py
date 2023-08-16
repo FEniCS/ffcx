@@ -1,8 +1,12 @@
-import numpy as np
+
+from ffcx.codegeneration.utils import scalar_to_value_type, cdtype_to_numpy
+import ffcx.codegeneration.lnodes as L
+
 
 class NumbaFormatter(object):
     def __init__(self, scalar) -> None:
         self.scalar_type = scalar
+        self.real_type = scalar_to_value_type(scalar)
 
     def format_statement_list(self, slist):
         output = ""
@@ -10,39 +14,33 @@ class NumbaFormatter(object):
             output += self.c_format(s)
         return output
 
-
     def format_comment(self, c):
         return "# " + c.comment + "\n"
 
-
     def format_array_decl(self, arr):
-        typename = arr.typename
-        if "double" in typename:
-            dtype = "np.float64"
-        elif "float" in typename:
-            dtype = "np.float32"
+        if arr.symbol.dtype == L.DataType.SCALAR:
+            dtype = cdtype_to_numpy(self.scalar_type)
+        elif arr.symbol.dtype == L.DataType.REAL:
+            dtype = cdtype_to_numpy(self.real_type)
         symbol = self.c_format(arr.symbol)
         if arr.values is None:
-            return f"{symbol} = np.empty({arr.sizes}, dtype={dtype})\n"
+            return f"{symbol} = np.empty({arr.sizes}, dtype=np.{dtype})\n"
         av = repr(arr.values)
         if av.startswith("array"):
-            av = "np." + av[:-1] + f", dtype={dtype})"
+            av = "np." + av[:-1] + f", dtype=np.{dtype})"
             return f"{symbol} = {av}\n"
         else:
             raise RuntimeError("Not sure about array:", av)
-
 
     def format_array_access(self, arr):
         array = self.c_format(arr.array)
         idx = ", ".join(self.c_format(ix) for ix in arr.indices)
         return f"{array}[{idx}]"
 
-
     def format_variable_decl(self, v):
         sym = self.c_format(v.symbol)
         val = self.c_format(v.value)
         return f"{sym} = {val}\n"
-
 
     def format_nary_op(self, oper):
         # Format children
@@ -55,7 +53,6 @@ class NumbaFormatter(object):
 
         # Return combined string
         return f" {oper.op} ".join(args)
-
 
     def format_binary_op(self, oper):
         # Format children
@@ -71,19 +68,15 @@ class NumbaFormatter(object):
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-
     def format_neg(self, val):
         arg = self.c_format(val.arg)
         return f"-{arg}"
 
-
     def format_literal_float(self, val):
         return f"{val.value}"
 
-
     def format_literal_int(self, val):
         return f"{val.value}"
-
 
     def format_for_range(self, r):
         begin = self.c_format(r.begin)
@@ -95,30 +88,24 @@ class NumbaFormatter(object):
             output += f"    {line}\n"
         return output
 
-
     def format_statement(self, s):
         return self.c_format(s.expr)
-
 
     def format_assign(self, expr):
         rhs = self.c_format(expr.rhs)
         lhs = self.c_format(expr.lhs)
         return f"{lhs} {expr.op} {rhs}\n"
 
-
     def format_conditional(self, c):
         return "conditional()"
 
-
     def format_symbol(self, s):
         return f"{s.name}"
-
 
     def format_mathfunction(self, f):
         function = f.function
         args = ", ".join(self.c_format(arg) for arg in f.args)
         return f"{function}({args})"
-
 
     c_impl = {
         "StatementList": format_statement_list,
@@ -143,7 +130,6 @@ class NumbaFormatter(object):
         "Conditional": format_conditional,
         "MathFunction": format_mathfunction,
     }
-
 
     def c_format(self, s):
         name = s.__class__.__name__
