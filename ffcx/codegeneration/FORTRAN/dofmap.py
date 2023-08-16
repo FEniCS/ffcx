@@ -8,39 +8,10 @@
 # old implementation in FFC
 
 import logging
-import typing
 
-import ffcx.codegeneration.FORTRAN.dofmap_template as ufcx_dofmap
+import ffcx.codegeneration.C.dofmap_template as ufcx_dofmap
 
 logger = logging.getLogger("ffcx")
-
-
-def tabulate_entity_dofs(
-    entity_dofs: typing.List[typing.List[typing.List[int]]],
-    num_dofs_per_entity: typing.List[int],
-):
-    # TODO: Removed check for (d <= tdim + 1)
-    tdim = len(num_dofs_per_entity) - 1
-
-    # Generate cases for each dimension:
-    all_cases = "switch(d)\n{\n"
-    for dim in range(tdim + 1):
-        # Ignore if no entities for this dimension
-        if num_dofs_per_entity[dim] == 0:
-            continue
-
-        all_cases += f"case {dim}:\n"
-        # Generate cases for each mesh entity
-        all_cases += "  switch(i)\n{\n"
-        for entity in range(len(entity_dofs[dim])):
-            all_cases += f"   case {entity}:\n"
-            for j, dof in enumerate(entity_dofs[dim][entity]):
-                all_cases += f"    dofs[{j}] = {dof};\n"
-            all_cases += "    break;\n"
-        all_cases += "}\n"
-
-    all_cases += "}\n"
-    return all_cases
 
 
 def generator(ir, options):
@@ -58,34 +29,47 @@ def generator(ir, options):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
 
-    num_entity_dofs = ir.num_entity_dofs + [0, 0, 0, 0]
-    num_entity_dofs = num_entity_dofs[:4]
-    ndofs = ", ".join(str(i) for i in num_entity_dofs)
-    d["num_entity_dofs"] = f"num_entity_dofs_{ir.name}"
-    d["num_entity_dofs_init"] = f"int num_entity_dofs_{ir.name}[4] = {{{ndofs}}};\n"
+    flattened_entity_dofs = []
+    entity_dof_offsets = [0]
+    for dim in ir.entity_dofs:
+        for ent in dim:
+            for v in ent:
+                flattened_entity_dofs.append(v)
+            entity_dof_offsets.append(len(flattened_entity_dofs))
+    d["entity_dofs"] = f"entity_dofs_{ir.name}"
+    values = ", ".join(str(i) for i in flattened_entity_dofs)
+    d["entity_dofs_init"] = f"int entity_dofs_{ir.name}[] = {{{values}}};"
 
-    num_entity_closure_dofs = ir.num_entity_closure_dofs + [0, 0, 0, 0]
-    num_entity_closure_dofs = num_entity_closure_dofs[:4]
-    d["num_entity_closure_dofs"] = f"num_entity_closure_dofs_{ir.name}"
-    ncdofs = ", ".join(str(i) for i in num_entity_closure_dofs)
+    d["entity_dof_offsets"] = f"entity_dof_offsets_{ir.name}"
+    values = ", ".join(str(i) for i in entity_dof_offsets)
+    d["entity_dof_offsets_init"] = f"int entity_dof_offsets_{ir.name}[] = {{{values}}};"
+
+    # Closure
+    flattened_entity_closure_dofs = []
+    entity_closure_dof_offsets = [0]
+    for dim in ir.entity_closure_dofs:
+        for ent in dim:
+            for v in ent:
+                flattened_entity_closure_dofs.append(v)
+            entity_closure_dof_offsets.append(len(flattened_entity_closure_dofs))
+    d["entity_closure_dofs"] = f"entity_closure_dofs_{ir.name}"
+    values = ", ".join(str(i) for i in flattened_entity_closure_dofs)
     d[
-        "num_entity_closure_dofs_init"
-    ] = f"int num_entity_closure_dofs_{ir.name}[4] = {{{ncdofs}}};\n"
+        "entity_closure_dofs_init"
+    ] = f"int entity_closure_dofs_{ir.name}[] = {{{values}}};"
+    d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
+    values = ", ".join(str(i) for i in entity_closure_dof_offsets)
+    d[
+        "entity_closure_dof_offsets_init"
+    ] = f"int entity_closure_dof_offsets_{ir.name}[] = {{{values}}};"
 
     d["block_size"] = ir.block_size
 
-    # Functions
-    d["tabulate_entity_dofs"] = tabulate_entity_dofs(ir.entity_dofs, ir.num_entity_dofs)
-
-    d["tabulate_entity_closure_dofs"] = tabulate_entity_dofs(
-        ir.entity_closure_dofs, ir.num_entity_closure_dofs
-    )
-
     if len(ir.sub_dofmaps) > 0:
-        vals = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
+        values = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
         d[
             "sub_dofmaps_initialization"
-        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{vals}}};\n"
+        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{values}}};"
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""

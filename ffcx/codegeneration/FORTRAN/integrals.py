@@ -9,7 +9,7 @@ import logging
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.FORTRAN import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.naming import cdtype_to_numpy
+from ffcx.codegeneration.utils import cdtype_to_numpy
 from ffcx.codegeneration.FORTRAN.fortran_implementation import FortranFormatter
 
 

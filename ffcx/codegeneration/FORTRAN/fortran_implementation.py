@@ -1,7 +1,13 @@
+
+from ffcx.codegeneration.utils import scalar_to_value_type
+import ffcx.codegeneration.lnodes as L
+
+
 class FortranFormatter(object):
     def __init__(self, scalar):
         self.declarations = ""
-        self.scalar = scalar
+        self.scalar_type = scalar
+        self.real_type = scalar_to_value_type(scalar)
 
     def format_statement_list(self, slist):
         code = ""
@@ -13,20 +19,25 @@ class FortranFormatter(object):
         return "! " + c.comment + "\n"
 
     def format_array_decl(self, arr):
-        types = {"double": "DOUBLE PRECISION", "float": "REAL"}
+        types = {"double": "DOUBLE PRECISION", "float": "REAL",
+                 "double _Complex": "DOUBLE COMPLEX", "float _Complex": "COMPLEX"}
         t = "VOID"
-        for k in types:
-            if k in arr.typename:
-                t = types[k]
+        if arr.symbol.dtype == L.DataType.SCALAR:
+            t = types[self.scalar_type]
+        elif arr.symbol.dtype == L.DataType.REAL:
+            t = types[self.real_type]
+
         symbol = self.c_format(arr.symbol)
         dims = ",".join([f"0:{i-1}" for i in arr.sizes])
         decl = f"      {t}, DIMENSION({dims}) :: {symbol}\n"
         self.declarations += decl
 
+        import textwrap
         if arr.values is None:
             return ""
         vals = ", ".join(f"{val}" for val in arr.values.flatten())
-        code = f"      {symbol} = reshape((/ {vals} /), shape({symbol}))\n"
+        vals = "&\n".join(textwrap.wrap(vals, 75))
+        code = f"      {symbol} = reshape((/ &\n{vals}&\n /), shape({symbol}))\n"
         return code
 
     def format_array_access(self, arr):

@@ -10,8 +10,8 @@
 
 import logging
 
-import ffcx.codegeneration.C.basix_custom_element_template as ufcx_basix_custom_finite_element
-import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
+import ffcx.codegeneration.FORTRAN.basix_custom_element_template as ufcx_basix_custom_finite_element
+import ffcx.codegeneration.FORTRAN.finite_element_template as ufcx_finite_element
 import ufl
 
 logger = logging.getLogger("ffcx")
@@ -63,23 +63,11 @@ def generator(ir, options):
     else:
         d["basix_cell"] = int(ir.basix_cell)
 
-    if len(ir.value_shape) > 0:
-        d["value_shape"] = f"value_shape_{ir.name}"
-        vals = ", ".join(str(val) for val in ir.value_shape)
-        d["value_shape_init"] = f"int value_shape_{ir.name}[] = {{{vals}}};"
-    else:
-        d["value_shape"] = "NULL"
-        d["value_shape_init"] = ""
+    vals = ", ".join(str(val) for val in ir.value_shape)
+    d["value_shape"] = f"(/ {vals} /)"
 
-    if len(ir.reference_value_shape) > 0:
-        d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
-        vals = ", ".join(str(i) for i in ir.reference_value_shape)
-        d[
-            "reference_value_shape_init"
-        ] = f"int reference_value_shape_{ir.name}[] = {{{vals}}};\n"
-    else:
-        d["reference_value_shape"] = "NULL"
-        d["reference_value_shape_init"] = ""
+    vals = ", ".join(str(i) for i in ir.reference_value_shape)
+    d["reference_value_shape"] = f"(/ {vals} /)"
 
     if len(ir.sub_elements) > 0:
         d["sub_elements"] = f"sub_elements_{ir.name}"
