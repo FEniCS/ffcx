@@ -142,7 +142,7 @@ class NumbaFormatter(object):
         if function == "power":
             return f"{args[0]}**{args[1]}"
         argstr = ", ".join(args)
-        return f"{function}({argstr})"
+        return f"np.{function}({argstr})"
 
     c_impl = {
         "StatementList": format_statement_list,

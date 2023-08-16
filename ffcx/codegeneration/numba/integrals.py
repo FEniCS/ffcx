@@ -47,9 +47,14 @@ def generator(ir, options):
     vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
     code["enabled_coefficients"] = f"[{vals}]"
 
-    header = "    A = numba.carray(_A, (1000))\n"
-    header += "    w = numba.carray(_w, (1000))\n"
-    header += "    c = numba.carray(_c, (1000))\n"
+    tensor_size = ir.tensor_shape[0]
+    if len(ir.tensor_shape) == 2:
+        tensor_size *= ir.tensor_shape[1]
+    n_coeff = 1000
+    n_const = 1000
+    header = f"    A = numba.carray(_A, ({tensor_size}))\n"
+    header += f"    w = numba.carray(_w, ({n_coeff}))\n"
+    header += f"    c = numba.carray(_c, ({n_const}))\n"
     header += "    coordinate_dofs = numba.carray(_coordinate_dofs, (1000))\n"
     code["tabulate_tensor"] = header + body
 
