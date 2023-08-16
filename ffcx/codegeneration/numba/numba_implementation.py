@@ -72,6 +72,26 @@ class NumbaFormatter(object):
         arg = self.c_format(val.arg)
         return f"-{arg}"
 
+    def format_not(self, val):
+        arg = self.c_format(val.arg)
+        return f"not({arg})"
+
+    def format_andor(self, oper):
+        # Format children
+        lhs = self.c_format(oper.lhs)
+        rhs = self.c_format(oper.rhs)
+
+        # Apply parentheses
+        if oper.lhs.precedence >= oper.precedence:
+            lhs = f"({lhs})"
+        if oper.rhs.precedence >= oper.precedence:
+            rhs = f"({rhs})"
+
+        opstr = {"||": "or", "&&": "and"}[oper.op]
+
+        # Return combined string
+        return f"{lhs} {opstr} {rhs}"
+
     def format_literal_float(self, val):
         return f"{val.value}"
 
@@ -96,16 +116,33 @@ class NumbaFormatter(object):
         lhs = self.c_format(expr.lhs)
         return f"{lhs} {expr.op} {rhs}\n"
 
-    def format_conditional(self, c):
-        return "conditional()"
+    def format_conditional(self, s):
+        # Format children
+        c = self.c_format(s.condition)
+        t = self.c_format(s.true)
+        f = self.c_format(s.false)
+
+        # Apply parentheses
+        if s.condition.precedence >= s.precedence:
+            c = "(" + c + ")"
+        if s.true.precedence >= s.precedence:
+            t = "(" + t + ")"
+        if s.false.precedence >= s.precedence:
+            f = "(" + f + ")"
+
+        # Return combined string
+        return f"({t} if {c} else {f})"
 
     def format_symbol(self, s):
         return f"{s.name}"
 
     def format_mathfunction(self, f):
         function = f.function
-        args = ", ".join(self.c_format(arg) for arg in f.args)
-        return f"{function}({args})"
+        args = [self.c_format(arg) for arg in f.args]
+        if function == "power":
+            return f"{args[0]}**{args[1]}"
+        argstr = ", ".join(args)
+        return f"{function}({argstr})"
 
     c_impl = {
         "StatementList": format_statement_list,
@@ -124,11 +161,20 @@ class NumbaFormatter(object):
         "Mul": format_binary_op,
         "Div": format_binary_op,
         "Neg": format_neg,
+        "Not": format_not,
         "LiteralFloat": format_literal_float,
         "LiteralInt": format_literal_int,
         "Symbol": format_symbol,
         "Conditional": format_conditional,
         "MathFunction": format_mathfunction,
+        "And": format_andor,
+        "Or": format_andor,
+        "NE": format_binary_op,
+        "EQ": format_binary_op,
+        "GE": format_binary_op,
+        "LE": format_binary_op,
+        "GT": format_binary_op,
+        "LT": format_binary_op,
     }
 
     def c_format(self, s):
