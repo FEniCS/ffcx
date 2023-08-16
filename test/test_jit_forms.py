@@ -39,11 +39,13 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    assert form0.num_integrals(module.lib.cell) == 1
-    ids = form0.integral_ids(module.lib.cell)
-    assert ids[0] == -1
+    offsets = form0.form_integral_offsets
+    cell = module.lib.cell
+    assert offsets[cell + 1] - offsets[cell] == 1
+    integral_id = form0.form_integral_ids[offsets[cell]]
+    assert integral_id == -1
 
-    default_integral = form0.integrals(module.lib.cell)[0]
+    default_integral = form0.form_integrals[offsets[cell]]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -107,8 +109,8 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
-    form1 = compiled_forms[1].integrals(module.lib.cell)[0]
+    form0 = compiled_forms[0].form_integrals[0]
+    form1 = compiled_forms[1].form_integrals[0]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -165,7 +167,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
+    form0 = compiled_forms[0].form_integrals[0]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -213,7 +215,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
+    form0 = compiled_forms[0].form_integrals[0]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((4, 4), dtype=np_type)
@@ -249,7 +251,7 @@ def test_form_coefficient(compile_args):
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
-    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
+    form0 = compiled_forms[0].form_integrals[0]
     A = np.zeros((3, 3), dtype=np.float64)
     w = np.array([1.0, 1.0, 1.0], dtype=np.float64)
     c = np.array([], dtype=np.float64)
@@ -288,21 +290,26 @@ def test_subdomains(compile_args):
         assert compiled_f.rank == len(f.arguments())
 
     form0 = compiled_forms[0]
-    ids = form0.integral_ids(module.lib.cell)
+    offsets = form0.form_integral_offsets
+    cell = module.lib.cell
+    ids = [form0.form_integral_ids[j] for j in range(offsets[cell], offsets[cell + 1])]
     assert ids[0] == -1 and ids[1] == 2
 
     form1 = compiled_forms[1]
-    ids = form1.integral_ids(module.lib.cell)
+    offsets = form1.form_integral_offsets
+    ids = [form1.form_integral_ids[j] for j in range(offsets[cell], offsets[cell + 1])]
     assert ids[0] == -1 and ids[1] == 2
 
     form2 = compiled_forms[2]
-    ids = form2.integral_ids(module.lib.cell)
+    offsets = form2.form_integral_offsets
+    ids = [form2.form_integral_ids[j] for j in range(offsets[cell], offsets[cell + 1])]
     assert ids[0] == 1 and ids[1] == 2
 
     form3 = compiled_forms[3]
-    assert form3.num_integrals(module.lib.cell) == 0
-
-    ids = form3.integral_ids(module.lib.exterior_facet)
+    offsets = form3.form_integral_offsets
+    assert offsets[cell + 1] - offsets[cell] == 0
+    exf = module.lib.exterior_facet
+    ids = [form3.form_integral_ids[j] for j in range(offsets[exf], offsets[exf + 1])]
     assert ids[0] == 0 and ids[1] == 210
 
 
@@ -325,7 +332,7 @@ def test_interior_facet_integral(mode, compile_args):
     ffi = module.ffi
     np_type = cdtype_to_numpy(mode)
 
-    integral0 = form0.integrals(module.lib.interior_facet)[0]
+    integral0 = form0.form_integrals[0]
     A = np.zeros((6, 6), dtype=np_type)
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np.float64)
@@ -370,8 +377,8 @@ def test_conditional(mode, compile_args):
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
-    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
-    form1 = compiled_forms[1].integrals(module.lib.cell)[0]
+    form0 = compiled_forms[0].form_integrals[0]
+    form1 = compiled_forms[1].form_integrals[0]
 
     ffi = module.ffi
     np_type = cdtype_to_numpy(mode)
@@ -427,7 +434,7 @@ def test_custom_quadrature(compile_args):
 
     ffi = module.ffi
     form = compiled_forms[0]
-    default_integral = form.integrals(module.lib.cell)[0]
+    default_integral = form.form_integrals[0]
 
     A = np.zeros((6, 6), dtype=np.float64)
     w = np.array([], dtype=np.float64)
@@ -512,8 +519,8 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    assert form0.num_integrals(module.lib.cell) == 1
-    default_integral = form0.integrals(module.lib.cell)[0]
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
+    default_integral = form0.form_integrals[0]
 
     np_type = cdtype_to_numpy(mode)
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
@@ -603,9 +610,9 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    assert form0.num_integrals(module.lib.cell) == 1
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
 
-    default_integral = form0.integrals(module.lib.cell)[0]
+    default_integral = form0.form_integrals[0]
 
     np_type = cdtype_to_numpy(mode)
     b = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=np_type)
@@ -640,9 +647,9 @@ def test_prism(compile_args):
 
     ffi = module.ffi
     form0 = compiled_forms[0]
-    assert form0.num_integrals(module.lib.cell) == 1
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
 
-    default_integral = form0.integrals(module.lib.cell)[0]
+    default_integral = form0.form_integrals[0]
     b = np.zeros(6, dtype=np.float64)
     coords = np.array([1.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
@@ -675,8 +682,8 @@ def test_complex_operations(compile_args):
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
 
-    form0 = compiled_forms[0].integrals(module.lib.cell)[0]
-    form1 = compiled_forms[1].integrals(module.lib.cell)[0]
+    form0 = compiled_forms[0].form_integrals[0]
+    form1 = compiled_forms[1].form_integrals[0]
 
     ffi = module.ffi
     np_type = cdtype_to_numpy(mode)
@@ -752,9 +759,9 @@ def test_interval_vertex_quadrature(compile_args):
 
     ffi = module.ffi
     form0 = compiled_forms[0]
-    assert form0.num_integrals(module.lib.cell) == 1
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
 
-    default_integral = form0.integrals(module.lib.cell)[0]
+    default_integral = form0.form_integrals[0]
     J = np.zeros(1, dtype=np.float64)
     a = np.pi
     b = np.exp(1)
@@ -799,9 +806,11 @@ def test_facet_vertex_quadrature(compile_args):
     assert len(compiled_forms) == 2
     solutions = []
     for form in compiled_forms:
-        assert form.num_integrals(module.lib.exterior_facet) == 1
+        offsets = form.form_integral_offsets
+        exf = module.lib.exterior_facet
+        assert offsets[exf + 1] - offsets[exf] == 1
 
-        default_integral = form.integrals(module.lib.exterior_facet)[0]
+        default_integral = form.form_integrals[offsets[exf]]
         J = np.zeros(1, dtype=np.float64)
         a = np.pi
         b = np.exp(1)
@@ -850,7 +859,7 @@ def test_manifold_derivatives(compile_args):
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
         [J], cffi_extra_compile_args=compile_args)
 
-    default_integral = compiled_forms[0].integrals(module.lib.cell)[0]
+    default_integral = compiled_forms[0].form_integrals[0]
     scale = 2.5
     coords = np.array([0.0, 0.0, 0.0, 0.0, scale, 0.0], dtype=np.float64)
     dof_coords = el.element.points.reshape(-1)
@@ -889,7 +898,8 @@ def test_integral_grouping(compile_args):
     a = ufl.inner(u, v) * ufl.dx((1, 2, 3)) + ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
         [a], cffi_extra_compile_args=compile_args)
-    num_integrals = compiled_forms[0].num_integrals(module.lib.cell)
+    # NOTE: This assumes that the first integral type is cell integrals, see UFCx.h
+    num_integrals = compiled_forms[0].form_integral_offsets[1] - compiled_forms[0].form_integral_offsets[0]
     assert num_integrals == 4
     unique_integrals = set([compiled_forms[0].form_integrals[i] for i in range(num_integrals)])
     assert len(unique_integrals) == 2

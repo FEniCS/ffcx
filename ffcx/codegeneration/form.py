@@ -30,16 +30,6 @@ def generator(ir, options):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    code = []
-    cases = []
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        num_integrals = 0
-        for ids in ir.subdomain_ids[itg_type].values():
-            num_integrals += len(ids)
-        cases += [(L.Symbol(itg_type), L.Return(num_integrals))]
-    code += [L.Switch("integral_type", cases, default=L.Return(0))]
-    d["num_integrals"] = L.StatementList(code)
-
     if len(ir.original_coefficient_position) > 0:
         d["original_coefficient_position_init"] = L.ArrayDecl(
             "int",
@@ -98,12 +88,19 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
-    # NOTE: This ordering is dependent of the enums in dolfinx::fem::IntegralType
+    # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
+        unsorted_integrals = []
+        unsorted_ids = []
         for key, name in ir.integral_names[itg_type].items():
             for subdomain_id in ir.subdomain_ids[itg_type][key]:
-                integrals += [L.AddressOf(L.Symbol(name))]
-                integral_ids += [subdomain_id]
+                unsorted_integrals += [L.AddressOf(L.Symbol(name))]
+                unsorted_ids += [subdomain_id]
+
+        id_sort = numpy.argsort(unsorted_ids)
+        integrals += [unsorted_integrals[id_sort[i]] for i in range(len(unsorted_integrals))]
+        integral_ids += [unsorted_ids[id_sort[i]] for i in range(len(unsorted_integrals))]
+
         integral_offsets.append(len(integrals))
 
     if len(integrals) > 0:
@@ -133,37 +130,6 @@ def generator(ir, options):
         values=integral_offsets,
         sizes=len(integral_offsets),
     )
-
-    code = []
-    cases = []
-    code_ids = []
-    cases_ids = []
-    for itg_type in ("cell", "interior_facet", "exterior_facet"):
-        # Get list of integrals and subdomain_ids for each kernel
-        values = []
-        id_values = []
-        for idx in ir.integral_names[itg_type].keys():
-            integrals = list(ir.subdomain_ids[itg_type][idx])
-            values.extend([L.AddressOf(L.Symbol(ir.integral_names[itg_type][idx]))] * len(integrals))
-            id_values.extend(integrals)
-        value_sort = numpy.argsort(id_values)
-        values = [values[value_sort[i]] for i in range(len(values))]
-        id_values = [id_values[value_sort[i]] for i in range(len(id_values))]
-        if len(values) > 0:
-            code += [L.ArrayDecl("static ufcx_integral*", f"integrals_{itg_type}_{ir.name}",
-                                 values=values, sizes=len(values))]
-            cases.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integrals_{itg_type}_{ir.name}"))))
-        if len(id_values) > 0:
-            code_ids += [L.ArrayDecl(
-                "static int", f"integral_ids_{itg_type}_{ir.name}",
-                values=id_values, sizes=len(id_values))]
-            cases_ids.append((L.Symbol(itg_type), L.Return(L.Symbol(f"integral_ids_{itg_type}_{ir.name}"))))
-
-    code += [L.Switch("integral_type", cases, default=L.Return(L.Null()))]
-    code_ids += [L.Switch("integral_type", cases_ids, default=L.Return(L.Null()))]
-    d["integrals"] = L.StatementList(code)
-
-    d["integral_ids"] = L.StatementList(code_ids)
 
     code = []
     function_name = L.Symbol("function_name")
