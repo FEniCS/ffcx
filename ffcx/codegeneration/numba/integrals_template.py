@@ -12,7 +12,7 @@ def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs, _entity_local_i
 
 class {factory_name}(object):
     enabled_coefficients = {enabled_coefficients}
-    tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name}
+    tabulate_tensor = tabulate_tensor_{factory_name}
     needs_facet_permutations = {needs_facet_permutations}
     coordinate_element = {coordinate_element}
 
