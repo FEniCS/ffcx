@@ -35,11 +35,13 @@ def test_additive_facet_integral(mode, compile_args):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    assert form0.num_integrals(module.lib.exterior_facet) == 1
-    ids = form0.integral_ids(module.lib.exterior_facet)
-    assert ids[0] == -1
+    integral_offsets = form0.form_integral_offsets
+    ex = module.lib.exterior_facet
+    assert integral_offsets[ex + 1] - integral_offsets[ex] == 1
+    integral_id = form0.form_integral_ids[integral_offsets[ex]]
+    assert integral_id == -1
 
-    default_integral = form0.integrals(module.lib.exterior_facet)[0]
+    default_integral = form0.form_integrals[integral_offsets[ex]]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((3, 3), dtype=np_type)
@@ -83,11 +85,14 @@ def test_additive_cell_integral(mode, compile_args):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    assert form0.num_integrals(module.lib.cell) == 1
-    ids = form0.integral_ids(module.lib.cell)
-    assert ids[0] == -1
+    cell = module.lib.cell
+    offsets = form0.form_integral_offsets
+    num_integrals = offsets[cell + 1] - offsets[cell]
+    assert num_integrals == 1
+    integral_id = form0.form_integral_ids[offsets[cell]]
+    assert integral_id == -1
 
-    default_integral = form0.integrals(0)[0]
+    default_integral = form0.form_integrals[offsets[cell]]
 
     np_type = cdtype_to_numpy(mode)
     A = np.zeros((3, 3), dtype=np_type)
