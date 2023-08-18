@@ -21,47 +21,23 @@ ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name
 factory = """
 // Code for form {factory_name}
 
-{original_coefficient_position_init}
 {dofmaps_init}
 {finite_elements_init}
-{form_integral_offsets_init}
-{form_integrals_init}
-{form_integral_ids_init}
 
-// Return a list of the coefficient names.
-const char** coefficient_name_{factory_name}(void)
-{{
-{coefficient_name_map}
-}}
-
-// Return a list of the constant names.
-const char** constant_name_{factory_name}(void)
-{{
-{constant_name_map}
-}}
-
-ufcx_form {factory_name} =
-{{
-
-  .signature = {signature},
-  .rank = {rank},
-  .num_coefficients = {num_coefficients},
-  .num_constants = {num_constants},
-  .original_coefficient_position = {original_coefficient_position},
-
-  .coefficient_name_map = coefficient_name_{factory_name},
-  .constant_name_map = constant_name_{factory_name},
-
-  .finite_elements = {finite_elements},
-  .dofmaps = {dofmaps},
-
-  .form_integrals = {form_integrals},
-  .form_integral_ids = {form_integral_ids},
-  .form_integral_offsets = form_integral_offsets_{factory_name}
-}};
-
-// Alias name
-ufcx_form* {name_from_uflfile} = &{factory_name};
+{name_from_uflfile}::constant_name = {constant_name_map};
+{name_from_uflfile}::coefficient_name = {coefficient_name_map};
+{name_from_uflfile}::signature ={signature};
+{name_from_uflfile}::rank = {rank};
+{name_from_uflfile}::num_coefficients = {num_coefficients};
+{name_from_uflfile}::num_constants = {num_constants};
+{name_from_uflfile}::original_coefficient_position = {original_coefficient_position};
+{name_from_uflfile}::coefficient_name_map = coefficient_name_{factory_name};
+{name_from_uflfile}::constant_name_map = constant_name_{factory_name};
+{name_from_uflfile}::finite_elements = {finite_elements};
+{name_from_uflfile}::dofmaps = {dofmaps};
+{name_from_uflfile}::form_integrals = {form_integrals};
+{name_from_uflfile}::form_integral_ids = {form_integral_ids};
+{name_from_uflfile}::form_integral_offsets = {form_integral_offsets};
 
 ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name)
 {{

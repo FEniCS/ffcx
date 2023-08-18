@@ -35,12 +35,9 @@ void {factory_name}::tabulate_tensor(T* A,
 {tabulate_tensor}
 }}
 
-{factory_name}::{enabled_coefficients_init}
-
-  .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
-  .needs_facet_permutations = {needs_facet_permutations},
-  .coordinate_element = &{coordinate_element},
-}};
+{factory_name}::enabled_coefficients = {enabled_coefficients};
+{factory_name}::needs_facet_permutations = {needs_facet_permutations};
+{factory_name}::coordinate_element = &{coordinate_element};
 
 // End of code for integral {factory_name}
 """
