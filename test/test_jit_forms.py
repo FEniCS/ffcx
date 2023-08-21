@@ -900,7 +900,8 @@ def test_integral_grouping(compile_args):
         [a], cffi_extra_compile_args=compile_args)
     # NOTE: This assumes that the first integral type is cell integrals, see UFCx.h
     cell = module.lib.cell
-    num_integrals = compiled_forms[0].form_integral_offsets[cell+1] - compiled_forms[0].form_integral_offsets[cell]
+    num_integrals = compiled_forms[0].form_integral_offsets[cell + 1] - compiled_forms[0].form_integral_offsets[cell]
     assert num_integrals == 4
-    unique_integrals = set([compiled_forms[0].form_integrals[compiled_forms[0].form_integral_offsets[cell]+i] for i in range(num_integrals)])
+    unique_integrals = set([compiled_forms[0].form_integrals[compiled_forms[0].form_integral_offsets[cell] + i]
+                            for i in range(num_integrals)])
     assert len(unique_integrals) == 2
