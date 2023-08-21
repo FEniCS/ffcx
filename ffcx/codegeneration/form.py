@@ -92,7 +92,7 @@ def generator(ir, options):
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
         unsorted_integrals = []
         unsorted_ids = []
-        for name, id in zip(ir.integral_names[itg_type], ir.subdomain_ids[itg_type], strict=True):
+        for name, id in zip(ir.integral_names[itg_type], ir.subdomain_ids[itg_type]):
             unsorted_integrals += [L.AddressOf(L.Symbol(name))]
             unsorted_ids += [id]
 
