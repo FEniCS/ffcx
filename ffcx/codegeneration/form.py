@@ -92,14 +92,13 @@ def generator(ir, options):
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
         unsorted_integrals = []
         unsorted_ids = []
-        for key, name in ir.integral_names[itg_type].items():
-            for subdomain_id in ir.subdomain_ids[itg_type][key]:
-                unsorted_integrals += [L.AddressOf(L.Symbol(name))]
-                unsorted_ids += [subdomain_id]
+        for name, id in zip(ir.integral_names[itg_type], ir.subdomain_ids[itg_type], strict=True):
+            unsorted_integrals += [L.AddressOf(L.Symbol(name))]
+            unsorted_ids += [id]
 
         id_sort = numpy.argsort(unsorted_ids)
-        integrals += [unsorted_integrals[id_sort[i]] for i in range(len(unsorted_integrals))]
-        integral_ids += [unsorted_ids[id_sort[i]] for i in range(len(unsorted_integrals))]
+        integrals += [unsorted_integrals[i] for i in id_sort]
+        integral_ids += [unsorted_ids[i] for i in id_sort]
 
         integral_offsets.append(len(integrals))
 

@@ -899,7 +899,8 @@ def test_integral_grouping(compile_args):
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
         [a], cffi_extra_compile_args=compile_args)
     # NOTE: This assumes that the first integral type is cell integrals, see UFCx.h
-    num_integrals = compiled_forms[0].form_integral_offsets[1] - compiled_forms[0].form_integral_offsets[0]
+    cell = module.lib.cell
+    num_integrals = compiled_forms[0].form_integral_offsets[cell+1] - compiled_forms[0].form_integral_offsets[cell]
     assert num_integrals == 4
-    unique_integrals = set([compiled_forms[0].form_integrals[i] for i in range(num_integrals)])
+    unique_integrals = set([compiled_forms[0].form_integrals[compiled_forms[0].form_integral_offsets[cell]+i] for i in range(num_integrals)])
     assert len(unique_integrals) == 2
