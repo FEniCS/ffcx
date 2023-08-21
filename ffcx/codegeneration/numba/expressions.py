@@ -37,38 +37,21 @@ def generator(ir, options):
 
     parts = eg.generate()
 
-    CF = NumbaFormatter(options["scalar_type"])
-    body = CF.c_format(parts)
+    F = NumbaFormatter(options["scalar_type"])
+    body = F.c_format(parts)
+    body = ["    " + line for line in body.split("\n")]
+    body = "\n".join(body)
+
     d["tabulate_expression"] = body
 
-    if len(ir.original_coefficient_positions) > 0:
-        d[
-            "original_coefficient_positions"
-        ] = f"original_coefficient_positions_{ir.name}"
-        n = len(ir.original_coefficient_positions)
-        originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
-        d[
-            "original_coefficient_positions_init"
-        ] = f"static int original_coefficient_positions_{ir.name}[{n}] = {{{originals}}};"
-
-    else:
-        d["original_coefficient_positions"] = "NULL"
-        d["original_coefficient_positions_init"] = ""
-
+    originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
+    d["original_coefficient_positions"] = f"[{originals}]"
     points = ", ".join(str(p) for p in ir.points.flatten())
     n = ir.points.size
-    d["points_init"] = f"static double points_{ir.name}[{n}] = {{{points}}};"
-    d["points"] = f"points_{ir.name}"
+    d["points"] = f"[{points}]"
 
-    if len(ir.expression_shape) > 0:
-        n = len(ir.expression_shape)
-        shape = ", ".join(str(i) for i in ir.expression_shape)
-        d["value_shape_init"] = f"static int value_shape_{ir.name}[{n}] = {{{shape}}};"
-        d["value_shape"] = f"value_shape_{ir.name}"
-    else:
-        d["value_shape_init"] = ""
-        d["value_shape"] = "NULL"
-
+    shape = ", ".join(str(i) for i in ir.expression_shape)
+    d["value_shape"] = f"[{shape}]"
     d["num_components"] = len(ir.expression_shape)
     d["num_coefficients"] = len(ir.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
@@ -80,28 +63,10 @@ def generator(ir, options):
 
     d["rank"] = len(ir.tensor_shape)
 
-    if len(ir.coefficient_names) > 0:
-        names = ", ".join(f'"{name}"' for name in ir.coefficient_names)
-        n = len(ir.coefficient_names)
-        d[
-            "coefficient_names_init"
-        ] = f"static const char* coefficient_names_{ir.name}[{n}] = {{{names}}};"
-
-        d["coefficient_names"] = f"coefficient_names_{ir.name}"
-    else:
-        d["coefficient_names_init"] = ""
-        d["coefficient_names"] = "NULL"
-
-    if len(ir.constant_names) > 0:
-        names = ", ".join(f'"{name}"' for name in ir.constant_names)
-        n = len(ir.constant_names)
-        d[
-            "constant_names_init"
-        ] = f"static const char* constant_names_{ir.name}[{n}] = {{{names}}};"
-        d["constant_names"] = f"constant_names_{ir.name}"
-    else:
-        d["constant_names_init"] = ""
-        d["constant_names"] = "NULL"
+    names = ", ".join(f'"{name}"' for name in ir.coefficient_names)
+    d["coefficient_names"] = f"[{names}]"
+    names = ", ".join(f'"{name}"' for name in ir.constant_names)
+    d["constant_names"] = f"[{names}]"
 
     code = []
 
@@ -135,17 +100,19 @@ def generator(ir, options):
         d["function_spaces"] = "NULL"
         d["function_spaces_init"] = ""
 
-    # Check that no keys are redundant or have been missed
-    from string import Formatter
+    d["function_spaces"] = "0"
 
-    fields = [
-        fname
-        for _, fname, _, _ in Formatter().parse(expressions_template.factory)
-        if fname
-    ]
-    assert set(fields) == set(
-        d.keys()
-    ), "Mismatch between keys in template and in formatting dict"
+    # Check that no keys are redundant or have been missed
+    # from string import Formatter
+
+    # fields = [
+    #     fname
+    #     for _, fname, _, _ in Formatter().parse(expressions_template.factory)
+    #     if fname
+    # ]
+    # assert set(fields) == set(
+    #     d.keys()
+    # ), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)

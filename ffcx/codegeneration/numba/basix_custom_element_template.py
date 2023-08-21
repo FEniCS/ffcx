@@ -4,7 +4,7 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
 
 factory = """
-// Code for custom element {factory_name}
+# Code for custom element {factory_name}
 
 {value_shape_init}
 {wcoeffs_init}
