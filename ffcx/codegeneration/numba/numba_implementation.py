@@ -1,12 +1,20 @@
 
-from ffcx.codegeneration.utils import scalar_to_value_type, cdtype_to_numpy
 import ffcx.codegeneration.lnodes as L
+
+
+def build_initializer_lists(values):
+    arr = "["
+    if len(values.shape) == 1:
+        return "[" + ", ".join(str(v) for v in values) + "]"
+    elif len(values.shape) > 1:
+        arr += ",\n".join(build_initializer_lists(v) for v in values)
+    arr += "]"
+    return arr
 
 
 class NumbaFormatter(object):
     def __init__(self, scalar) -> None:
         self.scalar_type = scalar
-        self.real_type = scalar_to_value_type(scalar)
 
     def format_statement_list(self, slist):
         output = ""
@@ -19,18 +27,15 @@ class NumbaFormatter(object):
 
     def format_array_decl(self, arr):
         if arr.symbol.dtype == L.DataType.SCALAR:
-            dtype = cdtype_to_numpy(self.scalar_type)
+            dtype = "A.dtype"
         elif arr.symbol.dtype == L.DataType.REAL:
-            dtype = cdtype_to_numpy(self.real_type)
+            dtype = "coordinate_dofs.dtype"
         symbol = self.c_format(arr.symbol)
         if arr.values is None:
-            return f"{symbol} = np.empty({arr.sizes}, dtype=np.{dtype})\n"
-        av = repr(arr.values)
-        if av.startswith("array"):
-            av = "np." + av[:-1] + f", dtype=np.{dtype})"
-            return f"{symbol} = {av}\n"
-        else:
-            raise RuntimeError("Not sure about array:", av)
+            return f"{symbol} = np.empty({arr.sizes}, dtype={dtype})\n"
+        av = build_initializer_lists(arr.values)
+        av = "np.array(" + av + f", dtype={dtype})"
+        return f"{symbol} = {av}\n"
 
     def format_array_access(self, arr):
         array = self.c_format(arr.array)
@@ -137,10 +142,15 @@ class NumbaFormatter(object):
         return f"{s.name}"
 
     def format_mathfunction(self, f):
-        function = f.function
+        function_map = {"ln": "log", "acos": "arccos", "asin": "arcsin",
+                        "atan": "arctan", "atan2": "arctan2", "acosh": "arccosh",
+                        "asinh": "arcsinh", "atanh": "arctanh"}
+        function = function_map.get(f.function, f.function)
         args = [self.c_format(arg) for arg in f.args]
-        if function == "power":
-            return f"{args[0]}**{args[1]}"
+        if "bessel" in function:
+            return "0"
+        if function == "erf":
+            return f"math.erf({args[0]})"
         argstr = ", ".join(args)
         return f"np.{function}({argstr})"
 

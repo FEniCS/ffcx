@@ -37,12 +37,25 @@ def generator(ir, options):
 
     parts = eg.generate()
 
+    tensor_size = 1
+    for dim in ir.tensor_shape:
+        tensor_size *= dim
+    n_coeff = 1000
+    n_const = 1000
+    header = f"""
+    A = numba.carray(_A, ({tensor_size}))
+    w = numba.carray(_w, ({n_coeff}))
+    c = numba.carray(_c, ({n_const}))
+    coordinate_dofs = numba.carray(_coordinate_dofs, (1000))
+    entity_local_index = numba.carray(_entity_local_index, (1000))
+    quadrature_permutation = numba.carray(_quadrature_permutation, (1000))
+    """
     F = NumbaFormatter(options["scalar_type"])
     body = F.c_format(parts)
     body = ["    " + line for line in body.split("\n")]
     body = "\n".join(body)
 
-    d["tabulate_expression"] = body
+    d["tabulate_expression"] = header + body
 
     originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
     d["original_coefficient_positions"] = f"[{originals}]"

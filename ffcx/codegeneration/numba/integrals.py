@@ -47,15 +47,19 @@ def generator(ir, options):
     vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
     code["enabled_coefficients"] = f"[{vals}]"
 
-    tensor_size = ir.tensor_shape[0]
-    if len(ir.tensor_shape) == 2:
-        tensor_size *= ir.tensor_shape[1]
+    tensor_size = 1
+    for dim in ir.tensor_shape:
+        tensor_size *= dim
     n_coeff = 1000
     n_const = 1000
-    header = f"    A = numba.carray(_A, ({tensor_size}))\n"
-    header += f"    w = numba.carray(_w, ({n_coeff}))\n"
-    header += f"    c = numba.carray(_c, ({n_const}))\n"
-    header += "    coordinate_dofs = numba.carray(_coordinate_dofs, (1000))\n"
+    header = f"""
+    A = numba.carray(_A, ({tensor_size}))
+    w = numba.carray(_w, ({n_coeff}))
+    c = numba.carray(_c, ({n_const}))
+    coordinate_dofs = numba.carray(_coordinate_dofs, (1000))
+    entity_local_index = numba.carray(_entity_local_index, (1000))
+    quadrature_permutation = numba.carray(_quadrature_permutation, (1000))
+    """
     code["tabulate_tensor"] = header + body
 
     implementation = ufcx_integrals.factory.format(

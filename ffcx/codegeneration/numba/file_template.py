@@ -18,6 +18,7 @@ implementation_pre = """
 
 import numba
 import numpy as np
+import math
 
 # ufcx enums
 interval = 10

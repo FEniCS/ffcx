@@ -13,58 +13,38 @@ for file in os.listdir(demo_dir):
 
 
 @pytest.mark.parametrize("file", ufl_files)
-@pytest.mark.parametrize("scalar", ["float", "double"])
-def test_demo(file, scalar):
+def test_demo(file):
     if file in [
         "MixedGradient",
         "TraceElement",  # HDiv Trace
         "MixedElasticity",  # VectorElement of BDM
         "RestrictedElement",
+        "HyperElasticity",  # tables too big
+        "BiharmonicRegge",
+        "Mini",
         "_TensorProductElement",
     ]:
         # Skip demos that use elements not yet implemented in Basix
         pytest.skip()
 
-    assert os.system(f"cd {demo_dir} && ffcx -L numba --scalar_type={scalar} {file}.py") == 0
-    # assert (
-    #     os.system(
-    #         f"cd {demo_dir} && "
-    #         "CPATH=../ffcx/codegeneration/ "
-    #         f"gcc -I/usr/include/python{sys.version_info.major}.{sys.version_info.minor} {extra_flags}"
-    #         f"-shared {file}.c -o {file}.so"
-    #     )
-    #     == 0
-    # )
+    assert os.system(f"cd {demo_dir} && ffcx -L numba {file}.py") == 0
     module = importlib.import_module(f"{file}_numba")
-    wrapper = module.wrapper(np.float64, np.float64)
+
     names = [getattr(module, w[0]) for w in inspect.getmembers(module) if "tabulate_tensor" in w[0]]
-    compiled_functions = [wrapper(f) for f in names]
-    print(compiled_functions)
+    for scalar_tp in [np.float32, np.float64]:
+        if scalar_tp == np.complex128:
+            real_tp = np.float64
+        else:
+            real_tp = scalar_tp
+        wrapper = module.wrapper(scalar_tp, real_tp)
+        compiled_functions = [wrapper(f) for f in names]
+        print(compiled_functions)
 
-# @pytest.mark.parametrize("file", ufl_files)
-# @pytest.mark.parametrize("scalar", ['"float _Complex"', '"double _Complex"'])
-# def test_demo_complex(file, scalar):
-#     if file not in [
-#         "CellGeometry",
-#         "VectorPoisson",
-#         "Symmetry",
-#         "ExpressionInterpolation",
-#         "MetaData",
-#         "MassDG0",
-#         "MixedCoefficient",
-#         "MathFunctions",
-#     ]:
-#         # Skip demos that fail with complex mode
-#         pytest.skip()
+    if file not in ["MathFunctions", "Conditional"]:
+        scalar_tp = np.complex128
+        real_tp = np.float64
+        wrapper = module.wrapper(scalar_tp, real_tp)
+        compiled_functions = [wrapper(f) for f in names]
+        print(compiled_functions)
 
-#     extra_flags = "-Wunused-variable -Werror -fPIC "
-#     assert os.system(f"cd {demo_dir} && ffcx --scalar_type={scalar} {file}.py") == 0
-#     assert (
-#         os.system(
-#             f"cd {demo_dir} && "
-#             "CPATH=../ffcx/codegeneration/ "
-#             f"gcc -I/usr/include/python{sys.version_info.major}.{sys.version_info.minor} {extra_flags}"
-#             f"-shared {file}.c -o {file}.so"
-#         )
-#         == 0
-#     )
+    os.unlink(f"{file}_numba.py")
