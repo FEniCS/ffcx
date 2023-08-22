@@ -14,21 +14,21 @@ import ufl
 def generate_geometry_tables(integrands):
     """Generate static tables of geometry data."""
     ufl_geometry = {
-        ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
-        ufl.geometry.CellFacetJacobian: "reference_facet_jacobian",
-        ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-        ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
-        ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
-        ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
-        ufl.geometry.ReferenceNormal: "reference_facet_normals",
-        ufl.geometry.FacetOrientation: "facet_orientation",
+        ufl.geometry.FacetEdgeVectors: facet_edge_vertices,
+        ufl.geometry.CellFacetJacobian: reference_facet_jacobian,
+        ufl.geometry.ReferenceCellVolume: reference_cell_volume,
+        ufl.geometry.ReferenceFacetVolume: reference_facet_volume,
+        ufl.geometry.ReferenceCellEdgeVectors: reference_edge_vectors,
+        ufl.geometry.ReferenceFacetEdgeVectors: facet_reference_edge_vectors,
+        ufl.geometry.ReferenceNormal: reference_facet_normals,
+        ufl.geometry.FacetOrientation: facet_orientation,
     }
     cells = {t: set() for t in ufl_geometry.keys()}
 
     for integrand in integrands:
         for attr in integrand["factorization"].nodes.values():
-            mt = attr.get("mt")
-            if mt is not None:
+            mt = attr.get("mt", False)
+            if mt:
                 t = type(mt.terminal)
                 if t in ufl_geometry:
                     cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
@@ -36,29 +36,14 @@ def generate_geometry_tables(integrands):
     parts = []
     for i, cell_list in cells.items():
         for c in cell_list:
-            parts.append(write_table(ufl_geometry[i], c))
+            fn = ufl_geometry[i]
+            parts.append(fn(c))
 
     return parts
 
 
-def write_table(tablename, cellname):
-    table_to_call = {"facet_edge_vertices": facet_edge_vertices,
-                     "reference_facet_jacobian": reference_facet_jacobian,
-                     "reference_cell_volume": reference_cell_volume,
-                     "reference_facet_volume": reference_facet_volume,
-                     "reference_edge_vectors": reference_edge_vectors,
-                     "facet_reference_edge_vectors": facet_reference_edge_vectors,
-                     "reference_facet_normals": reference_facet_normals,
-                     "facet_orientation": facet_orientation
-                     }
-    fn = table_to_call.get(tablename, False)
-    if fn:
-        return fn(tablename, cellname)
-    else:
-        raise ValueError(f"Unknown geometry table name: {tablename}")
-
-
-def facet_edge_vertices(tablename, cellname):
+def facet_edge_vertices(cellname):
+    tablename = "facet_edge_vertices"
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     triangle_edges = basix.topology(basix.CellType.triangle)[1]
@@ -81,21 +66,24 @@ def facet_edge_vertices(tablename, cellname):
     return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
-def reference_facet_jacobian(tablename, cellname):
+def reference_facet_jacobian(cellname):
+    tablename = "reference_facet_jacobian"
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_jacobians(celltype)
     arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
-def reference_cell_volume(tablename, cellname):
+def reference_cell_volume(cellname):
+    tablename = "reference_cell_volume"
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.volume(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.VariableDecl(symbol, out)
 
 
-def reference_facet_volume(tablename, cellname):
+def reference_facet_volume(cellname):
+    tablename = "reference_facet_volume"
     celltype = getattr(basix.CellType, cellname)
     volumes = basix.cell.facet_reference_volumes(celltype)
     for i in volumes[1:]:
@@ -105,7 +93,8 @@ def reference_facet_volume(tablename, cellname):
     return L.VariableDecl(symbol, volumes[0])
 
 
-def reference_edge_vectors(tablename, cellname):
+def reference_edge_vectors(cellname):
+    tablename = "reference_edge_vectors"
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
@@ -115,7 +104,8 @@ def reference_edge_vectors(tablename, cellname):
     return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
-def facet_reference_edge_vectors(tablename, cellname):
+def facet_reference_edge_vectors(cellname):
+    tablename = "facet_reference_edge_vectors"
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
@@ -139,14 +129,16 @@ def facet_reference_edge_vectors(tablename, cellname):
     return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
-def reference_facet_normals(tablename, cellname):
+def reference_facet_normals(cellname):
+    tablename = "reference_facet_normals"
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_outward_normals(celltype)
     arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
-def facet_orientation(tablename, cellname):
+def facet_orientation(cellname):
+    tablename = "facet_orientation"
     celltype = getattr(basix.CellType, cellname)
     out = np.array(basix.cell.facet_orientations(celltype))
     arr_symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)

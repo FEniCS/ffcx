@@ -48,29 +48,6 @@ class ExpressionGenerator:
 
         return L.StatementList(parts)
 
-    def generate_geometry_tables(self):
-        """Generate static tables of geometry data."""
-        # Currently we only support circumradius
-        ufl_geometry = {
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-        }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
-
-        for integrand in self.ir.integrand.values():
-            for attr in integrand["factorization"].nodes.values():
-                mt = attr.get("mt")
-                if mt is not None:
-                    t = type(mt.terminal)
-                    if t in ufl_geometry:
-                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
-
-        parts = []
-        for i, cell_list in cells.items():
-            for c in cell_list:
-                parts.append(geometry.write_table(ufl_geometry[i], c))
-
-        return parts
-
     def generate_element_tables(self):
         """Generate tables of FE basis evaluated at specified points."""
         parts = []
