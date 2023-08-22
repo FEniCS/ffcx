@@ -24,8 +24,6 @@ class FFCXDefinitions(object):
         self.symbols = symbols
         self.options = options
 
-        self.ir = ir
-
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
         self.call_lookup = {

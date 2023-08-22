@@ -115,7 +115,7 @@ class IntegralGenerator(object):
         parts += self.generate_element_tables()
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += geometry.generate_geometry_tables(self.ir.integrand.values())
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -141,7 +141,6 @@ class IntegralGenerator(object):
             self.fuse_loops(all_predefinitions),
             "Pre-definitions of modified terminals to enable unit-stride access",
         )
-
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
@@ -201,7 +200,7 @@ class IntegralGenerator(object):
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+                parts.append(geometry.write_table(ufl_geometry[i], c))
 
         return parts
 

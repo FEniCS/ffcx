@@ -37,7 +37,7 @@ class ExpressionGenerator:
 
         parts = []
         parts += self.generate_element_tables()
-        parts += self.generate_geometry_tables()
+        parts += geometry.generate_geometry_tables(self.ir.integrand.values())
         parts += self.generate_piecewise_partition()
 
         preparts, quadparts = self.generate_quadrature_loop()
@@ -67,7 +67,7 @@ class ExpressionGenerator:
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+                parts.append(geometry.write_table(ufl_geometry[i], c))
 
         return parts
 
