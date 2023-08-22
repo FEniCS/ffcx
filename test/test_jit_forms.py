@@ -406,45 +406,26 @@ def test_subdomains(compile_args):
 
     cell = module.lib.cell
     form0 = compiled_forms[0]
-    ids = [
-        form0.form_integral_ids[j]
-        for j in range(
-            form0.form_integral_offsets[cell], form0.form_integral_offsets[cell + 1]
-        )
-    ]
+    offsets = form0.form_integral_offsets
+    cell = module.lib.cell
+    ids = [form0.form_integral_ids[j] for j in range(offsets[cell], offsets[cell + 1])]
     assert ids[0] == -1 and ids[1] == 2
 
     form1 = compiled_forms[1]
-    ids = [
-        form1.form_integral_ids[j]
-        for j in range(
-            form1.form_integral_offsets[cell], form1.form_integral_offsets[cell + 1]
-        )
-    ]
+    offsets = form1.form_integral_offsets
+    ids = [form1.form_integral_ids[j] for j in range(offsets[cell], offsets[cell + 1])]
     assert ids[0] == -1 and ids[1] == 2
 
     form2 = compiled_forms[2]
-    ids = [
-        form2.form_integral_ids[j]
-        for j in range(
-            form2.form_integral_offsets[cell], form2.form_integral_offsets[cell + 1]
-        )
-    ]
+    offsets = form2.form_integral_offsets
+    ids = [form2.form_integral_ids[j] for j in range(offsets[cell], offsets[cell + 1])]
     assert ids[0] == 1 and ids[1] == 2
 
     form3 = compiled_forms[3]
-    assert (
-        form3.form_integral_offsets[cell + 1] - form3.form_integral_offsets[cell] == 0
-    )
-
-    ext_facet = module.lib.exterior_facet
-    ids = [
-        form3.form_integral_ids[j]
-        for j in range(
-            form3.form_integral_offsets[ext_facet],
-            form3.form_integral_offsets[ext_facet + 1],
-        )
-    ]
+    offsets = form3.form_integral_offsets
+    assert offsets[cell + 1] - offsets[cell] == 0
+    exf = module.lib.exterior_facet
+    ids = [form3.form_integral_ids[j] for j in range(offsets[exf], offsets[exf + 1])]
     assert ids[0] == 0 and ids[1] == 210
 
 
@@ -1097,9 +1078,11 @@ def test_facet_vertex_quadrature(compile_args):
     assert len(compiled_forms) == 2
     solutions = []
     for form in compiled_forms:
-        assert form.form_integral_offsets[module.lib.exterior_facet + 1] == 1
+        offsets = form.form_integral_offsets
+        exf = module.lib.exterior_facet
+        assert offsets[exf + 1] - offsets[exf] == 1
 
-        default_integral = form.form_integrals[0]
+        default_integral = form.form_integrals[offsets[exf]]
         J = np.zeros(1, dtype=np.float64)
         a = np.pi
         b = np.exp(1)

@@ -88,8 +88,8 @@ def test_additive_cell_integral(mode, compile_args):
     ffi = module.ffi
     form0 = compiled_forms[0]
 
-    offsets = form0.form_integral_offsets
     cell = module.lib.cell
+    offsets = form0.form_integral_offsets
     num_integrals = offsets[cell + 1] - offsets[cell]
     assert num_integrals == 1
     integral_id = form0.form_integral_ids[offsets[cell]]
