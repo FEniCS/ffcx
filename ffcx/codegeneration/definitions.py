@@ -98,9 +98,7 @@ class FFCXDefinitions(object):
 
             # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
             if dof_access_map:
-                pre_code += [
-                    L.ArrayDecl(dof_access.array, sizes=num_dofs)
-                ]
+                pre_code += [L.ArrayDecl(dof_access.array, sizes=num_dofs)]
                 pre_body = [L.Assign(dof_access, dof_access_map)]
                 pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
