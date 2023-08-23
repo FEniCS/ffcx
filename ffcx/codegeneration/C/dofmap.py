@@ -9,7 +9,7 @@
 
 import logging
 
-import ffcx.codegeneration.dofmap_template as ufcx_dofmap
+import ffcx.codegeneration.C.dofmap_template as ufcx_dofmap
 
 logger = logging.getLogger("ffcx")
 
