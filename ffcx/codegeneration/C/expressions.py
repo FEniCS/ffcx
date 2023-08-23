@@ -28,7 +28,6 @@ def generator(ir, options):
         factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile)
 
     backend = FFCXBackend(ir, options)
-    L = backend.language
     eg = ExpressionGenerator(ir, backend)
 
     d = {}
@@ -42,20 +41,23 @@ def generator(ir, options):
 
     if len(ir.original_coefficient_positions) > 0:
         d["original_coefficient_positions"] = f"original_coefficient_positions_{ir.name}"
-        d["original_coefficient_positions_init"] = L.ArrayDecl(
-            "static int", f"original_coefficient_positions_{ir.name}",
-            values=ir.original_coefficient_positions, sizes=len(ir.original_coefficient_positions))
+        values = ", ".join(str(i) for i in ir.original_coefficient_positions)
+        sizes = len(ir.original_coefficient_positions)
+        d["original_coefficient_positions_init"] = \
+            f"static int original_coefficient_positions_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["original_coefficient_positions"] = "NULL"
         d["original_coefficient_positions_init"] = ""
 
-    d["points_init"] = L.ArrayDecl(
-        "static double", f"points_{ir.name}", values=ir.points.flatten(), sizes=ir.points.size)
-    d["points"] = L.Symbol(f"points_{ir.name}")
+    values = ", ".join(str(p) for p in ir.points.flatten())
+    sizes = ir.points.size
+    d["points_init"] = f"static double points_{ir.name}[{sizes}] = {{{values}}};"
+    d["points"] = f"points_{ir.name}"
 
     if len(ir.expression_shape) > 0:
-        d["value_shape_init"] = L.ArrayDecl(
-            "static int", f"value_shape_{ir.name}", values=ir.expression_shape, sizes=len(ir.expression_shape))
+        values = ", ".join(str(i) for i in ir.expression_shape)
+        sizes = len(ir.expression_shape)
+        d["value_shape_init"] = f"static int value_shape_{ir.name}[{sizes}] = {{{values}}};"
         d["value_shape"] = f"value_shape_{ir.name}"
     else:
         d["value_shape_init"] = ""
@@ -73,18 +75,18 @@ def generator(ir, options):
     d["rank"] = len(ir.tensor_shape)
 
     if len(ir.coefficient_names) > 0:
-        d["coefficient_names_init"] = L.ArrayDecl(
-            "static const char*", f"coefficient_names_{ir.name}", values=ir.coefficient_names,
-            sizes=len(ir.coefficient_names))
+        values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
+        sizes = len(ir.coefficient_names)
+        d["coefficient_names_init"] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
         d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
         d["coefficient_names_init"] = ""
         d["coefficient_names"] = "NULL"
 
     if len(ir.constant_names) > 0:
-        d["constant_names_init"] = L.ArrayDecl(
-            "static const char*", f"constant_names_{ir.name}", values=ir.constant_names,
-            sizes=len(ir.constant_names))
+        values = ", ".join(f'"{name}"' for name in ir.constant_names)
+        sizes = len(ir.constant_names)
+        d["constant_names_init"] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
@@ -103,7 +105,7 @@ def generator(ir, options):
         code += [f".geometry_degree = {cmap_degree}"]
         code += ["};"]
 
-    d["function_spaces_alloc"] = L.StatementList(code)
+    d["function_spaces_alloc"] = "\n".join(code)
     d["function_spaces"] = ""
 
     if len(ir.function_spaces) > 0:
