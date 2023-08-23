@@ -65,7 +65,7 @@ def generator(ir, options):
 
     if len(ir.value_shape) > 0:
         d["value_shape"] = f"value_shape_{ir.name}"
-        values = ", ".join(str(i) for i in ir.values_shape)
+        values = ", ".join(str(i) for i in ir.value_shape)
         sizes = len(ir.value_shape)
         d["value_shape_init"] = f"int value_shape_{ir.name}[{sizes}] = {{{values}}};"
     else:
@@ -76,7 +76,7 @@ def generator(ir, options):
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
         values = ", ".join(str(i) for i in ir.reference_value_shape)
         sizes = len(ir.reference_value_shape)
-        d["reference_value_shape_init"] = "int reference_value_shape_{ir.name}[{sizes}] = {{{values}}};"
+        d["reference_value_shape_init"] = f"int reference_value_shape_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["reference_value_shape"] = "NULL"
         d["reference_value_shape_init"] = ""
