@@ -56,7 +56,7 @@ def generator(ir, options):
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""
-        code["enabled_coefficients"] = L.Null()
+        code["enabled_coefficients"] = "NULL"
 
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
@@ -73,6 +73,6 @@ def generator(ir, options):
         scalar_type=options["scalar_type"],
         geom_type=scalar_to_value_type(options["scalar_type"]),
         np_scalar_type=cdtype_to_numpy(options["scalar_type"]),
-        coordinate_element=L.AddressOf(L.Symbol(ir.coordinate_element)))
+        coordinate_element=f"&{ir.coordinate_element}")
 
     return declaration, implementation

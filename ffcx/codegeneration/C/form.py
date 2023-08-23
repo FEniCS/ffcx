@@ -40,7 +40,7 @@ def generator(ir, options):
         d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
-        d["original_coefficient_position"] = L.Null()
+        d["original_coefficient_position"] = "NULL"
 
     cnames = ir.coefficient_names
     assert ir.num_coefficients == len(cnames)
@@ -63,24 +63,18 @@ def generator(ir, options):
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
-        d["finite_elements_init"] = L.ArrayDecl(
-            "ufcx_finite_element*",
-            f"finite_elements_{ir.name}",
-            values=[L.AddressOf(L.Symbol(el)) for el in ir.finite_elements],
-            sizes=len(ir.finite_elements),
-        )
+        values = ", ".join(f"&{el}" for el in ir.finite_elements)
+        sizes = len(ir.finite_elements)
+        d["finite_elements_init"] = f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
     else:
-        d["finite_elements"] = L.Null()
+        d["finite_elements"] = "NULL"
         d["finite_elements_init"] = ""
 
     if len(ir.dofmaps) > 0:
         d["dofmaps"] = f"dofmaps_{ir.name}"
-        d["dofmaps_init"] = L.ArrayDecl(
-            "ufcx_dofmap*",
-            f"dofmaps_{ir.name}",
-            values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.dofmaps],
-            sizes=len(ir.dofmaps),
-        )
+        values = ", ".join(f"&{dofmap}" for dofmap in ir.dofmaps)
+        sizes = len(ir.dofmaps)
+        d["dofmaps_init"] = f"ufcx_dofmap* dofmaps_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["dofmaps"] = L.Null()
         d["dofmaps_init"] = ""

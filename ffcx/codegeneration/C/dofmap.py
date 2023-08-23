@@ -79,12 +79,9 @@ def generator(ir, options):
     d["block_size"] = ir.block_size
 
     if len(ir.sub_dofmaps) > 0:
-        d["sub_dofmaps_initialization"] = L.ArrayDecl(
-            "ufcx_dofmap*",
-            f"sub_dofmaps_{ir.name}",
-            values=[L.AddressOf(L.Symbol(dofmap)) for dofmap in ir.sub_dofmaps],
-            sizes=len(ir.sub_dofmaps),
-        )
+        values = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
+        sizes = len(ir.sub_dofmaps)
+        d["sub_dofmaps_initialization"] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[{sizes}] = {{{values}}};"
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""
