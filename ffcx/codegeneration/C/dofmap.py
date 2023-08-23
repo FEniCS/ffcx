@@ -29,8 +29,6 @@ def generator(ir, options):
     d["num_element_support_dofs"] = ir.num_element_support_dofs
     d["num_sub_dofmaps"] = ir.num_sub_dofmaps
 
-    import ffcx.codegeneration.C.cnodes as L
-
     flattened_entity_dofs = []
     entity_dof_offsets = [0]
     for dim in ir.entity_dofs:
@@ -39,19 +37,13 @@ def generator(ir, options):
                 flattened_entity_dofs.append(v)
             entity_dof_offsets.append(len(flattened_entity_dofs))
     d["entity_dofs"] = f"entity_dofs_{ir.name}"
-    d["entity_dofs_init"] = L.ArrayDecl(
-        "int",
-        f"entity_dofs_{ir.name}",
-        values=flattened_entity_dofs,
-        sizes=len(flattened_entity_dofs),
-    )
+    values = ", ".join(str(i) for i in flattened_entity_dofs)
+    sizes = len(flattened_entity_dofs)
+    d["entity_dofs_init"] = f"int entity_dofs_{ir.name}[{sizes}] = {{{values}}};"
     d["entity_dof_offsets"] = f"entity_dof_offsets_{ir.name}"
-    d["entity_dof_offsets_init"] = L.ArrayDecl(
-        "int",
-        f"entity_dof_offsets_{ir.name}",
-        values=entity_dof_offsets,
-        sizes=len(entity_dof_offsets),
-    )
+    values = ", ".join(str(i) for i in entity_dof_offsets)
+    sizes = len(entity_dof_offsets)
+    d["entity_dof_offsets_init"] = f"int entity_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     # Closure
     flattened_entity_closure_dofs = []
@@ -62,19 +54,13 @@ def generator(ir, options):
                 flattened_entity_closure_dofs.append(v)
             entity_closure_dof_offsets.append(len(flattened_entity_closure_dofs))
     d["entity_closure_dofs"] = f"entity_closure_dofs_{ir.name}"
-    d["entity_closure_dofs_init"] = L.ArrayDecl(
-        "int",
-        f"entity_closure_dofs_{ir.name}",
-        values=flattened_entity_closure_dofs,
-        sizes=len(flattened_entity_closure_dofs),
-    )
+    values = ", ".join(str(i) for i in flattened_entity_closure_dofs)
+    sizes = len(flattened_entity_closure_dofs)
+    d["entity_closure_dofs_init"] = f"int entity_closure_dofs_{ir.name}[{sizes}] = {{{values}}};"
     d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
-    d["entity_closure_dof_offsets_init"] = L.ArrayDecl(
-        "int",
-        f"entity_closure_dof_offsets_{ir.name}",
-        values=entity_closure_dof_offsets,
-        sizes=len(entity_closure_dof_offsets),
-    )
+    values = ", ".join(str(i) for i in entity_closure_dof_offsets)
+    sizes = len(entity_dof_offsets)
+    d["entity_closure_dof_offsets_init"] = f"int entity_closure_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     d["block_size"] = ir.block_size
 
