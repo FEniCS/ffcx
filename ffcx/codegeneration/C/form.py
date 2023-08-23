@@ -20,8 +20,6 @@ def generator(ir, options):
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
 
-    import ffcx.codegeneration.C.cnodes as L
-
     d = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
@@ -31,12 +29,11 @@ def generator(ir, options):
     d["num_constants"] = ir.num_constants
 
     if len(ir.original_coefficient_position) > 0:
-        d["original_coefficient_position_init"] = L.ArrayDecl(
-            "int",
-            f"original_coefficient_position_{ir.name}",
-            values=ir.original_coefficient_position,
-            sizes=len(ir.original_coefficient_position),
-        )
+        values = ", ".join(str(i) for i in ir.original_coefficient_position)
+        sizes = len(ir.original_coefficient_position)
+
+        d["original_coefficient_position_init"] = \
+            f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
         d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
@@ -44,22 +41,22 @@ def generator(ir, options):
 
     cnames = ir.coefficient_names
     assert ir.num_coefficients == len(cnames)
-    names = L.Symbol("names")
     if len(cnames) == 0:
-        code = [L.Return(L.Null())]
+        code = ["return NULL;"]
     else:
-        code = [L.ArrayDecl("static const char*", names, len(cnames), cnames)]
-        code += [L.Return(names)]
-    d["coefficient_name_map"] = L.StatementList(code)
+        values = ", ".join(f'"{name}"' for name in cnames)
+        code = [f"static const char* names[{len(cnames)}] = {{{values}}};",
+                "return names;"]
+    d["coefficient_name_map"] = "\n".join(code)
 
     cstnames = ir.constant_names
-    names = L.Symbol("names")
     if len(cstnames) == 0:
-        code = [L.Return(L.Null())]
+        code = ["return NULL;"]
     else:
-        code = [L.ArrayDecl("static const char*", names, len(cstnames), cstnames)]
-        code += [L.Return(names)]
-    d["constant_name_map"] = L.StatementList(code)
+        values = ", ".join(f'"{name}"' for name in cstnames)
+        code = [f"static const char* names[{len(cstnames)}] = {{{values}}};",
+                "return names;"]
+    d["constant_name_map"] = "\n".join(code)
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
@@ -76,7 +73,7 @@ def generator(ir, options):
         sizes = len(ir.dofmaps)
         d["dofmaps_init"] = f"ufcx_dofmap* dofmaps_{ir.name}[{sizes}] = {{{values}}};"
     else:
-        d["dofmaps"] = L.Null()
+        d["dofmaps"] = "NULL"
         d["dofmaps_init"] = ""
 
     integrals = []
@@ -84,24 +81,18 @@ def generator(ir, options):
     integral_offsets = [0]
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
-        integrals += [L.AddressOf(L.Symbol(itg)) for itg in ir.integral_names[itg_type]]
+        integrals += [f"&{itg}" for itg in ir.integral_names[itg_type]]
         integral_ids += ir.subdomain_ids[itg_type]
         integral_offsets.append(len(integrals))
 
     if len(integrals) > 0:
-        d["form_integrals_init"] = L.ArrayDecl(
-            "static ufcx_integral*",
-            f"form_integrals_{ir.name}",
-            values=integrals,
-            sizes=len(integrals),
-        )
+        sizes = len(integrals)
+        values = ", ".join(integrals)
+        d["form_integrals_init"] = f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integrals"] = f"form_integrals_{ir.name}"
-        d["form_integral_ids_init"] = L.ArrayDecl(
-            "int",
-            f"form_integral_ids_{ir.name}",
-            values=integral_ids,
-            sizes=len(integral_ids),
-        )
+        sizes = len(integral_ids)
+        values = ", ".join(str(i) for i in integral_ids)
+        d["form_integral_ids_init"] = f"int form_integral_ids_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
     else:
         d["form_integrals_init"] = ""
@@ -109,15 +100,11 @@ def generator(ir, options):
         d["form_integral_ids_init"] = ""
         d["form_integral_ids"] = "NULL"
 
-    d["form_integral_offsets_init"] = L.ArrayDecl(
-        "int",
-        f"form_integral_offsets_{ir.name}",
-        values=integral_offsets,
-        sizes=len(integral_offsets),
-    )
+    sizes = len(integral_offsets)
+    values = ", ".join(str(i) for i in integral_offsets)
+    d["form_integral_offsets_init"] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     code = []
-    function_name = L.Symbol("function_name")
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated
@@ -139,15 +126,12 @@ def generator(ir, options):
         code += [f".geometry_basix_variant = {int(cmap_variant)}"]
         code += ["};"]
 
-    _if = L.If
     for name in ir.function_spaces.keys():
-        condition = L.EQ(L.Call("strcmp", (function_name, L.LiteralString(name))), 0)
-        code += [_if(condition, L.Return(L.Symbol(f"&functionspace_{name}")))]
-        _if = L.ElseIf
+        code += [f'if (strcmp(function_name, "{name}") == 0) return &functionspace_{name};']
 
     code += ["return NULL;\n"]
 
-    d["functionspace"] = L.StatementList(code)
+    d["functionspace"] = "\n".join(code)
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
