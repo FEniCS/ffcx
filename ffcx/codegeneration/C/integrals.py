@@ -57,9 +57,6 @@ def generator(ir, options):
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
-    if options["tabulate_tensor_void"]:
-        code["tabulate_tensor"] = ""
-
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],

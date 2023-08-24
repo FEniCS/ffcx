@@ -142,7 +142,7 @@ def build_initializer_lists(values):
     if len(values.shape) == 1:
         arr += ", ".join(str(v) for v in values)
     elif len(values.shape) > 1:
-        arr += ",\n".join(build_initializer_lists(v) for v in values)
+        arr += ",\n  ".join(build_initializer_lists(v) for v in values)
     arr += "}"
     return arr
 
@@ -166,6 +166,8 @@ class CFormatter(object):
             typename = self.scalar_type
         elif dtype == L.DataType.REAL:
             typename = self.real_type
+        else:
+            raise ValueError(f"Invalid dtype: {dtype}")
 
         symbol = self.c_format(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
