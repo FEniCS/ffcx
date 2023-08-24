@@ -79,6 +79,7 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
+    # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
         integrals += [f"&{itg}" for itg in ir.integral_names[itg_type]]
         integral_ids += ir.subdomain_ids[itg_type]
@@ -138,14 +139,6 @@ def generator(ir, options):
     fields = [
         fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
     ]
-
-    for f in fields:
-        if f not in d.keys():
-            print(f, "not in d.keys()")
-
-    for f in d.keys():
-        if f not in fields:
-            print(f, "not in fields")
 
     assert set(fields) == set(
         d.keys()

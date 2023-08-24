@@ -40,15 +40,11 @@ def generator(ir, options):
     d["tabulate_expression"] = CF.c_format(parts)
 
     if len(ir.original_coefficient_positions) > 0:
-        d[
-            "original_coefficient_positions"
-        ] = f"original_coefficient_positions_{ir.name}"
-        n = len(ir.original_coefficient_positions)
-        originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
-        d[
-            "original_coefficient_positions_init"
-        ] = f"static int original_coefficient_positions_{ir.name}[{n}] = {{{originals}}};"
-
+        d["original_coefficient_positions"] = f"original_coefficient_positions_{ir.name}"
+        values = ", ".join(str(i) for i in ir.original_coefficient_positions)
+        sizes = len(ir.original_coefficient_positions)
+        d["original_coefficient_positions_init"] = \
+            f"static int original_coefficient_positions_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["original_coefficient_positions"] = "NULL"
         d["original_coefficient_positions_init"] = ""
