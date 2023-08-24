@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-from typing import Any, Dict, List, Set, Tuple
+from typing import List, Tuple
 
 import ufl
 import collections
@@ -115,7 +115,7 @@ class IntegralGenerator(object):
         parts += self.generate_element_tables()
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += geometry.generate_geometry_tables(self.ir.integrand.values())
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -141,7 +141,6 @@ class IntegralGenerator(object):
             self.fuse_loops(all_predefinitions),
             "Pre-definitions of modified terminals to enable unit-stride access",
         )
-
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
@@ -170,39 +169,6 @@ class IntegralGenerator(object):
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
-        return parts
-
-    def generate_geometry_tables(self):
-        """Generate static tables of geometry data."""
-        ufl_geometry = {
-            ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
-            ufl.geometry.CellFacetJacobian: "reference_facet_jacobian",
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
-            ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
-            ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
-            ufl.geometry.ReferenceNormal: "reference_facet_normals",
-            ufl.geometry.FacetOrientation: "facet_orientation",
-        }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
-
-        for integrand in self.ir.integrand.values():
-            for attr in integrand["factorization"].nodes.values():
-                mt = attr.get("mt")
-                if mt is not None:
-                    t = type(mt.terminal)
-                    if t in ufl_geometry:
-                        cells[t].add(
-                            ufl.domain.extract_unique_domain(mt.terminal)
-                            .ufl_cell()
-                            .cellname()
-                        )
-
-        parts = []
-        for i, cell_list in cells.items():
-            for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
-
         return parts
 
     def generate_element_tables(self):

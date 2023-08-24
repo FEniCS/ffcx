@@ -29,9 +29,11 @@ def generator(ir, options):
     d["num_constants"] = ir.num_constants
 
     if len(ir.original_coefficient_position) > 0:
-        orig_coeff = ', '.join(str(i) for i in ir.original_coefficient_position)
+        values = ", ".join(str(i) for i in ir.original_coefficient_position)
+        sizes = len(ir.original_coefficient_position)
+
         d["original_coefficient_position_init"] = \
-            f"int original_coefficient_position_{ir.name}[] = {{{orig_coeff}}};"
+            f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
         d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
@@ -39,35 +41,37 @@ def generator(ir, options):
 
     cnames = ir.coefficient_names
     assert ir.num_coefficients == len(cnames)
-    if (len(cnames) == 0):
-        code = "return NULL;"
+    if len(cnames) == 0:
+        code = ["return NULL;"]
     else:
-        names = ", ".join(f'"{name}"' for name in cnames)
-        code = f"static const char* names[] = {{{names}}};\n"
-        code += "return names;\n"
-    d["coefficient_name_map"] = code
+        values = ", ".join(f'"{name}"' for name in cnames)
+        code = [f"static const char* names[{len(cnames)}] = {{{values}}};",
+                "return names;"]
+    d["coefficient_name_map"] = "\n".join(code)
 
     cstnames = ir.constant_names
     if len(cstnames) == 0:
-        code = "return NULL;"
+        code = ["return NULL;"]
     else:
-        names = ", ".join(f'"{name}"' for name in cstnames)
-        code = f"static const char* names[] = {{{names}}};\n"
-        code += "return names;\n"
-    d["constant_name_map"] = code
+        values = ", ".join(f'"{name}"' for name in cstnames)
+        code = [f"static const char* names[{len(cstnames)}] = {{{values}}};",
+                "return names;"]
+    d["constant_name_map"] = "\n".join(code)
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
-        finite_elements = ", ".join(f"&{el}" for el in ir.finite_elements)
-        d["finite_elements_init"] = f"ufcx_finite_element* finite_elements_{ir.name}[] = {{{finite_elements}}};"
+        values = ", ".join(f"&{el}" for el in ir.finite_elements)
+        sizes = len(ir.finite_elements)
+        d["finite_elements_init"] = f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["finite_elements"] = "NULL"
         d["finite_elements_init"] = ""
 
     if len(ir.dofmaps) > 0:
         d["dofmaps"] = f"dofmaps_{ir.name}"
-        dofmaps = ", ".join(f"&{dm}" for dm in ir.dofmaps)
-        d["dofmaps_init"] = f"ufcx_dofmap* dofmaps_{ir.name}[] = {{{dofmaps}}};"
+        values = ", ".join(f"&{dofmap}" for dofmap in ir.dofmaps)
+        sizes = len(ir.dofmaps)
+        d["dofmaps_init"] = f"ufcx_dofmap* dofmaps_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["dofmaps"] = "NULL"
         d["dofmaps_init"] = ""
@@ -75,19 +79,20 @@ def generator(ir, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
+    # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
-        integrals += ir.integral_names[itg_type]
+        integrals += [f"&{itg}" for itg in ir.integral_names[itg_type]]
         integral_ids += ir.subdomain_ids[itg_type]
         integral_offsets.append(len(integrals))
 
     if len(integrals) > 0:
-        integrals_str = ", ".join(f"&{itg}" for itg in integrals)
-        integral_ids_str = ", ".join(str(i) for i in integral_ids)
-        d["form_integrals_init"] = \
-            f"static ufcx_integral* form_integrals_{ir.name}[] = {{{integrals_str}}};"
+        sizes = len(integrals)
+        values = ", ".join(integrals)
+        d["form_integrals_init"] = f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integrals"] = f"form_integrals_{ir.name}"
-        d["form_integral_ids_init"] = \
-            f"int form_integral_ids_{ir.name}[] = {{{integral_ids_str}}};"
+        sizes = len(integral_ids)
+        values = ", ".join(str(i) for i in integral_ids)
+        d["form_integral_ids_init"] = f"int form_integral_ids_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
     else:
         d["form_integrals_init"] = ""
@@ -95,9 +100,9 @@ def generator(ir, options):
         d["form_integral_ids_init"] = ""
         d["form_integral_ids"] = "NULL"
 
-    offsets = ", ".join(str(i) for i in integral_offsets)
-    d["form_integral_offsets_init"] = \
-        f"int form_integral_offsets_{ir.name}[] = {{{offsets}}};"
+    sizes = len(integral_offsets)
+    values = ", ".join(str(i) for i in integral_offsets)
+    d["form_integral_offsets_init"] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     code = []
 
@@ -134,14 +139,6 @@ def generator(ir, options):
     fields = [
         fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
     ]
-
-    for f in fields:
-        if f not in d.keys():
-            print(f, "not in d.keys()")
-
-    for f in d.keys():
-        if f not in fields:
-            print(f, "not in fields")
 
     assert set(fields) == set(
         d.keys()

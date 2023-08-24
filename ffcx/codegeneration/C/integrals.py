@@ -46,12 +46,9 @@ def generator(ir, options):
     code["name"] = ir.name
 
     if len(ir.enabled_coefficients) > 0:
-        vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
-        n = len(ir.enabled_coefficients)
-        code[
-            "enabled_coefficients_init"
-        ] = f"bool enabled_coefficients_{ir.name}[{n}] = {{{vals}}};"
-
+        values = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
+        sizes = len(ir.enabled_coefficients)
+        code["enabled_coefficients_init"] = f"bool enabled_coefficients_{ir.name}[{sizes}] = {{{values}}};"
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""
@@ -59,9 +56,6 @@ def generator(ir, options):
 
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
-
-    if options["tabulate_tensor_void"]:
-        code["tabulate_tensor"] = ""
 
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,

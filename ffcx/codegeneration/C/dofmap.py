@@ -38,11 +38,12 @@ def generator(ir, options):
             entity_dof_offsets.append(len(flattened_entity_dofs))
     d["entity_dofs"] = f"entity_dofs_{ir.name}"
     values = ", ".join(str(i) for i in flattened_entity_dofs)
-    d["entity_dofs_init"] = f"int entity_dofs_{ir.name}[] = {{{values}}};"
-
+    sizes = len(flattened_entity_dofs)
+    d["entity_dofs_init"] = f"int entity_dofs_{ir.name}[{sizes}] = {{{values}}};"
     d["entity_dof_offsets"] = f"entity_dof_offsets_{ir.name}"
     values = ", ".join(str(i) for i in entity_dof_offsets)
-    d["entity_dof_offsets_init"] = f"int entity_dof_offsets_{ir.name}[] = {{{values}}};"
+    sizes = len(entity_dof_offsets)
+    d["entity_dof_offsets_init"] = f"int entity_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     # Closure
     flattened_entity_closure_dofs = []
@@ -54,22 +55,19 @@ def generator(ir, options):
             entity_closure_dof_offsets.append(len(flattened_entity_closure_dofs))
     d["entity_closure_dofs"] = f"entity_closure_dofs_{ir.name}"
     values = ", ".join(str(i) for i in flattened_entity_closure_dofs)
-    d[
-        "entity_closure_dofs_init"
-    ] = f"int entity_closure_dofs_{ir.name}[] = {{{values}}};"
+    sizes = len(flattened_entity_closure_dofs)
+    d["entity_closure_dofs_init"] = f"int entity_closure_dofs_{ir.name}[{sizes}] = {{{values}}};"
     d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
     values = ", ".join(str(i) for i in entity_closure_dof_offsets)
-    d[
-        "entity_closure_dof_offsets_init"
-    ] = f"int entity_closure_dof_offsets_{ir.name}[] = {{{values}}};"
+    sizes = len(entity_dof_offsets)
+    d["entity_closure_dof_offsets_init"] = f"int entity_closure_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     d["block_size"] = ir.block_size
 
     if len(ir.sub_dofmaps) > 0:
         values = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
-        d[
-            "sub_dofmaps_initialization"
-        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[] = {{{values}}};"
+        sizes = len(ir.sub_dofmaps)
+        d["sub_dofmaps_initialization"] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[{sizes}] = {{{values}}};"
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""

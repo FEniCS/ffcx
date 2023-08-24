@@ -21,8 +21,6 @@ FFCX_DEFAULT_OPTIONS = {
     "scalar_type":
         ("double", """Scalar type used in generated code. Any of real or complex C floating-point types, e.g.
                       float, double, float _Complex, double _Complex, ..."""),
-    "tabulate_tensor_void":
-        (False, "True to generate empty tabulation kernels."),
     "table_rtol":
         (1e-6, "Relative precision to use when comparing finite element table values for table reuse."),
     "table_atol":
@@ -31,8 +29,6 @@ FFCX_DEFAULT_OPTIONS = {
         (-1, """Assumes alignment (in bytes) of pointers to tabulated tensor, coefficients and constants array.
                This value must be compatible with alignment of data structures allocated outside FFC.
                (-1 means no alignment assumed, safe option)"""),
-    "padlen":
-        (1, "Pads every declared array in tabulation kernel such that its last dimension is divisible by given value."),
     "verbosity":
         (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.")
 }

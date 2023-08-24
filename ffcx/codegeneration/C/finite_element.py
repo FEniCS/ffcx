@@ -64,23 +64,27 @@ def generator(ir, options):
 
     if len(ir.value_shape) > 0:
         d["value_shape"] = f"value_shape_{ir.name}"
-        d["value_shape_init"] = f"int value_shape_{ir.name}[] = {{{', '.join(str(i) for i in ir.value_shape)}}};"
+        values = ", ".join(str(i) for i in ir.value_shape)
+        sizes = len(ir.value_shape)
+        d["value_shape_init"] = f"int value_shape_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["value_shape"] = "NULL"
         d["value_shape_init"] = ""
 
     if len(ir.reference_value_shape) > 0:
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
-        d["reference_value_shape_init"] = \
-            f"int reference_value_shape_{ir.name}[] = {{{', '.join(str(i) for i in ir.reference_value_shape)}}};"
+        values = ", ".join(str(i) for i in ir.reference_value_shape)
+        sizes = len(ir.reference_value_shape)
+        d["reference_value_shape_init"] = f"int reference_value_shape_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["reference_value_shape"] = "NULL"
         d["reference_value_shape_init"] = ""
 
     if len(ir.sub_elements) > 0:
         d["sub_elements"] = f"sub_elements_{ir.name}"
-        sub_elements = ", ".join(f"&{el}" for el in ir.sub_elements)
-        d["sub_elements_init"] = f"ufcx_finite_element* sub_elements_{ir.name}[] = {{{sub_elements}}};"
+        values = ", ".join(f"&{el}" for el in ir.sub_elements)
+        sizes = len(ir.sub_elements)
+        d["sub_elements_init"] = f"ufcx_finite_element* sub_elements_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["sub_elements"] = "NULL"
         d["sub_elements_init"] = ""
@@ -123,8 +127,9 @@ def generate_custom_element(name, ir):
     d["value_shape_length"] = len(ir.value_shape)
     if len(ir.value_shape) > 0:
         d["value_shape"] = f"value_shape_{name}"
-        values = ', '.join(str(i) for i in ir.value_shape)
-        d["value_shape_init"] = f"int value_shape_{name}[] = {{{values}}};"
+        values = ", ".join(str(i) for i in ir.value_shape)
+        sizes = len(ir.value_shape)
+        d["value_shape_init"] = f"int value_shape_{name}[{sizes}] = {{{values}}};"
     else:
         d["value_shape"] = "NULL"
         d["value_shape_init"] = ""

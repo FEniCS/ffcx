@@ -181,39 +181,21 @@ class FFCXAccess(object):
 
     def reference_cell_volume(self, e, mt, tabledata, access):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
-        if cellname in (
-            "interval",
-            "triangle",
-            "tetrahedron",
-            "quadrilateral",
-            "hexahedron",
-        ):
+        if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_cell_volume")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_facet_volume(self, e, mt, tabledata, access):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
-        if cellname in (
-            "interval",
-            "triangle",
-            "tetrahedron",
-            "quadrilateral",
-            "hexahedron",
-        ):
+        if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_facet_volume")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_normal(self, e, mt, tabledata, access):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
-        if cellname in (
-            "interval",
-            "triangle",
-            "tetrahedron",
-            "quadrilateral",
-            "hexahedron",
-        ):
+        if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_facet_normals")
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]]
@@ -302,9 +284,7 @@ class FFCXAccess(object):
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             pass
         elif cellname == "interval":
-            raise RuntimeError(
-                "The physical cell edge vectors doesn't make sense for interval cell."
-            )
+            raise RuntimeError("The physical cell edge vectors doesn't make sense for interval cell.")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
