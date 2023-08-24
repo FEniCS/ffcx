@@ -10,126 +10,13 @@ from itertools import product
 from typing import Any, DefaultDict, Dict, Set
 
 import ufl
-from ffcx.codegeneration import expressions_template, geometry
+from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.cnodes import CNode
-from ffcx.codegeneration.C.format_lines import format_indented_lines
 from ffcx.ir.representation import ExpressionIR
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
-
-
-def generator(ir, options):
-    """Generate UFC code for an expression."""
-    logger.info("Generating code for expression:")
-    logger.info(f"--- points: {ir.points}")
-    logger.info(f"--- name: {ir.name}")
-
-    factory_name = ir.name
-
-    # Format declaration
-    declaration = expressions_template.declaration.format(
-        factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile)
-
-    backend = FFCXBackend(ir, options)
-    L = backend.language
-    eg = ExpressionGenerator(ir, backend)
-
-    d = {}
-    d["name_from_uflfile"] = ir.name_from_uflfile
-    d["factory_name"] = ir.name
-
-    parts = eg.generate()
-
-    body = format_indented_lines(parts.cs_format(), 1)
-    d["tabulate_expression"] = body
-
-    if len(ir.original_coefficient_positions) > 0:
-        d["original_coefficient_positions"] = f"original_coefficient_positions_{ir.name}"
-        d["original_coefficient_positions_init"] = L.ArrayDecl(
-            "static int", f"original_coefficient_positions_{ir.name}",
-            values=ir.original_coefficient_positions, sizes=len(ir.original_coefficient_positions))
-    else:
-        d["original_coefficient_positions"] = L.Null()
-        d["original_coefficient_positions_init"] = ""
-
-    d["points_init"] = L.ArrayDecl(
-        "static double", f"points_{ir.name}", values=ir.points.flatten(), sizes=ir.points.size)
-    d["points"] = L.Symbol(f"points_{ir.name}")
-
-    if len(ir.expression_shape) > 0:
-        d["value_shape_init"] = L.ArrayDecl(
-            "static int", f"value_shape_{ir.name}", values=ir.expression_shape, sizes=len(ir.expression_shape))
-        d["value_shape"] = f"value_shape_{ir.name}"
-    else:
-        d["value_shape_init"] = ""
-        d["value_shape"] = L.Null()
-
-    d["num_components"] = len(ir.expression_shape)
-    d["num_coefficients"] = len(ir.coefficient_numbering)
-    d["num_constants"] = len(ir.constant_names)
-    d["num_points"] = ir.points.shape[0]
-    d["topological_dimension"] = ir.points.shape[1]
-    d["scalar_type"] = options["scalar_type"]
-    d["geom_type"] = scalar_to_value_type(options["scalar_type"])
-    d["np_scalar_type"] = cdtype_to_numpy(options["scalar_type"])
-
-    d["rank"] = len(ir.tensor_shape)
-
-    if len(ir.coefficient_names) > 0:
-        d["coefficient_names_init"] = L.ArrayDecl(
-            "static const char*", f"coefficient_names_{ir.name}", values=ir.coefficient_names,
-            sizes=len(ir.coefficient_names))
-        d["coefficient_names"] = f"coefficient_names_{ir.name}"
-    else:
-        d["coefficient_names_init"] = ""
-        d["coefficient_names"] = L.Null()
-
-    if len(ir.constant_names) > 0:
-        d["constant_names_init"] = L.ArrayDecl(
-            "static const char*", f"constant_names_{ir.name}", values=ir.constant_names,
-            sizes=len(ir.constant_names))
-        d["constant_names"] = f"constant_names_{ir.name}"
-    else:
-        d["constant_names_init"] = ""
-        d["constant_names"] = L.Null()
-
-    code = []
-
-    # FIXME: Should be handled differently, revise how
-    # ufcx_function_space is generated (also for ufcx_form)
-    for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
-        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
-        code += ["{"]
-        code += [f".finite_element = &{element},"]
-        code += [f".dofmap = &{dofmap},"]
-        code += [f".geometry_family = \"{cmap_family}\","]
-        code += [f".geometry_degree = {cmap_degree}"]
-        code += ["};"]
-
-    d["function_spaces_alloc"] = L.StatementList(code)
-    d["function_spaces"] = ""
-
-    if len(ir.function_spaces) > 0:
-        d["function_spaces"] = f"function_spaces_{ir.name}"
-        d["function_spaces_init"] = L.ArrayDecl("ufcx_function_space*", f"function_spaces_{ir.name}", values=[
-                                                L.AddressOf(L.Symbol(f"function_space_{name}_{ir.name_from_uflfile}"))
-                                                for (name, _) in ir.function_spaces.items()],
-                                                sizes=len(ir.function_spaces))
-    else:
-        d["function_spaces"] = L.Null()
-        d["function_spaces_init"] = ""
-
-    # Check that no keys are redundant or have been missed
-    from string import Formatter
-    fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
-
-    # Format implementation code
-    implementation = expressions_template.factory.format_map(d)
-
-    return declaration, implementation
 
 
 class ExpressionGenerator:
