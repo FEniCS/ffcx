@@ -15,8 +15,7 @@ import ufl
 def test_finite_element(compile_args):
     ufl_element = basix.ufl.element("Lagrange", "triangle", 1)
     jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
-        [ufl_element], cffi_extra_compile_args=compile_args
-    )
+        [ufl_element], cffi_extra_compile_args=compile_args)
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 2
@@ -35,6 +34,7 @@ def test_finite_element(compile_args):
     assert ufcx_dofmap.num_element_support_dofs == 3
     off = np.array([ufcx_dofmap.entity_dof_offsets[i] for i in range(8)])
     assert np.all(np.diff(off) == [1, 1, 1, 0, 0, 0, 0])
+
     for v in range(3):
         assert ufcx_dofmap.entity_dofs[v] == v
     assert ufcx_dofmap.num_sub_dofmaps == 0
@@ -43,8 +43,7 @@ def test_finite_element(compile_args):
 def test_vector_element(compile_args):
     ufl_element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
     jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
-        [ufl_element], cffi_extra_compile_args=compile_args
-    )
+        [ufl_element], cffi_extra_compile_args=compile_args)
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 2
@@ -74,8 +73,7 @@ def test_vector_element(compile_args):
 def test_tensor_element(compile_args):
     ufl_element = basix.ufl.element("Lagrange", "triangle", 1, rank=2)
     jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
-        [ufl_element], cffi_extra_compile_args=compile_args
-    )
+        [ufl_element], cffi_extra_compile_args=compile_args)
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 2
@@ -105,12 +103,9 @@ def test_tensor_element(compile_args):
 
 
 def test_vector_quadrature_element(compile_args):
-    ufl_element = ufl.VectorElement(
-        ufl.FiniteElement("Quadrature", "tetrahedron", degree=2, quad_scheme="default")
-    )
+    ufl_element = ufl.VectorElement(ufl.FiniteElement("Quadrature", "tetrahedron", degree=2, quad_scheme="default"))
     jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
-        [ufl_element], cffi_extra_compile_args=compile_args
-    )
+        [ufl_element], cffi_extra_compile_args=compile_args)
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 3
