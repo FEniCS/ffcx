@@ -25,8 +25,7 @@ def generator(ir, options):
 
     # Format declaration
     declaration = expressions_template.declaration.format(
-        factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile
-    )
+        factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile)
 
     backend = FFCXBackend(ir, options)
     eg = ExpressionGenerator(ir, backend)
@@ -54,16 +53,15 @@ def generator(ir, options):
         d["original_coefficient_positions"] = "NULL"
         d["original_coefficient_positions_init"] = ""
 
-    points = ", ".join(str(p) for p in ir.points.flatten())
-    n = ir.points.size
-
-    d["points_init"] = f"static double points_{ir.name}[{n}] = {{{points}}};"
+    values = ", ".join(str(p) for p in ir.points.flatten())
+    sizes = ir.points.size
+    d["points_init"] = f"static double points_{ir.name}[{sizes}] = {{{values}}};"
     d["points"] = f"points_{ir.name}"
 
     if len(ir.expression_shape) > 0:
-        n = len(ir.expression_shape)
-        shape = ", ".join(str(i) for i in ir.expression_shape)
-        d["value_shape_init"] = f"static int value_shape_{ir.name}[{n}] = {{{shape}}};"
+        values = ", ".join(str(i) for i in ir.expression_shape)
+        sizes = len(ir.expression_shape)
+        d["value_shape_init"] = f"static int value_shape_{ir.name}[{sizes}] = {{{values}}};"
         d["value_shape"] = f"value_shape_{ir.name}"
     else:
         d["value_shape_init"] = ""
@@ -81,23 +79,18 @@ def generator(ir, options):
     d["rank"] = len(ir.tensor_shape)
 
     if len(ir.coefficient_names) > 0:
-        names = ", ".join(f'"{name}"' for name in ir.coefficient_names)
-        n = len(ir.coefficient_names)
-        d[
-            "coefficient_names_init"
-        ] = f"static const char* coefficient_names_{ir.name}[{n}] = {{{names}}};"
-
+        values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
+        sizes = len(ir.coefficient_names)
+        d["coefficient_names_init"] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
         d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
         d["coefficient_names_init"] = ""
         d["coefficient_names"] = "NULL"
 
     if len(ir.constant_names) > 0:
-        names = ", ".join(f'"{name}"' for name in ir.constant_names)
-        n = len(ir.constant_names)
-        d[
-            "constant_names_init"
-        ] = f"static const char* constant_names_{ir.name}[{n}] = {{{names}}};"
+        values = ", ".join(f'"{name}"' for name in ir.constant_names)
+        sizes = len(ir.constant_names)
+        d["constant_names_init"] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
@@ -107,14 +100,12 @@ def generator(ir, options):
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated (also for ufcx_form)
-    for name, (element, dofmap, cmap_family, cmap_degree) in ir.function_spaces.items():
-        code += [
-            f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="
-        ]
+    for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
+        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
-        code += [f'.geometry_family = "{cmap_family}",']
+        code += [f".geometry_family = \"{cmap_family}\","]
         code += [f".geometry_degree = {cmap_degree}"]
         code += ["};"]
 
@@ -123,29 +114,18 @@ def generator(ir, options):
 
     if len(ir.function_spaces) > 0:
         d["function_spaces"] = f"function_spaces_{ir.name}"
-        fs_list = ", ".join(
-            f"&function_space_{name}_{ir.name_from_uflfile}"
-            for (name, _) in ir.function_spaces.items()
-        )
-        n = len(ir.function_spaces.items())
-        d[
-            "function_spaces_init"
-        ] = f"ufcx_function_space* function_spaces_{ir.name}[{n}] = {{{fs_list}}};"
+        values = ", ".join(f"&function_space_{name}_{ir.name_from_uflfile}"
+                           for (name, _) in ir.function_spaces.items())
+        sizes = len(ir.function_spaces)
+        d["function_spaces_init"] = f"ufcx_function_space* function_spaces_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["function_spaces"] = "NULL"
         d["function_spaces_init"] = ""
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
-
-    fields = [
-        fname
-        for _, fname, _, _ in Formatter().parse(expressions_template.factory)
-        if fname
-    ]
-    assert set(fields) == set(
-        d.keys()
-    ), "Mismatch between keys in template and in formatting dict"
+    fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)
