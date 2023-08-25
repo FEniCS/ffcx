@@ -9,23 +9,23 @@ import numpy as np
 import basix
 
 
-def write_table(L, tablename, cellname, type: str):
+def write_table(L, tablename, cellname):
     if tablename == "facet_edge_vertices":
         return facet_edge_vertices(L, tablename, cellname)
     if tablename == "reference_facet_jacobian":
-        return reference_facet_jacobian(L, tablename, cellname, type)
+        return reference_facet_jacobian(L, tablename, cellname)
     if tablename == "reference_cell_volume":
-        return reference_cell_volume(L, tablename, cellname, type)
+        return reference_cell_volume(L, tablename, cellname)
     if tablename == "reference_facet_volume":
-        return reference_facet_volume(L, tablename, cellname, type)
+        return reference_facet_volume(L, tablename, cellname)
     if tablename == "reference_edge_vectors":
-        return reference_edge_vectors(L, tablename, cellname, type)
+        return reference_edge_vectors(L, tablename, cellname)
     if tablename == "facet_reference_edge_vectors":
-        return facet_reference_edge_vectors(L, tablename, cellname, type)
+        return facet_reference_edge_vectors(L, tablename, cellname)
     if tablename == "reference_facet_normals":
-        return reference_facet_normals(L, tablename, cellname, type)
+        return reference_facet_normals(L, tablename, cellname)
     if tablename == "facet_orientation":
-        return facet_orientation(L, tablename, cellname, type)
+        return facet_orientation(L, tablename, cellname)
     raise ValueError(f"Unknown geometry table name: {tablename}")
 
 

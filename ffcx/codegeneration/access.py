@@ -11,6 +11,7 @@ import warnings
 import ufl
 import basix.ufl
 from ffcx.element_interface import convert_element
+import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -18,12 +19,11 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendAccess(object):
     """FFCx specific cpp formatter class."""
 
-    def __init__(self, ir, language, symbols, options):
+    def __init__(self, ir, symbols, options):
 
         # Store ir and options
         self.entitytype = ir.entitytype
         self.integral_type = ir.integral_type
-        self.language = language
         self.symbols = symbols
         self.options = options
 
@@ -178,10 +178,9 @@ class FFCXBackendAccess(object):
         return self.symbols.J_component(mt)
 
     def reference_cell_volume(self, e, mt, tabledata, access):
-        L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            return L.Symbol(f"{cellname}_reference_cell_volume")
+            return L.Symbol(f"{cellname}_reference_cell_volume", dtype=L.DataType.REAL)
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
@@ -189,7 +188,7 @@ class FFCXBackendAccess(object):
         L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            return L.Symbol(f"{cellname}_reference_facet_volume")
+            return L.Symbol(f"{cellname}_reference_facet_volume", dtype=L.DataType.REAL)
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
@@ -197,7 +196,7 @@ class FFCXBackendAccess(object):
         L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_normals")
+            table = L.Symbol(f"{cellname}_reference_facet_normals", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]]
         else:
@@ -207,7 +206,7 @@ class FFCXBackendAccess(object):
         L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_jacobian")
+            table = L.Symbol(f"{cellname}_reference_facet_jacobian", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":
@@ -219,7 +218,7 @@ class FFCXBackendAccess(object):
         L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors")
+            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError("The reference cell edge vectors doesn't make sense for interval cell.")
@@ -230,7 +229,7 @@ class FFCXBackendAccess(object):
         L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors")
+            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
@@ -246,7 +245,7 @@ class FFCXBackendAccess(object):
         if cellname not in ("interval", "triangle", "tetrahedron"):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-        table = L.Symbol(f"{cellname}_facet_orientations")
+        table = L.Symbol(f"{cellname}_facet_orientations", dtype=L.DataType.INT)
         facet = self.symbols.entity("facet", mt.restriction)
         return table[facet]
 

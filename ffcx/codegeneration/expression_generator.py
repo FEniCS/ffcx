@@ -12,7 +12,8 @@ from typing import Any, DefaultDict, Dict, Set
 import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.cnodes import CNode
+import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
 from ffcx.naming import scalar_to_value_type
 
@@ -27,7 +28,7 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scope: Dict[Any, CNode] = {}
+        self.scope: Dict[Any, LNode] = {}
         self._ufl_names: Set[Any] = set()
         self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
         self.shared_symbols: Dict[Any, Any] = {}
@@ -58,10 +59,8 @@ class ExpressionGenerator:
 
         return L.StatementList(parts)
 
-    def generate_geometry_tables(self, float_type: str):
+    def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
-        L = self.backend.language
-
         # Currently we only support circumradius
         ufl_geometry = {
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
@@ -79,24 +78,20 @@ class ExpressionGenerator:
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c, float_type))
+                parts.append(geometry.write_table(L, ufl_geometry[i], c))
 
         return parts
 
     def generate_element_tables(self, float_type: str):
         """Generate tables of FE basis evaluated at specified points."""
-        L = self.backend.language
         parts = []
 
         tables = self.ir.unique_tables
-
-        padlen = self.ir.options["padlen"]
         table_names = sorted(tables)
 
         for name in table_names:
             table = tables[name]
-            decl = L.ArrayDecl(
-                f"static const {float_type}", name, table.shape, table, padlen=padlen)
+            decl = L.ArrayDecl(name, table)
             parts += [decl]
 
         # Add leading comment if there are any tables
