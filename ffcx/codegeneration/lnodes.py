@@ -1,78 +1,122 @@
-# Copyright (C) 2013-2017 Martin Sandve Alnæs
+# Copyright (C) 2013-2023 Martin Sandve Alnæs, Chris Richardson
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import logging
 import numbers
-
+import ufl
 import numpy as np
+from enum import Enum
 
-from ffcx.codegeneration.C.format_lines import Indented, format_indented_lines
-from ffcx.codegeneration.C.format_value import format_float, format_int, format_value
-from ffcx.codegeneration.C.precedence import PRECEDENCE
 
-logger = logging.getLogger("ffcx")
-"""CNode TODO:
-- Array copy statement
-- Extend ArrayDecl and ArrayAccess with support for
-  flattened but conceptually multidimensional arrays,
-  maybe even with padding (FlattenedArray possibly covers what we need)
-- Function declaration
-- TypeDef
-- Type
-- TemplateArgumentList
-- Class declaration
-- Class definition
+class PRECEDENCE:
+    """An enum-like class for operator precedence levels."""
+
+    HIGHEST = 0
+    LITERAL = 0
+    SYMBOL = 0
+    SUBSCRIPT = 2
+
+    NOT = 3
+    NEG = 3
+
+    MUL = 4
+    DIV = 4
+
+    ADD = 5
+    SUB = 5
+
+    LT = 7
+    LE = 7
+    GT = 7
+    GE = 7
+    EQ = 8
+    NE = 8
+    AND = 11
+    OR = 12
+    CONDITIONAL = 13
+    ASSIGN = 13
+    LOWEST = 15
+
+
+"""LNodes is intended as a minimal generic language description.
+Formatting is done later, depending on the target language.
+
+Supported:
+ Floating point (and complex) and integer variables and multidimensional arrays
+ Range loops
+ Simple arithmetic, +-*/
+ Math operations
+ Logic conditions
+ Comments
+Not supported:
+ Pointers
+ Function Calls
+ Flow control (if, switch, while)
+ Booleans
+ Strings
 """
 
-# Some helper functions
 
-
-def is_zero_cexpr(cexpr):
-    return (isinstance(cexpr, LiteralFloat) and cexpr.value == 0.0) or (
-        isinstance(cexpr, LiteralInt) and cexpr.value == 0
+def is_zero_lexpr(lexpr):
+    return (isinstance(lexpr, LiteralFloat) and lexpr.value == 0.0) or (
+        isinstance(lexpr, LiteralInt) and lexpr.value == 0
     )
 
 
-def is_one_cexpr(cexpr):
-    return (isinstance(cexpr, LiteralFloat) and cexpr.value == 1.0) or (
-        isinstance(cexpr, LiteralInt) and cexpr.value == 1
+def is_one_lexpr(lexpr):
+    return (isinstance(lexpr, LiteralFloat) and lexpr.value == 1.0) or (
+        isinstance(lexpr, LiteralInt) and lexpr.value == 1
     )
 
 
-def is_negative_one_cexpr(cexpr):
-    return (isinstance(cexpr, LiteralFloat) and cexpr.value == -1.0) or (
-        isinstance(cexpr, LiteralInt) and cexpr.value == -1
+def is_negative_one_lexpr(lexpr):
+    return (isinstance(lexpr, LiteralFloat) and lexpr.value == -1.0) or (
+        isinstance(lexpr, LiteralInt) and lexpr.value == -1
     )
 
 
 def float_product(factors):
     """Build product of float factors, simplifying ones and zeros and returning 1.0 if empty sequence."""
-    factors = [f for f in factors if not is_one_cexpr(f)]
+    factors = [f for f in factors if not is_one_lexpr(f)]
     if len(factors) == 0:
         return LiteralFloat(1.0)
     elif len(factors) == 1:
         return factors[0]
     else:
         for f in factors:
-            if is_zero_cexpr(f):
+            if is_zero_lexpr(f):
                 return f
         return Product(factors)
 
 
-# CNode core
+class DataType(Enum):
+    """Representation of data types for variables in LNodes.
+
+    These can be REAL (same type as geometry),
+    SCALAR (same type as tensor), or INT (for entity indices etc.)
+    """
+
+    REAL = 0
+    SCALAR = 1
+    INT = 2
 
 
-class CNode(object):
-    """Base class for all C AST nodes."""
+def merge_dtypes(dtype0, dtype1):
+    # Promote dtype to SCALAR or REAL if either argument matches
+    if DataType.SCALAR in (dtype0, dtype1):
+        return DataType.SCALAR
+    elif DataType.REAL in (dtype0, dtype1):
+        return DataType.REAL
+    elif (dtype0 == DataType.INT and dtype1 == DataType.INT):
+        return DataType.INT
+    else:
+        raise ValueError(f"Can't get dtype for binary operation with {dtype0, dtype1}")
 
-    __slots__ = ()
 
-    def __str__(self):
-        name = self.__class__.__name__
-        raise NotImplementedError("Missing implementation of __str__ in " + name)
+class LNode(object):
+    """Base class for all AST nodes."""
 
     def __eq__(self, other):
         name = self.__class__.__name__
@@ -82,28 +126,11 @@ class CNode(object):
         return not self.__eq__(other)
 
 
-# CExpr base classes
-
-
-class CExpr(CNode):
-    """Base class for all C expressions.
+class LExpr(LNode):
+    """Base class for all expressions.
 
     All subtypes should define a 'precedence' class attribute.
-
     """
-
-    __slots__ = ()
-
-    def ce_format(self, precision=None):
-        raise NotImplementedError("Missing implementation of ce_format() in CExpr.")
-
-    def __str__(self):
-        try:
-            s = self.ce_format()
-        except Exception:
-            raise
-
-        return s
 
     def __getitem__(self, indices):
         return ArrayAccess(self, indices)
@@ -116,346 +143,187 @@ class CExpr(CNode):
         return Neg(self)
 
     def __add__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
+        other = as_lexpr(other)
+        if is_zero_lexpr(self):
             return other
-        if is_zero_cexpr(other):
+        if is_zero_lexpr(other):
             return self
         if isinstance(other, Neg):
             return Sub(self, other.arg)
         return Add(self, other)
 
     def __radd__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
+        other = as_lexpr(other)
+        if is_zero_lexpr(self):
             return other
-        if is_zero_cexpr(other):
+        if is_zero_lexpr(other):
             return self
         if isinstance(self, Neg):
             return Sub(other, self.arg)
         return Add(other, self)
 
     def __sub__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
+        other = as_lexpr(other)
+        if is_zero_lexpr(self):
             return -other
-        if is_zero_cexpr(other):
+        if is_zero_lexpr(other):
             return self
         if isinstance(other, Neg):
             return Add(self, other.arg)
+        if isinstance(self, LiteralInt) and isinstance(other, LiteralInt):
+            return LiteralInt(self.value - other.value)
         return Sub(self, other)
 
     def __rsub__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
+        other = as_lexpr(other)
+        if is_zero_lexpr(self):
             return other
-        if is_zero_cexpr(other):
+        if is_zero_lexpr(other):
             return -self
         if isinstance(self, Neg):
             return Add(other, self.arg)
         return Sub(other, self)
 
     def __mul__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
+        other = as_lexpr(other)
+        if is_zero_lexpr(self):
             return self
-        if is_zero_cexpr(other):
+        if is_zero_lexpr(other):
             return other
-        if is_one_cexpr(self):
+        if is_one_lexpr(self):
             return other
-        if is_one_cexpr(other):
+        if is_one_lexpr(other):
             return self
-        if is_negative_one_cexpr(other):
+        if is_negative_one_lexpr(other):
             return Neg(self)
-        if is_negative_one_cexpr(self):
+        if is_negative_one_lexpr(self):
             return Neg(other)
+        if isinstance(self, LiteralInt) and isinstance(other, LiteralInt):
+            return LiteralInt(self.value * other.value)
         return Mul(self, other)
 
     def __rmul__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
+        other = as_lexpr(other)
+        if is_zero_lexpr(self):
             return self
-        if is_zero_cexpr(other):
+        if is_zero_lexpr(other):
             return other
-        if is_one_cexpr(self):
+        if is_one_lexpr(self):
             return other
-        if is_one_cexpr(other):
+        if is_one_lexpr(other):
             return self
-        if is_negative_one_cexpr(other):
+        if is_negative_one_lexpr(other):
             return Neg(self)
-        if is_negative_one_cexpr(self):
+        if is_negative_one_lexpr(self):
             return Neg(other)
         return Mul(other, self)
 
     def __div__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(other):
+        other = as_lexpr(other)
+        if is_zero_lexpr(other):
             raise ValueError("Division by zero!")
-        if is_zero_cexpr(self):
+        if is_zero_lexpr(self):
             return self
         return Div(self, other)
 
     def __rdiv__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
+        other = as_lexpr(other)
+        if is_zero_lexpr(self):
             raise ValueError("Division by zero!")
-        if is_zero_cexpr(other):
+        if is_zero_lexpr(other):
             return other
         return Div(other, self)
 
-    # TODO: Error check types? Can't do that exactly as symbols here have no type.
+    # TODO: Error check types?
     __truediv__ = __div__
     __rtruediv__ = __rdiv__
     __floordiv__ = __div__
     __rfloordiv__ = __rdiv__
 
-    def __mod__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(other):
-            raise ValueError("Division by zero!")
-        if is_zero_cexpr(self):
-            return self
-        return Mod(self, other)
 
-    def __rmod__(self, other):
-        other = as_cexpr(other)
-        if is_zero_cexpr(self):
-            raise ValueError("Division by zero!")
-        if is_zero_cexpr(other):
-            return other
-        return Mod(other, self)
+class LExprOperator(LExpr):
+    """Base class for all expression operators."""
 
-
-class CExprOperator(CExpr):
-    """Base class for all C expression operator."""
-
-    __slots__ = ()
     sideeffect = False
 
 
-class CExprTerminal(CExpr):
-    """Base class for all C expression terminals."""
+class LExprTerminal(LExpr):
+    """Base class for all  expression terminals."""
 
-    __slots__ = ()
     sideeffect = False
 
 
-# CExprTerminal types
+# LExprTerminal types
 
 
-class CExprLiteral(CExprTerminal):
-    """A float or int literal value."""
-
-    __slots__ = ()
-    precedence = PRECEDENCE.LITERAL
-
-
-class Null(CExprLiteral):
-    """A null pointer literal."""
-
-    __slots__ = ()
-    precedence = PRECEDENCE.LITERAL
-
-    def ce_format(self, precision=None):
-        return "NULL"
-
-    def __eq__(self, other):
-        return isinstance(other, Null)
-
-
-class LiteralFloat(CExprLiteral):
+class LiteralFloat(LExprTerminal):
     """A floating point literal value."""
 
-    __slots__ = ("value",)
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
-        assert isinstance(value, (float, complex, int, np.number))
+        assert isinstance(value, (float, complex))
         self.value = value
-
-    def ce_format(self, precision=None):
-        return format_float(self.value, precision)
+        if isinstance(value, complex):
+            self.dtype = DataType.SCALAR
+        else:
+            self.dtype = DataType.REAL
 
     def __eq__(self, other):
         return isinstance(other, LiteralFloat) and self.value == other.value
 
-    def __bool__(self):
-        return bool(self.value)
-
-    __nonzero__ = __bool__
-
     def __float__(self):
         return float(self.value)
 
-    def flops(self):
-        return 0
 
-
-class LiteralInt(CExprLiteral):
+class LiteralInt(LExprTerminal):
     """An integer literal value."""
 
-    __slots__ = ("value",)
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
         assert isinstance(value, (int, np.number))
         self.value = value
-
-    def ce_format(self, precision=None):
-        return str(self.value)
-
-    def flops(self):
-        return 0
+        self.dtype = DataType.INT
 
     def __eq__(self, other):
         return isinstance(other, LiteralInt) and self.value == other.value
 
-    def __bool__(self):
-        return bool(self.value)
-
-    __nonzero__ = __bool__
-
-    def __int__(self):
-        return int(self.value)
-
-    def __float__(self):
-        return float(self.value)
-
     def __hash__(self):
-        return hash(self.ce_format())
+        return hash(self.value)
 
 
-class LiteralBool(CExprLiteral):
-    """A boolean literal value."""
-
-    __slots__ = ("value",)
-    precedence = PRECEDENCE.LITERAL
-
-    def __init__(self, value):
-        assert isinstance(value, (bool,))
-        self.value = value
-
-    def ce_format(self, precision=None):
-        return "true" if self.value else "false"
-
-    def __eq__(self, other):
-        return isinstance(other, LiteralBool) and self.value == other.value
-
-    def __bool__(self):
-        return bool(self.value)
-
-    __nonzero__ = __bool__
-
-
-class LiteralString(CExprLiteral):
-    """A boolean literal value."""
-
-    __slots__ = ("value",)
-    precedence = PRECEDENCE.LITERAL
-
-    def __init__(self, value):
-        assert isinstance(value, (str,))
-        assert '"' not in value
-        self.value = value
-
-    def ce_format(self, precision=None):
-        return '"%s"' % (self.value,)
-
-    def __eq__(self, other):
-        return isinstance(other, LiteralString) and self.value == other.value
-
-
-class Symbol(CExprTerminal):
+class Symbol(LExprTerminal):
     """A named symbol."""
 
-    __slots__ = ("name",)
     precedence = PRECEDENCE.SYMBOL
 
-    def __init__(self, name):
+    def __init__(self, name, dtype=None):
         assert isinstance(name, str)
         self.name = name
-
-    def ce_format(self, precision=None):
-        return self.name
-
-    def flops(self):
-        return 0
+        self.dtype = dtype
 
     def __eq__(self, other):
         return isinstance(other, Symbol) and self.name == other.name
 
     def __hash__(self):
-        return hash(self.ce_format())
+        return hash(self.name)
 
 
-# CExprOperator base classes
-
-
-class UnaryOp(CExprOperator):
+class PrefixUnaryOp(LExprOperator):
     """Base class for unary operators."""
 
-    __slots__ = ("arg",)
-
     def __init__(self, arg):
-        self.arg = as_cexpr(arg)
+        self.arg = as_lexpr(arg)
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.arg == other.arg
 
-    def flops(self):
-        raise NotImplementedError()
 
-
-class PrefixUnaryOp(UnaryOp):
-    """Base class for prefix unary operators."""
-
-    __slots__ = ()
-
-    def ce_format(self, precision=None):
-        arg = self.arg.ce_format(precision)
-        if self.arg.precedence >= self.precedence:
-            arg = "(" + arg + ")"
-        return self.op + arg
-
-    def __eq__(self, other):
-        return isinstance(other, type(self))
-
-
-class PostfixUnaryOp(UnaryOp):
-    """Base class for postfix unary operators."""
-
-    __slots__ = ()
-
-    def ce_format(self, precision=None):
-        arg = self.arg.ce_format(precision)
-        if self.arg.precedence >= self.precedence:
-            arg = "(" + arg + ")"
-        return arg + self.op
-
-    def __eq__(self, other):
-        return isinstance(other, type(self))
-
-
-class BinOp(CExprOperator):
-    __slots__ = ("lhs", "rhs")
-
+class BinOp(LExprOperator):
     def __init__(self, lhs, rhs):
-        self.lhs = as_cexpr(lhs)
-        self.rhs = as_cexpr(rhs)
-
-    def ce_format(self, precision=None):
-        # Format children
-        lhs = self.lhs.ce_format(precision)
-        rhs = self.rhs.ce_format(precision)
-
-        # Apply parentheses
-        if self.lhs.precedence >= self.precedence:
-            lhs = "(" + lhs + ")"
-        if self.rhs.precedence >= self.precedence:
-            rhs = "(" + rhs + ")"
-
-        # Return combined string
-        return lhs + (" " + self.op + " ") + rhs
+        self.lhs = as_lexpr(lhs)
+        self.rhs = as_lexpr(rhs)
 
     def __eq__(self, other):
         return (
@@ -465,35 +333,21 @@ class BinOp(CExprOperator):
         )
 
     def __hash__(self):
-        return hash(self.ce_format())
-
-    def flops(self):
-        return 1 + self.lhs.flops() + self.rhs.flops()
+        return hash(self.lhs) + hash(self.rhs)
 
 
-class NaryOp(CExprOperator):
+class ArithmeticBinOp(BinOp):
+    def __init__(self, lhs, rhs):
+        self.lhs = as_lexpr(lhs)
+        self.rhs = as_lexpr(rhs)
+        self.dtype = merge_dtypes(self.lhs.dtype, self.rhs.dtype)
+
+
+class NaryOp(LExprOperator):
     """Base class for special n-ary operators."""
 
-    __slots__ = ("args",)
-
     def __init__(self, args):
-        self.args = [as_cexpr(arg) for arg in args]
-
-    def ce_format(self, precision=None):
-        # Format children
-        args = [arg.ce_format(precision) for arg in self.args]
-
-        # Apply parentheses
-        for i in range(len(args)):
-            if self.args[i].precedence >= self.precedence:
-                args[i] = "(" + args[i] + ")"
-
-        # Return combined string
-        op = " " + self.op + " "
-        s = args[0]
-        for i in range(1, len(args)):
-            s += op + args[i]
-        return s
+        self.args = [as_lexpr(arg) for arg in args]
 
     def __eq__(self, other):
         return (
@@ -502,175 +356,81 @@ class NaryOp(CExprOperator):
             and all(a == b for a, b in zip(self.args, other.args))
         )
 
-    def flops(self):
-        flops = len(self.args) - 1
-        for arg in self.args:
-            flops += arg.flops()
-        return flops
-
-
-# CExpr unary operators
-
-
-class AddressOf(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.ADDRESSOF
-    op = "&"
-
-
-class SizeOf(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.SIZEOF
-    op = "sizeof"
-
 
 class Neg(PrefixUnaryOp):
-    __slots__ = ()
     precedence = PRECEDENCE.NEG
     op = "-"
 
-
-class Pos(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.POS
-    op = "+"
+    def __init__(self, arg):
+        self.arg = as_lexpr(arg)
+        self.dtype = self.arg.dtype
 
 
 class Not(PrefixUnaryOp):
-    __slots__ = ()
     precedence = PRECEDENCE.NOT
     op = "!"
 
 
-class BitNot(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BIT_NOT
-    op = "~"
+# Binary operators
+# Arithmetic operators preserve the dtype of their operands
+# The other operations (logical) do not need a dtype
 
-
-class PreIncrement(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.PRE_INC
-    sideeffect = True
-    op = "++"
-
-
-class PreDecrement(PrefixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.PRE_DEC
-    sideeffect = True
-    op = "--"
-
-
-class PostIncrement(PostfixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.POST_INC
-    sideeffect = True
-    op = "++"
-
-
-class PostDecrement(PostfixUnaryOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.POST_DEC
-    sideeffect = True
-    op = "--"
-
-
-# CExpr binary operators
-
-
-class Add(BinOp):
-    __slots__ = ()
+class Add(ArithmeticBinOp):
     precedence = PRECEDENCE.ADD
     op = "+"
 
 
-class Sub(BinOp):
-    __slots__ = ()
+class Sub(ArithmeticBinOp):
     precedence = PRECEDENCE.SUB
     op = "-"
 
 
-class Mul(BinOp):
-    __slots__ = ()
+class Mul(ArithmeticBinOp):
     precedence = PRECEDENCE.MUL
     op = "*"
 
 
-class Div(BinOp):
-    __slots__ = ()
+class Div(ArithmeticBinOp):
     precedence = PRECEDENCE.DIV
     op = "/"
 
 
-class Mod(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.MOD
-    op = "%"
-
-
 class EQ(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.EQ
     op = "=="
 
 
 class NE(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.NE
     op = "!="
 
 
 class LT(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.LT
     op = "<"
 
 
 class GT(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.GT
     op = ">"
 
 
 class LE(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.LE
     op = "<="
 
 
 class GE(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.GE
     op = ">="
 
 
-class BitwiseAnd(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BITAND
-    op = "&"
-
-
-class BitShiftR(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BITSHIFT
-    op = ">>"
-
-
-class BitShiftL(BinOp):
-    __slots__ = ()
-    precedence = PRECEDENCE.BITSHIFT
-    op = "<<"
-
-
 class And(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.AND
     op = "&&"
 
 
 class Or(BinOp):
-    __slots__ = ()
     precedence = PRECEDENCE.OR
     op = "||"
 
@@ -678,7 +438,6 @@ class Or(BinOp):
 class Sum(NaryOp):
     """Sum of any number of operands."""
 
-    __slots__ = ()
     precedence = PRECEDENCE.ADD
     op = "+"
 
@@ -686,94 +445,86 @@ class Sum(NaryOp):
 class Product(NaryOp):
     """Product of any number of operands."""
 
-    __slots__ = ()
     precedence = PRECEDENCE.MUL
     op = "*"
+
+
+class MathFunction(LExprOperator):
+    """A Math Function, with any arguments."""
+
+    precedence = PRECEDENCE.HIGHEST
+
+    def __init__(self, func, args):
+        self.function = func
+        self.args = [as_lexpr(arg) for arg in args]
+        self.dtype = self.args[0].dtype
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, type(self))
+            and self.function == other.function
+            and len(self.args) == len(other.args)
+            and all(a == b for a, b in zip(self.args, other.args))
+        )
 
 
 class AssignOp(BinOp):
     """Base class for assignment operators."""
 
-    __slots__ = ()
     precedence = PRECEDENCE.ASSIGN
     sideeffect = True
 
     def __init__(self, lhs, rhs):
-        BinOp.__init__(self, as_cexpr_or_string_symbol(lhs), rhs)
+        assert isinstance(lhs, LNode)
+        BinOp.__init__(self, lhs, rhs)
 
 
 class Assign(AssignOp):
-    __slots__ = ()
     op = "="
-
-    def flops(self):
-        return super().flops() - 1
 
 
 class AssignAdd(AssignOp):
-    __slots__ = ()
     op = "+="
 
 
 class AssignSub(AssignOp):
-    __slots__ = ()
     op = "-="
 
 
 class AssignMul(AssignOp):
-    __slots__ = ()
     op = "*="
 
 
 class AssignDiv(AssignOp):
-    __slots__ = ()
     op = "/="
-
-
-# CExpr operators
 
 
 class FlattenedArray(object):
     """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
 
-    __slots__ = ("array", "strides", "offset", "dims")
-
-    def __init__(self, array, dummy=None, dims=None, strides=None, offset=None):
-        assert dummy is None, "Please use keyword arguments for strides or dims."
-
-        # Typecheck array argument
-        if isinstance(array, ArrayDecl):
-            self.array = array.symbol
-        elif isinstance(array, Symbol):
-            self.array = array
-        else:
-            assert isinstance(array, str)
-            self.array = Symbol(array)
+    def __init__(self, array, dims=None):
+        assert dims is not None
+        assert isinstance(array, Symbol)
+        self.array = array
 
         # Allow expressions or literals as strides or dims and offset
-        if strides is None:
-            assert dims is not None, "Please provide either strides or dims."
-            assert isinstance(dims, (list, tuple))
-            dims = tuple(as_cexpr(i) for i in dims)
-            self.dims = dims
-            n = len(dims)
-            literal_one = LiteralInt(1)
-            strides = [literal_one] * n
-            for i in range(n - 2, -1, -1):
-                s = strides[i + 1]
-                d = dims[i + 1]
-                if d == literal_one:
-                    strides[i] = s
-                elif s == literal_one:
-                    strides[i] = d
-                else:
-                    strides[i] = d * s
-        else:
-            self.dims = None
-            assert isinstance(strides, (list, tuple))
-            strides = tuple(as_cexpr(i) for i in strides)
+        assert isinstance(dims, (list, tuple))
+        dims = tuple(as_lexpr(i) for i in dims)
+        self.dims = dims
+        n = len(dims)
+        literal_one = LiteralInt(1)
+        strides = [literal_one] * n
+        for i in range(n - 2, -1, -1):
+            s = strides[i + 1]
+            d = dims[i + 1]
+            if d == literal_one:
+                strides[i] = s
+            elif s == literal_one:
+                strides[i] = d
+            else:
+                strides[i] = d * s
+
         self.strides = strides
-        self.offset = None if offset is None else as_cexpr(offset)
 
     def __getitem__(self, indices):
         if not isinstance(indices, (list, tuple)):
@@ -788,10 +539,8 @@ class FlattenedArray(object):
             i, s = (indices[0], self.strides[0])
             literal_one = LiteralInt(1)
             flat = i if s == literal_one else s * i
-            if self.offset is not None:
-                flat = self.offset + flat
             for i, s in zip(indices[1:n], self.strides[1:n]):
-                flat = flat + (i if s == literal_one else s * i)
+                flat = flat + s * i
         # Delay applying ArrayAccess until we have all indices
         if n == len(self.strides):
             return ArrayAccess(self.array, flat)
@@ -799,23 +548,24 @@ class FlattenedArray(object):
             return FlattenedArray(self.array, strides=self.strides[n:], offset=flat)
 
 
-class ArrayAccess(CExprOperator):
-    __slots__ = ("array", "indices")
+class ArrayAccess(LExprOperator):
     precedence = PRECEDENCE.SUBSCRIPT
 
     def __init__(self, array, indices):
         # Typecheck array argument
         if isinstance(array, Symbol):
             self.array = array
+            self.dtype = array.dtype
         elif isinstance(array, ArrayDecl):
             self.array = array.symbol
+            self.dtype = array.symbol.dtype
         else:
             raise ValueError("Unexpected array type %s." % (type(array).__name__,))
 
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
             indices = (indices,)
-        self.indices = tuple(as_cexpr_or_string_symbol(i) for i in indices)
+        self.indices = tuple(as_lexpr(i) for i in indices)
 
         # Early error checking for negative array dimensions
         if any(isinstance(i, int) and i < 0 for i in self.indices):
@@ -840,12 +590,6 @@ class ArrayAccess(CExprOperator):
             indices = (indices,)
         return ArrayAccess(self.array, self.indices + indices)
 
-    def ce_format(self, precision=None):
-        s = self.array.ce_format(precision)
-        for index in self.indices:
-            s += "[" + index.ce_format(precision) + "]"
-        return s
-
     def __eq__(self, other):
         return (
             isinstance(other, type(self))
@@ -854,37 +598,17 @@ class ArrayAccess(CExprOperator):
         )
 
     def __hash__(self):
-        return hash(self.ce_format())
-
-    def flops(self):
-        return 0
+        return hash(self.array)
 
 
-class Conditional(CExprOperator):
-    __slots__ = ("condition", "true", "false")
+class Conditional(LExprOperator):
     precedence = PRECEDENCE.CONDITIONAL
 
     def __init__(self, condition, true, false):
-        self.condition = as_cexpr(condition)
-        self.true = as_cexpr(true)
-        self.false = as_cexpr(false)
-
-    def ce_format(self, precision=None):
-        # Format children
-        c = self.condition.ce_format(precision)
-        t = self.true.ce_format(precision)
-        f = self.false.ce_format(precision)
-
-        # Apply parentheses
-        if self.condition.precedence >= self.precedence:
-            c = "(" + c + ")"
-        if self.true.precedence >= self.precedence:
-            t = "(" + t + ")"
-        if self.false.precedence >= self.precedence:
-            f = "(" + f + ")"
-
-        # Return combined string
-        return c + " ? " + t + " : " + f
+        self.condition = as_lexpr(condition)
+        self.true = as_lexpr(true)
+        self.false = as_lexpr(false)
+        self.dtype = merge_dtypes(self.true.dtype, self.false.dtype)
 
     def __eq__(self, other):
         return (
@@ -894,278 +618,65 @@ class Conditional(CExprOperator):
             and self.false == other.false
         )
 
-    def flops(self):
-        raise NotImplementedError("Flop count is not implemented for conditionals")
 
+def as_lexpr(node):
+    """Typechecks and wraps an object as a valid LExpr.
 
-class Call(CExprOperator):
-    __slots__ = ("function", "arguments")
-    precedence = PRECEDENCE.CALL
-    sideeffect = True
-
-    def __init__(self, function, arguments=None):
-        self.function = as_cexpr_or_string_symbol(function)
-
-        # Accept None, single, or multiple arguments; literals or CExprs
-        if arguments is None:
-            arguments = ()
-        elif not isinstance(arguments, (tuple, list)):
-            arguments = (arguments,)
-        self.arguments = [as_cexpr(arg) for arg in arguments]
-
-    def ce_format(self, precision=None):
-        args = ", ".join(arg.ce_format(precision) for arg in self.arguments)
-        return self.function.ce_format(precision) + "(" + args + ")"
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, type(self))
-            and self.function == other.function
-            and self.arguments == other.arguments
-        )
-
-    def flops(self):
-        return 1
-
-
-def Sqrt(x):
-    return Call("sqrt", x)
-
-
-# Conversion function to expression nodes
-
-
-def _is_zero_valued(values):
-    if isinstance(values, (numbers.Integral, LiteralInt)):
-        return int(values) == 0
-    elif isinstance(values, (numbers.Number, LiteralFloat)):
-        return float(values) == 0.0
-    else:
-        return np.count_nonzero(values) == 0
-
-
-def as_cexpr(node):
-    """Typechecks and wraps an object as a valid CExpr.
-
-    Accepts CExpr nodes, treats int and float as literals, and treats a
-    string as a symbol.
+    Accepts LExpr nodes, treats int and float as literals.
 
     """
-    if isinstance(node, CExpr):
+    if isinstance(node, LExpr):
         return node
-    elif isinstance(node, bool):
-        return LiteralBool(node)
     elif isinstance(node, numbers.Integral):
         return LiteralInt(node)
     elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
-    elif isinstance(node, str):
-        raise RuntimeError("Got string for CExpr, this is ambiguous: %s" % (node,))
     else:
-        raise RuntimeError("Unexpected CExpr type %s:\n%s" % (type(node), str(node)))
+        raise RuntimeError("Unexpected LExpr type %s:\n%s" % (type(node), str(node)))
 
 
-def as_cexpr_or_string_symbol(node):
-    if isinstance(node, str):
-        return Symbol(node)
-    return as_cexpr(node)
-
-
-def as_cexpr_or_literal(node):
-    if isinstance(node, str):
-        return LiteralString(node)
-    return as_cexpr(node)
-
-
-def as_symbol(symbol):
-    if isinstance(symbol, str):
-        symbol = Symbol(symbol)
-    assert isinstance(symbol, Symbol)
-    return symbol
-
-
-def flattened_indices(indices, shape):
-    """Return a flattened indexing expression.
-
-    Given a tuple of indices and a shape tuple, return
-    a CNode expression for flattened indexing into multidimensional
-    array.
-
-    Indices and shape entries can be int values, str symbol names, or
-    CNode expressions.
-
-    """
-    n = len(shape)
-    if n == 0:
-        # Scalar
-        return as_cexpr(0)
-    elif n == 1:
-        # Simple vector
-        return as_cexpr(indices[0])
-    else:
-        # 2d or higher
-        strides = [None] * (n - 2) + [shape[-1], 1]
-        for i in range(n - 3, -1, -1):
-            strides[i] = Mul(shape[i + 1], strides[i + 1])
-        result = indices[-1]
-        for i in range(n - 2, -1, -1):
-            result = Add(Mul(strides[i], indices[i]), result)
-        return result
-
-
-# Base class for all statements
-
-
-class CStatement(CNode):
-    """Base class for all C statements.
-
-    Subtypes do _not_ define a 'precedence' class attribute.
-
-    """
-
-    __slots__ = ()
-
-    # True if statement contains its own scope, false by default to be
-    # on the safe side
-    is_scoped = False
-
-    def cs_format(self, precision=None):
-        """Return S: string | list(S) | Indented(S)."""
-        raise NotImplementedError(
-            "Missing implementation of cs_format() in CStatement."
-        )
-
-    def __str__(self):
-        try:
-            s = self.cs_format()
-        except Exception:
-            logger.error("Error in CStatement string formatting.")
-            raise
-        return format_indented_lines(s)
-
-    def flops(self):
-        raise NotImplementedError()
-
-
-# Statements
-
-
-class VerbatimStatement(CStatement):
-    """Wraps a source code string to be pasted verbatim into the source code."""
-
-    __slots__ = ("codestring",)
-    is_scoped = False
-
-    def __init__(self, codestring):
-        assert isinstance(codestring, str)
-        self.codestring = codestring
-
-    def cs_format(self, precision=None):
-        return self.codestring
-
-    def __eq__(self, other):
-        return isinstance(other, type(self)) and self.codestring == other.codestring
-
-
-class Statement(CStatement):
+class Statement(LNode):
     """Make an expression into a statement."""
 
-    __slots__ = ("expr",)
     is_scoped = False
 
     def __init__(self, expr):
-        self.expr = as_cexpr(expr)
-
-    def cs_format(self, precision=None):
-        return self.expr.ce_format(precision) + ";"
+        self.expr = as_lexpr(expr)
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.expr == other.expr
 
-    def flops(self):
-        # print(self.expr.rhs.flops())
-        return self.expr.flops()
 
-
-class StatementList(CStatement):
+class StatementList(LNode):
     """A simple sequence of statements. No new scopes are introduced."""
 
-    __slots__ = ("statements",)
-
     def __init__(self, statements):
-        self.statements = [as_cstatement(st) for st in statements]
+        self.statements = [as_statement(st) for st in statements]
 
     @property
     def is_scoped(self):
         return all(st.is_scoped for st in self.statements)
 
-    def cs_format(self, precision=None):
-        return [st.cs_format(precision) for st in self.statements]
-
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.statements == other.statements
 
-    def flops(self):
-        flops = 0
-        for statement in self.statements:
-            flops += statement.flops()
-        return flops
 
-
-# Simple statements
-
-
-class Return(CStatement):
-    __slots__ = ("value",)
-    is_scoped = True
-
-    def __init__(self, value=None):
-        if value is None:
-            self.value = None
-        else:
-            self.value = as_cexpr(value)
-
-    def cs_format(self, precision=None):
-        if self.value is None:
-            return "return;"
-        else:
-            return "return %s;" % (self.value.ce_format(precision),)
-
-    def __eq__(self, other):
-        return isinstance(other, type(self)) and self.value == other.value
-
-    def flops(self):
-        return 0
-
-
-class Comment(CStatement):
+class Comment(Statement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
 
-    __slots__ = ("comment",)
     is_scoped = True
 
     def __init__(self, comment):
         assert isinstance(comment, str)
         self.comment = comment
 
-    def cs_format(self, precision=None):
-        lines = self.comment.strip().split("\n")
-        return ["// " + line.strip() for line in lines]
-
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.comment == other.comment
-
-    def flops(self):
-        return 0
-
-
-def NoOp():
-    return Comment("Do nothing")
 
 
 def commented_code_list(code, comments):
     """Add comment to code list if the list is not empty."""
-    if isinstance(code, CNode):
+    if isinstance(code, LNode):
         code = [code]
     assert isinstance(code, list)
     if code:
@@ -1176,53 +687,23 @@ def commented_code_list(code, comments):
     return code
 
 
-class Pragma(CStatement):
-    """Pragma comments used for compiler-specific annotations."""
-
-    __slots__ = ("comment",)
-    is_scoped = True
-
-    def __init__(self, comment):
-        assert isinstance(comment, str)
-        self.comment = comment
-
-    def cs_format(self, precision=None):
-        assert "\n" not in self.comment
-        return "#pragma " + self.comment
-
-    def __eq__(self, other):
-        return isinstance(other, type(self)) and self.comment == other.comment
-
-    def flops(self):
-        return 0
-
-
 # Type and variable declarations
 
 
-class VariableDecl(CStatement):
+class VariableDecl(Statement):
     """Declare a variable, optionally define initial value."""
 
-    __slots__ = ("typename", "symbol", "value")
     is_scoped = False
 
-    def __init__(self, typename, symbol, value=None):
-        # No type system yet, just using strings
-        assert isinstance(typename, str)
-        self.typename = typename
+    def __init__(self, symbol, value=None):
 
-        # Allow Symbol or just a string
-        self.symbol = as_symbol(symbol)
+        assert isinstance(symbol, Symbol)
+        assert symbol.dtype is not None
+        self.symbol = symbol
 
         if value is not None:
-            value = as_cexpr(value)
+            value = as_lexpr(value)
         self.value = value
-
-    def cs_format(self, precision=None):
-        code = self.typename + " " + self.symbol.name
-        if self.value is not None:
-            code += " = " + self.value.ce_format(precision)
-        return code + ";"
 
     def __eq__(self, other):
         return (
@@ -1232,111 +713,8 @@ class VariableDecl(CStatement):
             and self.value == other.value
         )
 
-    def flops(self):
-        if self.value is not None:
-            return self.value.flops()
-        else:
-            return 0
 
-
-def leftover(size, padlen):
-    """Return minimum integer to add to size to make it divisible by padlen."""
-    return (padlen - (size % padlen)) % padlen
-
-
-def pad_dim(dim, padlen):
-    """Make dim divisible by padlen."""
-    return ((dim + padlen - 1) // padlen) * padlen
-
-
-def pad_innermost_dim(shape, padlen):
-    """Make the last dimension in shape divisible by padlen."""
-    if not shape:
-        return ()
-    shape = list(shape)
-    if padlen:
-        shape[-1] = pad_dim(shape[-1], padlen)
-    return tuple(shape)
-
-
-def build_1d_initializer_list(values, formatter, padlen=0, precision=None):
-    """Return a list containing a single line formatted like '{ 0.0, 1.0, 2.0 }'."""
-    if formatter == str:
-
-        def formatter(x, p):
-            return str(x)
-
-    tokens = ["{ "]
-    if np.prod(values.shape) > 0:
-        sep = ", "
-        fvalues = [formatter(v, precision) for v in values]
-        for v in fvalues[:-1]:
-            tokens.append(v)
-            tokens.append(sep)
-        tokens.append(fvalues[-1])
-        if padlen:
-            # Add padding
-            zero = formatter(values.dtype.type(0), precision)
-            for i in range(leftover(len(values), padlen)):
-                tokens.append(sep)
-                tokens.append(zero)
-    tokens += " }"
-    return "".join(tokens)
-
-
-def build_initializer_lists(values, sizes, level, formatter, padlen=0, precision=None):
-    """Return a list of lines with initializer lists for a multidimensional array.
-
-    Example output::
-
-        { { 0.0, 0.1 },
-          { 1.0, 1.1 } }
-
-    """
-    if formatter == str:
-
-        def formatter(x, p):
-            return str(x)
-
-    values = np.asarray(values)
-    assert np.prod(values.shape) == np.prod(sizes)
-    assert len(sizes) > 0
-    assert len(values.shape) > 0
-    assert len(sizes) == len(values.shape)
-    assert np.all(values.shape == sizes)
-
-    r = len(sizes)
-    assert r > 0
-    if r == 1:
-        return [
-            build_1d_initializer_list(
-                values, formatter, padlen=padlen, precision=precision
-            )
-        ]
-    else:
-        # Render all sublists
-        parts = []
-        for val in values:
-            sublist = build_initializer_lists(
-                val, sizes[1:], level + 1, formatter, padlen=padlen, precision=precision
-            )
-            parts.append(sublist)
-        # Add comma after last line in each part except the last one
-        for part in parts[:-1]:
-            part[-1] += ","
-        # Collect all lines in flat list
-        lines = []
-        for part in parts:
-            lines.extend(part)
-        # Enclose lines in '{ ' and ' }' and indent lines in between
-        lines[0] = "{ " + lines[0]
-        for i in range(1, len(lines)):
-            lines[i] = "  " + lines[i]
-        lines[-1] += " }"
-        return lines
-
-
-class ArrayDecl(CStatement):
+class ArrayDecl(Statement):
     """A declaration or definition of an array.
 
     Note that just setting values=0 is sufficient to initialize the
@@ -1347,116 +725,36 @@ class ArrayDecl(CStatement):
 
     """
 
-    __slots__ = ("typename", "symbol", "sizes", "padlen", "values")
     is_scoped = False
 
-    def __init__(self, typename, symbol, sizes=None, values=None, padlen=0):
-        assert isinstance(typename, str)
-        self.typename = typename
+    def __init__(self, symbol, sizes=None, values=None, const=False):
+        assert isinstance(symbol, Symbol)
+        self.symbol = symbol
+        assert symbol.dtype
 
-        if isinstance(symbol, FlattenedArray):
-            if sizes is None:
-                assert symbol.dims is not None
-                sizes = symbol.dims
-            elif symbol.dims is not None:
-                assert symbol.dims == sizes
-            self.symbol = symbol.array
-        else:
-            self.symbol = as_symbol(symbol)
-
+        if sizes is None:
+            assert values is not None
+            sizes = values.shape
         if isinstance(sizes, int):
             sizes = (sizes,)
         self.sizes = tuple(sizes)
 
-        # NB! No type checking, assuming nested lists of literal values. Not applying as_cexpr.
+        if values is None:
+            assert sizes is not None
+
+        # NB! No type checking, assuming nested lists of literal values. Not applying as_lexpr.
         if isinstance(values, (list, tuple)):
             self.values = np.asarray(values)
         else:
             self.values = values
 
-        self.padlen = padlen
-
-    def cs_format(self, precision=None):
-        if not all(self.sizes):
-            raise RuntimeError(
-                f"Detected an array {self.symbol} dimension of zero. This is not valid in C."
-            )
-
-        # Pad innermost array dimension
-        sizes = pad_innermost_dim(self.sizes, self.padlen)
-
-        # Add brackets
-        brackets = "".join("[%d]" % n for n in sizes)
-
-        # Join declaration
-        decl = self.typename + " " + self.symbol.name + brackets
-
-        if self.values is None:
-            # Undefined initial values
-            return decl + ";"
-        elif _is_zero_valued(self.values):
-            # Zero initial values
-            # (NB! C style zero initialization, not sure about other target languages)
-            nb = len(sizes)
-            lbr = "{" * nb
-            rbr = "}" * nb
-            return f"{decl} = {lbr} 0 {rbr};"
-        else:
-            # Construct initializer lists for arbitrary multidimensional array values
-            if self.values.dtype.kind == "f":
-                formatter = format_float
-            elif self.values.dtype.kind == "i":
-                formatter = format_int
-            elif self.values.dtype == np.bool_:
-
-                def format_bool(x, precision=None):
-                    return "true" if x is True else "false"
-
-                formatter = format_bool
-            else:
-                formatter = format_value
-            initializer_lists = build_initializer_lists(
-                self.values,
-                self.sizes,
-                0,
-                formatter,
-                padlen=self.padlen,
-                precision=precision,
-            )
-            if len(initializer_lists) == 1:
-                return decl + " = " + initializer_lists[0] + ";"
-            else:
-                initializer_lists[-1] += ";"  # Close statement on final line
-                return (decl + " =", Indented(initializer_lists))
+        self.const = const
 
     def __eq__(self, other):
         attributes = ("typename", "symbol", "sizes", "padlen", "values")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
-
-    def flops(self):
-        return 0
-
-
-# Scoped statements
-
-
-class Scope(CStatement):
-    __slots__ = ("body",)
-    is_scoped = True
-
-    def __init__(self, body):
-        self.body = as_cstatement(body)
-
-    def cs_format(self, precision=None):
-        return ("{", Indented(self.body.cs_format(precision)), "}")
-
-    def __eq__(self, other):
-        return isinstance(other, type(self)) and self.body == other.body
-
-    def flops(self):
-        return 0
 
 
 def is_simple_inner_loop(code):
@@ -1467,81 +765,116 @@ def is_simple_inner_loop(code):
     return False
 
 
-class ForRange(CStatement):
+class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
-    __slots__ = ("index", "begin", "end", "body", "index_type")
     is_scoped = True
 
-    def __init__(self, index, begin, end, body, index_type="int"):
-        self.index = as_cexpr_or_string_symbol(index)
-        self.begin = as_cexpr(begin)
-        self.end = as_cexpr(end)
-        self.body = as_cstatement(body)
-        self.index_type = index_type
-
-    def cs_format(self, precision=None):
-        indextype = self.index_type
-        index = self.index.ce_format(precision)
-        begin = self.begin.ce_format(precision)
-        end = self.end.ce_format(precision)
-
-        init = indextype + " " + index + " = " + begin
-        check = index + " < " + end
-        update = "++" + index
-
-        prelude = "for (" + init + "; " + check + "; " + update + ")"
-        body = Indented(self.body.cs_format(precision))
-
-        # Reduce size of code with lots of simple loops by dropping {} in obviously safe cases
-        if is_simple_inner_loop(self.body):
-            code = (prelude, body)
-        else:
-            code = (prelude, "{", body, "}")
-
-        return code
+    def __init__(self, index, begin, end, body):
+        assert isinstance(index, Symbol)
+        self.index = index
+        self.begin = as_lexpr(begin)
+        self.end = as_lexpr(end)
+        assert isinstance(body, list)
+        self.body = StatementList(body)
 
     def __eq__(self, other):
-        attributes = ("index", "begin", "end", "body", "index_type")
+        attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
 
-    def flops(self):
-        return (self.end.value - self.begin.value) * self.body.flops()
 
-
-# Conversion function to statement nodes
-
-
-def as_cstatement(node):
+def as_statement(node):
     """Perform type checking on node and wrap in a suitable statement type if necessary."""
     if isinstance(node, StatementList) and len(node.statements) == 1:
         # Cleans up the expression tree a bit
         return node.statements[0]
-    elif isinstance(node, CStatement):
+    elif isinstance(node, Statement):
         # No-op
         return node
-    elif isinstance(node, CExprOperator):
+    elif isinstance(node, LExprOperator):
         if node.sideeffect:
             # Special case for using assignment expressions as statements
             return Statement(node)
         else:
             raise RuntimeError(
-                "Trying to create a statement of CExprOperator type %s:\n%s"
+                "Trying to create a statement of lexprOperator type %s:\n%s"
                 % (type(node), str(node))
             )
     elif isinstance(node, list):
         # Convenience case for list of statements
         if len(node) == 1:
             # Cleans up the expression tree a bit
-            return as_cstatement(node[0])
+            return as_statement(node[0])
         else:
             return StatementList(node)
-    elif isinstance(node, str):
-        # Backdoor for flexibility in code generation to allow verbatim pasted statements
-        return VerbatimStatement(node)
     else:
         raise RuntimeError(
             "Unexpected CStatement type %s:\n%s" % (type(node), str(node))
         )
+
+
+class UFL2LNodes(object):
+    """UFL to LNodes translator class."""
+
+    def __init__(self):
+        self.force_floats = False
+        self.enable_strength_reduction = False
+
+        # Lookup table for handler to call when the "get" method (below) is
+        # called, depending on the first argument type.
+        self.call_lookup = {
+            ufl.constantvalue.IntValue: lambda x: LiteralInt(int(x)),
+            ufl.constantvalue.FloatValue: lambda x: LiteralFloat(float(x)),
+            ufl.constantvalue.ComplexValue: lambda x: LiteralFloat(x.value()),
+            ufl.constantvalue.Zero: lambda x: LiteralFloat(0.0),
+            ufl.algebra.Product: lambda x, a, b: a * b,
+            ufl.algebra.Sum: lambda x, a, b: a + b,
+            ufl.algebra.Division: lambda x, a, b: a / b,
+            ufl.algebra.Abs: self.math_function,
+            ufl.algebra.Power: self.math_function,
+            ufl.algebra.Real: self.math_function,
+            ufl.algebra.Imag: self.math_function,
+            ufl.algebra.Conj: self.math_function,
+            ufl.classes.GT: lambda x, a, b: GT(a, b),
+            ufl.classes.GE: lambda x, a, b: GE(a, b),
+            ufl.classes.EQ: lambda x, a, b: EQ(a, b),
+            ufl.classes.NE: lambda x, a, b: NE(a, b),
+            ufl.classes.LT: lambda x, a, b: LT(a, b),
+            ufl.classes.LE: lambda x, a, b: LE(a, b),
+            ufl.classes.AndCondition: lambda x, a, b: And(a, b),
+            ufl.classes.OrCondition: lambda x, a, b: Or(a, b),
+            ufl.classes.NotCondition: lambda x, a: Not(a),
+            ufl.classes.Conditional: lambda x, c, t, f: Conditional(c, t, f),
+            ufl.classes.MinValue: self.math_function,
+            ufl.classes.MaxValue: self.math_function,
+            ufl.mathfunctions.Sqrt: self.math_function,
+            ufl.mathfunctions.Ln: self.math_function,
+            ufl.mathfunctions.Exp: self.math_function,
+            ufl.mathfunctions.Cos: self.math_function,
+            ufl.mathfunctions.Sin: self.math_function,
+            ufl.mathfunctions.Tan: self.math_function,
+            ufl.mathfunctions.Cosh: self.math_function,
+            ufl.mathfunctions.Sinh: self.math_function,
+            ufl.mathfunctions.Tanh: self.math_function,
+            ufl.mathfunctions.Acos: self.math_function,
+            ufl.mathfunctions.Asin: self.math_function,
+            ufl.mathfunctions.Atan: self.math_function,
+            ufl.mathfunctions.Erf: self.math_function,
+            ufl.mathfunctions.Atan2: self.math_function,
+            ufl.mathfunctions.MathFunction: self.math_function,
+            ufl.mathfunctions.BesselJ: self.math_function,
+            ufl.mathfunctions.BesselY: self.math_function,
+        }
+
+    def get(self, o, *args):
+        # Call appropriate handler, depending on the type of o
+        otype = type(o)
+        if otype in self.call_lookup:
+            return self.call_lookup[otype](o, *args)
+        else:
+            raise RuntimeError(f"Missing lookup for expr type {otype}.")
+
+    def math_function(self, o, *args):
+        return MathFunction(o._ufl_handler_name_, args)
