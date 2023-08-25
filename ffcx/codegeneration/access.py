@@ -138,7 +138,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError("Expecting reference cell coordinate to be symbolically rewritten.")
 
     def facet_coordinate(self, e, mt, tabledata, num_points):
-        L = self.language
         if mt.global_derivatives:
             raise RuntimeError("Not expecting derivatives of FacetCoordinate.")
         if mt.local_derivatives:
@@ -185,7 +184,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_facet_volume(self, e, mt, tabledata, access):
-        L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_facet_volume", dtype=L.DataType.REAL)
@@ -193,7 +191,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_normal(self, e, mt, tabledata, access):
-        L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_facet_normals", dtype=L.DataType.REAL)
@@ -203,7 +200,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def cell_facet_jacobian(self, e, mt, tabledata, num_points):
-        L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_facet_jacobian", dtype=L.DataType.REAL)
@@ -215,7 +211,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_cell_edge_vectors(self, e, mt, tabledata, num_points):
-        L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
@@ -226,7 +221,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_facet_edge_vectors(self, e, mt, tabledata, num_points):
-        L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
@@ -240,7 +234,6 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def facet_orientation(self, e, mt, tabledata, num_points):
-        L = self.language
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname not in ("interval", "triangle", "tetrahedron"):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
@@ -312,7 +305,6 @@ class FFCXBackendAccess(object):
         )
 
     def facet_edge_vectors(self, e, mt, tabledata, num_points):
-        L = self.language
 
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)

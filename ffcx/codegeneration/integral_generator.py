@@ -193,7 +193,7 @@ class IntegralGenerator(object):
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c))
+                parts.append(geometry.write_table(ufl_geometry[i], c))
 
         return parts
 
