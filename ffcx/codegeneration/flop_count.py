@@ -9,7 +9,7 @@ import ffcx.options
 import ufl
 from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.integrals import IntegralGenerator
+from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.ir.representation import compute_ir
 
 
