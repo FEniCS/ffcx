@@ -6,7 +6,8 @@
 
 import warnings
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import scalar_to_value_type
+from ffcx.codegeneration.utils import scalar_to_value_type, cdtype_to_numpy
+import numpy as np
 
 math_table = {
     "double": {
@@ -137,20 +138,29 @@ math_table = {
 }
 
 
-def build_initializer_lists(values):
-    arr = "{"
-    if len(values.shape) == 1:
-        arr += ", ".join(str(v) for v in values)
-    elif len(values.shape) > 1:
-        arr += ",\n  ".join(build_initializer_lists(v) for v in values)
-    arr += "}"
-    return arr
-
-
 class CFormatter(object):
-    def __init__(self, scalar) -> None:
+    def __init__(self, scalar, precision=None) -> None:
         self.scalar_type = scalar
         self.real_type = scalar_to_value_type(scalar)
+        if precision is None:
+            np_type = cdtype_to_numpy(self.real_type)
+            self.precision = np.finfo(np_type).precision + 1
+
+    def _format_float(self, x):
+        prec = self.precision
+        if isinstance(x, complex):
+            return "({:.{prec}}+I*{:.{prec}})".format(x.real, x.imag, prec=prec)
+        else:
+            return "{:.{prec}}".format(x, prec=prec)
+
+    def _build_initializer_lists(self, values):
+        arr = "{"
+        if len(values.shape) == 1:
+            arr += ", ".join(self._format_float(v) for v in values)
+        elif len(values.shape) > 1:
+            arr += ",\n  ".join(self._build_initializer_lists(v) for v in values)
+        arr += "}"
+        return arr
 
     def format_statement_list(self, slist) -> str:
         return "".join(self.c_format(s) for s in slist.statements)
@@ -175,7 +185,7 @@ class CFormatter(object):
             assert arr.const is False
             return f"{typename} {symbol}{dims};\n"
 
-        vals = build_initializer_lists(arr.values)
+        vals = self._build_initializer_lists(arr.values)
         cstr = "static const " if arr.const else ""
         return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
@@ -229,7 +239,8 @@ class CFormatter(object):
         return f"{val.op}({arg})"
 
     def format_literal_float(self, val) -> str:
-        return f"{val.value}"
+        value = self._format_float(val.value)
+        return f"{value}"
 
     def format_literal_int(self, val) -> str:
         return f"{val.value}"
