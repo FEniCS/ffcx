@@ -81,7 +81,7 @@ def reference_edge_vectors(tablename, cellname):
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
     edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
-    out = np.array(edge_vectors[cellname])
+    out = np.array(edge_vectors)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=out, const=True)
 

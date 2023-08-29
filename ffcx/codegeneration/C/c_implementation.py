@@ -145,18 +145,22 @@ class CFormatter(object):
         if precision is None:
             np_type = cdtype_to_numpy(self.real_type)
             self.precision = np.finfo(np_type).precision + 1
+        else:
+            assert isinstance(precision, int)
+            self.precision = precision
 
-    def _format_float(self, x):
+    def _format_number(self, x):
         prec = self.precision
         if isinstance(x, complex):
             return "({:.{prec}}+I*{:.{prec}})".format(x.real, x.imag, prec=prec)
-        else:
+        elif isinstance(x, float):
             return "{:.{prec}}".format(x, prec=prec)
+        return str(x)
 
     def _build_initializer_lists(self, values):
         arr = "{"
         if len(values.shape) == 1:
-            arr += ", ".join(self._format_float(v) for v in values)
+            arr += ", ".join(self._format_number(v) for v in values)
         elif len(values.shape) > 1:
             arr += ",\n  ".join(self._build_initializer_lists(v) for v in values)
         arr += "}"
@@ -176,6 +180,8 @@ class CFormatter(object):
             typename = self.scalar_type
         elif dtype == L.DataType.REAL:
             typename = self.real_type
+        elif dtype == L.DataType.INT:
+            typename = "int"
         else:
             raise ValueError(f"Invalid dtype: {dtype}")
 
@@ -239,7 +245,7 @@ class CFormatter(object):
         return f"{val.op}({arg})"
 
     def format_literal_float(self, val) -> str:
-        value = self._format_float(val.value)
+        value = self._format_number(val.value)
         return f"{value}"
 
     def format_literal_int(self, val) -> str:
