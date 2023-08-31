@@ -150,11 +150,11 @@ class CFormatter(object):
             self.precision = precision
 
     def _format_number(self, x):
-        prec = self.precision
+        p = self.precision
         if isinstance(x, complex):
-            return "({:.{prec}}+I*{:.{prec}})".format(x.real, x.imag, prec=prec)
+            return f"({x.real:.{p}}+I*{x.imag:.{p}})"
         elif isinstance(x, float):
-            return "{:.{prec}}".format(x, prec=prec)
+            return f"{x:.{p}}"
         return str(x)
 
     def _build_initializer_lists(self, values):

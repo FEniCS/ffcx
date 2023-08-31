@@ -32,3 +32,5 @@ a = inner(grad(u), grad(v)) * dx(0, degree=8)\
     + inner(c, c) * inner(grad(u), grad(v)) * dx(1, degree=4)\
     + inner(c, c) * inner(grad(u), grad(v)) * dx(1, degree=2)\
     + inner(grad(u), grad(v)) * dx(1, degree=-1)
+
+L = v * dx(0, metadata={"precision": 1})
