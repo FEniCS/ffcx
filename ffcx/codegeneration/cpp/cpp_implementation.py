@@ -61,6 +61,10 @@ class CppFormatter(object):
             typename = self.scalar_type
         elif dtype == L.DataType.REAL:
             typename = self.real_type
+        elif dtype == L.DataType.INT:
+            typename = "int"
+        else:
+            raise ValueError("Invalid datatype")
 
         symbol = self.c_format(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
