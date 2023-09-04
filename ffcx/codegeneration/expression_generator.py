@@ -27,7 +27,6 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.ufl_to_language = L.UFL2LNodes()
         self.scope: Dict[Any, LNode] = {}
         self._ufl_names: Set[Any] = set()
         self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
@@ -296,7 +295,7 @@ class ExpressionGenerator:
 
     def get_var(self, v):
         if v._ufl_is_literal_:
-            return self.ufl_to_language.get(v)
+            return L.ufl_to_lnodes(v)
         f = self.scope.get(v)
         return f
 
@@ -315,7 +314,7 @@ class ExpressionGenerator:
             mt = attr.get('mt')
 
             if v._ufl_is_literal_:
-                vaccess = self.ufl_to_language.get(v)
+                vaccess = L.ufl_to_lnodes(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
@@ -344,7 +343,7 @@ class ExpressionGenerator:
 
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
-                vexpr = self.ufl_to_language.get(v, *vops)
+                vexpr = L.ufl_to_lnodes(v, *vops)
 
                 # Create a new intermediate for each subexpression
                 # except boolean conditions and its childs
