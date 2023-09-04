@@ -22,8 +22,12 @@ def test_demo(file):
         # Skip demos that use elements not yet implemented in Basix
         pytest.skip()
 
+    opts = ""
+    if "Complex" in file:
+        opts = '--scalar_type "double _Complex"'
+
     extra_flags = "-Wunused-variable -Werror -fPIC "
-    assert os.system(f"cd {demo_dir} && ffcx {file}.py") == 0
+    assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
     assert os.system(f"cd {demo_dir} && "
                      "CPATH=../ffcx/codegeneration/ "
                      f"gcc -I/usr/include/python{sys.version_info.major}.{sys.version_info.minor} {extra_flags}"

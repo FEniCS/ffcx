@@ -9,10 +9,11 @@ from typing import List, Tuple
 import ufl
 import collections
 from ffcx.codegeneration import geometry
-from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.lnodes import LNode, BinOp
+from ffcx.ir.representationutils import QuadratureRule
 
 
 class IntegralGenerator(object):
@@ -25,7 +26,6 @@ class IntegralGenerator(object):
         # - definitions: for defining backend specific variables
         # - access: for accessing backend specific variables
         self.backend = backend
-        self.ufl_to_language = L.UFL2LNodes()
 
         # Set of operator names code has been generated for, used in the
         # end for selecting necessary includes
@@ -73,7 +73,7 @@ class IntegralGenerator(object):
         Returns the LNodes expression to access the value in the code.
         """
         if v._ufl_is_literal_:
-            return self.ufl_to_language.get(v)
+            return L.ufl_to_lnodes(v)
         f = self.scopes[quadrature_rule].get(v)
         if f is None:
             f = self.scopes[None].get(v)
@@ -159,13 +159,9 @@ class IntegralGenerator(object):
 
         # Loop over quadrature rules
         for quadrature_rule, integrand in self.ir.integrand.items():
-
             # Generate quadrature weights array
             wsym = self.backend.symbols.weights_table(quadrature_rule)
-            parts += [
-                L.ArrayDecl(
-                    wsym, values=quadrature_rule.weights, const=True)
-            ]
+            parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
@@ -241,12 +237,8 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        pre_definitions, parts = self.generate_partition(
-            arraysymbol, F, "piecewise", None
-        )
-        assert (
-            len(pre_definitions) == 0
-        ), "Quadrature independent code should have not pre-definitions"
+        pre_definitions, parts = self.generate_partition(arraysymbol, F, "piecewise", None)
+        assert len(pre_definitions) == 0, "Quadrature independent code should have not pre-definitions"
         parts = L.commented_code_list(
             parts,
             f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}",
@@ -259,12 +251,8 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        pre_definitions, parts = self.generate_partition(
-            arraysymbol, F, "varying", quadrature_rule
-        )
-        parts = L.commented_code_list(
-            parts, f"Varying computations for quadrature rule {quadrature_rule.id()}"
-        )
+        pre_definitions, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
+        parts = L.commented_code_list(parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
 
         return pre_definitions, parts
 
@@ -285,7 +273,7 @@ class IntegralGenerator(object):
             # cache
             if not self.get_var(quadrature_rule, v):
                 if v._ufl_is_literal_:
-                    vaccess = self.ufl_to_language.get(v)
+                    vaccess = L.ufl_to_lnodes(v)
                 elif mt is not None:
                     # All finite element based terminals have table
                     # data, as well as some, but not all, of the
@@ -319,7 +307,7 @@ class IntegralGenerator(object):
 
                     # Mapping UFL operator to target language
                     self._ufl_names.add(v._ufl_handler_name_)
-                    vexpr = self.ufl_to_language.get(v, *vops)
+                    vexpr = L.ufl_to_lnodes(v, *vops)
 
                     # Create a new intermediate for each subexpression
                     # except boolean conditions and its childs
@@ -347,9 +335,7 @@ class IntegralGenerator(object):
                             intermediates.append(L.Assign(vaccess, vexpr))
                         else:
                             vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                            intermediates.append(
-                                L.VariableDecl(vaccess, vexpr)
-                            )
+                            intermediates.append(L.VariableDecl(vaccess, vexpr))
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
@@ -361,12 +347,7 @@ class IntegralGenerator(object):
 
         if intermediates:
             if use_symbol_array:
-                parts += [
-                    L.ArrayDecl(
-                        symbol,
-                        sizes=len(intermediates),
-                    )
-                ]
+                parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
         return pre_definitions, parts
 
@@ -449,8 +430,8 @@ class IntegralGenerator(object):
         quadloop-independent blocks.
         """
         # The parts to return
-        preparts: List = []
-        quadparts: List = []
+        preparts: List[LNode] = []
+        quadparts: List[LNode] = []
 
         # RHS expressions grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
@@ -537,9 +518,9 @@ class IntegralGenerator(object):
         # List of statements to keep in the inner loop
         keep = collections.defaultdict(list)
         # List of temporary array declarations
-        pre_loop: List = []
+        pre_loop: List[LNode] = []
         # List of loop invariant expressions to hoist
-        hoist: List = []
+        hoist: List[BinOp] = []
 
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
@@ -570,7 +551,7 @@ class IntegralGenerator(object):
                 # floating point operations (factorize expressions by
                 # grouping)
                 for statement in hoist_rhs:
-                    sum = L.Sum(L.float_product(rhs) for rhs in hoist_rhs[statement])
+                    sum = L.Sum([L.float_product(rhs) for rhs in hoist_rhs[statement]])
 
                     lhs = None
                     for h in hoist:
@@ -582,18 +563,14 @@ class IntegralGenerator(object):
                     else:
                         t = self.new_temp_symbol("t")
                         pre_loop.append(L.ArrayDecl(t, sizes=blockdims[0]))
-                        keep[indices].append(
-                            L.float_product([statement, t[B_indices[0]]])
-                        )
+                        keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
                         hoist.append(L.Assign(t[B_indices[i - 1]], sum))
             else:
                 keep[indices] = rhs_expressions[indices]
 
-        hoist_code = (
-            [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
-        )
+        hoist_code: List[LNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
 
-        body: List = []
+        body: List[LNode] = []
 
         for indices in keep:
             body.append(L.AssignAdd(A[indices], L.Sum(keep[indices])))

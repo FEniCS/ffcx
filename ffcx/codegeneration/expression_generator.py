@@ -12,8 +12,9 @@ from typing import Any, DefaultDict, Dict, Set
 import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.ir.representation import ExpressionIR
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.lnodes import LNode
+from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
 
@@ -26,8 +27,7 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.ufl_to_language = L.UFL2LNodes()
-        self.scope: Dict = {}
+        self.scope: Dict[Any, LNode] = {}
         self._ufl_names: Set[Any] = set()
         self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
         self.shared_symbols: Dict[Any, Any] = {}
@@ -58,8 +58,7 @@ class ExpressionGenerator:
         for name in table_names:
             table = tables[name]
             symbol = L.Symbol(name, dtype=L.DataType.REAL)
-            decl = L.ArrayDecl(
-                symbol, sizes=table.shape, values=table, const=True)
+            decl = L.ArrayDecl(symbol, sizes=table.shape, values=table, const=True)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -260,9 +259,15 @@ class ExpressionGenerator:
             arg_factors.append(arg_factor)
         return arg_factors
 
+    def new_temp_symbol(self, basename):
+        """Create a new code symbol named basename + running counter."""
+        name = "%s%d" % (basename, self.symbol_counters[basename])
+        self.symbol_counters[basename] += 1
+        return L.Symbol(name, dtype=L.DataType.SCALAR)
+
     def get_var(self, v):
         if v._ufl_is_literal_:
-            return self.ufl_to_language.get(v)
+            return L.ufl_to_lnodes(v)
         f = self.scope.get(v)
         return f
 
@@ -281,7 +286,7 @@ class ExpressionGenerator:
             mt = attr.get('mt')
 
             if v._ufl_is_literal_:
-                vaccess = self.ufl_to_language.get(v)
+                vaccess = L.ufl_to_lnodes(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
@@ -310,7 +315,7 @@ class ExpressionGenerator:
 
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
-                vexpr = self.ufl_to_language.get(v, *vops)
+                vexpr = L.ufl_to_lnodes(v, *vops)
 
                 # Create a new intermediate for each subexpression
                 # except boolean conditions and its childs
@@ -335,8 +340,9 @@ class ExpressionGenerator:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
+                        scalar_type = self.backend.access.options["scalar_type"]
                         vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
-                        intermediates.append(L.VariableDecl(vaccess, vexpr))
+                        intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
             # Store access node for future reference
             self.scope[v] = vaccess

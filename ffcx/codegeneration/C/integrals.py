@@ -37,7 +37,7 @@ def generator(ir, options):
     parts = ig.generate()
 
     # Format code as string
-    CF = CFormatter(options["scalar_type"])
+    CF = CFormatter(options["scalar_type"], ir.precision)
     body = CF.c_format(parts)
 
     # Generate generic FFCx code snippets and add specific parts

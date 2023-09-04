@@ -9,7 +9,7 @@ import logging
 
 import ufl
 from ffcx.element_interface import convert_element
-from ffcx.codegeneration import lnodes as L
+import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
