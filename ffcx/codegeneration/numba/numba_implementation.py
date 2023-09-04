@@ -30,6 +30,8 @@ class NumbaFormatter(object):
             dtype = "A.dtype"
         elif arr.symbol.dtype == L.DataType.REAL:
             dtype = "coordinate_dofs.dtype"
+        elif arr.symbol.dtype == L.DataType.INT:
+            dtype = "np.int32"
         symbol = self.c_format(arr.symbol)
         if arr.values is None:
             return f"{symbol} = np.empty({arr.sizes}, dtype={dtype})\n"
