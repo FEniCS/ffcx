@@ -1,4 +1,4 @@
-# Copyright (C) 2009 Kristian B. Oelgaard
+# Copyright (C) 2023 Chris Richardson
 #
 # This file is part of FFCx.
 #
@@ -15,22 +15,25 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
-# Test form for metadata.
+# The bilinear form a(u, v) and linear form L(v) for
+# Poisson's equation using bilinear elements on bilinear mesh geometry.
 import basix.ufl
-from ufl import Coefficient, TestFunction, TrialFunction, dx, grad, inner
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
-element = basix.ufl.element("Lagrange", "triangle", 1)
-vector_element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
+coords = basix.ufl.element("P", "triangle", 2, rank=1)
+mesh = Mesh(coords)
+dx = dx(mesh)
 
+element = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
+space = FunctionSpace(mesh, element)
 
-u = TrialFunction(element)
-v = TestFunction(element)
-c = Coefficient(vector_element)
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
-# Terms on the same subdomain using different quadrature degree
-a = inner(grad(u), grad(v)) * dx(0, degree=8)\
-    + inner(c, c) * inner(grad(u), grad(v)) * dx(1, degree=4)\
-    + inner(c, c) * inner(grad(u), grad(v)) * dx(1, degree=2)\
-    + inner(grad(u), grad(v)) * dx(1, degree=-1)
+# Test literal complex number in form
+k = 3.213 + 1.023j
 
-L = v * dx(0, metadata={"precision": 1})
+a = k * inner(grad(u), grad(v)) * dx
+L = inner(k * f, v) * dx

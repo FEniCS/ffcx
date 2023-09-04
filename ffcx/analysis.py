@@ -202,7 +202,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
             p = precisions.pop()
         elif len(precisions) == 0:
             # Default precision
-            p = np.finfo("double").precision + 1  # == 16
+            p = None
         else:
             raise RuntimeError("Only one precision allowed within integrals grouped by subdomain.")
 
