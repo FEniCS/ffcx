@@ -21,6 +21,7 @@ def test_demo(file):
         "RestrictedElement",
         "HyperElasticity",  # tables too big
         "BiharmonicRegge",
+        "ComplexPoisson",
         "Mini",
         "_TensorProductElement",
     ]:

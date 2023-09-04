@@ -60,7 +60,7 @@ def facet_edge_vertices(cellname):
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
     out = np.array(edge_vertices, dtype=int)
-    arr_symbol = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.REAL)
+    arr_symbol = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)
     return L.ArrayDecl(arr_symbol, values=out, const=True)
 
 
