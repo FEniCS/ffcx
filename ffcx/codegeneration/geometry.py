@@ -6,7 +6,6 @@
 
 import numpy as np
 import ffcx.codegeneration.lnodes as L
-
 import basix
 import ufl
 
@@ -54,9 +53,9 @@ def facet_edge_vertices(cellname):
     edge_vertices = []
     for facet in topology[-2]:
         if len(facet) == 3:
-            edge_vertices += [[facet[i] for i in edge] for edge in triangle_edges]
+            edge_vertices += [[[facet[i] for i in edge] for edge in triangle_edges]]
         elif len(facet) == 4:
-            edge_vertices += [[facet[i] for i in edge] for edge in quadrilateral_edges]
+            edge_vertices += [[[facet[i] for i in edge] for edge in quadrilateral_edges]]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 

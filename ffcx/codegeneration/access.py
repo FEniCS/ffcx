@@ -182,21 +182,21 @@ class FFCXAccess(object):
     def reference_cell_volume(self, e, mt, tabledata, access):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            return L.Symbol(f"{cellname}_reference_cell_volume")
+            return L.Symbol(f"{cellname}_reference_cell_volume", dtype=L.DataType.REAL)
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_facet_volume(self, e, mt, tabledata, access):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            return L.Symbol(f"{cellname}_reference_facet_volume")
+            return L.Symbol(f"{cellname}_reference_facet_volume", dtype=L.DataType.REAL)
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_normal(self, e, mt, tabledata, access):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_normals")
+            table = L.Symbol(f"{cellname}_reference_facet_normals", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]]
         else:
@@ -218,7 +218,7 @@ class FFCXAccess(object):
     def reference_cell_edge_vectors(self, e, mt, tabledata, num_points):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors")
+            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError(
@@ -230,7 +230,7 @@ class FFCXAccess(object):
     def reference_facet_edge_vectors(self, e, mt, tabledata, num_points):
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors")
+            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
@@ -245,7 +245,7 @@ class FFCXAccess(object):
         if cellname not in ("interval", "triangle", "tetrahedron"):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-        table = L.Symbol(f"{cellname}_facet_orientations")
+        table = L.Symbol(f"{cellname}_facet_orientations", dtype=L.DataType.INT)
         facet = self.symbols.entity("facet", mt.restriction)
         return table[facet]
 
@@ -342,7 +342,7 @@ class FFCXAccess(object):
         # Get edge vertices
         facet = self.symbols.entity("facet", mt.restriction)
         facet_edge = mt.component[0]
-        facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices")
+        facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)
         vertex0 = facet_edge_vertices[facet][facet_edge][0]
         vertex1 = facet_edge_vertices[facet][facet_edge][1]
 
