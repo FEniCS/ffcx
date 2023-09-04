@@ -53,9 +53,6 @@ def generator(ir, options):
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
-    if options["tabulate_tensor_void"]:
-        code["tabulate_tensor"] = ""
-
     scalar_types = {
         "double": "DOUBLE PRECISION",
         "float": "REAL",
