@@ -819,7 +819,7 @@ def _math_function(op, *args):
     return MathFunction(op._ufl_handler_name_, args)
 
 
-# Lookup table for handler to call when the "get" method (below) is
+# Lookup table for handler to call when the ufl_to_lnodes method (below) is
 # called, depending on the first argument type.
 _ufl_call_lookup = {
     ufl.constantvalue.IntValue: lambda x: LiteralInt(int(x)),
