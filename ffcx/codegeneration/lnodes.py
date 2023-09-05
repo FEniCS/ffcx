@@ -275,6 +275,9 @@ class LiteralFloat(LExprTerminal):
     def __float__(self):
         return float(self.value)
 
+    def __repr__(self):
+        return str(self.value)
+
 
 class LiteralInt(LExprTerminal):
     """An integer literal value."""
@@ -292,6 +295,9 @@ class LiteralInt(LExprTerminal):
     def __hash__(self):
         return hash(self.value)
 
+    def __repr__(self):
+        return str(self.value)
+
 
 class Symbol(LExprTerminal):
     """A named symbol."""
@@ -308,6 +314,9 @@ class Symbol(LExprTerminal):
 
     def __hash__(self):
         return hash(self.name)
+
+    def __repr__(self):
+        return self.name
 
 
 class PrefixUnaryOp(LExprOperator):
@@ -334,6 +343,9 @@ class BinOp(LExprOperator):
 
     def __hash__(self):
         return hash(self.lhs) + hash(self.rhs)
+
+    def __repr__(self):
+        return str(self.lhs) + str(self.op) + str(self.rhs)
 
 
 class ArithmeticBinOp(BinOp):
@@ -599,6 +611,9 @@ class ArrayAccess(LExprOperator):
 
     def __hash__(self):
         return hash(self.array)
+
+    def __repr__(self):
+        return str(self.array) + "[" + ", ".join(str(i) for i in self.indices) + "]"
 
 
 class Conditional(LExprOperator):
