@@ -831,6 +831,14 @@ def as_statement(node):
 
 
 def _math_function(op, *args):
+    name = op._ufl_handler_name_
+    dtype = args[0].dtype
+    if name in ("conj", "real") and dtype == DataType.REAL:
+        assert len(args) == 1
+        return args[0]
+    if name == "imag" and dtype == DataType.REAL:
+        assert len(args) == 1
+        return LiteralFloat(0.0)
     return MathFunction(op._ufl_handler_name_, args)
 
 
