@@ -313,7 +313,7 @@ class CFormatter(object):
             func = func.split(" ", 1)[1]
             if func == "()":
                 assert len(c.args) == 1
-                return self.c_format(c.args[0])
+                return "(" + self.c_format(c.args[0]) + ")"
             elif func == "0":
                 return "0"
             else:
