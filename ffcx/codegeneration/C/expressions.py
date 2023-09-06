@@ -10,7 +10,7 @@ from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.c_implementation import CFormatter
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
