@@ -291,13 +291,6 @@ class CFormatter(object):
         return f"{s.name}"
 
     def format_math_function(self, c) -> str:
-        if c.args[0].dtype == L.DataType.REAL:
-            if c.function in ("real", "conj"):
-                assert len(c.args) == 1
-                return "(" + self.c_format(c.args[0]) + ")"
-            elif c.function == "imag":
-                return "0"
-
         # Get a table of functions for this type, if available
         arg_type = self.scalar_type
         if hasattr(c.args[0], "dtype"):
