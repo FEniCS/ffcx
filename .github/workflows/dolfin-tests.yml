@@ -91,3 +91,5 @@ jobs:
 
       - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
+      - name: Run DOLFINx Python demos
+        run: python3 -m pytest -n=2 -m serial python/demo/test.py
