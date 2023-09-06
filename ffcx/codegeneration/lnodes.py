@@ -766,7 +766,7 @@ class ArrayDecl(Statement):
         self.const = const
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "padlen", "values")
+        attributes = ("typename", "symbol", "sizes", "values")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )

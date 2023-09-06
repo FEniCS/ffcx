@@ -41,13 +41,6 @@ def generator(ir, options):
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
-    code["class_type"] = ir.integral_type + "_integral"
-    code["name"] = ir.name
-    code["members"] = ""
-    code["constructor"] = ""
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = ""
 
     if len(ir.enabled_coefficients) > 0:
         values = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
@@ -60,9 +53,6 @@ def generator(ir, options):
 
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
-
-    if options["tabulate_tensor_void"]:
-        code["tabulate_tensor"] = ""
 
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
