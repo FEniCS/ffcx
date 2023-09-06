@@ -12,9 +12,9 @@ from typing import Any, DefaultDict, Dict, Set
 import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.cnodes import CNode
+import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
-from ffcx.naming import scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -27,22 +27,17 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scope: Dict[Any, CNode] = {}
+        self.scope: Dict[Any, LNode] = {}
         self._ufl_names: Set[Any] = set()
         self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
         self.shared_symbols: Dict[Any, Any] = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):
-        L = self.backend.language
-
         parts = []
-        scalar_type = self.backend.access.options["scalar_type"]
-        value_type = scalar_to_value_type(scalar_type)
-
-        parts += self.generate_element_tables(value_type)
+        parts += self.generate_element_tables()
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables(value_type)
+        parts += self.generate_geometry_tables()
         parts += self.generate_piecewise_partition()
 
         all_preparts = []
@@ -58,10 +53,8 @@ class ExpressionGenerator:
 
         return L.StatementList(parts)
 
-    def generate_geometry_tables(self, float_type: str):
+    def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
-        L = self.backend.language
-
         # Currently we only support circumradius
         ufl_geometry = {
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
@@ -79,24 +72,21 @@ class ExpressionGenerator:
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
-                parts.append(geometry.write_table(L, ufl_geometry[i], c, float_type))
+                parts.append(geometry.write_table(ufl_geometry[i], c))
 
         return parts
 
-    def generate_element_tables(self, float_type: str):
+    def generate_element_tables(self):
         """Generate tables of FE basis evaluated at specified points."""
-        L = self.backend.language
         parts = []
 
         tables = self.ir.unique_tables
-
-        padlen = self.ir.options["padlen"]
         table_names = sorted(tables)
 
         for name in table_names:
             table = tables[name]
-            decl = L.ArrayDecl(
-                f"static const {float_type}", name, table.shape, table, padlen=padlen)
+            symbol = L.Symbol(name, dtype=L.DataType.REAL)
+            decl = L.ArrayDecl(symbol, sizes=table.shape, values=table, const=True)
             parts += [decl]
 
         # Add leading comment if there are any tables
@@ -112,8 +102,6 @@ class ExpressionGenerator:
         In the context of expressions quadrature loop is not accumulated.
 
         """
-        L = self.backend.language
-
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
@@ -138,12 +126,10 @@ class ExpressionGenerator:
 
     def generate_varying_partition(self):
         """Generate factors of blocks which are not cellwise constant."""
-        L = self.backend.language
-
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}")
+        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "varying")
         parts = L.commented_code_list(
             parts, f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}")
@@ -151,12 +137,10 @@ class ExpressionGenerator:
 
     def generate_piecewise_partition(self):
         """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
-        L = self.backend.language
-
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol("sp")
+        arraysymbol = L.Symbol("sp", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "piecewise")
         parts = L.commented_code_list(parts, "Unstructured piecewise computations")
         return parts
@@ -188,8 +172,6 @@ class ExpressionGenerator:
 
     def generate_block_parts(self, blockmap, blockdata):
         """Generate and return code parts for a given block."""
-        L = self.backend.language
-
         # The parts to return
         preparts = []
         quadparts = []
@@ -288,8 +270,6 @@ class ExpressionGenerator:
             Indices used to index element tables
 
         """
-        L = self.backend.language
-
         arg_factors = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
@@ -309,21 +289,18 @@ class ExpressionGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        L = self.backend.language
         name = "%s%d" % (basename, self.symbol_counters[basename])
         self.symbol_counters[basename] += 1
-        return L.Symbol(name)
+        return L.Symbol(name, dtype=L.DataType.SCALAR)
 
     def get_var(self, v):
         if v._ufl_is_literal_:
-            return self.backend.ufl_to_language.get(v)
+            return L.ufl_to_lnodes(v)
         f = self.scope.get(v)
         return f
 
     def generate_partition(self, symbol, F, mode):
         """Generate computations of factors of blocks."""
-        L = self.backend.language
-
         definitions = []
         pre_definitions = dict()
         intermediates = []
@@ -337,7 +314,7 @@ class ExpressionGenerator:
             mt = attr.get('mt')
 
             if v._ufl_is_literal_:
-                vaccess = self.backend.ufl_to_language.get(v)
+                vaccess = L.ufl_to_lnodes(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
@@ -366,7 +343,7 @@ class ExpressionGenerator:
 
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
-                vexpr = self.backend.ufl_to_language.get(v, *vops)
+                vexpr = L.ufl_to_lnodes(v, *vops)
 
                 # Create a new intermediate for each subexpression
                 # except boolean conditions and its childs
@@ -392,7 +369,7 @@ class ExpressionGenerator:
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
                         scalar_type = self.backend.access.options["scalar_type"]
-                        vaccess = L.Symbol("%s_%d" % (symbol.name, j))
+                        vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
                         intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
             # Store access node for future reference
@@ -410,7 +387,6 @@ class ExpressionGenerator:
 
         if intermediates:
             if use_symbol_array:
-                scalar_type = self.backend.access.options["scalar_type"]
-                parts += [L.ArrayDecl(scalar_type, symbol, len(intermediates))]
+                parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
         return parts
