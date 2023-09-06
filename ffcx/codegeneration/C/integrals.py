@@ -10,7 +10,7 @@ from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.c_implementation import CFormatter
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
