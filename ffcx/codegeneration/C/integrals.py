@@ -9,8 +9,8 @@ import logging
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C.format_lines import format_indented_lines
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.C.c_implementation import CFormatter
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 logger = logging.getLogger("ffcx")
 
@@ -36,17 +36,11 @@ def generator(ir, options):
     parts = ig.generate()
 
     # Format code as string
-    body = format_indented_lines(parts.cs_format(ir.precision), 1)
+    CF = CFormatter(options["scalar_type"], ir.precision)
+    body = CF.c_format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
-    code["class_type"] = ir.integral_type + "_integral"
-    code["name"] = ir.name
-    code["members"] = ""
-    code["constructor"] = ""
-    code["constructor_arguments"] = ""
-    code["initializer_list"] = ""
-    code["destructor"] = ""
 
     if len(ir.enabled_coefficients) > 0:
         values = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
@@ -59,9 +53,6 @@ def generator(ir, options):
 
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
-
-    if options["tabulate_tensor_void"]:
-        code["tabulate_tensor"] = ""
 
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
