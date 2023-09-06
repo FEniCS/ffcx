@@ -34,8 +34,9 @@ math_table = {
         "max_value": "fmax",
         "bessel_y": "yn",
         "bessel_j": "jn",
-        "real": None,
-        "conj": None,
+        "real": "SPECIAL_CASE ()",
+        "imag": "SPECIAL_CASE 0",
+        "conj": "SPECIAL_CASE ()",
     },
     "float": {
         "sqrt": "sqrtf",
@@ -61,8 +62,9 @@ math_table = {
         "max_value": "fmaxf",
         "bessel_y": "yn",
         "bessel_j": "jn",
-        "real": None,
-        "conj": None,
+        "real": "SPECIAL_CASE ()",
+        "imag": "SPECIAL_CASE 0",
+        "conj": "SPECIAL_CASE ()",
     },
     "long double": {
         "sqrt": "sqrtl",
@@ -307,9 +309,15 @@ class CFormatter(object):
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
-        if func is None:
-            assert len(c.args) == 1
-            return self.c_format(c.args[0])
+        if func.startswith("SPECIAL_CASE"):
+            func = func.split(" ", 1)[1]
+            if func == "()":
+                assert len(c.args) == 1
+                return self.c_format(c.args[0])
+            elif func == "0":
+                return "0"
+            else:
+                raise ValueError(f"Unknown special case: {func}")
         args = ", ".join(self.c_format(arg) for arg in c.args)
         return f"{func}({args})"
 
