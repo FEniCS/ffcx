@@ -766,7 +766,7 @@ class ArrayDecl(Statement):
         self.const = const
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "padlen", "values")
+        attributes = ("typename", "symbol", "sizes", "values")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
@@ -839,7 +839,7 @@ def _math_function(op, *args):
     if name == "imag" and dtype == DataType.REAL:
         assert len(args) == 1
         return LiteralFloat(0.0)
-    return MathFunction(op._ufl_handler_name_, args)
+    return MathFunction(name, args)
 
 
 # Lookup table for handler to call when the ufl_to_lnodes method (below) is
