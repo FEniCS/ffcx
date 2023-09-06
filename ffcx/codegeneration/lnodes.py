@@ -275,6 +275,9 @@ class LiteralFloat(LExprTerminal):
     def __float__(self):
         return float(self.value)
 
+    def __repr__(self):
+        return str(self.value)
+
 
 class LiteralInt(LExprTerminal):
     """An integer literal value."""
@@ -292,6 +295,9 @@ class LiteralInt(LExprTerminal):
     def __hash__(self):
         return hash(self.value)
 
+    def __repr__(self):
+        return str(self.value)
+
 
 class Symbol(LExprTerminal):
     """A named symbol."""
@@ -308,6 +314,9 @@ class Symbol(LExprTerminal):
 
     def __hash__(self):
         return hash(self.name)
+
+    def __repr__(self):
+        return self.name
 
 
 class PrefixUnaryOp(LExprOperator):
@@ -334,6 +343,9 @@ class BinOp(LExprOperator):
 
     def __hash__(self):
         return hash(self.lhs) + hash(self.rhs)
+
+    def __repr__(self):
+        return str(self.lhs) + str(self.op) + str(self.rhs)
 
 
 class ArithmeticBinOp(BinOp):
@@ -600,6 +612,9 @@ class ArrayAccess(LExprOperator):
     def __hash__(self):
         return hash(self.array)
 
+    def __repr__(self):
+        return str(self.array) + "[" + ", ".join(str(i) for i in self.indices) + "]"
+
 
 class Conditional(LExprOperator):
     precedence = PRECEDENCE.CONDITIONAL
@@ -751,7 +766,7 @@ class ArrayDecl(Statement):
         self.const = const
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "padlen", "values")
+        attributes = ("typename", "symbol", "sizes", "values")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
@@ -816,7 +831,15 @@ def as_statement(node):
 
 
 def _math_function(op, *args):
-    return MathFunction(op._ufl_handler_name_, args)
+    name = op._ufl_handler_name_
+    dtype = args[0].dtype
+    if name in ("conj", "real") and dtype == DataType.REAL:
+        assert len(args) == 1
+        return args[0]
+    if name == "imag" and dtype == DataType.REAL:
+        assert len(args) == 1
+        return LiteralFloat(0.0)
+    return MathFunction(name, args)
 
 
 # Lookup table for handler to call when the ufl_to_lnodes method (below) is

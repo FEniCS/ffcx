@@ -236,13 +236,11 @@ class CFormatter(object):
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    def format_neg(self, val) -> str:
-        arg = self.c_format(val.arg)
-        return f"-{arg}"
-
-    def format_not(self, val) -> str:
-        arg = self.c_format(val.arg)
-        return f"{val.op}({arg})"
+    def format_unary_op(self, oper) -> str:
+        arg = self.c_format(oper.arg)
+        if oper.arg.precedence >= oper.precedence:
+            return f"{oper.op}({arg})"
+        return f"{oper.op}{arg}"
 
     def format_literal_float(self, val) -> str:
         value = self._format_number(val.value)
@@ -319,13 +317,13 @@ class CFormatter(object):
         "Assign": format_assign,
         "AssignAdd": format_assign,
         "Product": format_nary_op,
-        "Neg": format_neg,
+        "Neg": format_unary_op,
         "Sum": format_nary_op,
         "Add": format_binary_op,
         "Sub": format_binary_op,
         "Mul": format_binary_op,
         "Div": format_binary_op,
-        "Not": format_not,
+        "Not": format_unary_op,
         "LiteralFloat": format_literal_float,
         "LiteralInt": format_literal_int,
         "Symbol": format_symbol,
