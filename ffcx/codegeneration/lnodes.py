@@ -839,7 +839,7 @@ def _math_function(op, *args):
     if name == "imag" and dtype == DataType.REAL:
         assert len(args) == 1
         return LiteralFloat(0.0)
-    return MathFunction(op._ufl_handler_name_, args)
+    return MathFunction(name, args)
 
 
 # Lookup table for handler to call when the ufl_to_lnodes method (below) is
