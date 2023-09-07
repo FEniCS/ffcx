@@ -4,10 +4,14 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
 
 declaration = """
-class {factory_name} public ufcx_integral
+class {factory_name}
 {{
 public:
 
+// Constructor
+{factory_name}();
+
+// Kernel
 template <typename T, typename U>
 void tabulate_tensor(T* A,
                      const T* w,
@@ -16,7 +20,9 @@ void tabulate_tensor(T* A,
                      const int* entity_local_index,
                      const uint8_t* quadrature_permutation);
 
+// Data
 std::vector<bool> enabled_coefficients;
+bool needs_facet_permutations;
 
 }};
 """
@@ -35,9 +41,11 @@ void {factory_name}::tabulate_tensor(T* A,
 {tabulate_tensor}
 }}
 
-{factory_name}::enabled_coefficients = {enabled_coefficients};
-{factory_name}::needs_facet_permutations = {needs_facet_permutations};
-{factory_name}::coordinate_element = &{coordinate_element};
+{factory_name}::{factory_name}()
+{{
+  enabled_coefficients = {enabled_coefficients};
+  needs_facet_permutations = {needs_facet_permutations};
+}}
 
 // End of code for integral {factory_name}
 """

@@ -12,7 +12,8 @@ declaration_pre = """
 {options}
 
 #pragma once
-#include <ufcx.h>
+#include <cmath>
+#include <vector>
 
 """
 
