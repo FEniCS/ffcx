@@ -144,7 +144,7 @@ class CFormatter(object):
         self.real_type = scalar_to_value_type(scalar)
         if precision is None:
             np_type = cdtype_to_numpy(self.real_type)
-            self.precision = np.finfo(np_type).precision + 1
+            self.precision = max(8, np.finfo(np_type).precision + 1)
         else:
             assert isinstance(precision, int)
             self.precision = precision
