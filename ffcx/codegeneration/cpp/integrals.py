@@ -45,7 +45,7 @@ def generator(ir, options):
     code["class_type"] = ir.integral_type + "_integral"
     code["name"] = ir.name
 
-    vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
+    vals = ", ".join("true" if i else "false" for i in ir.enabled_coefficients)
     code["enabled_coefficients"] = f"{{{vals}}}"
 
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
