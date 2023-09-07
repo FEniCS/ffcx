@@ -29,7 +29,10 @@ math_table = {
     "min_value": "std::fmin",
     "max_value": "std::fmax",
     "bessel_y": "std::cyl_bessel_i",
-    "bessel_j": "std::cyl_bessel_j"}
+    "bessel_j": "std::cyl_bessel_j",
+    "conj": "std::conj",
+    "real": "std::real",
+    "imag": "std::imag"}
 
 
 def build_initializer_lists(values):

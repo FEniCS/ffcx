@@ -62,4 +62,4 @@ def generator(ir, options):
         coordinate_element=ir.coordinate_element,
     )
 
-    return declaration, implementation
+    return declaration + implementation, ""
