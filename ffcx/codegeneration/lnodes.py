@@ -304,7 +304,7 @@ class Symbol(LExprTerminal):
 
     precedence = PRECEDENCE.SYMBOL
 
-    def __init__(self, name, dtype=None):
+    def __init__(self, name: str, dtype=None):
         assert isinstance(name, str)
         self.name = name
         self.dtype = dtype
@@ -317,6 +317,62 @@ class Symbol(LExprTerminal):
 
     def __repr__(self):
         return self.name
+
+
+class MultiIndex(LExprTerminal):
+    def __init__(self, names: list, sizes: list):
+        self.dtype = DataType.INT
+        self.sizes = sizes
+        self.symbols = [Symbol(f"{name}", DataType.INT) for name in names]
+
+    def size(self):
+        return np.prod(self.sizes)
+
+    def global_index(self):
+        dim = len(self.sizes)
+        if dim == 1:
+            return self.symbols[0]
+        else:
+            strides = np.ones(dim, dtype=int)
+            for i in range(dim - 1):
+                strides[i] = np.prod(self.sizes[i + 1:])
+
+            global_factors = [strides[i] * self.symbols[i] for i in range(dim)]
+            return Sum(global_factors)
+
+    def local_index(self, idx):
+        assert idx < len(self.symbols)
+        return self.symbols[idx]
+
+    def intersection(self, other):
+        symbols = []
+        sizes = []
+        for (idx, size) in zip(self.symbols, self.sizes):
+            if idx in other.symbols:
+                symbols.append(idx)
+                sizes.append(size)
+        return MultiIndex(symbols, sizes)
+
+    def union(self, other):
+        symbols = self.symbols.copy()
+        sizes = self.sizes.copy()
+        for (idx, size) in zip(other.symbols, other.sizes):
+            if idx not in symbols:
+                symbols.append(idx)
+                sizes.append(size)
+        return MultiIndex(symbols, sizes)
+
+    def difference(self, other):
+        symbols = []
+        sizes = []
+        for (idx, size) in zip(self.symbols, self.sizes):
+            if idx not in other.symbols:
+                symbols.append(idx)
+                sizes.append(size)
+        return MultiIndex(symbols, sizes)
+
+    def __hash__(self):
+        return hash(self.global_idx())
 
 
 class PrefixUnaryOp(LExprOperator):
@@ -360,6 +416,7 @@ class NaryOp(LExprOperator):
 
     def __init__(self, args):
         self.args = [as_lexpr(arg) for arg in args]
+        self.op = ""
 
     def __eq__(self, other):
         return (
@@ -367,6 +424,9 @@ class NaryOp(LExprOperator):
             and len(self.args) == len(other.args)
             and all(a == b for a, b in zip(self.args, other.args))
         )
+
+    def __repr__(self) -> str:
+        return f"{self.op} ".join(f"{i} " for i in self.args)
 
 
 class Neg(PrefixUnaryOp):
