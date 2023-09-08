@@ -143,8 +143,11 @@ class CFormatter(object):
         self.real_type = scalar_to_value_type(scalar)
 
     def _format_number(self, x):
+        # Use 16sf for precision (good for float64 or less)
         if isinstance(x, complex):
-            return f"({x.real}+I*{x.imag})"
+            return f"({x.real:.16}+I*{x.imag:.16})"
+        elif isinstance(x, float):
+            return f"{x:.16}"
         return str(x)
 
     def _build_initializer_lists(self, values):
