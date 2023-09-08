@@ -6,8 +6,7 @@
 
 import warnings
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import scalar_to_value_type, cdtype_to_numpy
-import numpy as np
+from ffcx.codegeneration.utils import scalar_to_value_type
 
 math_table = {
     "double": {
@@ -139,22 +138,13 @@ math_table = {
 
 
 class CFormatter(object):
-    def __init__(self, scalar, precision=None) -> None:
+    def __init__(self, scalar) -> None:
         self.scalar_type = scalar
         self.real_type = scalar_to_value_type(scalar)
-        if precision is None:
-            np_type = cdtype_to_numpy(self.real_type)
-            self.precision = max(8, np.finfo(np_type).precision + 1)
-        else:
-            assert isinstance(precision, int)
-            self.precision = precision
 
     def _format_number(self, x):
-        p = self.precision
         if isinstance(x, complex):
-            return f"({x.real:.{p}}+I*{x.imag:.{p}})"
-        elif isinstance(x, float):
-            return f"{x:.{p}}"
+            return f"({x.real}+I*{x.imag})"
         return str(x)
 
     def _build_initializer_lists(self, values):

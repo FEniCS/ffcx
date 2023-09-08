@@ -135,7 +135,6 @@ class IntegralIR(typing.NamedTuple):
     unique_table_types: typing.Dict[str, str]
     integrand: typing.Dict[QuadratureRule, dict]
     name: str
-    precision: int
     needs_facet_permutations: bool
     coordinate_element: str
 
@@ -486,7 +485,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             _offset += np.prod(constant.ufl_shape, dtype=int)
 
         ir["original_constant_offsets"] = original_constant_offsets
-        ir["precision"] = itg_data.metadata["precision"]
 
         # Create map from number of quadrature points -> integrand
         integrands = {rule: integral.integrand() for rule, integral in sorted_integrals.items()}
