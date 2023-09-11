@@ -283,6 +283,9 @@ class CFormatter(object):
     def format_symbol(self, s) -> str:
         return f"{s.name}"
 
+    def format_multi_index(self, mi) -> str:
+        return self.c_format(mi.global_index)
+
     def format_math_function(self, c) -> str:
         # Get a table of functions for this type, if available
         arg_type = self.scalar_type
@@ -304,6 +307,7 @@ class CFormatter(object):
         "Comment": format_comment,
         "ArrayDecl": format_array_decl,
         "ArrayAccess": format_array_access,
+        "MultiIndex": format_multi_index,
         "VariableDecl": format_variable_decl,
         "ForRange": format_for_range,
         "Statement": format_statement,

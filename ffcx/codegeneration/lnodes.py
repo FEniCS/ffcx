@@ -322,6 +322,8 @@ class Symbol(LExprTerminal):
 
 
 class MultiIndex(LExprTerminal):
+    """A multi-index for accessing tensors flattened in memory."""
+
     def __init__(self, symbols: list, sizes: list):
         self.sizes = sizes
         for n in symbols:
