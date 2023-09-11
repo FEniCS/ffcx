@@ -340,6 +340,7 @@ class MultiIndex(LExprTerminal):
             global_factors = [strides[i] * self.symbols[i] for i in range(dim)]
             return Sum(global_factors)
 
+    # Bracket operator isntead.
     def local_index(self, idx):
         assert idx < len(self.symbols)
         return self.symbols[idx]

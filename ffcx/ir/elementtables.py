@@ -274,7 +274,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 
 def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
-                           modified_terminals, existing_tables,
+                           modified_terminals, existing_tables, use_sum_factorization,
                            rtol=default_rtol, atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
@@ -397,6 +397,9 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         cell_offset = 0
         element = convert_element(element)
 
+        if use_sum_factorization and not quadrature_rule.has_tensor_factors:
+            raise RuntimeError("Sum factorization not available for this element.")
+
         tensor_factors = None
         tensor_perm = None
         if (
@@ -404,6 +407,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             # TODO: allow for element made from multiple tensor parts
             and len(element.get_tensor_product_representation()) == 1
             and quadrature_rule.has_tensor_factors
+            and use_sum_factorization
         ):
             factors = element.get_tensor_product_representation()
 
