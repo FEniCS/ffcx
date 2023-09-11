@@ -132,6 +132,8 @@ class LExpr(LNode):
     All subtypes should define a 'precedence' class attribute.
     """
 
+    dtype = None
+
     def __getitem__(self, indices):
         return ArrayAccess(self, indices)
 
@@ -320,25 +322,20 @@ class Symbol(LExprTerminal):
 
 
 class MultiIndex(LExprTerminal):
-    def __init__(self, names: list, sizes: list):
-        self.dtype = DataType.INT
+    def __init__(self, symbols: list, sizes: list):
         self.sizes = sizes
-        self.symbols = [Symbol(f"{name}", DataType.INT) for name in names]
+        for n in symbols:
+            assert isinstance(n, LExpr)
+            assert n.dtype == DataType.INT
+        self.symbols = symbols
+
+        dim = len(sizes)
+        stride = [np.prod(sizes[i:]) for i in range(dim)]
+        stride += [LiteralInt(1)]
+        self.global_index = Sum(n * sym for n, sym in zip(stride[1:], self.symbols))
 
     def size(self):
         return np.prod(self.sizes)
-
-    def global_index(self):
-        dim = len(self.sizes)
-        if dim == 1:
-            return self.symbols[0]
-        else:
-            strides = np.ones(dim, dtype=int)
-            for i in range(dim - 1):
-                strides[i] = np.prod(self.sizes[i + 1:])
-
-            global_factors = [strides[i] * self.symbols[i] for i in range(dim)]
-            return Sum(global_factors)
 
     # Bracket operator isntead.
     def local_index(self, idx):
@@ -348,18 +345,23 @@ class MultiIndex(LExprTerminal):
     def intersection(self, other):
         symbols = []
         sizes = []
-        for (idx, size) in zip(self.symbols, self.sizes):
-            if idx in other.symbols:
-                symbols.append(idx)
+        for (sym, size) in zip(self.symbols, self.sizes):
+            if sym in other.symbols:
+                i = other.symbols.index(sym)
+                assert other.sizes[i] == size
+                symbols.append(sym)
                 sizes.append(size)
         return MultiIndex(symbols, sizes)
 
     def union(self, other):
         symbols = self.symbols.copy()
         sizes = self.sizes.copy()
-        for (idx, size) in zip(other.symbols, other.sizes):
-            if idx not in symbols:
-                symbols.append(idx)
+        for (sym, size) in zip(other.symbols, other.sizes):
+            if sym in symbols:
+                i = symbols.index(sym)
+                assert sizes[i] == size
+            else:
+                symbols.append(sym)
                 sizes.append(size)
         return MultiIndex(symbols, sizes)
 
@@ -402,7 +404,7 @@ class BinOp(LExprOperator):
         return hash(self.lhs) + hash(self.rhs)
 
     def __repr__(self):
-        return str(self.lhs) + str(self.op) + str(self.rhs)
+        return f"({self.lhs} {self.op} {self.rhs})"
 
 
 class ArithmeticBinOp(BinOp):
@@ -415,9 +417,10 @@ class ArithmeticBinOp(BinOp):
 class NaryOp(LExprOperator):
     """Base class for special n-ary operators."""
 
+    op = ""
+
     def __init__(self, args):
         self.args = [as_lexpr(arg) for arg in args]
-        self.op = ""
 
     def __eq__(self, other):
         return (
