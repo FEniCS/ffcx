@@ -334,7 +334,7 @@ class MultiIndex(LExprTerminal):
         dim = len(sizes)
         stride = [np.prod(sizes[i:]) for i in range(dim)]
         stride += [LiteralInt(1)]
-        self.global_index = Sum(n * sym for n, sym in zip(stride[1:], self.symbols))
+        self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
 
     def size(self):
         return np.prod(self.sizes)
@@ -356,6 +356,7 @@ class MultiIndex(LExprTerminal):
         return MultiIndex(symbols, sizes)
 
     def union(self, other):
+        # NB result may depend on order a.union(b) != b.union(a)
         symbols = self.symbols.copy()
         sizes = self.sizes.copy()
         for (sym, size) in zip(other.symbols, other.sizes):
@@ -377,7 +378,7 @@ class MultiIndex(LExprTerminal):
         return MultiIndex(symbols, sizes)
 
     def __hash__(self):
-        return hash(self.global_idx())
+        return hash(self.global_idx)
 
 
 class PrefixUnaryOp(LExprOperator):
