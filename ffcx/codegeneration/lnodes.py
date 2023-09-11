@@ -101,6 +101,7 @@ class DataType(Enum):
     REAL = 0
     SCALAR = 1
     INT = 2
+    NONE = 3
 
 
 def merge_dtypes(dtype0, dtype1):
@@ -132,7 +133,7 @@ class LExpr(LNode):
     All subtypes should define a 'precedence' class attribute.
     """
 
-    dtype = None
+    dtype = DataType.NONE
 
     def __getitem__(self, indices):
         return ArrayAccess(self, indices)
@@ -321,25 +322,29 @@ class Symbol(LExprTerminal):
         return self.name
 
 
-class MultiIndex(LExprTerminal):
+class MultiIndex(LExpr):
     """A multi-index for accessing tensors flattened in memory."""
 
     def __init__(self, symbols: list, sizes: list):
+        self.dtype = DataType.INT
         self.sizes = sizes
-        for n in symbols:
-            assert isinstance(n, LExpr)
-            assert n.dtype == DataType.INT
+        for sym in symbols:
+            assert isinstance(sym, LExpr)
+            assert sym.dtype == DataType.INT
         self.symbols = symbols
 
         dim = len(sizes)
-        stride = [np.prod(sizes[i:]) for i in range(dim)]
-        stride += [LiteralInt(1)]
-        self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
+        if dim == 0:
+            self.global_index: LExpr = LiteralInt(0)
+        else:
+            stride = [np.prod(sizes[i:]) for i in range(dim)]
+            stride += [LiteralInt(1)]
+            self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
 
     def size(self):
         return np.prod(self.sizes)
 
-    # Bracket operator isntead.
+    # Bracket operator instead
     def local_index(self, idx):
         assert idx < len(self.symbols)
         return self.symbols[idx]
