@@ -137,6 +137,7 @@ class IntegralIR(typing.NamedTuple):
     name: str
     needs_facet_permutations: bool
     coordinate_element: str
+    sum_factorization: bool
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -310,7 +311,20 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     # FIXME: This does not work for prisms and pyramids
     num_dofs_per_entity = [i[0] for i in element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
-    ir["entity_dofs"] = element.entity_dofs
+
+    if element.has_tensor_product_factorisation():
+        representation = element.get_tensor_product_representation()
+        permutation = representation[0][1]
+        # FIXME: Assuming that the permutation is ordered
+        permutation = np.arange(len(permutation))
+        if not np.all(np.diff(permutation) >= 0):
+            raise RuntimeError("Elements with tensor product factorisation and non-ordered permutations")
+        ir["entity_dofs"] = [[[permutation[d] for d in e] for e in ent] for ent in element.entity_dofs]
+        ir["entity_closure_dofs"] = [[[permutation[d] for d in e] for e in ent] for ent in element.entity_closure_dofs]
+
+    else:
+        ir["entity_dofs"] = element.entity_dofs
+        ir["entity_closure_dofs"] = element.entity_closure_dofs
 
     num_dofs_per_entity_closure = [i[0] for i in element.num_entity_closure_dofs]
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
@@ -357,7 +371,8 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             "num_vertices": cell.num_vertices(),
             "enabled_coefficients": itg_data.enabled_coefficients,
             "cell_shape": cellname,
-            "coordinate_element": finite_element_names[convert_element(itg_data.domain.ufl_coordinate_element())]
+            "coordinate_element": finite_element_names[convert_element(itg_data.domain.ufl_coordinate_element())],
+            "sum_factorization": options["sum_factorization"] and itg_data.integral_type == "cell",
         }
 
         # Get element space dimensions
@@ -435,13 +450,15 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                     raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
             else:
                 degree = md["quadrature_degree"]
-                points, weights, _ = create_quadrature_points_and_weights(
-                    integral_type, cell, degree, scheme, [convert_element(e) for e in form_data.argument_elements])
+                elements = [convert_element(e) for e in form_data.argument_elements]
+                use_tensor_product = ir["sum_factorization"]
+                print(use_tensor_product)
+                points, weights, tensor_factors = create_quadrature_points_and_weights(
+                    integral_type, cell, degree, scheme, elements, use_tensor_product)
 
             points = np.asarray(points)
             weights = np.asarray(weights)
-
-            rule = QuadratureRule(points, weights)
+            rule = QuadratureRule(points, weights, tensor_factors)
 
             if rule not in grouped_integrands:
                 grouped_integrands[rule] = []

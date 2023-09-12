@@ -398,7 +398,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         element = convert_element(element)
 
         if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
-            raise RuntimeError("Sum factorization not available for this element.")
+            raise RuntimeError("Sum factorization not available for this quadrature rule.")
 
         tensor_factors = None
         tensor_perm = None

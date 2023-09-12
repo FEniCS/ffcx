@@ -92,6 +92,7 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elem
         pass
     else:
         logging.exception(f"Unknown integral type: {integral_type}")
+
     return pts, wts, tensor_factors
 
 
