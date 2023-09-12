@@ -312,19 +312,8 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     num_dofs_per_entity = [i[0] for i in element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
 
-    if element.has_tensor_product_factorisation():
-        representation = element.get_tensor_product_representation()
-        permutation = representation[0][1]
-        # FIXME: Assuming that the permutation is ordered
-        permutation = np.arange(len(permutation))
-        if not np.all(np.diff(permutation) >= 0):
-            raise RuntimeError("Elements with tensor product factorisation and non-ordered permutations")
-        ir["entity_dofs"] = [[[permutation[d] for d in e] for e in ent] for ent in element.entity_dofs]
-        ir["entity_closure_dofs"] = [[[permutation[d] for d in e] for e in ent] for ent in element.entity_closure_dofs]
-
-    else:
-        ir["entity_dofs"] = element.entity_dofs
-        ir["entity_closure_dofs"] = element.entity_closure_dofs
+    ir["entity_dofs"] = element.entity_dofs
+    ir["entity_closure_dofs"] = element.entity_closure_dofs
 
     num_dofs_per_entity_closure = [i[0] for i in element.num_entity_closure_dofs]
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
@@ -405,7 +394,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
-
+            tensor_factors = None
             if scheme == "custom":
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
@@ -452,7 +441,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 degree = md["quadrature_degree"]
                 elements = [convert_element(e) for e in form_data.argument_elements]
                 use_tensor_product = ir["sum_factorization"]
-                print(use_tensor_product)
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
                     integral_type, cell, degree, scheme, elements, use_tensor_product)
 
