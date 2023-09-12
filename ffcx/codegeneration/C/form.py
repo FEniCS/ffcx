@@ -3,11 +3,15 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-
+#
+# Modified by Chris Richardson and Jørgen S. Dokken 2023
+#
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
 import logging
+
+import numpy
 
 from ffcx.codegeneration.C import form_template
 
@@ -81,8 +85,16 @@ def generator(ir, options):
     integral_offsets = [0]
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
-        integrals += [f"&{itg}" for itg in ir.integral_names[itg_type]]
-        integral_ids += ir.subdomain_ids[itg_type]
+        unsorted_integrals = []
+        unsorted_ids = []
+        for name, id in zip(ir.integral_names[itg_type], ir.subdomain_ids[itg_type]):
+            unsorted_integrals += [f"&{name}"]
+            unsorted_ids += [id]
+
+        id_sort = numpy.argsort(unsorted_ids)
+        integrals += [unsorted_integrals[i] for i in id_sort]
+        integral_ids += [unsorted_ids[i] for i in id_sort]
+
         integral_offsets.append(len(integrals))
 
     if len(integrals) > 0:
