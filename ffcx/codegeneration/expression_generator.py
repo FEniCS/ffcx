@@ -191,10 +191,8 @@ class ExpressionGenerator:
         components = ufl.product(self.ir.expression_shape)
 
         num_points = self.quadrature_rule.points.shape[0]
-        A_shape = self.ir.tensor_shape
-        Asym = self.backend.symbols.element_tensor()
-        A = L.FlattenedArray(Asym, dims=[num_points, components] + A_shape)
-
+        A_shape = [num_points, components] + self.ir.tensor_shape
+        A = self.backend.symbols.element_tensor()
         iq = self.backend.symbols.quadrature_loop_index()
 
         # Check if DOFs in dofrange are equally spaced.
@@ -218,7 +216,8 @@ class ExpressionGenerator:
                     f = self.get_var(F.nodes[fi_ci[0]]["expression"])
                     arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
                     Brhs = L.float_product([f] + arg_factors)
-                    quadparts.append(L.AssignAdd(A[(A_indices[0], fi_ci[1]) + A_indices[1:]], Brhs))
+                    multi_index = L.MultiIndex([A_indices[0], fi_ci[1]] + A_indices[1:], A_shape)
+                    quadparts.append(L.AssignAdd(A[multi_index], Brhs))
         else:
 
             # Prepend dimensions of dofmap block with free index
@@ -250,7 +249,9 @@ class ExpressionGenerator:
             for fi_ci in blockdata.factor_indices_comp_indices:
                 f = self.get_var(F.nodes[fi_ci[0]]["expression"])
                 Brhs = L.float_product([f] + arg_factors)
-                body.append(L.AssignAdd(A[(A_indices[0], fi_ci[1]) + A_indices[1:]], Brhs))
+                indices = [A_indices[0], fi_ci[1]] + list(A_indices[1:])
+                multi_index = L.MultiIndex(indices, A_shape)
+                body.append(L.AssignAdd(A[multi_index], Brhs))
 
             for i in reversed(range(block_rank)):
                 body = L.ForRange(

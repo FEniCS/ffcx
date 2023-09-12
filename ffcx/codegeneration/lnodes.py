@@ -330,10 +330,9 @@ class MultiIndex(LExpr):
     def __init__(self, symbols: list, sizes: list):
         self.dtype = DataType.INT
         self.sizes = sizes
-        for sym in symbols:
-            assert isinstance(sym, LExpr)
+        self.symbols = [as_lexpr(sym) for sym in symbols]
+        for sym in self.symbols:
             assert sym.dtype == DataType.INT
-        self.symbols = symbols
 
         dim = len(sizes)
         if dim == 0:
@@ -752,6 +751,13 @@ def as_statement(node):
                 "Trying to create a statement of lexprOperator type %s:\n%s"
                 % (type(node), str(node))
             )
+    elif isinstance(node, list):
+        # Convenience case for list of statements
+        if len(node) == 1:
+            # Cleans up the expression tree a bit
+            return as_statement(node[0])
+        else:
+            return StatementList(node)
     else:
         raise RuntimeError(
             "Unexpected Statement type %s:\n%s" % (type(node), str(node))
