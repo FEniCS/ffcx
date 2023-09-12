@@ -181,8 +181,8 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
                 assert np.allclose(e._points, custom_q[0])
                 assert np.allclose(e._weights, custom_q[1])
 
-    # Determine unique quadrature degree, quadrature scheme and
-    # precision per each integral data
+    # Determine unique quadrature degree and quadrature scheme
+    # per each integral data
     for id, integral_data in enumerate(form_data.integral_data):
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
@@ -191,22 +191,6 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         # Quadrature degree and quadrature scheme must be the same for
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
-
-        # Extract precision
-        p_default = -1
-        precisions = set([integral.metadata().get("precision", p_default)
-                          for integral in integral_data.integrals])
-        precisions.discard(p_default)
-
-        if len(precisions) == 1:
-            p = precisions.pop()
-        elif len(precisions) == 0:
-            # Default precision
-            p = None
-        else:
-            raise RuntimeError("Only one precision allowed within integrals grouped by subdomain.")
-
-        integral_data.metadata["precision"] = p
 
         qd_default = -1
         qr_default = "default"
@@ -228,12 +212,11 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
                 logger.info(f"Integral {i}, integral group {id}:")
                 logger.info(f"--- quadrature rule: {qr}")
                 logger.info(f"--- quadrature degree: {qd}")
-                logger.info(f"--- precision: {p}")
 
-                metadata.update({"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})
+                metadata.update({"quadrature_degree": qd, "quadrature_rule": qr})
             else:
                 metadata.update({"quadrature_points": custom_q[0], "quadrature_weights": custom_q[1],
-                                 "quadrature_rule": "custom", "precision": p})
+                                 "quadrature_rule": "custom"})
 
             integral_data.integrals[i] = integral.reconstruct(metadata=metadata)
 
