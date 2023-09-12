@@ -106,6 +106,8 @@ class DataType(Enum):
 
 def merge_dtypes(dtype0, dtype1):
     # Promote dtype to SCALAR or REAL if either argument matches
+    if DataType.NONE in (dtype0, dtype1):
+        raise ValueError(f"Invalid DataType in LNodes {dtype0, dtype1}")
     if DataType.SCALAR in (dtype0, dtype1):
         return DataType.SCALAR
     elif DataType.REAL in (dtype0, dtype1):
@@ -337,8 +339,7 @@ class MultiIndex(LExpr):
         if dim == 0:
             self.global_index: LExpr = LiteralInt(0)
         else:
-            stride = [np.prod(sizes[i:]) for i in range(dim)]
-            stride += [LiteralInt(1)]
+            stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
             self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
 
     def size(self):
@@ -734,6 +735,29 @@ class Statement(LNode):
         return isinstance(other, type(self)) and self.expr == other.expr
 
 
+def as_statement(node):
+    """Perform type checking on node and wrap in a suitable statement type if necessary."""
+    if isinstance(node, StatementList) and len(node.statements) == 1:
+        # Cleans up the expression tree a bit
+        return node.statements[0]
+    elif isinstance(node, Statement):
+        # No-op
+        return node
+    elif isinstance(node, LExprOperator):
+        if node.sideeffect:
+            # Special case for using assignment expressions as statements
+            return Statement(node)
+        else:
+            raise RuntimeError(
+                "Trying to create a statement of lexprOperator type %s:\n%s"
+                % (type(node), str(node))
+            )
+    else:
+        raise RuntimeError(
+            "Unexpected Statement type %s:\n%s" % (type(node), str(node))
+        )
+
+
 class StatementList(LNode):
     """A simple sequence of statements. No new scopes are introduced."""
 
@@ -869,36 +893,6 @@ class ForRange(Statement):
         attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
-        )
-
-
-def as_statement(node):
-    """Perform type checking on node and wrap in a suitable statement type if necessary."""
-    if isinstance(node, StatementList) and len(node.statements) == 1:
-        # Cleans up the expression tree a bit
-        return node.statements[0]
-    elif isinstance(node, Statement):
-        # No-op
-        return node
-    elif isinstance(node, LExprOperator):
-        if node.sideeffect:
-            # Special case for using assignment expressions as statements
-            return Statement(node)
-        else:
-            raise RuntimeError(
-                "Trying to create a statement of lexprOperator type %s:\n%s"
-                % (type(node), str(node))
-            )
-    elif isinstance(node, list):
-        # Convenience case for list of statements
-        if len(node) == 1:
-            # Cleans up the expression tree a bit
-            return as_statement(node[0])
-        else:
-            return StatementList(node)
-    else:
-        raise RuntimeError(
-            "Unexpected CStatement type %s:\n%s" % (type(node), str(node))
         )
 
 

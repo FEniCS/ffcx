@@ -88,10 +88,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             entitytype,
             initial_terminals.values(),
             ir["unique_tables"],
-            use_sum_factorization=p["sum_factorization"],
             rtol=p["table_rtol"],
-            atol=p["table_atol"]
-        )
+            atol=p["table_atol"])
 
         # Fetch unique tables for this quadrature rule
         table_types = {v.name: v.ttype for v in mt_table_reference.values()}
