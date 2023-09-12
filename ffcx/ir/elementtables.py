@@ -111,7 +111,7 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
             weights = element._weights
         else:
             # Make quadrature rule and get points and weights
-            points, weights = create_quadrature_points_and_weights(
+            points, weights, _ = create_quadrature_points_and_weights(
                 integral_type, cell, element.highest_degree(), "default", [element])
 
     # Tabulate table of basis functions and derivatives in points for each entity

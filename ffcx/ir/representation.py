@@ -435,7 +435,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                     raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
             else:
                 degree = md["quadrature_degree"]
-                points, weights = create_quadrature_points_and_weights(
+                points, weights, _ = create_quadrature_points_and_weights(
                     integral_type, cell, degree, scheme, [convert_element(e) for e in form_data.argument_elements])
 
             points = np.asarray(points)
