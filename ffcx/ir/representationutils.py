@@ -56,8 +56,6 @@ def product(values):
 
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elements, use_tensor_product=False):
     """Create quadrature rule and return points and weights."""
-
-    """Create quadrature rule and return points and weights."""
     pts = None
     wts = None
     tensor_factors = None
