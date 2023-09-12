@@ -21,14 +21,12 @@ FFCX_DEFAULT_OPTIONS = {
     "scalar_type":
         ("double", """Scalar type used in generated code. Any of real or complex C floating-point types, e.g.
                       float, double, float _Complex, double _Complex, ..."""),
-    "sum_factorization": (False, "Use sum factorization."),
     "table_rtol":
         (1e-6, "Relative precision to use when comparing finite element table values for table reuse."),
     "table_atol":
         (1e-9, "Absolute precision to use when comparing finite element table values for reuse."),
     "verbosity":
         (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.")
-
 }
 
 

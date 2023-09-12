@@ -344,7 +344,6 @@ class MultiIndex(LExpr):
     def size(self):
         return np.prod(self.sizes)
 
-    # Bracket operator instead
     def local_index(self, idx):
         assert idx < len(self.symbols)
         return self.symbols[idx]
