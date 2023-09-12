@@ -583,55 +583,6 @@ class AssignDiv(AssignOp):
     op = "/="
 
 
-class FlattenedArray(object):
-    """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
-
-    def __init__(self, array, dims=None):
-        assert dims is not None
-        assert isinstance(array, Symbol)
-        self.array = array
-
-        # Allow expressions or literals as strides or dims and offset
-        assert isinstance(dims, (list, tuple))
-        dims = tuple(as_lexpr(i) for i in dims)
-        self.dims = dims
-        n = len(dims)
-        literal_one = LiteralInt(1)
-        strides = [literal_one] * n
-        for i in range(n - 2, -1, -1):
-            s = strides[i + 1]
-            d = dims[i + 1]
-            if d == literal_one:
-                strides[i] = s
-            elif s == literal_one:
-                strides[i] = d
-            else:
-                strides[i] = d * s
-
-        self.strides = strides
-
-    def __getitem__(self, indices):
-        if not isinstance(indices, (list, tuple)):
-            indices = (indices,)
-        n = len(indices)
-        if n == 0:
-            # Handle scalar case, allowing dims=() and indices=() for A[0]
-            if len(self.strides) != 0:
-                raise ValueError("Empty indices for nonscalar array.")
-            flat = LiteralInt(0)
-        else:
-            i, s = (indices[0], self.strides[0])
-            literal_one = LiteralInt(1)
-            flat = i if s == literal_one else s * i
-            for i, s in zip(indices[1:n], self.strides[1:n]):
-                flat = flat + s * i
-        # Delay applying ArrayAccess until we have all indices
-        if n == len(self.strides):
-            return ArrayAccess(self.array, flat)
-        else:
-            return FlattenedArray(self.array, strides=self.strides[n:], offset=flat)
-
-
 class ArrayAccess(LExprOperator):
     precedence = PRECEDENCE.SUBSCRIPT
 

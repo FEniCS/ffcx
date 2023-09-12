@@ -559,11 +559,11 @@ class IntegralGenerator(object):
 
         body: List[LNode] = []
 
-        A_shape = self.ir.tensor_shape
         A = self.backend.symbols.element_tensor()
+        A_shape = self.ir.tensor_shape
         for indices in keep:
-            midx = L.MultiIndex(list(indices), A_shape)
-            body.append(L.AssignAdd(A[midx], L.Sum(keep[indices])))
+            multi_index = L.MultiIndex(list(indices), A_shape)
+            body.append(L.AssignAdd(A[multi_index], L.Sum(keep[indices])))
 
         for i in reversed(range(block_rank)):
             body = [L.ForRange(B_indices[i], 0, blockdims[i], body=body)]
