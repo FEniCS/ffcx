@@ -20,7 +20,6 @@ import numpy.typing as npt
 
 import basix.ufl
 import ufl
-from ffcx.element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
 
@@ -74,10 +73,10 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
     for ufl_object in ufl_objects:
         if isinstance(ufl_object, ufl.form.Form):
             forms.append(ufl_object)
-        elif isinstance(ufl_object, ufl.FiniteElementBase):
-            elements.append(convert_element(ufl_object))
+        elif isinstance(ufl_object, ufl.AbstractFiniteElement):
+            elements.append(ufl_object)
         elif isinstance(ufl_object, ufl.Mesh):
-            coordinate_elements.append(convert_element(ufl_object.ufl_coordinate_element()))
+            coordinate_elements.append(ufl_object.ufl_coordinate_element())
         elif isinstance(ufl_object[0], ufl.core.expr.Expr):
             original_expression = ufl_object[0]
             points = np.asarray(ufl_object[1])
@@ -87,11 +86,11 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
 
     form_data = tuple(_analyze_form(form, options) for form in forms)
     for data in form_data:
-        elements += [convert_element(e) for e in data.unique_sub_elements]
-        coordinate_elements += [convert_element(e) for e in data.coordinate_elements]
+        elements += data.unique_sub_elements
+        coordinate_elements += data.coordinate_elements
 
     for original_expression, points in expressions:
-        elements += [convert_element(e) for e in ufl.algorithms.extract_elements(original_expression)]
+        elements += ufl.algorithms.extract_elements(original_expression)
         processed_expression = _analyze_expression(original_expression, options)
         processed_expressions += [(processed_expression, points, original_expression)]
 
@@ -153,7 +152,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        if not isinstance(element, basix.ufl._ElementBase) and element.degree() > 2:
+        if not isinstance(element, basix.ufl._ElementBase) and element.embedded_degree > 2:
             warn("UFL coordinate elements using elements not created via Basix may not work with DOLFINx")
 
     # Check for complex mode
@@ -173,7 +172,6 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     # If form contains a quadrature element, use the custom quadrature scheme
     custom_q = None
     for e in form_data.unique_elements:
-        e = convert_element(e)
         if e.has_custom_quadrature:
             if custom_q is None:
                 custom_q = e.custom_quadrature()

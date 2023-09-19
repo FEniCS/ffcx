@@ -103,7 +103,8 @@ def test_tensor_element(compile_args):
 
 
 def test_vector_quadrature_element(compile_args):
-    ufl_element = ufl.VectorElement(ufl.FiniteElement("Quadrature", "tetrahedron", degree=2, quad_scheme="default"))
+    ufl_element = basix.ufl.blocked_element(
+        basix.ufl.quadrature_element("tetrahedron", degree=2, scheme="default"), rank=1)
     jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
         [ufl_element], cffi_extra_compile_args=compile_args)
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
