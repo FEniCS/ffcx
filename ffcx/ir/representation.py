@@ -82,7 +82,6 @@ class ElementIR(typing.NamedTuple):
     value_shape: typing.Tuple[int, ...]
     reference_value_shape: typing.Tuple[int, ...]
     degree: int
-    family: str
     num_sub_elements: int
     block_size: int
     sub_elements: typing.List[str]
@@ -216,7 +215,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     logger.info(f"Computing IR for element {element}")
 
     # Create basix elements
-    cell = element.cell()
+    cell = element.cell
 
     # Store id
     ir = {"id": element_numbers[element]}
@@ -235,12 +234,11 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["basix_cell"] = element.cell_type
     ir["discontinuous"] = element.discontinuous
     ir["degree"] = element.degree()
-    ir["family"] = element.family_name
-    ir["value_shape"] = element.value_shape()
-    ir["reference_value_shape"] = element.reference_value_shape()
+    ir["value_shape"] = element.value_shape
+    ir["reference_value_shape"] = element.reference_value_shape
 
-    ir["num_sub_elements"] = element.num_sub_elements()
-    ir["sub_elements"] = [finite_element_names[e] for e in element.sub_elements()]
+    ir["num_sub_elements"] = element.num_sub_elements
+    ir["sub_elements"] = [finite_element_names[e] for e in element.sub_elements]
 
     ir["block_size"] = element.block_size
     if element.block_size > 1:
@@ -285,8 +283,8 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
 
     # Compute data for each function
     ir["signature"] = "FFCx dofmap for " + repr(element)
-    ir["sub_dofmaps"] = [dofmap_names[e] for e in element.sub_elements()]
-    ir["num_sub_dofmaps"] = element.num_sub_elements()
+    ir["sub_dofmaps"] = [dofmap_names[e] for e in element.sub_elements]
+    ir["num_sub_dofmaps"] = element.num_sub_elements
 
     ir["block_size"] = element.block_size
     if element.block_size > 1:
@@ -541,7 +539,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         # Default point spacing for CoordinateElement is equispaced
         if not isinstance(cmap, basix.ufl._ElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
-        family = cmap.family()
+        family = cmap.family_name
         degree = cmap.degree()
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
                     cmap.cell_type, cmap.lagrange_variant)
@@ -638,7 +636,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
             raise ValueError(f"Function name \"{name}\" must be a valid object identifier.")
         el = function.ufl_function_space().ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
-        family = cmap.family()
+        family = cmap.family_name
         degree = cmap.degree()
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
 

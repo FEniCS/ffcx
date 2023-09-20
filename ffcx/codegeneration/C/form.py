@@ -132,7 +132,7 @@ def generator(ir, options):
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
-        code += [f'.geometry_family = "{cmap_family}",']
+        code += [f'.geometry_family = \"{cmap_family}\",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
         code += [f".geometry_basix_variant = {int(cmap_variant)}"]

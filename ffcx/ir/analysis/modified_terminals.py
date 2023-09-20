@@ -267,7 +267,7 @@ def analyse_modified_terminal(expr):
             # Ignoring symmetry, assuming already applied in conversion
             # to reference frame
             base_symmetry = {}
-            base_shape = element.reference_value_shape()
+            base_shape = element.reference_value_shape
         else:
             base_symmetry = element.symmetry()
             base_shape = t.ufl_shape
