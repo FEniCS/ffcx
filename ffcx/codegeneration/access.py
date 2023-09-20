@@ -249,8 +249,8 @@ class FFCXBackendAccess(object):
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape() == (gdim, )
-        ufl_scalar_element, = set(coordinate_element.sub_elements())
+        assert coordinate_element.value_shape == (gdim, )
+        ufl_scalar_element, = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
@@ -280,8 +280,8 @@ class FFCXBackendAccess(object):
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape() == (gdim, )
-        ufl_scalar_element, = set(coordinate_element.sub_elements())
+        assert coordinate_element.value_shape == (gdim, )
+        ufl_scalar_element, = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
@@ -321,8 +321,8 @@ class FFCXBackendAccess(object):
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape() == (gdim, )
-        ufl_scalar_element, = set(coordinate_element.sub_elements())
+        assert coordinate_element.value_shape == (gdim, )
+        ufl_scalar_element, = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
