@@ -20,19 +20,19 @@
 #
 # Compile this form with FFCx: ffcx Poisson.ufl
 from ufl import (Coefficient, Constant, Mesh, TestFunction,
-                 TrialFunction, dx, grad, inner)
+                 TrialFunction, dx, grad, inner, FunctionSpace)
 import basix.ufl
 
 mesh = Mesh(basix.ufl.element('P', "triangle", 2, rank=1))
-
 e = basix.ufl.element("Lagrange", "triangle", 2)
+space = FunctionSpace(mesh, e)
 
-u = TrialFunction(e)
-v = TestFunction(e)
-f = Coefficient(e)
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
-kappa1 = Constant(mesh.ufl_cell(), shape=(2, 2))
-kappa2 = Constant(mesh.ufl_cell(), shape=(2, 2))
+kappa1 = Constant(mesh, shape=(2, 2))
+kappa2 = Constant(mesh, shape=(2, 2))
 
 a = inner(kappa1, kappa2) * inner(grad(u), grad(v)) * dx
 L = f * v * dx
