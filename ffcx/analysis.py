@@ -152,8 +152,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        if not isinstance(element, basix.ufl._ElementBase) and element.embedded_degree > 2:
-            warn("UFL coordinate elements using elements not created via Basix may not work with DOLFINx")
+        assert isinstance(element, basix.ufl._ElementBase)
 
     # Check for complex mode
     complex_mode = "_Complex" in options["scalar_type"]
