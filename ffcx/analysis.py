@@ -13,7 +13,6 @@ representation type.
 
 import logging
 import typing
-from warnings import warn
 
 import numpy as np
 import numpy.typing as npt

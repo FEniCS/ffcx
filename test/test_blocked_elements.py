@@ -9,7 +9,6 @@ import numpy as np
 import ffcx
 import ffcx.codegeneration.jit
 import basix.ufl
-import ufl
 
 
 def test_finite_element(compile_args):
