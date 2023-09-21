@@ -99,7 +99,7 @@ jobs:
         with:
           path: ./ufl
           repository: FEniCS/ufl
-          ref: main
+          ref: mscroggs/remove-elements
 
       - name: Run FFCx and UFL demos
         run: |
