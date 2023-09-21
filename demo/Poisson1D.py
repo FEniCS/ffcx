@@ -18,13 +18,16 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation.
 import basix.ufl
-from ufl import Coefficient, TestFunction, TrialFunction, dx, grad, inner
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
 element = basix.ufl.element("Lagrange", "interval", 1)
+domain = Mesh(basix.ufl.element("Lagrange", "interval", 1, rank=1))
+space = FunctionSpace(domain, element)
 
-u = TrialFunction(element)
-v = TestFunction(element)
-f = Coefficient(element)
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
 a = inner(grad(u), grad(v)) * dx
 L = f * v * dx

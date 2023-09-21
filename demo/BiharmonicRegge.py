@@ -3,17 +3,20 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Biharmonic equation in Regge formulation.
 import basix.ufl
-from ufl import (Coefficient, FacetNormal, Identity, TestFunctions,
-                 TrialFunctions, dot, dS, ds, dx, grad, inner, jump,
-                 tetrahedron, tr)
+from ufl import (Coefficient, FacetNormal, FunctionSpace, Identity, Mesh,
+                 TestFunctions, TrialFunctions, dot, dS, ds, dx, grad, inner,
+                 jump, tr)
 
 REG = basix.ufl.element("Regge", "tetrahedron", 1)
 P = basix.ufl.element("Lagrange", "tetrahedron", 2)
 mixed_element = basix.ufl.mixed_element([REG, P])
+domain = Mesh(basix.ufl.element("P", "tetrahedron", 1, rank=1))
+mixed_space = FunctionSpace(domain, mixed_element)
+p_space = FunctionSpace(domain, P)
 
-(sigma, u) = TrialFunctions(mixed_element)
-(tau, v) = TestFunctions(mixed_element)
-f = Coefficient(P)
+(sigma, u) = TrialFunctions(mixed_space)
+(tau, v) = TestFunctions(mixed_space)
+f = Coefficient(p_space)
 
 
 def S(mu):
@@ -21,7 +24,7 @@ def S(mu):
 
 
 def b(mu, v):
-    n = FacetNormal(tetrahedron)
+    n = FacetNormal(domain)
     return inner(S(mu), grad(grad(v))) * dx \
         - dot(dot(S(mu('+')), n('+')), n('+')) * jump(grad(v), n) * dS \
         - dot(dot(S(mu), n), n) * dot(grad(v), n) * ds

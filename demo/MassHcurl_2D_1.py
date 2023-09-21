@@ -15,11 +15,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 import basix.ufl
-from ufl import TestFunction, TrialFunction, dx, inner
+from ufl import FunctionSpace, Mesh, TestFunction, TrialFunction, dx, inner
 
 element = basix.ufl.element("N1curl", "triangle", 1)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+space = FunctionSpace(domain, element)
 
-v = TestFunction(element)
-u = TrialFunction(element)
+v = TestFunction(space)
+u = TrialFunction(space)
 
 a = inner(v, u) * dx

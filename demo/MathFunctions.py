@@ -17,13 +17,15 @@
 #
 # Test all algebra operators on Coefficients.
 import basix.ufl
-from ufl import (Coefficient, acos, asin, atan, bessel_J, bessel_Y, cos, dx,
-                 erf, exp, ln, sin, sqrt, tan)
+from ufl import (Coefficient, FunctionSpace, Mesh, acos, asin, atan, bessel_J,
+                 bessel_Y, cos, dx, erf, exp, ln, sin, sqrt, tan)
 
 element = basix.ufl.element("Lagrange", "triangle", 1)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+space = FunctionSpace(domain, element)
 
-c0 = Coefficient(element)
-c1 = Coefficient(element)
+c0 = Coefficient(space)
+c1 = Coefficient(space)
 
 s0 = 3 * c0 - c1
 p0 = c0 * c1

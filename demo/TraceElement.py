@@ -15,8 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 import basix.ufl
-from ufl import TestFunction, avg, ds, dS
+from ufl import FunctionSpace, Mesh, TestFunction, avg, ds, dS
 
 element = basix.ufl.element("HDiv Trace", "triangle", 0)
-v = TestFunction(element)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+space = FunctionSpace(domain, element)
+v = TestFunction(space)
 L = v * ds + avg(v) * dS

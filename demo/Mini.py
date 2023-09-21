@@ -20,14 +20,17 @@
 # formulation involving the Mini element. The velocity element is
 # composed of a P1 element augmented by the cubic bubble function.
 import basix.ufl
-from ufl import TestFunctions, TrialFunctions, div, dx, grad, inner
+from ufl import (FunctionSpace, Mesh, TestFunctions, TrialFunctions, div, dx,
+                 grad, inner)
 
 P1 = basix.ufl.element("Lagrange", "triangle", 1)
 B = basix.ufl.element("Bubble", "triangle", 3)
 V = basix.ufl.blocked_element(basix.ufl.enriched_element([P1, B]), shape=(2, ))
 Q = basix.ufl.element("P", "triangle", 1)
 
-Mini = basix.ufl.mixed_element([V, Q])
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+Mini = FunctionSpace(domain, basix.ufl.mixed_element([V, Q]))
+
 (u, p) = TrialFunctions(Mini)
 (v, q) = TestFunctions(Mini)
 

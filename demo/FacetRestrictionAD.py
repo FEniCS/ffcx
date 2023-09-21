@@ -15,14 +15,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 import basix.ufl
-from ufl import (Coefficient, TestFunction, TrialFunction, avg, derivative,
-                 dot, dS, dx, grad, inner)
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 avg, derivative, dot, dS, dx, grad, inner)
 
 element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+space = FunctionSpace(domain, element)
 
-v = TestFunction(element)
-w = Coefficient(element)
+v = TestFunction(space)
+w = Coefficient(space)
 L = inner(grad(w), grad(v)) * dx - dot(avg(grad(w)), avg(grad(v))) * dS
 
-u = TrialFunction(element)
+u = TrialFunction(space)
 a = derivative(L, w, u)
