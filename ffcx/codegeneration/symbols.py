@@ -68,7 +68,7 @@ class FFCXSymbols(object):
 
     def element_tensor(self):
         """Symbol for the element tensor itself."""
-        return L.Symbol("A")
+        return L.Symbol("A", dtype=L.DataType.SCALAR)
 
     def entity(self, entitytype, restriction):
         """Entity index for lookup in element tables."""

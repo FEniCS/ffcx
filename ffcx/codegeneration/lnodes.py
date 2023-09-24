@@ -101,10 +101,13 @@ class DataType(Enum):
     REAL = 0
     SCALAR = 1
     INT = 2
+    NONE = 3
 
 
 def merge_dtypes(dtype0, dtype1):
     # Promote dtype to SCALAR or REAL if either argument matches
+    if DataType.NONE in (dtype0, dtype1):
+        raise ValueError(f"Invalid DataType in LNodes {dtype0, dtype1}")
     if DataType.SCALAR in (dtype0, dtype1):
         return DataType.SCALAR
     elif DataType.REAL in (dtype0, dtype1):
@@ -131,6 +134,8 @@ class LExpr(LNode):
 
     All subtypes should define a 'precedence' class attribute.
     """
+
+    dtype = DataType.NONE
 
     def __getitem__(self, indices):
         return ArrayAccess(self, indices)
@@ -304,7 +309,7 @@ class Symbol(LExprTerminal):
 
     precedence = PRECEDENCE.SYMBOL
 
-    def __init__(self, name, dtype=None):
+    def __init__(self, name: str, dtype):
         assert isinstance(name, str)
         self.name = name
         self.dtype = dtype
@@ -317,6 +322,67 @@ class Symbol(LExprTerminal):
 
     def __repr__(self):
         return self.name
+
+
+class MultiIndex(LExpr):
+    """A multi-index for accessing tensors flattened in memory."""
+
+    def __init__(self, symbols: list, sizes: list):
+        self.dtype = DataType.INT
+        self.sizes = sizes
+        self.symbols = [as_lexpr(sym) for sym in symbols]
+        for sym in self.symbols:
+            assert sym.dtype == DataType.INT
+
+        dim = len(sizes)
+        if dim == 0:
+            self.global_index: LExpr = LiteralInt(0)
+        else:
+            stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
+            self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
+
+    def size(self):
+        return np.prod(self.sizes)
+
+    def local_index(self, idx):
+        assert idx < len(self.symbols)
+        return self.symbols[idx]
+
+    def intersection(self, other):
+        symbols = []
+        sizes = []
+        for (sym, size) in zip(self.symbols, self.sizes):
+            if sym in other.symbols:
+                i = other.symbols.index(sym)
+                assert other.sizes[i] == size
+                symbols.append(sym)
+                sizes.append(size)
+        return MultiIndex(symbols, sizes)
+
+    def union(self, other):
+        # NB result may depend on order a.union(b) != b.union(a)
+        symbols = self.symbols.copy()
+        sizes = self.sizes.copy()
+        for (sym, size) in zip(other.symbols, other.sizes):
+            if sym in symbols:
+                i = symbols.index(sym)
+                assert sizes[i] == size
+            else:
+                symbols.append(sym)
+                sizes.append(size)
+        return MultiIndex(symbols, sizes)
+
+    def difference(self, other):
+        symbols = []
+        sizes = []
+        for (idx, size) in zip(self.symbols, self.sizes):
+            if idx not in other.symbols:
+                symbols.append(idx)
+                sizes.append(size)
+        return MultiIndex(symbols, sizes)
+
+    def __hash__(self):
+        return hash(self.global_idx)
 
 
 class PrefixUnaryOp(LExprOperator):
@@ -345,7 +411,7 @@ class BinOp(LExprOperator):
         return hash(self.lhs) + hash(self.rhs)
 
     def __repr__(self):
-        return str(self.lhs) + str(self.op) + str(self.rhs)
+        return f"({self.lhs} {self.op} {self.rhs})"
 
 
 class ArithmeticBinOp(BinOp):
@@ -358,6 +424,8 @@ class ArithmeticBinOp(BinOp):
 class NaryOp(LExprOperator):
     """Base class for special n-ary operators."""
 
+    op = ""
+
     def __init__(self, args):
         self.args = [as_lexpr(arg) for arg in args]
 
@@ -367,6 +435,9 @@ class NaryOp(LExprOperator):
             and len(self.args) == len(other.args)
             and all(a == b for a, b in zip(self.args, other.args))
         )
+
+    def __repr__(self) -> str:
+        return f"{self.op} ".join(f"{i} " for i in self.args)
 
 
 class Neg(PrefixUnaryOp):
@@ -511,55 +582,6 @@ class AssignDiv(AssignOp):
     op = "/="
 
 
-class FlattenedArray(object):
-    """Syntax carrying object only, will get translated on __getitem__ to ArrayAccess."""
-
-    def __init__(self, array, dims=None):
-        assert dims is not None
-        assert isinstance(array, Symbol)
-        self.array = array
-
-        # Allow expressions or literals as strides or dims and offset
-        assert isinstance(dims, (list, tuple))
-        dims = tuple(as_lexpr(i) for i in dims)
-        self.dims = dims
-        n = len(dims)
-        literal_one = LiteralInt(1)
-        strides = [literal_one] * n
-        for i in range(n - 2, -1, -1):
-            s = strides[i + 1]
-            d = dims[i + 1]
-            if d == literal_one:
-                strides[i] = s
-            elif s == literal_one:
-                strides[i] = d
-            else:
-                strides[i] = d * s
-
-        self.strides = strides
-
-    def __getitem__(self, indices):
-        if not isinstance(indices, (list, tuple)):
-            indices = (indices,)
-        n = len(indices)
-        if n == 0:
-            # Handle scalar case, allowing dims=() and indices=() for A[0]
-            if len(self.strides) != 0:
-                raise ValueError("Empty indices for nonscalar array.")
-            flat = LiteralInt(0)
-        else:
-            i, s = (indices[0], self.strides[0])
-            literal_one = LiteralInt(1)
-            flat = i if s == literal_one else s * i
-            for i, s in zip(indices[1:n], self.strides[1:n]):
-                flat = flat + s * i
-        # Delay applying ArrayAccess until we have all indices
-        if n == len(self.strides):
-            return ArrayAccess(self.array, flat)
-        else:
-            return FlattenedArray(self.array, strides=self.strides[n:], offset=flat)
-
-
 class ArrayAccess(LExprOperator):
     precedence = PRECEDENCE.SUBSCRIPT
 
@@ -660,6 +682,36 @@ class Statement(LNode):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.expr == other.expr
+
+
+def as_statement(node):
+    """Perform type checking on node and wrap in a suitable statement type if necessary."""
+    if isinstance(node, StatementList) and len(node.statements) == 1:
+        # Cleans up the expression tree a bit
+        return node.statements[0]
+    elif isinstance(node, Statement):
+        # No-op
+        return node
+    elif isinstance(node, LExprOperator):
+        if node.sideeffect:
+            # Special case for using assignment expressions as statements
+            return Statement(node)
+        else:
+            raise RuntimeError(
+                "Trying to create a statement of lexprOperator type %s:\n%s"
+                % (type(node), str(node))
+            )
+    elif isinstance(node, list):
+        # Convenience case for list of statements
+        if len(node) == 1:
+            # Cleans up the expression tree a bit
+            return as_statement(node[0])
+        else:
+            return StatementList(node)
+    else:
+        raise RuntimeError(
+            "Unexpected Statement type %s:\n%s" % (type(node), str(node))
+        )
 
 
 class StatementList(LNode):
@@ -797,36 +849,6 @@ class ForRange(Statement):
         attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
-        )
-
-
-def as_statement(node):
-    """Perform type checking on node and wrap in a suitable statement type if necessary."""
-    if isinstance(node, StatementList) and len(node.statements) == 1:
-        # Cleans up the expression tree a bit
-        return node.statements[0]
-    elif isinstance(node, Statement):
-        # No-op
-        return node
-    elif isinstance(node, LExprOperator):
-        if node.sideeffect:
-            # Special case for using assignment expressions as statements
-            return Statement(node)
-        else:
-            raise RuntimeError(
-                "Trying to create a statement of lexprOperator type %s:\n%s"
-                % (type(node), str(node))
-            )
-    elif isinstance(node, list):
-        # Convenience case for list of statements
-        if len(node) == 1:
-            # Cleans up the expression tree a bit
-            return as_statement(node[0])
-        else:
-            return StatementList(node)
-    else:
-        raise RuntimeError(
-            "Unexpected CStatement type %s:\n%s" % (type(node), str(node))
         )
 
 

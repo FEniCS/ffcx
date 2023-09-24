@@ -23,7 +23,8 @@ class CodeBlocks(typing.NamedTuple):
     """
     Storage of code blocks of the form (declaration, implementation).
 
-    Blocks for elements, dofmaps, integrals, forms and expressions is stored
+    Blocks for elements, dofmaps, integrals, forms and expressions,
+    and start and end of file output
     """
 
     file_pre: typing.List[typing.Tuple[str, str]]
@@ -67,19 +68,8 @@ def generate_code(ir, options) -> CodeBlocks:
     ]
 
     code_forms = [form_generator(form_ir, options) for form_ir in ir.forms]
-
-    code_expressions = [
-        expression_generator(expression_ir, options) for expression_ir in ir.expressions
-    ]
-
+    code_expressions = [expression_generator(expression_ir, options) for expression_ir in ir.expressions]
     code_file_pre, code_file_post = file_generator(options)
-
-    return CodeBlocks(
-        file_pre=[code_file_pre],
-        elements=code_finite_elements,
-        dofmaps=code_dofmaps,
-        integrals=code_integrals,
-        forms=code_forms,
-        expressions=code_expressions,
-        file_post=[code_file_post],
-    )
+    return CodeBlocks(file_pre=[code_file_pre], elements=code_finite_elements, dofmaps=code_dofmaps,
+                      integrals=code_integrals, forms=code_forms, expressions=code_expressions,
+                      file_post=[code_file_post])

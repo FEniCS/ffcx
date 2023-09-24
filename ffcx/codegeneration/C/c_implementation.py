@@ -6,8 +6,7 @@
 
 import warnings
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import scalar_to_value_type, cdtype_to_numpy
-import numpy as np
+from ffcx.codegeneration.utils import scalar_to_value_type
 
 math_table = {
     "double": {
@@ -139,22 +138,25 @@ math_table = {
 
 
 class CFormatter(object):
-    def __init__(self, scalar, precision=None) -> None:
+    def __init__(self, scalar) -> None:
         self.scalar_type = scalar
         self.real_type = scalar_to_value_type(scalar)
-        if precision is None:
-            np_type = cdtype_to_numpy(self.real_type)
-            self.precision = np.finfo(np_type).precision + 1
-        else:
-            assert isinstance(precision, int)
-            self.precision = precision
+
+    def _dtype_to_name(self, dtype):
+        if dtype == L.DataType.SCALAR:
+            return self.scalar_type
+        if dtype == L.DataType.REAL:
+            return self.real_type
+        if dtype == L.DataType.INT:
+            return "int"
+        raise ValueError(f"Invalid dtype: {dtype}")
 
     def _format_number(self, x):
-        p = self.precision
+        # Use 16sf for precision (good for float64 or less)
         if isinstance(x, complex):
-            return f"({x.real:.{p}}+I*{x.imag:.{p}})"
+            return f"({x.real:.16}+I*{x.imag:.16})"
         elif isinstance(x, float):
-            return f"{x:.{p}}"
+            return f"{x:.16}"
         return str(x)
 
     def _build_initializer_lists(self, values):
@@ -174,16 +176,7 @@ class CFormatter(object):
 
     def format_array_decl(self, arr) -> str:
         dtype = arr.symbol.dtype
-        assert dtype is not None
-
-        if dtype == L.DataType.SCALAR:
-            typename = self.scalar_type
-        elif dtype == L.DataType.REAL:
-            typename = self.real_type
-        elif dtype == L.DataType.INT:
-            typename = "int"
-        else:
-            raise ValueError(f"Invalid dtype: {dtype}")
+        typename = self._dtype_to_name(dtype)
 
         symbol = self.c_format(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
@@ -203,11 +196,7 @@ class CFormatter(object):
     def format_variable_decl(self, v) -> str:
         val = self.c_format(v.value)
         symbol = self.c_format(v.symbol)
-        assert v.symbol.dtype
-        if v.symbol.dtype == L.DataType.SCALAR:
-            typename = self.scalar_type
-        elif v.symbol.dtype == L.DataType.REAL:
-            typename = self.real_type
+        typename = self._dtype_to_name(v.symbol.dtype)
         return f"{typename} {symbol} = {val};\n"
 
     def format_nary_op(self, oper) -> str:
@@ -290,6 +279,9 @@ class CFormatter(object):
     def format_symbol(self, s) -> str:
         return f"{s.name}"
 
+    def format_multi_index(self, mi) -> str:
+        return self.c_format(mi.global_index)
+
     def format_math_function(self, c) -> str:
         # Get a table of functions for this type, if available
         arg_type = self.scalar_type
@@ -311,6 +303,7 @@ class CFormatter(object):
         "Comment": format_comment,
         "ArrayDecl": format_array_decl,
         "ArrayAccess": format_array_access,
+        "MultiIndex": format_multi_index,
         "VariableDecl": format_variable_decl,
         "ForRange": format_for_range,
         "Statement": format_statement,
