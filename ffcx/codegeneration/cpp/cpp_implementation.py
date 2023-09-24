@@ -84,6 +84,9 @@ class CppFormatter(object):
         indices = f"[{']['.join(self.c_format(i) for i in arr.indices)}]"
         return f"{name}{indices}"
 
+    def format_multi_index(self, index) -> str:
+        return self.c_format(index.global_index)
+
     def format_variable_decl(self, v) -> str:
         val = self.c_format(v.value)
         symbol = self.c_format(v.symbol)
@@ -186,6 +189,7 @@ class CppFormatter(object):
         "Comment": format_comment,
         "ArrayDecl": format_array_decl,
         "ArrayAccess": format_array_access,
+        "MultiIndex": format_multi_index,
         "VariableDecl": format_variable_decl,
         "ForRange": format_for_range,
         "Statement": format_statement,

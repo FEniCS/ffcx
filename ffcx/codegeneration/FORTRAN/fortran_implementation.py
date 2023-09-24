@@ -45,6 +45,9 @@ class FortranFormatter(object):
         idx = ", ".join(self.c_format(ix) for ix in arr.indices)
         return f"{symbol}({idx})"
 
+    def format_multi_index(self, index):
+        return self.c_format(index.global_index)
+
     def format_variable_decl(self, v):
         sym = self.c_format(v.symbol)
         val = self.c_format(v.value)
@@ -124,6 +127,7 @@ class FortranFormatter(object):
         "Comment": format_comment,
         "ArrayDecl": format_array_decl,
         "ArrayAccess": format_array_access,
+        "MultiIndex": format_multi_index,
         "VariableDecl": format_variable_decl,
         "ForRange": format_for_range,
         "Statement": format_statement,
@@ -146,6 +150,8 @@ class FortranFormatter(object):
     def c_format(self, s):
         name = s.__class__.__name__
         try:
-            return self.c_impl[name](self, s)
+            st = self.c_impl[name](self, s)
+            print(name, st)
+            return st
         except KeyError:
             raise RuntimeError("Unknown statement: ", name)
