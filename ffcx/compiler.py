@@ -105,7 +105,7 @@ def compile_ufl_objects(
 
     # Stage 3: code generation
     cpu_time = time()
-    code = generate_code(ir, options)
+    code, sfx = generate_code(ir, options)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: join code
@@ -114,4 +114,4 @@ def compile_ufl_objects(
     code_main = "".join(c[1] for part in code for c in part)
     _print_timing(4, time() - cpu_time)
 
-    return (code_head, code_main)
+    return (code_head, code_main, sfx)

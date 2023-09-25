@@ -73,7 +73,7 @@ def main(args=None):
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        code_header, code_main = compiler.compile_ufl_objects(
+        code_header, code_main, sfx = compiler.compile_ufl_objects(
             ufd.forms + ufd.expressions + ufd.elements,
             ufd.object_names,
             prefix=prefix,
@@ -83,13 +83,7 @@ def main(args=None):
 
         # Write to file
 
-        suffix_map = {
-            "C": (".h", ".c"),
-            "cpp": (".hpp", ".cpp"),
-            "FORTRAN": (".f90h", ".f90"),
-            "numba": (None, "_numba.py"),
-        }
-        head_suffix, main_suffix = suffix_map.get(options["language"], (".h", ".c"))
+        head_suffix, main_suffix = sfx
         output_dir = xargs.output_directory
         if head_suffix:
             filename = os.path.join(output_dir, prefix + head_suffix)
