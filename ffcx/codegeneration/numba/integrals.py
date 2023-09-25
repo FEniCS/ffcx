@@ -50,8 +50,8 @@ def generator(ir, options):
     tensor_size = 1
     for dim in ir.tensor_shape:
         tensor_size *= dim
-    n_coeff = 1000
-    n_const = 1000
+    n_coeff = len(ir.enabled_coefficients)
+    n_const = len(ir.original_constant_offsets)
     header = f"""
     A = numba.carray(_A, ({tensor_size}))
     w = numba.carray(_w, ({n_coeff}))
