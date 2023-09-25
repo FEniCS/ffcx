@@ -94,7 +94,7 @@ jobs:
         # when there are test failures
         if: always()
 
-      - name: Run FFCx and UFL demos
+      - name: Run FFCx demos
         run: |
           pytest demo/test_demos.py
           rm -Rf ufl/
