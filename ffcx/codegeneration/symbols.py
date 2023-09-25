@@ -77,13 +77,15 @@ class FFCXBackendSymbols(object):
         if entitytype == "cell":
             # Always 0 for cells (even with restriction)
             return L.LiteralInt(0)
-        elif entitytype == "facet":
-            postfix = "[0]"
+
+        entity_local_index = L.Symbol("entity_local_index", dtype=L.DataType.INT)
+        if entitytype == "facet":
             if restriction == "-":
-                postfix = "[1]"
-            return L.Symbol("entity_local_index" + postfix, dtype=L.DataType.INT)
+                return entity_local_index[1]
+            else:
+                return entity_local_index[0]
         elif entitytype == "vertex":
-            return L.Symbol("entity_local_index[0]", dtype=L.DataType.INT)
+            return entity_local_index[0]
         else:
             logging.exception(f"Unknown entitytype {entitytype}")
 
