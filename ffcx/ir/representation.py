@@ -233,7 +233,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["basix_family"] = element.element_family
     ir["basix_cell"] = element.cell_type
     ir["discontinuous"] = element.discontinuous
-    ir["degree"] = element.degree()
+    ir["degree"] = element.degree
     ir["value_shape"] = element.value_shape
     ir["reference_value_shape"] = element.reference_value_shape
 
@@ -540,7 +540,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         if not isinstance(cmap, basix.ufl._ElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
         family = cmap.family_name
-        degree = cmap.degree()
+        degree = cmap.degree
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
                     cmap.cell_type, cmap.lagrange_variant)
 
@@ -637,7 +637,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
         el = function.ufl_function_space().ufl_element()
         cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
         family = cmap.family_name
-        degree = cmap.degree()
+        degree = cmap.degree
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
 
     expression_name = object_names.get(id(original_expression), index)

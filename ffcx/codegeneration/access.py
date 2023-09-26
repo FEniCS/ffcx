@@ -338,7 +338,7 @@ class FFCXBackendAccess(object):
 
         # Get dofs and component
         component = mt.component[1]
-        assert coordinate_element.degree() == 1, "Assuming degree 1 element"
+        assert coordinate_element.embedded_superdegree == 1, "Assuming degree 1 element"
         dof0 = vertex0
         dof1 = vertex1
         expr = (
