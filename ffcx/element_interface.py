@@ -53,14 +53,14 @@ def QuadratureElement(
     cellname: str, value_shape: typing.Tuple[int, ...], scheme: typing.Optional[str] = None,
     degree: typing.Optional[int] = None, points: typing.Optional[npt.NDArray[np.float64]] = None,
     weights: typing.Optional[npt.NDArray[np.float64]] = None,
-    pull_back: ufl.AbstractPullBack = ufl.identity_pull_back
+    pullback: ufl.AbstractPullback = ufl.identity_pullback
 ) -> basix.ufl._ElementBase:
     warnings.warn(
         "ffcx.element_interface.QuadratureElement is deprecated and will be removed after December 2023. "
         "Use basix.ufl.quadrature_element instead.", DeprecationWarning)
     return basix.ufl.quadrature_element(
         cell=cellname, value_shape=value_shape, scheme=scheme, degree=degree, points=points, weights=weights,
-        pull_back=pull_back)
+        pullback=pullback)
 
 
 # TODO: remove this deprecated function
