@@ -257,7 +257,7 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, options, cach
 
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
-    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, options=options)
+    _, code_body, _ = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, options=options)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffcx.codegeneration.get_include_path()],
