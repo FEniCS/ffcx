@@ -15,7 +15,6 @@ import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
 import ufl
 
 logger = logging.getLogger("ffcx")
-index_type = "int"
 
 
 def generator(ir, options):

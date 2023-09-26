@@ -11,13 +11,14 @@ Parse command-line arguments and generate code from input UFL form files.
 import argparse
 import cProfile
 import logging
+import os
 import pathlib
 import re
 import string
 
 import ufl
 from ffcx import __version__ as FFCX_VERSION
-from ffcx import compiler, formatting
+from ffcx import compiler
 from ffcx.options import FFCX_DEFAULT_OPTIONS, get_options
 
 logger = logging.getLogger("ffcx")
@@ -25,10 +26,11 @@ logger = logging.getLogger("ffcx")
 parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFCx, https://fenicsproject.org)")
 parser.add_argument(
-    "--version", action='version', version=f"%(prog)s (version {FFCX_VERSION})")
+    "--version", action="version", version=f"%(prog)s (version {FFCX_VERSION})")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
-parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
+parser.add_argument("-p", "--profile", action="store_true", help="enable profiling")
+parser.add_argument("-L", "--language", type=str, default="C", help="output language plugin (default C)")
 
 # Add all options from FFCx option system
 for opt_name, (opt_val, opt_desc) in FFCX_DEFAULT_OPTIONS.items():
@@ -64,12 +66,18 @@ def main(args=None):
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        code_h, code_c = compiler.compile_ufl_objects(
+        code_decl, code_impl, suffixes = compiler.compile_ufl_objects(
             ufd.forms + ufd.expressions + ufd.elements, ufd.object_names,
             prefix=prefix, options=options, visualise=xargs.visualise)
 
         # Write to file
-        formatting.write_code(code_h, code_c, prefix, xargs.output_directory)
+        output_dir = xargs.output_directory
+
+        for i, code in enumerate((code_impl, code_decl)):
+            if suffixes[i]:
+                filename = os.path.join(output_dir, prefix + suffixes[i])
+                with open(filename, "w") as cfile:
+                    cfile.write(code)
 
         # Turn off profiling and write status to file
         if xargs.profile:
