@@ -147,9 +147,16 @@ class NumbaFormatter(object):
         return f"{s.name}"
 
     def format_mathfunction(self, f):
-        function_map = {"ln": "log", "acos": "arccos", "asin": "arcsin",
-                        "atan": "arctan", "atan2": "arctan2", "acosh": "arccosh",
-                        "asinh": "arcsinh", "atanh": "arctanh"}
+        function_map = {"ln": "log",
+                        "acos": "arccos",
+                        "asin": "arcsin",
+                        "atan": "arctan",
+                        "atan2": "arctan2",
+                        "acosh": "arccosh",
+                        "asinh": "arcsinh",
+                        "atanh": "arctanh",
+                        "max_value": "max",
+                        "min_value": "min"}
         function = function_map.get(f.function, f.function)
         args = [self.c_format(arg) for arg in f.args]
         if "bessel" in function:
@@ -157,6 +164,8 @@ class NumbaFormatter(object):
         if function == "erf":
             return f"math.erf({args[0]})"
         argstr = ", ".join(args)
+        if function == "max" or function == "min":
+            return f"{function}({argstr})"
         return f"np.{function}({argstr})"
 
     c_impl = {

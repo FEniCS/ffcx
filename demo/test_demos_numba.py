@@ -45,4 +45,4 @@ def test_demo(file):
         compiled_functions = [wrapper(f) for f in names]
         print(compiled_functions)
 
-    os.unlink(f"{file}_numba.py")
+    os.unlink(f"{demo_dir}/{file}_numba.py")
