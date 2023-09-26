@@ -7,7 +7,7 @@ demo_dir = os.path.dirname(os.path.realpath(__file__))
 
 ufl_files = []
 for file in os.listdir(demo_dir):
-    if file.endswith(".py") and not file == "test_demos.py":
+    if file.endswith(".py") and "test" not in file:
         ufl_files.append(file[:-3])
 
 
