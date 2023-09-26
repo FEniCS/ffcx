@@ -18,6 +18,17 @@ subroutine tabulate_tensor(A, w, c, coordinate_dofs, entity_local_index, quadrat
  INTEGER, DIMENSION(0:*) :: entity_local_index
  CHARACTER, DIMENSION(0:*) :: quadrature_permutation
  {tabulate_tensor}
+ contains
+ function conditional(c, t, f)
+   logical c
+   double precision t, f, conditional
+   if (c) then
+     conditional = t
+     return
+   endif
+   conditional = f
+   return
+ end function
  END subroutine
 
 {factory_name}%enabled_coefficients = {enabled_coefficients}

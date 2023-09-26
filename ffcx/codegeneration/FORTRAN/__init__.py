@@ -1,3 +1,3 @@
 from . import finite_element, dofmap, form, expressions, integrals, file # noqa
 
-suffixes = (None, ".f90")
+suffixes = (".f90h", ".f90")

@@ -110,11 +110,24 @@ class FortranFormatter(object):
         else:
             return f"      {lhs} {expr.op} {rhs}\n"
 
-    def format_conditional(self, c):
-        return "conditional()"
+    def format_conditional(self, s):
+        c = self.c_format(s.condition)
+        t = self.c_format(s.true)
+        f = self.c_format(s.false)
+        return f"conditional({c}, {t}, {f})"
 
     def format_symbol(self, s):
         return f"{s.name}"
+
+    def format_not(self, s):
+        arg = self.c_format(s.arg)
+        return f".NOT.({arg})"
+
+    def format_logical(self, c):
+        fortran_op = c.__class__.__name__
+        lhs = self.c_format(c.lhs)
+        rhs = self.c_format(c.rhs)
+        return f"{lhs} .{fortran_op}. {rhs}"
 
     def format_math_function(self, c):
         lookup = {"fabs": "DABS"}
@@ -140,6 +153,14 @@ class FortranFormatter(object):
         "Mul": format_binary_op,
         "Div": format_binary_op,
         "Neg": format_neg,
+        "GT": format_logical,
+        "LT": format_logical,
+        "LE": format_logical,
+        "EQ": format_logical,
+        "GE": format_logical,
+        "And": format_logical,
+        "Or": format_logical,
+        "Not": format_not,
         "LiteralFloat": format_literal_float,
         "LiteralInt": format_literal_int,
         "Symbol": format_symbol,
