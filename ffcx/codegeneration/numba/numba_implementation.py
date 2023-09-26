@@ -36,8 +36,7 @@ class NumbaFormatter(object):
         if arr.values is None:
             return f"{symbol} = np.empty({arr.sizes}, dtype={dtype})\n"
         av = build_initializer_lists(arr.values)
-        av = "np.array(" + av + f", dtype={dtype})"
-        return f"{symbol} = {av}\n"
+        return f"{symbol} = np.array({av}, dtype={dtype})\n"
 
     def format_array_access(self, arr):
         array = self.c_format(arr.array)

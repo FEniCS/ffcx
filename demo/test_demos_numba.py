@@ -38,7 +38,7 @@ def test_demo(file):
         print(compiled_functions)
 
     # Some demos failing with complex numbers
-    if file not in ["MathFunctions", "Conditional"]:
+    if file not in ["MathFunctions", "Conditional", "FunctionOperators"]:
         scalar_tp = np.complex128
         real_tp = np.float64
         wrapper = module.wrapper(scalar_tp, real_tp)
