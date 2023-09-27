@@ -77,12 +77,12 @@ class NumbaFormatter(object):
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    def format_neg(self, val):
-        arg = self.c_format(val.arg)
-        return f"-{arg}"
+    def format_neg(self, s):
+        arg = self.c_format(s.arg)
+        return f"-({arg})"
 
-    def format_not(self, val):
-        arg = self.c_format(val.arg)
+    def format_not(self, s):
+        arg = self.c_format(s.arg)
         return f"not({arg})"
 
     def format_andor(self, oper):
