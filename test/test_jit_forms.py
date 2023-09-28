@@ -545,14 +545,11 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     np_type = cdtype_to_numpy(mode)
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
     w = np.array([], dtype=np_type)
-
     geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
-
     coords = np.array([[1.0, 0.0, 0.0],
                        [2.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np_gtype)
-
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
@@ -804,9 +801,7 @@ def test_interval_vertex_quadrature(compile_args):
 
 
 def test_facet_vertex_quadrature(compile_args):
-    """
-    Test facet vertex quadrature
-    """
+    """Test facet vertex quadrature"""
     c_el = basix.ufl.element("Lagrange", "quadrilateral", 1, shape=(2,))
     mesh = ufl.Mesh(c_el)
 
@@ -863,10 +858,7 @@ def test_facet_vertex_quadrature(compile_args):
 
 
 def test_manifold_derivatives(compile_args):
-    """
-    Test higher order derivatives on manifolds
-    """
-
+    """Test higher order derivatives on manifolds"""
     c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(2,), gdim=2)
     mesh = ufl.Mesh(c_el)
 
@@ -888,8 +880,7 @@ def test_manifold_derivatives(compile_args):
     default_integral = compiled_forms[0].form_integrals[0]
     scale = 2.5
     coords = np.array([0.0, 0.0, 0.0, 0.0, scale, 0.0], dtype=np.float64)
-    dof_coords = el.element.points.reshape(-1)
-    dof_coords *= scale
+    dof_coords = scale * el.element.points.reshape(-1)
 
     w = np.array([d * d_c**order for d_c in dof_coords], dtype=np.float64)
     c = np.array([], dtype=np.float64)
@@ -908,14 +899,15 @@ def test_manifold_derivatives(compile_args):
 
 
 def test_integral_grouping(compile_args):
-    """
-    We group integrals with common integrands to avoid duplicated integration kernels.
-    This means that `inner(u, v)*dx((1,2,3))  + inner(grad(u), grad(v))*dx(2) + inner(u,v)*dx`
-    is grouped as
+    """We group integrals with common integrands to avoid duplicated
+    integration kernels. This means that `inner(u, v)*dx((1,2,3))  +
+    inner(grad(u), grad(v))*dx(2) + inner(u,v)*dx` is grouped as
     1. `inner(u,v)*dx(("everywhere", 1, 3))`
     2. `(inner(grad(u), grad(v)) + inner(u, v))*dx(2)`
-    Each of the forms has one generated `tabulate_tensor_*` function, which is referred to multiple times in
-    `integrals_` and `integral_ids_`
+    Each of the forms has one generated `tabulate_tensor_*` function,
+    which is referred to multiple times in `integrals_` and
+    `integral_ids_`
+
     """
     mesh = ufl.Mesh(ufl.VectorElement("Lagrange", ufl.triangle, 1))
     V = ufl.FunctionSpace(mesh, ufl.FiniteElement("Lagrange", ufl.triangle, 1))
