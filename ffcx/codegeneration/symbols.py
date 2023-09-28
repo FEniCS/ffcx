@@ -75,8 +75,19 @@ class FFCXBackendSymbols(object):
         # Reusing a single symbol for all quadrature loops, assumed not to be nested.
         self.quadrature_loop_index = L.Symbol("iq", dtype=L.DataType.INT)
 
-        # Symbol for the element tensor itself.
+        # Symbols for the tabulate_tensor function arguments
         self.element_tensor = L.Symbol("A", dtype=L.DataType.SCALAR)
+        self.coordinate_dofs = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
+        self.quadrature_permutation = L.Symbol("quadrature_permutation", dtype=L.DataType.INT)
+
+        # Index for loops over coefficient dofs, assumed to never be used in two nested loops.
+        self.coefficient_dof_sum_index = L.Symbol("ic", dtype=L.DataType.INT)
+
+        # Table for chunk of custom quadrature weights (including cell measure scaling).
+        self.custom_weights_table = L.Symbol("weights_chunk", dtype=L.DataType.REAL)
+
+        # Table for chunk of custom quadrature points (physical coordinates).
+        self.custom_points_table = L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
     def entity(self, entitytype, restriction):
         """Entity index for lookup in element tables."""
@@ -99,22 +110,6 @@ class FFCXBackendSymbols(object):
         """Loop index for argument #iarg."""
         indices = ["i", "j", "k", "l"]
         return L.Symbol(indices[iarg], dtype=L.DataType.INT)
-
-    def coefficient_dof_sum_index(self):
-        """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
-        return L.Symbol("ic", dtype=L.DataType.INT)
-
-    def quadrature_permutation(self, index):
-        """Quadrature permutation, as input to the function."""
-        return L.Symbol("quadrature_permutation", dtype=L.DataType.INT)[index]
-
-    def custom_weights_table(self):
-        """Table for chunk of custom quadrature weights (including cell measure scaling)."""
-        return L.Symbol("weights_chunk", dtype=L.DataType.REAL)
-
-    def custom_points_table(self):
-        """Table for chunk of custom quadrature points (physical coordinates)."""
-        return L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
     def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
@@ -142,8 +137,7 @@ class FFCXBackendSymbols(object):
         offset = 0
         if restriction == "-":
             offset = num_scalar_dofs * 3
-        vc = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
-        return vc[3 * dof + component + offset]
+        return self.coordinate_dofs[3 * dof + component + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
@@ -191,9 +185,9 @@ class FFCXBackendSymbols(object):
             iq = self.quadrature_loop_index
 
         if tabledata.is_permuted:
-            qp = self.quadrature_permutation(0)
+            qp = self.quadrature_permutation[0]
             if restriction == "-":
-                qp = self.quadrature_permutation(1)
+                qp = self.quadrature_permutation[1]
         else:
             qp = 0
 

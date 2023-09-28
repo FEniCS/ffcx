@@ -95,8 +95,8 @@ class FFCXBackendAccess(object):
                 raise RuntimeError("FIXME: Jacobian in custom integrals is not implemented.")
 
             # Access predefined quadrature points table
-            x = self.symbols.custom_points_table()
-            iq = self.symbols.quadrature_loop_index()
+            x = self.symbols.custom_points_table
+            iq = self.symbols.quadrature_loop_index
             gdim, = mt.terminal.ufl_shape
             if gdim == 1:
                 index = iq
