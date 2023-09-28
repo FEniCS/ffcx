@@ -226,6 +226,7 @@ class IntegralGenerator(object):
 
         """
         table_symbol = L.Symbol(name, dtype=L.DataType.REAL)
+        self.backend.symbols.element_tables[name] = table_symbol
         return [L.ArrayDecl(table_symbol, values=table, const=True)]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):

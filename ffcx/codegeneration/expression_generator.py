@@ -86,6 +86,7 @@ class ExpressionGenerator:
         for name in table_names:
             table = tables[name]
             symbol = L.Symbol(name, dtype=L.DataType.REAL)
+            self.backend.symbols[name] = symbol
             decl = L.ArrayDecl(symbol, sizes=table.shape, values=table, const=True)
             parts += [decl]
 
