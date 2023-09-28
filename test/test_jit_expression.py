@@ -39,7 +39,7 @@ def test_matvec(compile_args):
     of user specified vector-valued finite element function (in P1 space).
 
     """
-    e = basix.ufl.element("P", "triangle", 1, rank=1)
+    e = basix.ufl.element("P", "triangle", 1, shape=(2, ))
     mesh = ufl.Mesh(e)
     V = ufl.FunctionSpace(mesh, e)
     f = ufl.Coefficient(V)
@@ -103,7 +103,7 @@ def test_rank1(compile_args):
     and evaluates expression [u_y, u_x] + grad(u_x) at specified points.
 
     """
-    e = basix.ufl.element("P", "triangle", 1, rank=1)
+    e = basix.ufl.element("P", "triangle", 1, shape=(2, ))
     mesh = ufl.Mesh(e)
 
     V = ufl.FunctionSpace(mesh, e)
@@ -164,7 +164,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
     Test elimination of tensor-valued expressions with zero tables
     """
     cell = "tetrahedron"
-    c_el = basix.ufl.element("P", cell, 1, rank=1)
+    c_el = basix.ufl.element("P", cell, 1, shape=(3, ))
     mesh = ufl.Mesh(c_el)
 
     e = basix.ufl.element("P", cell, 1)

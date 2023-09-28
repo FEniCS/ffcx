@@ -23,7 +23,7 @@ from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
                          ])
 def test_additive_facet_integral(mode, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a = ufl.inner(u, v) * ufl.ds
@@ -75,7 +75,7 @@ def test_additive_facet_integral(mode, compile_args):
 @pytest.mark.parametrize("mode", ["double", "float", "long double", "double _Complex", "float _Complex"])
 def test_additive_cell_integral(mode, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
