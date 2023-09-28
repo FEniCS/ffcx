@@ -68,8 +68,9 @@ class FFCXBackendSymbols(object):
 
         self.original_constant_offsets = original_constant_offsets
 
-        # Keep tabs on tables, so the symbol can be reused
+        # Keep tabs on tables, so the symbols can be reused
         self.quadrature_weight_tables = {}
+        self.element_tables = {}
 
         # Reusing a single symbol for all quadrature loops, assumed not to be nested.
         self.quadrature_loop_index = L.Symbol("iq", dtype=L.DataType.INT)
@@ -187,7 +188,7 @@ class FFCXBackendSymbols(object):
         if tabledata.is_piecewise:
             iq = 0
         else:
-            iq = self.quadrature_loop_index()
+            iq = self.quadrature_loop_index
 
         if tabledata.is_permuted:
             qp = self.quadrature_permutation(0)
@@ -196,5 +197,8 @@ class FFCXBackendSymbols(object):
         else:
             qp = 0
 
-        # Return direct access to element table
-        return L.Symbol(tabledata.name, dtype=L.DataType.REAL)[qp][entity][iq]
+        # Return direct access to element table, reusing symbol if possible
+        if tabledata.name not in self.element_tables.keys():
+            self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
+                                                           dtype=L.DataType.REAL)
+        return self.element_tables[tabledata.name][qp][entity][iq]

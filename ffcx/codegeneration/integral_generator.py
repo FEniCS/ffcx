@@ -559,7 +559,7 @@ class IntegralGenerator(object):
 
         body: List[LNode] = []
 
-        A = self.backend.symbols.element_tensor()
+        A = self.backend.symbols.element_tensor
         A_shape = self.ir.tensor_shape
         for indices in keep:
             multi_index = L.MultiIndex(list(indices), A_shape)
