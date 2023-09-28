@@ -64,7 +64,7 @@ def test_gemv(scalar):
     y = L.Symbol("y", dtype=L.DataType.SCALAR)
     A = L.Symbol("A", dtype=L.DataType.SCALAR)
     x = L.Symbol("x", dtype=L.DataType.SCALAR)
-    code = [L.Comment(f"Matrix multiply y({p}) = A{p,q} * x({q})")]
+    code = [L.Comment(f"Matrix-vector multiply y({p}) = A{p,q} * x({q})")]
 
     i = L.Symbol("i", dtype=L.DataType.INT)
     j = L.Symbol("j", dtype=L.DataType.INT)
@@ -79,8 +79,6 @@ def test_gemv(scalar):
     decl = f"void gemm({scalar} *y, {scalar} *A, {scalar} *x)"
     c_code = decl + "{\n" + \
         Q.c_format(L.StatementList(code)) + "\n}\n"
-
-    print(c_code)
 
     ffibuilder = FFI()
     ffibuilder.cdef(decl + ";")

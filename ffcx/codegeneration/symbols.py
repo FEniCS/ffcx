@@ -192,7 +192,7 @@ class FFCXBackendSymbols(object):
             qp = 0
 
         # Return direct access to element table, reusing symbol if possible
-        if tabledata.name not in self.element_tables.keys():
+        if tabledata.name not in self.element_tables:
             self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
                                                            dtype=L.DataType.REAL)
         return self.element_tables[tabledata.name][qp][entity][iq]
