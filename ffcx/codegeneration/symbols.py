@@ -68,9 +68,14 @@ class FFCXBackendSymbols(object):
 
         self.original_constant_offsets = original_constant_offsets
 
-    def element_tensor(self):
-        """Symbol for the element tensor itself."""
-        return L.Symbol("A", dtype=L.DataType.SCALAR)
+        # Keep tabs on tables, so the symbol can be reused
+        self.quadrature_weight_tables = {}
+
+        # Reusing a single symbol for all quadrature loops, assumed not to be nested.
+        self.quadrature_loop_index = L.Symbol("iq", dtype=L.DataType.INT)
+
+        # Symbol for the element tensor itself.
+        self.element_tensor = L.Symbol("A", dtype=L.DataType.SCALAR)
 
     def entity(self, entitytype, restriction):
         """Entity index for lookup in element tables."""
@@ -98,10 +103,6 @@ class FFCXBackendSymbols(object):
         """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
         return L.Symbol("ic", dtype=L.DataType.INT)
 
-    def quadrature_loop_index(self):
-        """Reusing a single index name for all quadrature loops, assumed not to be nested."""
-        return L.Symbol("iq", dtype=L.DataType.INT)
-
     def quadrature_permutation(self, index):
         """Quadrature permutation, as input to the function."""
         return L.Symbol("quadrature_permutation", dtype=L.DataType.INT)[index]
@@ -116,7 +117,11 @@ class FFCXBackendSymbols(object):
 
     def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
-        return L.Symbol(f"weights_{quadrature_rule.id()}", dtype=L.DataType.REAL)
+        key = f"weights_{quadrature_rule.id()}"
+        if key not in self.quadrature_weight_tables:
+            self.quadrature_weight_tables[key] = L.Symbol(f"weights_{quadrature_rule.id()}",
+                                                          dtype=L.DataType.REAL)
+        return self.quadrature_weight_tables[key]
 
     def points_table(self, quadrature_rule):
         """Table of quadrature points (points on the reference integration entity)."""

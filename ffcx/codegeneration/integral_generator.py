@@ -247,7 +247,7 @@ class IntegralGenerator(object):
             quadparts = []
         else:
             num_points = quadrature_rule.points.shape[0]
-            iq = self.backend.symbols.quadrature_loop_index()
+            iq = self.backend.symbols.quadrature_loop_index
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
         return pre_definitions, preparts, quadparts
@@ -445,7 +445,7 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
-        iq = self.backend.symbols.quadrature_loop_index()
+        iq = self.backend.symbols.quadrature_loop_index
 
         # Override dof index with quadrature loop index for arguments
         # with quadrature element, to index B like B[iq*num_dofs + iq]
