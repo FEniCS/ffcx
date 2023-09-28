@@ -77,7 +77,10 @@ class FFCXBackendSymbols(object):
 
         # Symbols for the tabulate_tensor function arguments
         self.element_tensor = L.Symbol("A", dtype=L.DataType.SCALAR)
+        self.coefficients = L.Symbol("w", dtype=L.DataType.SCALAR)
+        self.constants = L.Symbol("c", dtype=L.DataType.SCALAR)
         self.coordinate_dofs = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
+        self.entity_local_index = L.Symbol("entity_local_index", dtype=L.DataType.INT)
         self.quadrature_permutation = L.Symbol("quadrature_permutation", dtype=L.DataType.INT)
 
         # Index for loops over coefficient dofs, assumed to never be used in two nested loops.
@@ -95,14 +98,13 @@ class FFCXBackendSymbols(object):
             # Always 0 for cells (even with restriction)
             return L.LiteralInt(0)
 
-        entity_local_index = L.Symbol("entity_local_index", dtype=L.DataType.INT)
         if entitytype == "facet":
             if restriction == "-":
-                return entity_local_index[1]
+                return self.entity_local_index[1]
             else:
-                return entity_local_index[0]
+                return self.entity_local_index[0]
         elif entitytype == "vertex":
-            return entity_local_index[0]
+            return self.entity_local_index[0]
         else:
             logging.exception(f"Unknown entitytype {entitytype}")
 
@@ -148,13 +150,13 @@ class FFCXBackendSymbols(object):
 
     def coefficient_dof_access(self, coefficient, dof_index):
         offset = self.coefficient_offsets[coefficient]
-        w = L.Symbol("w", dtype=L.DataType.SCALAR)
+        w = self.coefficients
         return w[offset + dof_index]
 
     def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
                                        block_size, dof_offset):
         coeff_offset = self.coefficient_offsets[coefficient]
-        w = L.Symbol("w", dtype=L.DataType.SCALAR)
+        w = self.coefficients
         _w = L.Symbol(f"_w_{coeff_offset}_{dof_offset}", dtype=L.DataType.SCALAR)
         unit_stride_access = _w[index]
         original_access = w[coeff_offset + index * block_size + dof_offset]
@@ -167,8 +169,7 @@ class FFCXBackendSymbols(object):
 
     def constant_index_access(self, constant, index):
         offset = self.original_constant_offsets[constant]
-        c = L.Symbol("c", dtype=L.DataType.SCALAR)
-
+        c = self.constants
         return c[offset + index]
 
     def element_table(self, tabledata, entitytype, restriction):
