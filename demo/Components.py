@@ -19,7 +19,7 @@
 import basix.ufl
 from ufl import Coefficient, TestFunction, as_vector, dot, dx
 
-element = basix.ufl.element("Lagrange", "tetrahedron", 1, rank=1)
+element = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, ))
 
 v = TestFunction(element)
 f = Coefficient(element)

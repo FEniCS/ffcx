@@ -22,7 +22,7 @@ from ufl import FacetNormal, TestFunction, TrialFunction, dot, ds, triangle
 
 cell = triangle
 
-element = basix.ufl.element("Lagrange", cell.cellname(), 1, rank=1)
+element = basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, ))
 
 n = FacetNormal(cell)
 

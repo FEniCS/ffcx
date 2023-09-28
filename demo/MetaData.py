@@ -20,7 +20,7 @@ import basix.ufl
 from ufl import Coefficient, TestFunction, TrialFunction, dx, grad, inner
 
 element = basix.ufl.element("Lagrange", "triangle", 1)
-vector_element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
+vector_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
 
 
 u = TrialFunction(element)
