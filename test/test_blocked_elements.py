@@ -41,7 +41,7 @@ def test_finite_element(compile_args):
 
 
 def test_vector_element(compile_args):
-    ufl_element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
+    ufl_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
     jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
         [ufl_element], cffi_extra_compile_args=compile_args)
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
@@ -71,7 +71,7 @@ def test_vector_element(compile_args):
 
 
 def test_tensor_element(compile_args):
-    ufl_element = basix.ufl.element("Lagrange", "triangle", 1, rank=2)
+    ufl_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, 2))
     jit_compiled_elements, module, code = ffcx.codegeneration.jit.compile_elements(
         [ufl_element], cffi_extra_compile_args=compile_args)
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
