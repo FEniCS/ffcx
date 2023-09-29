@@ -25,7 +25,7 @@ from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 ])
 def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     kappa = ufl.Constant(domain, shape=(2, 2))
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
@@ -101,7 +101,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
 ])
 def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a = ufl.inner(u, v) * ufl.dx
@@ -155,7 +155,7 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
 ])
 def test_helmholtz_form_2d(mode, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     if mode == "double":
@@ -212,7 +212,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
 ])
 def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "tetrahedron", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
@@ -250,7 +250,7 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
 
 def test_form_coefficient(compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TestFunction(space), ufl.TrialFunction(space)
     g = ufl.Coefficient(space)
@@ -287,7 +287,7 @@ def test_form_coefficient(compile_args):
 
 def test_subdomains(compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a0 = ufl.inner(u, v) * ufl.dx + ufl.inner(u, v) * ufl.dx(2)
@@ -328,7 +328,7 @@ def test_subdomains(compile_args):
 @pytest.mark.parametrize("mode", ["double", "double _Complex"])
 def test_interior_facet_integral(mode, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a0 = ufl.inner(ufl.jump(ufl.grad(u)), ufl.jump(ufl.grad(v))) * ufl.dS
@@ -375,7 +375,7 @@ def test_interior_facet_integral(mode, compile_args):
 @pytest.mark.parametrize("mode", ["double", "double _Complex"])
 def test_conditional(mode, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     x = ufl.SpatialCoordinate(domain)
@@ -433,7 +433,7 @@ def test_conditional(mode, compile_args):
 
 
 def test_custom_quadrature(compile_args):
-    ve = basix.ufl.element("P", "triangle", 1, rank=1)
+    ve = basix.ufl.element("P", "triangle", 1, shape=(2, ))
     mesh = ufl.Mesh(ve)
 
     e = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
@@ -472,7 +472,7 @@ def test_custom_quadrature(compile_args):
 
 def test_curl_curl(compile_args):
     V = basix.ufl.element("N1curl", "triangle", 2)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, V)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a = ufl.inner(ufl.curl(u), ufl.curl(v)) * ufl.dx
@@ -527,7 +527,7 @@ def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lamb
 def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_triangle_symbolic(order, fun=sym_fun)
     element = basix.ufl.element("Lagrange", "triangle", order)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     v = ufl.TestFunction(space)
 
@@ -545,14 +545,11 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     np_type = cdtype_to_numpy(mode)
     b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
     w = np.array([], dtype=np_type)
-
     geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
-
     coords = np.array([[1.0, 0.0, 0.0],
                        [2.0, 0.0, 0.0],
                        [0.0, 1.0, 0.0]], dtype=np_gtype)
-
     kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
     kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
@@ -620,7 +617,7 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
 def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     sym = lagrange_tetrahedron_symbolic(order, fun=sym_fun)
     element = basix.ufl.element("Lagrange", "tetrahedron", order)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, )))
     space = ufl.FunctionSpace(domain, element)
     v = ufl.TestFunction(space)
 
@@ -660,7 +657,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
 
 def test_prism(compile_args):
     element = basix.ufl.element("Lagrange", "prism", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "prism", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "prism", 1, shape=(3, )))
     space = ufl.FunctionSpace(domain, element)
     v = ufl.TestFunction(space)
 
@@ -694,9 +691,9 @@ def test_prism(compile_args):
 def test_complex_operations(compile_args):
     mode = "double _Complex"
     cell = "triangle"
-    c_element = basix.ufl.element("Lagrange", cell, 1, rank=1)
+    c_element = basix.ufl.element("Lagrange", cell, 1, shape=(2, ))
     mesh = ufl.Mesh(c_element)
-    element = basix.ufl.element("DG", cell, 0, rank=1)
+    element = basix.ufl.element("DG", cell, 0, shape=(2, ))
     V = ufl.FunctionSpace(mesh, element)
     u = ufl.Coefficient(V)
     J1 = ufl.real(u)[0] * ufl.imag(u)[1] * ufl.conj(u)[0] * ufl.dx
@@ -750,7 +747,7 @@ def test_invalid_function_name(compile_args):
     ufl.Coefficient.__str__ = lambda self: "invalid function name"
 
     V = basix.ufl.element("Lagrange", "triangle", 1)
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, V)
     u = ufl.Coefficient(space)
     a = ufl.inner(u, u) * ufl.dx
@@ -771,7 +768,7 @@ def test_invalid_function_name(compile_args):
 
 def test_interval_vertex_quadrature(compile_args):
 
-    c_el = basix.ufl.element("Lagrange", "interval", 1, rank=1)
+    c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(1, ))
     mesh = ufl.Mesh(c_el)
 
     x = ufl.SpatialCoordinate(mesh)
@@ -804,9 +801,7 @@ def test_interval_vertex_quadrature(compile_args):
 
 
 def test_facet_vertex_quadrature(compile_args):
-    """
-    Test facet vertex quadrature
-    """
+    """Test facet vertex quadrature"""
     c_el = basix.ufl.element("Lagrange", "quadrilateral", 1, shape=(2,))
     mesh = ufl.Mesh(c_el)
 
@@ -863,10 +858,7 @@ def test_facet_vertex_quadrature(compile_args):
 
 
 def test_manifold_derivatives(compile_args):
-    """
-    Test higher order derivatives on manifolds
-    """
-
+    """Test higher order derivatives on manifolds"""
     c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(2,), gdim=2)
     mesh = ufl.Mesh(c_el)
 
@@ -888,8 +880,7 @@ def test_manifold_derivatives(compile_args):
     default_integral = compiled_forms[0].form_integrals[0]
     scale = 2.5
     coords = np.array([0.0, 0.0, 0.0, 0.0, scale, 0.0], dtype=np.float64)
-    dof_coords = el.element.points.reshape(-1)
-    dof_coords *= scale
+    dof_coords = scale * el.element.points.reshape(-1)
 
     w = np.array([d * d_c**order for d_c in dof_coords], dtype=np.float64)
     c = np.array([], dtype=np.float64)
@@ -908,14 +899,15 @@ def test_manifold_derivatives(compile_args):
 
 
 def test_integral_grouping(compile_args):
-    """
-    We group integrals with common integrands to avoid duplicated integration kernels.
-    This means that `inner(u, v)*dx((1,2,3))  + inner(grad(u), grad(v))*dx(2) + inner(u,v)*dx`
-    is grouped as
+    """We group integrals with common integrands to avoid duplicated
+    integration kernels. This means that `inner(u, v)*dx((1,2,3))  +
+    inner(grad(u), grad(v))*dx(2) + inner(u,v)*dx` is grouped as
     1. `inner(u,v)*dx(("everywhere", 1, 3))`
     2. `(inner(grad(u), grad(v)) + inner(u, v))*dx(2)`
-    Each of the forms has one generated `tabulate_tensor_*` function, which is referred to multiple times in
-    `integrals_` and `integral_ids_`
+    Each of the forms has one generated `tabulate_tensor_*` function,
+    which is referred to multiple times in `integrals_` and
+    `integral_ids_`
+
     """
     mesh = ufl.Mesh(ufl.VectorElement("Lagrange", ufl.triangle, 1))
     V = ufl.FunctionSpace(mesh, ufl.FiniteElement("Lagrange", ufl.triangle, 1))

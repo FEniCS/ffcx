@@ -17,9 +17,9 @@ N = FacetNormal(cell)
 x = SpatialCoordinate(cell)
 
 # Elements
-u_element = basix.ufl.element("P", cell.cellname(), 2, rank=1)
+u_element = basix.ufl.element("P", cell.cellname(), 2, shape=(3, ))
 p_element = basix.ufl.element("P", cell.cellname(), 1)
-A_element = basix.ufl.element("P", cell.cellname(), 1, rank=2)
+A_element = basix.ufl.element("P", cell.cellname(), 1, shape=(3, 3))
 
 # Test and trial functions
 v = TestFunction(u_element)

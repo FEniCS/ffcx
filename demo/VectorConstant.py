@@ -21,7 +21,7 @@ import basix.ufl
 from ufl import (Constant, Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  dx, grad, inner)
 
-coords = basix.ufl.element("P", "triangle", 2, rank=1)
+coords = basix.ufl.element("P", "triangle", 2, shape=(2, ))
 mesh = Mesh(coords)
 dx = dx(mesh)
 
