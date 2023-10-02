@@ -40,9 +40,9 @@ def generator(ir, options):
     body = ""
     for i, p in enumerate(parts):
         b = CF.c_format(p)
-        print(f"----- [{i}] --------------------------------------v")
-        print(b)
-        print(f"----- [{i}] --------------------------------------^")
+        # print(f"----- [{i}] --------------------------------------v")
+        # print(b)
+        # print(f"----- [{i}] --------------------------------------^")
         body += b
 
     # Generate generic FFCx code snippets and add specific parts

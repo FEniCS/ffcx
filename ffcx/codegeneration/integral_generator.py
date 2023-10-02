@@ -106,50 +106,52 @@ class IntegralGenerator(object):
         # once
         assert not any(d for d in self.scopes.values())
 
-        parts = []
+        code = {"tables": []}
 
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables()
+        code["tables"] += self.generate_quadrature_tables()
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
-        parts += self.generate_element_tables()
+        code["tables"] += self.generate_element_tables()
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        code["tables"] += self.generate_geometry_tables()
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
         # quadloops
-        all_preparts = []
-        all_quadparts = []
+        code["all_preparts"] = []
 
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
-        all_predefinitions = dict()
+        code["predefinitions"] = {}
+        code["preparts"] = {}
+        code["quadparts"] = {}
 
         for rule in self.ir.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
-            all_preparts += self.generate_piecewise_partition(rule)
+            code["all_preparts"] += self.generate_piecewise_partition(rule)
 
             # Generate code to integrate reusable blocks of final
             # element tensor
-            pre_definitions, preparts, quadparts = self.generate_quadrature_loop(rule)
-            all_preparts += preparts
-            all_quadparts += quadparts
-            all_predefinitions.update(pre_definitions)
+            pre_definitions, preparts, quadparts, b0, b1 = self.generate_quadrature_loop(rule)
+            code["preparts"][rule.id()] = preparts
+            num_points = rule.points.shape[0]
+            iq = self.backend.symbols.quadrature_loop_index
+            code["quadparts"][rule.id()] = [L.ForRange(iq, 0, num_points, body=[b0, b1])]
+            code["predefinitions"].update(pre_definitions)
 
-        # parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
-        #                                "Pre-definitions of modified terminals to enable unit-stride access")
+        code["predefinitions"] = L.commented_code_list(self.fuse_loops(code["predefinitions"]),
+                                 "Pre-definitions of modified terminals to enable unit-stride access") # noqa
 
-        # # Collect parts before, during, and after quadrature loops
-        # parts += all_preparts
-
-        all_predefinitions = L.commented_code_list(self.fuse_loops(all_predefinitions),
-                                                   "Pre-definitions of modified terminals to enable unit-stride access")
-
-        return [L.StatementList(parts), L.StatementList(all_predefinitions),
-                L.StatementList(all_preparts), L.StatementList(all_quadparts)]
+        r = [L.StatementList(code["tables"]),
+             L.StatementList(code["predefinitions"]),
+             L.StatementList(code["all_preparts"])]
+        for rule in self.ir.integrand:
+            r += [L.StatementList(code["preparts"][rule.id()]),
+                  L.StatementList(code["quadparts"][rule.id()])]
+        return r
 
     def generate_quadrature_tables(self):
         """Generate static tables of quadrature points and weights."""
@@ -238,13 +240,14 @@ class IntegralGenerator(object):
         # Generate varying partition
         pre_definitions, body = self.generate_varying_partition(quadrature_rule)
 
-        body = L.commented_code_list(body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
+        b0 = L.commented_code_list(body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
         preparts, quadparts = self.generate_dofblock_partition(quadrature_rule)
-        body += quadparts
+        b1 = L.commented_code_list(quadparts, "Dof block partition")
 
+        body = b0 + b1
         # Wrap body in loop or scope
         if not body:
             # Could happen for integral with everything zero and
@@ -255,7 +258,7 @@ class IntegralGenerator(object):
             iq = self.backend.symbols.quadrature_loop_index
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
-        return pre_definitions, preparts, quadparts
+        return pre_definitions, preparts, quadparts, b0, b1
 
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
