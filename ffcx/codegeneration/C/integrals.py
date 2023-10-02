@@ -37,7 +37,13 @@ def generator(ir, options):
 
     # Format code as string
     CF = CFormatter(options["scalar_type"])
-    body = CF.c_format(parts)
+    body = ""
+    for i, p in enumerate(parts):
+        b = CF.c_format(p)
+        print(f"----- [{i}] --------------------------------------v")
+        print(b)
+        print(f"----- [{i}] --------------------------------------^")
+        body += b
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}

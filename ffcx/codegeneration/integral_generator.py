@@ -127,6 +127,7 @@ class IntegralGenerator(object):
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
         all_predefinitions = dict()
+
         for rule in self.ir.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
             all_preparts += self.generate_piecewise_partition(rule)
@@ -138,14 +139,17 @@ class IntegralGenerator(object):
             all_quadparts += quadparts
             all_predefinitions.update(pre_definitions)
 
-        parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
-                                       "Pre-definitions of modified terminals to enable unit-stride access")
+        # parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
+        #                                "Pre-definitions of modified terminals to enable unit-stride access")
 
-        # Collect parts before, during, and after quadrature loops
-        parts += all_preparts
-        parts += all_quadparts
+        # # Collect parts before, during, and after quadrature loops
+        # parts += all_preparts
 
-        return L.StatementList(parts)
+        all_predefinitions = L.commented_code_list(self.fuse_loops(all_predefinitions),
+                                                   "Pre-definitions of modified terminals to enable unit-stride access")
+
+        return [L.StatementList(parts), L.StatementList(all_predefinitions),
+                L.StatementList(all_preparts), L.StatementList(all_quadparts)]
 
     def generate_quadrature_tables(self):
         """Generate static tables of quadrature points and weights."""
@@ -482,15 +486,17 @@ class IntegralGenerator(object):
                 weight = weights[iq]
 
             # Define fw = f * weight
-            fw_rhs = L.float_product([f, weight])
-            if not isinstance(fw_rhs, L.Product):
-                fw = fw_rhs
-            else:
-                # Define and cache scalar temp variable
-                key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
-                fw, defined = self.get_temp_symbol("fw", key)
-                if not defined:
-                    quadparts.append(L.VariableDecl(fw, fw_rhs))
+            # fw_rhs = L.float_product([f, weight])
+            fw_rhs = f * weight
+            # if not isinstance(fw_rhs, L.Product):
+            #     fw = fw_rhs
+            # else:
+
+            # Define and cache scalar temp variable
+            key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
+            fw, defined = self.get_temp_symbol("fw", key)
+            if not defined:
+                quadparts.append(L.VariableDecl(fw, fw_rhs))
 
             assert not blockdata.transposed, "Not handled yet"
 
