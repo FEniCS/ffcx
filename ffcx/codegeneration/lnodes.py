@@ -684,6 +684,9 @@ class Statement(LNode):
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.expr == other.expr
 
+    def __repr__(self):
+        return f"{self.expr}"
+
 
 def as_statement(node):
     """Perform type checking on node and wrap in a suitable statement type if necessary."""
@@ -727,6 +730,9 @@ class StatementList(LNode):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.statements == other.statements
+
+    def __repr__(self):
+        return f"{[str(s) for s in self.statements]}"
 
 
 class Comment(Statement):
@@ -781,6 +787,9 @@ class VariableDecl(Statement):
             and self.value == other.value
         )
 
+    def __repr__(self):
+        return f"{self.symbol} = {self.value};"
+
 
 class ArrayDecl(Statement):
     """A declaration or definition of an array.
@@ -824,6 +833,9 @@ class ArrayDecl(Statement):
             getattr(self, name) == getattr(self, name) for name in attributes
         )
 
+    def __repr__(self):
+        return f"{self.symbol.name}[{','.join(str(i) for i in self.sizes)}] = {self.values};"
+
 
 def is_simple_inner_loop(code):
     if isinstance(code, ForRange) and is_simple_inner_loop(code.body):
@@ -851,6 +863,9 @@ class ForRange(Statement):
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
+
+    def __repr__(self):
+        return f"for({self.index}: {self.begin},{self.end}: [{self.body}])"
 
 
 def _math_function(op, *args):

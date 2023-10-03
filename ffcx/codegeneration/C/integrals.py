@@ -43,6 +43,7 @@ def generator(ir, options):
         # print(f"----- [{i}] --------------------------------------v")
         # print(b)
         # print(f"----- [{i}] --------------------------------------^")
+        body += f"// {i}\n\n"
         body += b
 
     # Generate generic FFCx code snippets and add specific parts
