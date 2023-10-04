@@ -16,10 +16,10 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # This example demonstrates how to create vectors component-wise
-from ufl import (Coefficient, TestFunction, VectorElement, as_vector, dot, dx,
-                 tetrahedron)
+import basix.ufl
+from ufl import Coefficient, TestFunction, as_vector, dot, dx
 
-element = VectorElement("Lagrange", tetrahedron, 1)
+element = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, ))
 
 v = TestFunction(element)
 f = Coefficient(element)

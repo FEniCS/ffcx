@@ -9,9 +9,10 @@ import cffi
 import numpy as np
 
 import basix
+import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
-from ffcx.naming import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 
 def float_to_type(name):
@@ -38,7 +39,7 @@ def test_matvec(compile_args):
     of user specified vector-valued finite element function (in P1 space).
 
     """
-    e = ufl.VectorElement("P", "triangle", 1)
+    e = basix.ufl.element("P", "triangle", 1, shape=(2, ))
     mesh = ufl.Mesh(e)
     V = ufl.FunctionSpace(mesh, e)
     f = ufl.Coefficient(V)
@@ -102,7 +103,7 @@ def test_rank1(compile_args):
     and evaluates expression [u_y, u_x] + grad(u_x) at specified points.
 
     """
-    e = ufl.VectorElement("P", "triangle", 1)
+    e = basix.ufl.element("P", "triangle", 1, shape=(2, ))
     mesh = ufl.Mesh(e)
 
     V = ufl.FunctionSpace(mesh, e)
@@ -163,10 +164,10 @@ def test_elimiate_zero_tables_tensor(compile_args):
     Test elimination of tensor-valued expressions with zero tables
     """
     cell = "tetrahedron"
-    c_el = ufl.VectorElement("P", cell, 1)
+    c_el = basix.ufl.element("P", cell, 1, shape=(3, ))
     mesh = ufl.Mesh(c_el)
 
-    e = ufl.FiniteElement("CG", cell, 1)
+    e = basix.ufl.element("P", cell, 1)
     V = ufl.FunctionSpace(mesh, e)
     u = ufl.Coefficient(V)
     expr = ufl.sym(ufl.as_tensor([[u, u.dx(0).dx(0), 0],
@@ -175,14 +176,17 @@ def test_elimiate_zero_tables_tensor(compile_args):
 
     # Get vertices of cell
     # Coords storage XYZXYZXYZ
-    basix_c_e = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 1, False)
+    basix_c_e = basix.create_element(basix.ElementFamily.P,
+                                     basix.cell.string_to_type(cell), 1,
+                                     discontinuous=False)
     coords = basix_c_e.points
 
     # Using same basix element for coordinate element and coefficient
     coeff_points = basix_c_e.points
 
     # Compile expression at interpolation points of second order Lagrange space
-    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell), 0, True)
+    b_el = basix.create_element(basix.ElementFamily.P, basix.cell.string_to_type(cell),
+                                0, discontinuous=True)
     points = b_el.points
     obj, module, code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args)

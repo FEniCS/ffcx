@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Kristian B. Oelgaard
+# Copyright (C) 2016 Jan Blechta
 #
 # This file is part of FFCx.
 #
@@ -16,22 +16,24 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # The bilinear form a(u, v) and linear form L(v) for
-# Poisson's equation where spatial coordinates are used to define the source
-# and boundary flux terms.
+# Poisson's equation using bilinear elements on bilinear mesh geometry.
 import basix.ufl
-from ufl import (SpatialCoordinate, TestFunction, TrialFunction, ds, dx, exp,
-                 grad, inner, sin, triangle)
+from ufl import (Constant, Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
-element = basix.ufl.element("Lagrange", "triangle", 2)
+coords = basix.ufl.element("P", "triangle", 2, shape=(2, ))
+mesh = Mesh(coords)
+dx = dx(mesh)
 
-u = TrialFunction(element)
-v = TestFunction(element)
+element = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
+space = FunctionSpace(mesh, element)
 
-x = SpatialCoordinate(triangle)
-d_x = x[0] - 0.5
-d_y = x[1] - 0.5
-f = 10.0 * exp(-(d_x * d_x + d_y * d_y) / 0.02)
-g = sin(5.0 * x[0])
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
-a = inner(grad(u), grad(v)) * dx
-L = f * v * dx + g * v * ds
+L = f * v * dx
+
+mu = Constant(mesh, shape=(3,))
+theta = - (mu[1] - 2) / mu[0] - (2 * (2 * mu[0] - 2) * (mu[0] - 1)) / (mu[0] * (mu[1] - 2))
+a = theta * inner(grad(u), grad(v)) * dx

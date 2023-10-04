@@ -8,12 +8,14 @@ import sys
 
 import ffcx.codegeneration.jit
 import ufl
+import basix.ufl
 
 
 def test_cache_modes(compile_args):
-    cell = ufl.triangle
-    element = ufl.FiniteElement("Lagrange", cell, 1)
-    u, v = ufl.TrialFunction(element), ufl.TestFunction(element)
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
 

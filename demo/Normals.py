@@ -17,12 +17,12 @@
 #
 # This example demonstrates how to use the facet normals
 # Merely project the normal onto a vector section.
-from ufl import (FacetNormal, TestFunction, TrialFunction, VectorElement, dot,
-                 ds, triangle)
+import basix.ufl
+from ufl import FacetNormal, TestFunction, TrialFunction, dot, ds, triangle
 
 cell = triangle
 
-element = VectorElement("Lagrange", cell, 1)
+element = basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, ))
 
 n = FacetNormal(cell)
 

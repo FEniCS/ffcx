@@ -19,15 +19,15 @@
 # bilinear form a(u, v) for the Stokes equations using a mixed
 # formulation involving the Mini element. The velocity element is
 # composed of a P1 element augmented by the cubic bubble function.
-from ufl import (FiniteElement, TestFunctions, TrialFunctions, VectorElement,
-                 div, dx, grad, inner, triangle)
+import basix.ufl
+from ufl import TestFunctions, TrialFunctions, div, dx, grad, inner
 
-P1 = FiniteElement("Lagrange", triangle, 1)
-B = FiniteElement("Bubble", triangle, 3)
-V = VectorElement(P1 + B)
-Q = FiniteElement("CG", triangle, 1)
+P1 = basix.ufl.element("Lagrange", "triangle", 1)
+B = basix.ufl.element("Bubble", "triangle", 3)
+V = basix.ufl.blocked_element(basix.ufl.enriched_element([P1, B]), shape=(2, ))
+Q = basix.ufl.element("P", "triangle", 1)
 
-Mini = V * Q
+Mini = basix.ufl.mixed_element([V, Q])
 (u, p) = TrialFunctions(Mini)
 (v, q) = TestFunctions(Mini)
 

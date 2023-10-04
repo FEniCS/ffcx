@@ -7,8 +7,8 @@
 import hashlib
 import typing
 
-import numpy
-import numpy.typing
+import numpy as np
+import numpy.typing as npt
 
 import ffcx
 import ufl
@@ -17,13 +17,13 @@ from .element_interface import convert_element
 
 
 def compute_signature(ufl_objects: typing.List[
-    typing.Union[ufl.Form,
-                 ufl.FiniteElementBase,
-                 typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64]]]], tag: str) -> str:
+    typing.Union[ufl.Form, ufl.FiniteElementBase,
+                 typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional
     'tag'.
+
     """
     object_signature = ""
     for ufl_object in ufl_objects:
@@ -101,33 +101,3 @@ def expression_name(expression, prefix):
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)
     return f"expression_{sig}"
-
-
-def cdtype_to_numpy(cdtype: str):
-    """Map a C data type string NumPy datatype string."""
-    if cdtype == "double":
-        return "float64"
-    elif cdtype == "double _Complex":
-        return "complex128"
-    elif cdtype == "float":
-        return "float32"
-    elif cdtype == "float _Complex":
-        return "complex64"
-    elif cdtype == "long double":
-        return "longdouble"
-    else:
-        raise RuntimeError(f"Unknown NumPy type for: {cdtype}")
-
-
-def scalar_to_value_type(scalar_type: str) -> str:
-    """The C value type associated with a C scalar type.
-
-    Args:
-      scalar_type: A C type.
-
-    Returns:
-      The value type associated with ``scalar_type``. E.g., if
-      ``scalar_type`` is ``float _Complex`` the return value is 'float'.
-
-    """
-    return scalar_type.replace(' _Complex', '')

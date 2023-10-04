@@ -10,7 +10,7 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 6
+#define UFCX_VERSION_MINOR 7
 #define UFCX_VERSION_MAINTENANCE 0
 #define UFCX_VERSION_RELEASE 1
 
@@ -200,6 +200,9 @@ extern "C"
 
     /// The highest degree of a polynomial in the element
     int highest_degree;
+
+    /// The polyset type of the element
+    int polyset_type;
   } ufcx_basix_custom_finite_element;
 
   typedef struct ufcx_dofmap
@@ -217,6 +220,18 @@ extern "C"
 
     /// Return the block size for a VectorElement or TensorElement
     int block_size;
+
+    /// Flattened list of dofs associated with each entity
+    int *entity_dofs;
+
+    /// Offset for dofs of each entity in entity_dofs
+    int *entity_dof_offsets;
+
+    /// Flattened list of closure dofs associated with each entity
+    int *entity_closure_dofs;
+
+    /// Offset for closure dofs of each entity in entity_closure_dofs
+    int *entity_closure_dof_offsets;
 
     /// Number of dofs associated with each cell entity of dimension d
     int *num_entity_dofs;
@@ -441,14 +456,14 @@ extern "C"
     ///        Coefficient number j=i-r if r+j <= i < r+n
     ufcx_dofmap** dofmaps;
 
-    /// All ids for integrals
-    int* (*integral_ids)(ufcx_integral_type);
+    /// List of cell, interior facet and exterior facet integrals
+    ufcx_integral** form_integrals;
 
-    /// Number of integrals
-    int (*num_integrals)(ufcx_integral_type);
+    /// IDs for each integral in form_integrals list
+    int* form_integral_ids;
 
-    /// Get an integral on sub domain subdomain_id
-    ufcx_integral** (*integrals)(ufcx_integral_type);
+    /// Offsets for cell, interior facet and exterior facet integrals in form_integrals list
+    int* form_integral_offsets;
 
   } ufcx_form;
 

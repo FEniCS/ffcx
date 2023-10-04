@@ -8,7 +8,7 @@
 import hashlib
 import logging
 
-import numpy
+import numpy as np
 
 import ufl
 from ffcx.element_interface import (create_quadrature, map_facet_points,
@@ -19,7 +19,7 @@ logger = logging.getLogger("ffcx")
 
 class QuadratureRule:
     def __init__(self, points, weights):
-        self.points = numpy.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
+        self.points = np.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
         self.weights = weights
         self._hash = None
 
@@ -30,7 +30,7 @@ class QuadratureRule:
         return self._hash
 
     def __eq__(self, other):
-        return numpy.allclose(self.points, other.points) and numpy.allclose(self.weights, other.weights)
+        return np.allclose(self.points, other.points) and np.allclose(self.weights, other.weights)
 
     def id(self):
         """Return unique deterministic identifier.
@@ -44,18 +44,18 @@ class QuadratureRule:
         return self.hash_obj.hexdigest()[-3:]
 
 
-def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
+def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elements):
     """Create quadrature rule and return points and weights."""
     if integral_type == "cell":
-        return create_quadrature(cell.cellname(), degree, rule)
+        return create_quadrature(cell.cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:
         facet_types = cell.facet_types()
         # Raise exception for cells with more than one facet type e.g. prisms
         if len(facet_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        return create_quadrature(facet_types[0].cellname(), degree, rule)
+        return create_quadrature(facet_types[0].cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.point_integral_types:
-        return create_quadrature("vertex", degree, rule)
+        return create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
         return (None, None)
 
@@ -87,11 +87,11 @@ def map_integral_points(points, integral_type, cell, entity):
     if entity_dim == tdim:
         assert points.shape[1] == tdim
         assert entity == 0
-        return numpy.asarray(points)
+        return np.asarray(points)
     elif entity_dim == tdim - 1:
         assert points.shape[1] == tdim - 1
-        return numpy.asarray(map_facet_points(points, entity, cell.cellname()))
+        return np.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
-        return numpy.asarray([reference_cell_vertices(cell.cellname())[entity]])
+        return np.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
         raise RuntimeError(f"Can't map points from entity_dim={entity_dim}")

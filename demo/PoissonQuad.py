@@ -17,14 +17,15 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation using bilinear elements on bilinear mesh geometry.
-from ufl import (Coefficient, FiniteElement, FunctionSpace, Mesh, TestFunction,
-                 TrialFunction, VectorElement, dx, grad, inner, triangle)
+import basix.ufl
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
-coords = VectorElement("P", triangle, 2)
+coords = basix.ufl.element("P", "triangle", 2, shape=(2, ))
 mesh = Mesh(coords)
 dx = dx(mesh)
 
-element = FiniteElement("P", mesh.ufl_cell(), 2)
+element = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
 space = FunctionSpace(mesh, element)
 
 u = TrialFunction(space)

@@ -17,10 +17,10 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation.
-from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction, dx,
-                 grad, inner, interval)
+import basix.ufl
+from ufl import Coefficient, TestFunction, TrialFunction, dx, grad, inner
 
-element = FiniteElement("Lagrange", interval, 1)
+element = basix.ufl.element("Lagrange", "interval", 1)
 
 u = TrialFunction(element)
 v = TestFunction(element)

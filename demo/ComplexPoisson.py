@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2010 Anders Logg
+# Copyright (C) 2023 Chris Richardson
 #
 # This file is part of FFCx.
 #
@@ -15,22 +15,25 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
-# First added:  2009-03-20
-# Last changed: 2011-03-08
-#
-# Simple example of a form defined over exterior and interior facets.
+# The bilinear form a(u, v) and linear form L(v) for
+# Poisson's equation using bilinear elements on bilinear mesh geometry.
 import basix.ufl
-from ufl import (FacetNormal, TestFunction, TrialFunction, avg, ds, dS, grad,
-                 inner, jump, triangle)
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
-element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
+coords = basix.ufl.element("P", "triangle", 2, shape=(2, ))
+mesh = Mesh(coords)
+dx = dx(mesh)
 
-u = TrialFunction(element)
-v = TestFunction(element)
+element = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
+space = FunctionSpace(mesh, element)
 
-n = FacetNormal(triangle)
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
-a = u * v * ds \
-    + u('+') * v('-') * dS \
-    + inner(jump(u, n), avg(grad(v))) * dS \
-    + inner(avg(grad(u)), jump(v, n)) * dS
+# Test literal complex number in form
+k = 3.213 + 1.023j
+
+a = k * inner(grad(u), grad(v)) * dx
+L = inner(k * f, v) * dx

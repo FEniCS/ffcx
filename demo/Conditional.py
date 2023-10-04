@@ -16,10 +16,11 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Illustration on how to use Conditional to define a source term
-from ufl import (And, Constant, FiniteElement, Not, Or, SpatialCoordinate,
-                 TestFunction, conditional, dx, ge, gt, le, lt, triangle)
+import basix.ufl
+from ufl import (And, Constant, Not, Or, SpatialCoordinate, TestFunction,
+                 conditional, dx, ge, gt, le, lt, triangle)
 
-element = FiniteElement("Lagrange", triangle, 2)
+element = basix.ufl.element("Lagrange", "triangle", 2)
 
 v = TestFunction(element)
 g = Constant(triangle)

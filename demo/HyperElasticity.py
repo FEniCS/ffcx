@@ -3,11 +3,12 @@
 # Date: 2008-12-22
 #
 
+import basix.ufl
 # Modified by Garth N. Wells, 2009
-from ufl import (Coefficient, Constant, FacetNormal, FiniteElement, Identity,
-                 SpatialCoordinate, TensorElement, TestFunction, TrialFunction,
-                 VectorElement, derivative, det, diff, dot, ds, dx, exp, grad,
-                 inner, inv, tetrahedron, tr, variable)
+from ufl import (Coefficient, Constant, FacetNormal, Identity,
+                 SpatialCoordinate, TestFunction, TrialFunction, derivative,
+                 det, diff, dot, ds, dx, exp, grad, inner, inv, tetrahedron,
+                 tr, variable)
 
 # Cell and its properties
 cell = tetrahedron
@@ -16,9 +17,9 @@ N = FacetNormal(cell)
 x = SpatialCoordinate(cell)
 
 # Elements
-u_element = VectorElement("CG", cell, 2)
-p_element = FiniteElement("CG", cell, 1)
-A_element = TensorElement("CG", cell, 1)
+u_element = basix.ufl.element("P", cell.cellname(), 2, shape=(3, ))
+p_element = basix.ufl.element("P", cell.cellname(), 1)
+A_element = basix.ufl.element("P", cell.cellname(), 1, shape=(3, 3))
 
 # Test and trial functions
 v = TestFunction(u_element)

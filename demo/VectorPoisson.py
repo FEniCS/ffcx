@@ -17,10 +17,10 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for
 # the vector-valued Poisson's equation.
-from ufl import (Coefficient, TestFunction, TrialFunction, VectorElement, dx,
-                 grad, inner, triangle)
+import basix.ufl
+from ufl import Coefficient, TestFunction, TrialFunction, dx, grad, inner
 
-element = VectorElement("Lagrange", triangle, 1)
+element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
 
 u = TrialFunction(element)
 v = TestFunction(element)

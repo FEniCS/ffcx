@@ -1,9 +1,9 @@
-from ufl import (FiniteElement, MixedElement, TestFunctions, TrialFunctions,
-                 ds, grad, inner, triangle)
+import basix.ufl
+from ufl import TestFunctions, TrialFunctions, ds, grad, inner
 
-element1 = FiniteElement("DG", triangle, 1)
-element2 = FiniteElement("DGT", triangle, 1)
-element = MixedElement(element1, element2)
+element1 = basix.ufl.element("DG", "triangle", 1)
+element2 = basix.ufl.element("DGT", "triangle", 1)
+element = basix.ufl.mixed_element([element1, element2])
 
 u = TrialFunctions(element)[0]
 v = TestFunctions(element)[0]

@@ -12,19 +12,13 @@ factory = """
 
 {sub_dofmaps_initialization}
 
-void tabulate_entity_dofs_{factory_name}(int* restrict dofs, int d, int i)
-{{
-{tabulate_entity_dofs}
-}}
+{entity_dofs_init}
 
-void tabulate_entity_closure_dofs_{factory_name}(int* restrict dofs, int d, int i)
-{{
-{tabulate_entity_closure_dofs}
-}}
+{entity_dof_offsets_init}
 
-{num_entity_dofs_init}
+{entity_closure_dofs_init}
 
-{num_entity_closure_dofs_init}
+{entity_closure_dof_offsets_init}
 
 ufcx_dofmap {factory_name} =
 {{
@@ -32,10 +26,10 @@ ufcx_dofmap {factory_name} =
   .num_global_support_dofs = {num_global_support_dofs},
   .num_element_support_dofs = {num_element_support_dofs},
   .block_size = {block_size},
-  .num_entity_dofs = {num_entity_dofs},
-  .tabulate_entity_dofs = tabulate_entity_dofs_{factory_name},
-  .num_entity_closure_dofs = {num_entity_closure_dofs},
-  .tabulate_entity_closure_dofs = tabulate_entity_closure_dofs_{factory_name},
+  .entity_dofs = {entity_dofs},
+  .entity_dof_offsets = {entity_dof_offsets},
+  .entity_closure_dofs = {entity_closure_dofs},
+  .entity_closure_dof_offsets = {entity_closure_dof_offsets},
   .num_sub_dofmaps = {num_sub_dofmaps},
   .sub_dofmaps = {sub_dofmaps}
 }};

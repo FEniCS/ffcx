@@ -28,9 +28,6 @@ jobs:
     container: fenicsproject/test-env:nightly-openmpi
 
     env:
-      CC: clang
-      CXX: clang++
-
       PETSC_ARCH: linux-gnu-complex-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -67,6 +64,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
+          ref: main
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v3
@@ -84,7 +82,7 @@ jobs:
 
       - name: Build DOLFINx C++ unit tests
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S build/test/
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S dolfinx/cpp/test/
           cmake --build build/test
       - name: Run DOLFINx C++ unit tests
         run: |
@@ -93,3 +91,5 @@ jobs:
 
       - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
+      - name: Run DOLFINx Python demos
+        run: python3 -m pytest -n=2 -m serial dolfinx/python/demo/test.py

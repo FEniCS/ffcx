@@ -20,11 +20,10 @@
 "Unit tests for FFCx"
 
 
-import numpy
+import numpy as np
 import pytest
 
-from ffcx.element_interface import create_element
-from ufl import FiniteElement
+import basix.ufl
 
 
 def element_coords(cell):
@@ -43,35 +42,35 @@ def element_coords(cell):
 
 
 def random_point(shape):
-    w = numpy.random.random(len(shape))
-    return sum([numpy.array(shape[i]) * w[i] for i in range(len(shape))]) / sum(w)
+    w = np.random.random(len(shape))
+    return sum([np.array(shape[i]) * w[i] for i in range(len(shape))]) / sum(w)
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 3), (2, 6), (3, 10)])
 def test_continuous_lagrange(degree, expected_dim):
     "Test space dimensions of continuous Lagrange elements."
-    P = create_element(FiniteElement("Lagrange", "triangle", degree))
+    P = basix.ufl.element("Lagrange", "triangle", degree)
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree))
+    P = basix.ufl.element("Lagrange", "quadrilateral", degree)
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
 def xtest_continuous_lagrange_quadrilateral_spectral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
-    P = create_element(FiniteElement("Lagrange", "quadrilateral", degree, variant="spectral"))
+    P = basix.ufl.element("Lagrange", "quadrilateral", degree, variant="spectral")
     assert P.dim == expected_dim
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(0, 1), (1, 3), (2, 6), (3, 10)])
 def test_discontinuous_lagrange(degree, expected_dim):
     "Test space dimensions of discontinuous Lagrange elements."
-    P = create_element(FiniteElement("DG", "triangle", degree))
+    P = basix.ufl.element("DG", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -79,7 +78,7 @@ def test_discontinuous_lagrange(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def test_regge(degree, expected_dim):
     "Test space dimensions of generalized Regge element."
-    P = create_element(FiniteElement("Regge", "triangle", degree))
+    P = basix.ufl.element("Regge", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -87,7 +86,7 @@ def test_regge(degree, expected_dim):
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
 def xtest_hhj(degree, expected_dim):
     "Test space dimensions of Hellan-Herrmann-Johnson element."
-    P = create_element(FiniteElement("HHJ", "triangle", degree))
+    P = basix.ufl.element("HHJ", "triangle", degree)
     assert P.dim == expected_dim
 
 
@@ -183,16 +182,16 @@ supported (non-mixed) for low degrees"""
     @pytest.mark.parametrize("family, cell, degree, reference", tests)
     def test_values(self, family, cell, degree, reference):
         # Create element
-        element = create_element(FiniteElement(family, cell, degree))
+        e = basix.ufl.element(family, cell, degree)
 
         # Get some points and check basis function values at points
         points = [random_point(element_coords(cell)) for i in range(5)]
         for x in points:
-            table = element.tabulate(0, (x,))
+            table = e.tabulate(0, np.array([x], dtype=np.float64))
             basis = table[0]
-            if sum(element.value_shape()) == 1:
+            if sum(e.value_shape()) == 1:
                 for i, value in enumerate(basis[0]):
-                    assert numpy.isclose(value, reference[i](x))
+                    assert np.isclose(value, reference[i](x))
             else:
                 for i, ref in enumerate(reference):
-                    assert numpy.allclose(basis[0][i::len(reference)], ref(x))
+                    assert np.allclose(basis[0][i::len(reference)], ref(x))

@@ -13,26 +13,26 @@ representation type.
 
 import logging
 import typing
-
-import numpy
-import numpy.typing
-
-import basix.ufl_wrapper
-import ufl
-from ffcx.element_interface import convert_element, QuadratureElement
 from warnings import warn
+
+import numpy as np
+import numpy.typing as npt
+
+import basix.ufl
+import ufl
+from ffcx.element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
 
 
 class UFLData(typing.NamedTuple):
     form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]  # Tuple of ufl form data
-    unique_elements: typing.List[basix.ufl_wrapper._BasixElementBase]  # List of unique elements
+    unique_elements: typing.List[basix.ufl._ElementBase]  # List of unique elements
     # Lookup table from each unique element to its index in `unique_elements`
-    element_numbers: typing.Dict[basix.ufl_wrapper._BasixElementBase, int]
-    unique_coordinate_elements: typing.List[basix.ufl_wrapper._BasixElementBase]  # List of unique coordinate elements
+    element_numbers: typing.Dict[basix.ufl._ElementBase, int]
+    unique_coordinate_elements: typing.List[basix.ufl._ElementBase]  # List of unique coordinate elements
     # List of ufl Expressions as tuples (expression, points, original_expression)
-    expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64], ufl.core.expr.Expr]]
+    expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
 
 
 def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLData:
@@ -55,7 +55,9 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
     unique_coordinate_elements
         Unique coordinate elements across all forms and expressions
     expressions
-        List of all expressions after post-processing, with its evaluation points and the original expression
+        List of all expressions after post-processing, with its
+        evaluation points and the original expression
+
     """
     logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")
@@ -78,7 +80,7 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
             coordinate_elements.append(convert_element(ufl_object.ufl_coordinate_element()))
         elif isinstance(ufl_object[0], ufl.core.expr.Expr):
             original_expression = ufl_object[0]
-            points = numpy.asarray(ufl_object[1])
+            points = np.asarray(ufl_object[1])
             expressions.append((original_expression, points))
         else:
             raise TypeError("UFL objects not recognised.")
@@ -100,7 +102,7 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
     unique_coordinate_element_list = sorted(set(coordinate_elements), key=lambda x: repr(x))
 
     for e in unique_elements:
-        assert isinstance(e, basix.ufl_wrapper._BasixElementBase)
+        assert isinstance(e, basix.ufl._ElementBase)
 
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
@@ -130,20 +132,17 @@ def _analyze_expression(expression: ufl.core.expr.Expr, options: typing.Dict):
 def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
-    Options
-    ----------
-    form
-    options
+    Args:
+        form: forms
+        options: options
 
-    Returns
-    -------
-    form_data -  Form data computed by UFL with metadata attached
+    Returns:
+        Form data computed by UFL with metadata attached
 
-    Note
-    ----
-    The main workload of this function is extraction of unique/default metadata
-    from options, integral metadata or inherited from UFL
-    (in case of quadrature degree)
+    Note:
+        The main workload of this function is extraction of
+        unique/default metadata from options, integral metadata or
+        inherited from UFL (in case of quadrature degree).
 
     """
     if form.empty():
@@ -154,7 +153,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     # Set default spacing for coordinate elements to be equispaced
     for n, i in enumerate(form._integrals):
         element = i._ufl_domain._ufl_coordinate_element
-        if not isinstance(element, basix.ufl_wrapper._BasixElementBase) and element.degree() > 2:
+        if not isinstance(element, basix.ufl._ElementBase) and element.degree() > 2:
             warn("UFL coordinate elements using elements not created via Basix may not work with DOLFINx")
 
     # Check for complex mode
@@ -175,15 +174,15 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
     custom_q = None
     for e in form_data.unique_elements:
         e = convert_element(e)
-        if isinstance(e, QuadratureElement):
+        if e.has_custom_quadrature:
             if custom_q is None:
-                custom_q = e._points, e._weights
+                custom_q = e.custom_quadrature()
             else:
-                assert numpy.allclose(e._points, custom_q[0])
-                assert numpy.allclose(e._weights, custom_q[1])
+                assert np.allclose(e._points, custom_q[0])
+                assert np.allclose(e._weights, custom_q[1])
 
-    # Determine unique quadrature degree, quadrature scheme and
-    # precision per each integral data
+    # Determine unique quadrature degree and quadrature scheme
+    # per each integral data
     for id, integral_data in enumerate(form_data.integral_data):
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
@@ -193,22 +192,6 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
 
-        # Extract precision
-        p_default = -1
-        precisions = set([integral.metadata().get("precision", p_default)
-                          for integral in integral_data.integrals])
-        precisions.discard(p_default)
-
-        if len(precisions) == 1:
-            p = precisions.pop()
-        elif len(precisions) == 0:
-            # Default precision
-            p = numpy.finfo("double").precision + 1  # == 16
-        else:
-            raise RuntimeError("Only one precision allowed within integrals grouped by subdomain.")
-
-        integral_data.metadata["precision"] = p
-
         qd_default = -1
         qr_default = "default"
 
@@ -217,7 +200,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
             if custom_q is None:
                 # Extract quadrature degree
                 qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
-                pd_estimated = numpy.max(integral.metadata()["estimated_polynomial_degree"])
+                pd_estimated = np.max(integral.metadata()["estimated_polynomial_degree"])
                 if qd_metadata != qd_default:
                     qd = qd_metadata
                 else:
@@ -229,12 +212,11 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
                 logger.info(f"Integral {i}, integral group {id}:")
                 logger.info(f"--- quadrature rule: {qr}")
                 logger.info(f"--- quadrature degree: {qd}")
-                logger.info(f"--- precision: {p}")
 
-                metadata.update({"quadrature_degree": qd, "quadrature_rule": qr, "precision": p})
+                metadata.update({"quadrature_degree": qd, "quadrature_rule": qr})
             else:
                 metadata.update({"quadrature_points": custom_q[0], "quadrature_weights": custom_q[1],
-                                 "quadrature_rule": "custom", "precision": p})
+                                 "quadrature_rule": "custom"})
 
             integral_data.integrals[i] = integral.reconstruct(metadata=metadata)
 
