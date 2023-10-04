@@ -7,7 +7,7 @@ from ufl import (CellVolume, Circumradius, Coefficient, FacetArea, FacetNormal,
 from ufl.geometry import FacetEdgeVectors
 
 V = basix.ufl.element("P", "tetrahedron", 1)
-domain = Mesh(basix.ufl.element("P", "tetrahedron", 1, rank=1))
+domain = Mesh(basix.ufl.element("P", "tetrahedron", 1, shape=(3, )))
 space = FunctionSpace(domain, V)
 u = Coefficient(space)
 

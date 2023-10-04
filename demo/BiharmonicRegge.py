@@ -10,7 +10,7 @@ from ufl import (Coefficient, FacetNormal, FunctionSpace, Identity, Mesh,
 REG = basix.ufl.element("Regge", "tetrahedron", 1)
 P = basix.ufl.element("Lagrange", "tetrahedron", 2)
 mixed_element = basix.ufl.mixed_element([REG, P])
-domain = Mesh(basix.ufl.element("P", "tetrahedron", 1, rank=1))
+domain = Mesh(basix.ufl.element("P", "tetrahedron", 1, shape=(3, )))
 mixed_space = FunctionSpace(domain, mixed_element)
 p_space = FunctionSpace(domain, P)
 

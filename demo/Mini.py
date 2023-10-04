@@ -28,7 +28,7 @@ B = basix.ufl.element("Bubble", "triangle", 3)
 V = basix.ufl.blocked_element(basix.ufl.enriched_element([P1, B]), shape=(2, ))
 Q = basix.ufl.element("P", "triangle", 1)
 
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 Mini = FunctionSpace(domain, basix.ufl.mixed_element([V, Q]))
 
 (u, p) = TrialFunctions(Mini)

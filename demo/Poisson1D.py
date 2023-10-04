@@ -22,7 +22,7 @@ from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  dx, grad, inner)
 
 element = basix.ufl.element("Lagrange", "interval", 1)
-domain = Mesh(basix.ufl.element("Lagrange", "interval", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(1, )))
 space = FunctionSpace(domain, element)
 
 u = TrialFunction(space)

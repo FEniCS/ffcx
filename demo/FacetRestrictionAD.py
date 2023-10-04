@@ -19,7 +19,7 @@ from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  avg, derivative, dot, dS, dx, grad, inner)
 
 element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 space = FunctionSpace(domain, element)
 
 v = TestFunction(space)

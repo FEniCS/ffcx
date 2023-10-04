@@ -21,7 +21,7 @@ from ufl import (Coefficient, FunctionSpace, Mesh, acos, asin, atan, bessel_J,
                  bessel_Y, cos, dx, erf, exp, ln, sin, sqrt, tan)
 
 element = basix.ufl.element("Lagrange", "triangle", 1)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 space = FunctionSpace(domain, element)
 
 c0 = Coefficient(space)

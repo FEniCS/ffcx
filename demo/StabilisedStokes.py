@@ -24,7 +24,7 @@ from ufl import (Coefficient, FunctionSpace, Mesh, TestFunctions,
 vector = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
 scalar = basix.ufl.element("Lagrange", "triangle", 1)
 system = basix.ufl.mixed_element([vector, scalar])
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 system_space = FunctionSpace(domain, system)
 scalar_space = FunctionSpace(domain, scalar)
 vector_space = FunctionSpace(domain, vector)

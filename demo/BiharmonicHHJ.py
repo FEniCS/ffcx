@@ -10,7 +10,7 @@ from ufl import (Coefficient, FacetNormal, FunctionSpace, Mesh, TestFunctions,
 HHJ = basix.ufl.element('HHJ', "triangle", 2)
 P = basix.ufl.element('P', "triangle", 3)
 mixed_element = basix.ufl.mixed_element([HHJ, P])
-domain = Mesh(basix.ufl.element("P", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("P", "triangle", 1, shape=(2, )))
 mixed_space = FunctionSpace(domain, mixed_element)
 p_space = FunctionSpace(domain, P)
 

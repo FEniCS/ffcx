@@ -23,7 +23,7 @@ from ufl import (FunctionSpace, Mesh, SpatialCoordinate, TestFunction,
                  TrialFunction, ds, dx, exp, grad, inner, sin)
 
 element = basix.ufl.element("Lagrange", "triangle", 2)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 space = FunctionSpace(domain, element)
 
 u = TrialFunction(space)

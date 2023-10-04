@@ -20,7 +20,7 @@ p_element = basix.ufl.element("P", cell.cellname(), 1)
 A_element = basix.ufl.element("P", cell.cellname(), 1, shape=(3, 3))
 
 # Spaces
-domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(3, )))
 u_space = FunctionSpace(domain, u_element)
 p_space = FunctionSpace(domain, p_element)
 A_space = FunctionSpace(domain, A_element)

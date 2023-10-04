@@ -26,7 +26,7 @@ CG = basix.ufl.element("Lagrange", "triangle", 2)
 RT = basix.ufl.element("RT", "triangle", 3)
 
 element = basix.ufl.mixed_element([DG, CG, RT])
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 space = FunctionSpace(domain, element)
 
 f, g, h = Coefficients(space)

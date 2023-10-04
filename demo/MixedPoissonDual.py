@@ -27,7 +27,7 @@ from ufl import (Coefficient, FunctionSpace, Mesh, TestFunctions,
 DRT = basix.ufl.element("Discontinuous RT", "triangle", 2)
 P = basix.ufl.element("P", "triangle", 3)
 W = basix.ufl.mixed_element([DRT, P])
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 space = FunctionSpace(domain, W)
 
 (sigma, u) = TrialFunctions(space)
