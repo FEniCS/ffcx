@@ -21,7 +21,7 @@ import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  dx, grad, inner)
 
-element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
+element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
 domain = Mesh(element)
 space = FunctionSpace(domain, element)
 

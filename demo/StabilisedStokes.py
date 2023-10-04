@@ -21,7 +21,7 @@ import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunctions,
                  TrialFunctions, div, dot, dx, grad, inner)
 
-vector = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
+vector = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
 scalar = basix.ufl.element("Lagrange", "triangle", 1)
 system = basix.ufl.mixed_element([vector, scalar])
 domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))

@@ -21,11 +21,10 @@ from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  dx, grad, inner)
 
 element = basix.ufl.element("Lagrange", "triangle", 1)
-vector_element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, rank=1))
+vector_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
 space = FunctionSpace(domain, element)
 vector_space = FunctionSpace(domain, vector_element)
-
 
 u = TrialFunction(space)
 v = TestFunction(space)

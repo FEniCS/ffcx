@@ -21,7 +21,7 @@
 import basix.ufl
 from ufl import Coefficients, FunctionSpace, Mesh, dot, dS, dx
 
-DG = basix.ufl.element("DG", "triangle", 0, rank=1)
+DG = basix.ufl.element("DG", "triangle", 0, shape=(2, ))
 CG = basix.ufl.element("Lagrange", "triangle", 2)
 RT = basix.ufl.element("RT", "triangle", 3)
 

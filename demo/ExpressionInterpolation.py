@@ -25,12 +25,12 @@ from ufl import Coefficient, FunctionSpace, Mesh, grad
 
 # Define mesh
 cell = "triangle"
-v_el = basix.ufl.element("Lagrange", cell, 1, rank=1)
+v_el = basix.ufl.element("Lagrange", cell, 1, shape=(2, ))
 mesh = Mesh(v_el)
 
 # Define mixed function space
 el = basix.ufl.element("P", cell, 2)
-el_int = basix.ufl.element("Discontinuous Lagrange", cell, 1, rank=1)
+el_int = basix.ufl.element("Discontinuous Lagrange", cell, 1, shape=(2, ))
 me = basix.ufl.mixed_element([el, el_int])
 V = FunctionSpace(mesh, me)
 u = Coefficient(V)
