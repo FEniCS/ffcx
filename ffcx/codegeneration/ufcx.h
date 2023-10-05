@@ -1,5 +1,6 @@
 /// This is UFCx
-/// This code is released into the public domain.
+/// This software is released under the terms of the unlicense (see the file
+/// UNLICENSE).
 ///
 /// The FEniCS Project (http://www.fenicsproject.org/) 2006-2021.
 ///
