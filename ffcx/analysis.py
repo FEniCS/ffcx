@@ -169,7 +169,6 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
-
     # If form contains a quadrature element, use the custom quadrature scheme
     custom_q = None
     for e in form_data.unique_elements:

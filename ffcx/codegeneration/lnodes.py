@@ -325,6 +325,8 @@ class Symbol(LExprTerminal):
 class MultiIndex(LExpr):
     """A multi-index for accessing tensors flattened in memory."""
 
+    precedence = PRECEDENCE.SYMBOL
+
     def __init__(self, symbols: list, sizes: list):
         self.dtype = DataType.INT
         self.sizes = sizes
@@ -383,7 +385,7 @@ class MultiIndex(LExpr):
         return MultiIndex(symbols, sizes)
 
     def __hash__(self):
-        return hash(self.global_idx)
+        return hash(self.global_index.__repr__)
 
 
 class PrefixUnaryOp(LExprOperator):
@@ -858,7 +860,7 @@ class ForRange(Statement):
     is_scoped = True
 
     def __init__(self, index, begin, end, body):
-        assert isinstance(index, Symbol)
+        assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
         self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)

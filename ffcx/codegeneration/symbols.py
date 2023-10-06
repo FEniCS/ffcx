@@ -191,3 +191,36 @@ class FFCXBackendSymbols(object):
 
         # Return direct access to element table
         return L.Symbol(tabledata.name, dtype=L.DataType.REAL)[qp][entity][iq]
+
+    def named_table(self, name):
+        return L.Symbol(name, dtype=L.DataType.REAL)
+
+    def table_access(self, tabledata, entitytype, restriction, quadrature_index, dof_index):
+        entity = self.entity(entitytype, restriction)
+        if tabledata.is_uniform:
+            entity = 0
+
+        iq = quadrature_index
+        if tabledata.is_piecewise:
+            iq = L.MultiIndex("iq", [0])
+
+        qp = 0
+        if tabledata.is_permuted:
+            qp = self.quadrature_permutation(0)
+            if restriction == "-":
+                qp = self.quadrature_permutation(1)
+
+        ic = dof_index
+
+        dim = len(dof_index.sizes)
+
+        if dim == 1:
+            return self.named_table(tabledata.name)[qp][entity][iq.global_index()][ic.global_index()]
+        else:
+            FE = []
+            for i in range(dim):
+                factor = tabledata.tensor_factors[i]
+                table = self.named_table(factor.name)[qp][entity][iq.local_index(i)][ic.local_index(i)]
+                FE.append(table)
+
+        return L.Product(FE)
