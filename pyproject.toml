@@ -18,9 +18,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://fenicsproject.org"
-Repository = "https://github.com/fenics/ffcx.git"
-Documentation = "https://docs.fenicsproject.org"
+homepage = "https://fenicsproject.org"
+repository = "https://github.com/fenics/ffcx.git"
+documentation = "https://docs.fenicsproject.org"
 
 [project.scripts]
 ffcx = "ffcx.__main__:main"
@@ -73,9 +73,9 @@ convention = "numpy"
 # TODO: Work on removing these ignores
 add-ignore = [
     "D100",  # Missing docstrings in modules
+    "D101",  # Missing docstrings in classes
     "D102",  # Missing docstrings in methods
     "D103",  # Missing docstrings in functions
-    "D101",  # Missing docstrings in classes
     "D104",  # Missing docstrings in packages
     "D105",  # Missing docstrings in magic methods
     "D401",  # Google convention
