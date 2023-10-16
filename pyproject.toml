@@ -28,7 +28,7 @@ ffcx = "ffcx.__main__:main"
 [project.optional-dependencies]
 lint = ["flake8", "pydocstyle[toml]"]
 doc = ["sphinx", "sphinx_rtd_theme"]
-optional = "pygraphviz==1.7"]
+optional = ["pygraphviz==1.7"]
 test = ["pytest >= 6.0", "sympy"]
 ci = [
     "coveralls",
