@@ -121,9 +121,6 @@ extern "C"
     /// product of the tensor's dimensions
     int block_size;
 
-    /// Family of the finite element function space
-    const char* family;
-
     /// Basix identifier of the family of the finite element function space
     int basix_family;
 

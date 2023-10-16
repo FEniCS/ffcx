@@ -909,8 +909,8 @@ def test_integral_grouping(compile_args):
     `integral_ids_`
 
     """
-    mesh = ufl.Mesh(ufl.VectorElement("Lagrange", ufl.triangle, 1))
-    V = ufl.FunctionSpace(mesh, ufl.FiniteElement("Lagrange", ufl.triangle, 1))
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+    V = ufl.FunctionSpace(mesh, basix.ufl.element("Lagrange", "triangle", 1))
     u = ufl.TrialFunction(V)
     v = ufl.TestFunction(V)
     a = ufl.inner(u, v) * ufl.dx((1, 2, 3)) + ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx(2) + ufl.inner(u, v) * ufl.dx
