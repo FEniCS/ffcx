@@ -1,4 +1,4 @@
-name: Spack build
+name: Spack install
 
 on:
   # Uncomment the below 'push' to trigger on push
@@ -7,7 +7,7 @@ on:
   #    - "**"
   schedule:
     # '*' is a special character in YAML, so string must be quoted
-    - cron: "0 2 * * WED"
+    - cron: "0 2 * * SUN"
   workflow_dispatch:
     inputs:
       spack_repo:
@@ -44,18 +44,18 @@ jobs:
           repository: ${{ github.event.inputs.spack_repo }}
           ref: ${{ github.event.inputs.spack_ref }}
 
-      - name: Install UFL development version and run tests
+      - name: Install FFCx development version and run tests
         run: |
           . ./spack/share/spack/setup-env.sh
           spack env create main
           spack env activate main
-          spack add py-fenics-ufl@main
+          spack add py-fenics-ffcx@main
           spack install --test=root
 
-      - name: Install UFL release version and run tests
+      - name: Install FFCx release version and run tests
         run: |
           . ./spack/share/spack/setup-env.sh
           spack env create release
           spack env activate release
-          spack add py-fenics-ufl
+          spack add py-fenics-ffcx
           spack install --test=root
