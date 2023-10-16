@@ -1,7 +1,53 @@
 [build-system]
 requires = ["setuptools>=62", "wheel"]
-
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "fenics-ffcx"
+version = "0.8.0.dev0"
+description = "The FEniCSx Form Compiler"
+readme = "README.md"
+requires-python = ">=3.8.0"
+license = {file = "LICENSE"}
+authors = [{email="fenics-dev@googlegroups.com"}, {name="FEniCS Project"}]
+dependencies = [
+    "numpy>=1.21",
+    "cffi",
+    "fenics-basix >= 0.8.0.dev0, <0.9.0",
+    "fenics-ufl >= 2023.3.0.dev0, <2023.4.0",
+]
+
+[project.urls]
+Homepage = "https://fenicsproject.org"
+Repository = "https://github.com/fenics/ffcx.git"
+Documentation = "https://docs.fenicsproject.org"
+
+[project.scripts]
+ffcx = "ffcx.__main__:main"
+
+[project.optional-dependencies]
+lint = ["flake8", "pydocstyle[toml]"]
+doc = ["sphinx", "sphinx_rtd_theme"]
+test = ["pytest >= 6.0", "sympy"]
+ci = [
+    "coveralls",
+    "coverage",
+    "isort",
+    "pytest-cov",
+    "pytest-xdist",
+    "types-setuptools",
+    "mypy",
+    "fenics-ffcx[docs]",
+    "fenics-ffcx[optional]",
+    "fenics-ffcx[lint]",
+    "fenics-ffcx[test]",
+]
+
+[options.entry_points]
+ffcx = "ffcx.__main__:main"
+
+[tool.setuptools]
+packages = ["ffcx"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -20,9 +66,9 @@ convention = "numpy"
 # TODO: Work on removing these ignores
 add-ignore = [
     "D100",  # Missing docstrings in modules
-    "D101",  # Missing docstrings in classes
     "D102",  # Missing docstrings in methods
     "D103",  # Missing docstrings in functions
+    "D101",  # Missing docstrings in classes
     "D104",  # Missing docstrings in packages
     "D105",  # Missing docstrings in magic methods
     "D401",  # Google convention
