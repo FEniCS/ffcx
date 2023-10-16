@@ -48,7 +48,13 @@ ci = [
 ffcx = "ffcx.__main__:main"
 
 [tool.setuptools]
-packages = ["ffcx", "ffcx.codegeneration", "ffcx.ir"]
+packages = [
+    "ffcx",
+    "ffcx.codegeneration",
+    "ffcx.codegeneration.C",
+    "ffcx.ir",
+    "ffcx.ir.analysis",
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
