@@ -15,17 +15,6 @@ import numpy as np
 import numpy.typing as npt
 
 
-def convert_element(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
-    """Convert and element to a FFCx element."""
-    if isinstance(element, basix.ufl._ElementBase):
-        return element
-    else:
-        warnings.warn(
-            "Use of elements created by UFL is deprecated. You should create elements directly using Basix.",
-            DeprecationWarning)
-        return basix.ufl.convert_ufl_element(element)
-
-
 def basix_index(indices: typing.Tuple[int]) -> int:
     """Get the Basix index of a derivative."""
     return basix.index(*indices)
@@ -63,18 +52,19 @@ def map_facet_points(points: npt.NDArray[np.float64], facet: int, cellname: str)
 def QuadratureElement(
     cellname: str, value_shape: typing.Tuple[int, ...], scheme: typing.Optional[str] = None,
     degree: typing.Optional[int] = None, points: typing.Optional[npt.NDArray[np.float64]] = None,
-    weights: typing.Optional[npt.NDArray[np.float64]] = None, mapname: str = "identity"
+    weights: typing.Optional[npt.NDArray[np.float64]] = None,
+    pullback: ufl.AbstractPullback = ufl.identity_pullback
 ) -> basix.ufl._ElementBase:
     warnings.warn(
         "ffcx.element_interface.QuadratureElement is deprecated and will be removed after December 2023. "
         "Use basix.ufl.quadrature_element instead.", DeprecationWarning)
     return basix.ufl.quadrature_element(
         cell=cellname, value_shape=value_shape, scheme=scheme, degree=degree, points=points, weights=weights,
-        mapname=mapname)
+        pullback=pullback)
 
 
 # TODO: remove this deprecated function
-def RealElement(element: ufl.finiteelement.FiniteElementBase) -> basix.ufl._ElementBase:
+def RealElement(element: ufl.finiteelement.AbstractFiniteElement) -> basix.ufl._ElementBase:
     warnings.warn(
         "ffcx.element_interface.RealElement is deprecated and will be removed after December 2023. "
         "Use basix.ufl.real_element instead.", DeprecationWarning)

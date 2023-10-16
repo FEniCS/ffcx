@@ -17,12 +17,15 @@
 #
 # This example demonstrates how to create vectors component-wise
 import basix.ufl
-from ufl import Coefficient, TestFunction, as_vector, dot, dx
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, as_vector,
+                 dot, dx)
 
 element = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, ))
+domain = Mesh(element)
+space = FunctionSpace(domain, element)
 
-v = TestFunction(element)
-f = Coefficient(element)
+v = TestFunction(space)
+f = Coefficient(space)
 
 # Create vector
 v0 = as_vector([v[0], v[1], 0.0])
