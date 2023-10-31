@@ -18,7 +18,7 @@ on:
         description: "Spack repository branch/tag to test"
         default: "develop"
         type: string
-      spack_tag:
+      ffcx_version:
         description: "Spack build tag"
         default: "main"
         type: string
@@ -53,5 +53,5 @@ jobs:
           . ./spack/share/spack/setup-env.sh
           spack env create ffcx-testing
           spack env activate ffcx-testing
-          spack add py-fenics-ffcx@${{ github.event.inputs.spack_tag }}
+          spack add py-fenics-ffcx@${{ github.event.inputs.ffcx_version }}
           spack install --test=root
