@@ -186,7 +186,6 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
             # If form contains a quadrature element, use the custom quadrature scheme
             custom_q = None
             for e in ufl.algorithms.extract_elements(integral):
-                e = convert_element(e)
                 if e.has_custom_quadrature:
                     if custom_q is None:
                         custom_q = e.custom_quadrature()
