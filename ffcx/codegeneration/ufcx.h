@@ -1,5 +1,6 @@
 /// This is UFCx
-/// This code is released into the public domain.
+/// This software is released under the terms of the unlicense (see the file
+/// UNLICENSE).
 ///
 /// The FEniCS Project (http://www.fenicsproject.org/) 2006-2021.
 ///
@@ -120,9 +121,6 @@ extern "C"
     /// Block size for a VectorElement. For a TensorElement, this is the
     /// product of the tensor's dimensions
     int block_size;
-
-    /// Family of the finite element function space
-    const char* family;
 
     /// Basix identifier of the family of the finite element function space
     int basix_family;

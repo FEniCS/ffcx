@@ -8,6 +8,7 @@
 import logging
 
 import ufl
+from ufl.pullback import SymmetricPullback
 from ffcx.ir.analysis.indexing import (map_component_tensor_arg_components,
                                        map_indexed_arg_components)
 from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal
@@ -88,15 +89,15 @@ class ValueNumberer(object):
 
     def form_argument(self, v):
         """Create new symbols for expressions that represent new values."""
-        symmetry = v.ufl_function_space().ufl_element().symmetry()
+        e = v.ufl_function_space().ufl_element()
 
-        if symmetry:
+        if isinstance(e.pullback, SymmetricPullback):
             # Build symbols with symmetric components skipped
             symbols = []
             mapped_symbols = {}
             for c in ufl.permutation.compute_indices(v.ufl_shape):
                 # Build mapped component mc with symmetries from element considered
-                mc = symmetry.get(c, c)
+                mc = min(i for i, j in e.pullback._symmetry.items() if j == e.pullback._symmetry[c])
 
                 # Get existing symbol or create new and store with mapped component mc as key
                 s = mapped_symbols.get(mc)
