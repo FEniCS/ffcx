@@ -119,8 +119,8 @@ def generate_custom_element(name, ir):
     d["polyset_type"] = int(ir.polyset_type)
     d["map_type"] = int(ir.map_type)
     d["sobolev_space"] = int(ir.sobolev_space)
-    d["highest_complete_degree"] = ir.highest_complete_degree
-    d["highest_degree"] = ir.highest_degree
+    d["embedded_subdegree"] = ir.embedded_subdegree
+    d["embedded_superdegree"] = ir.embedded_superdegree
     d["discontinuous"] = "true" if ir.discontinuous else "false"
     d["interpolation_nderivs"] = ir.interpolation_nderivs
     d["value_shape_length"] = len(ir.value_shape)
