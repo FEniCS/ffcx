@@ -18,6 +18,10 @@ on:
         description: "Spack repository branch/tag to test"
         default: "develop"
         type: string
+      ffcx_version:
+        description: "Spack build tag"
+        default: "main"
+        type: string
 
 jobs:
   build:
@@ -44,18 +48,10 @@ jobs:
           repository: ${{ github.event.inputs.spack_repo }}
           ref: ${{ github.event.inputs.spack_ref }}
 
-      - name: Install FFCx development version and run tests
+      - name: Install FFCx and run tests
         run: |
           . ./spack/share/spack/setup-env.sh
-          spack env create main
-          spack env activate main
-          spack add py-fenics-ffcx@main
-          spack install --test=root
-
-      - name: Install FFCx release version and run tests
-        run: |
-          . ./spack/share/spack/setup-env.sh
-          spack env create release
-          spack env activate release
-          spack add py-fenics-ffcx
+          spack env create ffcx-testing
+          spack env activate ffcx-testing
+          spack add py-fenics-ffcx@${{ github.event.inputs.ffcx_version }}
           spack install --test=root
