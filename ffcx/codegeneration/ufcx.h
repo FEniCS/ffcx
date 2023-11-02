@@ -191,13 +191,13 @@ extern "C"
     bool discontinuous;
 
     /// The highest degree full polynomial space contained in this element
-    int highest_complete_degree;
+    int embedded_subdegree;
 
     /// The number of derivatives needed when interpolating
     int interpolation_nderivs;
 
     /// The highest degree of a polynomial in the element
-    int highest_degree;
+    int embedded_superdegree;
 
     /// The polyset type of the element
     int polyset_type;
