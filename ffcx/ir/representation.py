@@ -66,8 +66,8 @@ class CustomElementIR(typing.NamedTuple):
     sobolev_space: basix.SobolevSpace
     interpolation_nderivs: int
     discontinuous: bool
-    highest_complete_degree: int
-    highest_degree: int
+    embedded_subdegree: int
+    embedded_superdegree: int
     polyset_type: basix.PolysetType
 
 
@@ -266,8 +266,8 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     ir["sobolev_space"] = basix_element.sobolev_space
     ir["discontinuous"] = basix_element.discontinuous
     ir["interpolation_nderivs"] = basix_element.interpolation_nderivs
-    ir["highest_complete_degree"] = basix_element.highest_complete_degree
-    ir["highest_degree"] = basix_element.highest_degree
+    ir["embedded_subdegree"] = basix_element.embedded_subdegree
+    ir["embedded_superdegree"] = basix_element.embedded_superdegree
     ir["polyset_type"] = basix_element.polyset_type
 
     return CustomElementIR(**ir)
