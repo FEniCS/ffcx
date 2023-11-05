@@ -108,7 +108,7 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
 
 
 def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                     cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
+                     cffi_verbose=False, cffi_debug=None, cffi_libraries=None, visualise: bool = False):
     """Compile a list of UFL elements and dofmaps into Python objects."""
     p = ffcx.options.get_options(options)
 
@@ -143,7 +143,7 @@ def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_ex
             decl += dofmap_template.format(name=names[i * 2 + 1])
 
         impl = _compile_objects(decl, elements, names, module_name, p, cache_dir,
-                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries, visualise=visualise)
     except Exception as e:
         try:
             # remove c file so that it will not timeout next time
@@ -160,7 +160,8 @@ def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_ex
 
 
 def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                  cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
+                  cffi_verbose=False, cffi_debug=None, cffi_libraries=None,
+                  visualise: bool = False):
     """Compile a list of UFL forms into UFC Python objects."""
     p = ffcx.options.get_options(options)
 
@@ -188,7 +189,8 @@ def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_co
             decl += form_template.format(name=name)
 
         impl = _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
-                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries,
+                                visualise=visualise)
     except Exception as e:
         try:
             # remove c file so that it will not timeout next time
@@ -203,7 +205,8 @@ def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_co
 
 
 def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                        cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
+                        cffi_verbose: bool = False, cffi_debug=None, cffi_libraries=None,
+                        visualise: bool = False):
     """Compile a list of UFL expressions into UFC Python objects.
 
     Options
@@ -236,7 +239,8 @@ def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, c
             decl += expression_template.format(name=name)
 
         impl = _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
-                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries,
+                                visualise=visualise)
     except Exception as e:
         try:
             # remove c file so that it will not timeout next time
@@ -251,13 +255,15 @@ def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, c
 
 
 def _compile_objects(decl, ufl_objects, object_names, module_name, options, cache_dir,
-                     cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries):
+                     cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries,
+                     visualise: bool = False):
 
     import ffcx.compiler
 
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
-    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, options=options)
+    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, options=options,
+                                                     visualise=visualise)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffcx.codegeneration.get_include_path()],
