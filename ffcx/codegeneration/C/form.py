@@ -43,7 +43,6 @@ def generator(ir, options):
         d["original_coefficient_position_init"] = ""
         d["original_coefficient_position"] = "NULL"
 
-
     if len(ir.coefficient_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
         sizes = len(ir.coefficient_names)
@@ -61,7 +60,7 @@ def generator(ir, options):
     else:
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
-    
+
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
         values = ", ".join(f"&{el}" for el in ir.finite_elements)
