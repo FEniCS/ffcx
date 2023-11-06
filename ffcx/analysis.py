@@ -167,16 +167,6 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode)
 
-    # If form contains a quadrature element, use the custom quadrature scheme
-    custom_q = None
-    for e in form_data.unique_elements:
-        if e.has_custom_quadrature:
-            if custom_q is None:
-                custom_q = e.custom_quadrature()
-            else:
-                assert np.allclose(e._points, custom_q[0])
-                assert np.allclose(e._weights, custom_q[1])
-
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
     for id, integral_data in enumerate(form_data.integral_data):
@@ -193,6 +183,16 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
 
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
+            # If form contains a quadrature element, use the custom quadrature scheme
+            custom_q = None
+            for e in ufl.algorithms.extract_elements(integral):
+                if e.has_custom_quadrature:
+                    if custom_q is None:
+                        custom_q = e.custom_quadrature()
+                    else:
+                        assert np.allclose(e._points, custom_q[0])
+                        assert np.allclose(e._weights, custom_q[1])
+
             if custom_q is None:
                 # Extract quadrature degree
                 qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
