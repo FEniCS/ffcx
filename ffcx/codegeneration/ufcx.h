@@ -420,11 +420,11 @@ extern "C"
     /// Original coefficient position for each coefficient
     int* original_coefficient_position;
 
-    /// Return list of names of coefficients
-    const char** (*coefficient_name_map)(void);
+    /// List of names of coefficients
+    const char** coefficient_name_map;
 
-    /// Return list of names of constants
-    const char** (*constant_name_map)(void);
+    /// List of names of constants
+    const char** constant_name_map;
 
     /// Get a finite element for the i-th argument function, where 0 <=
     /// i < r + n.
