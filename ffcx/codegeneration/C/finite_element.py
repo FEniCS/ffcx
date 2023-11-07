@@ -214,8 +214,6 @@ def generate_custom_quadrature(name, ir):
     fieldnames = [
         fname for _, fname, _, _ in Formatter().parse(ufcx_quadrature_rule.factory) if fname
     ]
-    print(fieldnames)
-    print(d.keys())
     assert set(fieldnames) == set(
         d.keys()), "Mismatch between keys in template and in formatting dict"
 
