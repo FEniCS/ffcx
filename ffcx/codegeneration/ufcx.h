@@ -89,9 +89,6 @@ extern "C"
     /// Element type
     ufcx_element_type element_type;
 
-    /// Element type
-    int map_type;
-
     /// Topological dimension of the cell
     int topological_dimension;
 

@@ -82,7 +82,6 @@ class ElementIR(typing.NamedTuple):
     name: str
     signature: str
     cell_shape: str
-    map_type: basix.MapType
     topological_dimension: int
     geometric_dimension: int
     space_dimension: int
@@ -232,7 +231,6 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     # Compute data for each function
     ir["signature"] = repr(element)
     ir["cell_shape"] = element.cell_type.name
-    ir["map_type"] = element.basix_map_type
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = element.dim + element.num_global_support_dofs
