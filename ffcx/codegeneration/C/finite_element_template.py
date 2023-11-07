@@ -21,6 +21,7 @@ ufcx_finite_element {factory_name} =
   .signature = {signature},
   .cell_shape = {cell_shape},
   .element_type = {element_type},
+  .map_type = {map_type},
   .topological_dimension = {topological_dimension},
   .geometric_dimension = {geometric_dimension},
   .space_dimension = {space_dimension},

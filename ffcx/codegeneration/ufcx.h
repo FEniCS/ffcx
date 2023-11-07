@@ -69,6 +69,17 @@ extern "C"
     ufcx_real_element = 4,
   } ufcx_element_type;
 
+  typedef enum
+  {
+    ufcx_identity_pullback = 0,
+    ufcx_covariant_piola = 1,
+    ufcx_contravariant_piola = 2,
+    ufcx_double_covariant_piola = 3,
+    ufcx_double_contravariant_piola = 4,
+    ufcx_l2_piola = 5,
+    ufcx_custom = 6,
+  } ufcx_map_type;
+
   /// Forward declarations
   typedef struct ufcx_finite_element ufcx_finite_element;
   typedef struct ufcx_basix_custom_finite_element ufcx_basix_custom_finite_element;
@@ -88,6 +99,9 @@ extern "C"
 
     /// Element type
     ufcx_element_type element_type;
+
+    /// Element type
+    ufcx_map_type map_type;
 
     /// Topological dimension of the cell
     int topological_dimension;

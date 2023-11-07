@@ -33,6 +33,7 @@ def generator(ir, options):
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
     d["element_type"] = ir.element_type
+    d["map_type"] = ir.map_type
     d["space_dimension"] = ir.space_dimension
     d["value_rank"] = len(ir.value_shape)
     d["value_size"] = ufl.product(ir.value_shape)
