@@ -77,7 +77,7 @@ extern "C"
     ufcx_double_covariant_piola = 3,
     ufcx_double_contravariant_piola = 4,
     ufcx_l2_piola = 5,
-    ufcx_custom = 6,
+    ufcx_custom_pullback = 6,
   } ufcx_map_type;
 
   /// Forward declarations
