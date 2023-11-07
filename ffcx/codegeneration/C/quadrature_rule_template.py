@@ -4,12 +4,12 @@
 # The FEniCS Project (http://www.fenicsproject.org/) 2023.
 
 factory = """
-// Code for custom quadrature rule {factory_name}
+// Code for quadrature rule {factory_name}
 
 {points_init}
 {weights_init}
 
-ufcx_basix_custom_finite_element {factory_name} =
+ufcx_quadrature_rule {factory_name} =
 {{
   .cell_shape = {cell_shape},
   .npts = {npts},
@@ -18,5 +18,5 @@ ufcx_basix_custom_finite_element {factory_name} =
   .weights = {weights}
 }};
 
-// End of code for custom quadrature rule {factory_name}
+// End of code for quadrature rule {factory_name}
 """
