@@ -146,6 +146,9 @@ extern "C"
 
     /// Pointer to data to recreate the element if it is a custom Basix element
     ufcx_basix_custom_finite_element* custom_element;
+
+    /// Pointer to data to recreate the custom quadrtaure rule if the element has one
+    ufcx_quadrature_rule* custom_quadrature;
   } ufcx_finite_element;
 
   typedef struct ufcx_basix_custom_finite_element
@@ -202,6 +205,24 @@ extern "C"
     /// The polyset type of the element
     int polyset_type;
   } ufcx_basix_custom_finite_element;
+
+  typedef struct ufcx_quadrature_rule
+  {
+    /// Cell shape
+    ufcx_shape cell_shape;
+
+    /// The number of points
+    int npts;
+
+    /// The topological dimension of the cell
+    int topological_dimension;
+
+    /// The quadraute points
+    double* points;
+
+    /// The quadraute weights
+    double* weights;
+  } ufcx_quadrature_rule;
 
   typedef struct ufcx_dofmap
   {
