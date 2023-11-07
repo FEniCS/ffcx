@@ -72,6 +72,7 @@ extern "C"
   /// Forward declarations
   typedef struct ufcx_finite_element ufcx_finite_element;
   typedef struct ufcx_basix_custom_finite_element ufcx_basix_custom_finite_element;
+  typedef struct ufcx_quadrature_rule ufcx_quadrature_rule;
   typedef struct ufcx_dofmap ufcx_dofmap;
   typedef struct ufcx_function_space ufcx_function_space;
 
@@ -147,7 +148,7 @@ extern "C"
     /// Pointer to data to recreate the element if it is a custom Basix element
     ufcx_basix_custom_finite_element* custom_element;
 
-    /// Pointer to data to recreate the custom quadrtaure rule if the element has one
+    /// Pointer to data to recreate the custom quadrature rule if the element has one
     ufcx_quadrature_rule* custom_quadrature;
   } ufcx_finite_element;
 
