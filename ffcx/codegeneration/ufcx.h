@@ -227,7 +227,6 @@ extern "C"
 
   typedef struct ufcx_dofmap
   {
-
     /// String identifying the dofmap
     const char* signature;
 
@@ -252,18 +251,6 @@ extern "C"
 
     /// Offset for closure dofs of each entity in entity_closure_dofs
     int *entity_closure_dof_offsets;
-
-    /// Number of dofs associated with each cell entity of dimension d
-    int *num_entity_dofs;
-
-    /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-    void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
-
-    /// Number of dofs associated with the closure of each cell entity of dimension d
-    int *num_entity_closure_dofs;
-
-    /// Tabulate the local-to-local mapping of dofs on the closure of entity (d, i)
-    void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
 
     /// Number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
@@ -455,11 +442,11 @@ extern "C"
     /// Original coefficient position for each coefficient
     int* original_coefficient_position;
 
-    /// Return list of names of coefficients
-    const char** (*coefficient_name_map)(void);
+    /// List of names of coefficients
+    const char** coefficient_name_map;
 
-    /// Return list of names of constants
-    const char** (*constant_name_map)(void);
+    /// List of names of constants
+    const char** constant_name_map;
 
     /// Get a finite element for the i-th argument function, where 0 <=
     /// i < r + n.

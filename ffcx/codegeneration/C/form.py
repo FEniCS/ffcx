@@ -43,24 +43,23 @@ def generator(ir, options):
         d["original_coefficient_position_init"] = ""
         d["original_coefficient_position"] = "NULL"
 
-    cnames = ir.coefficient_names
-    assert ir.num_coefficients == len(cnames)
-    if len(cnames) == 0:
-        code = ["return NULL;"]
+    if len(ir.coefficient_names) > 0:
+        values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
+        sizes = len(ir.coefficient_names)
+        d["coefficient_names_init"] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
-        values = ", ".join(f'"{name}"' for name in cnames)
-        code = [f"static const char* names[{len(cnames)}] = {{{values}}};",
-                "return names;"]
-    d["coefficient_name_map"] = "\n".join(code)
+        d["coefficient_names_init"] = ""
+        d["coefficient_names"] = "NULL"
 
-    cstnames = ir.constant_names
-    if len(cstnames) == 0:
-        code = ["return NULL;"]
+    if len(ir.constant_names) > 0:
+        values = ", ".join(f'"{name}"' for name in ir.constant_names)
+        sizes = len(ir.constant_names)
+        d["constant_names_init"] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["constant_names"] = f"constant_names_{ir.name}"
     else:
-        values = ", ".join(f'"{name}"' for name in cstnames)
-        code = [f"static const char* names[{len(cstnames)}] = {{{values}}};",
-                "return names;"]
-    d["constant_name_map"] = "\n".join(code)
+        d["constant_names_init"] = ""
+        d["constant_names"] = "NULL"
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
