@@ -293,7 +293,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
     # get priority
     all_elements = [res[0] for res in analysis.values()]
     unique_elements = ufl.algorithms.sort_elements(
-        ufl.algorithms.analysis.extract_sub_elements(all_elements))
+        set(ufl.algorithms.analysis.extract_sub_elements(all_elements)))
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
     mt_tables = {}
 
