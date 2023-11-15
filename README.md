@@ -1,6 +1,7 @@
 # FFCx: The FEniCSx Form Compiler
 
 [![FFCx CI](https://github.com/FEniCS/ffcx/actions/workflows/pythonapp.yml/badge.svg)](https://github.com/FEniCS/ffcx/actions/workflows/pythonapp.yml)
+[![Spack install](https://github.com/FEniCS/ffcx/actions/workflows/spack.yml/badge.svg)](https://github.com/FEniCS/ffcx/actions/workflows/spack.yml)
 [![Coverage Status](https://coveralls.io/repos/github/FEniCS/ffcx/badge.svg?branch=main)](https://coveralls.io/github/FEniCS/ffcx?branch=main)
 
 FFCx is a new version of the FEniCS Form Compiler. It is being actively
