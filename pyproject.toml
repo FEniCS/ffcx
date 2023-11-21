@@ -23,7 +23,7 @@ repository = "https://github.com/fenics/ffcx.git"
 documentation = "https://docs.fenicsproject.org"
 
 [project.scripts]
-ffcx = "ffcx.__main__:main"
+ffcx = "ffcx:__main__.main"
 
 [project.optional-dependencies]
 lint = ["flake8", "pydocstyle[toml]"]
@@ -43,9 +43,6 @@ ci = [
     "fenics-ffcx[lint]",
     "fenics-ffcx[test]",
 ]
-
-[options.entry_points]
-ffcx = "ffcx.__main__:main"
 
 [tool.setuptools]
 packages = [
@@ -82,4 +79,3 @@ add-ignore = [
     "D406",  # Google convention
     "D407"   # Google convention
 ]
-
