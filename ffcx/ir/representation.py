@@ -71,6 +71,12 @@ class CustomElementIR(typing.NamedTuple):
     polyset_type: basix.PolysetType
 
 
+class QuadratureIR(typing.NamedTuple):
+    cell_shape: str
+    points: npt.NDArray[np.float64]
+    weights: npt.NDArray[np.float64]
+
+
 class ElementIR(typing.NamedTuple):
     id: int
     name: str
@@ -93,6 +99,7 @@ class ElementIR(typing.NamedTuple):
     basix_cell: basix.CellType
     discontinuous: bool
     custom_element: CustomElementIR
+    custom_quadrature: QuadratureIR
 
 
 class DofMapIR(typing.NamedTuple):
@@ -251,6 +258,11 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     else:
         ir["custom_element"] = None
 
+    if element.has_custom_quadrature:
+        ir["custom_quadrature"] = _compute_custom_quadrature_ir(element)
+    else:
+        ir["custom_quadrature"] = None
+
     return ElementIR(**ir)
 
 
@@ -271,6 +283,15 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     ir["polyset_type"] = basix_element.polyset_type
 
     return CustomElementIR(**ir)
+
+
+def _compute_custom_quadrature_ir(element: basix.ufl._ElementBase):
+    """Compute intermediate representation of a custom Basix element."""
+    ir: typing.Dict[str, typing.Any] = {}
+    ir["cell_shape"] = element.cell_type.name
+    ir["points"], ir["weights"] = element.custom_quadrature()
+
+    return QuadratureIR(**ir)
 
 
 def _compute_dofmap_ir(element, element_numbers, dofmap_names):

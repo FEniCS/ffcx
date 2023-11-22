@@ -14,6 +14,7 @@ factory = """
 {reference_value_shape_init}
 {sub_elements_init}
 {custom_element_init}
+{custom_quadrature_init}
 
 ufcx_finite_element {factory_name} =
 {{
@@ -38,7 +39,8 @@ ufcx_finite_element {factory_name} =
   .dpc_variant = {dpc_variant},
   .num_sub_elements = {num_sub_elements},
   .sub_elements = {sub_elements},
-  .custom_element = {custom_element}
+  .custom_element = {custom_element},
+  .custom_quadrature = {custom_quadrature}
 }};
 
 // End of code for element {factory_name}
