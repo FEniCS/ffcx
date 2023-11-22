@@ -43,17 +43,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ffcx_ref }}
-
       - name: Upgrade pip and setuptools
         run: python -m pip install setuptools pip build --upgrade
-
       - name: Build sdist and wheel
         run: python -m build .
-
       - uses: actions/upload-artifact@v2
         with:
           path: dist/*
-
   upload_pypi:
     name: Upload to PyPI (optional)
     needs: [build]
@@ -63,7 +59,6 @@ jobs:
         with:
           name: artifact
           path: dist
-
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         if: ${{ github.event.inputs.pypi_publish == 'true' }}
@@ -71,7 +66,6 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
           repository_url: https://upload.pypi.org/legacy/
-
       - name: Publish to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         if: ${{ github.event.inputs.test_pypi_publish == 'true' }}
