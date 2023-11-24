@@ -190,8 +190,9 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
                     if custom_q is None:
                         custom_q = e.custom_quadrature()
                     else:
-                        assert np.allclose(e._points, custom_q[0])
-                        assert np.allclose(e._weights, custom_q[1])
+                        p, w = e.custom_quadrature()
+                        assert np.allclose(p, custom_q[0])
+                        assert np.allclose(w, custom_q[1])
 
             if custom_q is None:
                 # Extract quadrature degree
