@@ -11,6 +11,7 @@
 import logging
 
 import ffcx.codegeneration.C.basix_custom_element_template as ufcx_basix_custom_finite_element
+import ffcx.codegeneration.C.quadrature_rule_template as ufcx_quadrature_rule
 import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
 import ufl
 
@@ -94,6 +95,13 @@ def generator(ir, options):
     else:
         d["custom_element"] = "NULL"
         d["custom_element_init"] = ""
+
+    if ir.custom_quadrature is not None:
+        d["custom_quadrature"] = f"&custom_quadrature_{ir.name}"
+        d["custom_quadrature_init"] = generate_custom_quadrature(f"custom_quadrature_{ir.name}", ir.custom_quadrature)
+    else:
+        d["custom_quadrature"] = "NULL"
+        d["custom_quadrature_init"] = ""
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
@@ -181,5 +189,35 @@ def generate_custom_element(name, ir):
 
     # Format implementation code
     implementation = ufcx_basix_custom_finite_element.factory.format_map(d)
+
+    return implementation
+
+
+def generate_custom_quadrature(name, ir):
+    npts = ir.points.shape[0]
+    tdim = ir.points.shape[1]
+
+    d = {}
+    d["factory_name"] = name
+    d["cell_shape"] = ir.cell_shape
+    d["topological_dimension"] = tdim
+    d["npts"] = npts
+    d["points"] = f"points_{name}"
+    d["points_init"] = f"double points_{name}[{npts * tdim}] = "
+    d["points_init"] += "{" + ",".join([f" {i}" for p in ir.points for i in p]) + "};"
+    d["weights"] = f"weights_{name}"
+    d["weights_init"] = f"double weights_{name}[{npts}] = "
+    d["weights_init"] += "{" + ",".join([f" {i}" for i in ir.weights]) + "};"
+
+    # Check that no keys are redundant or have been missed
+    from string import Formatter
+    fieldnames = [
+        fname for _, fname, _, _ in Formatter().parse(ufcx_quadrature_rule.factory) if fname
+    ]
+    assert set(fieldnames) == set(
+        d.keys()), "Mismatch between keys in template and in formatting dict"
+
+    # Format implementation code
+    implementation = ufcx_quadrature_rule.factory.format_map(d)
 
     return implementation
