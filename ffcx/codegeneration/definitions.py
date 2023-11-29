@@ -8,7 +8,6 @@
 import logging
 
 import ufl
-from ffcx.element_interface import convert_element
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -175,7 +174,7 @@ class FFCXBackendDefinitions(object):
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = convert_element(coordinate_element).sub_element.dim
+        num_scalar_dofs = coordinate_element.sub_element.dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
@@ -190,8 +189,8 @@ class FFCXBackendDefinitions(object):
 
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-
-        ic = create_dof_index(tabledata, "ic")
+        ic_symbol = self.symbols.coefficient_dof_sum_index
+        ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule)
         FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 

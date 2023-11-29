@@ -12,8 +12,8 @@ import numpy as np
 import numpy.typing as npt
 
 import ufl
-from ffcx.element_interface import (QuadratureElement, basix_index,
-                                    convert_element)
+import basix.ufl
+from ffcx.element_interface import QuadratureElement, basix_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -29,7 +29,7 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 
 class ModifiedTerminalElement(typing.NamedTuple):
-    element: ufl.FiniteElementBase
+    element: basix.ufl._ElementBase
     averaged: str
     local_derivatives: typing.Tuple[int, ...]
     fc: int
@@ -77,7 +77,6 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
     Returns a 3D numpy array with axes
     (entity number, quadrature point number, dof number)
     """
-    element = convert_element(element)
     deriv_order = sum(derivative_counts)
 
     if integral_type in ufl.custom_integral_types:
@@ -111,8 +110,8 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
             weights = element._weights
         else:
             # Make quadrature rule and get points and weights
-            points, weights, _ = create_quadrature_points_and_weights(
-                integral_type, cell, element.highest_degree(), "default", [element])
+            points, weights = create_quadrature_points_and_weights(
+                integral_type, cell, element.embedded_superdegree(), "default", [element])
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension()
@@ -200,14 +199,14 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
         elif ld and not mt.reference_value:
             raise RuntimeError(
                 "Local derivatives of global values not defined.")
-        element = convert_element(mt.terminal.ufl_function_space().ufl_element())
+        element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
             raise RuntimeError("Not expecting reference value of x.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of x.")
-        element = convert_element(domain.ufl_coordinate_element())
+        element = domain.ufl_coordinate_element()
         if not ld:
             fc = mt.flat_component
         else:
@@ -220,7 +219,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
             raise RuntimeError("Not expecting reference value of J.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of J.")
-        element = convert_element(domain.ufl_coordinate_element())
+        element = domain.ufl_coordinate_element()
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
         fc, d = mt.component  # x-component, derivative
@@ -297,7 +296,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
     # get priority
     all_elements = [res[0] for res in analysis.values()]
     unique_elements = ufl.algorithms.sort_elements(
-        ufl.algorithms.analysis.extract_sub_elements(all_elements))
+        set(ufl.algorithms.analysis.extract_sub_elements(all_elements)))
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
     mt_tables = {}
 
@@ -395,7 +394,6 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             _existing_tables[name] = tbl
 
         cell_offset = 0
-        element = convert_element(element)
 
         if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
             raise RuntimeError("Sum factorization not available for this quadrature rule.")

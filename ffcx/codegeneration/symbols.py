@@ -68,22 +68,43 @@ class FFCXBackendSymbols(object):
 
         self.original_constant_offsets = original_constant_offsets
 
-    def element_tensor(self):
-        """Symbol for the element tensor itself."""
-        return L.Symbol("A", dtype=L.DataType.SCALAR)
+        # Keep tabs on tables, so the symbols can be reused
+        self.quadrature_weight_tables = {}
+        self.element_tables = {}
+
+        # Reusing a single symbol for all quadrature loops, assumed not to be nested.
+        self.quadrature_loop_index = L.Symbol("iq", dtype=L.DataType.INT)
+
+        # Symbols for the tabulate_tensor function arguments
+        self.element_tensor = L.Symbol("A", dtype=L.DataType.SCALAR)
+        self.coefficients = L.Symbol("w", dtype=L.DataType.SCALAR)
+        self.constants = L.Symbol("c", dtype=L.DataType.SCALAR)
+        self.coordinate_dofs = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
+        self.entity_local_index = L.Symbol("entity_local_index", dtype=L.DataType.INT)
+        self.quadrature_permutation = L.Symbol("quadrature_permutation", dtype=L.DataType.INT)
+
+        # Index for loops over coefficient dofs, assumed to never be used in two nested loops.
+        self.coefficient_dof_sum_index = L.Symbol("ic", dtype=L.DataType.INT)
+
+        # Table for chunk of custom quadrature weights (including cell measure scaling).
+        self.custom_weights_table = L.Symbol("weights_chunk", dtype=L.DataType.REAL)
+
+        # Table for chunk of custom quadrature points (physical coordinates).
+        self.custom_points_table = L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
     def entity(self, entitytype, restriction):
         """Entity index for lookup in element tables."""
         if entitytype == "cell":
             # Always 0 for cells (even with restriction)
             return L.LiteralInt(0)
-        elif entitytype == "facet":
-            postfix = "[0]"
+
+        if entitytype == "facet":
             if restriction == "-":
-                postfix = "[1]"
-            return L.Symbol("entity_local_index" + postfix, dtype=L.DataType.INT)
+                return self.entity_local_index[1]
+            else:
+                return self.entity_local_index[0]
         elif entitytype == "vertex":
-            return L.Symbol("entity_local_index[0]", dtype=L.DataType.INT)
+            return self.entity_local_index[0]
         else:
             logging.exception(f"Unknown entitytype {entitytype}")
 
@@ -92,29 +113,13 @@ class FFCXBackendSymbols(object):
         indices = ["i", "j", "k", "l"]
         return L.Symbol(indices[iarg], dtype=L.DataType.INT)
 
-    def coefficient_dof_sum_index(self):
-        """Index for loops over coefficient dofs, assumed to never be used in two nested loops."""
-        return L.Symbol("ic", dtype=L.DataType.INT)
-
-    def quadrature_loop_index(self):
-        """Reusing a single index name for all quadrature loops, assumed not to be nested."""
-        return L.Symbol("iq", dtype=L.DataType.INT)
-
-    def quadrature_permutation(self, index):
-        """Quadrature permutation, as input to the function."""
-        return L.Symbol("quadrature_permutation", dtype=L.DataType.INT)[index]
-
-    def custom_weights_table(self):
-        """Table for chunk of custom quadrature weights (including cell measure scaling)."""
-        return L.Symbol("weights_chunk", dtype=L.DataType.REAL)
-
-    def custom_points_table(self):
-        """Table for chunk of custom quadrature points (physical coordinates)."""
-        return L.Symbol("points_chunk", dtype=L.DataType.REAL)
-
     def weights_table(self, quadrature_rule):
         """Table of quadrature weights."""
-        return L.Symbol(f"weights_{quadrature_rule.id()}", dtype=L.DataType.REAL)
+        key = f"weights_{quadrature_rule.id()}"
+        if key not in self.quadrature_weight_tables:
+            self.quadrature_weight_tables[key] = L.Symbol(f"weights_{quadrature_rule.id()}",
+                                                          dtype=L.DataType.REAL)
+        return self.quadrature_weight_tables[key]
 
     def points_table(self, quadrature_rule):
         """Table of quadrature points (points on the reference integration entity)."""
@@ -134,8 +139,7 @@ class FFCXBackendSymbols(object):
         offset = 0
         if restriction == "-":
             offset = num_scalar_dofs * 3
-        vc = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
-        return vc[3 * dof + component + offset]
+        return self.coordinate_dofs[3 * dof + component + offset]
 
     def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
         # FIXME: Add domain number or offset!
@@ -146,13 +150,13 @@ class FFCXBackendSymbols(object):
 
     def coefficient_dof_access(self, coefficient, dof_index):
         offset = self.coefficient_offsets[coefficient]
-        w = L.Symbol("w", dtype=L.DataType.SCALAR)
+        w = self.coefficients
         return w[offset + dof_index]
 
     def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
                                        block_size, dof_offset):
         coeff_offset = self.coefficient_offsets[coefficient]
-        w = L.Symbol("w", dtype=L.DataType.SCALAR)
+        w = self.coefficients
         _w = L.Symbol(f"_w_{coeff_offset}_{dof_offset}", dtype=L.DataType.SCALAR)
         unit_stride_access = _w[index]
         original_access = w[coeff_offset + index * block_size + dof_offset]
@@ -165,8 +169,7 @@ class FFCXBackendSymbols(object):
 
     def constant_index_access(self, constant, index):
         offset = self.original_constant_offsets[constant]
-        c = L.Symbol("c", dtype=L.DataType.SCALAR)
-
+        c = self.constants
         return c[offset + index]
 
     def element_table(self, tabledata, entitytype, restriction):
@@ -180,47 +183,17 @@ class FFCXBackendSymbols(object):
         if tabledata.is_piecewise:
             iq = 0
         else:
-            iq = self.quadrature_loop_index()
+            iq = self.quadrature_loop_index
 
         if tabledata.is_permuted:
-            qp = self.quadrature_permutation(0)
+            qp = self.quadrature_permutation[0]
             if restriction == "-":
-                qp = self.quadrature_permutation(1)
+                qp = self.quadrature_permutation[1]
         else:
             qp = 0
 
-        # Return direct access to element table
-        return L.Symbol(tabledata.name, dtype=L.DataType.REAL)[qp][entity][iq]
-
-    def named_table(self, name):
-        return L.Symbol(name, dtype=L.DataType.REAL)
-
-    def table_access(self, tabledata, entitytype, restriction, quadrature_index, dof_index):
-        entity = self.entity(entitytype, restriction)
-        if tabledata.is_uniform:
-            entity = 0
-
-        iq = quadrature_index
-        if tabledata.is_piecewise:
-            iq = L.MultiIndex("iq", [0])
-
-        qp = 0
-        if tabledata.is_permuted:
-            qp = self.quadrature_permutation(0)
-            if restriction == "-":
-                qp = self.quadrature_permutation(1)
-
-        ic = dof_index
-
-        dim = len(dof_index.sizes)
-
-        if dim == 1:
-            return self.named_table(tabledata.name)[qp][entity][iq.global_index()][ic.global_index()]
-        else:
-            FE = []
-            for i in range(dim):
-                factor = tabledata.tensor_factors[i]
-                table = self.named_table(factor.name)[qp][entity][iq.local_index(i)][ic.local_index(i)]
-                FE.append(table)
-
-        return L.Product(FE)
+        # Return direct access to element table, reusing symbol if possible
+        if tabledata.name not in self.element_tables:
+            self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
+                                                           dtype=L.DataType.REAL)
+        return self.element_tables[tabledata.name][qp][entity][iq]

@@ -142,6 +142,15 @@ class CFormatter(object):
         self.scalar_type = scalar
         self.real_type = scalar_to_value_type(scalar)
 
+    def _dtype_to_name(self, dtype):
+        if dtype == L.DataType.SCALAR:
+            return self.scalar_type
+        if dtype == L.DataType.REAL:
+            return self.real_type
+        if dtype == L.DataType.INT:
+            return "int"
+        raise ValueError(f"Invalid dtype: {dtype}")
+
     def _format_number(self, x):
         # Use 16sf for precision (good for float64 or less)
         if isinstance(x, complex):
@@ -167,16 +176,7 @@ class CFormatter(object):
 
     def format_array_decl(self, arr) -> str:
         dtype = arr.symbol.dtype
-        assert dtype is not None
-
-        if dtype == L.DataType.SCALAR:
-            typename = self.scalar_type
-        elif dtype == L.DataType.REAL:
-            typename = self.real_type
-        elif dtype == L.DataType.INT:
-            typename = "int"
-        else:
-            raise ValueError(f"Invalid dtype: {dtype}")
+        typename = self._dtype_to_name(dtype)
 
         symbol = self.c_format(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
@@ -196,11 +196,7 @@ class CFormatter(object):
     def format_variable_decl(self, v) -> str:
         val = self.c_format(v.value)
         symbol = self.c_format(v.symbol)
-        assert v.symbol.dtype
-        if v.symbol.dtype == L.DataType.SCALAR:
-            typename = self.scalar_type
-        elif v.symbol.dtype == L.DataType.REAL:
-            typename = self.real_type
+        typename = self._dtype_to_name(v.symbol.dtype)
         return f"{typename} {symbol} = {val};\n"
 
     def format_nary_op(self, oper) -> str:

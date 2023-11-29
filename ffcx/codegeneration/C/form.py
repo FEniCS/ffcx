@@ -3,11 +3,15 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-
+#
+# Modified by Chris Richardson and Jørgen S. Dokken 2023
+#
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
 
 import logging
+
+import numpy
 
 from ffcx.codegeneration.C import form_template
 
@@ -39,24 +43,23 @@ def generator(ir, options):
         d["original_coefficient_position_init"] = ""
         d["original_coefficient_position"] = "NULL"
 
-    cnames = ir.coefficient_names
-    assert ir.num_coefficients == len(cnames)
-    if len(cnames) == 0:
-        code = ["return NULL;"]
+    if len(ir.coefficient_names) > 0:
+        values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
+        sizes = len(ir.coefficient_names)
+        d["coefficient_names_init"] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
-        values = ", ".join(f'"{name}"' for name in cnames)
-        code = [f"static const char* names[{len(cnames)}] = {{{values}}};",
-                "return names;"]
-    d["coefficient_name_map"] = "\n".join(code)
+        d["coefficient_names_init"] = ""
+        d["coefficient_names"] = "NULL"
 
-    cstnames = ir.constant_names
-    if len(cstnames) == 0:
-        code = ["return NULL;"]
+    if len(ir.constant_names) > 0:
+        values = ", ".join(f'"{name}"' for name in ir.constant_names)
+        sizes = len(ir.constant_names)
+        d["constant_names_init"] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["constant_names"] = f"constant_names_{ir.name}"
     else:
-        values = ", ".join(f'"{name}"' for name in cstnames)
-        code = [f"static const char* names[{len(cstnames)}] = {{{values}}};",
-                "return names;"]
-    d["constant_name_map"] = "\n".join(code)
+        d["constant_names_init"] = ""
+        d["constant_names"] = "NULL"
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
@@ -81,8 +84,16 @@ def generator(ir, options):
     integral_offsets = [0]
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
-        integrals += [f"&{itg}" for itg in ir.integral_names[itg_type]]
-        integral_ids += ir.subdomain_ids[itg_type]
+        unsorted_integrals = []
+        unsorted_ids = []
+        for name, id in zip(ir.integral_names[itg_type], ir.subdomain_ids[itg_type]):
+            unsorted_integrals += [f"&{name}"]
+            unsorted_ids += [id]
+
+        id_sort = numpy.argsort(unsorted_ids)
+        integrals += [unsorted_integrals[i] for i in id_sort]
+        integral_ids += [unsorted_ids[i] for i in id_sort]
+
         integral_offsets.append(len(integrals))
 
     if len(integrals) > 0:

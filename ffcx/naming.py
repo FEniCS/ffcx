@@ -11,13 +11,12 @@ import numpy as np
 import numpy.typing as npt
 
 import ffcx
+import basix.ufl
 import ufl
-
-from .element_interface import convert_element
 
 
 def compute_signature(ufl_objects: typing.List[
-    typing.Union[ufl.Form, ufl.FiniteElementBase,
+    typing.Union[ufl.Form, basix.ufl._ElementBase,
                  typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
     """Compute the signature hash.
 
@@ -31,8 +30,8 @@ def compute_signature(ufl_objects: typing.List[
         if isinstance(ufl_object, ufl.Form):
             kind = "form"
             object_signature += ufl_object.signature()
-        elif isinstance(ufl_object, ufl.FiniteElementBase):
-            object_signature += repr(convert_element(ufl_object))
+        elif isinstance(ufl_object, ufl.AbstractFiniteElement):
+            object_signature += repr(ufl_object)
             kind = "element"
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
             expr = ufl_object[0]
@@ -86,14 +85,14 @@ def form_name(original_form, form_id, prefix):
 
 
 def finite_element_name(ufl_element, prefix):
-    assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([convert_element(ufl_element)], prefix)
+    assert isinstance(ufl_element, basix.ufl._ElementBase)
+    sig = compute_signature([ufl_element], prefix)
     return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
-    assert isinstance(ufl_element, ufl.FiniteElementBase)
-    sig = compute_signature([convert_element(ufl_element)], prefix)
+    assert isinstance(ufl_element, basix.ufl._ElementBase)
+    sig = compute_signature([ufl_element], prefix)
     return f"dofmap_{sig}"
 
 
