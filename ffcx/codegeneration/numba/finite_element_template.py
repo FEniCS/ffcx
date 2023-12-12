@@ -25,7 +25,6 @@ class {factory_name}(object):
     reference_value_size = {reference_value_size}
     degree = {degree}
     block_size = {block_size}
-    family = {family}
     basix_family = {basix_family}
     basix_cell = {basix_cell}
     discontinuous = {discontinuous}

@@ -49,6 +49,9 @@ packages = [
     "ffcx",
     "ffcx.codegeneration",
     "ffcx.codegeneration.C",
+    "ffcx.codegeneration.FORTRAN",
+    "ffcx.codegeneration.cpp",
+    "ffcx.codegeneration.numba",
     "ffcx.ir",
     "ffcx.ir.analysis",
 ]

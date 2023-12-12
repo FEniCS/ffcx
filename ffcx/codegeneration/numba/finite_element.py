@@ -21,7 +21,6 @@ index_type = "int"
 def generator(ir, options):
     """Generate UFC code for a finite element."""
     logger.info("Generating code for finite element:")
-    logger.info(f"--- family: {ir.family}")
     logger.info(f"--- degree: {ir.degree}")
     logger.info(f"--- value shape: {ir.value_shape}")
     logger.info(f"--- name: {ir.name}")
@@ -39,7 +38,6 @@ def generator(ir, options):
     d["reference_value_rank"] = len(ir.reference_value_shape)
     d["reference_value_size"] = ufl.product(ir.reference_value_shape)
     d["degree"] = ir.degree
-    d["family"] = f"\"{ir.family}\""
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
     d["discontinuous"] = str(ir.discontinuous)
@@ -64,8 +62,7 @@ def generator(ir, options):
         d["basix_cell"] = int(ir.basix_cell)
 
     d["value_shape"] = f"[{', '.join(str(i) for i in ir.value_shape)}]"
-    d["reference_value_shape"] = \
-            f"[{', '.join(str(i) for i in ir.reference_value_shape)}]"
+    d["reference_value_shape"] = f"[{', '.join(str(i) for i in ir.reference_value_shape)}]"
 
     sub_elements = ", ".join(el for el in ir.sub_elements)
     d["sub_elements"] = f"[{sub_elements}]"
@@ -73,7 +70,6 @@ def generator(ir, options):
     d["custom_element"] = "None"
     if ir.custom_element is not None:
         d["custom_element"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element)
-
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

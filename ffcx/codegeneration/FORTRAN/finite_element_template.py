@@ -27,7 +27,6 @@ factory = """
 {factory_name}%reference_value_size = {reference_value_size}
 {factory_name}%degree = {degree}
 {factory_name}%block_size = {block_size}
-{factory_name}%family = {family}
 {factory_name}%basix_family = {basix_family}
 {factory_name}%basix_cell = {basix_cell}
 {factory_name}%discontinuous = {discontinuous}

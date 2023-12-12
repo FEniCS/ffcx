@@ -20,7 +20,6 @@ logger = logging.getLogger("ffcx")
 def generator(ir, options):
     """Generate UFC code for a finite element."""
     logger.info("Generating code for finite element:")
-    logger.info(f"--- family: {ir.family}")
     logger.info(f"--- degree: {ir.degree}")
     logger.info(f"--- value shape: {ir.value_shape}")
     logger.info(f"--- name: {ir.name}")
