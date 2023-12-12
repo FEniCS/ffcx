@@ -58,6 +58,7 @@ class ExpressionGenerator:
         for name in table_names:
             table = tables[name]
             symbol = L.Symbol(name, dtype=L.DataType.REAL)
+            self.backend.symbols.element_tables[name] = symbol
             decl = L.ArrayDecl(symbol, sizes=table.shape, values=table, const=True)
             parts += [decl]
 
@@ -90,7 +91,7 @@ class ExpressionGenerator:
             # Could happen for integral with everything zero and optimized away
             quadparts = []
         else:
-            iq = self.backend.symbols.quadrature_loop_index()
+            iq = self.backend.symbols.quadrature_loop_index
             num_points = self.quadrature_rule.points.shape[0]
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
@@ -164,8 +165,8 @@ class ExpressionGenerator:
 
         num_points = self.quadrature_rule.points.shape[0]
         A_shape = [num_points, components] + self.ir.tensor_shape
-        A = self.backend.symbols.element_tensor()
-        iq = self.backend.symbols.quadrature_loop_index()
+        A = self.backend.symbols.element_tensor
+        iq = self.backend.symbols.quadrature_loop_index
 
         # Check if DOFs in dofrange are equally spaced.
         expand_loop = False

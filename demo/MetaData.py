@@ -17,15 +17,18 @@
 #
 # Test form for metadata.
 import basix.ufl
-from ufl import Coefficient, TestFunction, TrialFunction, dx, grad, inner
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
 element = basix.ufl.element("Lagrange", "triangle", 1)
-vector_element = basix.ufl.element("Lagrange", "triangle", 1, rank=1)
+vector_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, element)
+vector_space = FunctionSpace(domain, vector_element)
 
-
-u = TrialFunction(element)
-v = TestFunction(element)
-c = Coefficient(vector_element)
+u = TrialFunction(space)
+v = TestFunction(space)
+c = Coefficient(vector_space)
 
 # Terms on the same subdomain using different quadrature degree
 a = inner(grad(u), grad(v)) * dx(0, degree=8)\

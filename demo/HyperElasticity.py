@@ -5,47 +5,55 @@
 
 import basix.ufl
 # Modified by Garth N. Wells, 2009
-from ufl import (Coefficient, Constant, FacetNormal, Identity,
-                 SpatialCoordinate, TestFunction, TrialFunction, derivative,
-                 det, diff, dot, ds, dx, exp, grad, inner, inv, tetrahedron,
-                 tr, variable)
+from ufl import (Coefficient, Constant, FacetNormal, FunctionSpace, Identity,
+                 Mesh, SpatialCoordinate, TestFunction, TrialFunction,
+                 derivative, det, diff, dot, ds, dx, exp, grad, inner, inv,
+                 tetrahedron, tr, variable)
 
 # Cell and its properties
 cell = tetrahedron
 d = cell.geometric_dimension()
-N = FacetNormal(cell)
-x = SpatialCoordinate(cell)
 
 # Elements
-u_element = basix.ufl.element("P", cell.cellname(), 2, rank=1)
+u_element = basix.ufl.element("P", cell.cellname(), 2, shape=(3, ))
 p_element = basix.ufl.element("P", cell.cellname(), 1)
-A_element = basix.ufl.element("P", cell.cellname(), 1, rank=2)
+A_element = basix.ufl.element("P", cell.cellname(), 1, shape=(3, 3))
+
+# Spaces
+domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(3, )))
+u_space = FunctionSpace(domain, u_element)
+p_space = FunctionSpace(domain, p_element)
+A_space = FunctionSpace(domain, A_element)
+
+# Cell properties
+N = FacetNormal(domain)
+x = SpatialCoordinate(domain)
 
 # Test and trial functions
-v = TestFunction(u_element)
-w = TrialFunction(u_element)
+v = TestFunction(u_space)
+w = TrialFunction(u_space)
 
 # Displacement at current and two previous timesteps
-u = Coefficient(u_element)
-up = Coefficient(u_element)
-upp = Coefficient(u_element)
+u = Coefficient(u_space)
+up = Coefficient(u_space)
+upp = Coefficient(u_space)
 
 # Time parameters
-dt = Constant(cell)
+dt = Constant(domain)
 
 # Fiber field
-A = Coefficient(A_element)
+A = Coefficient(A_space)
 
 # External forces
-T = Coefficient(u_element)
-p0 = Coefficient(p_element)
+T = Coefficient(u_space)
+p0 = Coefficient(p_space)
 
 # Material parameters FIXME
-rho = Constant(cell)
-K = Constant(cell)
-c00 = Constant(cell)
-c11 = Constant(cell)
-c22 = Constant(cell)
+rho = Constant(domain)
+K = Constant(domain)
+c00 = Constant(domain)
+c11 = Constant(domain)
+c22 = Constant(domain)
 
 # Deformation gradient
 I = Identity(d)

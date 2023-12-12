@@ -19,14 +19,16 @@
 #
 # Mixed coefficient.
 import basix.ufl
-from ufl import Coefficients, dot, dS, dx
+from ufl import Coefficients, FunctionSpace, Mesh, dot, dS, dx
 
-DG = basix.ufl.element("DG", "triangle", 0, rank=1)
+DG = basix.ufl.element("DG", "triangle", 0, shape=(2, ))
 CG = basix.ufl.element("Lagrange", "triangle", 2)
 RT = basix.ufl.element("RT", "triangle", 3)
 
 element = basix.ufl.mixed_element([DG, CG, RT])
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, element)
 
-f, g, h = Coefficients(element)
+f, g, h = Coefficients(space)
 
 forms = [dot(f('+'), h('-')) * dS + g * dx]

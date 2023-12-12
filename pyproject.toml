@@ -1,7 +1,57 @@
 [build-system]
 requires = ["setuptools>=62", "wheel"]
-
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "fenics-ffcx"
+version = "0.8.0.dev0"
+description = "The FEniCSx Form Compiler"
+readme = "README.md"
+requires-python = ">=3.8.0"
+license = {file = "LICENSE"}
+authors = [{email="fenics-dev@googlegroups.com"}, {name="FEniCS Project"}]
+dependencies = [
+    "numpy>=1.21",
+    "cffi",
+    "fenics-basix >= 0.8.0.dev0, <0.9.0",
+    "fenics-ufl >= 2023.3.0.dev0, <2023.4.0",
+]
+
+[project.urls]
+homepage = "https://fenicsproject.org"
+repository = "https://github.com/fenics/ffcx.git"
+documentation = "https://docs.fenicsproject.org"
+
+[project.scripts]
+ffcx = "ffcx:__main__.main"
+
+[project.optional-dependencies]
+lint = ["flake8", "pydocstyle[toml]"]
+docs = ["sphinx", "sphinx_rtd_theme"]
+optional = ["pygraphviz==1.7"]
+test = ["pytest >= 6.0", "sympy"]
+ci = [
+    "coveralls",
+    "coverage",
+    "isort",
+    "pytest-cov",
+    "pytest-xdist",
+    "types-setuptools",
+    "mypy",
+    "fenics-ffcx[docs]",
+    "fenics-ffcx[optional]",
+    "fenics-ffcx[lint]",
+    "fenics-ffcx[test]",
+]
+
+[tool.setuptools]
+packages = [
+    "ffcx",
+    "ffcx.codegeneration",
+    "ffcx.codegeneration.C",
+    "ffcx.ir",
+    "ffcx.ir.analysis",
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -29,4 +79,3 @@ add-ignore = [
     "D406",  # Google convention
     "D407"   # Google convention
 ]
-

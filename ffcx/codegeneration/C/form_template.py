@@ -28,17 +28,8 @@ factory = """
 {form_integrals_init}
 {form_integral_ids_init}
 
-// Return a list of the coefficient names.
-const char** coefficient_name_{factory_name}(void)
-{{
-{coefficient_name_map}
-}}
-
-// Return a list of the constant names.
-const char** constant_name_{factory_name}(void)
-{{
-{constant_name_map}
-}}
+{coefficient_names_init}
+{constant_names_init}
 
 ufcx_form {factory_name} =
 {{
@@ -49,8 +40,8 @@ ufcx_form {factory_name} =
   .num_constants = {num_constants},
   .original_coefficient_position = {original_coefficient_position},
 
-  .coefficient_name_map = coefficient_name_{factory_name},
-  .constant_name_map = constant_name_{factory_name},
+  .coefficient_name_map = {coefficient_names},
+  .constant_name_map = {constant_names},
 
   .finite_elements = {finite_elements},
   .dofmaps = {dofmaps},

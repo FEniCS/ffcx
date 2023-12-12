@@ -122,11 +122,10 @@ class LNode(object):
     """Base class for all AST nodes."""
 
     def __eq__(self, other):
-        name = self.__class__.__name__
-        raise NotImplementedError("Missing implementation of __eq__ in " + name)
+        return NotImplemented
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return NotImplemented
 
 
 class LExpr(LNode):
@@ -311,6 +310,7 @@ class Symbol(LExprTerminal):
 
     def __init__(self, name: str, dtype):
         assert isinstance(name, str)
+        assert name.replace("_", "").isalnum()
         self.name = name
         self.dtype = dtype
 

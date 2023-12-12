@@ -8,7 +8,6 @@
 import logging
 
 import ufl
-from ffcx.element_interface import convert_element
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
@@ -81,7 +80,7 @@ class FFCXDefinitions(object):
 
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index()
+        ic = self.symbols.coefficient_dof_sum_index
 
         code = []
         pre_code = []
@@ -125,7 +124,7 @@ class FFCXDefinitions(object):
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = convert_element(coordinate_element).sub_element.dim
+        num_scalar_dofs = coordinate_element.sub_element.dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
@@ -140,17 +139,11 @@ class FFCXDefinitions(object):
 
         # Get access to element table
         FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index()
-        dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
-
-        # coordinate dofs is always 3d
-        dim = 3
-        offset = 0
-        if mt.restriction == "-":
-            offset = num_scalar_dofs * dim
+        ic = self.symbols.coefficient_dof_sum_index
+        dof_access = self.symbols.domain_dof_access(ic, begin, 3, num_scalar_dofs, mt.restriction)
 
         code = []
-        body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE[ic])]
+        body = [L.AssignAdd(access, dof_access * FE[ic])]
         code += [L.VariableDecl(access, 0.0)]
         code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 

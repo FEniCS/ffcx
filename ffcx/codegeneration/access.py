@@ -9,7 +9,6 @@ import warnings
 
 import ufl
 import basix.ufl
-from ffcx.element_interface import convert_element
 import ffcx.codegeneration.lnodes as L
 
 
@@ -94,9 +93,9 @@ class FFCXAccess(object):
                 )
 
             # Access predefined quadrature points table
-            x = self.symbols.custom_points_table()
-            iq = self.symbols.quadrature_loop_index()
-            (gdim,) = mt.terminal.ufl_shape
+            x = self.symbols.custom_points_table
+            iq = self.symbols.quadrature_loop_index
+            gdim, = mt.terminal.ufl_shape
             if gdim == 1:
                 index = iq
             else:
@@ -253,13 +252,13 @@ class FFCXAccess(object):
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         gdim = domain.geometric_dimension()
-        coordinate_element = convert_element(domain.ufl_coordinate_element())
+        coordinate_element = domain.ufl_coordinate_element()
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape() == (gdim,)
-        (ufl_scalar_element,) = set(coordinate_element.sub_elements())
-        scalar_element = convert_element(ufl_scalar_element)
+        assert coordinate_element.value_shape == (gdim, )
+        ufl_scalar_element, = set(coordinate_element.sub_elements)
+        scalar_element = ufl_scalar_element
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
@@ -279,7 +278,7 @@ class FFCXAccess(object):
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
-        coordinate_element = convert_element(domain.ufl_coordinate_element())
+        coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             pass
@@ -290,9 +289,9 @@ class FFCXAccess(object):
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape() == (gdim,)
-        (ufl_scalar_element,) = set(coordinate_element.sub_elements())
-        scalar_element = convert_element(ufl_scalar_element)
+        assert coordinate_element.value_shape == (gdim, )
+        ufl_scalar_element, = set(coordinate_element.sub_elements)
+        scalar_element = ufl_scalar_element
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
@@ -318,7 +317,7 @@ class FFCXAccess(object):
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
         gdim = domain.geometric_dimension()
-        coordinate_element = convert_element(domain.ufl_coordinate_element())
+        coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("tetrahedron", "hexahedron"):
             pass
@@ -331,12 +330,12 @@ class FFCXAccess(object):
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape() == (gdim,)
-        (ufl_scalar_element,) = set(coordinate_element.sub_elements())
-        scalar_element = convert_element(ufl_scalar_element)
+        assert coordinate_element.value_shape == (gdim, )
+        ufl_scalar_element, = set(coordinate_element.sub_elements)
+        scalar_element = ufl_scalar_element
         assert scalar_element.value_size == 1 and scalar_element.block_size == 1
 
-        scalar_element = convert_element(ufl_scalar_element)
+        scalar_element = ufl_scalar_element
         num_scalar_dofs = scalar_element.dim
 
         # Get edge vertices
@@ -348,7 +347,7 @@ class FFCXAccess(object):
 
         # Get dofs and component
         component = mt.component[1]
-        assert coordinate_element.degree() == 1, "Assuming degree 1 element"
+        assert coordinate_element.embedded_superdegree == 1, "Assuming degree 1 element"
         dof0 = vertex0
         dof1 = vertex1
         expr = self.symbols.domain_dof_access(

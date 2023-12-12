@@ -203,6 +203,7 @@ class IntegralGenerator(object):
 
         """
         table_symbol = L.Symbol(name, dtype=L.DataType.REAL)
+        self.backend.symbols.element_tables[name] = table_symbol
         return [L.ArrayDecl(table_symbol, values=table, const=True)]
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
@@ -227,7 +228,7 @@ class IntegralGenerator(object):
             quadparts = []
         else:
             num_points = quadrature_rule.points.shape[0]
-            iq = self.backend.symbols.quadrature_loop_index()
+            iq = self.backend.symbols.quadrature_loop_index
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
 
         return pre_definitions, preparts, quadparts
@@ -439,7 +440,7 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
-        iq = self.backend.symbols.quadrature_loop_index()
+        iq = self.backend.symbols.quadrature_loop_index
 
         # Override dof index with quadrature loop index for arguments
         # with quadrature element, to index B like B[iq*num_dofs + iq]
@@ -474,7 +475,7 @@ class IntegralGenerator(object):
 
             # Quadrature weight was removed in representation, add it back now
             if self.ir.integral_type in ufl.custom_integral_types:
-                weights = self.backend.symbols.custom_weights_table()
+                weights = self.backend.symbols.custom_weights_table
                 weight = weights[iq]
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
@@ -568,7 +569,7 @@ class IntegralGenerator(object):
 
         body: List[LNode] = []
 
-        A = self.backend.symbols.element_tensor()
+        A = self.backend.symbols.element_tensor
         A_shape = self.ir.tensor_shape
         for indices in keep:
             multi_index = L.MultiIndex(list(indices), A_shape)
