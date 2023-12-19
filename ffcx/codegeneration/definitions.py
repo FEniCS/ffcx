@@ -189,13 +189,10 @@ class FFCXBackendDefinitions(object):
         assert ttype != "ones"
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         ic_symbol = self.symbols.coefficient_dof_sum_index
         ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule)
         FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
-
-        # ic = self.symbols.coefficient_dof_sum_index()
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
@@ -206,7 +203,7 @@ class FFCXBackendDefinitions(object):
             offset = num_scalar_dofs * dim
 
         code = []
-        body = [L.AssignAdd(access, dof_access[ic * dim + begin + offset] * FE)]
+        body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
         code += [L.VariableDecl(access, 0.0)]
         code += [create_nested_for_loops([ic], body)]
 

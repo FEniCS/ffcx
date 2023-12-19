@@ -334,11 +334,11 @@ class MultiIndex(LExpr):
         for sym in self.symbols:
             assert sym.dtype == DataType.INT
 
-        dim = len(sizes)
-        if dim == 0:
+        self.dim = len(sizes)
+        if self.dim == 0:
             self.global_index: LExpr = LiteralInt(0)
         else:
-            stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
+            stride = [np.prod(sizes[i:]) for i in range(self.dim)] + [LiteralInt(1)]
             self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
 
     def size(self):
@@ -428,6 +428,9 @@ class NaryOp(LExprOperator):
 
     def __init__(self, args):
         self.args = [as_lexpr(arg) for arg in args]
+        self.dtype = self.args[0].dtype
+        for arg in self.args:
+            self.dtype = merge_dtypes(self.dtype, arg.dtype)
 
     def __eq__(self, other):
         return (
