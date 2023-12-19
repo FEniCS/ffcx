@@ -17,7 +17,7 @@ element_tp = basix.create_element(basix.ElementFamily.P, cell_type,
                                   dof_ordering=np.argsort(perm))
 element = basix.ufl._BasixElement(element_tp)
 
-coords = ufl.VectorElement("Lagrange", ufl.hexahedron, 1)
+coords = basix.ufl.element("Lagrange", cell_type, 1, shape=(3, ))
 mesh = ufl.Mesh(coords)
 V = ufl.FunctionSpace(mesh, element)
 x = ufl.SpatialCoordinate(mesh)
