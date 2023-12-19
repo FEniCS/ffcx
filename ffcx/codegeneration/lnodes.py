@@ -442,6 +442,9 @@ class NaryOp(LExprOperator):
     def __repr__(self) -> str:
         return f"{self.op} ".join(f"{i} " for i in self.args)
 
+    def __hash__(self):
+        return hash(tuple(self.args))
+
 
 class Neg(PrefixUnaryOp):
     precedence = PRECEDENCE.NEG

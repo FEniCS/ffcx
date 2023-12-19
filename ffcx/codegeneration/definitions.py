@@ -26,10 +26,10 @@ def create_nested_for_loops(indices: L.MultiIndex, body):
     return loops[0]
 
 
-def create_quadrature_index(quadrature_rule):
+def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
     """Create a multi index for the quadrature loop."""
     ranges = [0]
-    name = "iq"
+    name = quadrature_index_symbol.name
     if quadrature_rule:
         indices = [L.Symbol(name, dtype=L.DataType.INT)]
         ranges = [quadrature_rule.weights.size]
@@ -41,12 +41,13 @@ def create_quadrature_index(quadrature_rule):
     return L.MultiIndex(indices, ranges)
 
 
-def create_dof_index(tabledata, name):
+def create_dof_index(tabledata, dof_index_symbol):
     """Create a multi index for the coefficient dofs."""
+
+    name = dof_index_symbol.name
     if tabledata.has_tensor_factorisation:
         dim = len(tabledata.tensor_factors)
         ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        print(name, type(name))
         indices = [L.Symbol(f"{name}{i}", dtype=L.DataType.INT) for i in range(dim)]
     else:
         ranges = [tabledata.values.shape[-1]]
@@ -111,8 +112,11 @@ class FFCXBackendDefinitions(object):
 
         apply_tensor_product = tabledata.has_tensor_factorisation and quadrature_rule.has_tensor_factors
 
-        iq = create_quadrature_index(quadrature_rule)
-        ic = create_dof_index(tabledata, "ic")
+        iq_symbol = self.symbols.quadrature_index
+        ic_symbol = self.symbols.coefficient_dof_index
+
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        ic = create_dof_index(tabledata, ic_symbol)
 
         # Get properties of tables
         ttype = tabledata.ttype
@@ -190,8 +194,9 @@ class FFCXBackendDefinitions(object):
 
         # Get access to element table
         ic_symbol = self.symbols.coefficient_dof_sum_index
+        iq_symbol = self.symbols.quadrature_loop_index
         ic = create_dof_index(tabledata, ic_symbol)
-        iq = create_quadrature_index(quadrature_rule)
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
         FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
@@ -206,8 +211,6 @@ class FFCXBackendDefinitions(object):
         body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
         code += [L.VariableDecl(access, 0.0)]
         code += [create_nested_for_loops([ic], body)]
-
-        # code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
 
         return [], code
 

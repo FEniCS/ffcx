@@ -15,6 +15,7 @@ from ffcx.ir.integral import BlockDataT
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode, BinOp
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.codegeneration.definitions import create_quadrature_index, create_nested_for_loops, create_dof_index
 
 logger = logging.getLogger("ffcx")
 
@@ -247,9 +248,9 @@ class IntegralGenerator(object):
             # optimized away
             quadparts = []
         else:
-            num_points = quadrature_rule.points.shape[0]
-            iq = self.backend.symbols.quadrature_loop_index
-            quadparts = [L.ForRange(iq, 0, num_points, body=body)]
+            iq_symbol = self.backend.symbols.quadrature_loop_index
+            iq = create_quadrature_index(quadrature_rule, iq_symbol)
+            quadparts = [create_nested_for_loops([iq], body)]
 
         return pre_definitions, preparts, quadparts
 
@@ -415,15 +416,14 @@ class IntegralGenerator(object):
             #       Not using self.backend.access.argument() here
             #       now because it assumes too much about indices.
 
-            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
-
             assert td.ttype != "zeros"
 
             if td.ttype == "ones":
                 arg_factor = 1
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = table[indices[i]]
+                arg_factor = self.backend.symbols.table_access(
+                    td, self.ir.entitytype, mt.restriction, iq, indices[i])
             arg_factors.append(arg_factor)
         return arg_factors
 
@@ -446,17 +446,18 @@ class IntegralGenerator(object):
         block_rank = len(blockmap)
         blockdims = tuple(len(dofmap) for dofmap in blockmap)
 
-        iq = self.backend.symbols.quadrature_loop_index
-
-        # Override dof index with quadrature loop index for arguments
-        # with quadrature element, to index B like B[iq*num_dofs + iq]
-        arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
-        B_indices = []
-        for i in range(block_rank):
-            B_indices.append(arg_indices[i])
-        B_indices = list(B_indices)
+        iq_symbol = self.backend.symbols.quadrature_loop_index
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
 
         for blockdata in blocklist:
+
+            B_indices = []
+            args = [L.Symbol(name, L.DataType.INT) for name in ["i", "j", "k", "l"]]
+            for i in range(block_rank):
+                table_ref = blockdata.ma_data[i].tabledata
+                index = create_dof_index(table_ref, args[i])
+                B_indices.append(index)
+
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
                 raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
@@ -476,10 +477,10 @@ class IntegralGenerator(object):
             # Quadrature weight was removed in representation, add it back now
             if self.ir.integral_type in ufl.custom_integral_types:
                 weights = self.backend.symbols.custom_weights_table
-                weight = weights[iq]
+                weight = weights[iq.global_index]
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
-                weight = weights[iq]
+                weight = weights[iq.global_index]
 
             # Define fw = f * weight
             fw_rhs = L.float_product([f, weight])
@@ -497,17 +498,19 @@ class IntegralGenerator(object):
             # Fetch code to access modified arguments
             arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
 
+            # Define B_rhs = fw * arg_factors
             B_rhs = L.float_product([fw] + arg_factors)
 
             A_indices = []
             for i in range(block_rank):
-                offset = blockdata.ma_data[i].tabledata.offset
-                index = arg_indices[i]
+                index = B_indices[i]
+                tabledata = blockdata.ma_data[i].tabledata
+                offset = tabledata.offset
                 if len(blockmap[i]) == 1:
-                    A_indices.append(index + offset)
+                    A_indices.append(index.global_index + offset)
                 else:
                     block_size = blockdata.ma_data[i].tabledata.block_size
-                    A_indices.append(block_size * index + offset)
+                    A_indices.append(block_size * index.global_index + offset)
             rhs_expressions[tuple(A_indices)].append(B_rhs)
 
         # List of statements to keep in the inner loop
@@ -567,7 +570,7 @@ class IntegralGenerator(object):
             body.append(L.AssignAdd(A[multi_index], L.Sum(keep[indices])))
 
         for i in reversed(range(block_rank)):
-            body = [L.ForRange(B_indices[i], 0, blockdims[i], body=body)]
+            body = [create_nested_for_loops([B_indices[i]], body)]
 
         quadparts += pre_loop
         quadparts += hoist_code
