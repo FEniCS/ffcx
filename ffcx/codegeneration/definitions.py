@@ -46,7 +46,8 @@ def create_dof_index(tabledata, name):
     if tabledata.has_tensor_factorisation:
         dim = len(tabledata.tensor_factors)
         ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        indices = [L.Symbol(name + f"{i}", dtype=L.DataType.INT) for i in range(dim)]
+        print(name, type(name))
+        indices = [L.Symbol(f"{name}{i}", dtype=L.DataType.INT) for i in range(dim)]
     else:
         ranges = [tabledata.values.shape[-1]]
         indices = [L.Symbol(name, dtype=L.DataType.INT)]
