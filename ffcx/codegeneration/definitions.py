@@ -112,8 +112,8 @@ class FFCXBackendDefinitions(object):
 
         apply_tensor_product = tabledata.has_tensor_factorisation and quadrature_rule.has_tensor_factors
 
-        iq_symbol = self.symbols.quadrature_index
-        ic_symbol = self.symbols.coefficient_dof_index
+        iq_symbol = self.symbols.quadrature_loop_index
+        ic_symbol = self.symbols.coefficient_dof_sum_index
 
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
         ic = create_dof_index(tabledata, ic_symbol)
