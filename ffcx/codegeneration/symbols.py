@@ -216,7 +216,7 @@ class FFCXBackendSymbols(object):
         ic = dof_index
 
         if dof_index.dim == 1:
-            return self.element_tables[tabledata.name][qp][entity][iq.global_idx()][ic.global_idx()]
+            return self.element_tables[tabledata.name][qp][entity][iq.global_index][ic.global_index]
         else:
             FE = []
             for i in range(dof_index.dim):
