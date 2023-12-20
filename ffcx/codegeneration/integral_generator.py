@@ -522,7 +522,6 @@ class IntegralGenerator(object):
 
         for indices in rhs_expressions:
             hoist_rhs = collections.defaultdict(list)
-
             # Hoist loop invariant code and group array access (each
             # table should only be read one time in the inner loop)
             if block_rank == 2:
@@ -531,7 +530,8 @@ class IntegralGenerator(object):
                     if len(rhs.args) <= 2:
                         keep[indices].append(rhs)
                     else:
-                        varying = next((x for x in rhs.args if hasattr(x, 'indices') and (ind in x.indices)), None)
+                        varying = next((x for x in rhs.args if hasattr(x, 'indices')
+                                       and (ind.global_index in x.indices)), None)
                         if varying:
                             invariant = [x for x in rhs.args if x is not varying]
                             hoist_rhs[varying].append(invariant)
@@ -554,8 +554,8 @@ class IntegralGenerator(object):
                     else:
                         t = self.new_temp_symbol("t")
                         pre_loop.append(L.ArrayDecl(t, sizes=blockdims[0]))
-                        keep[indices].append(L.float_product([statement, t[B_indices[0]]]))
-                        hoist.append(L.Assign(t[B_indices[i - 1]], sum))
+                        keep[indices].append(L.float_product([statement, t[B_indices[0].global_index]]))
+                        hoist.append(L.Assign(t[B_indices[i - 1].global_index], sum))
             else:
                 keep[indices] = rhs_expressions[indices]
 
