@@ -28,13 +28,16 @@ parser.add_argument(
     "--version", action='version', version=f"%(prog)s (version {FFCX_VERSION})")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
-parser.add_argument("--sum_factorization", type=bool, default=False)
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 
 # Add all options from FFCx option system
 for opt_name, (opt_val, opt_desc) in FFCX_DEFAULT_OPTIONS.items():
-    parser.add_argument(f"--{opt_name}",
-                        type=type(opt_val), help=f"{opt_desc} (default={opt_val})")
+    if isinstance(opt_val, bool):
+        parser.add_argument(f"--{opt_name}", action="store_true",
+                            help=f"{opt_desc} (default={opt_val})")
+    else:
+        parser.add_argument(f"--{opt_name}",
+                            type=type(opt_val), help=f"{opt_desc} (default={opt_val})")
 
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 
