@@ -327,6 +327,8 @@ class Symbol(LExprTerminal):
 class MultiIndex(LExpr):
     """A multi-index for accessing tensors flattened in memory."""
 
+    precedence = PRECEDENCE.SYMBOL
+
     def __init__(self, symbols: list, sizes: list):
         self.dtype = DataType.INT
         self.sizes = sizes

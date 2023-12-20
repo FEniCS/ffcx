@@ -36,6 +36,7 @@ class ExpressionGenerator:
     def generate(self):
         parts = []
         parts += self.generate_element_tables()
+
         # Generate the tables of geometry data that are needed
         parts += self.generate_geometry_tables()
         parts += self.generate_piecewise_partition()
@@ -122,7 +123,6 @@ class ExpressionGenerator:
             iq = self.backend.symbols.quadrature_loop_index
             num_points = self.quadrature_rule.points.shape[0]
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
-
         return preparts, quadparts
 
     def generate_varying_partition(self):
