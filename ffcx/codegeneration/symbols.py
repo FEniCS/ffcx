@@ -204,8 +204,13 @@ class FFCXBackendSymbols(object):
             entity = 0
 
         iq = quadrature_index
+        ic = dof_index
+
+        iq_global_index = iq.global_index
+        ic_global_index = ic.global_index
+
         if tabledata.is_piecewise:
-            iq = 0
+            iq_global_index = 0
 
         qp = 0
         if tabledata.is_permuted:
@@ -213,10 +218,8 @@ class FFCXBackendSymbols(object):
             if restriction == "-":
                 qp = self.quadrature_permutation(1)
 
-        ic = dof_index
-
         if dof_index.dim == 1:
-            return self.element_tables[tabledata.name][qp][entity][iq.global_index][ic.global_index]
+            return self.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
         else:
             FE = []
             for i in range(dof_index.dim):
