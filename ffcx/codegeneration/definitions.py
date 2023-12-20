@@ -27,8 +27,8 @@ def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
     """Create a multi index for the quadrature loop."""
     ranges = [0]
     name = quadrature_index_symbol.name
+    indices = [L.Symbol(name, dtype=L.DataType.INT)]
     if quadrature_rule:
-        indices = [L.Symbol(name, dtype=L.DataType.INT)]
         ranges = [quadrature_rule.weights.size]
         if quadrature_rule.has_tensor_factors:
             dim = len(quadrature_rule.tensor_factors)
