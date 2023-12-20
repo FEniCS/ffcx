@@ -7,23 +7,20 @@
 
 import logging
 
+from typing import List
 import ufl
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
 
-def create_nested_for_loops(indices: L.MultiIndex, body):
-    loops = []
+def create_nested_for_loops(indices: List[L.MultiIndex], body):
     ranges = [r for idx in indices for r in idx.sizes]
     indices = [idx.local_index(i) for idx in indices for i in range(len(idx.sizes))]
     depth = len(ranges)
     for i in reversed(range(depth)):
-        body = body
-        for_range = L.ForRange(indices[i], 0, ranges[i], body=[body])
-        loops.insert(0, for_range)
-        body = for_range
-    return loops[0]
+        body = L.ForRange(indices[i], 0, ranges[i], body=[body])
+    return body
 
 
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
@@ -43,7 +40,6 @@ def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
 
 def create_dof_index(tabledata, dof_index_symbol):
     """Create a multi index for the coefficient dofs."""
-
     name = dof_index_symbol.name
     if tabledata.has_tensor_factorisation:
         dim = len(tabledata.tensor_factors)
@@ -105,7 +101,6 @@ class FFCXBackendDefinitions(object):
 
     def coefficient(self, t, mt, tabledata, quadrature_rule, access):
         """Return definition code for coefficients."""
-
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
         # If both are true, we can apply the tensor product to the coefficient.
