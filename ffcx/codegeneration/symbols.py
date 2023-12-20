@@ -214,9 +214,9 @@ class FFCXBackendSymbols(object):
 
         qp = 0
         if tabledata.is_permuted:
-            qp = self.quadrature_permutation(0)
+            qp = self.quadrature_permutation[0]
             if restriction == "-":
-                qp = self.quadrature_permutation(1)
+                qp = self.quadrature_permutation[1]
 
         if dof_index.dim == 1:
             return self.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
