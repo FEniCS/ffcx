@@ -131,7 +131,6 @@ class FFCXBackendDefinitions(object):
         assert begin < end
 
         # Get access to element table
-        # FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
         FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         code = []
