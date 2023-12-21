@@ -63,7 +63,6 @@ def test_bilinear_form(mode, P):
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
 
-    mode = "double"
     np_type = cdtype_to_numpy(mode)
     geom_type = scalar_to_value_type(mode)
     np_gtype = cdtype_to_numpy(geom_type)
@@ -78,7 +77,7 @@ def test_bilinear_form(mode, P):
                        [0.0, 1.0, 0.0],
                        [1.0, 1.0, 0.0]], dtype=np_gtype)
 
-    kernel, code, module = generate_kernel([a], mode, options={})
+    kernel, code, module = generate_kernel([a], mode, options={"scalar_type": mode})
     ffi = module.ffi
     kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
@@ -87,7 +86,7 @@ def test_bilinear_form(mode, P):
 
     # Use sum factorization
     A1 = np.zeros((ndofs, ndofs), dtype=np_type)
-    kernel, code, module = generate_kernel([a], mode, options={"sum_factorization": True})
+    kernel, code, module = generate_kernel([a], mode, options={"scalar_type": mode, "sum_factorization": True})
     ffi = module.ffi
     kernel(ffi.cast('{type} *'.format(type=mode), A1.ctypes.data),
            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
