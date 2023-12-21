@@ -111,8 +111,6 @@ class FFCXBackendDefinitions(object):
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
         # If both are true, we can apply the tensor product to the coefficient.
 
-        apply_tensor_product = tabledata.has_tensor_factorisation and quadrature_rule.has_tensor_factors
-
         iq_symbol = self.symbols.quadrature_loop_index
         ic_symbol = self.symbols.coefficient_dof_sum_index
 
@@ -161,10 +159,7 @@ class FFCXBackendDefinitions(object):
 
         body = [L.AssignAdd(access, dof_access * FE)]
         code += [L.VariableDecl(access, 0.0)]
-        if apply_tensor_product:
-            code += [create_nested_for_loops([ic], body)]
-        else:
-            code += [L.ForRange(ic, 0, num_dofs, body)]
+        code += [create_nested_for_loops([ic], body)]
 
         return pre_code, code
 
