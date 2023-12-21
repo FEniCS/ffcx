@@ -1,3 +1,9 @@
+# Copyright (C) 2023 Igor A. Baratta
+#
+# This file is part of FFCx. (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
+
 import ufl
 import basix
 import numpy as np
