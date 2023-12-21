@@ -15,6 +15,10 @@ logger = logging.getLogger("ffcx")
 
 
 def create_nested_for_loops(indices: List[L.MultiIndex], body):
+    """
+    Create nested for loops over list of indices. The depth of the nested for
+    loops is equal to the sub-indices for all MultiIndex combined.
+    """
     ranges = [r for idx in indices for r in idx.sizes]
     indices = [idx.local_index(i) for idx in indices for i in range(len(idx.sizes))]
     depth = len(ranges)
