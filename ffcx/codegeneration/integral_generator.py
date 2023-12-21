@@ -452,10 +452,10 @@ class IntegralGenerator(object):
         for blockdata in blocklist:
 
             B_indices = []
-            args = [L.Symbol(name, L.DataType.INT) for name in ["i", "j", "k", "l"]]
             for i in range(block_rank):
                 table_ref = blockdata.ma_data[i].tabledata
-                index = create_dof_index(table_ref, args[i])
+                symbol = self.backend.symbols.argument_loop_index(i)
+                index = create_dof_index(table_ref, symbol)
                 B_indices.append(index)
 
             ttypes = blockdata.ttypes
