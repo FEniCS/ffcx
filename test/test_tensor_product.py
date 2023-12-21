@@ -13,8 +13,15 @@ import ufl
 from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 
-def create_tensor_product_element(cell_type, degree, variant, shape=(1,)):
+def create_tensor_product_element(cell_type, degree, variant, shape=None):
     """Create tensor product element."""
+    if cell_type == basix.CellType.quadrilateral:
+        gdim = 2
+    elif cell_type == basix.CellType.hexahedron:
+        gdim = 3
+    else:
+        raise NotImplementedError("Only quadrilateral and hexahedron supported")
+
     family = basix.ElementFamily.P
     ref = basix.create_element(family, cell_type, degree, variant)
     factors = ref.get_tensor_product_representation()[0]
@@ -22,15 +29,20 @@ def create_tensor_product_element(cell_type, degree, variant, shape=(1,)):
     dof_ordering = np.argsort(perm)
     element = basix.create_element(family, cell_type, degree, variant,
                                    dof_ordering=dof_ordering)
-    uflelement = basix.ufl._BasixElement(element, gdim=2)
+    uflelement = basix.ufl._BasixElement(element, gdim=gdim)
     if shape is None:
         return uflelement
     else:
-        return basix.ufl.blocked_element(uflelement, shape=shape, gdim=2)
+        return basix.ufl.blocked_element(uflelement, shape=shape, gdim=gdim)
 
 
 def generate_kernel(forms, mode, options):
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, options=options)
+
+    # string to a different cache folder for sum factorization
+    sf = options.get("sum_factorization", False)
+    cache_dir = f"./ffcx-cache-{sf}"
+
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cache_dir=cache_dir, options=options)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
