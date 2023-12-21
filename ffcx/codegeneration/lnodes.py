@@ -336,12 +336,16 @@ class MultiIndex(LExpr):
         for sym in self.symbols:
             assert sym.dtype == DataType.INT
 
-        self.dim = len(sizes)
-        if self.dim == 0:
+        dim = len(sizes)
+        if dim == 0:
             self.global_index: LExpr = LiteralInt(0)
         else:
-            stride = [np.prod(sizes[i:]) for i in range(self.dim)] + [LiteralInt(1)]
+            stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
             self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
+
+    @property
+    def dim(self):
+        return len(self.sizes)
 
     def size(self):
         return np.prod(self.sizes)
