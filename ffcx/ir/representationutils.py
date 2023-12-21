@@ -46,14 +46,6 @@ class QuadratureRule:
         return self.hash_obj.hexdigest()[-3:]
 
 
-def product(values):
-    """Compute the product of items in a list."""
-    out = 1
-    for i in values:
-        out *= - i
-    return out
-
-
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elements, use_tensor_product=False):
     """Create quadrature rule and return points and weights."""
     pts = None
@@ -75,7 +67,7 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elem
                 for p in itertools.product(*[f[0] for f in tensor_factors])
             ])
             wts = np.array([
-                product(i for i in p)
+                np.prod(p)
                 for p in itertools.product(*[f[1] for f in tensor_factors])
             ])
         else:
