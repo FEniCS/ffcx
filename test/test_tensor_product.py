@@ -13,15 +13,19 @@ import ufl
 from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
 
 
+def cell_to_gdim(cell_type):
+    """Return geometric dimension of cell."""
+    if cell_type == basix.CellType.quadrilateral:
+        return 2
+    elif cell_type == basix.CellType.hexahedron:
+        return 3
+    else:
+        raise NotImplementedError
+
+
 def create_tensor_product_element(cell_type, degree, variant, shape=None):
     """Create tensor product element."""
-    if cell_type == basix.CellType.quadrilateral:
-        gdim = 2
-    elif cell_type == basix.CellType.hexahedron:
-        gdim = 3
-    else:
-        raise NotImplementedError("Only quadrilateral and hexahedron supported")
-
+    gdim = cell_to_gdim(cell_type)
     family = basix.ElementFamily.P
     ref = basix.create_element(family, cell_type, degree, variant)
     factors = ref.get_tensor_product_representation()[0]
@@ -37,13 +41,13 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
 
 
 def generate_kernel(forms, mode, options):
+    """Generate kernel for given forms."""
 
-    # string to a different cache folder for sum factorization
+    # use a different cache directory for each option
     sf = options.get("sum_factorization", False)
     cache_dir = f"./ffcx-cache-{sf}"
 
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cache_dir=cache_dir, options=options)
-
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
@@ -63,12 +67,13 @@ def generate_kernel(forms, mode, options):
     return kernel, code, module
 
 
-@pytest.mark.parametrize("mode, P", [("double", 1), ("double", 2), ("double", 3), ("double", 4),
-                                     ("float", 1), ("float", 2), ("float", 3), ("float", 4)])
-def test_bilinear_form(mode, P):
-    cell_type = basix.CellType.quadrilateral
+@pytest.mark.parametrize("mode", ["double", "float"])
+@pytest.mark.parametrize("P", [1, 2, 3])
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_bilinear_form(mode, P, cell_type):
+    gdim = cell_to_gdim(cell_type)
     element = create_tensor_product_element(cell_type, P, basix.LagrangeVariant.gll_warped)
-    coords = create_tensor_product_element(cell_type, 1, basix.LagrangeVariant.gll_warped, shape=(2, ))
+    coords = create_tensor_product_element(cell_type, 1, basix.LagrangeVariant.gll_warped, shape=(gdim, ))
     mesh = ufl.Mesh(coords)
     V = ufl.FunctionSpace(mesh, element)
 
@@ -84,10 +89,21 @@ def test_bilinear_form(mode, P):
     A = np.zeros((ndofs, ndofs), dtype=np_type)
     w = np.array([], dtype=np_type)
     c = np.array([], dtype=np_type)
-    coords = np.array([[0.0, 0.0, 0.0],
-                       [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0],
-                       [1.0, 1.0, 0.0]], dtype=np_gtype)
+
+    if cell_type == basix.CellType.quadrilateral:
+        coords = np.array([[0.0, 0.0, 0.0],
+                           [1.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0],
+                           [1.0, 1.0, 0.0]], dtype=np_gtype)
+    elif cell_type == basix.CellType.hexahedron:
+        coords = np.array([[0.0, 0.0, 0.0],
+                           [1.0, 0.0, 0.0],
+                           [0.0, 1.0, 0.0],
+                           [1.0, 1.0, 0.0],
+                           [0.0, 0.0, 1.0],
+                           [1.0, 0.0, 1.0],
+                           [0.0, 1.0, 1.0],
+                           [1.0, 1.0, 1.0]], dtype=np_gtype)
 
     kernel, code, module = generate_kernel([a], mode, options={"scalar_type": mode})
     ffi = module.ffi
