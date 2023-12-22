@@ -7,10 +7,55 @@
 
 import logging
 
+from typing import List
 import ufl
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
+
+
+def create_nested_for_loops(indices: List[L.MultiIndex], body):
+    """
+    Create nested for loops over list of indices.
+
+    The depth of the nested for loops is equal to the sub-indices for all
+    MultiIndex combined.
+    """
+    ranges = [r for idx in indices for r in idx.sizes]
+    indices = [idx.local_index(i) for idx in indices for i in range(len(idx.sizes))]
+    depth = len(ranges)
+    for i in reversed(range(depth)):
+        body = L.ForRange(indices[i], 0, ranges[i], body=[body])
+    return body
+
+
+def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
+    """Create a multi index for the quadrature loop."""
+    ranges = [0]
+    name = quadrature_index_symbol.name
+    indices = [L.Symbol(name, dtype=L.DataType.INT)]
+    if quadrature_rule:
+        ranges = [quadrature_rule.weights.size]
+        if quadrature_rule.has_tensor_factors:
+            dim = len(quadrature_rule.tensor_factors)
+            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
+            indices = [L.Symbol(name + f"{i}", dtype=L.DataType.INT) for i in range(dim)]
+
+    return L.MultiIndex(indices, ranges)
+
+
+def create_dof_index(tabledata, dof_index_symbol):
+    """Create a multi index for the coefficient dofs."""
+    name = dof_index_symbol.name
+    if tabledata.has_tensor_factorisation:
+        dim = len(tabledata.tensor_factors)
+        ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+        indices = [L.Symbol(f"{name}{i}", dtype=L.DataType.INT) for i in range(dim)]
+    else:
+        ranges = [tabledata.values.shape[-1]]
+        indices = [L.Symbol(name, dtype=L.DataType.INT)]
+
+    return L.MultiIndex(indices, ranges)
 
 
 class FFCXBackendDefinitions(object):
@@ -62,6 +107,17 @@ class FFCXBackendDefinitions(object):
 
     def coefficient(self, t, mt, tabledata, quadrature_rule, access):
         """Return definition code for coefficients."""
+        # For applying tensor product to coefficients, we need to know if the coefficient
+        # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
+        # If both are true, we can apply the tensor product to the coefficient.
+
+        iq_symbol = self.symbols.quadrature_loop_index
+        ic_symbol = self.symbols.coefficient_dof_sum_index
+
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        ic = create_dof_index(tabledata, ic_symbol)
+
+        # Get properties of tables
         ttype = tabledata.ttype
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
@@ -79,8 +135,7 @@ class FFCXBackendDefinitions(object):
         assert begin < end
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index
+        FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         code = []
         pre_code = []
@@ -99,11 +154,12 @@ class FFCXBackendDefinitions(object):
                 pre_body = [L.Assign(dof_access, dof_access_map)]
                 pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
         else:
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
+            # For bs == 1, the coefficient access has a stride of 1. e.g.: XXXXXX
+            dof_access = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
-        body = [L.AssignAdd(access, dof_access * FE[ic])]
+        body = [L.AssignAdd(access, dof_access * FE)]
         code += [L.VariableDecl(access, 0.0)]
-        code += [L.ForRange(ic, 0, num_dofs, body)]
+        code += [create_nested_for_loops([ic], body)]
 
         return pre_code, code
 
@@ -132,14 +188,24 @@ class FFCXBackendDefinitions(object):
         assert ttype != "ones"
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index
-        dof_access = self.symbols.domain_dof_access(ic, begin, 3, num_scalar_dofs, mt.restriction)
+        ic_symbol = self.symbols.coefficient_dof_sum_index
+        iq_symbol = self.symbols.quadrature_loop_index
+        ic = create_dof_index(tabledata, ic_symbol)
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+
+        dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
+
+        # coordinate dofs is always 3d
+        dim = 3
+        offset = 0
+        if mt.restriction == "-":
+            offset = num_scalar_dofs * dim
 
         code = []
-        body = [L.AssignAdd(access, dof_access * FE[ic])]
+        body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
         code += [L.VariableDecl(access, 0.0)]
-        code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
+        code += [create_nested_for_loops([ic], body)]
 
         return [], code
 

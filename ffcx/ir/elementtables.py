@@ -44,6 +44,9 @@ class UniqueTableReferenceT(typing.NamedTuple):
     is_piecewise: bool
     is_uniform: bool
     is_permuted: bool
+    has_tensor_factorisation: bool
+    tensor_factors: typing.List[typing.Any]
+    tensor_permutation: np.typing.NDArray[np.int32]
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -270,7 +273,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 
 def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
-                           modified_terminals, existing_tables,
+                           modified_terminals, existing_tables, use_sum_factorization,
                            rtol=default_rtol, atol=default_atol):
     """Build the element tables needed for a list of modified terminals.
 
@@ -298,6 +301,9 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
     mt_tables = {}
 
     _existing_tables = existing_tables.copy()
+
+    all_tensor_factors = []
+    tensor_n = 0
 
     for mt in modified_terminals:
         res = analysis.get(mt)
@@ -389,6 +395,42 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
         cell_offset = 0
 
+        if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
+            raise RuntimeError("Sum factorization not available for this quadrature rule.")
+
+        tensor_factors = None
+        tensor_perm = None
+        if (
+            use_sum_factorization
+            and element.has_tensor_product_factorisation
+            and len(element.get_tensor_product_representation()) == 1
+            and quadrature_rule.has_tensor_factors
+        ):
+            factors = element.get_tensor_product_representation()
+
+            tensor_factors = []
+            for i, j in enumerate(factors[0][0]):
+                pts = quadrature_rule.tensor_factors[i][0]
+                d = local_derivatives[i]
+                sub_tbl = j.tabulate(d, pts)[d]
+                sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
+                for i in all_tensor_factors:
+                    if i.values.shape == sub_tbl.shape and np.allclose(i.values, sub_tbl):
+                        tensor_factors.append(i)
+                        break
+                else:
+                    ut = UniqueTableReferenceT(
+                        f"FE_TF{tensor_n}", sub_tbl,
+                        None, None, None,
+                        False, False, False,
+                        False, None, None)
+                    all_tensor_factors.append(ut)
+                    tensor_factors.append(ut)
+                    mt_tables[ut.name] = ut
+                    tensor_n += 1
+
+            tensor_perm = factors[0][1]
+
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
             cell_offset = element.dim
@@ -399,7 +441,8 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
         # tables is just np.arrays, mt_tables hold metadata too
         mt_tables[mt] = UniqueTableReferenceT(
             name, tbl, offset, block_size, tabletype,
-            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted)
+            tabletype in piecewise_ttypes, tabletype in uniform_ttypes, is_permuted,
+            tensor_factors is not None, tensor_factors, tensor_perm)
 
     return mt_tables
 
