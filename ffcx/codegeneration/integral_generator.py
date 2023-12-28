@@ -15,7 +15,7 @@ from ffcx.ir.integral import BlockDataT
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode, BinOp
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.codegeneration.definitions import create_quadrature_index, create_nested_for_loops, create_dof_index
+from ffcx.codegeneration.definitions import create_quadrature_index, create_dof_index
 
 logger = logging.getLogger("ffcx")
 
@@ -250,7 +250,7 @@ class IntegralGenerator(object):
         else:
             iq_symbol = self.backend.symbols.quadrature_loop_index
             iq = create_quadrature_index(quadrature_rule, iq_symbol)
-            quadparts = [create_nested_for_loops([iq], body)]
+            quadparts = [L.create_nested_for_loops([iq], body)]
 
         return pre_definitions, preparts, quadparts
 
@@ -570,7 +570,7 @@ class IntegralGenerator(object):
             body.append(L.AssignAdd(A[multi_index], L.Sum(keep[indices])))
 
         for i in reversed(range(block_rank)):
-            body = [create_nested_for_loops([B_indices[i]], body)]
+            body = [L.create_nested_for_loops([B_indices[i]], body)]
 
         quadparts += pre_loop
         quadparts += hoist_code

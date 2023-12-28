@@ -8,26 +8,10 @@
 
 import logging
 
-from typing import List
 import ufl
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
-
-
-def create_nested_for_loops(indices: List[L.MultiIndex], body):
-    """
-    Create nested for loops over list of indices.
-
-    The depth of the nested for loops is equal to the sub-indices for all
-    MultiIndex combined.
-    """
-    ranges = [r for idx in indices for r in idx.sizes]
-    indices = [idx.local_index(i) for idx in indices for i in range(len(idx.sizes))]
-    depth = len(ranges)
-    for i in reversed(range(depth)):
-        body = L.ForRange(indices[i], 0, ranges[i], body=[body])
-    return body
 
 
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
@@ -154,7 +138,7 @@ class FFCXBackendDefinitions(object):
 
         body = [L.AssignAdd(access, dof_access * FE)]
         code += [L.VariableDecl(access, 0.0)]
-        code += [create_nested_for_loops([ic], body)]
+        code += [L.create_nested_for_loops([ic], body)]
 
         return pre_code, code
 
@@ -194,7 +178,7 @@ class FFCXBackendDefinitions(object):
         code = []
         body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
         code += [L.VariableDecl(access, 0.0)]
-        code += [create_nested_for_loops([ic], body)]
+        code += [L.create_nested_for_loops([ic], body)]
 
         return [], code
 

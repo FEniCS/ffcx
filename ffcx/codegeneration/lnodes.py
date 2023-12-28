@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+from typing import List
 import numbers
 import ufl
 import numpy as np
@@ -929,3 +930,18 @@ def ufl_to_lnodes(operator, *args):
         return _ufl_call_lookup[optype](operator, *args)
     else:
         raise RuntimeError(f"Missing lookup for expr type {optype}.")
+
+
+def create_nested_for_loops(indices: List[MultiIndex], body):
+    """
+    Create nested for loops over list of indices.
+
+    The depth of the nested for loops is equal to the sub-indices for all
+    MultiIndex combined.
+    """
+    ranges = [r for idx in indices for r in idx.sizes]
+    indices = [idx.local_index(i) for idx in indices for i in range(len(idx.sizes))]
+    depth = len(ranges)
+    for i in reversed(range(depth)):
+        body = ForRange(indices[i], 0, ranges[i], body=[body])
+    return body
