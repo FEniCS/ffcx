@@ -1,5 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
-# Additional contributions (C) 2023 Igor A. Baratta
+# Copyright (C) 2011-2023 Martin Sandve Alnæs, Igor A. Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
