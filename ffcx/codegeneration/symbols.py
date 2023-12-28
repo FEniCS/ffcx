@@ -142,13 +142,6 @@ class FFCXBackendSymbols(object):
             offset = num_scalar_dofs * 3
         return self.coordinate_dofs[3 * dof + component + offset]
 
-    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
-        # FIXME: Add domain number or offset!
-        return [
-            self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
-            for dof in range(num_scalar_dofs) for component in range(gdim)
-        ]
-
     def coefficient_dof_access(self, coefficient, dof_index):
         offset = self.coefficient_offsets[coefficient]
         w = self.coefficients
