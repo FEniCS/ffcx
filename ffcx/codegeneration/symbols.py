@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2017 Martin Sandve Alnæs,
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -211,9 +211,7 @@ class FFCXBackendSymbols(object):
             restriction: Restriction ("+", "-")
             quadrature_index: Quadrature index
             dof_index: Dof index
-
         """
-
         entity = self.entity(entitytype, restriction)
         iq_global_index = quadrature_index.global_index
         ic_global_index = dof_index.global_index
