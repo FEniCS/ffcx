@@ -200,7 +200,7 @@ class FFCXBackendSymbols(object):
                                                            dtype=L.DataType.REAL)
         return self.element_tables[tabledata.name][qp][entity][iq]
 
-    def table_access(self, tabledata: UniqueTableReferenceT, entitytype: str, restriction: str | None,
+    def table_access(self, tabledata: UniqueTableReferenceT, entitytype: str, restriction: str,
                      quadrature_index: L.MultiIndex, dof_index: L.MultiIndex):
         """
         Access element table for given entity, quadrature point, and dof index.
@@ -218,10 +218,10 @@ class FFCXBackendSymbols(object):
         qp = 0  # quadrature permutation
 
         if tabledata.is_uniform:
-            entity = 0
+            entity = L.LiteralInt(0)
 
         if tabledata.is_piecewise:
-            iq_global_index = 0
+            iq_global_index = L.LiteralInt(0)
 
         # FIXME: Hopefully tabledata is not permuted when applying sum
         # factorization
