@@ -62,7 +62,8 @@ class FFCXBackendDefinitions(object):
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
         # Set of UFL terminals that do not need to be handled
-        self.do_nothing_set = {ufl.geometry.CellVertices,
+        self.do_nothing_set = {ufl.constant.Constant,
+                               ufl.geometry.CellVertices,
                                ufl.geometry.FacetEdgeVectors,
                                ufl.geometry.CellEdgeVectors,
                                ufl.geometry.CellFacetJacobian,
