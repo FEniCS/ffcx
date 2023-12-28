@@ -1,4 +1,5 @@
 # Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Additional contributions (C) 2023 Igor A. Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -73,37 +74,31 @@ class FFCXBackendDefinitions(object):
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
         self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
-                            ufl.constant.Constant: self.constant,
-                            ufl.geometry.Jacobian: self.jacobian,
-                            ufl.geometry.CellVertices: self._expect_physical_coords,
-                            ufl.geometry.FacetEdgeVectors: self._expect_physical_coords,
-                            ufl.geometry.CellEdgeVectors: self._expect_physical_coords,
-                            ufl.geometry.CellFacetJacobian: self._expect_table,
-                            ufl.geometry.ReferenceCellVolume: self._expect_table,
-                            ufl.geometry.ReferenceFacetVolume: self._expect_table,
-                            ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
-                            ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
-                            ufl.geometry.ReferenceNormal: self._expect_table,
-                            ufl.geometry.CellOrientation: self._pass,
-                            ufl.geometry.FacetOrientation: self._expect_table,
+                            ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
+
+        # Set of UFL terminals that do not need to be handled
+        self.do_nothing_set = {ufl.geometry.CellVertices,
+                               ufl.geometry.FacetEdgeVectors,
+                               ufl.geometry.CellEdgeVectors,
+                               ufl.geometry.CellFacetJacobian,
+                               ufl.geometry.ReferenceCellVolume,
+                               ufl.geometry.ReferenceFacetVolume,
+                               ufl.geometry.ReferenceCellEdgeVectors,
+                               ufl.geometry.ReferenceFacetEdgeVectors,
+                               ufl.geometry.ReferenceNormal,
+                               ufl.geometry.CellOrientation,
+                               ufl.geometry.FacetOrientation}
 
     def get(self, t, mt, tabledata, quadrature_rule, access):
         # Call appropriate handler, depending on the type of t
         ttype = type(t)
-        handler = self.call_lookup.get(ttype, False)
 
-        if not handler:
-            # Look for parent class types instead
-            for k in self.call_lookup.keys():
-                if isinstance(t, k):
-                    handler = self.call_lookup[k]
-                    break
-
-        if handler:
-            return handler(t, mt, tabledata, quadrature_rule, access)
+        if ttype in self.do_nothing_set:
+            return [], []
         else:
-            raise RuntimeError("Not handled: %s", ttype)
+            handler = self.call_lookup[ttype]
+            return handler(t, mt, tabledata, quadrature_rule, access)
 
     def coefficient(self, t, mt, tabledata, quadrature_rule, access):
         """Return definition code for coefficients."""
@@ -162,12 +157,6 @@ class FFCXBackendDefinitions(object):
         code += [create_nested_for_loops([ic], body)]
 
         return pre_code, code
-
-    def constant(self, t, mt, tabledata, quadrature_rule, access):
-        # Constants are not defined within the kernel.
-        # No definition is needed because access to them is directly
-        # via symbol c[], i.e. as passed into the kernel.
-        return [], []
 
     def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
@@ -232,18 +221,3 @@ class FFCXBackendDefinitions(object):
     def jacobian(self, e, mt, tabledata, quadrature_rule, access):
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
-
-    def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
-        """Return quantities referring to constant tables defined in the generated code."""
-        # TODO: Inject const static table here instead?
-        return [], []
-
-    def _expect_physical_coords(self, e, mt, tabledata, quadrature_rule, access):
-        """Return quantities referring to coordinate_dofs."""
-        # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
-        #       and CellDiameter here rather than lowering these quantities?
-        return [], []
-
-    def _pass(self, *args, **kwargs):
-        """Return nothing."""
-        return [], []
