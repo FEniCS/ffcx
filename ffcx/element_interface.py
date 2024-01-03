@@ -6,11 +6,9 @@
 """Finite element interface."""
 
 import typing
-import warnings
 
 import basix
 import basix.ufl
-import ufl
 import numpy as np
 import numpy.typing as npt
 
