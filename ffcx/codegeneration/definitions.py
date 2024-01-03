@@ -74,17 +74,21 @@ class FFCXBackendDefinitions(object):
                                ufl.geometry.CellOrientation,
                                ufl.geometry.FacetOrientation}
 
-    def get(self, t, mt, tabledata, quadrature_rule, access):
+    def get(self, mt, tabledata, quadrature_rule, access):
         # Call appropriate handler, depending on the type of t
-        ttype = type(t)
+
+        terminal = mt.terminal
+        ttype = type(terminal)
 
         if ttype in self.do_nothing_set:
             return [], []
-        else:
+        elif ttype in self.call_lookup:
             handler = self.call_lookup[ttype]
-            return handler(t, mt, tabledata, quadrature_rule, access)
+            return handler(mt, tabledata, quadrature_rule, access)
+        else:
+            raise NotImplementedError(f"No handler for terminal type: {ttype}")
 
-    def coefficient(self, t, mt, tabledata, quadrature_rule, access):
+    def coefficient(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -142,7 +146,7 @@ class FFCXBackendDefinitions(object):
 
         return pre_code, code
 
-    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, quadrature_rule, access):
+    def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -182,7 +186,7 @@ class FFCXBackendDefinitions(object):
 
         return [], code
 
-    def spatial_coordinate(self, e, mt, tabledata, quadrature_rule, access):
+    def spatial_coordinate(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -200,8 +204,8 @@ class FFCXBackendDefinitions(object):
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+            return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def jacobian(self, e, mt, tabledata, quadrature_rule, access):
+    def jacobian(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for the Jacobian of x(X)."""
-        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+        return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)

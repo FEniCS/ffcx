@@ -270,7 +270,6 @@ class IntegralGenerator(object):
 
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
-
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         pre_definitions, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
         parts = L.commented_code_list(parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
@@ -291,20 +290,17 @@ class IntegralGenerator(object):
             v = attr['expression']
             mt = attr.get('mt')
 
-            # Generate code only if the expression is not already in
-            # cache
+            # Generate code only if the expression is not already in cache
             if not self.get_var(quadrature_rule, v):
                 if v._ufl_is_literal_:
                     vaccess = L.ufl_to_lnodes(v)
-                elif mt is not None:
-                    # All finite element based terminals have table
-                    # data, as well as some, but not all, of the
-                    # symbolic geometric terminals
+                elif mt:
+                    assert mt is not None
                     tabledata = attr.get('tr')
 
                     # Backend specific modified terminal translation
-                    vaccess = self.backend.access.get(mt.terminal, mt, tabledata, quadrature_rule)
-                    predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, quadrature_rule, vaccess)
+                    vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
+                    predef, vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
                     if predef:
                         access = predef[0].symbol.name
                         pre_definitions[str(access)] = predef
@@ -312,6 +308,7 @@ class IntegralGenerator(object):
                     # Store definitions of terminals in list
                     assert isinstance(vdef, list)
                     definitions[str(vaccess)] = vdef
+
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]

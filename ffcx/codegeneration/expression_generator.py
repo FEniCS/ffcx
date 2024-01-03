@@ -323,9 +323,9 @@ class ExpressionGenerator:
                 tabledata = attr.get('tr')
 
                 # Backend specific modified terminal translation
-                vaccess = self.backend.access.get(mt.terminal, mt, tabledata, 0)
+                vaccess = self.backend.access.get(mt, tabledata, 0)
 
-                predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
+                predef, vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
                 if predef:
                     pre_definitions[str(predef[0].symbol.name)] = predef
 
