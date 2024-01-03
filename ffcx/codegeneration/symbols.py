@@ -8,7 +8,6 @@
 import logging
 import ufl
 import ffcx.codegeneration.lnodes as L
-from ffcx.ir.elementtables import UniqueTableReferenceT
 
 logger = logging.getLogger("ffcx")
 
