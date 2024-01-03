@@ -255,7 +255,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["entity_dofs"] = element.entity_dofs
 
     if element.is_custom_element:
-        ir["custom_element"] = _compute_custom_element_ir(element.element)
+        ir["custom_element"] = _compute_custom_element_ir(element._element)
     else:
         ir["custom_element"] = None
 
