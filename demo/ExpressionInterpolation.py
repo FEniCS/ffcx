@@ -20,7 +20,6 @@
 
 import basix
 import basix.ufl
-from ffcx.element_interface import QuadratureElement
 from ufl import Coefficient, FunctionSpace, Mesh, grad
 
 # Define mesh
@@ -42,7 +41,7 @@ du1 = grad(u[1])
 # Define an expression using quadrature elements
 q_rule = "gauss_jacobi"
 q_degree = 3
-q_el = QuadratureElement(cell, (), q_rule, q_degree)
+q_el = basix.ufl.quadrature_element(cell, scheme=q_rule, degree=q_degree)
 Q = FunctionSpace(mesh, q_el)
 q = Coefficient(Q)
 powq = 3 * q**2
