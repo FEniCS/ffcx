@@ -380,9 +380,9 @@ class FFCXBackendAccess(object):
         # FIXME: Hopefully tabledata is not permuted when applying sum
         # factorization
         if tabledata.is_permuted:
-            qp = self.quadrature_permutation[0]
+            qp = self.symbols.quadrature_permutation[0]
             if restriction == "-":
-                qp = self.quadrature_permutation[1]
+                qp = self.symbols.quadrature_permutation[1]
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
             return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
@@ -392,6 +392,6 @@ class FFCXBackendAccess(object):
                 factor = tabledata.tensor_factors[i]
                 iq_i = quadrature_index.local_index(i)
                 ic_i = dof_index.local_index(i)
-                table = self.element_tables[factor.name][qp][entity][iq_i][ic_i]
+                table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
                 FE.append(table)
             return L.Product(FE)
