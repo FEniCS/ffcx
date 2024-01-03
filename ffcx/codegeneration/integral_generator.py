@@ -419,7 +419,7 @@ class IntegralGenerator(object):
                 arg_factor = 1
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = self.backend.symbols.table_access(
+                arg_factor = self.backend.access.table_access(
                     td, self.ir.entitytype, mt.restriction, iq, indices[i])
             arg_factors.append(arg_factor)
         return arg_factors

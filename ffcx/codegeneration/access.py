@@ -11,6 +11,7 @@ import warnings
 import ufl
 import basix.ufl
 import ffcx.codegeneration.lnodes as L
+from ffcx.ir.elementtables import UniqueTableReferenceT
 
 logger = logging.getLogger("ffcx")
 
@@ -352,3 +353,45 @@ class FFCXBackendAccess(object):
     def _pass(self, *args, **kwargs):
         """Return one."""
         return 1
+
+    def table_access(self, tabledata: UniqueTableReferenceT, entitytype: str, restriction: str,
+                     quadrature_index: L.MultiIndex, dof_index: L.MultiIndex):
+        """
+        Access element table for given entity, quadrature point, and dof index.
+
+        Args:
+            tabledata: Table data object
+            entitytype: Entity type ("cell", "facet", "vertex")
+            restriction: Restriction ("+", "-")
+            quadrature_index: Quadrature index
+            dof_index: Dof index
+        """
+        entity = self.entity(entitytype, restriction)
+        iq_global_index = quadrature_index.global_index
+        ic_global_index = dof_index.global_index
+        qp = 0  # quadrature permutation
+
+        if tabledata.is_uniform:
+            entity = L.LiteralInt(0)
+
+        if tabledata.is_piecewise:
+            iq_global_index = L.LiteralInt(0)
+
+        # FIXME: Hopefully tabledata is not permuted when applying sum
+        # factorization
+        if tabledata.is_permuted:
+            qp = self.quadrature_permutation[0]
+            if restriction == "-":
+                qp = self.quadrature_permutation[1]
+
+        if dof_index.dim == 1 and quadrature_index.dim == 1:
+            return self.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
+        else:
+            FE = []
+            for i in range(dof_index.dim):
+                factor = tabledata.tensor_factors[i]
+                iq_i = quadrature_index.local_index(i)
+                ic_i = dof_index.local_index(i)
+                table = self.element_tables[factor.name][qp][entity][iq_i][ic_i]
+                FE.append(table)
+            return L.Product(FE)

@@ -54,39 +54,61 @@ class FFCXBackendDefinitions(object):
 
         self.ir = ir
 
-        # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
-        self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
-                            ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
-                            ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
-
-        # Set of UFL terminals that do not need to be handled
-        self.do_nothing_set = {ufl.constant.Constant,
-                               ufl.geometry.CellVertices,
-                               ufl.geometry.FacetEdgeVectors,
-                               ufl.geometry.CellEdgeVectors,
-                               ufl.geometry.CellFacetJacobian,
-                               ufl.geometry.ReferenceCellVolume,
-                               ufl.geometry.ReferenceFacetVolume,
-                               ufl.geometry.ReferenceCellEdgeVectors,
-                               ufl.geometry.ReferenceFacetEdgeVectors,
-                               ufl.geometry.ReferenceNormal,
-                               ufl.geometry.CellOrientation,
-                               ufl.geometry.FacetOrientation}
+        self.handler_lookup = {ufl.coefficient.Coefficient: self.coefficient,
+                               ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
+                               ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
+                               ufl.constant.Constant: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.CellVertices: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.FacetEdgeVectors: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.CellEdgeVectors: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.CellFacetJacobian: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.ReferenceCellVolume: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.ReferenceFacetVolume: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.ReferenceCellEdgeVectors: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.ReferenceFacetEdgeVectors: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.ReferenceNormal: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.CellOrientation: lambda *args, **kwargs: ([], []),
+                               ufl.geometry.FacetOrientation: lambda *args, **kwargs: ([], [])}
 
     def get(self, mt, tabledata, quadrature_rule, access):
-        # Call appropriate handler, depending on the type of t
+        """
+        Retrieves the appropriate handler based on the terminal type of the given 'mt' and invokes it.
 
+        This method searches for a handler for the terminal's type or its nearest parent class that has a defined handler.
+        If a handler is found, it is invoked with the provided arguments. If no handler is found in the hierarchy,
+        a NotImplementedError is raised.
+
+        Parameters:
+        mt (Terminal): The terminal object whose type is used to look up the handler.
+        tabledata: Data structure representing the table for which the handler is retrieved.
+        quadrature_rule: The rule to be used for quadrature in numerical integration.
+        access: Additional data or context needed for the handler.
+
+        Returns:
+        Varies depending on the handler invoked. Typically, the result of the handler function.
+
+        Raises:
+        NotImplementedError: If no handler is found for the terminal type or any of its parent classes.
+        """
+        print("mt", type(mt))
+
+        # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
         ttype = type(terminal)
 
-        if ttype in self.do_nothing_set:
-            return [], []
-        elif ttype in self.call_lookup:
-            handler = self.call_lookup[ttype]
-            return handler(mt, tabledata, quadrature_rule, access)
-        else:
+        # Look for parent class of ttype or direct handler
+        while ttype not in self.handler_lookup and ttype.__bases__:  # noqa: E721
+            ttype = ttype.__bases__[0]
+
+        # Get the handler from the lookup, or None if not found
+        handler = self.handler_lookup.get(ttype)
+
+        if handler is None:
             raise NotImplementedError(f"No handler for terminal type: {ttype}")
+
+        # Call the handler
+        return handler(mt, tabledata, quadrature_rule, access)
 
     def coefficient(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for coefficients."""
@@ -118,7 +140,7 @@ class FFCXBackendDefinitions(object):
         assert begin < end
 
         # Get access to element table
-        FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        FE = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         code = []
         pre_code = []
@@ -169,7 +191,7 @@ class FFCXBackendDefinitions(object):
         iq_symbol = self.symbols.quadrature_loop_index
         ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        FE = self.symbols.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        FE = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
