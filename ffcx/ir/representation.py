@@ -250,7 +250,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
 
     ir["block_size"] = element.block_size
     if element.block_size > 1:
-        element = element.sub_element
+        element = element._sub_element
 
     ir["entity_dofs"] = element.entity_dofs
 
@@ -310,7 +310,7 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
 
     ir["block_size"] = element.block_size
     if element.block_size > 1:
-        element = element.sub_element
+        element = element._sub_element
 
     # Precompute repeatedly used items
     for i in element.num_entity_dofs:
