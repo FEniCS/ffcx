@@ -45,11 +45,12 @@ def create_dof_index(tabledata, dof_index_symbol):
 class FFCXBackendDefinitions(object):
     """FFCx specific code definitions."""
 
-    def __init__(self, ir, symbols, options):
+    def __init__(self, ir, access, options):
         # Store ir and options
         self.integral_type = ir.integral_type
         self.entitytype = ir.entitytype
-        self.symbols = symbols
+        self.access = access
+        self.symbols = access.symbols
         self.options = options
 
         self.ir = ir
@@ -58,18 +59,18 @@ class FFCXBackendDefinitions(object):
         self.handler_lookup = {ufl.coefficient.Coefficient: self.coefficient,
                                ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
                                ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
-                               ufl.constant.Constant: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.CellVertices: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.FacetEdgeVectors: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.CellEdgeVectors: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.CellFacetJacobian: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.ReferenceCellVolume: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.ReferenceFacetVolume: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.ReferenceCellEdgeVectors: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.ReferenceFacetEdgeVectors: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.ReferenceNormal: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.CellOrientation: lambda *args, **kwargs: ([], []),
-                               ufl.geometry.FacetOrientation: lambda *args, **kwargs: ([], [])}
+                               ufl.constant.Constant: self.pass_through,
+                               ufl.geometry.CellVertices: self.pass_through,
+                               ufl.geometry.FacetEdgeVectors: self.pass_through,
+                               ufl.geometry.CellEdgeVectors: self.pass_through,
+                               ufl.geometry.CellFacetJacobian: self.pass_through,
+                               ufl.geometry.ReferenceCellVolume: self.pass_through,
+                               ufl.geometry.ReferenceFacetVolume: self.pass_through,
+                               ufl.geometry.ReferenceCellEdgeVectors: self.pass_through,
+                               ufl.geometry.ReferenceFacetEdgeVectors: self.pass_through,
+                               ufl.geometry.ReferenceNormal: self.pass_through,
+                               ufl.geometry.CellOrientation: self.pass_through,
+                               ufl.geometry.FacetOrientation: self.pass_through}
 
     def get(self, mt, tabledata, quadrature_rule, access):
         # Call appropriate handler, depending on the type of terminal
@@ -210,3 +211,7 @@ class FFCXBackendDefinitions(object):
     def jacobian(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
+
+    def pass_through(self, mt, tabledata, quadrature_rule, access):
+        """Return definition code for pass through terminals."""
+        return [], []

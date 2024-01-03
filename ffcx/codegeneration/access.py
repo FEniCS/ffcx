@@ -366,7 +366,7 @@ class FFCXBackendAccess(object):
             quadrature_index: Quadrature index
             dof_index: Dof index
         """
-        entity = self.entity(entitytype, restriction)
+        entity = self.symbols.entity(entitytype, restriction)
         iq_global_index = quadrature_index.global_index
         ic_global_index = dof_index.global_index
         qp = 0  # quadrature permutation
@@ -385,7 +385,7 @@ class FFCXBackendAccess(object):
                 qp = self.quadrature_permutation[1]
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
-            return self.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
+            return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
         else:
             FE = []
             for i in range(dof_index.dim):
