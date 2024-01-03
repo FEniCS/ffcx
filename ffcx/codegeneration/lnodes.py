@@ -727,15 +727,24 @@ def as_statement(node):
         )
 
 
+class Section(LNode):
+    """
+    A section of code with a name and a list of statements.
+    """
+
+    def __init__(self, name, statements):
+        self.name = name
+        self.statements = [as_statement(st) for st in statements]
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.name == other.name and self.statements == other.statements
+
+
 class StatementList(LNode):
     """A simple sequence of statements. No new scopes are introduced."""
 
     def __init__(self, statements):
         self.statements = [as_statement(st) for st in statements]
-
-    @property
-    def is_scoped(self):
-        return all(st.is_scoped for st in self.statements)
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.statements == other.statements
@@ -743,8 +752,6 @@ class StatementList(LNode):
 
 class Comment(Statement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
-
-    is_scoped = True
 
     def __init__(self, comment):
         assert isinstance(comment, str)
