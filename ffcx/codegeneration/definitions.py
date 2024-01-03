@@ -72,27 +72,6 @@ class FFCXBackendDefinitions(object):
                                ufl.geometry.FacetOrientation: lambda *args, **kwargs: ([], [])}
 
     def get(self, mt, tabledata, quadrature_rule, access):
-        """
-        Retrieves the appropriate handler based on the terminal type of the given 'mt' and invokes it.
-
-        This method searches for a handler for the terminal's type or its nearest parent class that has a defined handler.
-        If a handler is found, it is invoked with the provided arguments. If no handler is found in the hierarchy,
-        a NotImplementedError is raised.
-
-        Parameters:
-        mt (Terminal): The terminal object whose type is used to look up the handler.
-        tabledata: Data structure representing the table for which the handler is retrieved.
-        quadrature_rule: The rule to be used for quadrature in numerical integration.
-        access: Additional data or context needed for the handler.
-
-        Returns:
-        Varies depending on the handler invoked. Typically, the result of the handler function.
-
-        Raises:
-        NotImplementedError: If no handler is found for the terminal type or any of its parent classes.
-        """
-        print("mt", type(mt))
-
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
         ttype = type(terminal)
