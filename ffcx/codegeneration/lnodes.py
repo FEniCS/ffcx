@@ -688,8 +688,6 @@ def as_lexpr(node):
 class Statement(LNode):
     """Make an expression into a statement."""
 
-    is_scoped = False
-
     def __init__(self, expr):
         self.expr = as_lexpr(expr)
 
@@ -728,9 +726,7 @@ def as_statement(node):
 
 
 class Section(LNode):
-    """
-    A section of code with a name and a list of statements.
-    """
+    """A section of code with a name and a list of statements."""
 
     def __init__(self, name, statements):
         self.name = name
@@ -780,8 +776,6 @@ def commented_code_list(code, comments):
 class VariableDecl(Statement):
     """Declare a variable, optionally define initial value."""
 
-    is_scoped = False
-
     def __init__(self, symbol, value=None):
 
         assert isinstance(symbol, Symbol)
@@ -811,8 +805,6 @@ class ArrayDecl(Statement):
     array values to initialize to.
 
     """
-
-    is_scoped = False
 
     def __init__(self, symbol, sizes=None, values=None, const=False):
         assert isinstance(symbol, Symbol)
@@ -854,8 +846,6 @@ def is_simple_inner_loop(code):
 
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
-
-    is_scoped = True
 
     def __init__(self, index, begin, end, body):
         assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
