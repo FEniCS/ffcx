@@ -139,7 +139,22 @@ class IntegralGenerator(object):
             all_quadparts += quadparts
             all_predefinitions += pre_definitions
 
-        parts += L.commented_code_list(all_predefinitions,
+        all_predefinitions = list(set(all_predefinitions))
+
+        # Collect pre-definitions of type ArrayDecl
+        declarations = [p for p in all_predefinitions if isinstance(p, L.ArrayDecl)]
+        for_loops = [p for p in all_predefinitions if isinstance(p, L.ForRange)]
+        
+        # remove repeated for loops
+        for_loops_dict = {}
+        for for_loop in for_loops:
+            for_loop_key = (for_loop.body.statements[0].expr.lhs.array)
+            if for_loop_key not in for_loops_dict:
+                for_loops_dict[for_loop_key] = for_loop
+
+        for_loops = list(for_loops_dict.values())
+
+        parts += L.commented_code_list(declarations + for_loops,
                                        "Pre-definitions of modified terminals to enable unit-stride access")
 
         # Collect parts before, during, and after quadrature loops
