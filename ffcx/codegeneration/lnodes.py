@@ -693,7 +693,7 @@ class Statement(LNode):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.expr == other.expr
-    
+
     def __hash__(self) -> int:
         return hash(self.expr)
 
@@ -750,7 +750,7 @@ class StatementList(LNode):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.statements == other.statements
-    
+
     def __hash__(self) -> int:
         return hash(tuple(self.statements))
 
@@ -844,7 +844,7 @@ class ArrayDecl(Statement):
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
-    
+
     def __hash__(self) -> int:
         return hash(self.symbol)
 
