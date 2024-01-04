@@ -880,7 +880,7 @@ def test_manifold_derivatives(compile_args):
     default_integral = compiled_forms[0].form_integrals[0]
     scale = 2.5
     coords = np.array([0.0, 0.0, 0.0, 0.0, scale, 0.0], dtype=np.float64)
-    dof_coords = scale * el.element.points.reshape(-1)
+    dof_coords = scale * el._element.points.reshape(-1)
 
     w = np.array([d * d_c**order for d_c in dof_coords], dtype=np.float64)
     c = np.array([], dtype=np.float64)
