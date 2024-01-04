@@ -693,6 +693,9 @@ class Statement(LNode):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.expr == other.expr
+    
+    def __hash__(self) -> int:
+        return hash(self.expr)
 
 
 def as_statement(node):
@@ -747,6 +750,9 @@ class StatementList(LNode):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.statements == other.statements
+    
+    def __hash__(self) -> int:
+        return hash(tuple(self.statements))
 
 
 class Comment(Statement):
@@ -831,12 +837,16 @@ class ArrayDecl(Statement):
             self.values = values
 
         self.const = const
+        self.dtype = symbol.dtype
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "values")
+        attributes = ("dtype", "symbol", "sizes", "values")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
+    
+    def __hash__(self) -> int:
+        return hash(self.symbol)
 
 
 def is_simple_inner_loop(code):
@@ -858,11 +868,17 @@ class ForRange(Statement):
         assert isinstance(body, list)
         self.body = StatementList(body)
 
+    def as_tuple(self):
+        return (self.index, self.begin, self.end, self.body)
+
     def __eq__(self, other):
         attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
+
+    def __hash__(self) -> int:
+        return hash(self.as_tuple())
 
 
 def _math_function(op, *args):

@@ -279,7 +279,7 @@ class IntegralGenerator(object):
     def generate_partition(self, symbol, F, mode, quadrature_rule):
 
         definitions = []
-        pre_definitions = []
+        pre_definitions = dict()
         intermediates = []
 
         use_symbol_array = True
@@ -309,7 +309,8 @@ class IntegralGenerator(object):
                         vdef = [vdef]
 
                     if predef:
-                        pre_definitions += predef
+                        access = predef[0].symbol.name
+                        pre_definitions[access] = predef
 
                     # # Store definitions of terminals in list
                     # assert isinstance(vdef, list)
@@ -371,7 +372,11 @@ class IntegralGenerator(object):
                 parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
 
-        return pre_definitions, parts
+        pre_parts = []
+        for access in pre_definitions:
+            pre_parts += pre_definitions[access]
+
+        return pre_parts, parts
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
