@@ -170,7 +170,7 @@ class CFormatter(object):
 
     def format_statement_list(self, slist) -> str:
         return "".join(self.c_format(s) for s in slist.statements)
-    
+
     def format_section(self, section) -> str:
         comments = "// " + section.name + "\n"
         body = "".join(self.c_format(s) for s in section.statements)
