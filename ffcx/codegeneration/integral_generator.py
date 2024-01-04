@@ -127,7 +127,7 @@ class IntegralGenerator(object):
 
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
-        all_predefinitions = dict()
+        all_predefinitions = []
         for rule in self.ir.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
             all_preparts += self.generate_piecewise_partition(rule)
@@ -137,9 +137,9 @@ class IntegralGenerator(object):
             pre_definitions, preparts, quadparts = self.generate_quadrature_loop(rule)
             all_preparts += preparts
             all_quadparts += quadparts
-            all_predefinitions.update(pre_definitions)
+            all_predefinitions += pre_definitions
 
-        parts += L.commented_code_list(self.fuse_loops(all_predefinitions),
+        parts += L.commented_code_list(all_predefinitions,
                                        "Pre-definitions of modified terminals to enable unit-stride access")
 
         # Collect parts before, during, and after quadrature loops
@@ -278,7 +278,7 @@ class IntegralGenerator(object):
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
 
-        definitions = dict()
+        definitions = []
         pre_definitions = dict()
         intermediates = []
 
@@ -314,7 +314,7 @@ class IntegralGenerator(object):
 
                     # Store definitions of terminals in list
                     assert isinstance(vdef, list)
-                    definitions[str(vaccess)] = vdef
+                    definitions += vdef
 
                 else:
                     # Get previously visited operands
@@ -365,7 +365,7 @@ class IntegralGenerator(object):
         # Join terminal computation, array of intermediate expressions,
         # and intermediate computations
         parts = []
-        parts += self.fuse_loops(definitions)
+        parts += definitions
 
         if intermediates:
             if use_symbol_array:
@@ -581,33 +581,3 @@ class IntegralGenerator(object):
         quadparts += body
 
         return preparts, quadparts
-
-    def fuse_loops(self, definitions):
-        """Merge a sequence of loops with the same iteration space into a single loop.
-
-        Loop fusion improves data locality, cache reuse and decreases
-        the loop control overhead.
-
-        NOTE: Loop fusion might increase the pressure on register
-        allocation. Ideally, we should define a cost function to
-        determine how many loops should fuse at a time.
-
-        """
-        loops = collections.defaultdict(list)
-        pre_loop = []
-        for access, definition in definitions.items():
-            for d in definition:
-                if isinstance(d, L.ForRange):
-                    loops[(d.index, d.begin, d.end)] += [d.body]
-                else:
-                    pre_loop += [d]
-        fused = []
-
-        for info, body in loops.items():
-            index, begin, end = info
-            fused += [L.ForRange(index, begin, end, body)]
-
-        code = []
-        code += pre_loop
-        code += fused
-        return code
