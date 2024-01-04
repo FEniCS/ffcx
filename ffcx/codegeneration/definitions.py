@@ -146,6 +146,9 @@ class FFCXBackendDefinitions(object):
         code += [L.VariableDecl(access, 0.0)]
         code += [L.create_nested_for_loops([ic], body)]
 
+        code = L.Section("Coefficient definition", code)
+        pre_code = L.Section("Coefficient pre definition", pre_code)
+
         return pre_code, code
 
     def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):

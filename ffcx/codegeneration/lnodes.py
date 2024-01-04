@@ -728,16 +728,17 @@ def as_statement(node):
 class Section(LNode):
     """A section of code with a name and a list of statements."""
 
-    def __init__(self, name, statements):
+    def __init__(self, name: str, statements: LExpr, annotations: List[str] = None):
         self.name = name
         self.statements = [as_statement(st) for st in statements]
+        self.annotations = annotations or []
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.name == other.name and self.statements == other.statements
 
 
 class StatementList(LNode):
-    """A simple sequence of statements. No new scopes are introduced."""
+    """A simple sequence of statements."""
 
     def __init__(self, statements):
         self.statements = [as_statement(st) for st in statements]
