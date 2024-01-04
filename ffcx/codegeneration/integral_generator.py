@@ -144,14 +144,14 @@ class IntegralGenerator(object):
         # Collect pre-definitions of type ArrayDecl
         declarations = [p for p in all_predefinitions if isinstance(p, L.ArrayDecl)]
         for_loops = [p for p in all_predefinitions if isinstance(p, L.ForRange)]
-        
-        # remove repeated for loops
+
+        # remove repeated for loops (should be done with section)
+        # FIXME: no two sections with same inputs and outputs should be generated
         for_loops_dict = {}
         for for_loop in for_loops:
             for_loop_key = (for_loop.body.statements[0].expr.lhs.array)
             if for_loop_key not in for_loops_dict:
                 for_loops_dict[for_loop_key] = for_loop
-
         for_loops = list(for_loops_dict.values())
 
         parts += L.commented_code_list(declarations + for_loops,
