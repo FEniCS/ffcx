@@ -306,14 +306,14 @@ class IntegralGenerator(object):
                         predef = predef.statements
 
                     if isinstance(vdef, L.Section):
-                        vdef = vdef.statements
+                        vdef = [vdef]
 
                     if predef:
                         access = predef[0].symbol.name
                         pre_definitions[str(access)] = predef
 
-                    # Store definitions of terminals in list
-                    assert isinstance(vdef, list)
+                    # # Store definitions of terminals in list
+                    # assert isinstance(vdef, list)
                     definitions += vdef
 
                 else:

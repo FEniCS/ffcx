@@ -304,7 +304,7 @@ class CFormatter(object):
         return f"{func}({args})"
 
     c_impl = {
-        "Section": format_statement_list,
+        "Section": format_section,
         "StatementList": format_statement_list,
         "Comment": format_comment,
         "ArrayDecl": format_array_decl,

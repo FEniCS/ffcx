@@ -719,6 +719,8 @@ def as_statement(node):
             return as_statement(node[0])
         else:
             return StatementList(node)
+    elif isinstance(node, Section):
+        return node
     else:
         raise RuntimeError(
             "Unexpected Statement type %s:\n%s" % (type(node), str(node))
