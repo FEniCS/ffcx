@@ -371,6 +371,8 @@ class FFCXBackendAccess(object):
         ic_global_index = dof_index.global_index
         qp = 0  # quadrature permutation
 
+        lst = []
+
         if tabledata.is_uniform:
             entity = L.LiteralInt(0)
 
@@ -385,7 +387,8 @@ class FFCXBackendAccess(object):
                 qp = self.symbols.quadrature_permutation[1]
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
-            return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
+            lst = [tabledata.name]
+            return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index], lst
         else:
             FE = []
             for i in range(dof_index.dim):
@@ -393,5 +396,6 @@ class FFCXBackendAccess(object):
                 iq_i = quadrature_index.local_index(i)
                 ic_i = dof_index.local_index(i)
                 table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
+                lst += [factor.name]
                 FE.append(table)
-            return L.Product(FE)
+            return L.Product(FE), lst

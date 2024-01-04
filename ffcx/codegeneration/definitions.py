@@ -125,7 +125,7 @@ class FFCXBackendDefinitions(object):
         assert begin < end
 
         # Get access to element table
-        FE = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        FE, _ = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         code = []
         pre_code: List[L.LNode] = []
@@ -152,7 +152,9 @@ class FFCXBackendDefinitions(object):
         code += [L.VariableDecl(access, 0.0)]
         code += [L.create_nested_for_loops([ic], body)]
 
-        return L.Section("Coefficient pre definition", pre_code), L.Section("Coefficient definition", code)
+        name = type(mt.terminal).__name__
+
+        return L.Section(name + "pre", pre_code), L.Section(name, code)
 
     def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
@@ -177,7 +179,7 @@ class FFCXBackendDefinitions(object):
         iq_symbol = self.symbols.quadrature_loop_index
         ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        FE = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
@@ -192,7 +194,19 @@ class FFCXBackendDefinitions(object):
         code += [L.VariableDecl(access, 0.0)]
         code += [L.create_nested_for_loops([ic], body)]
 
-        return [], code
+        name = type(mt.terminal).__name__
+        output = [access]
+        input = [dof_access] + tables
+
+        name += f"\n// Input: {input}"
+        name += f"\n// Output: {output}"
+
+        # print name and input output of the section
+        # print("Section: ", name)
+        # print("Input: ", input)
+        # print("Output: ", output)
+
+        return [], L.Section(name, code)
 
     def spatial_coordinate(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for the physical spatial coordinates.

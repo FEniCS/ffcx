@@ -279,7 +279,7 @@ class IntegralGenerator(object):
     def generate_partition(self, symbol, F, mode, quadrature_rule):
 
         definitions = []
-        pre_definitions = dict()
+        pre_definitions = []
         intermediates = []
 
         use_symbol_array = True
@@ -309,8 +309,7 @@ class IntegralGenerator(object):
                         vdef = [vdef]
 
                     if predef:
-                        access = predef[0].symbol.name
-                        pre_definitions[str(access)] = predef
+                        pre_definitions += predef
 
                     # # Store definitions of terminals in list
                     # assert isinstance(vdef, list)
@@ -371,6 +370,7 @@ class IntegralGenerator(object):
             if use_symbol_array:
                 parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
+
         return pre_definitions, parts
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
@@ -426,7 +426,7 @@ class IntegralGenerator(object):
                 arg_factor = 1
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor = self.backend.access.table_access(
+                arg_factor, _ = self.backend.access.table_access(
                     td, self.ir.entitytype, mt.restriction, iq, indices[i])
             arg_factors.append(arg_factor)
         return arg_factors
