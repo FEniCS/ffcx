@@ -8,7 +8,7 @@
 import logging
 
 import ufl
-from typing import List, Optional
+from typing import List
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -94,7 +94,8 @@ class FFCXBackendDefinitions(object):
         # Call the handler
         return handler(mt, tabledata, quadrature_rule, access)
 
-    def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT, quadrature_rule: QuadratureRule, access: str):
+    def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+                    quadrature_rule: QuadratureRule, access: str):
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
