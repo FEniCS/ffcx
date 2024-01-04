@@ -174,7 +174,7 @@ class FFCXBackendDefinitions(object):
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = coordinate_element.sub_element.dim
+        num_scalar_dofs = coordinate_element._sub_element.dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
