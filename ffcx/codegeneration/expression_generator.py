@@ -326,6 +326,13 @@ class ExpressionGenerator:
                 vaccess = self.backend.access.get(mt, tabledata, 0)
 
                 predef, vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
+
+                if isinstance(predef, L.Section):
+                    predef = predef.statements
+
+                if isinstance(vdef, L.Section):
+                    vdef = vdef.statements
+
                 if predef:
                     pre_definitions[str(predef[0].symbol.name)] = predef
 
