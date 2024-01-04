@@ -13,7 +13,7 @@ from ffcx.codegeneration import geometry
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.lnodes import LNode, BinOp
+from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.codegeneration.definitions import create_quadrature_index, create_dof_index
 
@@ -468,8 +468,6 @@ class IntegralGenerator(object):
         rhs_expressions = collections.defaultdict(list)
 
         block_rank = len(blockmap)
-        blockdims = tuple(len(dofmap) for dofmap in blockmap)
-
         iq_symbol = self.backend.symbols.quadrature_loop_index
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
 
@@ -553,8 +551,9 @@ class IntegralGenerator(object):
             multi_index = L.MultiIndex(list(indices), A_shape)
             body.append(L.AssignAdd(A[multi_index], L.Sum(keep[indices])))
 
-        for i in reversed(range(block_rank)):
-            body = [L.create_nested_for_loops([B_indices[i]], body)]
+        # reverse B_indices
+        B_indices = B_indices[::-1]
+        body = [L.create_nested_for_loops(B_indices, body)]
 
         quadparts += pre_loop
         quadparts += body
