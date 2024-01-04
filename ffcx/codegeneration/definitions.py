@@ -8,7 +8,11 @@
 import logging
 
 import ufl
+from typing import List, Optional
 import ffcx.codegeneration.lnodes as L
+from ffcx.ir.elementtables import UniqueTableReferenceT
+from ffcx.ir.representationutils import QuadratureRule
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 
 logger = logging.getLogger("ffcx")
 
@@ -90,7 +94,7 @@ class FFCXBackendDefinitions(object):
         # Call the handler
         return handler(mt, tabledata, quadrature_rule, access)
 
-    def coefficient(self, mt, tabledata, quadrature_rule, access):
+    def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT, quadrature_rule: QuadratureRule, access: str):
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -123,7 +127,7 @@ class FFCXBackendDefinitions(object):
         FE = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         code = []
-        pre_code = []
+        pre_code: List[L.LNode] = []
 
         if bs > 1 and not tabledata.is_piecewise:
             # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
@@ -133,7 +137,8 @@ class FFCXBackendDefinitions(object):
             # have a sequential access pattern.
             dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
 
-            # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
+            # If a map is necessary from stride 1 to bs, the code must be added
+            # before the quadrature loop.
             if dof_access_map:
                 pre_code += [L.ArrayDecl(dof_access.array, sizes=num_dofs)]
                 pre_body = [L.Assign(dof_access, dof_access_map)]
@@ -146,10 +151,7 @@ class FFCXBackendDefinitions(object):
         code += [L.VariableDecl(access, 0.0)]
         code += [L.create_nested_for_loops([ic], body)]
 
-        code = L.Section("Coefficient definition", code)
-        pre_code = L.Section("Coefficient pre definition", pre_code)
-
-        return pre_code, code
+        return L.Section("Coefficient pre definition", pre_code), L.Section("Coefficient definition", code)
 
     def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""

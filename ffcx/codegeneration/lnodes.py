@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-from typing import List
+from typing import List, Optional, Tuple
 import numbers
 import ufl
 import numpy as np
@@ -728,7 +728,7 @@ def as_statement(node):
 class Section(LNode):
     """A section of code with a name and a list of statements."""
 
-    def __init__(self, name: str, statements: LExpr, annotations: List[str] = None):
+    def __init__(self, name: str, statements: List, annotations: Optional[List] = None):
         self.name = name
         self.statements = [as_statement(st) for st in statements]
         self.annotations = annotations or []
