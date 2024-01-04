@@ -39,7 +39,7 @@ class IntegralGenerator(object):
         self.init_scopes()
 
         # Cache
-        self.shared_symbols = {}
+        self.temp_symbols = {}
 
         # Set of counters used for assigning names to intermediate
         # variables
@@ -89,11 +89,11 @@ class IntegralGenerator(object):
 
     def get_temp_symbol(self, tempname, key):
         key = (tempname,) + key
-        s = self.shared_symbols.get(key)
+        s = self.temp_symbols.get(key)
         defined = s is not None
         if not defined:
             s = self.new_temp_symbol(tempname)
-            self.shared_symbols[key] = s
+            self.temp_symbols[key] = s
         return s, defined
 
     def generate(self):
