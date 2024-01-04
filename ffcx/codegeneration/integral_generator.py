@@ -541,13 +541,9 @@ class IntegralGenerator(object):
         keep = collections.defaultdict(list)
         # List of temporary array declarations
         pre_loop: List[LNode] = []
-        # List of loop invariant expressions to hoist
-        hoist: List[BinOp] = []
 
         for indices in rhs_expressions:
             keep[indices] = rhs_expressions[indices]
-
-        hoist_code: List[LNode] = [L.ForRange(B_indices[0], 0, blockdims[0], body=hoist)] if hoist else []
 
         body: List[LNode] = []
 
@@ -561,7 +557,6 @@ class IntegralGenerator(object):
             body = [L.create_nested_for_loops([B_indices[i]], body)]
 
         quadparts += pre_loop
-        quadparts += hoist_code
         quadparts += body
 
         return preparts, quadparts
