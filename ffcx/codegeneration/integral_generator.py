@@ -316,10 +316,9 @@ class IntegralGenerator(object):
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
                     vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
 
-                    assert isinstance(vdef, L.Section)
-
-                    # Store definitions of terminals in list
-                    definitions += [vdef]
+                    if isinstance(vdef, L.Section):
+                        # Store definitions of terminals in list
+                        definitions += [vdef]
 
                 else:
                     # Get previously visited operands
