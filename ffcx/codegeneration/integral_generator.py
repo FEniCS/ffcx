@@ -296,8 +296,6 @@ class IntegralGenerator(object):
         definitions = []
         intermediates = []
 
-        use_symbol_array = True
-
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
@@ -319,7 +317,6 @@ class IntegralGenerator(object):
                     if isinstance(vdef, L.Section):
                         # Store definitions of terminals in list
                         definitions += [vdef]
-
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
@@ -356,12 +353,8 @@ class IntegralGenerator(object):
                     else:
                         # Record assignment of vexpr to intermediate variable
                         j = len(intermediates)
-                        if use_symbol_array:
-                            vaccess = symbol[j]
-                            intermediates.append(L.Assign(vaccess, vexpr))
-                        else:
-                            vaccess = L.Symbol("%s_%d" % (symbol.name, j))
-                            intermediates.append(L.VariableDecl(vaccess, vexpr))
+                        vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
+                        intermediates.append(L.VariableDecl(vaccess, vexpr))
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
@@ -372,8 +365,7 @@ class IntegralGenerator(object):
         parts += definitions
 
         if intermediates:
-            if use_symbol_array:
-                parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
+            intermediates = [L.Section(f"Intermediate computations for {mode} computations", intermediates)]
             parts += intermediates
 
         return [], parts
@@ -429,12 +421,13 @@ class IntegralGenerator(object):
 
             if td.ttype == "ones":
                 arg_factor = 1
+                tables = []
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor, _ = self.backend.access.table_access(
+                arg_factor, tables = self.backend.access.table_access(
                     td, self.ir.entitytype, mt.restriction, iq, indices[i])
             arg_factors.append(arg_factor)
-        return arg_factors
+        return arg_factors, tables
 
     def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):
         """Generate and return code parts for a given block.
@@ -498,12 +491,14 @@ class IntegralGenerator(object):
                 key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
-                    quadparts.append(L.VariableDecl(fw, fw_rhs))
+                    quad_sec = L.Section(f"Definition of {fw}", [L.VariableDecl(fw, fw_rhs)],
+                                         input=[f, weights], output=[fw])
+                    quadparts.append(quad_sec)
 
             assert not blockdata.transposed, "Not handled yet"
 
             # Fetch code to access modified arguments
-            arg_factors = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+            arg_factors, tables = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
 
             # Define B_rhs = fw * arg_factors
             B_rhs = L.float_product([fw] + arg_factors)
@@ -522,8 +517,6 @@ class IntegralGenerator(object):
 
         # List of statements to keep in the inner loop
         keep = collections.defaultdict(list)
-        # List of temporary array declarations
-        pre_loop: List[LNode] = []
 
         for indices in rhs_expressions:
             keep[indices] = rhs_expressions[indices]
@@ -540,7 +533,6 @@ class IntegralGenerator(object):
         B_indices = B_indices[::-1]
         body = [L.create_nested_for_loops(B_indices, body)]
 
-        quadparts += pre_loop
-        quadparts += body
+        quadparts += [L.Section("Tensor Computation", body, input=[fw, *tables], output=[A])]
 
         return preparts, quadparts

@@ -178,6 +178,7 @@ class CFormatter(object):
         comments += "// Inputs: " + ", ".join(w.name for w in section.input) + "\n"
         comments += "// Outputs: " + ", ".join(w.name for w in section.output) + "\n"
         body = "".join(self.c_format(s) for s in section.statements)
+        body += "// ------------------------ \n"
         return comments + body
 
     def format_comment(self, c) -> str:
