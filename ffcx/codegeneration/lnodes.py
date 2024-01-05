@@ -741,8 +741,6 @@ class Section(LNode):
         self.input = input or []
         self.output = output or []
 
-        
-
     def to_tuple(self):
         return (self.name, self.input, self.output, self.annotations, self.statements)
 
