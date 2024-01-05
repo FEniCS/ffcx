@@ -733,13 +733,26 @@ def as_statement(node):
 class Section(LNode):
     """A section of code with a name and a list of statements."""
 
-    def __init__(self, name: str, statements: List, annotations: Optional[List] = None):
+    def __init__(self, name: str, statements: List, input: Optional[List] = None,
+                 output: Optional[List] = None, annotations: Optional[List] = None):
         self.name = name
         self.statements = [as_statement(st) for st in statements]
         self.annotations = annotations or []
+        self.input = input or []
+        self.output = output or []
+
+        # Convert all inputs to strings
+        self.input = [str(i) for i in self.input]
+        self.output = [str(o) for o in self.output]
+
+    def to_tuple(self):
+        return (self.name, self.input, self.output, self.annotations, self.statements)
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and self.name == other.name and self.statements == other.statements
+        attributes = ("name", "input", "output", "annotations", "statements")
+        return isinstance(other, type(self)) and all(
+            getattr(self, name) == getattr(self, name) for name in attributes
+        )
 
 
 class StatementList(LNode):
