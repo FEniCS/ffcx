@@ -325,16 +325,10 @@ class ExpressionGenerator:
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt, tabledata, 0)
 
-                predef, vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
+                vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
 
-                if isinstance(predef, L.Section):
-                    predef = predef.statements
-
-                if isinstance(vdef, L.Section):
-                    vdef = vdef.statements
-
-                if predef:
-                    pre_definitions[str(predef[0].symbol.name)] = predef
+                assert isinstance(vdef, L.Section)
+                vdef = vdef.statements
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)

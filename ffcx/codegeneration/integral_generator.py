@@ -314,14 +314,12 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
-                    _, vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
+                    vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
 
-                    if isinstance(vdef, L.Section):
-                        vdef = [vdef]
+                    assert isinstance(vdef, L.Section)
 
-                    # # Store definitions of terminals in list
-                    # assert isinstance(vdef, list)
-                    definitions += vdef
+                    # Store definitions of terminals in list
+                    definitions += [vdef]
 
                 else:
                     # Get previously visited operands

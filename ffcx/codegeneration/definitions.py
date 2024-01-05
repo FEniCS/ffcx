@@ -115,11 +115,11 @@ class FFCXBackendDefinitions(object):
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
-            return [], []
+            return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
         if ttype == "ones" and end - begin == 1:
-            return [], []
+            return []
 
         assert begin < end
 
@@ -134,10 +134,9 @@ class FFCXBackendDefinitions(object):
         code += [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
-
         section = L.Section(name, code, input=[self.symbols.coefficients, *tables], output=[access])
 
-        return [], section
+        return section
 
     def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
@@ -181,7 +180,7 @@ class FFCXBackendDefinitions(object):
         output = [access]
         input = [dof_access, *tables]
 
-        return [], L.Section(name, code, input=input, output=output)
+        return L.Section(name, code, input=input, output=output)
 
     def spatial_coordinate(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for the physical spatial coordinates.
@@ -209,4 +208,4 @@ class FFCXBackendDefinitions(object):
 
     def pass_through(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for pass through terminals."""
-        return [], []
+        return []

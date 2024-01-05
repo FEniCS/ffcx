@@ -741,9 +741,7 @@ class Section(LNode):
         self.input = input or []
         self.output = output or []
 
-        # Convert all inputs to strings
-        self.input = [str(i) for i in self.input]
-        self.output = [str(o) for o in self.output]
+        
 
     def to_tuple(self):
         return (self.name, self.input, self.output, self.annotations, self.statements)

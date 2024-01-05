@@ -175,8 +175,8 @@ class CFormatter(object):
         # add new line before section
         comments = "// ------------------------ \n"
         comments += "// Section: " + section.name + "\n"
-        comments += "// Inputs: " + ", ".join(section.input) + "\n"
-        comments += "// Outputs: " + ", ".join(section.output) + "\n"
+        comments += "// Inputs: " + ", ".join(w.name for w in section.input) + "\n"
+        comments += "// Outputs: " + ", ".join(w.name for w in section.output) + "\n"
         body = "".join(self.c_format(s) for s in section.statements)
         return comments + body
 
