@@ -327,8 +327,8 @@ class ExpressionGenerator:
 
                 vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
 
-                assert isinstance(vdef, L.Section)
-                vdef = vdef.statements
+                if isinstance(vdef, L.Section):
+                   vdef = vdef.statements
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)
