@@ -44,9 +44,9 @@ jobs:
         run: pip install .[ci]
       - name: Lint with flake8
         run: flake8 --statistics ffcx/ test/
-      # - name: Static check with mypy
-      #   run: mypy ffcx/
-      #   if: matrix.python-version != '3.11'
+      - name: Static check with mypy
+        run: mypy ffcx/
+        if: matrix.python-version != '3.11'
       - name: isort checks (non-blocking)
         continue-on-error: true
         run: isort --check .
