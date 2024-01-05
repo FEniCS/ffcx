@@ -315,17 +315,10 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
-                    predef, vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
-
-                    if isinstance(predef, L.Section):
-                        predef = predef.statements
+                    _, vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
 
                     if isinstance(vdef, L.Section):
                         vdef = [vdef]
-
-                    if predef:
-                        access = predef[0].symbol.name
-                        pre_definitions[access] = predef
 
                     # # Store definitions of terminals in list
                     # assert isinstance(vdef, list)
@@ -387,11 +380,7 @@ class IntegralGenerator(object):
                 parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
 
-        pre_parts = []
-        for access in pre_definitions:
-            pre_parts += pre_definitions[access]
-
-        return pre_parts, parts
+        return [], parts
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
