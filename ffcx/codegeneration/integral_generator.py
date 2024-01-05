@@ -248,7 +248,7 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
-        pre_definitions, body = self.generate_varying_partition(quadrature_rule)
+        _, body = self.generate_varying_partition(quadrature_rule)
 
         body = L.commented_code_list(body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
@@ -267,7 +267,7 @@ class IntegralGenerator(object):
             iq = create_quadrature_index(quadrature_rule, iq_symbol)
             quadparts = [L.create_nested_for_loops([iq], body)]
 
-        return pre_definitions, preparts, quadparts
+        return [], preparts, quadparts
 
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
@@ -294,7 +294,6 @@ class IntegralGenerator(object):
     def generate_partition(self, symbol, F, mode, quadrature_rule):
 
         definitions = []
-        pre_definitions = dict()
         intermediates = []
 
         use_symbol_array = True
