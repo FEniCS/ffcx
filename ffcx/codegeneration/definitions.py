@@ -8,7 +8,6 @@
 import logging
 
 import ufl
-# from typing import List
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -128,24 +127,6 @@ class FFCXBackendDefinitions(object):
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         code = []
-        # pre_code: List[L.LNode] = []
-
-        # if bs > 1 and not tabledata.is_piecewise:
-        #     # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
-        #     # When memory access patterns are non-sequential, the number of cache misses increases.
-        #     # In turn, it results in noticeably reduced performance.
-        #     # In this case, we create temp arrays outside the quadrature to store the coefficients and
-        #     # have a sequential access pattern.
-        #     dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
-
-        #     # If a map is necessary from stride 1 to bs, the code must be added
-        #     # before the quadrature loop.
-        #     if dof_access_map:
-        #         pre_code += [L.ArrayDecl(dof_access.array, sizes=num_dofs)]
-        #         pre_body = [L.Assign(dof_access, dof_access_map)]
-        #         pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
-        # else:
-        # For bs == 1, the coefficient access has a stride of 1. e.g.: XXXXXX
         dof_access = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
         body = [L.AssignAdd(access, dof_access * FE)]
@@ -154,13 +135,9 @@ class FFCXBackendDefinitions(object):
 
         name = type(mt.terminal).__name__
 
-        # if pre_code:
-        #     pre_section = L.Section(name + "pre", pre_code, input=[dof_access, *tables], output=[dof_access_map])
-        # else:
-        pre_section = []
         section = L.Section(name, code, input=[self.symbols.coefficients, *tables], output=[access])
 
-        return pre_section, section
+        return [], section
 
     def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
