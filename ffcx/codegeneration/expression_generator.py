@@ -392,5 +392,5 @@ class ExpressionGenerator:
             if use_symbol_array:
                 parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
-        parts = L.commented_code_list(parts, f"Intermediate computations for {mode} computations")
+
         return parts
