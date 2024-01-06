@@ -406,11 +406,13 @@ class IntegralGenerator(object):
 
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
         arg_factors = []
+        tables = []
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
             scope = self.ir.integrand[quadrature_rule]["modified_arguments"]
             mt = scope[mad.ma_index]
+            arg_tables = []
 
             # Translate modified terminal to code
             # TODO: Move element table access out of backend?
@@ -421,12 +423,14 @@ class IntegralGenerator(object):
 
             if td.ttype == "ones":
                 arg_factor = 1
-                tables = []
             else:
                 # Assuming B sparsity follows element table sparsity
-                arg_factor, tables = self.backend.access.table_access(
+                arg_factor, arg_tables = self.backend.access.table_access(
                     td, self.ir.entitytype, mt.restriction, iq, indices[i])
+
+            tables += arg_tables
             arg_factors.append(arg_factor)
+
         return arg_factors, tables
 
     def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):

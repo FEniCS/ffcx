@@ -304,10 +304,7 @@ class ExpressionGenerator:
     def generate_partition(self, symbol, F, mode):
         """Generate computations of factors of blocks."""
         definitions = []
-        pre_definitions = dict()
         intermediates = []
-
-        use_symbol_array = True
 
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
@@ -324,7 +321,6 @@ class ExpressionGenerator:
 
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt, tabledata, 0)
-
                 vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
 
                 if isinstance(vdef, L.Section):
@@ -367,13 +363,8 @@ class ExpressionGenerator:
                 else:
                     # Record assignment of vexpr to intermediate variable
                     j = len(intermediates)
-                    if use_symbol_array:
-                        vaccess = symbol[j]
-                        intermediates.append(L.Assign(vaccess, vexpr))
-                    else:
-                        scalar_type = self.backend.access.options["scalar_type"]
-                        vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
-                        intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
+                    vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
+                    intermediates.append(L.VariableDecl(vaccess, vexpr))
 
             # Store access node for future reference
             self.scope[v] = vaccess
@@ -382,15 +373,10 @@ class ExpressionGenerator:
         # and intermediate computations
         parts = []
 
-        for _, definition in pre_definitions.items():
-            parts += definition
-
-        # if definitions:
-        #     parts += definitions
+        if definitions:
+            parts += definitions
 
         if intermediates:
-            if use_symbol_array:
-                parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
             parts += intermediates
 
         return parts
