@@ -135,6 +135,8 @@ class FFCXBackendDefinitions(object):
 
         name = type(mt.terminal).__name__
         section = L.Section(name, code, input=[self.symbols.coefficients, *tables], output=[access])
+        for table in tables:
+            print(type(table))
 
         return section
 

@@ -495,8 +495,12 @@ class IntegralGenerator(object):
                 key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
                 fw, defined = self.get_temp_symbol("fw", key)
                 if not defined:
+                    input = [f, weight]
+                    # filter only L.Symbol in input
+                    input = [i for i in input if isinstance(i, L.Symbol)]
                     quad_sec = L.Section(f"Definition of {fw}", [L.VariableDecl(fw, fw_rhs)],
-                                         input=[f, weights], output=[fw])
+                                         input=input, output=[fw])
+
                     quadparts.append(quad_sec)
 
             assert not blockdata.transposed, "Not handled yet"
