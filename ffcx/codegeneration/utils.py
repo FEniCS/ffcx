@@ -19,7 +19,12 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
     Returns:
         Corresponding C type
     """
-    if _np.dtype(dtype) == _np.float32:
+    # Note: possible aliases, e.g. numpy.longdouble, must come first
+    if _np.dtype(dtype) == _np.longdouble:
+        return "long double"
+    elif _np.dtype(dtype) == _np.intc:
+        return "int"
+    elif _np.dtype(dtype) == _np.float32:
         return "float"
     elif _np.dtype(dtype) == _np.float64:
         return "double"
@@ -27,8 +32,6 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
         return "float _Complex"
     elif _np.dtype(dtype) == _np.complex128:
         return "double _Complex"
-    elif _np.dtype(dtype) == _np.intc:
-        return "int"
     else:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
