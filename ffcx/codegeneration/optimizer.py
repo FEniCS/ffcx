@@ -43,7 +43,6 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
         Fused list of LNodes.
 
     """
-
     statements = []
     indices = []
     input = []
@@ -100,7 +99,6 @@ def fuse_loops(code: L.Section) -> L.Section:
         Fused list of LNodes.
 
     """
-
     loops = defaultdict(list)
     pre_loop = []
     for statement in code.statements:
