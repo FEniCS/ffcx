@@ -49,5 +49,7 @@ def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _npt.DTyp
         return dtype
     elif _np.issubdtype(dtype, _np.complexfloating):
         return _np.dtype(dtype).type(0).real.dtype
+    elif _np.issubdtype(dtype, _np.integer):
+        return dtype
     else:
-        raise RuntimeError("Cannot get value dtype. ")
+        raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
