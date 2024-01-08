@@ -144,9 +144,9 @@ class CFormatter(object):
     scalar_type: npt.DTypeLike
     real_type: npt.DTypeLike
 
-    def __init__(self, scalar: npt.DTypeLike) -> None:
-        self.scalar_type = scalar
-        self.real_type = dtype_to_scalar_dtype(scalar)
+    def __init__(self, dtype: npt.DTypeLike) -> None:
+        self.scalar_type = dtype
+        self.real_type = dtype_to_scalar_dtype(dtype)
 
         self.c_scalar_type = dtype_to_c_type(self.scalar_type)
         self.c_real_type = dtype_to_c_type(self.real_type)

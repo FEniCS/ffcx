@@ -33,7 +33,7 @@ def test_gemm(dtype):
     code += [L.ForRange(k, 0, r, body=body)]
 
     # Format into C and compile with CFFI
-    Q = CFormatter(scalar=dtype)
+    Q = CFormatter(dtype=dtype)
     c_scalar = dtype_to_c_type(dtype)
     decl = f"void gemm({c_scalar} *A, {c_scalar} *B, {c_scalar} *C)"
     c_code = decl + "{\n" + \
@@ -81,7 +81,7 @@ def test_gemv(dtype):
     code += [L.ForRange(j, 0, q, body=body)]
 
     # Format into C and compile with CFFI
-    Q = CFormatter(scalar=dtype)
+    Q = CFormatter(dtype=dtype)
     c_scalar = dtype_to_c_type(dtype)
     decl = f"void gemm({c_scalar} *y, {c_scalar} *A, {c_scalar} *x)"
     c_code = decl + "{\n" + \

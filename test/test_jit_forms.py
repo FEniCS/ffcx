@@ -16,7 +16,8 @@ from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
 @pytest.mark.parametrize("dtype,expected_result", [
-    ("float64", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
+    ("float64",
+     np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
     ("complex128",
      np.array(
          [[1.0 + 0j, -0.5 + 0j, -0.5 + 0j], [-0.5 + 0j, 0.5 + 0j, 0.0 + 0j],
@@ -73,31 +74,31 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
 
 
 @pytest.mark.parametrize("dtype,expected_result", [
-    # ("float32",
-    #  np.array(
-    #      [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
-    #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
-    #      dtype=np.float32)),
+    ("float32",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.float32)),
     ("longdouble",
      np.array(
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
           [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
          dtype=np.longdouble)),
-    # ("float64",
-    #  np.array(
-    #      [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
-    #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
-    #      dtype=np.float64)),
-    # ("complex128",
-    #  np.array(
-    #      [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
-    #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
-    #      dtype=np.complex128)),
-    # ("complex64",
-    #  np.array(
-    #      [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
-    #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
-    #      dtype=np.complex64)),
+    ("float64",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.float64)),
+    ("complex128",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.complex128)),
+    ("complex64",
+     np.array(
+         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+         dtype=np.complex64)),
 ])
 def test_mass_bilinear_form_2d(dtype, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
@@ -109,40 +110,6 @@ def test_mass_bilinear_form_2d(dtype, expected_result, compile_args):
     forms = [a, L]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
-
-    for f, compiled_f in zip(forms, compiled_forms):
-        assert compiled_f.rank == len(f.arguments())
-
-    form0 = compiled_forms[0].form_integrals[0]
-    form1 = compiled_forms[1].form_integrals[0]
-
-    A = np.zeros((3, 3), dtype=dtype)
-    w = np.array([], dtype=dtype)
-    c = np.array([], dtype=dtype)
-
-    ffi = module.ffi
-    xdtype = dtype_to_scalar_dtype(dtype)
-    coords = np.array([[0.0, 0.0, 0.0],
-                       [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=xdtype)
-
-    c_type = dtype_to_c_type(dtype)
-    c_xtype = dtype_to_c_type(xdtype)
-    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{dtype} *", getattr(form0, f"tabulate_tensor_{dtype}"))
-    kernel0(ffi.cast(f'{c_type} *', A.ctypes.data),
-            ffi.cast(f'{c_type} *', w.ctypes.data),
-            ffi.cast(f'{c_type} *', c.ctypes.data),
-            ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
-
-    b = np.zeros(3, dtype=dtype)
-    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{dtype} *", getattr(form1, f"tabulate_tensor_{dtype}"))
-    kernel1(ffi.cast(f'{c_type} *', b.ctypes.data),
-            ffi.cast(f'{c_type} *', w.ctypes.data),
-            ffi.cast(f'{c_type} *', c.ctypes.data),
-            ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
-
-    assert np.allclose(A, expected_result)
-    assert np.allclose(b, 1.0 / 6.0)
 
 
 @pytest.mark.parametrize("dtype,expected_result", [

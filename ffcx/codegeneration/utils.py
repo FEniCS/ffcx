@@ -19,14 +19,14 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
     Returns:
         Corresponding C type
     """
-    # Note: possible aliases, e.g. numpy.longdouble, must come first
-    if _np.dtype(dtype) == _np.longdouble:
+    # Note: Possible aliases, e.g. numpy.longdouble, should test against char ID
+    if _np.dtype(dtype).char == 'g':
         return "long double"
-    elif _np.dtype(dtype) == _np.intc:
+    if _np.dtype(dtype) == _np.intc:
         return "int"
-    elif _np.dtype(dtype) == _np.float32:
+    elif _np.dtype(dtype).char == 'f':
         return "float"
-    elif _np.dtype(dtype) == _np.float64:
+    elif _np.dtype(dtype).char == 'd':
         return "double"
     elif _np.dtype(dtype) == _np.complex64:
         return "float _Complex"
@@ -45,5 +45,9 @@ def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _npt.DTyp
     Returns:
         ``numpy.dtype`` for the real component of ``dtype``.
     """
-    _dtype = _np.dtype(dtype)
-    return _np.real(_dtype.type(0)).dtype
+    if _np.issubdtype(dtype, _np.floating):
+        return dtype
+    elif _np.issubdtype(dtype, _np.complexfloating):
+        return _np.dtype(dtype).type(0).real.dtype
+    else:
+        raise RuntimeError("Cannot get value dtype. ")
