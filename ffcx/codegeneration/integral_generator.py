@@ -77,7 +77,11 @@ class IntegralGenerator(object):
         """
         if v._ufl_is_literal_:
             return L.ufl_to_lnodes(v)
+
+        # quadrature loop scope
         f = self.scopes[quadrature_rule].get(v)
+
+        # piecewise scope
         if f is None:
             f = self.scopes[None].get(v)
         return f
@@ -134,9 +138,7 @@ class IntegralGenerator(object):
 
             # Generate code to integrate reusable blocks of final
             # element tensor
-            preparts, quadparts = self.generate_quadrature_loop(rule)
-            all_preparts += preparts
-            all_quadparts += quadparts
+            all_quadparts += self.generate_quadrature_loop(rule)
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
@@ -235,7 +237,7 @@ class IntegralGenerator(object):
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
-        preparts, quadparts = self.generate_dofblock_partition(quadrature_rule)
+        quadparts = self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
 
         body = optimize(body)
@@ -250,7 +252,7 @@ class IntegralGenerator(object):
             iq = create_quadrature_index(quadrature_rule, iq_symbol)
             quadparts = [L.create_nested_for_loops([iq], body)]
 
-        return preparts, quadparts
+        return quadparts
 
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
@@ -346,7 +348,6 @@ class IntegralGenerator(object):
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
-        preparts = []
         quadparts = []
         blocks = [(blockmap, blockdata)
                   for blockmap, contributions in sorted(block_contributions.items())
@@ -367,16 +368,13 @@ class IntegralGenerator(object):
             block_groups[tuple(scalar_blockmap)].append(blockdata)
 
         for blockmap in block_groups:
-            block_preparts, block_quadparts = self.generate_block_parts(
+            block_quadparts = self.generate_block_parts(
                 quadrature_rule, blockmap, block_groups[blockmap])
-
-            # Add definitions
-            preparts.extend(block_preparts)
 
             # Add computations
             quadparts.extend(block_quadparts)
 
-        return preparts, quadparts
+        return quadparts
 
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
         arg_factors = []
@@ -417,7 +415,6 @@ class IntegralGenerator(object):
         quadloop-independent blocks.
         """
         # The parts to return
-        preparts: List[LNode] = []
         quadparts: List[LNode] = []
 
         # RHS expressions grouped by LHS "dofmap"
@@ -530,4 +527,4 @@ class IntegralGenerator(object):
 
         quadparts += [L.Section("Tensor Computation", body, input=input, output=output)]
 
-        return preparts, quadparts
+        return quadparts
