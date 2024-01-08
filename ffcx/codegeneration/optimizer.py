@@ -56,8 +56,9 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
                 input += section.input
                 output += section.output
 
-    loops = []
-    declarations = []
+    loops: List[L.LNode] = []
+    declarations: List[L.LNode] = []
+
     for statement in statements:
         if isinstance(statement, L.VariableDecl):
             declarations.append(statement)
@@ -84,7 +85,7 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     return code
 
 
-def fuse_loops(code: L.Section) -> List[L.Section]:
+def fuse_loops(code: L.Section) -> L.Section:
     """Fuse loops with the same range and same annotations.
 
     Parameters
