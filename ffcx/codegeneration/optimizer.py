@@ -148,9 +148,8 @@ def licm(section: L.Section) -> L.Section:
         expression = statement.expr
         if isinstance(expression, L.AssignAdd):
             rhs = expression.rhs
-            lhs = expression.lhs
-            print(hash(lhs))
-
+            # lhs = expression.lhs
+            
             # Check if rhs is a sum
             if not isinstance(rhs, L.Sum):
                 continue
