@@ -6,8 +6,9 @@
 """Utility functions for some code shared between representations."""
 
 import hashlib
-import logging
 import itertools
+import logging
+
 import numpy as np
 
 import ufl

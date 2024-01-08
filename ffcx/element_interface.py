@@ -8,11 +8,12 @@
 import typing
 import warnings
 
+import numpy as np
+import numpy.typing as npt
+
 import basix
 import basix.ufl
 import ufl
-import numpy as np
-import numpy.typing as npt
 
 
 def basix_index(indices: typing.Tuple[int]) -> int:

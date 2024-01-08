@@ -4,9 +4,10 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import ufl
-import basix
 import numpy as np
+
+import basix
+import ufl
 
 P = 3
 cell_type = basix.CellType.hexahedron
