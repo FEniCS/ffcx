@@ -60,25 +60,12 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
                 output += section.output
                 annotations = section.annotations
 
-    loops: List[L.LNode] = []
-    declarations: List[L.LNode] = []
-
-    for statement in statements:
-        if isinstance(statement, L.VariableDecl):
-            declarations.append(statement)
-        elif isinstance(statement, L.ArrayDecl):
-            declarations.append(statement)
-        elif isinstance(statement, L.ForRange):
-            loops.append(statement)
-        else:
-            raise NotImplementedError(f"Not expecting {type(statement)}.")
-
     # Remove duplicated inputs
     input = list(set(input))
     # Remove duplicated outputs
     output = list(set(output))
 
-    section = L.Section(name, declarations + loops, input, output, annotations)
+    section = L.Section(name, statements, input, output, annotations)
 
     # Replace the first section with the fused section
     code = code.copy()
