@@ -141,8 +141,10 @@ def licm(section: L.Section) -> L.Section:
     index_outer = outer_loop.index
     index_inner = inner_loop.index
 
-    pre_loop = []
+    pre_loop: List[L.LNode] = []
     for statement in inner_loop.body.statements:
+        if isinstance(statement, L.StatementList):
+            continue
         expression = statement.expr
         if isinstance(expression, L.AssignAdd):
             rhs = expression.rhs
