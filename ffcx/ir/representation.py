@@ -629,7 +629,6 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
-
     argument_dimensions = [ir["element_dimensions"][element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
