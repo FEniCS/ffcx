@@ -20,7 +20,6 @@ def optimize(code: List[L.LNode]) -> List[L.LNode]:
     # Fuse sections with the same name and same annotations
     code = fuse_sections(code, "Coefficient")
     code = fuse_sections(code, "Jacobian")
-    code = fuse_sections(code, "Tensor Computation")
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
