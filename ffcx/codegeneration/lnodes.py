@@ -730,6 +730,13 @@ def as_statement(node):
         )
 
 
+class Annotation(Enum):
+    fuse = 1        # fuse loops in section
+    unroll = 2      # unroll loop in section
+    licm = 3        # loop invariant code motion
+    factorize = 4   # apply sum factorization
+
+
 class Section(LNode):
     """A section of code with a name and a list of statements."""
 

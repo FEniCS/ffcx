@@ -136,14 +136,13 @@ class FFCXBackendDefinitions(object):
         name = type(mt.terminal).__name__
         input = [dof_access.array, *tables]
         output = [access]
+        annotations = [L.Annotation.fuse]
 
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        section = L.Section(name, code, input=input, output=output)
-
-        return section
+        return L.Section(name, code, input, output, annotations)
 
     def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
@@ -186,12 +185,13 @@ class FFCXBackendDefinitions(object):
         name = type(mt.terminal).__name__
         output = [access]
         input = [dof_access, *tables]
+        annotations = [L.Annotation.fuse]
 
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return L.Section(name, code, input=input, output=output)
+        return L.Section(name, code, input, output, annotations)
 
     def spatial_coordinate(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for the physical spatial coordinates.

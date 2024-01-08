@@ -17,10 +17,14 @@ def optimize(code: List[L.LNode]) -> List[L.LNode]:
         Optimized list of LNodes.
 
     """
+    # Fuse sections with the same name and same annotations
+    code = fuse_sections(code, "Coefficient")
     code = fuse_sections(code, "Jacobian")
+    code = fuse_sections(code, "Tensor Computation")
+
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
-            if section.name == "Jacobian":
+            if L.Annotation.fuse in section.annotations:
                 section = fuse_loops(section)
                 code[i] = section
 
@@ -45,6 +49,8 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     indices = []
     input = []
     output = []
+    annotations = []
+
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
             if section.name == name:
@@ -52,6 +58,7 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
                 indices.append(i)
                 input += section.input
                 output += section.output
+                annotations = section.annotations
 
     loops: List[L.LNode] = []
     declarations: List[L.LNode] = []
@@ -71,7 +78,7 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     # Remove duplicated outputs
     output = list(set(output))
 
-    section = L.Section(name, declarations + loops, input, output)
+    section = L.Section(name, declarations + loops, input, output, annotations)
 
     # Replace the first section with the fused section
     code = code.copy()
