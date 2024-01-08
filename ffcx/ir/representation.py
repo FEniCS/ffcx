@@ -386,6 +386,9 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             for i, element in enumerate(unique_elements)
         }
 
+        for e in form_data.argument_elements:
+            print(e)
+        
         # Create dimensions of primary indices, needed to reset the argument
         # 'A' given to tabulate_tensor() by the assembler.
         argument_dimensions = [
@@ -629,6 +632,10 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
+
+    for e in argument_elements:
+        print(e)
+
     argument_dimensions = [ir["element_dimensions"][element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
