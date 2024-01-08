@@ -11,6 +11,7 @@ from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_c_scalar
 
 logger = logging.getLogger("ffcx")
 
@@ -68,9 +69,9 @@ def generator(ir, options):
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
-    d["scalar_type"] = options["scalar_type"]
-    d["geom_type"] = scalar_to_value_type(options["scalar_type"])
-    d["np_scalar_type"] = cdtype_to_numpy(options["scalar_type"])
+    d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
+    d["geom_type"] = dtype_to_c_scalar(options["scalar_type"])
+    d["np_scalar_type"] = options["scalar_type"]
 
     d["rank"] = len(ir.tensor_shape)
 

@@ -15,6 +15,8 @@ from ffcx.codegeneration.backend import FFCXBackend
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
+from ffcx.codegeneration.utils import dtype_to_c_type
+
 
 logger = logging.getLogger("ffcx")
 
@@ -370,7 +372,7 @@ class ExpressionGenerator:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
-                        scalar_type = self.backend.access.options["scalar_type"]
+                        scalar_type = dtype_to_c_type(self.backend.access.options["scalar_type"])
                         vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
                         intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 

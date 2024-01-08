@@ -24,7 +24,7 @@ def test_demo(file):
 
     opts = ""
     if "Complex" in file:
-        opts = '--scalar_type "double _Complex"'
+        opts = '--scalar_type "complex128"'
 
     extra_flags = "-Wunused-variable -Werror -fPIC "
     assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0

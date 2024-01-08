@@ -10,7 +10,7 @@ from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C.c_implementation import CFormatter
-from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type, dtype_to_c_type, dtype_to_c_scalar
 
 logger = logging.getLogger("ffcx")
 
@@ -60,9 +60,9 @@ def generator(ir, options):
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
-        scalar_type=options["scalar_type"],
-        geom_type=scalar_to_value_type(options["scalar_type"]),
-        np_scalar_type=cdtype_to_numpy(options["scalar_type"]),
+        scalar_type=dtype_to_c_type(options["scalar_type"]),
+        geom_type=dtype_to_c_scalar(options["scalar_type"]),
+        np_scalar_type=options["scalar_type"],
         coordinate_element=f"&{ir.coordinate_element}")
 
     return declaration, implementation

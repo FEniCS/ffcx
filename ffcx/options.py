@@ -19,8 +19,8 @@ FFCX_DEFAULT_OPTIONS = {
     "epsilon":
         (1e-14, "Machine precision, used for dropping zero terms in tables"),
     "scalar_type":
-        ("double", """Scalar type used in generated code. Any of real or complex C floating-point types, e.g.
-                      float, double, float _Complex, double _Complex, ..."""),
+        ("float64", """Scalar type used in generated code. Any of real or complex C floating-point types, e.g.
+                      float32, float64, complex64, complex128"""),
     "sum_factorization": (False, "Use sum factorization."),
     "table_rtol":
         (1e-6, "Relative precision to use when comparing finite element table values for table reuse."),

@@ -27,7 +27,7 @@ def generator(options):
     d = {"ffcx_version": FFCX_VERSION, "ufcx_version": UFC_VERSION}
     d["options"] = textwrap.indent(pprint.pformat(options), "//  ")
     extra_c_includes = []
-    if "_Complex" in options["scalar_type"]:
+    if "complex" in options["scalar_type"]:
         extra_c_includes += ["complex.h"]
     d["extra_c_includes"] = "\n".join(
         f"#include <{header}>" for header in extra_c_includes
