@@ -546,7 +546,8 @@ class IntegralGenerator(object):
         # reverse B_indices
         B_indices = B_indices[::-1]
         body = [L.create_nested_for_loops(B_indices, body)]
-        input = [fw, *tables]
+        var = fw if isinstance(fw, L.Symbol) else fw.array
+        input = [var, *tables]
         output = [A]
 
         # assert input and output are Symbol objects
