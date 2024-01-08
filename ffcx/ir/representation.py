@@ -386,9 +386,6 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             for i, element in enumerate(unique_elements)
         }
 
-        for e in form_data.argument_elements:
-            print(e)
-        
         # Create dimensions of primary indices, needed to reset the argument
         # 'A' given to tabulate_tensor() by the assembler.
         argument_dimensions = [
