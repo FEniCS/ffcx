@@ -873,6 +873,14 @@ def is_simple_inner_loop(code):
     return False
 
 
+def depth(code):
+    if isinstance(code, ForRange):
+        return 1 + depth(code.body)
+    if isinstance(code, StatementList):
+        return max([depth(c) for c in code.statements])
+    return 0
+
+
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 

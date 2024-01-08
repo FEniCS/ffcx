@@ -525,6 +525,10 @@ class IntegralGenerator(object):
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        quadparts += [L.Section("Tensor Computation", body, input=input, output=output)]
+        annotations = []
+        if len(B_indices) > 1:
+            annotations.append(L.Annotation.licm)
+
+        quadparts += [L.Section("Tensor Computation", body, input, output, annotations)]
 
         return quadparts
