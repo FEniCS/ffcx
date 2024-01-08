@@ -6,14 +6,12 @@
 """Finite element interface."""
 
 import typing
-import warnings
 
 import numpy as np
 import numpy.typing as npt
 
 import basix
 import basix.ufl
-import ufl
 
 
 def basix_index(indices: typing.Tuple[int]) -> int:
@@ -47,26 +45,3 @@ def map_facet_points(points: npt.NDArray[np.float64], facet: int, cellname: str)
     facet_vertices = [geom[i] for i in basix.topology(basix.cell.string_to_type(cellname))[-2][facet]]
     return np.asarray([facet_vertices[0] + sum((i - facet_vertices[0]) * j for i, j in zip(facet_vertices[1:], p))
                        for p in points], dtype=np.float64)
-
-
-# TODO: remove this deprecated function
-def QuadratureElement(
-    cellname: str, value_shape: typing.Tuple[int, ...], scheme: typing.Optional[str] = None,
-    degree: typing.Optional[int] = None, points: typing.Optional[npt.NDArray[np.float64]] = None,
-    weights: typing.Optional[npt.NDArray[np.float64]] = None,
-    pullback: ufl.AbstractPullback = ufl.identity_pullback
-) -> basix.ufl._ElementBase:
-    warnings.warn(
-        "ffcx.element_interface.QuadratureElement is deprecated and will be removed after December 2023. "
-        "Use basix.ufl.quadrature_element instead.", DeprecationWarning)
-    return basix.ufl.quadrature_element(
-        cell=cellname, value_shape=value_shape, scheme=scheme, degree=degree, points=points, weights=weights,
-        pullback=pullback)
-
-
-# TODO: remove this deprecated function
-def RealElement(element: ufl.finiteelement.AbstractFiniteElement) -> basix.ufl._ElementBase:
-    warnings.warn(
-        "ffcx.element_interface.RealElement is deprecated and will be removed after December 2023. "
-        "Use basix.ufl.real_element instead.", DeprecationWarning)
-    return basix.ufl.real_element(cell=element.cell().cellname(), value_shape=element.value_shape())

@@ -12,8 +12,7 @@ import numpy as np
 import numpy.typing as npt
 
 import basix.ufl
-import ufl
-from ffcx.element_interface import QuadratureElement, basix_index
+from ffcx.element_interface import basix_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,
                                          map_integral_points)
@@ -105,7 +104,7 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
         elif avg == "facet":
             integral_type = "exterior_facet"
 
-        if isinstance(element, QuadratureElement):
+        if isinstance(element, basix.ufl.QuadratureElement):
             points = element._points
             weights = element._weights
         else:
