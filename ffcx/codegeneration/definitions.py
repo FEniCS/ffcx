@@ -6,10 +6,10 @@
 """FFCx/UFC specific variable definitions."""
 
 import logging
-
 from typing import List
-import ufl
+
 import ffcx.codegeneration.lnodes as L
+import ufl
 
 logger = logging.getLogger("ffcx")
 

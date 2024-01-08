@@ -9,14 +9,13 @@ import logging
 from itertools import product
 from typing import Any, DefaultDict, Dict, Set
 
+import ffcx.codegeneration.lnodes as L
 import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode
-from ffcx.ir.representation import ExpressionIR
 from ffcx.codegeneration.utils import dtype_to_c_type
-
+from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
 

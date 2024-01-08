@@ -8,14 +8,16 @@ import collections
 import logging
 from typing import Any, Dict, List, Set, Tuple
 
+import ffcx.codegeneration.lnodes as L
 import ufl
 from ffcx.codegeneration import geometry
+from ffcx.codegeneration.definitions import (create_dof_index,
+                                             create_nested_for_loops,
+                                             create_quadrature_index)
+from ffcx.codegeneration.lnodes import BinOp, LNode
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
-import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.lnodes import LNode, BinOp
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.codegeneration.definitions import create_quadrature_index, create_nested_for_loops, create_dof_index
 
 logger = logging.getLogger("ffcx")
 

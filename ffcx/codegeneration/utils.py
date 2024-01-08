@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import typing
+
 import numpy as _np
 import numpy.typing as _npt
 

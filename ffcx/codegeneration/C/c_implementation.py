@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import warnings
+
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.utils import scalar_to_value_type
 
