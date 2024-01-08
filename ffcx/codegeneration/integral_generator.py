@@ -498,8 +498,14 @@ class IntegralGenerator(object):
                     input = [f, weight]
                     # filter only L.Symbol in input
                     input = [i for i in input if isinstance(i, L.Symbol)]
+                    output = [fw]
+
+                    # assert input and output are Symbol objects
+                    assert all(isinstance(i, L.Symbol) for i in input)
+                    assert all(isinstance(o, L.Symbol) for o in output)
+
                     quad_sec = L.Section(f"Definition of {fw}", [L.VariableDecl(fw, fw_rhs)],
-                                         input=input, output=[fw])
+                                         input=input, output=output)
 
                     quadparts.append(quad_sec)
 
@@ -540,7 +546,13 @@ class IntegralGenerator(object):
         # reverse B_indices
         B_indices = B_indices[::-1]
         body = [L.create_nested_for_loops(B_indices, body)]
+        input = [fw, *tables]
+        output = [A]
 
-        quadparts += [L.Section("Tensor Computation", body, input=[fw, *tables], output=[A])]
+        # assert input and output are Symbol objects
+        assert all(isinstance(i, L.Symbol) for i in input)
+        assert all(isinstance(o, L.Symbol) for o in output)
+
+        quadparts += [L.Section("Tensor Computation", body, input=input, output=output)]
 
         return preparts, quadparts

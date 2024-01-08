@@ -141,7 +141,7 @@ class FFCXBackendDefinitions(object):
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        section = L.Section(name, code, input=[self.symbols.coefficients, *tables], output=[access])
+        section = L.Section(name, code, input=input, output=output)
 
         return section
 
