@@ -6,11 +6,13 @@
 
 import warnings
 
+import numpy.typing as npt
+
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import scalar_to_value_type
+from ffcx.codegeneration.utils import dtype_to_scalar_dtype, dtype_to_scalar_dtype, dtype_to_c_type
 
 math_table = {
-    "double": {
+    "float64": {
         "sqrt": "sqrt",
         "abs": "fabs",
         "cos": "cos",
@@ -35,7 +37,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "float": {
+    "float32": {
         "sqrt": "sqrtf",
         "abs": "fabsf",
         "cos": "cosf",
@@ -60,30 +62,30 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "long double": {
-        "sqrt": "sqrtl",
-        "abs": "fabsl",
-        "cos": "cosl",
-        "sin": "sinl",
-        "tan": "tanl",
-        "acos": "acosl",
-        "asin": "asinl",
-        "atan": "atanl",
-        "cosh": "coshl",
-        "sinh": "sinhl",
-        "tanh": "tanhl",
-        "acosh": "acoshl",
-        "asinh": "asinhl",
-        "atanh": "atanhl",
-        "power": "powl",
-        "exp": "expl",
-        "ln": "logl",
-        "erf": "erfl",
-        "atan_2": "atan2l",
-        "min_value": "fminl",
-        "max_value": "fmaxl",
-    },
-    "double _Complex": {
+    # "long double": {
+    #     "sqrt": "sqrtl",
+    #     "abs": "fabsl",
+    #     "cos": "cosl",
+    #     "sin": "sinl",
+    #     "tan": "tanl",
+    #     "acos": "acosl",
+    #     "asin": "asinl",
+    #     "atan": "atanl",
+    #     "cosh": "coshl",
+    #     "sinh": "sinhl",
+    #     "tanh": "tanhl",
+    #     "acosh": "acoshl",
+    #     "asinh": "asinhl",
+    #     "atanh": "atanhl",
+    #     "power": "powl",
+    #     "exp": "expl",
+    #     "ln": "logl",
+    #     "erf": "erfl",
+    #     "atan_2": "atan2l",
+    #     "min_value": "fminl",
+    #     "max_value": "fmaxl",
+    # },
+    "complex128": {
         "sqrt": "csqrt",
         "abs": "cabs",
         "cos": "ccos",
@@ -109,7 +111,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "float _Complex": {
+    "complex64": {
         "sqrt": "csqrtf",
         "abs": "cabsf",
         "cos": "ccosf",
@@ -139,15 +141,21 @@ math_table = {
 
 
 class CFormatter(object):
-    def __init__(self, scalar) -> None:
-        self.scalar_type = scalar
-        self.real_type = scalar_to_value_type(scalar)
+    scalar_type: npt.DTypeLike
+    real_type: npt.DTypeLike
 
-    def _dtype_to_name(self, dtype):
+    def __init__(self, scalar: npt.DTypeLike) -> None:
+        self.scalar_type = scalar
+        self.real_type = dtype_to_scalar_dtype(scalar)
+
+        self.c_scalar_type = dtype_to_c_type(self.scalar_type)
+        self.c_real_type = dtype_to_c_type(self.real_type)
+
+    def _dtype_to_name(self, dtype) -> str:
         if dtype == L.DataType.SCALAR:
-            return self.scalar_type
+            return self.c_scalar_type
         if dtype == L.DataType.REAL:
-            return self.real_type
+            return self.c_real_type
         if dtype == L.DataType.INT:
             return "int"
         raise ValueError(f"Invalid dtype: {dtype}")

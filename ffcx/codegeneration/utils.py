@@ -10,20 +10,20 @@ import numpy as _np
 import numpy.typing as _npt
 
 
-def cdtype_to_numpy(cdtype: str) -> str:
-    """Map a C data type string NumPy datatype string."""
-    if cdtype == "double":
-        return "float64"
-    elif cdtype == "double _Complex":
-        return "complex128"
-    elif cdtype == "float":
-        return "float32"
-    elif cdtype == "float _Complex":
-        return "complex64"
-    elif cdtype == "long double":
-        return "longdouble"
-    else:
-        raise RuntimeError(f"Unknown NumPy type for: {cdtype}")
+# def cdtype_to_numpy(cdtype: str) -> str:
+#     """Map a C data type string NumPy datatype string."""
+#     if cdtype == "double":
+#         return "float64"
+#     elif cdtype == "double _Complex":
+#         return "complex128"
+#     elif cdtype == "float":
+#         return "float32"
+#     elif cdtype == "float _Complex":
+#         return "complex64"
+#     elif cdtype == "long double":
+#         return "longdouble"
+#     else:
+#         raise RuntimeError(f"Unknown NumPy type for: {cdtype}")
 
 
 def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
@@ -35,7 +35,7 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
     Returns:
         Corresponding C type
     """
-    if _np.dtype(dtype) == _np.float64:
+    if _np.dtype(dtype) == _np.float32:
         return "float"
     elif _np.dtype(dtype) == _np.float64:
         return "double"
@@ -43,11 +43,13 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
         return "float _Complex"
     elif _np.dtype(dtype) == _np.complex128:
         return "double _Complex"
+    elif _np.dtype(dtype) == _np.intc:
+        return "int"
     else:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
 
-def dtype_to_c_scalar(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
+def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
     """For a NumPy dtype, return the corresponding real dtype.
 
     Args:

@@ -187,6 +187,10 @@ def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_co
         for name in form_names:
             decl += form_template.format(name=name)
 
+        # print("DDDDDDDD")
+        # print(decl)
+        # print("DDDDDDDD")
+
         impl = _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
                                 cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
     except Exception as e:
