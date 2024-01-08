@@ -15,6 +15,7 @@ from ffcx.ir.integral import BlockDataT
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representationutils import QuadratureRule
+from ffcx.codegeneration.optimizer import optimize
 from ffcx.codegeneration.definitions import create_quadrature_index, create_dof_index
 
 logger = logging.getLogger("ffcx")
@@ -127,35 +128,15 @@ class IntegralGenerator(object):
 
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
-        all_predefinitions = []
         for rule in self.ir.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
             all_preparts += self.generate_piecewise_partition(rule)
 
             # Generate code to integrate reusable blocks of final
             # element tensor
-            pre_definitions, preparts, quadparts = self.generate_quadrature_loop(rule)
+            preparts, quadparts = self.generate_quadrature_loop(rule)
             all_preparts += preparts
             all_quadparts += quadparts
-            all_predefinitions += pre_definitions
-
-        all_predefinitions = list(set(all_predefinitions))
-
-        # Collect pre-definitions of type ArrayDecl
-        declarations = [p for p in all_predefinitions if isinstance(p, L.ArrayDecl)]
-        for_loops = [p for p in all_predefinitions if isinstance(p, L.ForRange)]
-
-        # remove repeated for loops (should be done with section)
-        # FIXME: no two sections with same inputs and outputs should be generated
-        for_loops_dict = {}
-        for for_loop in for_loops:
-            for_loop_key = (for_loop.body.statements[0].expr.lhs.array)
-            if for_loop_key not in for_loops_dict:
-                for_loops_dict[for_loop_key] = for_loop
-        for_loops = list(for_loops_dict.values())
-
-        parts += L.commented_code_list(declarations + for_loops,
-                                       "Pre-definitions of modified terminals to enable unit-stride access")
 
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
@@ -248,7 +229,7 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
-        _, body = self.generate_varying_partition(quadrature_rule)
+        body = self.generate_varying_partition(quadrature_rule)
 
         body = L.commented_code_list(body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
 
@@ -256,6 +237,8 @@ class IntegralGenerator(object):
         # after quadloop
         preparts, quadparts = self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
+
+        body = optimize(body)
 
         # Wrap body in loop or scope
         if not body:
@@ -267,29 +250,20 @@ class IntegralGenerator(object):
             iq = create_quadrature_index(quadrature_rule, iq_symbol)
             quadparts = [L.create_nested_for_loops([iq], body)]
 
-        return [], preparts, quadparts
+        return preparts, quadparts
 
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
-
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        pre_definitions, parts = self.generate_partition(arraysymbol, F, "piecewise", None)
-        assert len(pre_definitions) == 0, "Quadrature independent code should have not pre-definitions"
-        parts = L.commented_code_list(
-            parts, f"Quadrature loop independent computations for quadrature rule {quadrature_rule.id()}")
-
-        return parts
+        return self.generate_partition(arraysymbol, F, "piecewise", None)
 
     def generate_varying_partition(self, quadrature_rule):
 
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        pre_definitions, parts = self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
-        parts = L.commented_code_list(parts, f"Varying computations for quadrature rule {quadrature_rule.id()}")
-
-        return pre_definitions, parts
+        return self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
 
@@ -368,7 +342,7 @@ class IntegralGenerator(object):
             intermediates = [L.Section(f"Intermediate computations for {mode} computations", intermediates)]
             parts += intermediates
 
-        return [], parts
+        return parts
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]

@@ -8,7 +8,7 @@ import ufl
 import basix
 import numpy as np
 
-P = 3
+P = 1
 cell_type = basix.CellType.hexahedron
 element = basix.create_element(basix.ElementFamily.P, cell_type,
                                P, basix.LagrangeVariant.gll_warped)
