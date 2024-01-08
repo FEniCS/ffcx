@@ -9,7 +9,7 @@ import warnings
 import numpy.typing as npt
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import dtype_to_scalar_dtype, dtype_to_scalar_dtype, dtype_to_c_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 math_table = {
     "float64": {
@@ -300,7 +300,7 @@ class CFormatter(object):
         else:
             warnings.warn(f"Syntax item without dtype {c.args[0]}")
 
-        dtype_math_table = math_table.get(arg_type, {})
+        dtype_math_table = math_table[str(arg_type)]
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)

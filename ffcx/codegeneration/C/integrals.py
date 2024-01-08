@@ -10,7 +10,7 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
-from ffcx.codegeneration.utils import dtype_to_scalar_dtype, dtype_to_c_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 logger = logging.getLogger("ffcx")
 
@@ -54,9 +54,6 @@ def generator(ir, options):
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
-    # print("TTTTT:", options["scalar_type"], dtype_to_c_type(options["scalar_type"]),
-    #       dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])))
-
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
@@ -67,11 +64,5 @@ def generator(ir, options):
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
         np_scalar_type=options["scalar_type"],
         coordinate_element=f"&{ir.coordinate_element}")
-
-    # print("\nD-----------")
-    # print(declaration)
-    # print("\nI-----------")
-    # print(implementation)
-    # print("E-----------")
 
     return declaration, implementation

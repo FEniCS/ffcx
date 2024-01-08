@@ -1,10 +1,12 @@
 
-from ffcx.codegeneration import lnodes as L
-from ffcx.codegeneration.C.c_implementation import CFormatter
-from cffi import FFI
+import importlib
+
 import numpy as np
 import pytest
-import importlib
+from cffi import FFI
+
+from ffcx.codegeneration import lnodes as L
+from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.utils import dtype_to_c_type
 
 

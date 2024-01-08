@@ -12,7 +12,7 @@ from sympy.abc import x, y, z
 import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
-from ffcx.codegeneration.utils import dtype_to_scalar_dtype, dtype_to_c_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
 @pytest.mark.parametrize("dtype,expected_result", [
@@ -368,8 +368,11 @@ def test_interior_facet_integral(dtype, compile_args):
            ffi.cast('uint8_t *', perms.ctypes.data))
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
-def xtest_conditional(dtype, compile_args):
+@pytest.mark.parametrize("dtype", [
+    "float64",
+    "complex128",
+])
+def test_conditional(dtype, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
@@ -396,7 +399,7 @@ def xtest_conditional(dtype, compile_args):
 
     A1 = np.zeros((3, 3), dtype=dtype)
     w1 = np.array([1.0, 1.0, 1.0], dtype=dtype)
-    c = np.array([], dtype=np.dtype)
+    c = np.array([], dtype=dtype)
 
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([[0.0, 0.0, 0.0],

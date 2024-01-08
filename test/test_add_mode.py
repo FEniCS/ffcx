@@ -7,10 +7,10 @@
 import numpy as np
 import pytest
 
-import ffcx.codegeneration.jit
 import basix.ufl
+import ffcx.codegeneration.jit
 import ufl
-from ffcx.codegeneration.utils import dtype_to_scalar_dtype, dtype_to_c_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
 @pytest.mark.parametrize("dtype",
@@ -50,8 +50,6 @@ def test_additive_facet_integral(dtype, compile_args):
     facets = np.array([0], dtype=np.int32)
     perm = np.array([0], dtype=np.uint8)
 
-    # geom_type = scalar_to_value_type(mode)
-    # # np_gtype = cdtype_to_numpy(geom_type)
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([0.0, 2.0, 0.0,
                        np.sqrt(3.0), -1.0, 0.0,
