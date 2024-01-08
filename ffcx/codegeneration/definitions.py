@@ -187,6 +187,10 @@ class FFCXBackendDefinitions(object):
         output = [access]
         input = [dof_access, *tables]
 
+        # assert input and output are Symbol objects
+        assert all(isinstance(i, L.Symbol) for i in input)
+        assert all(isinstance(o, L.Symbol) for o in output)
+
         return L.Section(name, code, input=input, output=output)
 
     def spatial_coordinate(self, mt, tabledata, quadrature_rule, access):
