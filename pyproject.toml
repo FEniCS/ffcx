@@ -28,7 +28,7 @@ ffcx = "ffcx:__main__.main"
 [project.optional-dependencies]
 lint = ["flake8", "pydocstyle[toml]"]
 docs = ["sphinx", "sphinx_rtd_theme"]
-optional = ["pygraphviz==1.7"]
+optional = ["numba", "pygraphviz==1.7"]
 test = ["pytest >= 6.0", "sympy"]
 ci = [
     "coveralls",
@@ -79,3 +79,24 @@ add-ignore = [
     "D406",  # Google convention
     "D407"   # Google convention
 ]
+
+[tool.mypy]
+# Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
+# Goal would be to make all of the below True long-term
+disallow_untyped_defs = false
+disallow_any_unimported = false
+no_implicit_optional = false
+check_untyped_defs = false
+warn_return_any = false
+warn_unused_ignores = false
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    'basix',
+    'cffi',
+    'numba.*',
+    'pygraphviz',
+    'ufl.*'
+]
+ignore_missing_imports = true
