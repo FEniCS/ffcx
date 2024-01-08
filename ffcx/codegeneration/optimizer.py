@@ -78,9 +78,10 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
 
     # Replace the first section with the fused section
     code = code.copy()
-    code[indices[0]] = section
-    # Remove the other sections
-    code = [c for i, c in enumerate(code) if i not in indices[1:]]
+    if indices:
+        code[indices[0]] = section
+        # Remove the other sections
+        code = [c for i, c in enumerate(code) if i not in indices[1:]]
 
     return code
 
