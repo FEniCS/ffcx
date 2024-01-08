@@ -17,9 +17,7 @@ def optimize(code: List[L.LNode]) -> List[L.LNode]:
         Optimized list of LNodes.
 
     """
-
     code = fuse_sections(code, "Jacobian")
-
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
             if section.name == "Jacobian":
