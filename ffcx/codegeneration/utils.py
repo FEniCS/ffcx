@@ -33,7 +33,7 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
 
-def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
+def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _npt.DTypeLike:
     """For a NumPy dtype, return the corresponding real dtype.
 
     Args:
