@@ -127,16 +127,21 @@ class FFCXBackendDefinitions(object):
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         code = []
-        dof_access = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
+        dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
         body = [L.AssignAdd(access, dof_access * FE)]
         code += [L.VariableDecl(access, 0.0)]
         code += [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
+        input = [dof_access.array, *tables]
+        output = [access]
+
+        # assert input and output are Symbol objects
+        assert all(isinstance(i, L.Symbol) for i in input)
+        assert all(isinstance(o, L.Symbol) for o in output)
+
         section = L.Section(name, code, input=[self.symbols.coefficients, *tables], output=[access])
-        for table in tables:
-            print(type(table))
 
         return section
 
