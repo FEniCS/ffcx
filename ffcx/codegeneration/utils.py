@@ -53,3 +53,26 @@ def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _npt.DTyp
         return dtype
     else:
         raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
+
+
+def numba_ufcx_kernel_signature(dtype: _npt.DTypeLike, xdtype: _npt.DTypeLike):
+    """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
+
+    Args:
+        dtype: The scalar type for the finite element data.
+        xdtype: The geometry float type.
+
+    Returns:
+        A Numba signature (``numba.core.typing.templates.Signature``).
+
+    Raises:
+        ImportError: If ``numba`` cannot be imported.
+    """
+    try:
+        from numba import from_dtype
+        import numba.types as types
+        return types.void(types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(dtype)),
+                          types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(xdtype)),
+                          types.CPointer(types.intc), types.CPointer(types.uint8))
+    except ImportError as e:
+        raise e
