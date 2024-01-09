@@ -69,8 +69,8 @@ def numba_ufcx_kernel_signature(dtype: _npt.DTypeLike, xdtype: _npt.DTypeLike):
         ImportError: If ``numba`` cannot be imported.
     """
     try:
-        from numba import from_dtype
         import numba.types as types
+        from numba import from_dtype
         return types.void(types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(dtype)),
                           types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(xdtype)),
                           types.CPointer(types.intc), types.CPointer(types.uint8))

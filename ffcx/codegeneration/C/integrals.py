@@ -6,6 +6,8 @@
 
 import logging
 
+import numpy as np
+
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.C.c_implementation import CFormatter
@@ -62,7 +64,7 @@ def generator(ir, options):
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
-        np_scalar_type=options["scalar_type"],
+        np_scalar_type=np.dtype(options["scalar_type"]).name,
         coordinate_element=f"&{ir.coordinate_element}")
 
     return declaration, implementation

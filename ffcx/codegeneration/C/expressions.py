@@ -6,6 +6,8 @@
 
 import logging
 
+import numpy as np
+
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.C.c_implementation import CFormatter
@@ -70,7 +72,7 @@ def generator(ir, options):
     d["topological_dimension"] = ir.points.shape[1]
     d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
     d["geom_type"] = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
-    d["np_scalar_type"] = options["scalar_type"]
+    d["np_scalar_type"] = np.dtype(options["scalar_type"]).name
 
     d["rank"] = len(ir.tensor_shape)
 
