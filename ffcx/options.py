@@ -16,19 +16,12 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
-    "epsilon":
-        (1e-14, "Machine precision, used for dropping zero terms in tables"),
-    "scalar_type":
-        ("float64", """Scalar type used in generated code. Any of real or complex C floating-point types, e.g.
-                      float32, float64, complex64, complex128"""),
-    "sum_factorization": (False, "Use sum factorization."),
-    "table_rtol":
-        (1e-6, "Relative precision to use when comparing finite element table values for table reuse."),
-    "table_atol":
-        (1e-9, "Absolute precision to use when comparing finite element table values for reuse."),
-    "verbosity":
-        (30, "Logger verbosity. Follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.")
-
+    "epsilon": (1e-14, "machine precision, used for dropping zero terms in tables.", None),
+    "scalar_type": ("float64", "scalar type to use in generated code.", ("float32", "float64", "complex64", "complex128")),
+    "sum_factorization": (False, "use sum factorization.", None),
+    "table_rtol": (1e-6, "relative precision to use when comparing finite element table values for table reuse.", None),
+    "table_atol": (1e-9, "absolute precision to use when comparing finite element table values for reuse.", None),
+    "verbosity": (30, "logger verbosity, follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.", None)
 }
 
 
@@ -57,7 +50,7 @@ def get_options(priority_options: Optional[dict] = None) -> dict:
     """Return (a copy of) the merged option values for FFCX.
 
     Options
-    ----------
+    -------
       priority_options:
         take priority over all other option values (see notes)
 
@@ -89,7 +82,7 @@ def get_options(priority_options: Optional[dict] = None) -> dict:
     """
     options: Dict[str, Any] = {}
 
-    for opt, (value, _) in FFCX_DEFAULT_OPTIONS.items():
+    for opt, (value, _, _) in FFCX_DEFAULT_OPTIONS.items():
         options[opt] = value
 
     # NOTE: _load_options uses functools.lru_cache
