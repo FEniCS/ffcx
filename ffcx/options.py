@@ -17,7 +17,8 @@ logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
     "epsilon": (1e-14, "machine precision, used for dropping zero terms in tables.", None),
-    "scalar_type": ("float64", "scalar type to use in generated code.", ("float32", "float64", "complex64", "complex128")),
+    "scalar_type": ("float64", "scalar type to use in generated code.",
+                    ("float32", "float64", "complex64", "complex128")),
     "sum_factorization": (False, "use sum factorization.", None),
     "table_rtol": (1e-6, "relative precision to use when comparing finite element table values for table reuse.", None),
     "table_atol": (1e-9, "absolute precision to use when comparing finite element table values for reuse.", None),
