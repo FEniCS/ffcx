@@ -19,9 +19,9 @@
 # Poisson's equation.
 #
 # Compile this form with FFCx: ffcx Poisson.ufl
-from ufl import (Coefficient, Constant, Mesh, TestFunction,
-                 TrialFunction, dx, grad, inner, FunctionSpace)
 import basix.ufl
+from ufl import (Coefficient, Constant, FunctionSpace, Mesh, TestFunction,
+                 TrialFunction, dx, grad, inner)
 
 mesh = Mesh(basix.ufl.element('P', "triangle", 2, shape=(2, )))
 

@@ -11,8 +11,8 @@
 import logging
 
 import ffcx.codegeneration.C.basix_custom_element_template as ufcx_basix_custom_finite_element
-import ffcx.codegeneration.C.quadrature_rule_template as ufcx_quadrature_rule
 import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
+import ffcx.codegeneration.C.quadrature_rule_template as ufcx_quadrature_rule
 import ufl
 
 logger = logging.getLogger("ffcx")

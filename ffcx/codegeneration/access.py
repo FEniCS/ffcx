@@ -8,9 +8,9 @@
 import logging
 import warnings
 
-import ufl
 import basix.ufl
 import ffcx.codegeneration.lnodes as L
+import ufl
 
 logger = logging.getLogger("ffcx")
 

@@ -5,9 +5,11 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numbers
-import ufl
-import numpy as np
 from enum import Enum
+
+import numpy as np
+
+import ufl
 
 
 class PRECEDENCE:

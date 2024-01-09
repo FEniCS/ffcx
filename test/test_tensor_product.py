@@ -10,7 +10,7 @@ import pytest
 import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
-from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
 def cell_to_gdim(cell_type):
@@ -40,7 +40,7 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
         return basix.ufl.blocked_element(uflelement, shape=shape, gdim=gdim)
 
 
-def generate_kernel(forms, mode, options):
+def generate_kernel(forms, dtype, options):
     """Generate kernel for given forms."""
 
     # use a different cache directory for each option
@@ -58,19 +58,15 @@ def generate_kernel(forms, mode, options):
     assert offsets[cell + 1] - offsets[cell] == 1
     integral_id = form0.form_integral_ids[offsets[cell]]
     assert integral_id == -1
-
     default_integral = form0.form_integrals[offsets[cell]]
-
-    np_type = cdtype_to_numpy(mode)
-    kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
-
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
     return kernel, code, module
 
 
-@pytest.mark.parametrize("mode", ["double", "float"])
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
 @pytest.mark.parametrize("P", [1, 2, 3])
 @pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
-def test_bilinear_form(mode, P, cell_type):
+def test_bilinear_form(dtype, P, cell_type):
     gdim = cell_to_gdim(cell_type)
     element = create_tensor_product_element(cell_type, P, basix.LagrangeVariant.gll_warped)
     coords = create_tensor_product_element(cell_type, 1, basix.LagrangeVariant.gll_warped, shape=(gdim, ))
@@ -80,21 +76,18 @@ def test_bilinear_form(mode, P, cell_type):
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
 
-    np_type = cdtype_to_numpy(mode)
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
-
     ndofs = element.dim
 
-    A = np.zeros((ndofs, ndofs), dtype=np_type)
-    w = np.array([], dtype=np_type)
-    c = np.array([], dtype=np_type)
+    A = np.zeros((ndofs, ndofs), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
 
+    xdtype = dtype_to_scalar_dtype(dtype)
     if cell_type == basix.CellType.quadrilateral:
         coords = np.array([[0.0, 0.0, 0.0],
                            [1.0, 0.0, 0.0],
                            [0.0, 1.0, 0.0],
-                           [1.0, 1.0, 0.0]], dtype=np_gtype)
+                           [1.0, 1.0, 0.0]], dtype=xdtype)
     elif cell_type == basix.CellType.hexahedron:
         coords = np.array([[0.0, 0.0, 0.0],
                            [1.0, 0.0, 0.0],
@@ -103,22 +96,24 @@ def test_bilinear_form(mode, P, cell_type):
                            [0.0, 0.0, 1.0],
                            [1.0, 0.0, 1.0],
                            [0.0, 1.0, 1.0],
-                           [1.0, 1.0, 1.0]], dtype=np_gtype)
+                           [1.0, 1.0, 1.0]], dtype=xdtype)
 
-    kernel, code, module = generate_kernel([a], mode, options={"scalar_type": mode})
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+    kernel, code, module = generate_kernel([a], dtype, options={"scalar_type": dtype})
     ffi = module.ffi
-    kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    kernel(ffi.cast(f'{c_type} *', A.ctypes.data),
+           ffi.cast(f'{c_type} *', w.ctypes.data),
+           ffi.cast(f'{c_type} *', c.ctypes.data),
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     # Use sum factorization
-    A1 = np.zeros((ndofs, ndofs), dtype=np_type)
-    kernel, code, module = generate_kernel([a], mode, options={"scalar_type": mode, "sum_factorization": True})
+    A1 = np.zeros((ndofs, ndofs), dtype=dtype)
+    kernel, code, module = generate_kernel([a], dtype, options={"scalar_type": dtype, "sum_factorization": True})
     ffi = module.ffi
-    kernel(ffi.cast('{type} *'.format(type=mode), A1.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    kernel(ffi.cast(f'{c_type} *', A1.ctypes.data),
+           ffi.cast(f'{c_type} *', w.ctypes.data),
+           ffi.cast(f'{c_type} *', c.ctypes.data),
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     np.testing.assert_allclose(A, A1, rtol=1e-6, atol=1e-6)

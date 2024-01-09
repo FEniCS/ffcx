@@ -6,9 +6,9 @@
 
 import sys
 
+import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
-import basix.ufl
 
 
 def test_cache_modes(compile_args):

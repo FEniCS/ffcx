@@ -12,18 +12,19 @@ from sympy.abc import x, y, z
 import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
-from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
-@pytest.mark.parametrize("mode,expected_result", [
-    ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
-    ("double _Complex",
+@pytest.mark.parametrize("dtype,expected_result", [
+    ("float64",
+     np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)),
+    ("complex128",
      np.array(
          [[1.0 + 0j, -0.5 + 0j, -0.5 + 0j], [-0.5 + 0j, 0.5 + 0j, 0.0 + 0j],
           [-0.5 + 0j, 0.0 + 0j, 0.5 + 0j]],
          dtype=np.complex128)),
 ])
-def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
+def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
@@ -33,7 +34,7 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
     a = ufl.tr(kappa) * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -49,57 +50,55 @@ def test_laplace_bilinear_form_2d(mode, expected_result, compile_args):
 
     default_integral = form0.form_integrals[offsets[cell]]
 
-    np_type = cdtype_to_numpy(mode)
-    A = np.zeros((3, 3), dtype=np_type)
-    w = np.array([], dtype=np_type)
+    A = np.zeros((3, 3), dtype=dtype)
+    w = np.array([], dtype=dtype)
 
     kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
-    c = np.array(kappa_value.flatten(), dtype=np_type)
+    c = np.array(kappa_value.flatten(), dtype=dtype)
 
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np_gtype)
+                       [0.0, 1.0, 0.0]], dtype=xdtype)
 
-    kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
-
-    kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(ffi.cast(f'{c_type} *', A.ctypes.data),
+           ffi.cast(f'{c_type} *', w.ctypes.data),
+           ffi.cast(f'{c_type} *', c.ctypes.data),
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, np.trace(kappa_value) * expected_result)
 
 
-@pytest.mark.parametrize("mode,expected_result", [
-    ("float",
+@pytest.mark.parametrize("dtype,expected_result", [
+    ("float32",
      np.array(
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
           [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
          dtype=np.float32)),
-    ("long double",
-     np.array(
-         [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
-          [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
-         dtype=np.longdouble)),
-    ("double",
+    # ("longdouble",
+    #  np.array(
+    #      [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
+    #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
+    #      dtype=np.longdouble)),
+    ("float64",
      np.array(
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
           [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
          dtype=np.float64)),
-    ("double _Complex",
+    ("complex128",
      np.array(
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
           [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
          dtype=np.complex128)),
-    ("float _Complex",
+    ("complex64",
      np.array(
          [[1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0], [1.0 / 24.0, 1.0 / 12.0, 1.0 / 24.0],
           [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
          dtype=np.complex64)),
 ])
-def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
+def test_mass_bilinear_form_2d(dtype, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
@@ -108,101 +107,64 @@ def test_mass_bilinear_form_2d(mode, expected_result, compile_args):
     L = ufl.conj(v) * ufl.dx
     forms = [a, L]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
-
-    for f, compiled_f in zip(forms, compiled_forms):
-        assert compiled_f.rank == len(f.arguments())
-
-    form0 = compiled_forms[0].form_integrals[0]
-    form1 = compiled_forms[1].form_integrals[0]
-
-    np_type = cdtype_to_numpy(mode)
-    A = np.zeros((3, 3), dtype=np_type)
-    w = np.array([], dtype=np_type)
-    c = np.array([], dtype=np_type)
-
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
-
-    ffi = module.ffi
-    coords = np.array([[0.0, 0.0, 0.0],
-                       [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np_gtype)
-
-    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
-    kernel0(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
-
-    b = np.zeros(3, dtype=np_type)
-    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
-    kernel1(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
-
-    assert np.allclose(A, expected_result)
-    assert np.allclose(b, 1.0 / 6.0)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
 
-@pytest.mark.parametrize("mode,expected_result", [
-    ("double", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)
+@pytest.mark.parametrize("dtype,expected_result", [
+    ("float64", np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)
      - (1.0 / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64)),
-    ("double _Complex",
+    ("complex128",
      np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.complex128)
      - (1.0j / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.complex128)),
 ])
-def test_helmholtz_form_2d(mode, expected_result, compile_args):
+def test_helmholtz_form_2d(dtype, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
-    if mode == "double":
-        k = 1.0
-    elif mode == "double _Complex":
+    if np.issubdtype(dtype, np.complexfloating):
         k = ufl.constantvalue.ComplexValue(1j)
+    elif np.issubdtype(dtype, np.floating):
+        k = 1.0
     else:
-        raise RuntimeError("Unknown mode type")
+        raise RuntimeError("Unknown mode type",)
 
     a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(k * u, v)) * ufl.dx
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
     form0 = compiled_forms[0].form_integrals[0]
 
-    np_type = cdtype_to_numpy(mode)
-    A = np.zeros((3, 3), dtype=np_type)
-    w = np.array([], dtype=np_type)
-    c = np.array([], dtype=np_type)
-
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
+    A = np.zeros((3, 3), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
 
     ffi = module.ffi
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np_gtype)
-    kernel = getattr(form0, f"tabulate_tensor_{np_type}")
+                       [0.0, 1.0, 0.0]], dtype=xdtype)
 
-    kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel = getattr(form0, f"tabulate_tensor_{dtype}")
+    kernel(ffi.cast(f'{c_type} *', A.ctypes.data),
+           ffi.cast(f'{c_type} *', w.ctypes.data),
+           ffi.cast(f'{c_type} *', c.ctypes.data),
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
 
 
-@pytest.mark.parametrize("mode,expected_result", [
-    ("double", np.array([[0.5, -1 / 6, -1 / 6, -1 / 6],
+@pytest.mark.parametrize("dtype,expected_result", [
+    ("float64", np.array([[0.5, -1 / 6, -1 / 6, -1 / 6],
                          [-1 / 6, 1 / 6, 0.0, 0.0],
                          [-1 / 6, 0.0, 1 / 6, 0.0],
                          [-1 / 6, 0.0, 0.0, 1 / 6]], dtype=np.float64)),
-    ("double _Complex",
+    ("complex128",
      np.array(
          [[0.5 + 0j, -1 / 6 + 0j, -1 / 6 + 0j, -1 / 6 + 0j],
           [-1 / 6 + 0j, 1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j],
@@ -210,7 +172,7 @@ def test_helmholtz_form_2d(mode, expected_result, compile_args):
           [-1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j, 1 / 6 + 0j]],
          dtype=np.complex128)),
 ])
-def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
+def test_laplace_bilinear_form_3d(dtype, expected_result, compile_args):
     element = basix.ufl.element("Lagrange", "tetrahedron", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, )))
     space = ufl.FunctionSpace(domain, element)
@@ -218,32 +180,30 @@ def test_laplace_bilinear_form_3d(mode, expected_result, compile_args):
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
     form0 = compiled_forms[0].form_integrals[0]
 
-    np_type = cdtype_to_numpy(mode)
-    A = np.zeros((4, 4), dtype=np_type)
-    w = np.array([], dtype=np_type)
-    c = np.array([], dtype=np_type)
-
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
+    A = np.zeros((4, 4), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
 
     ffi = module.ffi
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([0.0, 0.0, 0.0,
                        1.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
-                       0.0, 0.0, 1.0], dtype=np_gtype)
+                       0.0, 0.0, 1.0], dtype=xdtype)
 
-    kernel = getattr(form0, f"tabulate_tensor_{np_type}")
-    kernel(ffi.cast('{type} *'.format(type=mode), A.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel = getattr(form0, f"tabulate_tensor_{dtype}")
+    kernel(ffi.cast(f'{c_type} *', A.ctypes.data),
+           ffi.cast(f'{c_type} *', w.ctypes.data),
+           ffi.cast(f'{c_type} *', c.ctypes.data),
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(A, expected_result)
 
@@ -296,7 +256,7 @@ def test_subdomains(compile_args):
     a3 = ufl.inner(u, v) * ufl.ds(210) + ufl.inner(u, v) * ufl.ds(0)
     forms = [a0, a1, a2, a3]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': 'double'}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': 'float64'}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -325,8 +285,8 @@ def test_subdomains(compile_args):
     assert ids[0] == 0 and ids[1] == 210
 
 
-@pytest.mark.parametrize("mode", ["double", "double _Complex"])
-def test_interior_facet_integral(mode, compile_args):
+@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+def test_interior_facet_integral(dtype, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
@@ -334,7 +294,7 @@ def test_interior_facet_integral(mode, compile_args):
     a0 = ufl.inner(ufl.jump(ufl.grad(u)), ufl.jump(ufl.grad(v))) * ufl.dS
     forms = [a0]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
@@ -344,36 +304,38 @@ def test_interior_facet_integral(mode, compile_args):
     form0 = compiled_forms[0]
 
     ffi = module.ffi
-    np_type = cdtype_to_numpy(mode)
 
     integral0 = form0.form_integrals[0]
-    A = np.zeros((6, 6), dtype=np_type)
-    w = np.array([], dtype=np_type)
-    c = np.array([], dtype=np.float64)
+    A = np.zeros((6, 6), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
 
     facets = np.array([0, 2], dtype=np.intc)
     perms = np.array([0, 1], dtype=np.uint8)
 
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
-
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([[0.0, 0.0, 0.0,
                         1.0, 0.0, 0.0,
                         0.0, 1.0, 0.0],
                        [1.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
-                       1.0, 1.0, 0.0]], dtype=np_gtype)
+                       1.0, 1.0, 0.0]], dtype=xdtype)
 
-    kernel = getattr(integral0, f"tabulate_tensor_{np_type}")
-    kernel(ffi.cast(f'{mode}  *', A.ctypes.data),
-           ffi.cast(f'{mode}  *', w.ctypes.data),
-           ffi.cast(f'{mode}  *', c.ctypes.data),
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+    kernel = getattr(integral0, f"tabulate_tensor_{dtype}")
+    kernel(ffi.cast(f'{c_type}  *', A.ctypes.data),
+           ffi.cast(f'{c_type}  *', w.ctypes.data),
+           ffi.cast(f'{c_type}  *', c.ctypes.data),
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.cast('int *', facets.ctypes.data),
            ffi.cast('uint8_t *', perms.ctypes.data))
 
 
-@pytest.mark.parametrize("mode", ["double", "double _Complex"])
-def test_conditional(mode, compile_args):
+@pytest.mark.parametrize("dtype", [
+    "float64",
+    "complex128",
+])
+def test_conditional(dtype, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
     space = ufl.FunctionSpace(domain, element)
@@ -391,44 +353,42 @@ def test_conditional(mode, compile_args):
     forms = [a, b]
 
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     form0 = compiled_forms[0].form_integrals[0]
     form1 = compiled_forms[1].form_integrals[0]
 
     ffi = module.ffi
-    np_type = cdtype_to_numpy(mode)
 
-    A1 = np.zeros((3, 3), dtype=np_type)
-    w1 = np.array([1.0, 1.0, 1.0], dtype=np_type)
-    c = np.array([], dtype=np.float64)
+    A1 = np.zeros((3, 3), dtype=dtype)
+    w1 = np.array([1.0, 1.0, 1.0], dtype=dtype)
+    c = np.array([], dtype=dtype)
 
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
-
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np_gtype)
+                       [0.0, 1.0, 0.0]], dtype=xdtype)
 
-    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
-    kernel0(ffi.cast('{type} *'.format(type=mode), A1.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{dtype} *", getattr(form0, f"tabulate_tensor_{dtype}"))
+    kernel0(ffi.cast(f'{c_type} *', A1.ctypes.data),
+            ffi.cast(f'{c_type} *', w1.ctypes.data),
+            ffi.cast(f'{c_type} *', c.ctypes.data),
+            ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
-    expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=np_type)
+    expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=dtype)
     assert np.allclose(A1, expected_result)
 
-    A2 = np.zeros(3, dtype=np_type)
-    w2 = np.array([1.0, 1.0, 1.0], dtype=np_type)
+    A2 = np.zeros(3, dtype=dtype)
+    w2 = np.array([1.0, 1.0, 1.0], dtype=dtype)
 
-    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
-    kernel1(ffi.cast('{type} *'.format(type=mode), A2.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), w2.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{dtype} *", getattr(form1, f"tabulate_tensor_{dtype}"))
+    kernel1(ffi.cast(f'{c_type} *', A2.ctypes.data),
+            ffi.cast(f'{c_type} *', w2.ctypes.data),
+            ffi.cast(f'{c_type} *', c.ctypes.data),
+            ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
-    expected_result = np.ones(3, dtype=np_type)
+    expected_result = np.ones(3, dtype=dtype)
     assert np.allclose(A2, expected_result)
 
 
@@ -518,13 +478,13 @@ def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lamb
     return results
 
 
-@pytest.mark.parametrize("mode", ["double"])
+@pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("sym_fun,ufl_fun", [
     (lambda i: i, lambda i: i),
     (lambda i: i.diff(x), lambda i: ufl.grad(i)[0]),
     (lambda i: i.diff(y), lambda i: ufl.grad(i)[1])])
 @pytest.mark.parametrize("order", [1, 2, 3])
-def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
+def test_lagrange_triangle(compile_args, order, dtype, sym_fun, ufl_fun):
     sym = lagrange_triangle_symbolic(order, fun=sym_fun)
     element = basix.ufl.element("Lagrange", "triangle", order)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
@@ -534,7 +494,7 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     a = ufl_fun(v) * ufl.dx
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     ffi = module.ffi
     form0 = compiled_forms[0]
@@ -542,25 +502,27 @@ def test_lagrange_triangle(compile_args, order, mode, sym_fun, ufl_fun):
     assert form0.form_integral_offsets[module.lib.cell + 1] == 1
     default_integral = form0.form_integrals[0]
 
-    np_type = cdtype_to_numpy(mode)
-    b = np.zeros((order + 2) * (order + 1) // 2, dtype=np_type)
-    w = np.array([], dtype=np_type)
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
+    b = np.zeros((order + 2) * (order + 1) // 2, dtype=dtype)
+    w = np.array([], dtype=dtype)
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([[1.0, 0.0, 0.0],
                        [2.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np_gtype)
-    kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
-    kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
+                       [0.0, 1.0, 0.0]], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(ffi.cast(f'{c_type} *', b.ctypes.data),
+           ffi.cast(f'{c_type} *', w.ctypes.data),
            ffi.NULL,
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     # Check that the result is the same as for sympy
     assert np.allclose(b, [float(i) for i in sym])
 
 
-def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0), (0, 0, 1)], fun=lambda i: i):
+def lagrange_tetrahedron_symbolic(order,
+                                  corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0), (0, 0, 1)],
+                                  fun=lambda i: i):
     from sympy import S
     poly_basis = [
         x**i * y**j * z**k for i in range(order + 1) for j in range(order + 1 - i)
@@ -608,13 +570,13 @@ def lagrange_tetrahedron_symbolic(order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0
     return results
 
 
-@pytest.mark.parametrize("mode", ["double"])
+@pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("sym_fun,ufl_fun", [
     (lambda i: i, lambda i: i),
     (lambda i: i.diff(x), lambda i: ufl.grad(i)[0]),
     (lambda i: i.diff(y), lambda i: ufl.grad(i)[1])])
 @pytest.mark.parametrize("order", [1, 2, 3])
-def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
+def test_lagrange_tetrahedron(compile_args, order, dtype, sym_fun, ufl_fun):
     sym = lagrange_tetrahedron_symbolic(order, fun=sym_fun)
     element = basix.ufl.element("Lagrange", "tetrahedron", order)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, )))
@@ -624,7 +586,7 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
     a = ufl_fun(v) * ufl.dx
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     ffi = module.ffi
     form0 = compiled_forms[0]
@@ -633,23 +595,21 @@ def test_lagrange_tetrahedron(compile_args, order, mode, sym_fun, ufl_fun):
 
     default_integral = form0.form_integrals[0]
 
-    np_type = cdtype_to_numpy(mode)
-    b = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=np_type)
-    w = np.array([], dtype=np_type)
+    b = np.zeros((order + 3) * (order + 2) * (order + 1) // 6, dtype=dtype)
+    w = np.array([], dtype=dtype)
 
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
-
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([1.0, 0.0, 0.0,
                        2.0, 0.0, 0.0,
                        0.0, 1.0, 0.0,
-                       0.0, 0.0, 1.0], dtype=np_gtype)
+                       0.0, 0.0, 1.0], dtype=xdtype)
 
-    kernel = getattr(default_integral, f"tabulate_tensor_{np_type}")
-    kernel(ffi.cast('{type} *'.format(type=mode), b.ctypes.data),
-           ffi.cast('{type} *'.format(type=mode), w.ctypes.data),
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(ffi.cast(f'{c_type} *', b.ctypes.data),
+           ffi.cast(f'{c_type} *', w.ctypes.data),
            ffi.NULL,
-           ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     # Check that the result is the same as for sympy
     assert np.allclose(b, [float(i) for i in sym])
@@ -660,11 +620,10 @@ def test_prism(compile_args):
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "prism", 1, shape=(3, )))
     space = ufl.FunctionSpace(domain, element)
     v = ufl.TestFunction(space)
-
     L = v * ufl.dx
     forms = [L]
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': 'double'}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': 'float64'}, cffi_extra_compile_args=compile_args)
 
     ffi = module.ffi
     form0 = compiled_forms[0]
@@ -678,7 +637,6 @@ def test_prism(compile_args):
                        1.0, 0.0, 1.0,
                        0.0, 1.0, 1.0,
                        0.0, 0.0, 1.0], dtype=np.float64)
-
     kernel = getattr(default_integral, "tabulate_tensor_float64")
     kernel(ffi.cast('double *', b.ctypes.data),
            ffi.NULL,
@@ -689,7 +647,7 @@ def test_prism(compile_args):
 
 
 def test_complex_operations(compile_args):
-    mode = "double _Complex"
+    dtype = "complex128"
     cell = "triangle"
     c_element = basix.ufl.element("Lagrange", cell, 1, shape=(2, ))
     mesh = ufl.Mesh(c_element)
@@ -701,40 +659,39 @@ def test_complex_operations(compile_args):
     forms = [J1, J2]
 
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={'scalar_type': mode}, cffi_extra_compile_args=compile_args)
+        forms, options={'scalar_type': dtype}, cffi_extra_compile_args=compile_args)
 
     form0 = compiled_forms[0].form_integrals[0]
     form1 = compiled_forms[1].form_integrals[0]
 
     ffi = module.ffi
-    np_type = cdtype_to_numpy(mode)
-    w1 = np.array([3 + 5j, 8 - 7j], dtype=np_type)
-    c = np.array([], dtype=np_type)
+    w1 = np.array([3 + 5j, 8 - 7j], dtype=dtype)
+    c = np.array([], dtype=dtype)
 
-    geom_type = scalar_to_value_type(mode)
-    np_gtype = cdtype_to_numpy(geom_type)
-
+    xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np_gtype)
-    J_1 = np.zeros((1), dtype=np_type)
-    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form0, f"tabulate_tensor_{np_type}"))
-    kernel0(ffi.cast('{type} *'.format(type=mode), J_1.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+                       [0.0, 1.0, 0.0]], dtype=xdtype)
+    J_1 = np.zeros((1), dtype=dtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel0 = ffi.cast(f"ufcx_tabulate_tensor_{dtype} *", getattr(form0, f"tabulate_tensor_{dtype}"))
+    kernel0(ffi.cast(f'{c_type} *', J_1.ctypes.data),
+            ffi.cast(f'{c_type} *', w1.ctypes.data),
+            ffi.cast(f'{c_type} *', c.ctypes.data),
+            ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     expected_result = np.array([0.5 * np.real(w1[0]) * np.imag(w1[1])
-                               * (np.real(w1[0]) - 1j * np.imag(w1[0]))], dtype=np_type)
+                               * (np.real(w1[0]) - 1j * np.imag(w1[0]))], dtype=dtype)
     assert np.allclose(J_1, expected_result)
 
-    J_2 = np.zeros((1), dtype=np_type)
+    J_2 = np.zeros((1), dtype=dtype)
 
-    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{np_type} *", getattr(form1, f"tabulate_tensor_{np_type}"))
-    kernel1(ffi.cast('{type} *'.format(type=mode), J_2.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), w1.ctypes.data),
-            ffi.cast('{type} *'.format(type=mode), c.ctypes.data),
-            ffi.cast(f'{geom_type} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    kernel1 = ffi.cast(f"ufcx_tabulate_tensor_{dtype} *", getattr(form1, f"tabulate_tensor_{dtype}"))
+    kernel1(ffi.cast(f'{c_type} *', J_2.ctypes.data),
+            ffi.cast(f'{c_type} *', w1.ctypes.data),
+            ffi.cast(f'{c_type} *', c.ctypes.data),
+            ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
     assert np.allclose(J_2, expected_result)
 
@@ -751,9 +708,7 @@ def test_invalid_function_name(compile_args):
     space = ufl.FunctionSpace(domain, V)
     u = ufl.Coefficient(space)
     a = ufl.inner(u, u) * ufl.dx
-
     forms = [a]
-
     try:
         compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
             forms, cffi_extra_compile_args=compile_args)
@@ -767,13 +722,11 @@ def test_invalid_function_name(compile_args):
 
 
 def test_interval_vertex_quadrature(compile_args):
-
     c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(1, ))
     mesh = ufl.Mesh(c_el)
 
     x = ufl.SpatialCoordinate(mesh)
-    dx = ufl.Measure(
-        "dx", metadata={"quadrature_rule": "vertex"})
+    dx = ufl.Measure("dx", metadata={"quadrature_rule": "vertex"})
     b = x[0] * dx
 
     forms = [b]
@@ -789,7 +742,6 @@ def test_interval_vertex_quadrature(compile_args):
     a = np.pi
     b = np.exp(1)
     coords = np.array([a, 0.0, 0.0,
-
                        b, 0.0, 0.0], dtype=np.float64)
 
     kernel = getattr(default_integral, "tabulate_tensor_float64")

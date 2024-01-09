@@ -5,8 +5,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numpy as np
-import ffcx.codegeneration.lnodes as L
+
 import basix
+import ffcx.codegeneration.lnodes as L
 
 
 def write_table(tablename, cellname):

@@ -9,11 +9,12 @@ import logging
 from itertools import product
 from typing import Any, DefaultDict, Dict, Set
 
+import ffcx.codegeneration.lnodes as L
 import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode
+from ffcx.codegeneration.utils import dtype_to_c_type
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -57,10 +58,8 @@ class ExpressionGenerator:
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
         # Currently we only support circumradius
-        ufl_geometry = {
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-        }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
+        ufl_geometry = {ufl.geometry.ReferenceCellVolume: "reference_cell_volume", }
+        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
@@ -370,7 +369,7 @@ class ExpressionGenerator:
                         vaccess = symbol[j]
                         intermediates.append(L.Assign(vaccess, vexpr))
                     else:
-                        scalar_type = self.backend.access.options["scalar_type"]
+                        scalar_type = dtype_to_c_type(self.backend.access.options["scalar_type"])
                         vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
                         intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
 
