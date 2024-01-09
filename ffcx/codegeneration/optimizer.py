@@ -154,13 +154,17 @@ def licm(section: L.Section) -> L.Section:
     outer_loop = section.statements[0]
     inner_loop = outer_loop.body.statements[0]
 
+    # Collect all expressions in the inner loop by RHS
+    expressions = defaultdict(list)
     for body in inner_loop.body.statements:
         statements = get_statements(body)
         assert isinstance(statements, list)
         for statement in statements:
-            assert isinstance(statement, L.AssignAdd)
-    #     if isinstance(statement, L.StatementList):
-    #         continue
+            assert isinstance(statement, L.AssignAdd)  # Expecting AssignAdd
+            rhs = statement.rhs
+            lhs = statement.lhs
+            expressions[rhs].append(lhs)
+
     #     expression = statement.expr
     #     if isinstance(expression, L.AssignAdd):
     #         rhs = expression.rhs
