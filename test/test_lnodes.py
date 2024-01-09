@@ -58,11 +58,7 @@ def test_gemm(dtype):
     assert np.all(A == q)
 
 
-@pytest.mark.parametrize("dtype",
-                         ("float32",
-                          "float64",
-                          "intc"
-                          ))
+@pytest.mark.parametrize("dtype", ("float32", "float64", "intc"))
 def test_gemv(dtype):
     # Test LNodes simple matvec multiply in C
     p, q = 5, 16

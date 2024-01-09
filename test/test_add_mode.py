@@ -57,8 +57,7 @@ def test_additive_facet_integral(dtype, compile_args):
 
     kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
 
-    c_type = dtype_to_c_type(dtype)
-    c_xtype = dtype_to_c_type(xdtype)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
     for i in range(3):
         facets[0] = i
         kernel(ffi.cast(f'{c_type} *', A.ctypes.data),
@@ -71,12 +70,11 @@ def test_additive_facet_integral(dtype, compile_args):
 
 
 @pytest.mark.parametrize("dtype",
-                         [
-                             "float32",
-                             "float64",
-                             "complex64",
-                             "complex128",
-                         ])
+                         ["float32",
+                          "float64",
+                          "complex64",
+                          "complex128",
+                          ])
 def test_additive_cell_integral(dtype, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
@@ -113,8 +111,7 @@ def test_additive_cell_integral(dtype, compile_args):
 
     kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
 
-    c_type = dtype_to_c_type(dtype)
-    c_xtype = dtype_to_c_type(xdtype)
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
     kernel(ffi.cast(f'{c_type} *', A.ctypes.data),
            ffi.cast(f'{c_type} *', w.ctypes.data),
            ffi.cast(f'{c_type} *', c.ctypes.data),

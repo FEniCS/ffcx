@@ -20,9 +20,11 @@ FFCX_DEFAULT_OPTIONS = {
     "scalar_type": (str, "float64", "scalar type to use in generated code.",
                     ("float32", "float64", "complex64", "complex128")),
     "sum_factorization": (bool, False, "use sum factorization.", None),
-    "table_rtol": (float, 1e-6, "relative precision to use when comparing finite element table values for table reuse.", None),
-    "table_atol": (float, 1e-9, "absolute precision to use when comparing finite element table values for reuse.", None),
-    "verbosity": (int, 30, "logger verbosity, follows standard logging library levels, i.e. INFO=20, DEBUG=10, etc.", None)
+    "table_rtol": (float, 1e-6,
+                   "relative precision to use when comparing finite element table values for reuse.", None),
+    "table_atol": (float, 1e-9, "absolute precision to use when comparing finite element table values reuse.", None),
+    "verbosity": (int, 30,
+                  "logger verbosity, follows standard library levels, i.e. INFO=20, DEBUG=10, etc.", None)
 }
 
 
