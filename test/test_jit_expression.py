@@ -117,7 +117,7 @@ def test_rank1(compile_args):
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
-    # # Coords storage XYZXYZXYZ
+    # Coords storage XYZXYZXYZ
     coords = np.zeros((points.shape[0], 3), dtype=xdtype)
     coords[:, :2] = points
     expression.tabulate_tensor_float64(
@@ -128,19 +128,19 @@ def test_rank1(compile_args):
         ffi.cast('int *', entity_index.ctypes.data),
         ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
-    # f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
+    f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
 
-    # # Apply the operator on some test input data
-    # u_ffcx = np.einsum("ijk,k", A, f.T.flatten())
+    # Apply the operator on some test input data
+    u_ffcx = np.einsum("ijk,k", A, f.T.flatten())
 
-    # # Compute the correct values using NumPy
-    # # Gradf0 is gradient of f[0], each component of the gradient is constant
-    # gradf0 = np.array([[f[0, 1] - f[0, 0], f[0, 1] - f[0, 0], f[0, 1] - f[0, 0]],
-    #                    [f[0, 2] - f[0, 0], f[0, 2] - f[0, 0], f[0, 2] - f[0, 0]]])
+    # Compute the correct values using NumPy
+    # Gradf0 is gradient of f[0], each component of the gradient is constant
+    gradf0 = np.array([[f[0, 1] - f[0, 0], f[0, 1] - f[0, 0], f[0, 1] - f[0, 0]],
+                       [f[0, 2] - f[0, 0], f[0, 2] - f[0, 0], f[0, 2] - f[0, 0]]])
 
-    # u_correct = np.array([f[1], f[0]]) + gradf0
+    u_correct = np.array([f[1], f[0]]) + gradf0
 
-    # assert np.allclose(u_ffcx, u_correct.T)
+    assert np.allclose(u_ffcx, u_correct.T)
 
 
 def test_elimiate_zero_tables_tensor(compile_args):
