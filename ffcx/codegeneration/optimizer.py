@@ -147,7 +147,8 @@ def licm(section: L.Section) -> L.Section:
 
     # Check depth of loops
     depth = L.depth(section.statements[0])
-    assert depth == 2
+    if depth != 2:
+        return section
 
     # Get statements in the inner loop
     outer_loop = section.statements[0]
