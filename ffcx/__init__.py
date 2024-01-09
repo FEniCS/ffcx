@@ -18,6 +18,5 @@ from ffcx.options import get_options  # noqa: F401
 
 __version__ = importlib.metadata.version("fenics-ffcx")
 
-logging.basicConfig()
 logger = logging.getLogger("ffcx")
 logging.captureWarnings(capture=True)
