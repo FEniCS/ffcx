@@ -14,10 +14,10 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
     """For a NumPy dtype, return the corresponding C type.
 
     Args:
-        dtype: Numpy data type
+        dtype: Numpy data type,
 
     Returns:
-        Corresponding C type
+        Corresponding C type.
     """
     # Note: Possible aliases, e.g. numpy.longdouble, should test against char ID
     if _np.dtype(dtype).char == 'g':
@@ -36,7 +36,7 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
 
-def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _npt.DTypeLike:
+def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _np.dtype:
     """For a NumPy dtype, return the corresponding real dtype.
 
     Args:
@@ -46,11 +46,11 @@ def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _npt.DTyp
         ``numpy.dtype`` for the real component of ``dtype``.
     """
     if _np.issubdtype(dtype, _np.floating):
-        return dtype
+        return _np.dtype(dtype)
     elif _np.issubdtype(dtype, _np.complexfloating):
         return _np.dtype(dtype).type(0).real.dtype
     elif _np.issubdtype(dtype, _np.integer):
-        return dtype
+        return _np.dtype(dtype)
     else:
         raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
 

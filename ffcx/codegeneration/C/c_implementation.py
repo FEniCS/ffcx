@@ -6,6 +6,7 @@
 
 import warnings
 
+import numpy as np
 import numpy.typing as npt
 
 import ffcx.codegeneration.lnodes as L
@@ -141,21 +142,18 @@ math_table = {
 
 
 class CFormatter(object):
-    scalar_type: npt.DTypeLike
-    real_type: npt.DTypeLike
+    scalar_type: np.dtype
+    real_type: np.dtype
 
     def __init__(self, dtype: npt.DTypeLike) -> None:
-        self.scalar_type = dtype
+        self.scalar_type = np.dtype(dtype)
         self.real_type = dtype_to_scalar_dtype(dtype)
-
-        self.c_scalar_type = dtype_to_c_type(self.scalar_type)
-        self.c_real_type = dtype_to_c_type(self.real_type)
 
     def _dtype_to_name(self, dtype) -> str:
         if dtype == L.DataType.SCALAR:
-            return self.c_scalar_type
+            return dtype_to_c_type(self.scalar_type)
         if dtype == L.DataType.REAL:
-            return self.c_real_type
+            return dtype_to_c_type(self.real_type)
         if dtype == L.DataType.INT:
             return "int"
         raise ValueError(f"Invalid dtype: {dtype}")
@@ -300,7 +298,7 @@ class CFormatter(object):
         else:
             warnings.warn(f"Syntax item without dtype {c.args[0]}")
 
-        dtype_math_table = math_table[str(arg_type)]
+        dtype_math_table = math_table[arg_type.name]
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
