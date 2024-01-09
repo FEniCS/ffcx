@@ -512,7 +512,8 @@ class IntegralGenerator(object):
         A_shape = self.ir.tensor_shape
         for indices in keep:
             multi_index = L.MultiIndex(list(indices), A_shape)
-            body.append(L.AssignAdd(A[multi_index], L.Sum(keep[indices])))
+            for expression in keep[indices]:
+                body.append(L.AssignAdd(A[multi_index], expression))
 
         # reverse B_indices
         B_indices = B_indices[::-1]
