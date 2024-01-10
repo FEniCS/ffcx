@@ -240,19 +240,17 @@ class IntegralGenerator(object):
         quadparts = self.generate_dofblock_partition(quadrature_rule)
         body += quadparts
 
-        body = optimize(body)
+        body = optimize(body, quadrature_rule)
 
         # Wrap body in loop or scope
         if not body:
             # Could happen for integral with everything zero and
             # optimized away
-            quadparts = []
+            return []
         else:
             iq_symbol = self.backend.symbols.quadrature_loop_index
             iq = create_quadrature_index(quadrature_rule, iq_symbol)
-            quadparts = [L.create_nested_for_loops([iq], body)]
-
-        return quadparts
+            return [L.create_nested_for_loops([iq], body)]
 
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
