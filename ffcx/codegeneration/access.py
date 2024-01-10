@@ -8,10 +8,10 @@
 import logging
 import warnings
 
-import ufl
 import basix.ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.elementtables import UniqueTableReferenceT
+import ufl
 
 logger = logging.getLogger("ffcx")
 

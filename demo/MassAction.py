@@ -4,11 +4,12 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import ufl
-import basix
 import numpy as np
 
-P = 1
+import basix
+import ufl
+
+P = 3
 cell_type = basix.CellType.hexahedron
 element = basix.create_element(basix.ElementFamily.P, cell_type,
                                P, basix.LagrangeVariant.gll_warped)

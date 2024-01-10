@@ -6,8 +6,9 @@
 """FFCx/UFC specific symbol naming."""
 
 import logging
-import ufl
+
 import ffcx.codegeneration.lnodes as L
+import ufl
 
 logger = logging.getLogger("ffcx")
 

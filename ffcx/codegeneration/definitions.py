@@ -7,11 +7,12 @@
 
 import logging
 
-import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
+import ufl
+
 
 logger = logging.getLogger("ffcx")
 

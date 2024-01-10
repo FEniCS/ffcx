@@ -31,13 +31,12 @@ parser.add_argument("--visualise", action="store_true", help="visualise the IR g
 parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
 
 # Add all options from FFCx option system
-for opt_name, (opt_val, opt_desc) in FFCX_DEFAULT_OPTIONS.items():
+for opt_name, (arg_type, opt_val, opt_desc, choices) in FFCX_DEFAULT_OPTIONS.items():
     if isinstance(opt_val, bool):
-        parser.add_argument(f"--{opt_name}", action="store_true",
-                            help=f"{opt_desc} (default={opt_val})")
+        parser.add_argument(f"--{opt_name}", action="store_true", help=f"{opt_desc} (default={opt_val})")
     else:
         parser.add_argument(f"--{opt_name}",
-                            type=type(opt_val), help=f"{opt_desc} (default={opt_val})")
+                            type=arg_type, choices=choices, help=f"{opt_desc} (default={opt_val})")
 
 parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
 

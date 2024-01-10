@@ -8,10 +8,10 @@
 import logging
 
 import ufl
-from ufl.pullback import SymmetricPullback
 from ffcx.ir.analysis.indexing import (map_component_tensor_arg_components,
                                        map_indexed_arg_components)
 from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal
+from ufl.pullback import SymmetricPullback
 
 logger = logging.getLogger("ffcx")
 

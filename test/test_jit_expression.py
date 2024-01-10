@@ -12,23 +12,6 @@ import basix
 import basix.ufl
 import ffcx.codegeneration.jit
 import ufl
-from ffcx.codegeneration.utils import cdtype_to_numpy, scalar_to_value_type
-
-
-def float_to_type(name):
-    """Map a string name to C and NumPy types"""
-    if name == "double":
-        return "double", np.float64
-    elif name == "double complex":
-        return "double _Complex", np.complex128
-    elif name == "float":
-        return "float", np.float32
-    elif name == "float complex":
-        return "float _Complex", np.complex64
-    elif name == "long double":
-        return "long double", np.longdouble
-    else:
-        raise RuntimeError("Unknown C type for: {}".format(name))
 
 
 def test_matvec(compile_args):
@@ -55,29 +38,29 @@ def test_matvec(compile_args):
     ffi = cffi.FFI()
     expression = obj[0]
 
-    c_type, np_type = float_to_type("double")
+    dtype = np.float64
+    c_type = "double"
+    xdtype = np.float64
+    c_xtype = "double"
 
-    A = np.zeros((3, 2), dtype=np_type)
+    A = np.zeros((3, 2), dtype=dtype)
     f_mat = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
 
     # Coefficient storage XYXYXY
-    w = np.array(f_mat.T.flatten(), dtype=np_type)
-    c = np.array([0.5], dtype=np_type)
+    w = np.array(f_mat.T.flatten(), dtype=dtype)
+    c = np.array([0.5], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
-
-    geom_type = scalar_to_value_type(c_type)
-    np_gtype = cdtype_to_numpy(geom_type)
 
     # Coords storage XYZXYZXYZ
     coords = np.array([[0.0, 0.0, 0.0],
                        [1.0, 0.0, 0.0],
-                       [0.0, 1.0, 0.0]], dtype=np_gtype)
+                       [0.0, 1.0, 0.0]], dtype=xdtype)
     expression.tabulate_tensor_float64(
-        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
-        ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast(f'{geom_type} *', coords.ctypes.data),
+        ffi.cast(f'{c_type} *', A.ctypes.data),
+        ffi.cast(f'{c_type} *', w.ctypes.data),
+        ffi.cast(f'{c_type} *', c.ctypes.data),
+        ffi.cast(f'{c_xtype} *', coords.ctypes.data),
         ffi.cast('int *', entity_index.ctypes.data),
         ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
@@ -118,29 +101,30 @@ def test_rank1(compile_args):
     ffi = cffi.FFI()
     expression = obj[0]
 
-    c_type, np_type = float_to_type("double")
-    geom_type = scalar_to_value_type(c_type)
-    np_gtype = cdtype_to_numpy(geom_type)
+    dtype = np.float64
+    c_type = "double"
+    xdtype = np.float64
+    c_xtype = "double"
 
     # 2 components for vector components of expression
     # 3 points of evaluation
     # 6 degrees of freedom for rank1 form
-    A = np.zeros((3, 2, 6), dtype=np_type)
+    A = np.zeros((3, 2, 6), dtype=dtype)
 
     # Coefficient storage XYXYXY
-    w = np.array([0.0], dtype=np_type)
-    c = np.array([0.0], dtype=np_type)
+    w = np.array([0.0], dtype=dtype)
+    c = np.array([0.0], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     # Coords storage XYZXYZXYZ
-    coords = np.zeros((points.shape[0], 3), dtype=np_gtype)
+    coords = np.zeros((points.shape[0], 3), dtype=xdtype)
     coords[:, :2] = points
     expression.tabulate_tensor_float64(
-        ffi.cast('{type} *'.format(type=c_type), A.ctypes.data),
-        ffi.cast('{type} *'.format(type=c_type), w.ctypes.data),
-        ffi.cast('{type} *'.format(type=c_type), c.ctypes.data),
-        ffi.cast(f'{geom_type} *', coords.ctypes.data),
+        ffi.cast(f'{c_type} *', A.ctypes.data),
+        ffi.cast(f'{c_type} *', w.ctypes.data),
+        ffi.cast(f'{c_type} *', c.ctypes.data),
+        ffi.cast(f'{c_xtype} *', coords.ctypes.data),
         ffi.cast('int *', entity_index.ctypes.data),
         ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
@@ -193,26 +177,29 @@ def test_elimiate_zero_tables_tensor(compile_args):
 
     ffi = cffi.FFI()
     expression = obj[0]
-    c_type, np_type = float_to_type("double")
 
-    output = np.zeros(9 * points.shape[0], dtype=np_type)
+    dtype = np.float64
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros(9 * points.shape[0], dtype=dtype)
 
     # Define coefficients for u = x + 2 * y
     u_coeffs = u_coeffs = coeff_points.T[0] + 2 * coeff_points.T[1]
-    consts = np.array([], dtype=np_type)
+    consts = np.array([], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     expression.tabulate_tensor_float64(
-        ffi.cast('{type} *'.format(type=c_type), output.ctypes.data),
-        ffi.cast('{type} *'.format(type=c_type), u_coeffs.ctypes.data),
-        ffi.cast('{type} *'.format(type=c_type), consts.ctypes.data),
-        ffi.cast('double *', coords.ctypes.data),
+        ffi.cast(f'{c_type} *', output.ctypes.data),
+        ffi.cast(f'{c_type} *', u_coeffs.ctypes.data),
+        ffi.cast(f'{c_type} *', consts.ctypes.data),
+        ffi.cast(f'{c_xtype} *', coords.ctypes.data),
         ffi.cast('int *', entity_index.ctypes.data),
         ffi.cast('uint8_t *', quad_perm.ctypes.data))
 
     def exact_expr(x):
-        val = np.zeros((9, x.shape[1]), dtype=np_type)
+        val = np.zeros((9, x.shape[1]), dtype=dtype)
         val[0] = x[0] + 2 * x[1]
         val[1] = 0 + 0.5 * 2
         val[3] = 0.5 * 2 + 0

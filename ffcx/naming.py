@@ -10,8 +10,8 @@ import typing
 import numpy as np
 import numpy.typing as npt
 
-import ffcx
 import basix.ufl
+import ffcx
 import ufl
 
 

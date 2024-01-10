@@ -9,10 +9,10 @@ import logging
 from itertools import product
 from typing import Any, DefaultDict, Dict, Set
 
+import ffcx.codegeneration.lnodes as L
 import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
 
@@ -57,10 +57,8 @@ class ExpressionGenerator:
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
         # Currently we only support circumradius
-        ufl_geometry = {
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-        }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
+        ufl_geometry = {ufl.geometry.ReferenceCellVolume: "reference_cell_volume", }
+        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():

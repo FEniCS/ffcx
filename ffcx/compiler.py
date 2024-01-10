@@ -87,7 +87,7 @@ def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
     """Generate UFC code for a given UFL objects.
 
     Options
-    ----------
+    -------
     @param ufl_objects:
         Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
 

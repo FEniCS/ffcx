@@ -11,8 +11,8 @@ import typing
 import numpy as np
 import numpy.typing as npt
 
-import ufl
 import basix.ufl
+import ufl
 from ffcx.element_interface import basix_index
 from ffcx.ir.representationutils import (create_quadrature_points_and_weights,
                                          integral_type_to_entity_dim,

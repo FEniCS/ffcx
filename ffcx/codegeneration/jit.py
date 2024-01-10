@@ -16,6 +16,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 import cffi
+import numpy as np
 
 import ffcx
 import ffcx.naming
@@ -135,7 +136,7 @@ def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_ex
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
+        decl = UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
         element_template = "extern ufcx_finite_element {name};\n"
         dofmap_template = "extern ufcx_dofmap {name};\n"
         for i in range(len(elements)):
@@ -180,7 +181,7 @@ def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_co
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        decl = UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
         form_template = "extern ufcx_form {name};\n"
@@ -207,7 +208,7 @@ def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, c
     """Compile a list of UFL expressions into UFC Python objects.
 
     Options
-    ----------
+    -------
     expressions
         List of (UFL expression, evaluation points).
 
@@ -228,7 +229,7 @@ def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, c
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        decl = UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_INTEGRAL_DECL + UFC_FORM_DECL + UFC_EXPRESSION_DECL
 
         expression_template = "extern ufcx_expression {name};\n"
