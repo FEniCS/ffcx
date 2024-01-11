@@ -127,12 +127,11 @@ class FFCXBackendDefinitions(object):
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
-        code = []
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
+        declaration = [L.VariableDecl(access, 0.0)]
         body = [L.AssignAdd(access, dof_access * FE)]
-        code += [L.VariableDecl(access, 0.0)]
-        code += [L.create_nested_for_loops([ic], body)]
+        code = [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
         input = [dof_access.array, *tables]
@@ -141,9 +140,8 @@ class FFCXBackendDefinitions(object):
 
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
-        assert all(isinstance(o, L.Symbol) for o in output)
 
-        return L.Section(name, code, input, output, annotations)
+        return L.Section(name, code, declaration, input, output, annotations)
 
     def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
         """Define x or J as a linear combination of coordinate dofs with given table data."""
@@ -179,9 +177,9 @@ class FFCXBackendDefinitions(object):
             offset = num_scalar_dofs * dim
 
         code = []
+        declaration = [L.VariableDecl(access, 0.0)]
         body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
-        code += [L.VariableDecl(access, 0.0)]
-        code += [L.create_nested_for_loops([ic], body)]
+        code = [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
         output = [access]
@@ -192,7 +190,7 @@ class FFCXBackendDefinitions(object):
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
 
-        return L.Section(name, code, input, output, annotations)
+        return L.Section(name, code, declaration, input, output, annotations)
 
     def spatial_coordinate(self, mt, tabledata, quadrature_rule, access):
         """Return definition code for the physical spatial coordinates.

@@ -49,11 +49,13 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     indices = []
     input = []
     output = []
+    declarations = []
     annotations = []
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
             if section.name == name:
+                declarations += section.declarations
                 statements += section.statements
                 indices.append(i)
                 input += section.input
@@ -65,7 +67,7 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     # Remove duplicated outputs
     output = list(set(output))
 
-    section = L.Section(name, statements, input, output, annotations)
+    section = L.Section(name, statements, declarations, input, output, annotations)
 
     # Replace the first section with the fused section
     code = code.copy()
@@ -103,7 +105,7 @@ def fuse_loops(code: L.Section) -> L.Section:
     for range, body in loops.items():
         output_code.append(L.ForRange(*range, body))
 
-    return L.Section(code.name, output_code, code.input, code.output)
+    return L.Section(code.name, output_code, code.declarations, code.input, code.output)
 
 
 def get_statements(statement: Union[L.Statement, L.StatementList]) -> List[L.LNode]:
@@ -204,7 +206,6 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     for lhs, rhs in expressions.items():
         for r in rhs:
             hoist_candidates = []
-            print(r.args)
             for arg in r.args:
                 dependency = check_dependency(arg, inner_loop.index)
                 if not dependency:

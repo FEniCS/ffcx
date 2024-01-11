@@ -231,26 +231,26 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
-        body = self.generate_varying_partition(quadrature_rule)
-
-        body = L.commented_code_list(body, f"Quadrature loop body setup for quadrature rule {quadrature_rule.id()}")
+        definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule)
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
-        quadparts = self.generate_dofblock_partition(quadrature_rule)
-        body += quadparts
+        tensor_comp, intermediates_fw = self.generate_dofblock_partition(quadrature_rule)
 
-        body = optimize(body, quadrature_rule)
+        # Check if we only have Section objects
+        for definition in definitions:
+            assert isinstance(definition, L.Section)
+        optimize(definitions, quadrature_rule)
 
-        # Wrap body in loop or scope
-        if not body:
-            # Could happen for integral with everything zero and
-            # optimized away
-            return []
-        else:
-            iq_symbol = self.backend.symbols.quadrature_loop_index
-            iq = create_quadrature_index(quadrature_rule, iq_symbol)
-            return [L.create_nested_for_loops([iq], body)]
+        for tc in tensor_comp:
+            assert isinstance(tc, L.Section)
+        optimize(tensor_comp, quadrature_rule)
+
+        intermediates = intermediates_0 + intermediates_fw
+
+        iq_symbol = self.backend.symbols.quadrature_loop_index
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        return [L.create_nested_for_loops([iq], definitions + intermediates + tensor_comp)]
 
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
@@ -333,16 +333,7 @@ class IntegralGenerator(object):
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
 
-        # Join terminal computation, array of intermediate expressions,
-        # and intermediate computations
-        parts = []
-        parts += definitions
-
-        if intermediates:
-            intermediates = [L.Section(f"Intermediate computations for {mode} computations", intermediates)]
-            parts += intermediates
-
-        return parts
+        return definitions, intermediates
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
@@ -365,14 +356,16 @@ class IntegralGenerator(object):
                 scalar_blockmap.append(b)
             block_groups[tuple(scalar_blockmap)].append(blockdata)
 
+        intermediates = []
         for blockmap in block_groups:
-            block_quadparts = self.generate_block_parts(
+            block_quadparts, intermediate = self.generate_block_parts(
                 quadrature_rule, blockmap, block_groups[blockmap])
+            intermediates += intermediate
 
             # Add computations
             quadparts.extend(block_quadparts)
 
-        return quadparts
+        return quadparts, intermediates
 
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
         arg_factors = []
@@ -403,7 +396,8 @@ class IntegralGenerator(object):
 
         return arg_factors, tables
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]):
+    def generate_block_parts(self, quadrature_rule: QuadratureRule,
+                             blockmap: Tuple, blocklist: List[BlockDataT]):
         """Generate and return code parts for a given block.
 
         Returns parts occurring before, inside, and after the quadrature
@@ -414,6 +408,9 @@ class IntegralGenerator(object):
         """
         # The parts to return
         quadparts: List[L.LNode] = []
+        intermediates: List[L.LNode] = []
+        tables = []
+        vars = []
 
         # RHS expressions grouped by LHS "dofmap"
         rhs_expressions = collections.defaultdict(list)
@@ -473,15 +470,15 @@ class IntegralGenerator(object):
                     assert all(isinstance(i, L.Symbol) for i in input)
                     assert all(isinstance(o, L.Symbol) for o in output)
 
-                    quad_sec = L.Section(f"Definition of {fw}", [L.VariableDecl(fw, fw_rhs)],
-                                         input=input, output=output)
+                    intermediates += [L.VariableDecl(fw, fw_rhs)]
 
-                    quadparts.append(quad_sec)
-
+            var = fw if isinstance(fw, L.Symbol) else fw.array
+            vars += [var]
             assert not blockdata.transposed, "Not handled yet"
 
             # Fetch code to access modified arguments
-            arg_factors, tables = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+            arg_factors, table = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+            tables += table
 
             # Define B_rhs = fw * arg_factors
             B_rhs = L.float_product([fw] + arg_factors)
@@ -516,9 +513,11 @@ class IntegralGenerator(object):
         # reverse B_indices
         B_indices = B_indices[::-1]
         body = [L.create_nested_for_loops(B_indices, body)]
-        var = fw if isinstance(fw, L.Symbol) else fw.array
-        input = [var, *tables]
+        input = [*vars, *tables]
         output = [A]
+
+        # Make sure we don't have repeated symbols in input
+        input = list(set(input))
 
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
@@ -528,6 +527,6 @@ class IntegralGenerator(object):
         if len(B_indices) > 1:
             annotations.append(L.Annotation.licm)
 
-        quadparts += [L.Section("Tensor Computation", body, input, output, annotations)]
+        quadparts += [L.Section("Tensor Computation", body, [], input, output, annotations)]
 
-        return quadparts
+        return quadparts, intermediates

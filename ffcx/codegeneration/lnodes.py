@@ -739,19 +739,26 @@ class Annotation(Enum):
     factorize = 4   # apply sum factorization
 
 
+def is_declaration(node):
+    return isinstance(node, VariableDecl) or isinstance(node, ArrayDecl)
+
+
 class Section(LNode):
     """A section of code with a name and a list of statements."""
 
-    def __init__(self, name: str, statements: List, input: Optional[List] = None,
+    def __init__(self, name: str, statements: List, declarations: List, input: Optional[List] = None,
                  output: Optional[List] = None, annotations: Optional[List] = None):
         self.name = name
         self.statements = [as_statement(st) for st in statements]
         self.annotations = annotations or []
         self.input = input or []
+        self.declarations = declarations or []
         self.output = output or []
 
-    def to_tuple(self):
-        return (self.name, self.input, self.output, self.annotations, self.statements)
+        for decl in self.declarations:
+            assert is_declaration(decl)
+            if decl.symbol not in self.output:
+                self.output.append(decl.symbol)
 
     def __eq__(self, other):
         attributes = ("name", "input", "output", "annotations", "statements")
@@ -774,19 +781,6 @@ class StatementList(LNode):
 
     def __repr__(self):
         return f"StatementList({self.statements})"
-
-
-class Scope(StatementList):
-    """A scope of statements."""
-
-    def __init__(self, statements):
-        self.statements = [as_statement(st) for st in statements]
-
-    def __eq__(self, other):
-        return isinstance(other, type(self)) and self.statements == other.statements
-
-    def __hash__(self) -> int:
-        return hash(tuple(self.statements))
 
 
 class Comment(Statement):
