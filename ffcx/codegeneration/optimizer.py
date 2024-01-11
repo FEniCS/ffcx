@@ -2,7 +2,6 @@ from typing import List, Union
 import ffcx.codegeneration.lnodes as L
 from collections import defaultdict
 from ffcx.ir.representationutils import QuadratureRule
-import hashlib
 
 
 def optimize(code: List[L.LNode], quadrature_rule) -> List[L.LNode]:
