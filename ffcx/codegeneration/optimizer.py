@@ -178,7 +178,6 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     """
     assert L.Annotation.licm in section.annotations
 
-    print(quadrature_rule.id())
     counter = 0
 
     # Check depth of loops
@@ -215,7 +214,6 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 name = f"temp_{quadrature_rule.id()}_{counter}"
                 counter += 1
                 temp = L.Symbol(name, L.DataType.REAL)
-                print("Hoist", lhs, hoist_candidates)
                 for h in hoist_candidates:
                     r.args.remove(h)
                 # update expression with new temp
