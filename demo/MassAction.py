@@ -4,10 +4,9 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import numpy as np
-
-import basix
 import ufl
+import basix
+import numpy as np
 
 P = 3
 cell_type = basix.CellType.hexahedron
@@ -29,10 +28,9 @@ mesh = ufl.Mesh(coords)
 V = ufl.FunctionSpace(mesh, element)
 x = ufl.SpatialCoordinate(mesh)
 
-# k = ufl.Constant(1.0)
 v = ufl.TestFunction(V)
 u = ufl.TrialFunction(V)
-a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(u, v)) * ufl.dx
+a = ufl.inner(u, v) * ufl.dx
 
-# w = ufl.Coefficient(V)
-# L = ufl.action(a, w)
+w = ufl.Coefficient(V)
+L = ufl.action(a, w)
