@@ -27,8 +27,6 @@ def optimize(code: List[L.LNode], quadrature_rule) -> List[L.LNode]:
                 section = fuse_loops(section)
             if L.Annotation.licm in section.annotations:
                 section = licm(section, quadrature_rule)
-            # Move declarations to the top of the code
-            code[i] = move_declaration(section)
 
     return code
 
@@ -162,35 +160,6 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
     return False
 
 
-def move_declaration(code: L.Section) -> L.Section:
-    """Move declarations to the top of the code.
-
-    Parameters
-    ----------
-    code : list of LNodes
-        List of LNodes to optimize.
-
-    Returns
-    -------
-    list of LNodes
-        Optimized list of LNodes.
-
-    """
-    declarations = []
-    output_code = []
-    for statement in code.statements:
-        if isinstance(statement, L.ArrayDecl):
-            declarations.append(statement)
-        elif isinstance(statement, L.VariableDecl):
-            declarations.append(statement)
-        else:
-            output_code.append(statement)
-
-    code.statements = declarations + output_code
-
-    return code
-
-
 def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     """Perform loop invariant code motion.
 
@@ -255,6 +224,6 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates))
                 pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
 
-    section.statements = [L.Scope(pre_loop + section.statements)]
+    section.statements = pre_loop + section.statements
 
     return section
