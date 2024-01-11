@@ -102,10 +102,8 @@ def fuse_loops(code: L.Section) -> L.Section:
         else:
             output_code.append(statement)
 
-    for info, body in loops.items():
-        index, begin, end = info
-        loop = L.ForRange(index, begin, end, body)
-        output_code.append(loop)
+    for range, body in loops.items():
+        output_code.append(L.ForRange(*range, body))
 
     return L.Section(code.name, output_code, code.input, code.output)
 
