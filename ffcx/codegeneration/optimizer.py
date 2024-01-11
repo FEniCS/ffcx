@@ -25,10 +25,10 @@ def optimize(code: List[L.LNode], quadrature_rule) -> List[L.LNode]:
         if isinstance(section, L.Section):
             if L.Annotation.fuse in section.annotations:
                 section = fuse_loops(section)
-                code[i] = section
             if L.Annotation.licm in section.annotations:
                 section = licm(section, quadrature_rule)
-                code[i] = section
+            # Move declarations to the top of the code
+            code[i] = move_declaration(section)
 
     return code
 
@@ -160,6 +160,35 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
         raise NotImplementedError(f"Statement {statement} not supported.")
 
     return False
+
+
+def move_declaration(code: L.Section) -> L.Section:
+    """Move declarations to the top of the code.
+
+    Parameters
+    ----------
+    code : list of LNodes
+        List of LNodes to optimize.
+
+    Returns
+    -------
+    list of LNodes
+        Optimized list of LNodes.
+
+    """
+    declarations = []
+    output_code = []
+    for statement in code.statements:
+        if isinstance(statement, L.ArrayDecl):
+            declarations.append(statement)
+        elif isinstance(statement, L.VariableDecl):
+            declarations.append(statement)
+        else:
+            output_code.append(statement)
+
+    code.statements = declarations + output_code
+
+    return code
 
 
 def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
