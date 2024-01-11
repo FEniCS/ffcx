@@ -157,6 +157,8 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
                         return True
     elif isinstance(statement, L.Symbol):
         return False
+    elif isinstance(statement, L.LiteralFloat) or isinstance(statement, L.LiteralInt):
+        return False
     else:
         raise NotImplementedError(f"Statement {statement} not supported.")
 
@@ -207,14 +209,14 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     for lhs, rhs in expressions.items():
         for r in rhs:
             hoist_candidates = []
+            print(r.args)
             for arg in r.args:
                 dependency = check_dependency(arg, inner_loop.index)
                 if not dependency:
                     hoist_candidates.append(arg)
             if (len(hoist_candidates) > 1):
                 # create new temp
-                hash = hashlib.sha1("my message".encode("UTF-8")).hexdigest()[:10]
-                name = f"temp_{quadrature_rule.id()}_{counter}_{hash}"
+                name = f"temp_{counter}"
                 counter += 1
                 temp = L.Symbol(name, L.DataType.SCALAR)
                 for h in hoist_candidates:
