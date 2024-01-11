@@ -7,11 +7,14 @@
 
 import logging
 import warnings
+from typing import Optional
 
 import basix.ufl
 import ffcx.codegeneration.lnodes as L
-from ffcx.ir.elementtables import UniqueTableReferenceT
 import ufl
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
+from ffcx.ir.elementtables import UniqueTableReferenceT
+from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
 
@@ -47,8 +50,8 @@ class FFCXBackendAccess(object):
                             ufl.geometry.FacetOrientation: self.facet_orientation,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
-    def get(self, mt, tabledata, num_points):
-
+    def get(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+            quadrature_rule: QuadratureRule):
         e = mt.terminal
         # Call appropriate handler, depending on the type of e
         handler = self.call_lookup.get(type(e), False)
@@ -61,11 +64,13 @@ class FFCXBackendAccess(object):
                     break
 
         if handler:
-            return handler(mt, tabledata, num_points)
+            return handler(mt, tabledata, quadrature_rule)
         else:
             raise RuntimeError(f"Not handled: {type(e)}")
 
-    def coefficient(self, mt, tabledata, num_points):
+    def coefficient(self, mt: ModifiedTerminal,
+                    tabledata:UniqueTableReferenceT,
+                    quadrature_rule: QuadratureRule):
         ttype = tabledata.ttype
         assert ttype != "zeros"
 
@@ -82,11 +87,15 @@ class FFCXBackendAccess(object):
             # Return symbol, see definitions for computation
             return self.symbols.coefficient_value(mt)
 
-    def constant(self, mt, tabledata, num_points):
+    def constant(self, mt: ModifiedTerminal,
+                 tabledata: Optional[UniqueTableReferenceT], 
+                 quadrature_rule: Optional[QuadratureRule]):
         """Access to a constant is handled trivially, directly through constants symbol."""
         return self.symbols.constant_index_access(mt.terminal, mt.flat_component)
 
-    def spatial_coordinate(self, mt, tabledata, num_points):
+    def spatial_coordinate(self, mt: ModifiedTerminal,
+                           tabledata: UniqueTableReferenceT,
+                           num_points: QuadratureRule):
         if mt.global_derivatives:
             raise RuntimeError("Not expecting global derivatives of SpatialCoordinate.")
         if mt.averaged is not None:
