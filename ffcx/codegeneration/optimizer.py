@@ -94,20 +94,20 @@ def fuse_loops(code: L.Section) -> L.Section:
 
     """
     loops = defaultdict(list)
-    pre_loop = []
+    output_code = []
     for statement in code.statements:
         if isinstance(statement, L.ForRange):
             id = (statement.index, statement.begin, statement.end)
             loops[id].append(statement.body)
         else:
-            pre_loop.append(statement)
+            output_code.append(statement)
 
     for info, body in loops.items():
         index, begin, end = info
         loop = L.ForRange(index, begin, end, body)
-        pre_loop.append(loop)
+        output_code.append(loop)
 
-    return L.Section(code.name, pre_loop, code.input, code.output)
+    return L.Section(code.name, output_code, code.input, code.output)
 
 
 def get_statements(statement: Union[L.Statement, L.StatementList]) -> List[L.LNode]:
