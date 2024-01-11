@@ -772,6 +772,22 @@ class StatementList(LNode):
     def __hash__(self) -> int:
         return hash(tuple(self.statements))
 
+    def __repr__(self):
+        return f"StatementList({self.statements})"
+
+
+class Scope(StatementList):
+    """A scope of statements."""
+
+    def __init__(self, statements):
+        self.statements = [as_statement(st) for st in statements]
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.statements == other.statements
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.statements))
+
 
 class Comment(Statement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""

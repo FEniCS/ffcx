@@ -178,6 +178,13 @@ class CFormatter(object):
     def format_statement_list(self, slist) -> str:
         return "".join(self.c_format(s) for s in slist.statements)
 
+    def format_scope(self, scope) -> str:
+        output = "{\n"
+        for s in scope.statements:
+            output += "  " + self.c_format(s) + "\n"
+        output += "}\n"
+        return output
+
     def format_section(self, section) -> str:
         # add new line before section
         comments = "// ------------------------ \n"
@@ -317,6 +324,7 @@ class CFormatter(object):
 
     c_impl = {
         "Section": format_section,
+        "Scope": format_scope,
         "StatementList": format_statement_list,
         "Comment": format_comment,
         "ArrayDecl": format_array_decl,

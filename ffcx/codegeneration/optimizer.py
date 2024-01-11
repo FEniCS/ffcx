@@ -227,6 +227,6 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates))
                 pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
 
-    section.statements = pre_loop + section.statements
+    section.statements = [L.Scope(pre_loop + section.statements)]
 
     return section
