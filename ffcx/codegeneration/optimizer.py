@@ -2,6 +2,7 @@ from typing import List, Union
 import ffcx.codegeneration.lnodes as L
 from collections import defaultdict
 from ffcx.ir.representationutils import QuadratureRule
+import hashlib
 
 
 def optimize(code: List[L.LNode], quadrature_rule) -> List[L.LNode]:
@@ -212,7 +213,6 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                     hoist_candidates.append(arg)
             if (len(hoist_candidates) > 1):
                 # create new temp
-                import hashlib
                 hash = hashlib.sha1("my message".encode("UTF-8")).hexdigest()[:10]
                 name = f"temp_{quadrature_rule.id()}_{counter}_{hash}"
                 counter += 1
