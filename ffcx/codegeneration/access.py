@@ -69,7 +69,7 @@ class FFCXBackendAccess(object):
             raise RuntimeError(f"Not handled: {type(e)}")
 
     def coefficient(self, mt: ModifiedTerminal,
-                    tabledata:UniqueTableReferenceT,
+                    tabledata: UniqueTableReferenceT,
                     quadrature_rule: QuadratureRule):
         ttype = tabledata.ttype
         assert ttype != "zeros"
@@ -88,7 +88,7 @@ class FFCXBackendAccess(object):
             return self.symbols.coefficient_value(mt)
 
     def constant(self, mt: ModifiedTerminal,
-                 tabledata: Optional[UniqueTableReferenceT], 
+                 tabledata: Optional[UniqueTableReferenceT],
                  quadrature_rule: Optional[QuadratureRule]):
         """Access to a constant is handled trivially, directly through constants symbol."""
         return self.symbols.constant_index_access(mt.terminal, mt.flat_component)
