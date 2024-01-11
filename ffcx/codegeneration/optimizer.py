@@ -211,7 +211,10 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 if not dependency:
                     hoist_candidates.append(arg)
             if (len(hoist_candidates) > 1):
-                name = f"temp_{quadrature_rule.id()}_{counter}"
+                # create new temp
+                import hashlib
+                hash = hashlib.sha1("my message".encode("UTF-8")).hexdigest()[:10]
+                name = f"temp_{quadrature_rule.id()}_{counter}_{hash}"
                 counter += 1
                 temp = L.Symbol(name, L.DataType.SCALAR)
                 for h in hoist_candidates:
