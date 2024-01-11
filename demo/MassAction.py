@@ -29,9 +29,10 @@ mesh = ufl.Mesh(coords)
 V = ufl.FunctionSpace(mesh, element)
 x = ufl.SpatialCoordinate(mesh)
 
+# k = ufl.Constant(1.0)
 v = ufl.TestFunction(V)
 u = ufl.TrialFunction(V)
-a = x[0] * ufl.inner(u, v) * ufl.dx
+a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(u, v)) * ufl.dx
 
-w = ufl.Coefficient(V)
-L = ufl.action(a, w)
+# w = ufl.Coefficient(V)
+# L = ufl.action(a, w)

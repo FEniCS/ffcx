@@ -213,7 +213,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             if (len(hoist_candidates) > 1):
                 name = f"temp_{quadrature_rule.id()}_{counter}"
                 counter += 1
-                temp = L.Symbol(name, L.DataType.REAL)
+                temp = L.Symbol(name, L.DataType.SCALAR)
                 for h in hoist_candidates:
                     r.args.remove(h)
                 # update expression with new temp
