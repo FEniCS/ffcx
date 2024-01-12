@@ -216,6 +216,6 @@ class FFCXBackendDefinitions(object):
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def pass_through(self, mt, tabledata, quadrature_rule, access):
+    def pass_through(self, mt, tabledata, quadrature_rule, access) -> list
         """Return definition code for pass through terminals."""
         return []

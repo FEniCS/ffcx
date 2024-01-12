@@ -739,7 +739,7 @@ class Annotation(Enum):
     factorize = 4   # apply sum factorization
 
 
-def is_declaration(node):
+def is_declaration(node) -> bool:
     return isinstance(node, VariableDecl) or isinstance(node, ArrayDecl)
 
 
@@ -885,7 +885,7 @@ def is_simple_inner_loop(code):
     return False
 
 
-def depth(code):
+def depth(code) -> int:
     if isinstance(code, ForRange):
         return 1 + depth(code.body)
     if isinstance(code, StatementList):
