@@ -9,7 +9,7 @@ import numpy as np
 import basix
 import ufl
 
-P = 1
+P = 3
 cell_type = basix.CellType.hexahedron
 element = basix.create_element(basix.ElementFamily.P, cell_type,
                                P, basix.LagrangeVariant.gll_warped)
@@ -31,7 +31,7 @@ x = ufl.SpatialCoordinate(mesh)
 
 v = ufl.TestFunction(V)
 u = ufl.TrialFunction(V)
-a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+a = ufl.inner(u, v) * ufl.dx
 
 w = ufl.Coefficient(V)
 L = ufl.action(a, w)
