@@ -17,18 +17,18 @@
 #
 # This demo illustrates use of finite element spaces defined over
 # simplicies embedded in higher dimensions
-from ufl import (Cell, FiniteElement, TestFunctions, TrialFunctions, div, dx,
+import basix.ufl
+from ufl import (FunctionSpace, Mesh, TestFunctions, TrialFunctions, div, dx,
                  inner)
 
-# Define interval embedded in 3D:
-domain = Cell("triangle", geometric_dimension=3)
-
 # Define element over this domain
-V = FiniteElement("RT", domain, 1)
-Q = FiniteElement("DG", domain, 0)
-element = V * Q
+V = basix.ufl.element("RT", "triangle", 1, gdim=3)
+Q = basix.ufl.element("DG", "triangle", 0, gdim=3)
+element = basix.ufl.mixed_element([V, Q])
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(3, ), gdim=3))
+space = FunctionSpace(domain, element)
 
-(u, p) = TrialFunctions(element)
-(v, q) = TestFunctions(element)
+(u, p) = TrialFunctions(space)
+(v, q) = TestFunctions(space)
 
 a = (inner(u, v) + div(u) * q + div(v) * p) * dx

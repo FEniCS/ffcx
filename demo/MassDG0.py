@@ -16,12 +16,14 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # The bilinear form for a mass matrix.
-from ufl import (FiniteElement, TestFunction, TrialFunction, dx, inner,
-                 tetrahedron)
+import basix.ufl
+from ufl import FunctionSpace, Mesh, TestFunction, TrialFunction, dx, inner
 
-element = FiniteElement("DG", tetrahedron, 0)
+element = basix.ufl.element("DG", "tetrahedron", 0)
+domain = Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, )))
+space = FunctionSpace(domain, element)
 
-v = TestFunction(element)
-u = TrialFunction(element)
+v = TestFunction(space)
+u = TrialFunction(space)
 
 a = inner(u, v) * dx

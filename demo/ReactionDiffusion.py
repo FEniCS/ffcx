@@ -17,14 +17,17 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for a simple
 # reaction-diffusion equation using simplified tuple notation.
-from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction, dx,
-                 grad, inner, triangle)
+import basix.ufl
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
-element = FiniteElement("Lagrange", triangle, 1)
+element = basix.ufl.element("Lagrange", "triangle", 1)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, element)
 
-u = TrialFunction(element)
-v = TestFunction(element)
-f = Coefficient(element)
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
 a = (inner(grad(u), grad(v)) + u * v) * dx
 L = f * v * dx

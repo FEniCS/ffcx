@@ -7,21 +7,22 @@
 import hashlib
 import typing
 
-import numpy
-import numpy.typing
-import ufl
+import numpy as np
+import numpy.typing as npt
 
+import basix.ufl
 import ffcx
+import ufl
 
 
 def compute_signature(ufl_objects: typing.List[
-    typing.Union[ufl.Form,
-                 ufl.FiniteElementBase,
-                 typing.Tuple[ufl.core.expr.Expr, numpy.typing.NDArray[numpy.float64]]]], tag: str) -> str:
+    typing.Union[ufl.Form, basix.ufl._ElementBase,
+                 typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional
     'tag'.
+
     """
     object_signature = ""
     for ufl_object in ufl_objects:
@@ -29,7 +30,7 @@ def compute_signature(ufl_objects: typing.List[
         if isinstance(ufl_object, ufl.Form):
             kind = "form"
             object_signature += ufl_object.signature()
-        elif isinstance(ufl_object, ufl.FiniteElementBase):
+        elif isinstance(ufl_object, ufl.AbstractFiniteElement):
             object_signature += repr(ufl_object)
             kind = "element"
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
@@ -53,7 +54,8 @@ def compute_signature(ufl_objects: typing.List[
                 domains.append(*arg.ufl_function_space().ufl_domains())
             for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
                 domains.append(*gc.ufl_domains())
-
+            for const in consts:
+                domains.append(const.ufl_domain())
             domains = ufl.algorithms.analysis.unique_tuple(domains)
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
@@ -83,13 +85,13 @@ def form_name(original_form, form_id, prefix):
 
 
 def finite_element_name(ufl_element, prefix):
-    assert isinstance(ufl_element, ufl.FiniteElementBase)
+    assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
-    assert isinstance(ufl_element, ufl.FiniteElementBase)
+    assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"dofmap_{sig}"
 
@@ -98,33 +100,3 @@ def expression_name(expression, prefix):
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)
     return f"expression_{sig}"
-
-
-def cdtype_to_numpy(cdtype: str):
-    """Map a C data type string NumPy datatype string."""
-    if cdtype == "double":
-        return "float64"
-    elif cdtype == "double _Complex":
-        return "complex128"
-    elif cdtype == "float":
-        return "float32"
-    elif cdtype == "float _Complex":
-        return "complex64"
-    elif cdtype == "long double":
-        return "longdouble"
-    else:
-        raise RuntimeError(f"Unknown NumPy type for: {cdtype}")
-
-
-def scalar_to_value_type(scalar_type: str) -> str:
-    """The C value type associated with a C scalar type.
-
-    Args:
-      scalar_type: A C type.
-
-    Returns:
-      The value type associated with ``scalar_type``. E.g., if
-      ``scalar_type`` is ``float _Complex`` the return value is 'float'.
-
-    """
-    return scalar_type.replace(' _Complex', '')

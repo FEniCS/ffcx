@@ -16,19 +16,24 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Test form for metadata.
-from ufl import (Coefficient, FiniteElement, TestFunction, TrialFunction,
-                 VectorElement, dx, grad, inner, triangle)
+import basix.ufl
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dx, grad, inner)
 
-element = FiniteElement("Lagrange", triangle, 1)
-vector_element = VectorElement("Lagrange", triangle, 1)
+element = basix.ufl.element("Lagrange", "triangle", 1)
+vector_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, element)
+vector_space = FunctionSpace(domain, vector_element)
 
-
-u = TrialFunction(element)
-v = TestFunction(element)
-c = Coefficient(vector_element)
+u = TrialFunction(space)
+v = TestFunction(space)
+c = Coefficient(vector_space)
 
 # Terms on the same subdomain using different quadrature degree
 a = inner(grad(u), grad(v)) * dx(0, degree=8)\
     + inner(c, c) * inner(grad(u), grad(v)) * dx(1, degree=4)\
     + inner(c, c) * inner(grad(u), grad(v)) * dx(1, degree=2)\
     + inner(grad(u), grad(v)) * dx(1, degree=-1)
+
+L = v * dx(0, metadata={"precision": 1})

@@ -9,16 +9,20 @@ import io
 import logging
 import os
 import re
+import sysconfig
 import tempfile
 import time
 from contextlib import redirect_stdout
 from pathlib import Path
 
 import cffi
+import numpy as np
+
 import ffcx
 import ffcx.naming
 
 logger = logging.getLogger("ffcx")
+root_logger = logging.getLogger()
 
 # Get declarations directly from ufcx.h
 file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -46,9 +50,9 @@ UFC_INTEGRAL_DECL += '\n'.join(re.findall('typedef struct ufcx_integral.*?ufcx_i
 UFC_EXPRESSION_DECL = '\n'.join(re.findall('typedef struct ufcx_expression.*?ufcx_expression;', ufcx_h, re.DOTALL))
 
 
-def _compute_parameter_signature(parameters):
-    """Return parameters signature (some parameters should not affect signature)."""
-    return str(sorted(parameters.items()))
+def _compute_option_signature(options):
+    """Return options signature (some options should not affect signature)."""
+    return str(sorted(options.items()))
 
 
 def get_cached_module(module_name, object_names, cache_dir, timeout):
@@ -85,18 +89,34 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
             logger.info(f"Waiting for {ready_name} to appear.")
             time.sleep(1)
         raise TimeoutError(f"""JIT compilation timed out, probably due to a failed previous compile.
-        Try cleaning cache (e.g. remove {c_filename}) or increase timeout parameter.""")
+        Try cleaning cache (e.g. remove {c_filename}) or increase timeout option.""")
 
 
-def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                     cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
+def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
+    """Compute the compilation-inputs part of the signature.
+
+    Used to avoid cache conflicts across Python versions, architectures, installs.
+
+    - SOABI includes platform, Python version, debug flags
+    - CFLAGS includes prefixes, arch targets
+    """
+    return (
+        str(cffi_extra_compile_args)
+        + str(cffi_debug)
+        + sysconfig.get_config_var("CFLAGS")
+        + sysconfig.get_config_var("SOABI")
+    )
+
+
+def compile_elements(elements, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+                     cffi_verbose=False, cffi_debug=None, cffi_libraries=None, visualise: bool = False):
     """Compile a list of UFL elements and dofmaps into Python objects."""
-    p = ffcx.parameters.get_parameters(parameters)
+    p = ffcx.options.get_options(options)
 
     # Get a signature for these elements
     module_name = 'libffcx_elements_' + \
-        ffcx.naming.compute_signature(elements, _compute_parameter_signature(p)
-                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+        ffcx.naming.compute_signature(elements, _compute_option_signature(p)
+                                      + _compilation_signature(cffi_extra_compile_args, cffi_debug))
 
     names = []
     for e in elements:
@@ -116,7 +136,7 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
+        decl = UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL
         element_template = "extern ufcx_finite_element {name};\n"
         dofmap_template = "extern ufcx_dofmap {name};\n"
         for i in range(len(elements)):
@@ -124,12 +144,15 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
             decl += dofmap_template.format(name=names[i * 2 + 1])
 
         impl = _compile_objects(decl, elements, names, module_name, p, cache_dir,
-                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
-    except Exception:
-        # remove c file so that it will not timeout next time
-        c_filename = cache_dir.joinpath(module_name + ".c")
-        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        raise
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries, visualise=visualise)
+    except Exception as e:
+        try:
+            # remove c file so that it will not timeout next time
+            c_filename = cache_dir.joinpath(module_name + ".c")
+            os.replace(c_filename, c_filename.with_suffix(".c.failed"))
+        except Exception:
+            pass
+        raise e
 
     objects, module = _load_objects(cache_dir, module_name, names)
     # Pair up elements with dofmaps
@@ -137,15 +160,16 @@ def compile_elements(elements, parameters=None, cache_dir=None, timeout=10, cffi
     return objects, module, (decl, impl)
 
 
-def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                  cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
+def compile_forms(forms, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+                  cffi_verbose=False, cffi_debug=None, cffi_libraries=None,
+                  visualise: bool = False):
     """Compile a list of UFL forms into UFC Python objects."""
-    p = ffcx.parameters.get_parameters(parameters)
+    p = ffcx.options.get_options(options)
 
     # Get a signature for these forms
     module_name = 'libffcx_forms_' + \
-        ffcx.naming.compute_signature(forms, _compute_parameter_signature(p)
-                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+        ffcx.naming.compute_signature(forms, _compute_option_signature(p)
+                                      + _compilation_signature(cffi_extra_compile_args, cffi_debug))
 
     form_names = [ffcx.naming.form_name(form, i, module_name) for i, form in enumerate(forms)]
 
@@ -158,7 +182,7 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        decl = UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_INTEGRAL_DECL + UFC_FORM_DECL
 
         form_template = "extern ufcx_form {name};\n"
@@ -166,32 +190,37 @@ def compile_forms(forms, parameters=None, cache_dir=None, timeout=10, cffi_extra
             decl += form_template.format(name=name)
 
         impl = _compile_objects(decl, forms, form_names, module_name, p, cache_dir,
-                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
-    except Exception:
-        # remove c file so that it will not timeout next time
-        c_filename = cache_dir.joinpath(module_name + ".c")
-        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        raise
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries,
+                                visualise=visualise)
+    except Exception as e:
+        try:
+            # remove c file so that it will not timeout next time
+            c_filename = cache_dir.joinpath(module_name + ".c")
+            os.replace(c_filename, c_filename.with_suffix(".c.failed"))
+        except Exception:
+            pass
+        raise e
 
     obj, module = _load_objects(cache_dir, module_name, form_names)
     return obj, module, (decl, impl)
 
 
-def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
-                        cffi_verbose=False, cffi_debug=None, cffi_libraries=None):
+def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, cffi_extra_compile_args=None,
+                        cffi_verbose: bool = False, cffi_debug=None, cffi_libraries=None,
+                        visualise: bool = False):
     """Compile a list of UFL expressions into UFC Python objects.
 
-    Parameters
-    ----------
+    Options
+    -------
     expressions
         List of (UFL expression, evaluation points).
 
     """
-    p = ffcx.parameters.get_parameters(parameters)
+    p = ffcx.options.get_options(options)
 
     module_name = 'libffcx_expressions_' + \
-        ffcx.naming.compute_signature(expressions, _compute_parameter_signature(p)
-                                      + str(cffi_extra_compile_args) + str(cffi_debug))
+        ffcx.naming.compute_signature(expressions, _compute_option_signature(p)
+                                      + _compilation_signature(cffi_extra_compile_args, cffi_debug))
     expr_names = [ffcx.naming.expression_name(expression, module_name) for expression in expressions]
 
     if cache_dir is not None:
@@ -203,7 +232,7 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
         cache_dir = Path(tempfile.mkdtemp())
 
     try:
-        decl = UFC_HEADER_DECL.format(p["scalar_type"]) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
+        decl = UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name) + UFC_ELEMENT_DECL + UFC_DOFMAP_DECL + \
             UFC_INTEGRAL_DECL + UFC_FORM_DECL + UFC_EXPRESSION_DECL
 
         expression_template = "extern ufcx_expression {name};\n"
@@ -211,25 +240,31 @@ def compile_expressions(expressions, parameters=None, cache_dir=None, timeout=10
             decl += expression_template.format(name=name)
 
         impl = _compile_objects(decl, expressions, expr_names, module_name, p, cache_dir,
-                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries)
-    except Exception:
-        # remove c file so that it will not timeout next time
-        c_filename = cache_dir.joinpath(module_name + ".c")
-        os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        raise
+                                cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries,
+                                visualise=visualise)
+    except Exception as e:
+        try:
+            # remove c file so that it will not timeout next time
+            c_filename = cache_dir.joinpath(module_name + ".c")
+            os.replace(c_filename, c_filename.with_suffix(".c.failed"))
+        except Exception:
+            pass
+        raise e
 
     obj, module = _load_objects(cache_dir, module_name, expr_names)
     return obj, module, (decl, impl)
 
 
-def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, cache_dir,
-                     cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries):
+def _compile_objects(decl, ufl_objects, object_names, module_name, options, cache_dir,
+                     cffi_extra_compile_args, cffi_verbose, cffi_debug, cffi_libraries,
+                     visualise: bool = False):
 
     import ffcx.compiler
 
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
-    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, parameters=parameters)
+    _, code_body = ffcx.compiler.compile_ufl_objects(ufl_objects, prefix=module_name, options=options,
+                                                     visualise=visualise)
 
     ffibuilder = cffi.FFI()
     ffibuilder.set_source(module_name, code_body, include_dirs=[ffcx.codegeneration.get_include_path()],
@@ -248,6 +283,10 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
 
     t0 = time.time()
     f = io.StringIO()
+    # Temporarily set root logger handlers to string buffer only
+    # since CFFI logs into root logger
+    old_handlers = root_logger.handlers.copy()
+    root_logger.handlers = [logging.StreamHandler(f)]
     with redirect_stdout(f):
         ffibuilder.compile(tmpdir=cache_dir, verbose=True, debug=cffi_debug)
     s = f.getvalue()
@@ -262,6 +301,10 @@ def _compile_objects(decl, ufl_objects, object_names, module_name, parameters, c
     fd = open(ready_name, "x")
     fd.write(s)
     fd.close()
+
+    # Copy back the original handlers (in case someone is logging into
+    # root logger and has custom handlers)
+    root_logger.handlers = old_handlers
 
     return code_body
 

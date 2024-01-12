@@ -18,17 +18,17 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Mixed coefficient.
-from ufl import (Coefficients, FiniteElement, MixedElement, VectorElement, dot,
-                 dS, dx, triangle)
+import basix.ufl
+from ufl import Coefficients, FunctionSpace, Mesh, dot, dS, dx
 
-cell = triangle
+DG = basix.ufl.element("DG", "triangle", 0, shape=(2, ))
+CG = basix.ufl.element("Lagrange", "triangle", 2)
+RT = basix.ufl.element("RT", "triangle", 3)
 
-DG = VectorElement("DG", cell, 0)
-CG = FiniteElement("Lagrange", cell, 2)
-RT = FiniteElement("RT", cell, 3)
+element = basix.ufl.mixed_element([DG, CG, RT])
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, element)
 
-element = MixedElement(DG, CG, RT)
-
-f, g, h = Coefficients(element)
+f, g, h = Coefficients(space)
 
 forms = [dot(f('+'), h('-')) * dS + g * dx]

@@ -3,20 +3,24 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Biharmonic equation in Hellan-Herrmann-Johnson (HHJ)
 # formulation.
-from ufl import (Coefficient, FacetNormal, FiniteElement, TestFunctions,
-                 TrialFunctions, dot, dS, ds, dx, grad, inner, jump, triangle)
+import basix.ufl
+from ufl import (Coefficient, FacetNormal, FunctionSpace, Mesh, TestFunctions,
+                 TrialFunctions, dot, dS, ds, dx, grad, inner, jump)
 
-HHJ = FiniteElement('HHJ', triangle, 2)
-CG = FiniteElement('CG', triangle, 3)
-mixed_element = HHJ * CG
+HHJ = basix.ufl.element('HHJ', "triangle", 2)
+P = basix.ufl.element('P', "triangle", 3)
+mixed_element = basix.ufl.mixed_element([HHJ, P])
+domain = Mesh(basix.ufl.element("P", "triangle", 1, shape=(2, )))
+mixed_space = FunctionSpace(domain, mixed_element)
+p_space = FunctionSpace(domain, P)
 
-(sigma, u) = TrialFunctions(mixed_element)
-(tau, v) = TestFunctions(mixed_element)
-f = Coefficient(CG)
+(sigma, u) = TrialFunctions(mixed_space)
+(tau, v) = TestFunctions(mixed_space)
+f = Coefficient(p_space)
 
 
 def b(sigma, v):
-    n = FacetNormal(triangle)
+    n = FacetNormal(domain)
     return inner(sigma, grad(grad(v))) * dx \
         - dot(dot(sigma('+'), n('+')), n('+')) * jump(grad(v), n) * dS \
         - dot(dot(sigma, n), n) * dot(grad(v), n) * ds

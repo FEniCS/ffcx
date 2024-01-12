@@ -18,15 +18,18 @@
 # The bilinear form a(u, v) and linear form L(v) for
 # Poisson's equation where spatial coordinates are used to define the source
 # and boundary flux terms.
-from ufl import (FiniteElement, SpatialCoordinate, TestFunction, TrialFunction,
-                 ds, dx, exp, grad, inner, sin, triangle)
+import basix.ufl
+from ufl import (FunctionSpace, Mesh, SpatialCoordinate, TestFunction,
+                 TrialFunction, ds, dx, exp, grad, inner, sin)
 
-element = FiniteElement("Lagrange", triangle, 2)
+element = basix.ufl.element("Lagrange", "triangle", 2)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, element)
 
-u = TrialFunction(element)
-v = TestFunction(element)
+u = TrialFunction(space)
+v = TestFunction(space)
 
-x = SpatialCoordinate(triangle)
+x = SpatialCoordinate(domain)
 d_x = x[0] - 0.5
 d_y = x[1] - 0.5
 f = 10.0 * exp(-(d_x * d_x + d_y * d_y) / 0.02)

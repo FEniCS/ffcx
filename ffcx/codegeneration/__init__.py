@@ -1,5 +1,5 @@
-import os
 import hashlib
+import os
 
 # Version of FFCx header files
 __author__ = "FEniCS Project"

@@ -10,7 +10,8 @@ import itertools
 import logging
 import typing
 
-import numpy
+import numpy as np
+
 import ufl
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
@@ -48,8 +49,8 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     # here
     ir = {}
 
-    # Pass on parameters for consumption in code generation
-    ir["params"] = p
+    # Pass on options for consumption in code generation
+    ir["options"] = p
 
     # Shared unique tables for all quadrature loops
     ir["unique_tables"] = {}
@@ -87,15 +88,17 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             entitytype,
             initial_terminals.values(),
             ir["unique_tables"],
+            use_sum_factorization=p["sum_factorization"],
             rtol=p["table_rtol"],
-            atol=p["table_atol"])
+            atol=p["table_atol"]
+        )
 
         # Fetch unique tables for this quadrature rule
         table_types = {v.name: v.ttype for v in mt_table_reference.values()}
         tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get('target', False)]
-        num_components = numpy.int32(numpy.prod(expression.ufl_shape))
+        num_components = np.int32(np.prod(expression.ufl_shape))
 
         if 'zeros' in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
@@ -115,9 +118,9 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             expressions = [None, ] * num_components
             for target in S_targets:
                 for comp in S.nodes[target]["component"]:
-                    assert(expressions[comp] is None)
+                    assert expressions[comp] is None
                     expressions[comp] = S.nodes[target]["expression"]
-            expression = ufl.as_tensor(numpy.reshape(expressions, expression.ufl_shape))
+            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
@@ -231,14 +234,22 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         for i, v in F.nodes.items():
             tr = v.get('tr')
             if tr is not None and F.nodes[i]['status'] != 'inactive':
-                active_table_names.add(tr.name)
+                if tr.has_tensor_factorisation:
+                    for t in tr.tensor_factors:
+                        active_table_names.add(t.name)
+                else:
+                    active_table_names.add(tr.name)
 
         # Figure out which table names are referenced in blocks
         for blockmap, contributions in itertools.chain(
                 block_contributions.items()):
             for blockdata in contributions:
                 for mad in blockdata.ma_data:
-                    active_table_names.add(mad.tabledata.name)
+                    if mad.tabledata.has_tensor_factorisation:
+                        for t in mad.tabledata.tensor_factors:
+                            active_table_names.add(t.name)
+                    else:
+                        active_table_names.add(mad.tabledata.name)
 
         active_tables = {}
         active_table_types = {}

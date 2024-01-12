@@ -16,15 +16,19 @@
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
 # Illustration on how to use Conditional to define a source term
-from ufl import (And, Constant, FiniteElement, Not, Or, SpatialCoordinate,
-                 TestFunction, conditional, dx, ge, gt, le, lt, triangle)
+import basix.ufl
+from ufl import (And, Constant, FunctionSpace, Mesh, Not, Or,
+                 SpatialCoordinate, TestFunction, conditional, dx, ge, gt, le,
+                 lt)
 
-element = FiniteElement("Lagrange", triangle, 2)
+element = basix.ufl.element("Lagrange", "triangle", 2)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, element)
 
-v = TestFunction(element)
-g = Constant(triangle)
+v = TestFunction(space)
+g = Constant(domain)
 
-x = SpatialCoordinate(triangle)
+x = SpatialCoordinate(domain)
 c0 = conditional(le((x[0] - 0.33)**2 + (x[1] - 0.67)**2, 0.015), -1.0, 5.0)
 c = conditional(le((x[0] - 0.33)**2 + (x[1] - 0.67)**2, 0.025), c0, 0.0)
 

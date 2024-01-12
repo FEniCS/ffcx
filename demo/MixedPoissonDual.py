@@ -20,19 +20,23 @@
 #
 # The bilinear form a(u, v) and linear form L(v) for a two-field
 # (mixed) formulation of Poisson's equation
-from ufl import (Coefficient, FiniteElement, TestFunctions, TrialFunctions,
-                 dot, ds, dx, grad, triangle)
+import basix.ufl
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunctions,
+                 TrialFunctions, dot, ds, dx, grad)
 
-DRT = FiniteElement("DRT", triangle, 2)
-CG = FiniteElement("CG", triangle, 3)
-W = DRT * CG
+DRT = basix.ufl.element("Discontinuous RT", "triangle", 2)
+P = basix.ufl.element("P", "triangle", 3)
+W = basix.ufl.mixed_element([DRT, P])
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+space = FunctionSpace(domain, W)
 
-(sigma, u) = TrialFunctions(W)
-(tau, v) = TestFunctions(W)
+(sigma, u) = TrialFunctions(space)
+(tau, v) = TestFunctions(space)
 
-CG1 = FiniteElement("CG", triangle, 1)
-f = Coefficient(CG1)
-g = Coefficient(CG1)
+P1 = basix.ufl.element("P", "triangle", 1)
+space = FunctionSpace(domain, P1)
+f = Coefficient(space)
+g = Coefficient(space)
 
 a = (dot(sigma, tau) + dot(grad(u), tau) + dot(sigma, grad(v))) * dx
 L = - f * v * dx - g * v * ds

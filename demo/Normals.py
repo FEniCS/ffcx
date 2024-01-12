@@ -17,17 +17,20 @@
 #
 # This example demonstrates how to use the facet normals
 # Merely project the normal onto a vector section.
-from ufl import (FacetNormal, TestFunction, TrialFunction, VectorElement, dot,
-                 ds, triangle)
+import basix.ufl
+from ufl import (FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction,
+                 dot, ds, triangle)
 
 cell = triangle
 
-element = VectorElement("Lagrange", cell, 1)
+element = basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, ))
+domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, )))
+space = FunctionSpace(domain, element)
 
-n = FacetNormal(cell)
+n = FacetNormal(domain)
 
-v = TrialFunction(element)
-u = TestFunction(element)
+v = TrialFunction(space)
+u = TestFunction(space)
 
 a = dot(v, u) * ds
 L = dot(n, u) * ds
