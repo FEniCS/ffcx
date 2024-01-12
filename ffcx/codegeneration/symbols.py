@@ -6,8 +6,9 @@
 """FFCx/UFC specific symbol naming."""
 
 import logging
-import ufl
+
 import ffcx.codegeneration.lnodes as L
+import ufl
 
 logger = logging.getLogger("ffcx")
 
@@ -197,3 +198,34 @@ class FFCXBackendSymbols(object):
             self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
                                                            dtype=L.DataType.REAL)
         return self.element_tables[tabledata.name][qp][entity][iq]
+
+    def table_access(self, tabledata, entitytype, restriction, quadrature_index, dof_index):
+        entity = self.entity(entitytype, restriction)
+        if tabledata.is_uniform:
+            entity = 0
+
+        iq = quadrature_index
+        ic = dof_index
+
+        iq_global_index = iq.global_index
+        ic_global_index = ic.global_index
+
+        if tabledata.is_piecewise:
+            iq_global_index = 0
+
+        qp = 0
+        if tabledata.is_permuted:
+            qp = self.quadrature_permutation[0]
+            if restriction == "-":
+                qp = self.quadrature_permutation[1]
+
+        if dof_index.dim == 1:
+            return self.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
+        else:
+            FE = []
+            for i in range(dof_index.dim):
+                factor = tabledata.tensor_factors[i]
+                table = self.element_tables[factor.name][qp][entity][iq.local_index(i)][ic.local_index(i)]
+                FE.append(table)
+
+        return L.Product(FE)

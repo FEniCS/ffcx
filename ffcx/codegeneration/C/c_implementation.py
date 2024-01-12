@@ -5,11 +5,15 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import warnings
+
+import numpy as np
+import numpy.typing as npt
+
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import scalar_to_value_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 math_table = {
-    "double": {
+    "float64": {
         "sqrt": "sqrt",
         "abs": "fabs",
         "cos": "cos",
@@ -34,7 +38,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "float": {
+    "float32": {
         "sqrt": "sqrtf",
         "abs": "fabsf",
         "cos": "cosf",
@@ -59,7 +63,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "long double": {
+    "longdouble": {
         "sqrt": "sqrtl",
         "abs": "fabsl",
         "cos": "cosl",
@@ -82,7 +86,7 @@ math_table = {
         "min_value": "fminl",
         "max_value": "fmaxl",
     },
-    "double _Complex": {
+    "complex128": {
         "sqrt": "csqrt",
         "abs": "cabs",
         "cos": "ccos",
@@ -108,7 +112,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "float _Complex": {
+    "complex64": {
         "sqrt": "csqrtf",
         "abs": "cabsf",
         "cos": "ccosf",
@@ -138,15 +142,18 @@ math_table = {
 
 
 class CFormatter(object):
-    def __init__(self, scalar) -> None:
-        self.scalar_type = scalar
-        self.real_type = scalar_to_value_type(scalar)
+    scalar_type: np.dtype
+    real_type: np.dtype
 
-    def _dtype_to_name(self, dtype):
+    def __init__(self, dtype: npt.DTypeLike) -> None:
+        self.scalar_type = np.dtype(dtype)
+        self.real_type = dtype_to_scalar_dtype(dtype)
+
+    def _dtype_to_name(self, dtype) -> str:
         if dtype == L.DataType.SCALAR:
-            return self.scalar_type
+            return dtype_to_c_type(self.scalar_type)
         if dtype == L.DataType.REAL:
-            return self.real_type
+            return dtype_to_c_type(self.real_type)
         if dtype == L.DataType.INT:
             return "int"
         raise ValueError(f"Invalid dtype: {dtype}")
@@ -291,7 +298,7 @@ class CFormatter(object):
         else:
             warnings.warn(f"Syntax item without dtype {c.args[0]}")
 
-        dtype_math_table = math_table.get(arg_type, {})
+        dtype_math_table = math_table[arg_type.name]
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)

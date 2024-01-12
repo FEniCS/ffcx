@@ -120,7 +120,7 @@ def _analyze_expression(expression: ufl.core.expr.Expr, options: typing.Dict):
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
 
-    complex_mode = "_Complex" in options["scalar_type"]
+    complex_mode = np.issubdtype(options["scalar_type"], np.complexfloating)
     if not complex_mode:
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
 
@@ -154,7 +154,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         assert isinstance(element, basix.ufl._ElementBase)
 
     # Check for complex mode
-    complex_mode = "_Complex" in options["scalar_type"]
+    complex_mode = np.issubdtype(options["scalar_type"], np.complexfloating)
 
     # Compute form metadata
     form_data = ufl.algorithms.compute_form_data(
@@ -190,8 +190,9 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
                     if custom_q is None:
                         custom_q = e.custom_quadrature()
                     else:
-                        assert np.allclose(e._points, custom_q[0])
-                        assert np.allclose(e._weights, custom_q[1])
+                        p, w = e.custom_quadrature()
+                        assert np.allclose(p, custom_q[0])
+                        assert np.allclose(w, custom_q[1])
 
             if custom_q is None:
                 # Extract quadrature degree

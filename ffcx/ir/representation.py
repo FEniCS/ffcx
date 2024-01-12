@@ -71,6 +71,12 @@ class CustomElementIR(typing.NamedTuple):
     polyset_type: basix.PolysetType
 
 
+class QuadratureIR(typing.NamedTuple):
+    cell_shape: str
+    points: npt.NDArray[np.float64]
+    weights: npt.NDArray[np.float64]
+
+
 class ElementIR(typing.NamedTuple):
     id: int
     name: str
@@ -93,6 +99,7 @@ class ElementIR(typing.NamedTuple):
     basix_cell: basix.CellType
     discontinuous: bool
     custom_element: CustomElementIR
+    custom_quadrature: QuadratureIR
 
 
 class DofMapIR(typing.NamedTuple):
@@ -134,6 +141,7 @@ class IntegralIR(typing.NamedTuple):
     name: str
     needs_facet_permutations: bool
     coordinate_element: str
+    sum_factorization: bool
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -242,14 +250,19 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
 
     ir["block_size"] = element.block_size
     if element.block_size > 1:
-        element = element.sub_element
+        element = element._sub_element
 
     ir["entity_dofs"] = element.entity_dofs
 
     if element.is_custom_element:
-        ir["custom_element"] = _compute_custom_element_ir(element.element)
+        ir["custom_element"] = _compute_custom_element_ir(element._element)
     else:
         ir["custom_element"] = None
+
+    if element.has_custom_quadrature:
+        ir["custom_quadrature"] = _compute_custom_quadrature_ir(element)
+    else:
+        ir["custom_quadrature"] = None
 
     return ElementIR(**ir)
 
@@ -273,6 +286,15 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     return CustomElementIR(**ir)
 
 
+def _compute_custom_quadrature_ir(element: basix.ufl._ElementBase):
+    """Compute intermediate representation of a custom Basix element."""
+    ir: typing.Dict[str, typing.Any] = {}
+    ir["cell_shape"] = element.cell_type.name
+    ir["points"], ir["weights"] = element.custom_quadrature()
+
+    return QuadratureIR(**ir)
+
+
 def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     """Compute intermediate representation of dofmap."""
     logger.info(f"Computing IR for dofmap of {element}")
@@ -288,7 +310,7 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
 
     ir["block_size"] = element.block_size
     if element.block_size > 1:
-        element = element.sub_element
+        element = element._sub_element
 
     # Precompute repeatedly used items
     for i in element.num_entity_dofs:
@@ -301,7 +323,9 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     # FIXME: This does not work for prisms and pyramids
     num_dofs_per_entity = [i[0] for i in element.num_entity_dofs]
     ir["num_entity_dofs"] = num_dofs_per_entity
+
     ir["entity_dofs"] = element.entity_dofs
+    ir["entity_closure_dofs"] = element.entity_closure_dofs
 
     num_dofs_per_entity_closure = [i[0] for i in element.num_entity_closure_dofs]
     ir["num_entity_closure_dofs"] = num_dofs_per_entity_closure
@@ -348,7 +372,8 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             "num_vertices": cell.num_vertices(),
             "enabled_coefficients": itg_data.enabled_coefficients,
             "cell_shape": cellname,
-            "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()]
+            "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()],
+            "sum_factorization": options["sum_factorization"] and itg_data.integral_type == "cell",
         }
 
         # Get element space dimensions
@@ -381,7 +406,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
-
+            tensor_factors = None
             if scheme == "custom":
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
@@ -425,14 +450,15 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
                 else:
                     raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
             else:
+
                 degree = md["quadrature_degree"]
-                points, weights = create_quadrature_points_and_weights(
-                    integral_type, cell, degree, scheme, form_data.argument_elements)
+                points, weights, tensor_factors = create_quadrature_points_and_weights(
+                    integral_type, cell, degree, scheme, form_data.argument_elements,
+                    ir["sum_factorization"])
 
             points = np.asarray(points)
             weights = np.asarray(weights)
-
-            rule = QuadratureRule(points, weights)
+            rule = QuadratureRule(points, weights, tensor_factors)
 
             if rule not in grouped_integrands:
                 grouped_integrands[rule] = []

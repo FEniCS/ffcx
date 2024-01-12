@@ -5,9 +5,11 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numbers
-import ufl
-import numpy as np
 from enum import Enum
+
+import numpy as np
+
+import ufl
 
 
 class PRECEDENCE:
@@ -327,6 +329,8 @@ class Symbol(LExprTerminal):
 class MultiIndex(LExpr):
     """A multi-index for accessing tensors flattened in memory."""
 
+    precedence = PRECEDENCE.SYMBOL
+
     def __init__(self, symbols: list, sizes: list):
         self.dtype = DataType.INT
         self.sizes = sizes
@@ -340,6 +344,10 @@ class MultiIndex(LExpr):
         else:
             stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
             self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
+
+    @property
+    def dim(self):
+        return len(self.sizes)
 
     def size(self):
         return np.prod(self.sizes)
@@ -382,7 +390,7 @@ class MultiIndex(LExpr):
         return MultiIndex(symbols, sizes)
 
     def __hash__(self):
-        return hash(self.global_idx)
+        return hash(self.global_index.__repr__)
 
 
 class PrefixUnaryOp(LExprOperator):
@@ -428,6 +436,9 @@ class NaryOp(LExprOperator):
 
     def __init__(self, args):
         self.args = [as_lexpr(arg) for arg in args]
+        self.dtype = self.args[0].dtype
+        for arg in self.args:
+            self.dtype = merge_dtypes(self.dtype, arg.dtype)
 
     def __eq__(self, other):
         return (
@@ -438,6 +449,9 @@ class NaryOp(LExprOperator):
 
     def __repr__(self) -> str:
         return f"{self.op} ".join(f"{i} " for i in self.args)
+
+    def __hash__(self):
+        return hash(tuple(self.args))
 
 
 class Neg(PrefixUnaryOp):
@@ -838,7 +852,7 @@ class ForRange(Statement):
     is_scoped = True
 
     def __init__(self, index, begin, end, body):
-        assert isinstance(index, Symbol)
+        assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
         self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)

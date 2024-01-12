@@ -19,7 +19,6 @@
 # Modified by Lizao Li, 2016
 "Unit tests for FFCx"
 
-
 import numpy as np
 import pytest
 
@@ -54,7 +53,7 @@ def test_continuous_lagrange(degree, expected_dim):
 
 
 @pytest.mark.parametrize("degree, expected_dim", [(1, 4), (2, 9), (3, 16)])
-def xtest_continuous_lagrange_quadrilateral(degree, expected_dim):
+def test_continuous_lagrange_quadrilateral(degree, expected_dim):
     "Test space dimensions of continuous TensorProduct elements (quadrilateral)."
     P = basix.ufl.element("Lagrange", "quadrilateral", degree)
     assert P.dim == expected_dim
@@ -84,15 +83,14 @@ def test_regge(degree, expected_dim):
 
 @pytest.mark.parametrize("degree, expected_dim",
                          [(0, 3), (1, 9), (2, 18), (3, 30)])
-def xtest_hhj(degree, expected_dim):
+def test_hhj(degree, expected_dim):
     "Test space dimensions of Hellan-Herrmann-Johnson element."
     P = basix.ufl.element("HHJ", "triangle", degree)
     assert P.dim == expected_dim
 
 
 class TestFunctionValues():
-    """These tests examine tabulate gives the correct answers for a the
-supported (non-mixed) for low degrees"""
+    """These tests examine tabulate gives the correct answers for a the supported (non-mixed) for low degrees."""
 
     # FIXME: Add tests for NED and BDM/RT in 3D.
 

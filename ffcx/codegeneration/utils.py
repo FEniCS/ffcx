@@ -1,34 +1,78 @@
-# Copyright (C) 2020-2023 Michal Habera and Chris Richardson
+# Copyright (C) 2020-2024 Michal Habera, Chris Richardson and Garth N. Wells
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-def cdtype_to_numpy(cdtype: str):
-    """Map a C data type string NumPy datatype string."""
-    if cdtype == "double":
-        return "float64"
-    elif cdtype == "double _Complex":
-        return "complex128"
-    elif cdtype == "float":
-        return "float32"
-    elif cdtype == "float _Complex":
-        return "complex64"
-    elif cdtype == "long double":
-        return "longdouble"
-    else:
-        raise RuntimeError(f"Unknown NumPy type for: {cdtype}")
+import typing
+
+import numpy as _np
+import numpy.typing as _npt
 
 
-def scalar_to_value_type(scalar_type: str) -> str:
-    """The C value type associated with a C scalar type.
+def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
+    """For a NumPy dtype, return the corresponding C type.
 
     Args:
-      scalar_type: A C type.
+        dtype: Numpy data type,
 
     Returns:
-      The value type associated with ``scalar_type``. E.g., if
-      ``scalar_type`` is ``float _Complex`` the return value is 'float'.
-
+        Corresponding C type.
     """
-    return scalar_type.replace(' _Complex', '')
+    # Note: Possible aliases, e.g. numpy.longdouble, should test against char ID
+    if _np.dtype(dtype).char == 'g':
+        return "long double"
+    if _np.dtype(dtype) == _np.intc:
+        return "int"
+    elif _np.dtype(dtype).char == 'f':
+        return "float"
+    elif _np.dtype(dtype).char == 'd':
+        return "double"
+    elif _np.dtype(dtype) == _np.complex64:
+        return "float _Complex"
+    elif _np.dtype(dtype) == _np.complex128:
+        return "double _Complex"
+    else:
+        raise RuntimeError(f"Unknown NumPy type for: {dtype}")
+
+
+def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _np.dtype:
+    """For a NumPy dtype, return the corresponding real dtype.
+
+    Args:
+        dtype: Numpy data type
+
+    Returns:
+        ``numpy.dtype`` for the real component of ``dtype``.
+    """
+    if _np.issubdtype(dtype, _np.floating):
+        return _np.dtype(dtype)
+    elif _np.issubdtype(dtype, _np.complexfloating):
+        return _np.dtype(dtype).type(0).real.dtype
+    elif _np.issubdtype(dtype, _np.integer):
+        return _np.dtype(dtype)
+    else:
+        raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
+
+
+def numba_ufcx_kernel_signature(dtype: _npt.DTypeLike, xdtype: _npt.DTypeLike):
+    """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
+
+    Args:
+        dtype: The scalar type for the finite element data.
+        xdtype: The geometry float type.
+
+    Returns:
+        A Numba signature (``numba.core.typing.templates.Signature``).
+
+    Raises:
+        ImportError: If ``numba`` cannot be imported.
+    """
+    try:
+        import numba.types as types
+        from numba import from_dtype
+        return types.void(types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(dtype)),
+                          types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(xdtype)),
+                          types.CPointer(types.intc), types.CPointer(types.uint8))
+    except ImportError as e:
+        raise e
