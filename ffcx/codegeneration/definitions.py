@@ -11,6 +11,7 @@ import ffcx.codegeneration.lnodes as L
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
+from typing import List
 import ufl
 
 
@@ -76,7 +77,7 @@ class FFCXBackendDefinitions(object):
                                ufl.geometry.CellOrientation: self.pass_through,
                                ufl.geometry.FacetOrientation: self.pass_through}
 
-    def get(self, mt, tabledata, quadrature_rule, access):
+    def get(self, mt, tabledata, quadrature_rule, access) -> List[L.LNode]:
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
         ttype = type(terminal)
@@ -95,7 +96,7 @@ class FFCXBackendDefinitions(object):
         return handler(mt, tabledata, quadrature_rule, access)
 
     def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                    quadrature_rule: QuadratureRule, access: str):
+                    quadrature_rule: QuadratureRule, access: str) -> List[L.LNode]:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -143,7 +144,8 @@ class FFCXBackendDefinitions(object):
 
         return L.Section(name, code, declaration, input, output, annotations)
 
-    def _define_coordinate_dofs_lincomb(self, mt, tabledata, quadrature_rule, access):
+    def _define_coordinate_dofs_lincomb(self, mt, tabledata,
+                                        quadrature_rule, access) -> List[L.LNode]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -216,6 +218,6 @@ class FFCXBackendDefinitions(object):
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def pass_through(self, mt, tabledata, quadrature_rule, access) -> list
+    def pass_through(self, mt, tabledata, quadrature_rule, access) -> List[L.LNode]:
         """Return definition code for pass through terminals."""
         return []
