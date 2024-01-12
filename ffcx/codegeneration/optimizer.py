@@ -27,12 +27,13 @@ def optimize(code: List[L.LNode], quadrature_rule) -> List[L.LNode]:
                 section = fuse_loops(section)
             if L.Annotation.licm in section.annotations:
                 section = licm(section, quadrature_rule)
+            code[i] = section
 
     return code
 
 
 def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
-    """Fuse sections with the same name and same annotations.
+    """Fuse sections with the same name.
 
     Parameters
     ----------
@@ -65,7 +66,7 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     # Remove duplicated inputs
     input = list(set(input))
     # Remove duplicated outputs
-    output = list(set(output))
+    output = list(set(output))  # Shouldn't be necessary
 
     section = L.Section(name, statements, declarations, input, output, annotations)
 

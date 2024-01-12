@@ -240,17 +240,19 @@ class IntegralGenerator(object):
         # Check if we only have Section objects
         for definition in definitions:
             assert isinstance(definition, L.Section)
-        optimize(definitions, quadrature_rule)
 
         for tc in tensor_comp:
             assert isinstance(tc, L.Section)
-        optimize(tensor_comp, quadrature_rule)
 
         intermediates = intermediates_0 + intermediates_fw
 
         iq_symbol = self.backend.symbols.quadrature_loop_index
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        return [L.create_nested_for_loops([iq], definitions + intermediates + tensor_comp)]
+
+        code = definitions + intermediates + tensor_comp
+        code = optimize(code, quadrature_rule)
+
+        return [L.create_nested_for_loops([iq], code)]
 
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
