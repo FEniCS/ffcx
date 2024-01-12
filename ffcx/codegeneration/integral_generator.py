@@ -238,13 +238,23 @@ class IntegralGenerator(object):
         tensor_comp, intermediates_fw = self.generate_dofblock_partition(quadrature_rule)
 
         # Check if we only have Section objects
+        inputs = []
         for definition in definitions:
             assert isinstance(definition, L.Section)
+            inputs += definition.output
 
         for tc in tensor_comp:
             assert isinstance(tc, L.Section)
 
-        intermediates = intermediates_0 + intermediates_fw
+        # Create intermediates section
+        output = []
+        declarations = []
+        for fw in intermediates_fw:
+            assert isinstance(fw, L.VariableDecl)
+            output += [fw.symbol]
+            declarations += [L.VariableDecl(fw.symbol, 0)]
+            intermediates_0 += [L.Assign(fw.symbol, fw.value)]
+        intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
 
         iq_symbol = self.backend.symbols.quadrature_loop_index
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
