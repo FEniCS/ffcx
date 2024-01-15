@@ -214,7 +214,7 @@ class FFCXBackendDefinitions(object):
         else:
             return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def jacobian(self, mt, tabledata, quadrature_rule, access):
+    def jacobian(self, mt, tabledata, quadrature_rule, access) -> Union[L.Section, List]:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
