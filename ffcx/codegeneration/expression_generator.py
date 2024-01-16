@@ -14,7 +14,6 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.lnodes import LNode
-from ffcx.codegeneration.utils import dtype_to_c_type
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
