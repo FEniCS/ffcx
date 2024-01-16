@@ -300,9 +300,9 @@ class IntegralGenerator(object):
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
                     vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
 
-                    if isinstance(vdef, L.Section):
-                        # Store definitions of terminals in list
-                        definitions += [vdef]
+                    if vdef:
+                        assert isinstance(vdef, L.Section)
+                    definitions += [vdef]
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
@@ -339,7 +339,7 @@ class IntegralGenerator(object):
                     else:
                         # Record assignment of vexpr to intermediate variable
                         j = len(intermediates)
-                        vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
+                        vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=L.DataType.SCALAR)
                         intermediates.append(L.VariableDecl(vaccess, vexpr))
 
                 # Store access node for future reference

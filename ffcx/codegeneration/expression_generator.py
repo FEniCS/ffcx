@@ -321,7 +321,8 @@ class ExpressionGenerator:
                 vaccess = self.backend.access.get(mt, tabledata, 0)
                 vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
 
-                if isinstance(vdef, L.Section):
+                if vdef:
+                    assert isinstance(vdef, L.Section)
                     vdef = vdef.declarations + vdef.statements
 
                 # Store definitions of terminals in list
@@ -361,7 +362,7 @@ class ExpressionGenerator:
                 else:
                     # Record assignment of vexpr to intermediate variable
                     j = len(intermediates)
-                    vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
+                    vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=L.DataType.SCALAR)
                     intermediates.append(L.VariableDecl(vaccess, vexpr))
 
             # Store access node for future reference
