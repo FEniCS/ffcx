@@ -1,4 +1,4 @@
-from typing import List, Union, Sequence
+from typing import List, Union
 import ffcx.codegeneration.lnodes as L
 from collections import defaultdict
 from ffcx.ir.representationutils import QuadratureRule
@@ -57,10 +57,10 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
         if isinstance(section, L.Section):
             if section.name == name:
                 declarations.append(*section.declarations)
-                statements += section.statements
+                statements.append(*section.statements)
                 indices.append(i)
-                input += section.input
-                output += section.output
+                input.append(*section.input)
+                output.append(*section.output)
                 annotations = section.annotations
 
     # Remove duplicated inputs
