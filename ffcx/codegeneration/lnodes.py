@@ -103,7 +103,8 @@ class DataType(Enum):
     REAL = 0
     SCALAR = 1
     INT = 2
-    NONE = 3
+    BOOL = 3
+    NONE = 4
 
 
 def merge_dtypes(dtype0, dtype1):
