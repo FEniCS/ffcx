@@ -285,8 +285,6 @@ class IntegralGenerator(object):
         pre_definitions = dict()
         intermediates = []
 
-        use_symbol_array = True
-
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
