@@ -236,15 +236,13 @@ class IntegralGenerator(object):
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
         tensor_comp, intermediates_fw = self.generate_dofblock_partition(quadrature_rule)
+        assert all([isinstance(tc, L.Section) for tc in tensor_comp])
 
         # Check if we only have Section objects
         inputs = []
         for definition in definitions:
             assert isinstance(definition, L.Section)
             inputs += definition.output
-
-        for tc in tensor_comp:
-            assert isinstance(tc, L.Section)
 
         # Create intermediates section
         output = []
@@ -286,14 +284,12 @@ class IntegralGenerator(object):
             if attr['status'] != mode:
                 continue
             v = attr['expression']
-            mt = attr.get('mt')
 
             # Generate code only if the expression is not already in cache
             if not self.get_var(quadrature_rule, v):
                 if v._ufl_is_literal_:
                     vaccess = L.ufl_to_lnodes(v)
-                elif mt:
-                    assert mt is not None
+                elif (mt := attr.get('mt')):
                     tabledata = attr.get('tr')
 
                     # Backend specific modified terminal translation
