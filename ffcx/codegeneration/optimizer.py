@@ -4,7 +4,7 @@ from collections import defaultdict
 from ffcx.ir.representationutils import QuadratureRule
 
 
-def optimize(code: List[L.LNode], quadrature_rule) -> List[L.LNode]:
+def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNode]:
     """Optimize code.
 
     Parameters
@@ -56,11 +56,11 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
             if section.name == name:
-                declarations.append(*section.declarations)
-                statements.append(*section.statements)
+                declarations.extend(section.declarations)
+                statements.extend(section.statements)
                 indices.append(i)
-                input.append(*section.input)
-                output.append(*section.output)
+                input.extend(section.input)
+                output.extend(section.output)
                 annotations = section.annotations
 
     # Remove duplicated inputs
