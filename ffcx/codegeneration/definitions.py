@@ -127,16 +127,15 @@ class FFCXBackendDefinitions(object):
 
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
-
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
-        declaration = [L.VariableDecl(access, 0.0)]
+        declaration: List[L.Declaration] = [L.VariableDecl(access, 0.0)]
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
         input = [dof_access.array, *tables]
-        output = [access]
+        output = [L.Symbol(access, dtype=L.DataType.SCALAR)]
         annotations = [L.Annotation.fuse]
 
         # assert input and output are Symbol objects

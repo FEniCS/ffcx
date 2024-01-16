@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Sequence
 import ffcx.codegeneration.lnodes as L
 from collections import defaultdict
 from ffcx.ir.representationutils import QuadratureRule
@@ -46,17 +46,17 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
         Fused list of LNodes.
 
     """
-    statements = []
-    indices = []
-    input = []
-    output = []
-    declarations = []
-    annotations = []
+    statements: List[L.LNode] = []
+    indices: List[int] = []
+    input: List[L.Symbol] = []
+    output: List[L.Symbol] = []
+    declarations: List[L.Declaration] = []
+    annotations: List[L.Annotation] = []
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
             if section.name == name:
-                declarations += section.declarations
+                declarations.append(*section.declarations)
                 statements += section.statements
                 indices.append(i)
                 input += section.input

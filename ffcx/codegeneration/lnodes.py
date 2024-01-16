@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-from typing import List, Optional
+from typing import List, Optional, Sequence
 import numbers
 from enum import Enum
 
@@ -739,6 +739,16 @@ class Annotation(Enum):
     factorize = 4   # apply sum factorization
 
 
+class Declaration(Statement):
+    """Base class for all declarations."""
+
+    def __init__(self, symbol):
+        self.symbol = symbol
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.symbol == other.symbol
+
+
 def is_declaration(node) -> bool:
     return isinstance(node, VariableDecl) or isinstance(node, ArrayDecl)
 
@@ -746,8 +756,10 @@ def is_declaration(node) -> bool:
 class Section(LNode):
     """A section of code with a name and a list of statements."""
 
-    def __init__(self, name: str, statements: List, declarations: List, input: Optional[List] = None,
-                 output: Optional[List] = None, annotations: Optional[List] = None):
+    def __init__(self, name: str, statements: List[LNode],
+                 declarations: Sequence[Declaration], input: Optional[List[Symbol]] = None,
+                 output: Optional[List[Symbol]] = None,
+                 annotations: Optional[List[Annotation]] = None):
         self.name = name
         self.statements = [as_statement(st) for st in statements]
         self.annotations = annotations or []
@@ -810,7 +822,7 @@ def commented_code_list(code, comments):
 # Type and variable declarations
 
 
-class VariableDecl(Statement):
+class VariableDecl(Declaration):
     """Declare a variable, optionally define initial value."""
 
     def __init__(self, symbol, value=None):
@@ -832,7 +844,7 @@ class VariableDecl(Statement):
         )
 
 
-class ArrayDecl(Statement):
+class ArrayDecl(Declaration):
     """A declaration or definition of an array.
 
     Note that just setting values=0 is sufficient to initialize the
