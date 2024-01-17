@@ -294,7 +294,6 @@ class IntegralGenerator(object):
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
-                    print(type(vaccess))
                     vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
 
                     if vdef:
