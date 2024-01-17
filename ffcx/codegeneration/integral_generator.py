@@ -18,8 +18,24 @@ from ffcx.codegeneration.lnodes import BinOp, LNode
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
-
+from numbers import Integral
 logger = logging.getLogger("ffcx")
+
+
+def extract_dtype(v, vops: List[Any]):
+    """Extract dtype from ufl expression v and its operands."""
+    dtypes = []
+    for op in vops:
+        if hasattr(op, "dtype"):
+            dtypes.append(op.dtype)
+        elif hasattr(op, "symbol"):
+            dtypes.append(op.symbol.dtype)
+        elif isinstance(op, Integral):
+            dtypes.append(L.DataType.INT)
+        else:
+            raise RuntimeError(f"Not expecting this type of operand {type(op)}")
+    is_cond = isinstance(v, ufl.classes.Condition)
+    return L.DataType.BOOL if is_cond else L.merge_dtypes(dtypes)
 
 
 class IntegralGenerator(object):
@@ -315,14 +331,11 @@ class IntegralGenerator(object):
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
-                    dtypes = [op.dtype for op in vops]
+                    dtype = extract_dtype(v, vops)
 
                     # Mapping UFL operator to target language
                     self._ufl_names.add(v._ufl_handler_name_)
                     vexpr = L.ufl_to_lnodes(v, *vops)
-
-                    is_cond = isinstance(v, ufl.classes.Condition)
-                    dtype = L.DataType.BOOL if is_cond else L.merge_dtypes(dtypes)
 
                     j = len(intermediates)
                     vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)

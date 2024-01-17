@@ -115,8 +115,10 @@ def merge_dtypes(dtypes: typing.List[DataType]):
         return DataType.SCALAR
     elif DataType.REAL in dtypes:
         return DataType.REAL
-    elif all(dtype == DataType.INT for dtype in dtypes):
+    elif DataType.INT in dtypes:
         return DataType.INT
+    elif DataType.BOOL in dtypes:
+        return DataType.BOOL
     else:
         raise ValueError(f"Can't get dtype for operation with {dtypes}")
 
