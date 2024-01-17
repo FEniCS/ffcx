@@ -811,13 +811,13 @@ def test_facet_vertex_quadrature(compile_args):
 
 def test_manifold_derivatives(compile_args):
     """Test higher order derivatives on manifolds"""
-    c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(2,), gdim=2)
+    c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(2,))
     mesh = ufl.Mesh(c_el)
 
     x = ufl.SpatialCoordinate(mesh)
     dx = ufl.Measure("dx", domain=mesh)
     order = 4
-    el = basix.ufl.element("Lagrange", "interval", order, gdim=2)
+    el = basix.ufl.element("Lagrange", "interval", order)
     V = ufl.FunctionSpace(mesh, el)
 
     u = ufl.Coefficient(V)

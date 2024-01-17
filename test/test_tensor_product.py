@@ -25,7 +25,6 @@ def cell_to_gdim(cell_type):
 
 def create_tensor_product_element(cell_type, degree, variant, shape=None):
     """Create tensor product element."""
-    gdim = cell_to_gdim(cell_type)
     family = basix.ElementFamily.P
     ref = basix.create_element(family, cell_type, degree, variant)
     factors = ref.get_tensor_product_representation()[0]
@@ -33,11 +32,11 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
     dof_ordering = np.argsort(perm)
     element = basix.create_element(family, cell_type, degree, variant,
                                    dof_ordering=dof_ordering)
-    uflelement = basix.ufl._BasixElement(element, gdim=gdim)
+    uflelement = basix.ufl._BasixElement(element)
     if shape is None:
         return uflelement
     else:
-        return basix.ufl.blocked_element(uflelement, shape=shape, gdim=gdim)
+        return basix.ufl.blocked_element(uflelement, shape=shape)
 
 
 def generate_kernel(forms, dtype, options):
