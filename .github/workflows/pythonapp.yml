@@ -38,8 +38,8 @@ jobs:
         run: brew install graphviz ninja pkg-config
       - name: Install FEniCS dependencies (Python)
         run: |
-          pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git
+          pip install git+https://github.com/FEniCS/ufl.git@mscroggs/gdim
+          pip install git+https://github.com/FEniCS/basix.git@mscroggs/remove-gdim
       - name: Install FFCx
         run: pip install .[ci]
       - name: Lint with flake8

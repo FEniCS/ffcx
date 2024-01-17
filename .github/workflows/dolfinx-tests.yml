@@ -35,8 +35,8 @@ jobs:
       - name: Install UFL and Basix (default branches/tags)
         if: github.event_name != 'workflow_dispatch'
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git
+          python3 -m pip install git+https://github.com/FEniCS/ufl.git@mscroggs/gdim
+          python3 -m pip install git+https://github.com/FEniCS/basix.git@mscroggs/remove-gdim
       - name: Install UFL and Basix (specified branches/tags)
         if: github.event_name == 'workflow_dispatch'
         run: |
