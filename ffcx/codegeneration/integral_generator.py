@@ -315,13 +315,14 @@ class IntegralGenerator(object):
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
+                    dtypes = [op.dtype for op in vops]
 
                     # Mapping UFL operator to target language
                     self._ufl_names.add(v._ufl_handler_name_)
                     vexpr = L.ufl_to_lnodes(v, *vops)
 
                     is_cond = isinstance(v, ufl.classes.Condition)
-                    dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
+                    dtype = L.DataType.BOOL if is_cond else L.merge_dtypes(dtypes)
 
                     j = len(intermediates)
                     vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)

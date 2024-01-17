@@ -6,7 +6,7 @@
 
 import numbers
 from enum import Enum
-
+import typing
 import numpy as np
 
 import ufl
@@ -107,18 +107,18 @@ class DataType(Enum):
     NONE = 4
 
 
-def merge_dtypes(dtype0, dtype1):
+def merge_dtypes(dtypes: typing.List[DataType]):
     # Promote dtype to SCALAR or REAL if either argument matches
-    if DataType.NONE in (dtype0, dtype1):
-        raise ValueError(f"Invalid DataType in LNodes {dtype0, dtype1}")
-    if DataType.SCALAR in (dtype0, dtype1):
+    if DataType.NONE in dtypes:
+        raise ValueError(f"Invalid DataType in LNodes {dtypes}")
+    if DataType.SCALAR in dtypes:
         return DataType.SCALAR
-    elif DataType.REAL in (dtype0, dtype1):
+    elif DataType.REAL in dtypes:
         return DataType.REAL
-    elif (dtype0 == DataType.INT and dtype1 == DataType.INT):
+    elif all(dtype == DataType.INT for dtype in dtypes):
         return DataType.INT
     else:
-        raise ValueError(f"Can't get dtype for binary operation with {dtype0, dtype1}")
+        raise ValueError(f"Can't get dtype for operation with {dtypes}")
 
 
 class LNode(object):
@@ -427,7 +427,7 @@ class ArithmeticBinOp(BinOp):
     def __init__(self, lhs, rhs):
         self.lhs = as_lexpr(lhs)
         self.rhs = as_lexpr(rhs)
-        self.dtype = merge_dtypes(self.lhs.dtype, self.rhs.dtype)
+        self.dtype = merge_dtypes([self.lhs.dtype, self.rhs.dtype])
 
 
 class NaryOp(LExprOperator):
@@ -439,7 +439,7 @@ class NaryOp(LExprOperator):
         self.args = [as_lexpr(arg) for arg in args]
         self.dtype = self.args[0].dtype
         for arg in self.args:
-            self.dtype = merge_dtypes(self.dtype, arg.dtype)
+            self.dtype = merge_dtypes([self.dtype, arg.dtype])
 
     def __eq__(self, other):
         return (
@@ -660,7 +660,7 @@ class Conditional(LExprOperator):
         self.condition = as_lexpr(condition)
         self.true = as_lexpr(true)
         self.false = as_lexpr(false)
-        self.dtype = merge_dtypes(self.true.dtype, self.false.dtype)
+        self.dtype = merge_dtypes([self.true.dtype, self.false.dtype])
 
     def __eq__(self, other):
         return (
