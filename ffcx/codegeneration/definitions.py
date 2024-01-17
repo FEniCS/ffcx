@@ -78,7 +78,7 @@ class FFCXBackendDefinitions(object):
                                ufl.geometry.FacetOrientation: self.pass_through}
 
     def get(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-            quadrature_rule: QuadratureRule, access: str) -> Union[L.Section, List]:
+            quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
         """Return definition code for a terminal."""
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
@@ -98,7 +98,7 @@ class FFCXBackendDefinitions(object):
         return handler(mt, tabledata, quadrature_rule, access)
 
     def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                    quadrature_rule: QuadratureRule, access: str) -> Union[L.Section, List]:
+                    quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -106,11 +106,6 @@ class FFCXBackendDefinitions(object):
 
         iq_symbol = self.symbols.quadrature_loop_index
         ic_symbol = self.symbols.coefficient_dof_sum_index
-
-        if isinstance(access, str):
-            access_symbol = L.Symbol(access, dtype=L.DataType.SCALAR)
-        else:
-            access_symbol = access
 
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
         ic = create_dof_index(tabledata, ic_symbol)
@@ -142,16 +137,17 @@ class FFCXBackendDefinitions(object):
 
         name = type(mt.terminal).__name__
         input = [dof_access.array, *tables]
-        output = [access_symbol]
+        output = [access]
         annotations = [L.Annotation.fuse]
 
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
+        assert all(isinstance(o, L.Symbol) for o in output)
 
         return L.Section(name, code, declaration, input, output, annotations)
 
     def _define_coordinate_dofs_lincomb(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                                        quadrature_rule: QuadratureRule, access: str) -> Union[L.Section, List]:
+                                        quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -177,10 +173,6 @@ class FFCXBackendDefinitions(object):
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
-        if isinstance(access, str):
-            access_symbol = L.Symbol(access, dtype=L.DataType.SCALAR)
-        else:
-            access_symbol = access
 
         # coordinate dofs is always 3d
         dim = 3
@@ -194,7 +186,7 @@ class FFCXBackendDefinitions(object):
         code = [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
-        output = [access_symbol]
+        output = [access]
         input = [dof_access, *tables]
         annotations = [L.Annotation.fuse]
 
@@ -205,7 +197,7 @@ class FFCXBackendDefinitions(object):
         return L.Section(name, code, declaration, input, output, annotations)
 
     def spatial_coordinate(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                           quadrature_rule: QuadratureRule, access: str) -> Union[L.Section, List]:
+                           quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -226,11 +218,11 @@ class FFCXBackendDefinitions(object):
             return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
     def jacobian(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                 quadrature_rule: QuadratureRule, access: str) -> Union[L.Section, List]:
+                 quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
     def pass_through(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                     quadrature_rule: QuadratureRule, access: str) -> Union[L.Section, List]:
+                     quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
         """Return definition code for pass through terminals."""
         return []
