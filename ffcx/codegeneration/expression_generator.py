@@ -14,7 +14,6 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.lnodes import LNode
-from ffcx.codegeneration.utils import dtype_to_c_type
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -306,8 +305,6 @@ class ExpressionGenerator:
         pre_definitions = dict()
         intermediates = []
 
-        use_symbol_array = True
-
         for i, attr in F.nodes.items():
             if attr['status'] != mode:
                 continue
@@ -335,43 +332,16 @@ class ExpressionGenerator:
                 # Get previously visited operands
                 vops = [self.get_var(op) for op in v.ufl_operands]
 
-                # get parent operand
-                pid = F.in_edges[i][0] if F.in_edges[i] else -1
-                if pid and pid > i:
-                    parent_exp = F.nodes.get(pid)['expression']
-                else:
-                    parent_exp = None
-
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
                 vexpr = L.ufl_to_lnodes(v, *vops)
 
-                # Create a new intermediate for each subexpression
-                # except boolean conditions and its childs
-                if isinstance(parent_exp, ufl.classes.Condition):
-                    # Skip intermediates for 'x' and 'y' in x<y
-                    # Avoid the creation of complex valued intermediates
-                    vaccess = vexpr
-                elif isinstance(v, ufl.classes.Condition):
-                    # Inline the conditions x < y, condition values
-                    # This removes the need to handle boolean intermediate variables.
-                    # With tensor-valued conditionals it may not be optimal but we
-                    # let the compiler take responsibility for optimizing those cases.
-                    vaccess = vexpr
-                elif any(op._ufl_is_literal_ for op in v.ufl_operands):
-                    # Skip intermediates for e.g. -2.0*x,
-                    # resulting in lines like z = y + -2.0*x
-                    vaccess = vexpr
-                else:
-                    # Record assignment of vexpr to intermediate variable
-                    j = len(intermediates)
-                    if use_symbol_array:
-                        vaccess = symbol[j]
-                        intermediates.append(L.Assign(vaccess, vexpr))
-                    else:
-                        scalar_type = dtype_to_c_type(self.backend.access.options["scalar_type"])
-                        vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
-                        intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
+                is_cond = isinstance(v, ufl.classes.Condition)
+                dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
+
+                j = len(intermediates)
+                vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
+                intermediates.append(L.VariableDecl(vaccess, vexpr))
 
             # Store access node for future reference
             self.scope[v] = vaccess
@@ -386,8 +356,6 @@ class ExpressionGenerator:
         if definitions:
             parts += definitions
 
-        if intermediates:
-            if use_symbol_array:
-                parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
-            parts += intermediates
+        parts += intermediates
+
         return parts
