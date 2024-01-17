@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+from typing import List, Optional, Sequence
 import numbers
 from enum import Enum
 import typing
@@ -692,13 +693,14 @@ def as_lexpr(node):
 class Statement(LNode):
     """Make an expression into a statement."""
 
-    is_scoped = False
-
     def __init__(self, expr):
         self.expr = as_lexpr(expr)
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.expr == other.expr
+
+    def __hash__(self) -> int:
+        return hash(self.expr)
 
 
 def as_statement(node):
@@ -725,30 +727,79 @@ def as_statement(node):
             return as_statement(node[0])
         else:
             return StatementList(node)
+    elif isinstance(node, Section):
+        return node
     else:
         raise RuntimeError(
             "Unexpected Statement type %s:\n%s" % (type(node), str(node))
         )
 
 
+class Annotation(Enum):
+    fuse = 1        # fuse loops in section
+    unroll = 2      # unroll loop in section
+    licm = 3        # loop invariant code motion
+    factorize = 4   # apply sum factorization
+
+
+class Declaration(Statement):
+    """Base class for all declarations."""
+
+    def __init__(self, symbol):
+        self.symbol = symbol
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.symbol == other.symbol
+
+
+def is_declaration(node) -> bool:
+    return isinstance(node, VariableDecl) or isinstance(node, ArrayDecl)
+
+
+class Section(LNode):
+    """A section of code with a name and a list of statements."""
+
+    def __init__(self, name: str, statements: List[LNode],
+                 declarations: Sequence[Declaration], input: Optional[List[Symbol]] = None,
+                 output: Optional[List[Symbol]] = None,
+                 annotations: Optional[List[Annotation]] = None):
+        self.name = name
+        self.statements = [as_statement(st) for st in statements]
+        self.annotations = annotations or []
+        self.input = input or []
+        self.declarations = declarations or []
+        self.output = output or []
+
+        for decl in self.declarations:
+            assert is_declaration(decl)
+            if decl.symbol not in self.output:
+                self.output.append(decl.symbol)
+
+    def __eq__(self, other):
+        attributes = ("name", "input", "output", "annotations", "statements")
+        return isinstance(other, type(self)) and all(
+            getattr(self, name) == getattr(self, name) for name in attributes
+        )
+
+
 class StatementList(LNode):
-    """A simple sequence of statements. No new scopes are introduced."""
+    """A simple sequence of statements."""
 
     def __init__(self, statements):
         self.statements = [as_statement(st) for st in statements]
 
-    @property
-    def is_scoped(self):
-        return all(st.is_scoped for st in self.statements)
-
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.statements == other.statements
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.statements))
+
+    def __repr__(self):
+        return f"StatementList({self.statements})"
 
 
 class Comment(Statement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
-
-    is_scoped = True
 
     def __init__(self, comment):
         assert isinstance(comment, str)
@@ -774,10 +825,8 @@ def commented_code_list(code, comments):
 # Type and variable declarations
 
 
-class VariableDecl(Statement):
+class VariableDecl(Declaration):
     """Declare a variable, optionally define initial value."""
-
-    is_scoped = False
 
     def __init__(self, symbol, value=None):
 
@@ -798,7 +847,7 @@ class VariableDecl(Statement):
         )
 
 
-class ArrayDecl(Statement):
+class ArrayDecl(Declaration):
     """A declaration or definition of an array.
 
     Note that just setting values=0 is sufficient to initialize the
@@ -808,8 +857,6 @@ class ArrayDecl(Statement):
     array values to initialize to.
 
     """
-
-    is_scoped = False
 
     def __init__(self, symbol, sizes=None, values=None, const=False):
         assert isinstance(symbol, Symbol)
@@ -833,12 +880,16 @@ class ArrayDecl(Statement):
             self.values = values
 
         self.const = const
+        self.dtype = symbol.dtype
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "values")
+        attributes = ("dtype", "symbol", "sizes", "values")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
+
+    def __hash__(self) -> int:
+        return hash(self.symbol)
 
 
 def is_simple_inner_loop(code):
@@ -849,10 +900,16 @@ def is_simple_inner_loop(code):
     return False
 
 
+def depth(code) -> int:
+    if isinstance(code, ForRange):
+        return 1 + depth(code.body)
+    if isinstance(code, StatementList):
+        return max([depth(c) for c in code.statements])
+    return 0
+
+
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
-
-    is_scoped = True
 
     def __init__(self, index, begin, end, body):
         assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
@@ -862,11 +919,17 @@ class ForRange(Statement):
         assert isinstance(body, list)
         self.body = StatementList(body)
 
+    def as_tuple(self):
+        return (self.index, self.begin, self.end, self.body)
+
     def __eq__(self, other):
         attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
+
+    def __hash__(self) -> int:
+        return hash(self.as_tuple())
 
 
 def _math_function(op, *args):
@@ -934,3 +997,18 @@ def ufl_to_lnodes(operator, *args):
         return _ufl_call_lookup[optype](operator, *args)
     else:
         raise RuntimeError(f"Missing lookup for expr type {optype}.")
+
+
+def create_nested_for_loops(indices: List[MultiIndex], body):
+    """
+    Create nested for loops over list of indices.
+
+    The depth of the nested for loops is equal to the sub-indices for all
+    MultiIndex combined.
+    """
+    ranges = [r for idx in indices for r in idx.sizes]
+    indices = [idx.local_index(i) for idx in indices for i in range(len(idx.sizes))]
+    depth = len(ranges)
+    for i in reversed(range(depth)):
+        body = ForRange(indices[i], 0, ranges[i], body=[body])
+    return body

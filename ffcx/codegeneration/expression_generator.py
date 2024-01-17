@@ -302,7 +302,6 @@ class ExpressionGenerator:
     def generate_partition(self, symbol, F, mode):
         """Generate computations of factors of blocks."""
         definitions = []
-        pre_definitions = dict()
         intermediates = []
 
         for i, attr in F.nodes.items():
@@ -319,11 +318,12 @@ class ExpressionGenerator:
                 tabledata = attr.get('tr')
 
                 # Backend specific modified terminal translation
-                vaccess = self.backend.access.get(mt.terminal, mt, tabledata, 0)
+                vaccess = self.backend.access.get(mt, tabledata, 0)
+                vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
 
-                predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
-                if predef:
-                    pre_definitions[str(predef[0].symbol.name)] = predef
+                if vdef:
+                    assert isinstance(vdef, L.Section)
+                    vdef = vdef.declarations + vdef.statements
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)
@@ -350,12 +350,7 @@ class ExpressionGenerator:
         # and intermediate computations
         parts = []
 
-        for _, definition in pre_definitions.items():
-            parts += definition
-
-        if definitions:
-            parts += definitions
-
+        parts += definitions
         parts += intermediates
 
         return parts
