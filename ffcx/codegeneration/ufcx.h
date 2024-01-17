@@ -92,20 +92,8 @@ extern "C"
     /// Topological dimension of the cell
     int topological_dimension;
 
-    /// Geometric dimension of the cell
-    int geometric_dimension;
-
     /// Dimension of the finite element function space
     int space_dimension;
-
-    /// Rank of the value space
-    int value_rank;
-
-    /// Dimension of the value space for axis i
-    int* value_shape;
-
-    /// Number of components of the value space
-    int value_size;
 
     /// Rank of the reference value space
     int reference_value_rank;

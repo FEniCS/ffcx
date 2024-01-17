@@ -83,7 +83,6 @@ class ElementIR(typing.NamedTuple):
     signature: str
     cell_shape: str
     topological_dimension: int
-    geometric_dimension: int
     space_dimension: int
     value_shape: typing.Tuple[int, ...]
     reference_value_shape: typing.Tuple[int, ...]
@@ -233,7 +232,6 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["signature"] = repr(element)
     ir["cell_shape"] = element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = element.dim + element.num_global_support_dofs
     ir["element_type"] = element.ufcx_element_type
     ir["lagrange_variant"] = element.lagrange_variant

@@ -23,19 +23,16 @@ def generator(ir, options):
     """Generate UFC code for a finite element."""
     logger.info("Generating code for finite element:")
     logger.info(f"--- degree: {ir.degree}")
-    logger.info(f"--- value shape: {ir.value_shape}")
+    logger.info(f"--- value shape: {ir.reference_value_shape}")
     logger.info(f"--- name: {ir.name}")
 
     d = {}
     d["factory_name"] = ir.name
     d["signature"] = f"\"{ir.signature}\""
-    d["geometric_dimension"] = ir.geometric_dimension
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
     d["element_type"] = ir.element_type
     d["space_dimension"] = ir.space_dimension
-    d["value_rank"] = len(ir.value_shape)
-    d["value_size"] = ufl.product(ir.value_shape)
     d["reference_value_rank"] = len(ir.reference_value_shape)
     d["reference_value_size"] = ufl.product(ir.reference_value_shape)
     d["degree"] = ir.degree
@@ -61,15 +58,6 @@ def generator(ir, options):
         d["basix_cell"] = -1
     else:
         d["basix_cell"] = int(ir.basix_cell)
-
-    if len(ir.value_shape) > 0:
-        d["value_shape"] = f"value_shape_{ir.name}"
-        values = ", ".join(str(i) for i in ir.value_shape)
-        sizes = len(ir.value_shape)
-        d["value_shape_init"] = f"int value_shape_{ir.name}[{sizes}] = {{{values}}};"
-    else:
-        d["value_shape"] = "NULL"
-        d["value_shape_init"] = ""
 
     if len(ir.reference_value_shape) > 0:
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"

@@ -187,7 +187,7 @@ class TestFunctionValues():
         for x in points:
             table = e.tabulate(0, np.array([x], dtype=np.float64))
             basis = table[0]
-            if sum(e.value_shape) == 1:
+            if sum(e.reference_value_shape) == 1:
                 for i, value in enumerate(basis[0]):
                     assert np.isclose(value, reference[i](x))
             else:
