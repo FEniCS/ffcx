@@ -17,8 +17,25 @@ from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.codegeneration.optimizer import optimize
+from numbers import Integral
 
 logger = logging.getLogger("ffcx")
+
+
+def extract_dtype(v, vops: List[Any]):
+    """Extract dtype from ufl expression v and its operands."""
+    dtypes = []
+    for op in vops:
+        if hasattr(op, "dtype"):
+            dtypes.append(op.dtype)
+        elif hasattr(op, "symbol"):
+            dtypes.append(op.symbol.dtype)
+        elif isinstance(op, Integral):
+            dtypes.append(L.DataType.INT)
+        else:
+            raise RuntimeError(f"Not expecting this type of operand {type(op)}")
+    is_cond = isinstance(v, ufl.classes.Condition)
+    return L.DataType.BOOL if is_cond else L.merge_dtypes(dtypes)
 
 
 class IntegralGenerator(object):
@@ -302,41 +319,15 @@ class IntegralGenerator(object):
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
-
-                    # get parent operand
-                    pid = F.in_edges[i][0] if F.in_edges[i] else -1
-                    if pid and pid > i:
-                        parent_exp = F.nodes.get(pid)['expression']
-                    else:
-                        parent_exp = None
+                    dtype = extract_dtype(v, vops)
 
                     # Mapping UFL operator to target language
                     self._ufl_names.add(v._ufl_handler_name_)
                     vexpr = L.ufl_to_lnodes(v, *vops)
 
-                    # Create a new intermediate for each subexpression
-                    # except boolean conditions and its childs
-                    if isinstance(parent_exp, ufl.classes.Condition):
-                        # Skip intermediates for 'x' and 'y' in x<y
-                        # Avoid the creation of complex valued intermediates
-                        vaccess = vexpr
-                    elif isinstance(v, ufl.classes.Condition):
-                        # Inline the conditions x < y, condition values
-                        # This removes the need to handle boolean
-                        # intermediate variables. With tensor-valued
-                        # conditionals it may not be optimal but we let
-                        # the compiler take responsibility for
-                        # optimizing those cases.
-                        vaccess = vexpr
-                    elif any(op._ufl_is_literal_ for op in v.ufl_operands):
-                        # Skip intermediates for e.g. -2.0*x,
-                        # resulting in lines like z = y + -2.0*x
-                        vaccess = vexpr
-                    else:
-                        # Record assignment of vexpr to intermediate variable
-                        j = len(intermediates)
-                        vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=L.DataType.SCALAR)
-                        intermediates.append(L.VariableDecl(vaccess, vexpr))
+                    j = len(intermediates)
+                    vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
+                    intermediates.append(L.VariableDecl(vaccess, vexpr))
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)

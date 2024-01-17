@@ -156,6 +156,8 @@ class CFormatter(object):
             return dtype_to_c_type(self.real_type)
         if dtype == L.DataType.INT:
             return "int"
+        if dtype == L.DataType.BOOL:
+            return "bool"
         raise ValueError(f"Invalid dtype: {dtype}")
 
     def _format_number(self, x):
