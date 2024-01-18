@@ -14,6 +14,7 @@ import logging
 import numpy
 
 from ffcx.codegeneration.C import form_template
+from ufl import product
 
 logger = logging.getLogger("ffcx")
 
@@ -116,6 +117,7 @@ def generator(ir, options):
     d["form_integral_offsets_init"] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     code = []
+    vs_code = []
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated
@@ -126,7 +128,12 @@ def generator(ir, options):
         cmap_degree,
         cmap_celltype,
         cmap_variant,
+        value_shape
     ) in ir.function_spaces.items():
+        print(value_shape)
+        if len(value_shape) > 0:
+            values = ", ".join(f"{i}" for i in value_shape)
+            vs_code += [f"int value_shape_{name}[{len(value_shape)}] = {{{values}}};"]
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
@@ -134,7 +141,13 @@ def generator(ir, options):
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)}"]
+        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
+        code += [f".value_rank = {len(value_shape)},"]
+        code += [f".value_size = {product(value_shape)},"]
+        if len(value_shape) == 0:
+            code += [".value_shape = NULL"]
+        else:
+            code += [f".value_shape = value_shape_{name}"]
         code += ["};"]
 
     for name in ir.function_spaces.keys():
@@ -142,6 +155,7 @@ def generator(ir, options):
 
     code += ["return NULL;\n"]
 
+    d["functionspace_vs"] = "\n".join(vs_code)
     d["functionspace"] = "\n".join(code)
 
     # Check that no keys are redundant or have been missed

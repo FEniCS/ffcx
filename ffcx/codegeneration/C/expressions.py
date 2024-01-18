@@ -98,13 +98,24 @@ def generator(ir, options):
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated (also for ufcx_form)
-    for (name, (element, dofmap, cmap_family, cmap_degree)) in ir.function_spaces.items():
+    for (name, (element, dofmap, cmap_family, cmap_degree, cmap_variant, value_shape)) in ir.function_spaces.items():
+        if len(value_shape) > 0:
+            values = ", ".join(f"{i}" for i in value_shape)
+            code += [f"int value_shape_{name}_{ir.name_from_uflfile}[{len(value_shape)}] = {{{values}}};"]
         code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
         code += [f".geometry_family = \"{cmap_family}\","]
-        code += [f".geometry_degree = {cmap_degree}"]
+        code += [f".geometry_degree = {cmap_degree},"]
+        code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
+        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
+        code += [f".value_rank = {len(value_shape)},"]
+        code += [f".value_size = {product(value_shape)},"]
+        if len(value_shape) == 0:
+            code += [".value_shape = NULL"]
+        else:
+            code += [f".value_shape = value_shape_{name}_{ir.name_from_uflfile}"]
         code += ["};"]
 
     d["function_spaces_alloc"] = "\n".join(code)

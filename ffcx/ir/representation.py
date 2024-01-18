@@ -46,7 +46,7 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, typing.Tuple[int, ...]]]
     original_coefficient_position: typing.List[int]
     coefficient_names: typing.List[str]
     constant_names: typing.List[str]
@@ -161,7 +161,7 @@ class ExpressionIR(typing.NamedTuple):
     coefficient_names: typing.List[str]
     constant_names: typing.List[str]
     needs_facet_permutations: bool
-    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, typing.Tuple[int, ...]]]
     name_from_uflfile: str
     original_coefficient_positions: typing.List[int]
 
@@ -559,14 +559,15 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         if not str(name).isidentifier():
             raise ValueError(f"Function name \"{name}\" must be a valid object identifier.")
         el = function.ufl_function_space().ufl_element()
-        cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        domain = function.ufl_function_space().ufl_domain()
+        cmap = domain.ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
         if not isinstance(cmap, basix.ufl._ElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
         family = cmap.family_name
         degree = cmap.degree
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
-                    cmap.cell_type, cmap.lagrange_variant)
+                    cmap.cell_type, cmap.lagrange_variant, el.value_shape(domain))
 
     form_name = object_names.get(id(form_data.original_form), form_id)
 
@@ -659,10 +660,11 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
         if not str(name).isidentifier():
             raise ValueError(f"Function name \"{name}\" must be a valid object identifier.")
         el = function.ufl_function_space().ufl_element()
-        cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        domain = function.ufl_function_space().ufl_domain()
+        cmap = domain.ufl_coordinate_element()
         family = cmap.family_name
         degree = cmap.degree
-        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
+        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree, el.value_shape(domain))
 
     expression_name = object_names.get(id(original_expression), index)
 

@@ -479,6 +479,15 @@ extern "C"
 
     /// The Basix variant of the finite element for the geometry map
     int geometry_basix_variant;
+
+    /// Rank of the value space
+    int value_rank;
+
+    /// Dimension of the value space for axis i
+    int* value_shape;
+
+    /// Number of components of the value space
+    int value_size;
   } ufcx_function_space;
 
 #ifdef __cplusplus
