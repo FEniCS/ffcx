@@ -6,11 +6,10 @@
 
 import collections
 import logging
-from typing import Any, Dict, List, Set, Tuple
+from typing import List, Tuple
 
 import ffcx.codegeneration.lnodes as L
 import ufl
-from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import (create_dof_index,
                                              create_quadrature_index)
 from ffcx.ir.integral import BlockDataT
