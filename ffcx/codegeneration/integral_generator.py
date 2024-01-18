@@ -96,55 +96,6 @@ class IntegralGenerator(object):
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self):
-        """Generate static tables of quadrature points and weights."""
-        parts = []
-
-        # No quadrature tables for custom (given argument) or point
-        # (evaluation in single vertex)
-        skip = ufl.custom_integral_types + ufl.measure.point_integral_types
-        if self.ir.integral_type in skip:
-            return parts
-
-        # Loop over quadrature rules
-        for quadrature_rule, integrand in self.ir.integrand.items():
-            # Generate quadrature weights array
-            wsym = self.backend.symbols.weights_table(quadrature_rule)
-            parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
-
-        # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, "Quadrature rules")
-        return parts
-
-    def generate_geometry_tables(self):
-        """Generate static tables of geometry data."""
-        ufl_geometry = {
-            ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
-            ufl.geometry.CellFacetJacobian: "reference_facet_jacobian",
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
-            ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
-            ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
-            ufl.geometry.ReferenceNormal: "reference_facet_normals",
-            ufl.geometry.FacetOrientation: "facet_orientation"
-        }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
-
-        for integrand in self.ir.integrand.values():
-            for attr in integrand["factorization"].nodes.values():
-                mt = attr.get("mt")
-                if mt is not None:
-                    t = type(mt.terminal)
-                    if t in ufl_geometry:
-                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
-
-        parts = []
-        for i, cell_list in cells.items():
-            for c in cell_list:
-                parts.append(geometry.write_table(ufl_geometry[i], c))
-
-        return parts
-
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
