@@ -105,28 +105,29 @@ def generate_geometry_tables(ir, backend):
     return parts
 
 
-def generate_piecewise_partition(ir, quadrature_rule):
+def generate_piecewise_partition(ir, backend, quadrature_rule):
     # Get annotated graph of factorisation
     F = ir.integrand[quadrature_rule]["factorization"]
     nodes = F.get_mode("piecewise")
     name = f"sp_{quadrature_rule.id()}"
-    return generate_partition(name, nodes)
+    return generate_partition(backend, name, nodes, None)
 
 
-def get_var(quadrature_rule, v, scopes):
-    f = scopes[quadrature_rule].get(v)
-    if f is None:
-        f = scopes[None].get(v)
-    return f
+def generate_varying_partition(ir, backend, quadrature_rule):
+    # Get annotated graph of factorisation
+    F = ir.integrand[quadrature_rule]["factorization"]
+    nodes = F.get_mode("varying")
+    name = f"sv_{quadrature_rule.id()}"
+    return generate_partition(backend, name, nodes, quadrature_rule)
 
 
-def generate_partition(backend, name, nodes, quadrature_rule, scopes):
+def generate_partition(backend, name, nodes, quadrature_rule):
     definitions: List[L.LNode] = []
     intermediates: List[L.LNode] = []
 
     for i, attr in nodes.items():
         expr = attr['expression']
-        if expr in scopes[quadrature_rule] or expr in scopes[None]:
+        if backend.get_var(quadrature_rule, expr):
             continue
         elif expr._ufl_is_literal_:
             lhs = L.ufl_to_lnodes(expr)
@@ -136,13 +137,13 @@ def generate_partition(backend, name, nodes, quadrature_rule, scopes):
             code = backend.definitions.get(mt, tabledata, quadrature_rule, lhs)
             definitions.append(code)
         else:
-            vops = [get_var(quadrature_rule, op, scopes) for op in expr.ufl_operands]
+            vops = [backend.get_var(quadrature_rule, op) for op in expr.ufl_operands]
             dtype = extract_dtype(expr, vops)
             rhs = L.ufl_to_lnodes(expr, *vops)
             lhs = L.Symbol(f"{name}_{len(intermediates)}", dtype=dtype)
             intermediates.append(L.VariableDecl(lhs, rhs))
 
         # Add to scope
-        scopes[quadrature_rule][expr] = lhs
+        backend.set_var(quadrature_rule, expr, lhs)
 
     return definitions, intermediates

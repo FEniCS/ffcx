@@ -84,7 +84,7 @@ class IntegralGenerator(object):
         # improve re-use and avoid name clashes
         for rule in self.ir.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
-            all_preparts += self.generate_piecewise_partition(rule)
+            all_preparts += gen.generate_piecewise_partition(self.ir, self.backend, rule)
 
             # Generate code to integrate reusable blocks of final
             # element tensor
@@ -148,7 +148,7 @@ class IntegralGenerator(object):
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
-        definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule)
+        definitions, intermediates_0 = gen.generate_varying_partition(self.ir, self.backend, quadrature_rule)
 
         # Generate dofblock parts, some of this will be placed before or
         # after quadloop
@@ -178,20 +178,6 @@ class IntegralGenerator(object):
         code = optimize(code, quadrature_rule)
 
         return [L.create_nested_for_loops([iq], code)]
-
-    def generate_piecewise_partition(self, quadrature_rule):
-        # Get annotated graph of factorisation
-        F = self.ir.integrand[quadrature_rule]["factorization"]
-        nodes = F.get_mode("piecewise")
-        name = f"sp_{quadrature_rule.id()}"
-        return gen.generate_partition(self.backend, name, nodes, None, self.backend.scopes)
-
-    def generate_varying_partition(self, quadrature_rule):
-        # Get annotated graph of factorisation
-        F = self.ir.integrand[quadrature_rule]["factorization"]
-        nodes = F.get_mode("varying")
-        name = f"sv_{quadrature_rule.id()}"
-        return gen.generate_partition(self.backend, name, nodes, quadrature_rule, self.backend.scopes)
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
