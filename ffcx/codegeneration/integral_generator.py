@@ -35,17 +35,12 @@ class IntegralGenerator(object):
         # Cache
         self.temp_symbols = {}
 
-        # Set of counters used for assigning names to intermediate
-        # variables
-        self.symbol_counters = collections.defaultdict(int)
-
     def get_temp_symbol(self, tempname, key):
         key = (tempname,) + key
         s = self.temp_symbols.get(key)
         defined = s is not None
         if not defined:
-            self.symbol_counters[tempname] += 1
-            name = f"{tempname}{self.symbol_counters[tempname]}"
+            name = f"{tempname}{len(self.temp_symbols)}"
             s = L.Symbol(name, dtype=L.DataType.SCALAR)
             self.temp_symbols[key] = s
         return s, defined
