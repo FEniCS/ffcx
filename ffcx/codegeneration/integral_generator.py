@@ -244,23 +244,20 @@ class IntegralGenerator(object):
 
             # Define fw = f * weight
             fw_rhs = L.float_product([f, weight])
-            if not isinstance(fw_rhs, L.Product):
-                fw = fw_rhs
-            else:
-                # Define and cache scalar temp variable
-                key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
-                fw, defined = self.get_temp_symbol("fw", key)
-                if not defined:
-                    input = [f, weight]
-                    # filter only L.Symbol in input
-                    input = [i for i in input if isinstance(i, L.Symbol)]
-                    output = [fw]
 
-                    # assert input and output are Symbol objects
-                    assert all(isinstance(i, L.Symbol) for i in input)
-                    assert all(isinstance(o, L.Symbol) for o in output)
+            # Define and cache scalar temp variable
+            key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
+            fw, defined = self.get_temp_symbol("fw", key)
+            if not defined:
+                input = [f, weight]
+                input = [i for i in input if isinstance(i, L.Symbol)]
+                output = [fw]
 
-                    intermediates += [L.VariableDecl(fw, fw_rhs)]
+                # assert input and output are Symbol objects
+                assert all(isinstance(i, L.Symbol) for i in input)
+                assert all(isinstance(o, L.Symbol) for o in output)
+
+                intermediates += [L.VariableDecl(fw, fw_rhs)]
 
             var = fw if isinstance(fw, L.Symbol) else fw.array
             vars += [var]
