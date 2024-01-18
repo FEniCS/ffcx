@@ -13,29 +13,13 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import (create_dof_index,
                                              create_quadrature_index)
-from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.codegeneration.optimizer import optimize
-from numbers import Integral
+# from numbers import Integral
+import ffcx.codegeneration.generator as gen
 
 logger = logging.getLogger("ffcx")
-
-
-def extract_dtype(v, vops: List[Any]):
-    """Extract dtype from ufl expression v and its operands."""
-    dtypes = []
-    for op in vops:
-        if hasattr(op, "dtype"):
-            dtypes.append(op.dtype)
-        elif hasattr(op, "symbol"):
-            dtypes.append(op.symbol.dtype)
-        elif isinstance(op, Integral):
-            dtypes.append(L.DataType.INT)
-        else:
-            raise RuntimeError(f"Not expecting this type of operand {type(op)}")
-    is_cond = isinstance(v, ufl.classes.Condition)
-    return L.DataType.BOOL if is_cond else L.merge_dtypes(dtypes)
 
 
 class IntegralGenerator(object):
@@ -105,7 +89,7 @@ class IntegralGenerator(object):
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
+        name = f"{basename}{self.symbol_counters[basename]}"
         self.symbol_counters[basename] += 1
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
@@ -132,14 +116,14 @@ class IntegralGenerator(object):
         parts = []
 
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables()
+        parts += gen.generate_quadrature_tables(self.ir, self.backend)
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
-        parts += self.generate_element_tables()
+        parts += gen.generate_element_tables(self.ir, self.backend)
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += gen.generate_geometry_tables(self.ir, self.backend)
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -212,39 +196,6 @@ class IntegralGenerator(object):
 
         return parts
 
-    def generate_element_tables(self):
-        """Generate static tables with precomputed element basisfunction values in quadrature points."""
-        parts = []
-        tables = self.ir.unique_tables
-        table_types = self.ir.unique_table_types
-        if self.ir.integral_type in ufl.custom_integral_types:
-            # Define only piecewise tables
-            table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
-        else:
-            # Define all tables
-            table_names = sorted(tables)
-
-        for name in table_names:
-            table = tables[name]
-            parts += self.declare_table(name, table)
-
-        # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, [
-            "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [permutation][entities][points][dofs]"])
-        return parts
-
-    def declare_table(self, name, table):
-        """Declare a table.
-
-        If the dof dimensions of the table have dof rotations, apply
-        these rotations.
-
-        """
-        table_symbol = L.Symbol(name, dtype=L.DataType.REAL)
-        self.backend.symbols.element_tables[name] = table_symbol
-        return [L.ArrayDecl(table_symbol, values=table, const=True)]
-
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule):
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
@@ -283,56 +234,14 @@ class IntegralGenerator(object):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        return self.generate_partition(arraysymbol, F, "piecewise", None)
+        return gen.generate_partition(self.backend, arraysymbol, F, "piecewise", None, self.scopes)
 
     def generate_varying_partition(self, quadrature_rule):
 
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        return self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
-
-    def generate_partition(self, symbol, F, mode, quadrature_rule):
-
-        definitions = []
-        intermediates = []
-
-        for i, attr in F.nodes.items():
-            if attr['status'] != mode:
-                continue
-            v = attr['expression']
-
-            # Generate code only if the expression is not already in cache
-            if not self.get_var(quadrature_rule, v):
-                if v._ufl_is_literal_:
-                    vaccess = L.ufl_to_lnodes(v)
-                elif (mt := attr.get('mt')):
-                    tabledata = attr.get('tr')
-
-                    # Backend specific modified terminal translation
-                    vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
-                    vdef = self.backend.definitions.get(mt, tabledata, quadrature_rule, vaccess)
-
-                    if vdef:
-                        assert isinstance(vdef, L.Section)
-                    definitions += [vdef]
-                else:
-                    # Get previously visited operands
-                    vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
-                    dtype = extract_dtype(v, vops)
-
-                    # Mapping UFL operator to target language
-                    self._ufl_names.add(v._ufl_handler_name_)
-                    vexpr = L.ufl_to_lnodes(v, *vops)
-
-                    j = len(intermediates)
-                    vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
-                    intermediates.append(L.VariableDecl(vaccess, vexpr))
-
-                # Store access node for future reference
-                self.set_var(quadrature_rule, v, vaccess)
-
-        return definitions, intermediates
+        return gen.generate_partition(self.backend, arraysymbol, F, "varying", quadrature_rule, self.scopes)
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]

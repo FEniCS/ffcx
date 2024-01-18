@@ -48,6 +48,14 @@ class ExpressionGraph(object):
         self.out_edges[node1] += [node2]
         self.in_edges[node2] += [node1]
 
+    def get_mode(self, mode: str):
+        """Return a dictionary of nodes with the given mode."""
+        nodes = {}
+        for i, attr in self.nodes.items():
+            if attr['status'] == mode:
+                nodes[i] = attr
+        return nodes
+
 
 def build_graph_vertices(expressions, skip_terminal_modifiers=False):
     # Count unique expression nodes
