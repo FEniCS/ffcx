@@ -4,17 +4,14 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import collections
 import logging
 from itertools import product
-from typing import Any, DefaultDict, Dict, Set
 
 import ffcx.codegeneration.lnodes as L
 import ufl
-from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
+import ffcx.codegeneration.generator as gen
 
 logger = logging.getLogger("ffcx")
 
@@ -27,19 +24,14 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scope: Dict[Any, LNode] = {}
-        self._ufl_names: Set[Any] = set()
-        self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
-        self.shared_symbols: Dict[Any, Any] = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):
         parts = []
-        parts += self.generate_element_tables()
 
-        # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
-        parts += self.generate_piecewise_partition()
+        parts += gen.generate_element_tables(self.ir, self.backend)
+        parts += gen.generate_geometry_tables(self.ir, self.backend)
+        parts += gen.generate_piecewise_partition(self.ir, self.backend, self.quadrature_rule)
 
         all_preparts = []
         all_quadparts = []
@@ -54,48 +46,6 @@ class ExpressionGenerator:
 
         return L.StatementList(parts)
 
-    def generate_geometry_tables(self):
-        """Generate static tables of geometry data."""
-        # Currently we only support circumradius
-        ufl_geometry = {ufl.geometry.ReferenceCellVolume: "reference_cell_volume", }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
-
-        for integrand in self.ir.integrand.values():
-            for attr in integrand["factorization"].nodes.values():
-                mt = attr.get("mt")
-                if mt is not None:
-                    t = type(mt.terminal)
-                    if t in ufl_geometry:
-                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
-
-        parts = []
-        for i, cell_list in cells.items():
-            for c in cell_list:
-                parts.append(geometry.write_table(ufl_geometry[i], c))
-
-        return parts
-
-    def generate_element_tables(self):
-        """Generate tables of FE basis evaluated at specified points."""
-        parts = []
-
-        tables = self.ir.unique_tables
-        table_names = sorted(tables)
-
-        for name in table_names:
-            table = tables[name]
-            symbol = L.Symbol(name, dtype=L.DataType.REAL)
-            self.backend.symbols.element_tables[name] = symbol
-            decl = L.ArrayDecl(symbol, sizes=table.shape, values=table, const=True)
-            parts += [decl]
-
-        # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, [
-            "Precomputed values of basis functions",
-            "FE* dimensions: [entities][points][dofs]",
-        ])
-        return parts
-
     def generate_quadrature_loop(self):
         """Generate quadrature loop for this quadrature rule.
 
@@ -103,9 +53,9 @@ class ExpressionGenerator:
 
         """
         # Generate varying partition
-        body = self.generate_varying_partition()
+        definitions, inter = gen.generate_varying_partition(self.ir, self.backend, self.quadrature_rule)
         body = L.commented_code_list(
-            body, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}")
+            definitions + inter, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}")
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
@@ -113,7 +63,7 @@ class ExpressionGenerator:
             self.generate_dofblock_partition()
         body += quadparts
 
-        # Wrap body in loop or scope
+        # Wrap body in loop or scopes
         if not body:
             # Could happen for integral with everything zero and optimized away
             quadparts = []
@@ -122,27 +72,6 @@ class ExpressionGenerator:
             num_points = self.quadrature_rule.points.shape[0]
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
         return preparts, quadparts
-
-    def generate_varying_partition(self):
-        """Generate factors of blocks which are not cellwise constant."""
-        # Get annotated graph of factorisation
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
-
-        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        parts = self.generate_partition(arraysymbol, F, "varying")
-        parts = L.commented_code_list(
-            parts, f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}")
-        return parts
-
-    def generate_piecewise_partition(self):
-        """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
-        # Get annotated graph of factorisation
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
-
-        arraysymbol = L.Symbol("sp", dtype=L.DataType.SCALAR)
-        parts = self.generate_partition(arraysymbol, F, "piecewise")
-        parts = L.commented_code_list(parts, "Unstructured piecewise computations")
-        return parts
 
     def generate_dofblock_partition(self):
         """Generate assignments of blocks multiplied with their factors into final tensor A."""
@@ -212,7 +141,7 @@ class ExpressionGenerator:
                 B_indices = tuple([iq] + list(B_indices))
                 A_indices = tuple([iq] + A_indices)
                 for fi_ci in blockdata.factor_indices_comp_indices:
-                    f = self.get_var(F.nodes[fi_ci[0]]["expression"])
+                    f = self.backend.get_var(self.quadrature_rule, F.nodes[fi_ci[0]]["expression"])
                     arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
                     Brhs = L.float_product([f] + arg_factors)
                     multi_index = L.MultiIndex([A_indices[0], fi_ci[1]] + A_indices[1:], A_shape)
@@ -246,7 +175,7 @@ class ExpressionGenerator:
             body = []
 
             for fi_ci in blockdata.factor_indices_comp_indices:
-                f = self.get_var(F.nodes[fi_ci[0]]["expression"])
+                f = self.backend.get_var(self.quadrature_rule, F.nodes[fi_ci[0]]["expression"])
                 Brhs = L.float_product([f] + arg_factors)
                 indices = [A_indices[0], fi_ci[1]] + list(A_indices[1:])
                 multi_index = L.MultiIndex(indices, A_shape)
@@ -286,71 +215,3 @@ class ExpressionGenerator:
                 arg_factor = table[indices[i + 1]]
             arg_factors.append(arg_factor)
         return arg_factors
-
-    def new_temp_symbol(self, basename):
-        """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
-        self.symbol_counters[basename] += 1
-        return L.Symbol(name, dtype=L.DataType.SCALAR)
-
-    def get_var(self, v):
-        if v._ufl_is_literal_:
-            return L.ufl_to_lnodes(v)
-        f = self.scope.get(v)
-        return f
-
-    def generate_partition(self, symbol, F, mode):
-        """Generate computations of factors of blocks."""
-        definitions = []
-        intermediates = []
-
-        for i, attr in F.nodes.items():
-            if attr['status'] != mode:
-                continue
-            v = attr['expression']
-            mt = attr.get('mt')
-
-            if v._ufl_is_literal_:
-                vaccess = L.ufl_to_lnodes(v)
-            elif mt is not None:
-                # All finite element based terminals have table data, as well
-                # as some, but not all, of the symbolic geometric terminals
-                tabledata = attr.get('tr')
-
-                # Backend specific modified terminal translation
-                vaccess = self.backend.access.get(mt, tabledata, 0)
-                vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
-
-                if vdef:
-                    assert isinstance(vdef, L.Section)
-                    vdef = vdef.declarations + vdef.statements
-
-                # Store definitions of terminals in list
-                assert isinstance(vdef, list)
-                definitions.extend(vdef)
-            else:
-                # Get previously visited operands
-                vops = [self.get_var(op) for op in v.ufl_operands]
-
-                # Mapping UFL operator to target language
-                self._ufl_names.add(v._ufl_handler_name_)
-                vexpr = L.ufl_to_lnodes(v, *vops)
-
-                is_cond = isinstance(v, ufl.classes.Condition)
-                dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
-
-                j = len(intermediates)
-                vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
-                intermediates.append(L.VariableDecl(vaccess, vexpr))
-
-            # Store access node for future reference
-            self.scope[v] = vaccess
-
-        # Join terminal computation, array of intermediate expressions,
-        # and intermediate computations
-        parts = []
-
-        parts += definitions
-        parts += intermediates
-
-        return parts
