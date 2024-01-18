@@ -33,59 +33,12 @@ class IntegralGenerator(object):
         # - access: for accessing backend specific variables
         self.backend = backend
 
-        # Set of operator names code has been generated for, used in the
-        # end for selecting necessary includes
-        self._ufl_names = set()
-
-        # Initialize lookup tables for variable scopes
-        self.init_scopes()
-
         # Cache
         self.temp_symbols = {}
 
         # Set of counters used for assigning names to intermediate
         # variables
         self.symbol_counters = collections.defaultdict(int)
-
-    def init_scopes(self):
-        """Initialize variable scope dicts."""
-        # Reset variables, separate sets for each quadrature rule
-        self.scopes = {quadrature_rule: {} for quadrature_rule in self.ir.integrand.keys()}
-        self.scopes[None] = {}
-
-    def set_var(self, quadrature_rule, v, vaccess):
-        """Set a new variable in variable scope dicts.
-
-        Scope is determined by quadrature_rule which identifies the
-        quadrature loop scope or None if outside quadrature loops.
-
-        v is the ufl expression and vaccess is the LNodes
-        expression to access the value in the code.
-
-        """
-        self.scopes[quadrature_rule][v] = vaccess
-
-    def get_var(self, quadrature_rule, v):
-        """Lookup ufl expression v in variable scope dicts.
-
-        Scope is determined by quadrature rule which identifies the
-        quadrature loop scope or None if outside quadrature loops.
-
-        If v is not found in quadrature loop scope, the piecewise
-        scope (None) is checked.
-
-        Returns the LNodes expression to access the value in the code.
-        """
-        if v._ufl_is_literal_:
-            return L.ufl_to_lnodes(v)
-
-        # quadrature loop scope
-        f = self.scopes[quadrature_rule].get(v)
-
-        # piecewise scope
-        if f is None:
-            f = self.scopes[None].get(v)
-        return f
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
@@ -109,10 +62,6 @@ class IntegralGenerator(object):
         context that matches a suitable version of the UFC
         tabulate_tensor signatures.
         """
-        # Assert that scopes are empty: expecting this to be called only
-        # once
-        assert not any(d for d in self.scopes.values())
-
         parts = []
 
         # Generate the tables of quadrature points and weights
@@ -235,14 +184,14 @@ class IntegralGenerator(object):
         F = self.ir.integrand[quadrature_rule]["factorization"]
         nodes = F.get_mode("piecewise")
         name = f"sp_{quadrature_rule.id()}"
-        return gen.generate_partition(self.backend, name, nodes, None, self.scopes)
+        return gen.generate_partition(self.backend, name, nodes, None, self.backend.scopes)
 
     def generate_varying_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         nodes = F.get_mode("varying")
         name = f"sv_{quadrature_rule.id()}"
-        return gen.generate_partition(self.backend, name, nodes, quadrature_rule, self.scopes)
+        return gen.generate_partition(self.backend, name, nodes, quadrature_rule, self.backend.scopes)
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
@@ -351,7 +300,7 @@ class IntegralGenerator(object):
             F = self.ir.integrand[quadrature_rule]["factorization"]
 
             v = F.nodes[factor_index]['expression']
-            f = self.get_var(quadrature_rule, v)
+            f = self.backend.get_var(quadrature_rule, v)
 
             # Quadrature weight was removed in representation, add it back now
             if self.ir.integral_type in ufl.custom_integral_types:
