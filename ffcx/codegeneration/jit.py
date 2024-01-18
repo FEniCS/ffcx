@@ -66,7 +66,8 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
 
     try:
         # Create C file with exclusive access
-        open(c_filename, "x")
+        with open(c_filename, "x"):
+            pass
         return None, None
     except FileExistsError:
         logger.info("Cached C file already exists: " + str(c_filename))
