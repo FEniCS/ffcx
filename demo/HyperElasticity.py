@@ -12,7 +12,7 @@ from ufl import (Coefficient, Constant, FacetNormal, FunctionSpace, Identity,
 
 # Cell and its properties
 cell = tetrahedron
-d = cell.geometric_dimension()
+d = 3
 
 # Elements
 u_element = basix.ufl.element("P", cell.cellname(), 2, shape=(3, ))
