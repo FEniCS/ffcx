@@ -39,18 +39,14 @@ class IntegralGenerator(object):
         # variables
         self.symbol_counters = collections.defaultdict(int)
 
-    def new_temp_symbol(self, basename):
-        """Create a new code symbol named basename + running counter."""
-        name = f"{basename}{self.symbol_counters[basename]}"
-        self.symbol_counters[basename] += 1
-        return L.Symbol(name, dtype=L.DataType.SCALAR)
-
     def get_temp_symbol(self, tempname, key):
         key = (tempname,) + key
         s = self.temp_symbols.get(key)
         defined = s is not None
         if not defined:
-            s = self.new_temp_symbol(tempname)
+            self.symbol_counters[tempname] += 1
+            name = f"{tempname}{self.symbol_counters[tempname]}"
+            s = L.Symbol(name, dtype=L.DataType.SCALAR)
             self.temp_symbols[key] = s
         return s, defined
 
