@@ -26,6 +26,7 @@ class FFCXBackend(object):
         self.access = FFCXBackendAccess(ir, self.symbols, options)
         self.definitions = FFCXBackendDefinitions(ir, self.access, options)
 
+        # TODO: Move this to symbols ?
         self.scopes = {}
         self.scopes = {quadrature_rule: {} for quadrature_rule in ir.integrand.keys()}
         self.scopes[None] = {}
