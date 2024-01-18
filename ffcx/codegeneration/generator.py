@@ -7,7 +7,7 @@
 from typing import Any, Dict, List, Set
 from numbers import Integral
 import ffcx.codegeneration.lnodes as L
-from ffcx.ir.analysis.graph import ExpressionGraph
+# from ffcx.ir.analysis.graph import ExpressionGraph
 from ffcx.codegeneration import geometry
 from ffcx.ir.elementtables import piecewise_ttypes
 import ufl
@@ -108,28 +108,22 @@ def generate_geometry_tables(ir, backend):
 def generate_piecewise_partition(ir, quadrature_rule):
     # Get annotated graph of factorisation
     F = ir.integrand[quadrature_rule]["factorization"]
-    arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-    return generate_partition(arraysymbol, F, "piecewise", None)
+    nodes = F.get_mode("piecewise")
+    name = f"sp_{quadrature_rule.id()}"
+    return generate_partition(name, nodes)
 
 
 def get_var(quadrature_rule, v, scopes):
-
-    # If v is a literal, return its value
-    if v._ufl_is_literal_:
-        return L.ufl_to_lnodes(v)
-
     f = scopes[quadrature_rule].get(v)
-
     if f is None:
         f = scopes[None].get(v)
     return f
 
 
-def generate_partition(backend, symbol, F: ExpressionGraph, mode, quadrature_rule, scopes):
+def generate_partition(backend, name, nodes, quadrature_rule, scopes):
     definitions: List[L.LNode] = []
     intermediates: List[L.LNode] = []
 
-    nodes = F.get_mode(mode)
     for i, attr in nodes.items():
         expr = attr['expression']
         if expr in scopes[quadrature_rule] or expr in scopes[None]:
@@ -145,7 +139,7 @@ def generate_partition(backend, symbol, F: ExpressionGraph, mode, quadrature_rul
             vops = [get_var(quadrature_rule, op, scopes) for op in expr.ufl_operands]
             dtype = extract_dtype(expr, vops)
             rhs = L.ufl_to_lnodes(expr, *vops)
-            lhs = L.Symbol(f"{symbol.name}_{len(intermediates)}", dtype=dtype)
+            lhs = L.Symbol(f"{name}_{len(intermediates)}", dtype=dtype)
             intermediates.append(L.VariableDecl(lhs, rhs))
 
         # Add to scope

@@ -233,15 +233,16 @@ class IntegralGenerator(object):
     def generate_piecewise_partition(self, quadrature_rule):
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
-        arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        return gen.generate_partition(self.backend, arraysymbol, F, "piecewise", None, self.scopes)
+        nodes = F.get_mode("piecewise")
+        name = f"sp_{quadrature_rule.id()}"
+        return gen.generate_partition(self.backend, name, nodes, None, self.scopes)
 
     def generate_varying_partition(self, quadrature_rule):
-
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
-        arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
-        return gen.generate_partition(self.backend, arraysymbol, F, "varying", quadrature_rule, self.scopes)
+        nodes = F.get_mode("varying")
+        name = f"sv_{quadrature_rule.id()}"
+        return gen.generate_partition(self.backend, name, nodes, quadrature_rule, self.scopes)
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
