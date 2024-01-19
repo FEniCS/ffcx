@@ -65,7 +65,7 @@ def generate_element_tables(ir, backend):
 
     for name in table_names:
         table = tables[name]
-        table_symbol = L.Symbol(name, dtype=L.DataType.REAL)
+        table_symbol = L.Symbol(name, dtype=L.DataType.REAL, shape=table.shape)
         backend.symbols.element_tables[name] = table_symbol
         parts += [L.ArrayDecl(table_symbol, values=table, const=True)]
 

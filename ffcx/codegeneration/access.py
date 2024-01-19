@@ -406,6 +406,6 @@ class FFCXBackendAccess(object):
                 iq_i = quadrature_index.local_index(i)
                 ic_i = dof_index.local_index(i)
                 table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
-                symbols += [L.Symbol(factor.name, dtype=L.DataType.REAL, shape=factor.values.shape)]
+                symbols += [self.symbols.element_tables[factor.name]]
                 FE.append(table)
             return L.Product(FE), symbols

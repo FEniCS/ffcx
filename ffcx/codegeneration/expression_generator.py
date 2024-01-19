@@ -167,6 +167,7 @@ class ExpressionGenerator:
 
             for fi_ci in blockdata.factor_indices_comp_indices:
                 f = self.backend.get_var(self.quadrature_rule, F.nodes[fi_ci[0]]["expression"])
+                f = f[iq] if (hasattr(f, "size") and f.size() > 1) else f
                 Brhs = L.float_product([f] + arg_factors)
                 indices = [A_indices[0], fi_ci[1]] + list(A_indices[1:])
                 multi_index = L.MultiIndex(indices, A_shape)
