@@ -10,6 +10,7 @@ import ffcx.codegeneration.lnodes as L
 # from ffcx.ir.analysis.graph import ExpressionGraph
 from ffcx.codegeneration import geometry
 from ffcx.ir.elementtables import piecewise_ttypes
+from ffcx.codegeneration.definitions import create_quadrature_index
 import ufl
 
 
@@ -125,6 +126,9 @@ def generate_partition(backend, name, nodes, quadrature_rule):
     definitions: List[L.LNode] = []
     intermediates: List[L.LNode] = []
 
+    iq_symbol = backend.symbols.quadrature_loop_index
+    iq = create_quadrature_index(quadrature_rule, iq_symbol)
+
     for i, attr in nodes.items():
         expr = attr['expression']
         if backend.get_var(quadrature_rule, expr):
@@ -138,6 +142,7 @@ def generate_partition(backend, name, nodes, quadrature_rule):
             definitions.append(code)
         else:
             vops = [backend.get_var(quadrature_rule, op) for op in expr.ufl_operands]
+            vops = [op[iq] if (hasattr(op, "size") and op.size() > 1) else op for op in vops]
             dtype = extract_dtype(expr, vops)
             rhs = L.ufl_to_lnodes(expr, *vops)
             lhs = L.Symbol(f"{name}_{len(intermediates)}", dtype=dtype)

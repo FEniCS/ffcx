@@ -13,12 +13,13 @@ from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from typing import List, Union
 import ufl
+import numpy as np
 
 
 logger = logging.getLogger("ffcx")
 
 
-def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
+def create_quadrature_index(quadrature_rule: QuadratureRule, quadrature_index_symbol):
     """Create a multi index for the quadrature loop."""
     ranges = [0]
     name = quadrature_index_symbol.name
@@ -98,7 +99,7 @@ class FFCXBackendDefinitions(object):
         return handler(mt, tabledata, quadrature_rule, access)
 
     def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                    quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+                    quadrature_rule: QuadratureRule, symbol: L.Symbol) -> Union[L.Section, List]:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -109,6 +110,7 @@ class FFCXBackendDefinitions(object):
 
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
         ic = create_dof_index(tabledata, ic_symbol)
+        symbol.shape = tuple(iq.sizes)
 
         # Get properties of tables
         ttype = tabledata.ttype
@@ -131,14 +133,16 @@ class FFCXBackendDefinitions(object):
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
-        declaration: List[L.Declaration] = [L.VariableDecl(access, 0.0)]
+        declaration: List[L.Declaration] = [L.declaration(symbol, [0.0])]
+        access = symbol[iq] if symbol.size() else symbol
+
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
         input = [dof_access.array, *tables]
-        output = [access]
-        annotations = [L.Annotation.fuse]
+        output = [symbol]
+        annotations = [L.Annotation.fuse] if not self.ir.sum_factorization else []
 
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
@@ -147,7 +151,7 @@ class FFCXBackendDefinitions(object):
         return L.Section(name, code, declaration, input, output, annotations)
 
     def _define_coordinate_dofs_lincomb(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                                        quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+                                        quadrature_rule: QuadratureRule, symbol: L.Symbol) -> Union[L.Section, List]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -171,6 +175,7 @@ class FFCXBackendDefinitions(object):
         ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        symbol.shape = tuple(iq.sizes)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
@@ -181,14 +186,16 @@ class FFCXBackendDefinitions(object):
             offset = num_scalar_dofs * dim
 
         code = []
-        declaration = [L.VariableDecl(access, 0.0)]
+        declaration = [L.declaration(symbol, [0.0])]
+        access = symbol[iq] if symbol.size() else symbol
+
         body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
         name = type(mt.terminal).__name__
-        output = [access]
+        output = [symbol]
         input = [dof_access, *tables]
-        annotations = [L.Annotation.fuse]
+        annotations = [L.Annotation.fuse] if not self.ir.sum_factorization else []
 
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)

@@ -50,7 +50,9 @@ class FFCXBackendAccess(object):
                             ufl.geometry.FacetOrientation: self.facet_orientation,
                             ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
 
-    def get(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+    def get(self,
+            mt: ModifiedTerminal,
+            tabledata: UniqueTableReferenceT,
             quadrature_rule: QuadratureRule):
         e = mt.terminal
         # Call appropriate handler, depending on the type of e
@@ -404,6 +406,6 @@ class FFCXBackendAccess(object):
                 iq_i = quadrature_index.local_index(i)
                 ic_i = dof_index.local_index(i)
                 table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
-                symbols += [L.Symbol(factor.name, dtype=L.DataType.REAL)]
+                symbols += [L.Symbol(factor.name, dtype=L.DataType.REAL, shape=factor.values.shape)]
                 FE.append(table)
             return L.Product(FE), symbols

@@ -165,6 +165,7 @@ class ExpressionIR(typing.NamedTuple):
     function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
     name_from_uflfile: str
     original_coefficient_positions: typing.List[int]
+    sum_factorization: bool
 
 
 class DataIR(typing.NamedTuple):
@@ -373,7 +374,7 @@ def _compute_integral_ir(form_data, form_index, element_numbers, integral_names,
             "enabled_coefficients": itg_data.enabled_coefficients,
             "cell_shape": cellname,
             "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()],
-            "sum_factorization": options["sum_factorization"] and itg_data.integral_type == "cell",
+            "sum_factorization": options["sum_factorization"],
         }
 
         # Get element space dimensions
@@ -698,8 +699,8 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     ir["original_constant_offsets"] = original_constant_offsets
-
     ir["points"] = points
+    ir["sum_factorization"] = False
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)

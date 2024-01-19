@@ -9,6 +9,8 @@ from ffcx.codegeneration.access import FFCXBackendAccess
 from ffcx.codegeneration.definitions import FFCXBackendDefinitions
 from ffcx.codegeneration.symbols import FFCXBackendSymbols
 import ffcx.codegeneration.lnodes as L
+from ffcx.ir.representationutils import QuadratureRule
+from ufl.core.expr import Expr
 
 
 class FFCXBackend(object):
@@ -32,7 +34,9 @@ class FFCXBackend(object):
         self.scopes = {quadrature_rule: {} for quadrature_rule in ir.integrand.keys()}
         self.scopes[None] = {}
 
-    def get_var(self, quadrature_rule, v):
+        self.temp_symbols = {}
+
+    def get_var(self, quadrature_rule: QuadratureRule, v: Expr):
         """Lookup ufl expression v in variable scope dicts.
 
         Scope is determined by quadrature rule which identifies the
@@ -43,6 +47,8 @@ class FFCXBackend(object):
 
         Returns the LNodes expression to access the value in the code.
         """
+        assert isinstance(v, Expr)
+
         if v._ufl_is_literal_:
             return L.ufl_to_lnodes(v)
 
@@ -54,7 +60,7 @@ class FFCXBackend(object):
             f = self.scopes[None].get(v)
         return f
 
-    def set_var(self, quadrature_rule, v, vaccess):
+    def set_var(self, quadrature_rule: QuadratureRule, v: Expr, vaccess: L.Symbol):
         """Set a new variable in variable scope dicts.
 
         Scope is determined by quadrature_rule which identifies the

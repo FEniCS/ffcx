@@ -143,17 +143,18 @@ class IntegralGenerator(object):
 
         intermediates = []
         for blockmap in block_groups:
-            block_quadparts, intermediate = self.generate_block_parts(
-                quadrature_rule, blockmap, block_groups[blockmap])
-            intermediates += intermediate
-
-            # Add computations
-            quadparts.extend(block_quadparts)
+            for block in block_groups[blockmap]:
+                block_quadparts, intermediate = self.generate_block_parts(
+                    quadrature_rule, blockmap, block)
+                intermediates += intermediate
+                quadparts.extend(block_quadparts)
 
         return quadparts, intermediates
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule,
-                             blockmap: Tuple, blocklist: List[BlockDataT]):
+    def generate_block_parts(self,
+                             quadrature_rule: QuadratureRule,
+                             blockmap: Tuple,
+                             blockdata: BlockDataT):
         """Generate and return code parts for a given block.
 
         Returns parts occurring before, inside, and after the quadrature
@@ -175,79 +176,77 @@ class IntegralGenerator(object):
         iq_symbol = self.backend.symbols.quadrature_loop_index
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
 
-        for blockdata in blocklist:
+        B_indices = []
+        for i in range(block_rank):
+            table_ref = blockdata.ma_data[i].tabledata
+            symbol = self.backend.symbols.argument_loop_index(i)
+            index = create_dof_index(table_ref, symbol)
+            B_indices.append(index)
 
-            B_indices = []
-            for i in range(block_rank):
-                table_ref = blockdata.ma_data[i].tabledata
-                symbol = self.backend.symbols.argument_loop_index(i)
-                index = create_dof_index(table_ref, symbol)
-                B_indices.append(index)
+        ttypes = blockdata.ttypes
+        if "zeros" in ttypes:
+            raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
 
-            ttypes = blockdata.ttypes
-            if "zeros" in ttypes:
-                raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
+        if len(blockdata.factor_indices_comp_indices) > 1:
+            raise RuntimeError("Code generation for non-scalar integrals unsupported")
 
-            if len(blockdata.factor_indices_comp_indices) > 1:
-                raise RuntimeError("Code generation for non-scalar integrals unsupported")
+        # We have scalar integrand here, take just the factor index
+        factor_index = blockdata.factor_indices_comp_indices[0][0]
 
-            # We have scalar integrand here, take just the factor index
-            factor_index = blockdata.factor_indices_comp_indices[0][0]
+        # Get factor expression
+        F = self.ir.integrand[quadrature_rule]["factorization"]
 
-            # Get factor expression
-            F = self.ir.integrand[quadrature_rule]["factorization"]
+        v: ufl.core.Expr = F.nodes[factor_index]['expression']
+        f: L.Symbol = self.backend.get_var(quadrature_rule, v)
 
-            v = F.nodes[factor_index]['expression']
-            f = self.backend.get_var(quadrature_rule, v)
+        # Quadrature weight was removed in representation, add it back now
+        if self.ir.integral_type in ufl.custom_integral_types:
+            weights = self.backend.symbols.custom_weights_table
+            weight = weights[iq.global_index]
+        else:
+            weights = self.backend.symbols.weights_table(quadrature_rule)
+            weight = weights[iq.global_index]
 
-            # Quadrature weight was removed in representation, add it back now
-            if self.ir.integral_type in ufl.custom_integral_types:
-                weights = self.backend.symbols.custom_weights_table
-                weight = weights[iq.global_index]
+        # Define fw = f * weight
+        fw_rhs = L.float_product([f, weight])
+
+        # Define and cache scalar temp variable
+        key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
+        fw, defined = self.get_temp_symbol("fw", key)
+        if not defined:
+            input = [f, weight]
+            input = [i for i in input if isinstance(i, L.Symbol)]
+            output = [fw]
+
+            # assert input and output are Symbol objects
+            assert all(isinstance(i, L.Symbol) for i in input)
+            assert all(isinstance(o, L.Symbol) for o in output)
+
+            intermediates += [L.VariableDecl(fw, fw_rhs)]
+
+        var = fw if isinstance(fw, L.Symbol) else fw.array
+        vars += [var]
+        assert not blockdata.transposed, "Not handled yet"
+
+        # Fetch code to access modified arguments
+        arg_factors, table = gen.get_arg_factors(
+            self.backend, blockdata, block_rank, quadrature_rule, iq, B_indices)
+        tables += table
+
+        # Define B_rhs = fw * arg_factors
+        B_rhs = L.float_product([fw] + arg_factors)
+
+        A_indices = []
+        for i in range(block_rank):
+            index = B_indices[i]
+            tabledata = blockdata.ma_data[i].tabledata
+            offset = tabledata.offset
+            if len(blockmap[i]) == 1:
+                A_indices.append(index.global_index + offset)
             else:
-                weights = self.backend.symbols.weights_table(quadrature_rule)
-                weight = weights[iq.global_index]
-
-            # Define fw = f * weight
-            fw_rhs = L.float_product([f, weight])
-
-            # Define and cache scalar temp variable
-            key = (quadrature_rule, factor_index, blockdata.all_factors_piecewise)
-            fw, defined = self.get_temp_symbol("fw", key)
-            if not defined:
-                input = [f, weight]
-                input = [i for i in input if isinstance(i, L.Symbol)]
-                output = [fw]
-
-                # assert input and output are Symbol objects
-                assert all(isinstance(i, L.Symbol) for i in input)
-                assert all(isinstance(o, L.Symbol) for o in output)
-
-                intermediates += [L.VariableDecl(fw, fw_rhs)]
-
-            var = fw if isinstance(fw, L.Symbol) else fw.array
-            vars += [var]
-            assert not blockdata.transposed, "Not handled yet"
-
-            # Fetch code to access modified arguments
-            arg_factors, table = gen.get_arg_factors(
-                self.backend, blockdata, block_rank, quadrature_rule, iq, B_indices)
-            tables += table
-
-            # Define B_rhs = fw * arg_factors
-            B_rhs = L.float_product([fw] + arg_factors)
-
-            A_indices = []
-            for i in range(block_rank):
-                index = B_indices[i]
-                tabledata = blockdata.ma_data[i].tabledata
-                offset = tabledata.offset
-                if len(blockmap[i]) == 1:
-                    A_indices.append(index.global_index + offset)
-                else:
-                    block_size = blockdata.ma_data[i].tabledata.block_size
-                    A_indices.append(block_size * index.global_index + offset)
-            rhs_expressions[tuple(A_indices)].append(B_rhs)
+                block_size = blockdata.ma_data[i].tabledata.block_size
+                A_indices.append(block_size * index.global_index + offset)
+        rhs_expressions[tuple(A_indices)].append(B_rhs)
 
         # List of statements to keep in the inner loop
         keep = collections.defaultdict(list)
