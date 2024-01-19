@@ -28,21 +28,12 @@ class ExpressionGenerator:
 
     def generate(self):
         parts = []
-
         parts += gen.generate_element_tables(self.ir, self.backend)
         parts += gen.generate_geometry_tables(self.ir, self.backend)
         parts += gen.generate_piecewise_partition(self.ir, self.backend, self.quadrature_rule)
 
-        all_preparts = []
-        all_quadparts = []
-
-        preparts, quadparts = self.generate_quadrature_loop()
-        all_preparts += preparts
-        all_quadparts += quadparts
-
-        # Collect parts before, during, and after quadrature loops
-        parts += all_preparts
-        parts += all_quadparts
+        piecewise, varying = self.generate_quadrature_loop()
+        parts += piecewise + varying
 
         return L.StatementList(parts)
 

@@ -21,6 +21,7 @@ class FFCXBackend(object):
 
         original_constant_offsets = ir.original_constant_offsets
 
+        self.ir = ir
         self.symbols = FFCXBackendSymbols(coefficient_numbering,
                                           coefficient_offsets, original_constant_offsets)
         self.access = FFCXBackendAccess(ir, self.symbols, options)

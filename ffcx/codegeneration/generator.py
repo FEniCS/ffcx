@@ -147,3 +147,30 @@ def generate_partition(backend, name, nodes, quadrature_rule):
         backend.set_var(quadrature_rule, expr, lhs)
 
     return definitions, intermediates
+
+
+def get_arg_factors(backend, blockdata, block_rank, quadrature_rule, iq, indices):
+
+    ir = backend.ir
+    arg_factors = []
+    tables = []
+    for i in range(block_rank):
+        mad = blockdata.ma_data[i]
+        td = mad.tabledata
+        scope = ir.integrand[quadrature_rule]["modified_arguments"]
+        mt = scope[mad.ma_index]
+        arg_tables = []
+
+        assert td.ttype != "zeros"
+
+        if td.ttype == "ones":
+            arg_factor = 1
+        else:
+            # Assuming B sparsity follows element table sparsity
+            arg_factor, arg_tables = backend.access.table_access(
+                td, ir.entitytype, mt.restriction, iq, indices[i])
+
+        tables += arg_tables
+        arg_factors.append(arg_factor)
+
+    return arg_factors, tables

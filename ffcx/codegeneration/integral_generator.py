@@ -152,35 +152,6 @@ class IntegralGenerator(object):
 
         return quadparts, intermediates
 
-    def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
-        arg_factors = []
-        tables = []
-        for i in range(block_rank):
-            mad = blockdata.ma_data[i]
-            td = mad.tabledata
-            scope = self.ir.integrand[quadrature_rule]["modified_arguments"]
-            mt = scope[mad.ma_index]
-            arg_tables = []
-
-            # Translate modified terminal to code
-            # TODO: Move element table access out of backend?
-            #       Not using self.backend.access.argument() here
-            #       now because it assumes too much about indices.
-
-            assert td.ttype != "zeros"
-
-            if td.ttype == "ones":
-                arg_factor = 1
-            else:
-                # Assuming B sparsity follows element table sparsity
-                arg_factor, arg_tables = self.backend.access.table_access(
-                    td, self.ir.entitytype, mt.restriction, iq, indices[i])
-
-            tables += arg_tables
-            arg_factors.append(arg_factor)
-
-        return arg_factors, tables
-
     def generate_block_parts(self, quadrature_rule: QuadratureRule,
                              blockmap: Tuple, blocklist: List[BlockDataT]):
         """Generate and return code parts for a given block.
@@ -259,7 +230,8 @@ class IntegralGenerator(object):
             assert not blockdata.transposed, "Not handled yet"
 
             # Fetch code to access modified arguments
-            arg_factors, table = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+            arg_factors, table = gen.get_arg_factors(
+                self.backend, blockdata, block_rank, quadrature_rule, iq, B_indices)
             tables += table
 
             # Define B_rhs = fw * arg_factors
