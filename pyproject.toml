@@ -9,7 +9,10 @@ description = "The FEniCSx Form Compiler"
 readme = "README.md"
 requires-python = ">=3.8.0"
 license = {file = "LICENSE"}
-authors = [{email="fenics-dev@googlegroups.com"}, {name="FEniCS Project"}]
+authors = [
+    { email = "fenics-steering-council@googlegroups.com" },
+    { name = "FEniCS Steering Council" },
+]
 dependencies = [
     "numpy>=1.21",
     "cffi",
