@@ -13,7 +13,6 @@ from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from typing import List, Union
 import ufl
-import numpy as np
 
 
 logger = logging.getLogger("ffcx")
