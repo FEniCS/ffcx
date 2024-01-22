@@ -19,7 +19,7 @@
 # reaction-diffusion equation using simplified tuple notation.
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 dx, grad, inner)
+                 conj, dx, grad, inner)
 
 element = basix.ufl.element("Lagrange", "triangle", 1)
 domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
@@ -29,5 +29,5 @@ u = TrialFunction(space)
 v = TestFunction(space)
 f = Coefficient(space)
 
-a = (inner(grad(u), grad(v)) + u * v) * dx
-L = f * v * dx
+a = (inner(grad(u), grad(v)) + inner(u, v)) * dx
+L = inner(f, v) * dx
