@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2023 Martin Sandve Alnæs, Igor A. Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -142,13 +142,6 @@ class FFCXBackendSymbols(object):
             offset = num_scalar_dofs * 3
         return self.coordinate_dofs[3 * dof + component + offset]
 
-    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
-        # FIXME: Add domain number or offset!
-        return [
-            self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
-            for dof in range(num_scalar_dofs) for component in range(gdim)
-        ]
-
     def coefficient_dof_access(self, coefficient, dof_index):
         offset = self.coefficient_offsets[coefficient]
         w = self.coefficients
@@ -173,6 +166,7 @@ class FFCXBackendSymbols(object):
         c = self.constants
         return c[offset + index]
 
+    # TODO: Remove this, use table_access instead
     def element_table(self, tabledata, entitytype, restriction):
         entity = self.entity(entitytype, restriction)
 
@@ -198,34 +192,3 @@ class FFCXBackendSymbols(object):
             self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
                                                            dtype=L.DataType.REAL)
         return self.element_tables[tabledata.name][qp][entity][iq]
-
-    def table_access(self, tabledata, entitytype, restriction, quadrature_index, dof_index):
-        entity = self.entity(entitytype, restriction)
-        if tabledata.is_uniform:
-            entity = 0
-
-        iq = quadrature_index
-        ic = dof_index
-
-        iq_global_index = iq.global_index
-        ic_global_index = ic.global_index
-
-        if tabledata.is_piecewise:
-            iq_global_index = 0
-
-        qp = 0
-        if tabledata.is_permuted:
-            qp = self.quadrature_permutation[0]
-            if restriction == "-":
-                qp = self.quadrature_permutation[1]
-
-        if dof_index.dim == 1:
-            return self.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index]
-        else:
-            FE = []
-            for i in range(dof_index.dim):
-                factor = tabledata.tensor_factors[i]
-                table = self.element_tables[factor.name][qp][entity][iq.local_index(i)][ic.local_index(i)]
-                FE.append(table)
-
-        return L.Product(FE)

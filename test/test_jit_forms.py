@@ -156,7 +156,7 @@ def test_helmholtz_form_2d(dtype, expected_result, compile_args):
            ffi.cast(f'{c_type} *', c.ctypes.data),
            ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
 
-    assert np.allclose(A, expected_result)
+    np.testing.assert_allclose(A, expected_result)
 
 
 @pytest.mark.parametrize("dtype,expected_result", [
