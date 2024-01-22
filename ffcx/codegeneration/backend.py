@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFCx specific pieces for the code generation phase."""
 
-from ffcx.codegeneration.access import ReprManagerAccess
 from ffcx.codegeneration.symbols import ReprManagerSymbols
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
@@ -25,7 +24,6 @@ class ReprManager(object):
         self.ir = ir
         self.symbols = ReprManagerSymbols(coefficient_numbering,
                                           coefficient_offsets, original_constant_offsets)
-        self.access = ReprManagerAccess(ir, self.symbols, options)
 
         # TODO: Move this to symbols ?
         self.scopes = {}

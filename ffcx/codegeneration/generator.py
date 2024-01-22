@@ -11,6 +11,7 @@ import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.codegeneration import definitions
+from ffcx.codegeneration import access
 import ufl
 
 
@@ -137,7 +138,7 @@ def generate_partition(backend, name, nodes, quadrature_rule):
             lhs = L.ufl_to_lnodes(expr)
         elif (mt := attr.get('mt')):
             tabledata = attr.get('tr')
-            lhs = backend.access.get(mt, tabledata, quadrature_rule)
+            lhs = access.get(backend, mt, tabledata, quadrature_rule)
             code = definitions.get(backend, mt, tabledata, quadrature_rule, lhs)
             defs.append(code)
         else:
@@ -172,8 +173,8 @@ def get_arg_factors(backend, blockdata, block_rank, quadrature_rule, iq, indices
             arg_factor = 1
         else:
             # Assuming B sparsity follows element table sparsity
-            arg_factor, arg_tables = backend.access.table_access(
-                td, ir.entitytype, mt.restriction, iq, indices[i])
+            arg_factor, arg_tables = access.table_access(backend,
+                                                         td, ir.entitytype, mt.restriction, iq, indices[i])
 
         tables += arg_tables
         arg_factors.append(arg_factor)

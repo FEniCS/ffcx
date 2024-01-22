@@ -9,10 +9,12 @@ import logging
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.backend import ReprManager
+from ffcx.codegeneration import access as access_module
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from typing import List, Union
+
 import ufl
 
 
@@ -103,7 +105,7 @@ def coefficient(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
     entitytype = backend.ir.entitytype
 
     # Get access to element table
-    FE, tables = backend.access.table_access(tabledata, entitytype, mt.restriction, iq, ic)
+    FE, tables = access_module.table_access(backend, tabledata, entitytype, mt.restriction, iq, ic)
     dof_access: L.ArrayAccess = backend.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
     declaration: List[L.Declaration] = [L.declaration(symbol, [0.0])]
@@ -148,7 +150,7 @@ def _define_coordinate_dofs_lincomb(backend, mt: ModifiedTerminal, tabledata: Un
     iq_symbol = backend.symbols.quadrature_loop_index
     ic = create_dof_index(tabledata, ic_symbol)
     iq = create_quadrature_index(quadrature_rule, iq_symbol)
-    FE, tables = backend.access.table_access(tabledata, backend.ir.entitytype, mt.restriction, iq, ic)
+    FE, tables = access_module.table_access(backend, tabledata, backend.ir.entitytype, mt.restriction, iq, ic)
     symbol.shape = tuple(iq.sizes)
 
     dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
