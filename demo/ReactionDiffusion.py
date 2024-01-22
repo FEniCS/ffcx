@@ -29,5 +29,5 @@ u = TrialFunction(space)
 v = TestFunction(space)
 f = Coefficient(space)
 
-a = (inner(grad(u), grad(v)) + u * v) * dx
-L = f * v * dx
+a = (inner(grad(u), grad(v)) + inner(u, v)) * dx
+L = inner(f, v) * dx

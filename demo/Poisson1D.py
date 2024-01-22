@@ -30,4 +30,4 @@ v = TestFunction(space)
 f = Coefficient(space)
 
 a = inner(grad(u), grad(v)) * dx
-L = f * v * dx
+L = inner(f, v) * dx

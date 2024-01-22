@@ -18,7 +18,7 @@
 # Illustration on how to use Conditional to define a source term
 import basix.ufl
 from ufl import (And, Constant, FunctionSpace, Mesh, Not, Or,
-                 SpatialCoordinate, TestFunction, conditional, dx, ge, gt, le,
+                 SpatialCoordinate, TestFunction, conditional, dx, ge, gt, inner, le,
                  lt)
 
 element = basix.ufl.element("Lagrange", "triangle", 2)
@@ -41,4 +41,4 @@ k = conditional(gt(1, 0), g, g + 1)
 
 f = c + t + k
 
-L = v * f * dx
+L = inner(f, v) * dx

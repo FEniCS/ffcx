@@ -36,4 +36,4 @@ f = 10.0 * exp(-(d_x * d_x + d_y * d_y) / 0.02)
 g = sin(5.0 * x[0])
 
 a = inner(grad(u), grad(v)) * dx
-L = f * v * dx + g * v * ds
+L = inner(f, v) * dx + inner(g, v) * ds
