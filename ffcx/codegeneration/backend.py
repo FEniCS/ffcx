@@ -29,8 +29,12 @@ class ReprManager(object):
         self.scopes = {}
         self.scopes = {quadrature_rule: {} for quadrature_rule in ir.integrand.keys()}
         self.scopes[None] = {}
-
         self.temp_symbols = {}
+
+        # store quadrature rules indices
+        self.quadrature_indices = {}
+        self.quadrature_indices = {qr: self.create_quadrature_index(qr) for qr in ir.integrand.keys()}
+        self.quadrature_indices[None] = self.create_quadrature_index(None)
 
     def get_var(self, quadrature_rule: QuadratureRule, v: Expr):
         """Lookup ufl expression v in variable scope dicts.
@@ -67,3 +71,19 @@ class ReprManager(object):
 
         """
         self.scopes[quadrature_rule][v] = vaccess
+
+    def create_quadrature_index(self, quadrature_rule: QuadratureRule):
+        """Return the quadrature index for the given quadrature rule."""
+
+        ranges = [0]
+        iq = self.symbols.quadrature_loop_index
+        indices = [L.Symbol(iq.name, dtype=L.DataType.INT)]
+
+        if quadrature_rule:
+            ranges = [quadrature_rule.weights.size]
+            if quadrature_rule.has_tensor_factors:
+                dim = len(quadrature_rule.tensor_factors)
+                ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
+                indices = [L.Symbol(iq.name + f"{i}", dtype=L.DataType.INT) for i in range(dim)]
+
+        return L.MultiIndex(indices, ranges)

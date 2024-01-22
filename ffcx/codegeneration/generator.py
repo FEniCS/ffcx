@@ -127,8 +127,7 @@ def generate_partition(backend, name, nodes, quadrature_rule):
     defs: List[L.LNode] = []
     intermediates: List[L.LNode] = []
 
-    iq_symbol = backend.symbols.quadrature_loop_index
-    iq = definitions.create_quadrature_index(quadrature_rule, iq_symbol)
+    iq = backend.quadrature_indices[quadrature_rule]
 
     for i, attr in nodes.items():
         expr = attr['expression']

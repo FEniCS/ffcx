@@ -21,21 +21,6 @@ import ufl
 logger = logging.getLogger("ffcx")
 
 
-def create_quadrature_index(quadrature_rule: QuadratureRule, quadrature_index_symbol):
-    """Create a multi index for the quadrature loop."""
-    ranges = [0]
-    name = quadrature_index_symbol.name
-    indices = [L.Symbol(name, dtype=L.DataType.INT)]
-    if quadrature_rule:
-        ranges = [quadrature_rule.weights.size]
-        if quadrature_rule.has_tensor_factors:
-            dim = len(quadrature_rule.tensor_factors)
-            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
-            indices = [L.Symbol(name + f"{i}", dtype=L.DataType.INT) for i in range(dim)]
-
-    return L.MultiIndex(indices, ranges)
-
-
 def create_dof_index(tabledata, dof_index_symbol):
     """Create a multi index for the coefficient dofs."""
     name = dof_index_symbol.name
@@ -50,7 +35,7 @@ def create_dof_index(tabledata, dof_index_symbol):
     return L.MultiIndex(indices, ranges)
 
 
-def get(backend: ReprManager, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+def get(repr: ReprManager, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
     """Return definition code for a terminal."""
     # Call appropriate handler, depending on the type of terminal
@@ -68,20 +53,19 @@ def get(backend: ReprManager, mt: ModifiedTerminal, tabledata: UniqueTableRefere
         raise NotImplementedError(f"No handler for terminal type: {ttype}")
 
     # Call the handler
-    return handler(backend, mt, tabledata, quadrature_rule, access)
+    return handler(repr, mt, tabledata, quadrature_rule, access)
 
 
-def coefficient(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+def coefficient(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
                 quadrature_rule: QuadratureRule, symbol: L.Symbol) -> Union[L.Section, List]:
     """Return definition code for coefficients."""
     # For applying tensor product to coefficients, we need to know if the coefficient
     # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
     # If both are true, we can apply the tensor product to the coefficient.
 
-    iq_symbol = backend.symbols.quadrature_loop_index
-    ic_symbol = backend.symbols.coefficient_dof_sum_index
+    ic_symbol = repr.symbols.coefficient_dof_sum_index
 
-    iq = create_quadrature_index(quadrature_rule, iq_symbol)
+    iq = repr.quadrature_indices[quadrature_rule]
     ic = create_dof_index(tabledata, ic_symbol)
     symbol.shape = tuple(iq.sizes)
 
@@ -102,11 +86,11 @@ def coefficient(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
 
     assert begin < end
 
-    entitytype = backend.ir.entitytype
+    entitytype = repr.ir.entitytype
 
     # Get access to element table
-    FE, tables = access_module.table_access(backend, tabledata, entitytype, mt.restriction, iq, ic)
-    dof_access: L.ArrayAccess = backend.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
+    FE, tables = access_module.table_access(repr, tabledata, entitytype, mt.restriction, iq, ic)
+    dof_access: L.ArrayAccess = repr.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
 
     declaration: List[L.Declaration] = [L.declaration(symbol, [0.0])]
     access = symbol[iq] if symbol.size() else symbol
@@ -117,7 +101,7 @@ def coefficient(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
     name = type(mt.terminal).__name__
     input = [dof_access.array, *tables]
     output = [symbol]
-    annotations = [L.Annotation.fuse] if not backend.ir.sum_factorization else []
+    annotations = [L.Annotation.fuse] if not repr.ir.sum_factorization else []
 
     # assert input and output are Symbol objects
     assert all(isinstance(i, L.Symbol) for i in input)
@@ -126,7 +110,7 @@ def coefficient(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
     return L.Section(name, code, declaration, input, output, annotations)
 
 
-def _define_coordinate_dofs_lincomb(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+def _define_coordinate_dofs_lincomb(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
                                     quadrature_rule: QuadratureRule, symbol: L.Symbol) -> Union[L.Section, List]:
     """Define x or J as a linear combination of coordinate dofs with given table data."""
     # Get properties of domain
@@ -146,11 +130,10 @@ def _define_coordinate_dofs_lincomb(backend, mt: ModifiedTerminal, tabledata: Un
     assert ttype != "ones"
 
     # Get access to element table
-    ic_symbol = backend.symbols.coefficient_dof_sum_index
-    iq_symbol = backend.symbols.quadrature_loop_index
+    ic_symbol = repr.symbols.coefficient_dof_sum_index
     ic = create_dof_index(tabledata, ic_symbol)
-    iq = create_quadrature_index(quadrature_rule, iq_symbol)
-    FE, tables = access_module.table_access(backend, tabledata, backend.ir.entitytype, mt.restriction, iq, ic)
+    iq = repr.quadrature_indices[quadrature_rule]
+    FE, tables = access_module.table_access(repr, tabledata, repr.ir.entitytype, mt.restriction, iq, ic)
     symbol.shape = tuple(iq.sizes)
 
     dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
@@ -171,7 +154,7 @@ def _define_coordinate_dofs_lincomb(backend, mt: ModifiedTerminal, tabledata: Un
     name = type(mt.terminal).__name__
     output = [symbol]
     input = [dof_access, *tables]
-    annotations = [L.Annotation.fuse] if not backend.ir.sum_factorization else []
+    annotations = [L.Annotation.fuse] if not repr.ir.sum_factorization else []
 
     # assert input and output are Symbol objects
     assert all(isinstance(i, L.Symbol) for i in input)
@@ -180,7 +163,7 @@ def _define_coordinate_dofs_lincomb(backend, mt: ModifiedTerminal, tabledata: Un
     return L.Section(name, code, declaration, input, output, annotations)
 
 
-def spatial_coordinate(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+def spatial_coordinate(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
                        quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
     """Return definition code for the physical spatial coordinates.
 
@@ -193,23 +176,23 @@ def spatial_coordinate(backend, mt: ModifiedTerminal, tabledata: UniqueTableRefe
     If reference facet coordinates are given:
         x = sum_k xdof_k xphi_k(Xf)
     """
-    integral_type = backend.ir.integral_type
+    integral_type = repr.ir.integral_type
     if integral_type in ufl.custom_integral_types:
         # FIXME: Jacobian may need adjustment for custom_integral_types
         if mt.local_derivatives:
             logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
         return []
     else:
-        return _define_coordinate_dofs_lincomb(backend, mt, tabledata, quadrature_rule, access)
+        return _define_coordinate_dofs_lincomb(repr, mt, tabledata, quadrature_rule, access)
 
 
-def jacobian(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+def jacobian(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
              quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
     """Return definition code for the Jacobian of x(X)."""
-    return _define_coordinate_dofs_lincomb(backend, mt, tabledata, quadrature_rule, access)
+    return _define_coordinate_dofs_lincomb(repr, mt, tabledata, quadrature_rule, access)
 
 
-def pass_through(backend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+def pass_through(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
                  quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
     """Return definition code for pass through terminals."""
     return []

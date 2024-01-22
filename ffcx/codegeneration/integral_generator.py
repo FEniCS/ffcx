@@ -10,8 +10,7 @@ from typing import List, Tuple
 
 import ffcx.codegeneration.lnodes as L
 import ufl
-from ffcx.codegeneration.definitions import (create_dof_index,
-                                             create_quadrature_index)
+from ffcx.codegeneration.definitions import (create_dof_index)
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.codegeneration.optimizer import optimize
@@ -112,9 +111,7 @@ class IntegralGenerator(object):
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
 
-        iq_symbol = self.backend.symbols.quadrature_loop_index
-        iq = create_quadrature_index(quadrature_rule, iq_symbol)
-
+        iq = self.backend.quadrature_indices[quadrature_rule]
         code = definitions + intermediates + tensor_comp
         code = optimize(code, quadrature_rule)
 
@@ -173,8 +170,7 @@ class IntegralGenerator(object):
         rhs_expressions = collections.defaultdict(list)
 
         block_rank = len(blockmap)
-        iq_symbol = self.backend.symbols.quadrature_loop_index
-        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        iq = self.backend.quadrature_indices[quadrature_rule]
 
         B_indices = []
         for i in range(block_rank):
