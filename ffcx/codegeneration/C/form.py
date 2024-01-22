@@ -127,13 +127,8 @@ def generator(ir, options):
         cmap_family,
         cmap_degree,
         cmap_celltype,
-        cmap_variant,
-        value_shape
+        cmap_variant
     ) in ir.function_spaces.items():
-        print(value_shape)
-        if len(value_shape) > 0:
-            values = ", ".join(f"{i}" for i in value_shape)
-            vs_code += [f"int value_shape_{name}[{len(value_shape)}] = {{{values}}};"]
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
@@ -141,13 +136,7 @@ def generator(ir, options):
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
-        code += [f".value_rank = {len(value_shape)},"]
-        code += [f".value_size = {product(value_shape)},"]
-        if len(value_shape) == 0:
-            code += [".value_shape = NULL"]
-        else:
-            code += [f".value_shape = value_shape_{name}"]
+        code += [f".geometry_basix_variant = {int(cmap_variant)}"]
         code += ["};"]
 
     for name in ir.function_spaces.keys():
