@@ -6,7 +6,6 @@
 """Collection of FFCx specific pieces for the code generation phase."""
 
 from ffcx.codegeneration.access import FFCXBackendAccess
-from ffcx.codegeneration.definitions import FFCXBackendDefinitions
 from ffcx.codegeneration.symbols import FFCXBackendSymbols
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
@@ -27,7 +26,6 @@ class FFCXBackend(object):
         self.symbols = FFCXBackendSymbols(coefficient_numbering,
                                           coefficient_offsets, original_constant_offsets)
         self.access = FFCXBackendAccess(ir, self.symbols, options)
-        self.definitions = FFCXBackendDefinitions(ir, self.access, options)
 
         # TODO: Move this to symbols ?
         self.scopes = {}

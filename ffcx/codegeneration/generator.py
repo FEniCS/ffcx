@@ -10,7 +10,7 @@ import ffcx.codegeneration.lnodes as L
 # from ffcx.ir.analysis.graph import ExpressionGraph
 from ffcx.codegeneration import geometry
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.codegeneration.definitions import create_quadrature_index
+from ffcx.codegeneration import definitions
 import ufl
 
 
@@ -123,11 +123,11 @@ def generate_varying_partition(ir, backend, quadrature_rule):
 
 
 def generate_partition(backend, name, nodes, quadrature_rule):
-    definitions: List[L.LNode] = []
+    defs: List[L.LNode] = []
     intermediates: List[L.LNode] = []
 
     iq_symbol = backend.symbols.quadrature_loop_index
-    iq = create_quadrature_index(quadrature_rule, iq_symbol)
+    iq = definitions.create_quadrature_index(quadrature_rule, iq_symbol)
 
     for i, attr in nodes.items():
         expr = attr['expression']
@@ -138,8 +138,8 @@ def generate_partition(backend, name, nodes, quadrature_rule):
         elif (mt := attr.get('mt')):
             tabledata = attr.get('tr')
             lhs = backend.access.get(mt, tabledata, quadrature_rule)
-            code = backend.definitions.get(mt, tabledata, quadrature_rule, lhs)
-            definitions.append(code)
+            code = definitions.get(backend, mt, tabledata, quadrature_rule, lhs)
+            defs.append(code)
         else:
             vops = [backend.get_var(quadrature_rule, op) for op in expr.ufl_operands]
             vops = [op[iq] if (hasattr(op, "size") and op.size() > 1) else op for op in vops]
@@ -151,7 +151,7 @@ def generate_partition(backend, name, nodes, quadrature_rule):
         # Add to scope
         backend.set_var(quadrature_rule, expr, lhs)
 
-    return definitions, intermediates
+    return defs, intermediates
 
 
 def get_arg_factors(backend, blockdata, block_rank, quadrature_rule, iq, indices):
