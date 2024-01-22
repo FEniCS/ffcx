@@ -14,7 +14,6 @@ import logging
 import numpy
 
 from ffcx.codegeneration.C import form_template
-from ufl import product
 
 logger = logging.getLogger("ffcx")
 
@@ -117,7 +116,6 @@ def generator(ir, options):
     d["form_integral_offsets_init"] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     code = []
-    vs_code = []
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated
@@ -144,7 +142,6 @@ def generator(ir, options):
 
     code += ["return NULL;\n"]
 
-    d["functionspace_vs"] = "\n".join(vs_code)
     d["functionspace"] = "\n".join(code)
 
     # Check that no keys are redundant or have been missed

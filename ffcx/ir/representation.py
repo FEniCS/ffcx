@@ -46,7 +46,7 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, typing.Tuple[int, ...]]]
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
     original_coefficient_position: typing.List[int]
     coefficient_names: typing.List[str]
     constant_names: typing.List[str]
@@ -84,7 +84,7 @@ class ElementIR(typing.NamedTuple):
     cell_shape: str
     topological_dimension: int
     space_dimension: int
-    value_shape: typing.Tuple[int, ...]
+    value_shape: typing.List[typing.Tuple[int, ...]]
     reference_value_shape: typing.Tuple[int, ...]
     degree: int
     num_sub_elements: int
@@ -161,7 +161,7 @@ class ExpressionIR(typing.NamedTuple):
     coefficient_names: typing.List[str]
     constant_names: typing.List[str]
     needs_facet_permutations: bool
-    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, typing.Tuple[int, ...]]]
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
     name_from_uflfile: str
     original_coefficient_positions: typing.List[int]
 
@@ -240,7 +240,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["basix_cell"] = element.cell_type
     ir["discontinuous"] = element.discontinuous
     ir["degree"] = element.degree
-    ir["value_shape"] = element.value_shape
+    ir["value_shape"] = [element.value_shape(ufl.domain.AbstractDomain(i, i)) for i in range(4)]
     ir["reference_value_shape"] = element.reference_value_shape
 
     ir["num_sub_elements"] = element.num_sub_elements
@@ -567,7 +567,7 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         family = cmap.family_name
         degree = cmap.degree
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
-                    cmap.cell_type, cmap.lagrange_variant, el.value_shape(domain))
+                    cmap.cell_type, cmap.lagrange_variant)
 
     form_name = object_names.get(id(form_data.original_form), form_id)
 
@@ -664,7 +664,8 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
         cmap = domain.ufl_coordinate_element()
         family = cmap.family_name
         degree = cmap.degree
-        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree, el.value_shape(domain))
+        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
+                    cmap.cell_type, cmap.lagrange_variant)
 
     expression_name = object_names.get(id(original_expression), index)
 
