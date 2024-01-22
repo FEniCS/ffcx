@@ -59,7 +59,7 @@ def format_mt_name(basename, mt):
     return access
 
 
-class FFCXBackendSymbols(object):
+class ReprManagerSymbols(object):
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
     def __init__(self, coefficient_numbering, coefficient_offsets,

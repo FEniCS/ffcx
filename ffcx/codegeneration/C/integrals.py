@@ -8,7 +8,7 @@ import logging
 
 import numpy as np
 
-from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.backend import ReprManager
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
@@ -29,7 +29,7 @@ def generator(ir, options):
     declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
 
     # Create FFCx C backend
-    backend = FFCXBackend(ir, options)
+    backend = ReprManager(ir, options)
 
     # Configure kernel generator
     ig = IntegralGenerator(ir, backend)

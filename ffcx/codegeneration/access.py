@@ -19,7 +19,7 @@ from ffcx.ir.representationutils import QuadratureRule
 logger = logging.getLogger("ffcx")
 
 
-class FFCXBackendAccess(object):
+class ReprManagerAccess(object):
     """FFCx specific cpp formatter class."""
 
     def __init__(self, ir, symbols, options):

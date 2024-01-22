@@ -9,7 +9,7 @@ from itertools import product
 
 import ffcx.codegeneration.lnodes as L
 import ufl
-from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.backend import ReprManager
 from ffcx.ir.representation import ExpressionIR
 import ffcx.codegeneration.generator as gen
 
@@ -17,7 +17,7 @@ logger = logging.getLogger("ffcx")
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
+    def __init__(self, ir: ExpressionIR, backend: ReprManager):
 
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")

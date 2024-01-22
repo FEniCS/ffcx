@@ -8,7 +8,7 @@
 import logging
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.backend import ReprManager
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
@@ -48,7 +48,7 @@ def create_dof_index(tabledata, dof_index_symbol):
     return L.MultiIndex(indices, ranges)
 
 
-def get(backend: FFCXBackend, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
+def get(backend: ReprManager, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
     """Return definition code for a terminal."""
     # Call appropriate handler, depending on the type of terminal

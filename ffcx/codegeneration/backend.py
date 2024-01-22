@@ -5,14 +5,14 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFCx specific pieces for the code generation phase."""
 
-from ffcx.codegeneration.access import FFCXBackendAccess
-from ffcx.codegeneration.symbols import FFCXBackendSymbols
+from ffcx.codegeneration.access import ReprManagerAccess
+from ffcx.codegeneration.symbols import ReprManagerSymbols
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
 from ufl.core.expr import Expr
 
 
-class FFCXBackend(object):
+class ReprManager(object):
     """Class collecting all aspects of the FFCx backend."""
 
     def __init__(self, ir, options):
@@ -23,9 +23,9 @@ class FFCXBackend(object):
         original_constant_offsets = ir.original_constant_offsets
 
         self.ir = ir
-        self.symbols = FFCXBackendSymbols(coefficient_numbering,
+        self.symbols = ReprManagerSymbols(coefficient_numbering,
                                           coefficient_offsets, original_constant_offsets)
-        self.access = FFCXBackendAccess(ir, self.symbols, options)
+        self.access = ReprManagerAccess(ir, self.symbols, options)
 
         # TODO: Move this to symbols ?
         self.scopes = {}
