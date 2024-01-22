@@ -32,7 +32,7 @@ u = TrialFunction(space)
 v = TestFunction(space)
 f = Coefficient(space)
 
-L = f * v * dx
+L = inner(f, v) * dx
 
 mu = Constant(mesh, shape=(3,))
 theta = - (mu[1] - 2) / mu[0] - (2 * (2 * mu[0] - 2) * (mu[0] - 1)) / (mu[0] * (mu[1] - 2))

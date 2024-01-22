@@ -32,7 +32,7 @@ v = TestFunction(space)
 
 n = FacetNormal(domain)
 
-a = u * v * ds \
-    + u('+') * v('-') * dS \
+a = inner(u, v) * ds \
+    + inner(u('+'), v('-')) * dS \
     + inner(jump(u, n), avg(grad(v))) * dS \
     + inner(avg(grad(u)), jump(v, n)) * dS

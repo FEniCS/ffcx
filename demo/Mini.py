@@ -34,4 +34,4 @@ Mini = FunctionSpace(domain, basix.ufl.mixed_element([V, Q]))
 (u, p) = TrialFunctions(Mini)
 (v, q) = TestFunctions(Mini)
 
-a = (inner(grad(u), grad(v)) - div(v) * p + div(u) * q) * dx
+a = (inner(grad(u), grad(v)) - inner(p, div(v)) + inner(div(u), q)) * dx

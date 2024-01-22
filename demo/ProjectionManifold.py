@@ -31,4 +31,4 @@ space = FunctionSpace(domain, element)
 (u, p) = TrialFunctions(space)
 (v, q) = TestFunctions(space)
 
-a = (inner(u, v) + div(u) * q + div(v) * p) * dx
+a = (inner(u, v) + inner(div(u), q) + inner(p, div(v))) * dx

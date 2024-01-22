@@ -22,7 +22,7 @@
 # (mixed) formulation of Poisson's equation
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunctions,
-                 TrialFunctions, dot, ds, dx, grad)
+                 TrialFunctions, ds, dx, grad, inner)
 
 DRT = basix.ufl.element("Discontinuous RT", "triangle", 2)
 P = basix.ufl.element("P", "triangle", 3)
@@ -38,5 +38,5 @@ space = FunctionSpace(domain, P1)
 f = Coefficient(space)
 g = Coefficient(space)
 
-a = (dot(sigma, tau) + dot(grad(u), tau) + dot(sigma, grad(v))) * dx
-L = - f * v * dx - g * v * ds
+a = (inner(sigma, tau) + inner(grad(u), tau) + inner(sigma, grad(v))) * dx
+L = - inner(f, v) * dx - inner(g, v) * ds
