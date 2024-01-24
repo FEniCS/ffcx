@@ -109,7 +109,6 @@ class DofMapIR(typing.NamedTuple):
     num_global_support_dofs: int
     num_element_support_dofs: int
     entity_dofs: typing.List[typing.List[typing.List[int]]]
-    num_entity_dofs: typing.List[typing.List[int]]
     entity_closure_dofs: typing.List[typing.List[typing.List[int]]]
     num_entity_closure_dofs: typing.List[typing.List[int]]
     num_sub_dofmaps: int
@@ -312,18 +311,6 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
     ir["block_size"] = element.block_size
     if element.block_size > 1:
         element = element._sub_element
-
-    # Precompute repeatedly used items
-    for i in element.num_entity_dofs:
-        # FIXME: this assumes the same number of DOFs on each entity of the same dim: this
-        # assumption will not be true for prisms and pyramids
-        if max(i) != min(i):
-            raise RuntimeError("Elements with different numbers of DOFs on subentities of the same dimension"
-                               " are not yet supported in FFCx.")
-
-    # FIXME: This does not work for prisms and pyramids
-    num_dofs_per_entity = [i[0] for i in element.num_entity_dofs]
-    ir["num_entity_dofs"] = num_dofs_per_entity
 
     ir["entity_dofs"] = element.entity_dofs
     ir["entity_closure_dofs"] = element.entity_closure_dofs
