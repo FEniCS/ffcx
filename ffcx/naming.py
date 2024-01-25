@@ -12,6 +12,7 @@ import numpy.typing as npt
 
 import basix.ufl
 import ffcx
+import ffcx.codegeneration
 import ufl
 
 
