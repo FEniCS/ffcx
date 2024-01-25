@@ -9,7 +9,6 @@ from numbers import Integral
 import ffcx.codegeneration.lnodes as L
 # from ffcx.ir.analysis.graph import ExpressionGraph
 from ffcx.codegeneration import geometry
-from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.codegeneration import definitions
 from ffcx.codegeneration import access
 import ufl
