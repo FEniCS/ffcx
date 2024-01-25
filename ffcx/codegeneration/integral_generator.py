@@ -195,12 +195,8 @@ class IntegralGenerator(object):
         f: L.Symbol = self.backend.get_var(quadrature_rule, v)
 
         # Quadrature weight was removed in representation, add it back now
-        if self.ir.integral_type in ufl.custom_integral_types:
-            weights = self.backend.symbols.custom_weights_table
-            weight = weights[iq.global_index]
-        else:
-            weights = self.backend.symbols.weights_table(quadrature_rule)
-            weight = weights[iq.global_index]
+        weights = self.backend.symbols.weights_table(quadrature_rule)
+        weight = weights[iq.global_index]
 
         # Define fw = f * weight
         fw_rhs = L.float_product([f, weight])

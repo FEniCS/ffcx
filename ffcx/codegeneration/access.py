@@ -81,28 +81,9 @@ def spatial_coordinate(repr: ReprManager,
     if mt.averaged is not None:
         raise RuntimeError("Not expecting average of SpatialCoordinates.")
 
-    integral_type = repr.ir.integral_type
-    if integral_type in ufl.custom_integral_types:
-        if mt.local_derivatives:
-            raise RuntimeError("FIXME: Jacobian in custom integrals is not implemented.")
-
-        # Access predefined quadrature points table
-        x = repr.symbols.custom_points_table
-        iq = repr.symbols.quadrature_loop_index
-        gdim, = mt.terminal.ufl_shape
-        if gdim == 1:
-            index = iq
-        else:
-            index = iq * gdim + mt.flat_component
-        return x[index]
-    elif integral_type == "expression":
-        # Physical coordinates are computed by code generated in
-        # definitions
-        return repr.symbols.x_component(mt)
-    else:
-        # Physical coordinates are computed by code generated in
-        # definitions
-        return repr.symbols.x_component(mt)
+    # Physical coordinates are computed by code generated in
+    # definitions
+    return repr.symbols.x_component(mt)
 
 
 def cell_coordinate(repr: ReprManager,

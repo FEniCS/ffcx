@@ -162,15 +162,7 @@ def spatial_coordinate(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferen
     If reference facet coordinates are given:
         x = sum_k xdof_k xphi_k(Xf)
     """
-    integral_type = repr.ir.integral_type
-    if integral_type in ufl.custom_integral_types:
-        assert False
-        # FIXME: Jacobian may need adjustment for custom_integral_types
-        if mt.local_derivatives:
-            logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
-        return []
-    else:
-        return _define_coordinate_dofs_lincomb(repr, mt, tabledata, quadrature_rule, access)
+    return _define_coordinate_dofs_lincomb(repr, mt, tabledata, quadrature_rule, access)
 
 
 def jacobian(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,

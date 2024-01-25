@@ -37,7 +37,7 @@ def generate_quadrature_tables(ir, backend):
 
     # No quadrature tables for custom (given argument) or point
     # (evaluation in single vertex)
-    skip = ufl.custom_integral_types + ufl.measure.point_integral_types
+    skip = ufl.measure.point_integral_types
     if ir.integral_type in skip:
         return parts
 
@@ -56,13 +56,7 @@ def generate_element_tables(ir, backend):
     """Generate static tables with precomputed element basisfunction values in quadrature points."""
     parts = []
     tables = ir.unique_tables
-    table_types = ir.unique_table_types
-    if ir.integral_type in ufl.custom_integral_types:
-        # Define only piecewise tables
-        table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
-    else:
-        # Define all tables
-        table_names = sorted(tables)
+    table_names = sorted(tables)
 
     for name in table_names:
         table = tables[name]
