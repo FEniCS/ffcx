@@ -21,19 +21,6 @@ import ufl
 logger = logging.getLogger("ffcx")
 
 
-def create_dof_index(tabledata, dof_index_symbol):
-    """Create a multi index for the coefficient dofs."""
-    name = dof_index_symbol.name
-    if tabledata.has_tensor_factorisation:
-        dim = len(tabledata.tensor_factors)
-        ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
-        indices = [L.Symbol(f"{name}{i}", dtype=L.DataType.INT) for i in range(dim)]
-    else:
-        ranges = [tabledata.values.shape[-1]]
-        indices = [L.Symbol(name, dtype=L.DataType.INT)]
-
-    return L.MultiIndex(indices, ranges)
-
 
 def get(repr: ReprManager, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
@@ -66,7 +53,7 @@ def coefficient(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
     ic_symbol = repr.symbols.coefficient_dof_sum_index
 
     iq = repr.quadrature_indices[quadrature_rule]
-    ic = create_dof_index(tabledata, ic_symbol)
+    ic = repr.create_dof_index(tabledata, ic_symbol)
     symbol.shape = tuple(iq.sizes)
 
     # Get properties of tables
@@ -131,7 +118,7 @@ def _define_coordinate_dofs_lincomb(repr, mt: ModifiedTerminal, tabledata: Uniqu
 
     # Get access to element table
     ic_symbol = repr.symbols.coefficient_dof_sum_index
-    ic = create_dof_index(tabledata, ic_symbol)
+    ic = repr.create_dof_index(tabledata, ic_symbol)
     iq = repr.quadrature_indices[quadrature_rule]
     FE, tables = access_module.table_access(repr, tabledata, repr.ir.entitytype, mt.restriction, iq, ic)
     symbol.shape = tuple(iq.sizes)
@@ -178,6 +165,7 @@ def spatial_coordinate(repr, mt: ModifiedTerminal, tabledata: UniqueTableReferen
     """
     integral_type = repr.ir.integral_type
     if integral_type in ufl.custom_integral_types:
+        assert False
         # FIXME: Jacobian may need adjustment for custom_integral_types
         if mt.local_derivatives:
             logging.exception("FIXME: Jacobian in custom integrals is not implemented.")

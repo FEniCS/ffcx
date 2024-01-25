@@ -10,7 +10,6 @@ from typing import List, Tuple
 
 import ffcx.codegeneration.lnodes as L
 import ufl
-from ffcx.codegeneration.definitions import (create_dof_index)
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
 from ffcx.codegeneration.optimizer import optimize
@@ -176,7 +175,7 @@ class IntegralGenerator(object):
         for i in range(block_rank):
             table_ref = blockdata.ma_data[i].tabledata
             symbol = self.backend.symbols.argument_loop_index(i)
-            index = create_dof_index(table_ref, symbol)
+            index = self.backend.create_dof_index(table_ref, symbol)
             B_indices.append(index)
 
         ttypes = blockdata.ttypes

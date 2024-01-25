@@ -147,15 +147,6 @@ class ReprManagerSymbols(object):
         w = self.coefficients
         return w[offset + dof_index]
 
-    def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
-                                       block_size, dof_offset):
-        coeff_offset = self.coefficient_offsets[coefficient]
-        w = self.coefficients
-        _w = L.Symbol(f"_w_{coeff_offset}_{dof_offset}", dtype=L.DataType.SCALAR)
-        unit_stride_access = _w[index]
-        original_access = w[coeff_offset + index * block_size + dof_offset]
-        return unit_stride_access, original_access
-
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
@@ -165,30 +156,3 @@ class ReprManagerSymbols(object):
         offset = self.original_constant_offsets[constant]
         c = self.constants
         return c[offset + index]
-
-    # TODO: Remove this, use table_access instead
-    def element_table(self, tabledata, entitytype, restriction):
-        entity = self.entity(entitytype, restriction)
-
-        if tabledata.is_uniform:
-            entity = 0
-        else:
-            entity = self.entity(entitytype, restriction)
-
-        if tabledata.is_piecewise:
-            iq = 0
-        else:
-            iq = self.quadrature_loop_index
-
-        if tabledata.is_permuted:
-            qp = self.quadrature_permutation[0]
-            if restriction == "-":
-                qp = self.quadrature_permutation[1]
-        else:
-            qp = 0
-
-        # Return direct access to element table, reusing symbol if possible
-        if tabledata.name not in self.element_tables:
-            self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
-                                                           dtype=L.DataType.REAL)
-        return self.element_tables[tabledata.name][qp][entity][iq]
