@@ -74,7 +74,6 @@ class ReprManager(object):
 
     def create_quadrature_index(self, quadrature_rule: QuadratureRule):
         """Return the quadrature index for the given quadrature rule."""
-
         ranges = [0]
         iq = self.symbols.quadrature_loop_index
         indices = [L.Symbol(iq.name, dtype=L.DataType.INT)]
