@@ -21,7 +21,6 @@ import ufl
 logger = logging.getLogger("ffcx")
 
 
-
 def get(repr: ReprManager, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
     """Return definition code for a terminal."""
