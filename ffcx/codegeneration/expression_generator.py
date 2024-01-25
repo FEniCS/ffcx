@@ -133,7 +133,7 @@ class ExpressionGenerator:
                 A_indices = tuple([iq] + A_indices)
                 for fi_ci in blockdata.factor_indices_comp_indices:
                     f = self.backend.get_var(self.quadrature_rule, F.nodes[fi_ci[0]]["expression"])
-                    arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
+                    arg_factors, _  = gen.get_arg_factors(self.backend, blockdata, block_rank, B_indices)
                     Brhs = L.float_product([f] + arg_factors)
                     multi_index = L.MultiIndex([A_indices[0], fi_ci[1]] + A_indices[1:], A_shape)
                     quadparts.append(L.AssignAdd(A[multi_index], Brhs))
@@ -142,10 +142,10 @@ class ExpressionGenerator:
             # Prepend dimensions of dofmap block with free index
             # for quadrature points and expression components
             B_indices = tuple([iq] + list(arg_indices))
-
+            iq_ = self.backend.quadrature_indices[self.quadrature_rule]
             # Fetch code to access modified arguments
             # An access to FE table data
-            arg_factors = self.get_arg_factors(blockdata, block_rank, B_indices)
+            arg_factors, _ = gen.get_arg_factors(self.backend, blockdata, block_rank, self.quadrature_rule, iq_, B_indices)
 
             # TODO: handle non-contiguous dof ranges
 
