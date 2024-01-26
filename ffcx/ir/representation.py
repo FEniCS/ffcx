@@ -46,7 +46,8 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, typing.Tuple[int]]]
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType,
+                                 basix.LagrangeVariant, typing.Tuple[int]]]
     original_coefficient_position: typing.List[int]
     coefficient_names: typing.List[str]
     constant_names: typing.List[str]
@@ -160,7 +161,8 @@ class ExpressionIR(typing.NamedTuple):
     coefficient_names: typing.List[str]
     constant_names: typing.List[str]
     needs_facet_permutations: bool
-    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, typing.Tuple[int]]]
+    function_spaces: typing.Dict[str, typing.Tuple[str, str, str, int, basix.CellType,
+                                 basix.LagrangeVariant, typing.Tuple[int]]]
     name_from_uflfile: str
     original_coefficient_positions: typing.List[int]
 
