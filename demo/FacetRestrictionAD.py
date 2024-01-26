@@ -24,7 +24,7 @@ space = FunctionSpace(domain, element)
 
 v = TestFunction(space)
 w = Coefficient(space)
-L = inner(grad(w), grad(v)) * dx - dot(avg(grad(w)), avg(grad(v))) * dS
+L = inner(grad(w), grad(v)) * dx - inner(avg(grad(w)), avg(grad(v))) * dS
 
 u = TrialFunction(space)
 a = derivative(L, w, u)

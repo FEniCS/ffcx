@@ -94,8 +94,8 @@ acc = (u - 2 * up + upp)
 # Residual equation # FIXME: Can contain errors, not tested!
 a_F = inner(acc, v) * dx \
     + k * inner(P, grad(v)) * dx \
-    - k * dot(J * Finv * T, v) * ds(0) \
-    - k * dot(J * Finv * p0 * N, v) * ds(1)
+    - k * inner(J * Finv * T, v) * ds(0) \
+    - k * inner(J * Finv * p0 * N, v) * ds(1)
 
 # Jacobi matrix of residual equation
 a_J = derivative(a_F, u, w)

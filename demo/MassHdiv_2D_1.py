@@ -24,4 +24,4 @@ space = FunctionSpace(domain, element)
 v = TestFunction(space)
 u = TrialFunction(space)
 
-a = inner(v, u) * dx
+a = inner(u, v) * dx
