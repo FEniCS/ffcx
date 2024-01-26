@@ -104,15 +104,6 @@ extern "C"
     /// Number of components of the reference value space
     int reference_value_size;
 
-    /// Rank of the value space
-    int value_rank;
-
-    /// Shape of the value space for gdim 0 to 3
-    int** value_shape;
-
-    /// Dimension of the value space for gdim 0 to 3
-    int* value_size;
-
     /// Maximum polynomial degree of the finite element function space
     int degree;
 
@@ -488,6 +479,12 @@ extern "C"
 
     /// The Basix variant of the finite element for the geometry map
     int geometry_basix_variant;
+
+    /// Rank of the value space
+    int value_rank;
+
+    /// Shape of the value space
+    int* value_shape;
   } ufcx_function_space;
 
 #ifdef __cplusplus

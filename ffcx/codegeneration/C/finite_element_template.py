@@ -10,8 +10,6 @@ extern ufcx_finite_element {factory_name};
 factory = """
 // Code for element {factory_name}
 
-{value_shape_init}
-{value_size_init}
 {reference_value_shape_init}
 {sub_elements_init}
 {custom_element_init}
@@ -27,9 +25,6 @@ ufcx_finite_element {factory_name} =
   .reference_value_rank = {reference_value_rank},
   .reference_value_shape = {reference_value_shape},
   .reference_value_size = {reference_value_size},
-  .value_rank = {value_rank},
-  .value_shape = {value_shape},
-  .value_size = {value_size},
   .degree = {degree},
   .block_size = {block_size},
   .basix_family = {basix_family},

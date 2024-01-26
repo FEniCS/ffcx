@@ -68,22 +68,6 @@ def generator(ir, options):
         d["reference_value_shape"] = "NULL"
         d["reference_value_shape_init"] = ""
 
-    rank = len(ir.value_shape[0])
-    d["value_rank"] = rank
-    d["value_size"] = f"value_size_{ir.name}"
-    d["value_size_init"] = f"int value_size_{ir.name}[4] = {{" + ", ".join([
-        f"{ufl.product(i)}" for i in ir.value_shape]) + "};"
-    d["value_shape"] = f"value_shape_{ir.name}"
-    d["value_shape_init"] = ""
-    if rank > 0:
-        for i in range(4):
-            d["value_shape_init"] += f"int value_shape_{ir.name}_{i}[{rank}] = {{" + ", ".join([
-                f"{j}" for j in ir.value_shape[i]]) + "};\n"
-        d["value_shape_init"] += f"int* value_shape_{ir.name}[4] = {{" + ", ".join([
-            f"value_shape_{ir.name}_{i}" for i in range(4)]) + "};"
-    else:
-        d["value_shape_init"] += f"int* value_shape_{ir.name}[4] = {{" + ", ".join(["NULL" for i in range(4)]) + "};"
-
     if len(ir.sub_elements) > 0:
         d["sub_elements"] = f"sub_elements_{ir.name}"
         values = ", ".join(f"&{el}" for el in ir.sub_elements)
