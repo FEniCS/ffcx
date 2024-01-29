@@ -559,14 +559,15 @@ def _compute_form_ir(form_data, form_id, prefix, form_names, integral_names, ele
         if not str(name).isidentifier():
             raise ValueError(f"Function name \"{name}\" must be a valid object identifier.")
         el = function.ufl_function_space().ufl_element()
-        domain = function.ufl_function_space().ufl_domain()
+        space = function.ufl_function_space()
+        domain = space.ufl_domain()
         cmap = domain.ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
         if not isinstance(cmap, basix.ufl._ElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
         family = cmap.family_name
         degree = cmap.degree
-        value_shape = el.value_shape(domain)
+        value_shape = space.value_shape
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
                     cmap.cell_type, cmap.lagrange_variant, value_shape)
 
@@ -661,11 +662,12 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
         if not str(name).isidentifier():
             raise ValueError(f"Function name \"{name}\" must be a valid object identifier.")
         el = function.ufl_function_space().ufl_element()
-        domain = function.ufl_function_space().ufl_domain()
+        space = function.ufl_function_space()
+        domain = space.ufl_domain()
         cmap = domain.ufl_coordinate_element()
         family = cmap.family_name
         degree = cmap.degree
-        value_shape = el.value_shape(domain)
+        value_shape = space.value_shape
         fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
                     cmap.cell_type, cmap.lagrange_variant, value_shape)
 
