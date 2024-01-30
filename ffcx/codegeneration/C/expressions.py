@@ -8,7 +8,7 @@ import logging
 
 import numpy as np
 
-from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.backend import ReprManager
 from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
@@ -29,7 +29,7 @@ def generator(ir, options):
     declaration = expressions_template.declaration.format(
         factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile)
 
-    backend = FFCXBackend(ir, options)
+    backend = ReprManager(ir, options)
     eg = ExpressionGenerator(ir, backend)
 
     d = {}

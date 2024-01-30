@@ -79,11 +79,6 @@ def get_ffcx_table_values(points, cell, integral_type, element, avg, entitytype,
     """
     deriv_order = sum(derivative_counts)
 
-    if integral_type in ufl.custom_integral_types:
-        # Use quadrature points on cell for analysis in custom integral types
-        integral_type = "cell"
-        assert not avg
-
     if integral_type == "expression":
         # FFCx tables for expression are generated as interior cell points
         integral_type = "cell"

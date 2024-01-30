@@ -97,8 +97,6 @@ def integral_type_to_entity_dim(integral_type, tdim):
         entity_dim = tdim - 1
     elif integral_type in ufl.measure.point_integral_types:
         entity_dim = 0
-    elif integral_type in ufl.custom_integral_types:
-        entity_dim = tdim
     elif integral_type == "expression":
         entity_dim = tdim
     else:

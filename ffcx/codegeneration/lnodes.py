@@ -314,11 +314,15 @@ class Symbol(LExprTerminal):
 
     precedence = PRECEDENCE.SYMBOL
 
-    def __init__(self, name: str, dtype):
+    def __init__(self, name: str, dtype: DataType = DataType.NONE, shape: Optional[Sequence[int]] = None):
         assert isinstance(name, str)
         assert name.replace("_", "").isalnum()
         self.name = name
         self.dtype = dtype
+        self.shape = tuple(shape) if shape else None
+
+    def size(self):
+        return np.prod(self.shape) if self.shape else 1
 
     def __eq__(self, other):
         return isinstance(other, Symbol) and self.name == other.name
@@ -327,7 +331,7 @@ class Symbol(LExprTerminal):
         return hash(self.name)
 
     def __repr__(self):
-        return self.name
+        return self.name + (f"[{self.shape}]" if self.shape else "") + (f":{self.dtype}" if self.dtype else "")
 
 
 class MultiIndex(LExpr):
@@ -750,6 +754,14 @@ class Declaration(Statement):
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.symbol == other.symbol
+
+
+def declaration(symbol, values=None):
+    """Create a declaration of a symbol."""
+    if symbol.size() > 1:
+        return ArrayDecl(symbol, sizes=[symbol.size()], values=values)
+    else:
+        return VariableDecl(symbol, values[0])
 
 
 def is_declaration(node) -> bool:
