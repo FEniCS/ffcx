@@ -6,14 +6,13 @@
 """FFCx/UFC specific variable definitions."""
 
 import logging
+from typing import List, Union
 
 import ffcx.codegeneration.lnodes as L
+import ufl
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
-from typing import List, Union
-import ufl
-
 
 logger = logging.getLogger("ffcx")
 

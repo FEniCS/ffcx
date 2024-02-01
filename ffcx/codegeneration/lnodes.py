@@ -4,10 +4,11 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-from typing import List, Optional, Sequence
 import numbers
-from enum import Enum
 import typing
+from enum import Enum
+from typing import List, Optional, Sequence
+
 import numpy as np
 
 import ufl

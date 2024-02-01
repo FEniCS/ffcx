@@ -1,6 +1,7 @@
-from typing import List, Union
-import ffcx.codegeneration.lnodes as L
 from collections import defaultdict
+from typing import List, Union
+
+import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
 
 

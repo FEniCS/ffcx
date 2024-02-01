@@ -17,8 +17,8 @@
 #
 # Test form for metadata.
 import basix.ufl
-from ufl import (Coefficient, Constant, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 dx, grad, inner)
+from ufl import (Coefficient, Constant, FunctionSpace, Mesh, TestFunction,
+                 TrialFunction, dx, grad, inner)
 
 element = basix.ufl.element("Lagrange", "triangle", 1)
 vector_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
