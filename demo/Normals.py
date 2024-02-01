@@ -19,7 +19,7 @@
 # Merely project the normal onto a vector section.
 import basix.ufl
 from ufl import (FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 inner, ds, triangle)
+                 ds, inner, triangle)
 
 cell = triangle
 

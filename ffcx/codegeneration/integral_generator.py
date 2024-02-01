@@ -6,6 +6,7 @@
 
 import collections
 import logging
+from numbers import Integral
 from typing import Any, Dict, List, Set, Tuple
 
 import ffcx.codegeneration.lnodes as L
@@ -13,11 +14,10 @@ import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import (create_dof_index,
                                              create_quadrature_index)
+from ffcx.codegeneration.optimizer import optimize
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.codegeneration.optimizer import optimize
-from numbers import Integral
 
 logger = logging.getLogger("ffcx")
 
