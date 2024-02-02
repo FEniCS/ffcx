@@ -409,7 +409,7 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
             factors = element.get_tensor_product_representation()
 
             tensor_factors = []
-            for i, j in enumerate(factors[0][0]):
+            for i, j in enumerate(factors[0]):
                 pts = quadrature_rule.tensor_factors[i][0]
                 d = local_derivatives[i]
                 sub_tbl = j.tabulate(d, pts)[d]
