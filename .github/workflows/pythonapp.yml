@@ -39,7 +39,7 @@ jobs:
       - name: Install FEniCS dependencies (Python)
         run: |
           pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git
+          pip install git+https://github.com/FEniCS/basix.git@chris/tp-element
       - name: Install FFCx
         run: pip install .[ci]
       - name: Lint with flake8
