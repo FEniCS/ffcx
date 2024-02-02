@@ -28,7 +28,6 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
     gdim = cell_to_gdim(cell_type)
     family = basix.ElementFamily.P
     element = basix.create_tp_element(family, cell_type, degree, variant)
-    factors = element.get_tensor_product_representation()[0]
     uflelement = basix.ufl.wrap_element(element, gdim=gdim)
     if shape is None:
         return uflelement
