@@ -3,8 +3,10 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Modified terminals."""
 
 import logging
+import typing
 
 from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
                          Grad, Indexed, Jacobian, ReferenceGrad,
@@ -15,33 +17,26 @@ logger = logging.getLogger("ffcx")
 
 
 class ModifiedTerminal(object):
-    """A modified terminal expression is an object of a Terminal subtype.
+    """A modified terminal."""
 
-    It is wrapped in terminal modifier types.
+    def __init__(self, expr, terminal, reference_value: bool, base_shape, base_symmetry, component: typing.Tuple[int, ...],
+                 flat_component: int, global_derivatives: typing.Tuple[int, ...], local_derivatives: typing.Tuple[int, ...],
+                 averaged: typing.Union[None, str], restriction: typing.Union[None, str]):
+        """Initialise.
 
-    The variables of this class are:
-
-        expr - The original UFL expression
-        terminal           - the underlying Terminal object
-
-        global_derivatives - tuple of ints, each meaning derivative in that global direction
-        local_derivatives  - tuple of ints, each meaning derivative in that local direction
-        reference_value    - bool, whether this is represented in reference frame
-        averaged           - None, 'facet' or 'cell'
-        restriction        - None, '+' or '-'
-
-        component          - tuple of ints, the global component of the Terminal
-        flat_component     - single int, flattened local component of the Terminal, considering symmetry
-
-
-        Possibly other component model:
-        - global_component
-        - reference_component
-        - flat_component
-    """
-
-    def __init__(self, expr, terminal, reference_value, base_shape, base_symmetry, component,
-                 flat_component, global_derivatives, local_derivatives, averaged, restriction):
+        Args:
+            expr: The original UFL expression
+            terminal: the underlying Terminal object
+            reference_value: whether this is represented in reference frame
+            base_shape: base shape
+            base_symmetry: base symmetry
+            component: the global component of the Terminal
+            flat_component: flattened local component of the Terminal, considering symmetry
+            global_derivatives: each entry is a derivative in that global direction
+            local_derivatives: each entry is a derivative in that local direction
+            averaged: Entity to average over (None, 'facet' or 'cell')
+            restriction: The restriction (None, '+' or '-')
+        """
         # The original expression
         self.expr = expr
 
@@ -112,18 +107,15 @@ class ModifiedTerminal(object):
         return (n, p, rv, fc, gd, ld, a, r)
 
     def __hash__(self):
+        """Hash."""
         return hash(self.as_tuple())
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
 
-    # def __lt__(self, other):
-    #    error("Shouldn't use this?")
-    #    # FIXME: Terminal is not sortable, so the as_tuple contents
-    #    # must be changed for this to work properly
-    #    return self.as_tuple() < other.as_tuple()
-
     def __str__(self):
+        """Format as string."""
         return (
             f"terminal:           {self.terminal}\n"
             f"global_derivatives: {self.global_derivatives}\n"

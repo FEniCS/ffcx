@@ -39,6 +39,7 @@ logger = logging.getLogger("ffcx")
 
 
 class FormIR(typing.NamedTuple):
+    """Intermediate representation of a form."""
     id: int
     name: str
     signature: str
@@ -57,6 +58,7 @@ class FormIR(typing.NamedTuple):
 
 
 class CustomElementIR(typing.NamedTuple):
+    """Intermediate representation of a custom element."""
     cell_type: basix.CellType
     value_shape: typing.Tuple[int, ...]
     wcoeffs: npt.NDArray[np.float64]
@@ -72,12 +74,14 @@ class CustomElementIR(typing.NamedTuple):
 
 
 class QuadratureIR(typing.NamedTuple):
+    """Intermediate representation of a quadrature rule."""
     cell_shape: str
     points: npt.NDArray[np.float64]
     weights: npt.NDArray[np.float64]
 
 
 class ElementIR(typing.NamedTuple):
+    """Intermediate representation of an element."""
     id: int
     name: str
     signature: str
@@ -103,6 +107,7 @@ class ElementIR(typing.NamedTuple):
 
 
 class DofMapIR(typing.NamedTuple):
+    """Intermediate representation of a DOF map."""
     id: int
     name: str
     signature: str
@@ -117,6 +122,7 @@ class DofMapIR(typing.NamedTuple):
 
 
 class IntegralIR(typing.NamedTuple):
+    """Intermediate representation of an integral."""
     integral_type: str
     subdomain_id: typing.Union[str, typing.Tuple[int, ...], int]
     rank: int
@@ -144,6 +150,7 @@ class IntegralIR(typing.NamedTuple):
 
 
 class ExpressionIR(typing.NamedTuple):
+    """Intermediate representation of an expression."""
     name: str
     element_dimensions: typing.Dict[basix.ufl._ElementBase, int]
     options: dict
@@ -167,6 +174,7 @@ class ExpressionIR(typing.NamedTuple):
 
 
 class DataIR(typing.NamedTuple):
+    """Intermediate representation of data."""
     elements: typing.List[ElementIR]
     dofmaps: typing.List[DofMapIR]
     integrals: typing.List[IntegralIR]

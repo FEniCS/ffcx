@@ -25,13 +25,14 @@ class ExpressionGraph(object):
     """
 
     def __init__(self):
-
+        """Initialise."""
         # Data structures for directed multi-edge graph
         self.nodes = {}
         self.out_edges = {}
         self.in_edges = {}
 
     def number_of_nodes(self):
+        """Get number of nodes."""
         return len(self.nodes)
 
     def add_node(self, key, **kwargs):
@@ -50,6 +51,7 @@ class ExpressionGraph(object):
 
 
 def build_graph_vertices(expressions, skip_terminal_modifiers=False):
+    """Build graph vertices."""
     # Count unique expression nodes
     G = ExpressionGraph()
     G.e2i = _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers)

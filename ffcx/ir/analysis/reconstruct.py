@@ -3,11 +3,13 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Reconstruct."""
 
 import ufl
 
 
 def handle_scalar_nary(o, ops):
+    """Handle a scalary nary operator."""
     if o.ufl_shape != ():
         raise RuntimeError("Expecting scalar.")
     sops = [op[0] for op in ops]
@@ -15,12 +17,14 @@ def handle_scalar_nary(o, ops):
 
 
 def handle_condition(o, ops):
+    """Handle a condition."""
     # A condition is always scalar, so len(op) == 1
     sops = [op[0] for op in ops]
     return [o._ufl_expr_reconstruct_(*sops)]
 
 
 def handle_conditional(o, ops):
+    """Handle a conditional."""
     # A condition can be non scalar
     symbols = []
     n = len(ops[1])
@@ -35,12 +39,14 @@ def handle_conditional(o, ops):
 
 
 def handle_elementwise_unary(o, ops):
+    """Handle a elementwise unary operator."""
     if len(ops) > 1:
         raise RuntimeError("Expecting unary operator.")
     return [o._ufl_expr_reconstruct_(op) for op in ops[0]]
 
 
 def handle_division(o, ops):
+    """Handle a division."""
     if len(ops) != 2:
         raise RuntimeError("Expecting two operands.")
     if len(ops[1]) != 1:
@@ -50,6 +56,7 @@ def handle_division(o, ops):
 
 
 def handle_sum(o, ops):
+    """Handle a sum."""
     if len(ops) != 2:
         raise RuntimeError("Expecting two operands.")
     if len(ops[0]) != len(ops[1]):
@@ -58,6 +65,7 @@ def handle_sum(o, ops):
 
 
 def handle_product(o, ops):
+    """Handle a product."""
     if len(ops) != 2:
         raise RuntimeError("Expecting two operands.")
 
@@ -101,6 +109,7 @@ def handle_product(o, ops):
 
 
 def handle_index_sum(o, ops):
+    """Handle an index sum."""
     summand, mi = o.ufl_operands
     ic = mi[0].count()
     fi = summand.ufl_free_indices
@@ -155,6 +164,7 @@ _reconstruct_call_lookup = {ufl.classes.MathFunction: handle_scalar_nary,
 
 
 def reconstruct(o, *args):
+    """Reconstruct."""
     # First look for exact match
     f = _reconstruct_call_lookup.get(type(o), False)
     if f:
