@@ -56,6 +56,14 @@ def generator(ir, options):
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
+    code["tabulate_tensor_float32"] = "NULL"
+    code["tabulate_tensor_float64"] = "NULL"
+    code["tabulate_tensor_longdouble"] = "NULL"
+    code["tabulate_tensor_complex64"] = "NULL"
+    code["tabulate_tensor_complex128"] = "NULL"
+    np_scalar_type=np.dtype(options["scalar_type"]).name
+    code[f"tabulate_tensor_{np_scalar_type}"] = f"tabulate_tensor_{factory_name}"
+
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
@@ -64,7 +72,11 @@ def generator(ir, options):
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
-        np_scalar_type=np.dtype(options["scalar_type"]).name,
-        coordinate_element=f"&{ir.coordinate_element}")
+        coordinate_element=f"&{ir.coordinate_element}",
+        tabulate_tensor_float32=code["tabulate_tensor_float32"],
+        tabulate_tensor_float64=code["tabulate_tensor_float64"],
+        tabulate_tensor_longdouble=code["tabulate_tensor_longdouble"],
+        tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
+        tabulate_tensor_complex128=code["tabulate_tensor_complex128"])
 
     return declaration, implementation
