@@ -50,6 +50,7 @@ class FFCXBackendDefinitions(object):
     """FFCx specific code definitions."""
 
     def __init__(self, ir, access, options):
+        """Initialise."""
         # Store ir and options
         self.integral_type = ir.integral_type
         self.entitytype = ir.entitytype

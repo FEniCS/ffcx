@@ -1,3 +1,4 @@
+"""Run ffcx on a UFL file."""
 #!/usr/bin/env python
 # Copyright (C) 2017-2017 Martin Sandve Alnæs
 #

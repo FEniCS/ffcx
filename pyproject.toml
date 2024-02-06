@@ -70,19 +70,7 @@ norecursedirs = [
 log_cli = true
 
 [tool.pydocstyle]
-convention = "numpy"
-# TODO: Work on removing these ignores
-add-ignore = [
-    "D100",  # Missing docstrings in modules
-    "D101",  # Missing docstrings in classes
-    "D102",  # Missing docstrings in methods
-    "D103",  # Missing docstrings in functions
-    "D104",  # Missing docstrings in packages
-    "D105",  # Missing docstrings in magic methods
-    "D401",  # Google convention
-    "D406",  # Google convention
-    "D407"   # Google convention
-]
+convention = "google"
 
 [tool.mypy]
 # Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/

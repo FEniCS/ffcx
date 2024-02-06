@@ -3,6 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Expression generator."""
 
 import collections
 import logging
@@ -20,8 +21,10 @@ logger = logging.getLogger("ffcx")
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
+    """Expression generator."""
 
+    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
+        """Initialise."""
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
 
@@ -34,6 +37,7 @@ class ExpressionGenerator:
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):
+        """Generate."""
         parts = []
         parts += self.generate_element_tables()
 
@@ -100,7 +104,6 @@ class ExpressionGenerator:
         """Generate quadrature loop for this quadrature rule.
 
         In the context of expressions quadrature loop is not accumulated.
-
         """
         # Generate varying partition
         body = self.generate_varying_partition()
@@ -262,13 +265,10 @@ class ExpressionGenerator:
     def get_arg_factors(self, blockdata, block_rank, indices):
         """Get argument factors (i.e. blocks).
 
-        Options
-        ----------
-        blockdata
-        block_rank
-        indices
-            Indices used to index element tables
-
+        Args:
+            blockdata: block data
+            block_rank: block rank
+            indices: Indices used to index element tables
         """
         arg_factors = []
         for i in range(block_rank):
@@ -294,6 +294,7 @@ class ExpressionGenerator:
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
     def get_var(self, v):
+        """Get a variable."""
         if v._ufl_is_literal_:
             return L.ufl_to_lnodes(v)
         f = self.scope.get(v)

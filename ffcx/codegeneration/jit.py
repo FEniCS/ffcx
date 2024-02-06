@@ -3,6 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Just-in-time compolation."""
 
 import importlib
 import io

@@ -14,7 +14,7 @@ class FFCXBackend(object):
     """Class collecting all aspects of the FFCx backend."""
 
     def __init__(self, ir, options):
-
+        """Initialise."""
         coefficient_numbering = ir.coefficient_numbering
         coefficient_offsets = ir.coefficient_offsets
 
