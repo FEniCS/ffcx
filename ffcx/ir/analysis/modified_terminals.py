@@ -19,9 +19,11 @@ logger = logging.getLogger("ffcx")
 class ModifiedTerminal(object):
     """A modified terminal."""
 
-    def __init__(self, expr, terminal, reference_value: bool, base_shape, base_symmetry, component: typing.Tuple[int, ...],
-                 flat_component: int, global_derivatives: typing.Tuple[int, ...], local_derivatives: typing.Tuple[int, ...],
-                 averaged: typing.Union[None, str], restriction: typing.Union[None, str]):
+    def __init__(
+        self, expr, terminal, reference_value: bool, base_shape, base_symmetry, component: typing.Tuple[int, ...],
+        flat_component: int, global_derivatives: typing.Tuple[int, ...], local_derivatives: typing.Tuple[int, ...],
+        averaged: typing.Union[None, str], restriction: typing.Union[None, str]
+    ):
         """Initialise.
 
         Args:
