@@ -14,11 +14,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# Illustration of vector sum of elements (EnrichedElement): The
-# bilinear form a(u, v) for the Stokes equations using a mixed
-# formulation involving the Mini element. The velocity element is
-# composed of a P1 element augmented by the cubic bubble function.
+"""Mini element demo.
+
+Illustration of vector sum of elements (EnrichedElement): The
+bilinear form a(u, v) for the Stokes equations using a mixed
+formulation involving the Mini element. The velocity element is
+composed of a P1 element augmented by the cubic bubble function.
+"""
+
 import basix.ufl
 from ufl import (FunctionSpace, Mesh, TestFunctions, TrialFunctions, div, dx,
                  grad, inner)

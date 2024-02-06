@@ -14,10 +14,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# The bilinear form a(u, v) and linear form L(v) for
-# Poisson's equation where spatial coordinates are used to define the source
-# and boundary flux terms.
+"""Spatial coordinates demo.
+
+The bilinear form a(u, v) and linear form L(v) for Poisson's equation where
+spatial coordinates are used to define the source and boundary flux terms.
+"""
+
 import basix.ufl
 from ufl import (FunctionSpace, Mesh, SpatialCoordinate, TestFunction,
                  TrialFunction, ds, dx, exp, grad, inner, sin)

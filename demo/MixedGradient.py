@@ -1,3 +1,5 @@
+"""Mixed gradient demo."""
+
 import basix.ufl
 from ufl import (FunctionSpace, Mesh, TestFunctions, TrialFunctions, ds, grad,
                  inner)

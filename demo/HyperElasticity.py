@@ -1,13 +1,12 @@
-#
 # Author: Martin Sandve Alnes
 # Date: 2008-12-22
-#
+# Modified by Garth N. Wells, 2009
+"""Hyper-elasticity demo."""
 
 import basix.ufl
-# Modified by Garth N. Wells, 2009
 from ufl import (Coefficient, Constant, FacetNormal, FunctionSpace, Identity,
                  Mesh, SpatialCoordinate, TestFunction, TrialFunction,
-                 derivative, det, diff, dot, ds, dx, exp, grad, inner, inv,
+                 derivative, det, diff, ds, dx, exp, grad, inner, inv,
                  tetrahedron, tr, variable)
 
 # Cell and its properties

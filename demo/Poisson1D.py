@@ -14,9 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# The bilinear form a(u, v) and linear form L(v) for
-# Poisson's equation.
+"""1D Poisson demo.
+
+The bilinear form a(u, v) and linear form L(v) for Poisson's equation.
+"""
+
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  dx, grad, inner)

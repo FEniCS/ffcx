@@ -14,12 +14,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with DOLFINx. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2014-01-29
-# Last changed: 2014-01-29
-#
-# The bilinear form a(u, v) and linear form L(v) for a two-field
-# (mixed) formulation of Poisson's equation
+"""Mixed Poisson dual demo.
+
+The bilinear form a(u, v) and linear form L(v) for a two-field
+(mixed) formulation of Poisson's equation.
+"""
+
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunctions,
                  TrialFunctions, ds, dx, grad, inner)

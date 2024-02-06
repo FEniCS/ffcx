@@ -1,7 +1,8 @@
 # Copyright (C) 2016 Lizao Li
-#
-# The bilinear form a(u, v) and linear form L(v) for
-# Biharmonic equation in Regge formulation.
+"""Biharmonic Regge demo.
+
+The bilinear form a(u, v) and linear form L(v) for Biharmonic equation in Regge formulation.
+"""
 import basix.ufl
 from ufl import (Coefficient, FacetNormal, FunctionSpace, Identity, Mesh,
                  TestFunctions, TrialFunctions, dot, dS, ds, dx, grad, inner,
@@ -20,10 +21,12 @@ f = Coefficient(p_space)
 
 
 def S(mu):
+    """The form S."""
     return mu - Identity(3) * tr(mu)
 
 
 def b(mu, v):
+    """The form b."""
     n = FacetNormal(domain)
     return inner(S(mu), grad(grad(v))) * dx \
         - dot(dot(S(mu('+')), n('+')), n('+')) * jump(grad(v), n) * dS \

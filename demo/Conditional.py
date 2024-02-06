@@ -14,8 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# Illustration on how to use Conditional to define a source term
+"""Conditional demo.
+
+Illustration on how to use Conditional to define a source term.
+"""
+
 import basix.ufl
 from ufl import (And, Constant, FunctionSpace, Mesh, Not, Or,
                  SpatialCoordinate, TestFunction, conditional, dx, ge, gt,
