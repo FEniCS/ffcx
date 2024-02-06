@@ -3,11 +3,9 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-
 """FEniCS Form Compiler (FFCx).
 
 FFCx compiles finite element variational forms into C code.
-
 """
 
 import importlib.metadata

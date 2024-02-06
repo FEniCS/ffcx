@@ -3,7 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-
+"""Options."""
 import functools
 import json
 import logging
@@ -52,35 +52,31 @@ def _load_options():
 def get_options(priority_options: Optional[dict] = None) -> dict:
     """Return (a copy of) the merged option values for FFCX.
 
-    Options
-    -------
-      priority_options:
-        take priority over all other option values (see notes)
+    Args:
+        priority_options: take priority over all other option values (see notes)
 
-    Returns
-    -------
-      dict: merged option values
+    Returns:
+        merged option values
 
-    Notes
-    -----
-    This function sets the log level from the merged option values prior to
-    returning.
+    Note:
+        This function sets the log level from the merged option values prior to
+        returning.
 
-    The `ffcx_options.json` files are cached on the first call. Subsequent
-    calls to this function use this cache.
+        The `ffcx_options.json` files are cached on the first call. Subsequent
+        calls to this function use this cache.
 
-    Priority ordering of options from highest to lowest is:
+        Priority ordering of options from highest to lowest is:
 
-    -  **priority_options** (API and command line options)
-    -  **$PWD/ffcx_options.json** (local options)
-    -  **$XDG_CONFIG_HOME/ffcx/ffcx_options.json** (user options)
-    -  **FFCX_DEFAULT_OPTIONS** in `ffcx.options`
+        -  **priority_options** (API and command line options)
+        -  **$PWD/ffcx_options.json** (local options)
+        -  **$XDG_CONFIG_HOME/ffcx/ffcx_options.json** (user options)
+        -  **FFCX_DEFAULT_OPTIONS** in `ffcx.options`
 
-    `XDG_CONFIG_HOME` is `~/.config/` if the environment variable is not set.
+        `XDG_CONFIG_HOME` is `~/.config/` if the environment variable is not set.
 
-    Example `ffcx_options.json` file:
+        Example `ffcx_options.json` file:
 
-      { "epsilon": 1e-7 }
+          { "epsilon": 1e-7 }
 
     """
     options: Dict[str, Any] = {}

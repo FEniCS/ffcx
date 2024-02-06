@@ -118,16 +118,14 @@ class ValueNumberer(object):
         """Handle modified terminal.
 
         Modifiers:
-        ---------
-        terminal           - the underlying Terminal object
-        global_derivatives - tuple of ints, each meaning derivative in that global direction
-        local_derivatives  - tuple of ints, each meaning derivative in that local direction
-        reference_value    - bool, whether this is represented in reference frame
-        averaged           - None, 'facet' or 'cell'
-        restriction        - None, '+' or '-'
-        component          - tuple of ints, the global component of the Terminal
-        flat_component     - single int, flattened local component of the Terminal, considering symmetry
-
+            terminal: the underlying Terminal object
+            global_derivatives: tuple of ints, each meaning derivative in that global direction
+            local_derivatives: tuple of ints, each meaning derivative in that local direction
+            reference_value: bool, whether this is represented in reference frame
+            averaged: None, 'facet' or 'cell'
+            restriction: None, '+' or '-'
+            component: tuple of ints, the global component of the Terminal
+            flat_component: single int, flattened local component of the Terminal, considering symmetry
         """
         # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
         #     in which case the reference value shape of the element must be used.

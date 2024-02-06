@@ -3,6 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Naming."""
 
 import hashlib
 import typing
@@ -21,9 +22,7 @@ def compute_signature(ufl_objects: typing.List[
                  typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
     """Compute the signature hash.
 
-    Based on the UFL type of the objects and an additional optional
-    'tag'.
-
+    Based on the UFL type of the objects and an additional optional 'tag'.
     """
     object_signature = ""
     for ufl_object in ufl_objects:
@@ -76,28 +75,33 @@ def compute_signature(ufl_objects: typing.List[
 
 
 def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
+    """Get integral name."""
     sig = compute_signature([original_form], str((prefix, integral_type, form_id, subdomain_id)))
     return f"integral_{sig}"
 
 
 def form_name(original_form, form_id, prefix):
+    """Get form name."""
     sig = compute_signature([original_form], str((prefix, form_id)))
     return f"form_{sig}"
 
 
 def finite_element_name(ufl_element, prefix):
+    """Get finite element name."""
     assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
+    """Get DOF map name."""
     assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"dofmap_{sig}"
 
 
 def expression_name(expression, prefix):
+    """Get expression name."""
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)
     return f"expression_{sig}"

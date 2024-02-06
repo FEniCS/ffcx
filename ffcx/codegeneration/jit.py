@@ -212,11 +212,16 @@ def compile_expressions(expressions, options=None, cache_dir=None, timeout=10, c
                         visualise: bool = False):
     """Compile a list of UFL expressions into UFC Python objects.
 
-    Options
-    -------
-    expressions
-        List of (UFL expression, evaluation points).
-
+    Args:
+        expressions: List of (UFL expression, evaluation points).
+        options: Options
+        cache_dir: Cache directory
+        timeout: Timeout
+        cffi_extra_compile_args: Extra compilation args for CFFI
+        cffi_verbose: Use verbose compile
+        cffi_debug: Use compiler debug mode
+        cffi_libraries: libraries to use with compiler
+        visualise: Toggle visualisation
     """
     p = ffcx.options.get_options(options)
 
