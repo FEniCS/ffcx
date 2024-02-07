@@ -7,7 +7,7 @@
 
 import typing
 
-import numpy as _np
+import numpy as np
 import numpy.typing as _npt
 
 
@@ -21,23 +21,23 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
         Corresponding C type.
     """
     # Note: Possible aliases, e.g. numpy.longdouble, should test against char ID
-    if _np.dtype(dtype).char == 'g':
+    if np.dtype(dtype).charg == "g":
         return "long double"
-    if _np.dtype(dtype) == _np.intc:
+    if np.dtype(dtype) == np.intc:
         return "int"
-    elif _np.dtype(dtype).char == 'f':
+    elif np.dtype(dtype).char == "f":
         return "float"
-    elif _np.dtype(dtype).char == 'd':
+    elif np.dtype(dtype).char == "d":
         return "double"
-    elif _np.dtype(dtype) == _np.complex64:
+    elif np.dtype(dtype) == np.complex64:
         return "float _Complex"
-    elif _np.dtype(dtype) == _np.complex128:
+    elif np.dtype(dtype) == np.complex128:
         return "double _Complex"
     else:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
 
-def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _np.dtype:
+def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> np.dtype:
     """For a NumPy dtype, return the corresponding real dtype.
 
     Args:
@@ -46,12 +46,12 @@ def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> _np.dtype
     Returns:
         ``numpy.dtype`` for the real component of ``dtype``.
     """
-    if _np.issubdtype(dtype, _np.floating):
-        return _np.dtype(dtype)
-    elif _np.issubdtype(dtype, _np.complexfloating):
-        return _np.dtype(dtype).type(0).real.dtype
-    elif _np.issubdtype(dtype, _np.integer):
-        return _np.dtype(dtype)
+    if np.issubdtype(dtype, np.floating):
+        return np.dtype(dtype)
+    elif np.issubdtype(dtype, np.complexfloating):
+        return np.dtype(dtype).type(0).real.dtype
+    elif np.issubdtype(dtype, np.integer):
+        return np.dtype(dtype)
     else:
         raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
 
@@ -72,8 +72,14 @@ def numba_ufcx_kernel_signature(dtype: _npt.DTypeLike, xdtype: _npt.DTypeLike):
     try:
         import numba.types as types
         from numba import from_dtype
-        return types.void(types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(dtype)),
-                          types.CPointer(from_dtype(dtype)), types.CPointer(from_dtype(xdtype)),
-                          types.CPointer(types.intc), types.CPointer(types.uint8))
+
+        return types.void(
+            types.CPointer(from_dtype(dtype)),
+            types.CPointer(from_dtype(dtype)),
+            types.CPointer(from_dtype(dtype)),
+            types.CPointer(from_dtype(xdtype)),
+            types.CPointer(types.intc),
+            types.CPointer(types.uint8),
+        )
     except ImportError as e:
         raise e

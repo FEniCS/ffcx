@@ -8,21 +8,41 @@
 import logging
 import typing
 
-from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
-                         Grad, Indexed, Jacobian, ReferenceGrad,
-                         ReferenceValue, Restricted, SpatialCoordinate)
+from ufl.classes import (
+    Argument,
+    CellAvg,
+    FacetAvg,
+    FixedIndex,
+    FormArgument,
+    Grad,
+    Indexed,
+    Jacobian,
+    ReferenceGrad,
+    ReferenceValue,
+    Restricted,
+    SpatialCoordinate,
+)
 from ufl.permutation import build_component_numbering
 
 logger = logging.getLogger("ffcx")
 
 
-class ModifiedTerminal(object):
+class ModifiedTerminal:
     """A modified terminal."""
 
     def __init__(
-        self, expr, terminal, reference_value: bool, base_shape, base_symmetry, component: typing.Tuple[int, ...],
-        flat_component: int, global_derivatives: typing.Tuple[int, ...], local_derivatives: typing.Tuple[int, ...],
-        averaged: typing.Union[None, str], restriction: typing.Union[None, str]
+        self,
+        expr,
+        terminal,
+        reference_value: bool,
+        base_shape,
+        base_symmetry,
+        component: typing.Tuple[int, ...],
+        flat_component: int,
+        global_derivatives: typing.Tuple[int, ...],
+        local_derivatives: typing.Tuple[int, ...],
+        averaged: typing.Union[None, str],
+        restriction: typing.Union[None, str],
     ):
         """Initialise.
 
@@ -124,7 +144,8 @@ class ModifiedTerminal(object):
             f"local_derivatives:  {self.local_derivatives}\n"
             f"averaged:           {self.averaged}\n"
             f"component:          {self.component}\n"
-            f"restriction:        {self.restriction}")
+            f"restriction:        {self.restriction}"
+        )
 
 
 def is_modified_terminal(v):
@@ -184,14 +205,14 @@ def analyse_modified_terminal(expr):
             if reference_value is not None:
                 raise RuntimeError("Got twice pulled back terminal!")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             reference_value = True
 
         elif isinstance(t, ReferenceGrad):
             if not component:  # covers None or ()
                 raise RuntimeError("Got local gradient of terminal without prior indexing.")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             local_derivatives.append(component[-1])
             component = component[:-1]
 
@@ -199,7 +220,7 @@ def analyse_modified_terminal(expr):
             if not component:  # covers None or ()
                 raise RuntimeError("Got local gradient of terminal without prior indexing.")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             global_derivatives.append(component[-1])
             component = component[:-1]
 
@@ -208,28 +229,28 @@ def analyse_modified_terminal(expr):
                 raise RuntimeError("Got twice restricted terminal!")
 
             restriction = t._side
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
 
         elif isinstance(t, CellAvg):
             if averaged is not None:
                 raise RuntimeError("Got twice averaged terminal!")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             averaged = "cell"
 
         elif isinstance(t, FacetAvg):
             if averaged is not None:
                 raise RuntimeError("Got twice averaged terminal!")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
-            raise RuntimeError("Missing handler for terminal modifier type {}, object is {}.".format(
-                type(t), repr(t)))
-
+            raise RuntimeError(
+                f"Missing handler for terminal modifier type {type(t)}, object is {t!r}."
+            )
         else:
-            raise RuntimeError("Unexpected type %s object %s." % (type(t), repr(t)))
+            raise RuntimeError(f"Unexpected type {type(t)} object {t}.")
 
     # Make canonical representation of derivatives
     global_derivatives = tuple(sorted(global_derivatives))
@@ -274,12 +295,22 @@ def analyse_modified_terminal(expr):
     if len(component) != len(base_shape):
         raise RuntimeError("Length of component does not match rank of (reference) terminal.")
     if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):
-        raise RuntimeError("Component indices %s are outside value shape %s" % (component, base_shape))
+        raise RuntimeError("Component indices {component} are outside value shape {base_shape}.")
 
     # Flatten component
     vi2si, _ = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
 
-    return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,
-                            flat_component, global_derivatives, local_derivatives, averaged,
-                            restriction)
+    return ModifiedTerminal(
+        expr,
+        t,
+        reference_value,
+        base_shape,
+        base_symmetry,
+        component,
+        flat_component,
+        global_derivatives,
+        local_derivatives,
+        averaged,
+        restriction,
+    )

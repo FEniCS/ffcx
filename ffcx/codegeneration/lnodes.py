@@ -29,12 +29,12 @@ from enum import Enum
 from typing import List, Optional, Sequence
 
 import numpy as np
-
 import ufl
 
 
 class PRECEDENCE:
     """An enum-like class for operator precedence levels."""
+
     HIGHEST = 0
     LITERAL = 0
     SYMBOL = 0
@@ -84,7 +84,10 @@ def is_negative_one_lexpr(lexpr):
 
 
 def float_product(factors):
-    """Build product of float factors, simplifying ones and zeros and returning 1.0 if empty sequence."""
+    """Build product of float factors.
+
+    Simplify ones and zeros and returning 1.0 if empty sequence.
+    """
     factors = [f for f in factors if not is_one_lexpr(f)]
     if len(factors) == 0:
         return LiteralFloat(1.0)
@@ -103,6 +106,7 @@ class DataType(Enum):
     These can be REAL (same type as geometry),
     SCALAR (same type as tensor), or INT (for entity indices etc.)
     """
+
     REAL = 0
     SCALAR = 1
     INT = 2
@@ -126,7 +130,7 @@ def merge_dtypes(dtypes: typing.List[DataType]):
         raise ValueError(f"Can't get dtype for operation with {dtypes}")
 
 
-class LNode(object):
+class LNode:
     """Base class for all AST nodes."""
 
     def __eq__(self, other):
@@ -391,7 +395,7 @@ class MultiIndex(LExpr):
         """Get the intersection."""
         symbols = []
         sizes = []
-        for (sym, size) in zip(self.symbols, self.sizes):
+        for sym, size in zip(self.symbols, self.sizes):
             if sym in other.symbols:
                 i = other.symbols.index(sym)
                 assert other.sizes[i] == size
@@ -407,7 +411,7 @@ class MultiIndex(LExpr):
         """
         symbols = self.symbols.copy()
         sizes = self.sizes.copy()
-        for (sym, size) in zip(other.symbols, other.sizes):
+        for sym, size in zip(other.symbols, other.sizes):
             if sym in symbols:
                 i = symbols.index(sym)
                 assert sizes[i] == size
@@ -420,7 +424,7 @@ class MultiIndex(LExpr):
         """Get the difference."""
         symbols = []
         sizes = []
-        for (idx, size) in zip(self.symbols, self.sizes):
+        for idx, size in zip(self.symbols, self.sizes):
             if idx not in other.symbols:
                 symbols.append(idx)
                 sizes.append(size)
@@ -453,11 +457,7 @@ class BinOp(LExprOperator):
 
     def __eq__(self, other):
         """Check equality."""
-        return (
-            isinstance(other, type(self))
-            and self.lhs == other.lhs
-            and self.rhs == other.rhs
-        )
+        return isinstance(other, type(self)) and self.lhs == other.lhs and self.rhs == other.rhs
 
     def __hash__(self):
         """Hash."""
@@ -528,72 +528,84 @@ class Not(PrefixUnaryOp):
 
 class Add(ArithmeticBinOp):
     """Add operator."""
+
     precedence = PRECEDENCE.ADD
     op = "+"
 
 
 class Sub(ArithmeticBinOp):
     """Subtract operator."""
+
     precedence = PRECEDENCE.SUB
     op = "-"
 
 
 class Mul(ArithmeticBinOp):
     """Multiply operator."""
+
     precedence = PRECEDENCE.MUL
     op = "*"
 
 
 class Div(ArithmeticBinOp):
     """Division operator."""
+
     precedence = PRECEDENCE.DIV
     op = "/"
 
 
 class EQ(BinOp):
     """Equality operator."""
+
     precedence = PRECEDENCE.EQ
     op = "=="
 
 
 class NE(BinOp):
     """Inequality operator."""
+
     precedence = PRECEDENCE.NE
     op = "!="
 
 
 class LT(BinOp):
     """Less than operator."""
+
     precedence = PRECEDENCE.LT
     op = "<"
 
 
 class GT(BinOp):
     """Greater than operator."""
+
     precedence = PRECEDENCE.GT
     op = ">"
 
 
 class LE(BinOp):
     """Less than or equal to operator."""
+
     precedence = PRECEDENCE.LE
     op = "<="
 
 
 class GE(BinOp):
     """Greater than or equal to operator."""
+
     precedence = PRECEDENCE.GE
     op = ">="
 
 
 class And(BinOp):
     """And operator."""
+
     precedence = PRECEDENCE.AND
     op = "&&"
 
 
 class Or(BinOp):
     """Or operator."""
+
     precedence = PRECEDENCE.OR
     op = "||"
 
@@ -690,7 +702,7 @@ class ArrayAccess(LExprOperator):
             self.array = array.symbol
             self.dtype = array.symbol.dtype
         else:
-            raise ValueError("Unexpected array type %s." % (type(array).__name__,))
+            raise ValueError(f"Unexpected array type {type(array).__name__}")
 
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
@@ -772,7 +784,7 @@ def as_lexpr(node):
     elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
     else:
-        raise RuntimeError("Unexpected LExpr type %s:\n%s" % (type(node), str(node)))
+        raise RuntimeError(f"Unexpected LExpr type {type(node)}:\n{node}")
 
 
 class Statement(LNode):
@@ -805,9 +817,9 @@ def as_statement(node):
             return Statement(node)
         else:
             raise RuntimeError(
-                "Trying to create a statement of lexprOperator type %s:\n%s"
-                % (type(node), str(node))
+                f"Trying to create a statement of lexprOperator type {type(node)}:\n{node}"
             )
+
     elif isinstance(node, list):
         # Convenience case for list of statements
         if len(node) == 1:
@@ -818,18 +830,16 @@ def as_statement(node):
     elif isinstance(node, Section):
         return node
     else:
-        raise RuntimeError(
-            "Unexpected Statement type %s:\n%s" % (type(node), str(node))
-        )
+        raise RuntimeError(f"Unexpected Statement type {type(node)}:\n{node}")
 
 
 class Annotation(Enum):
     """Annotation."""
 
-    fuse = 1        # fuse loops in section
-    unroll = 2      # unroll loop in section
-    licm = 3        # loop invariant code motion
-    factorize = 4   # apply sum factorization
+    fuse = 1  # fuse loops in section
+    unroll = 2  # unroll loop in section
+    licm = 3  # loop invariant code motion
+    factorize = 4  # apply sum factorization
 
 
 class Declaration(Statement):
@@ -852,10 +862,15 @@ def is_declaration(node) -> bool:
 class Section(LNode):
     """A section of code with a name and a list of statements."""
 
-    def __init__(self, name: str, statements: List[LNode],
-                 declarations: Sequence[Declaration], input: Optional[List[Symbol]] = None,
-                 output: Optional[List[Symbol]] = None,
-                 annotations: Optional[List[Annotation]] = None):
+    def __init__(
+        self,
+        name: str,
+        statements: List[LNode],
+        declarations: Sequence[Declaration],
+        input: Optional[List[Symbol]] = None,
+        output: Optional[List[Symbol]] = None,
+        annotations: Optional[List[Annotation]] = None,
+    ):
         """Initialise."""
         self.name = name
         self.statements = [as_statement(st) for st in statements]
@@ -1099,7 +1114,8 @@ _ufl_call_lookup = {
     ufl.mathfunctions.Atan2: _math_function,
     ufl.mathfunctions.MathFunction: _math_function,
     ufl.mathfunctions.BesselJ: _math_function,
-    ufl.mathfunctions.BesselY: _math_function}
+    ufl.mathfunctions.BesselY: _math_function,
+}
 
 
 def ufl_to_lnodes(operator, *args):

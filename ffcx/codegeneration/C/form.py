@@ -12,7 +12,7 @@
 
 import logging
 
-import numpy
+import numpy as np
 
 from ffcx.codegeneration.C import form_template
 
@@ -37,8 +37,9 @@ def generator(ir, options):
         values = ", ".join(str(i) for i in ir.original_coefficient_position)
         sizes = len(ir.original_coefficient_position)
 
-        d["original_coefficient_position_init"] = \
-            f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
+        d[
+            "original_coefficient_position_init"
+        ] = f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
         d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
@@ -47,7 +48,9 @@ def generator(ir, options):
     if len(ir.coefficient_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
         sizes = len(ir.coefficient_names)
-        d["coefficient_names_init"] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        d[
+            "coefficient_names_init"
+        ] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
         d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
         d["coefficient_names_init"] = ""
@@ -56,7 +59,9 @@ def generator(ir, options):
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)
         sizes = len(ir.constant_names)
-        d["constant_names_init"] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        d[
+            "constant_names_init"
+        ] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
@@ -66,7 +71,9 @@ def generator(ir, options):
         d["finite_elements"] = f"finite_elements_{ir.name}"
         values = ", ".join(f"&{el}" for el in ir.finite_elements)
         sizes = len(ir.finite_elements)
-        d["finite_elements_init"] = f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+        d[
+            "finite_elements_init"
+        ] = f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["finite_elements"] = "NULL"
         d["finite_elements_init"] = ""
@@ -91,7 +98,7 @@ def generator(ir, options):
             unsorted_integrals += [f"&{name}"]
             unsorted_ids += [id]
 
-        id_sort = numpy.argsort(unsorted_ids)
+        id_sort = np.argsort(unsorted_ids)
         integrals += [unsorted_integrals[i] for i in id_sort]
         integral_ids += [unsorted_ids[i] for i in id_sort]
 
@@ -100,7 +107,9 @@ def generator(ir, options):
     if len(integrals) > 0:
         sizes = len(integrals)
         values = ", ".join(integrals)
-        d["form_integrals_init"] = f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
+        d[
+            "form_integrals_init"
+        ] = f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integrals"] = f"form_integrals_{ir.name}"
         sizes = len(integral_ids)
         values = ", ".join(str(i) for i in integral_ids)
@@ -114,7 +123,9 @@ def generator(ir, options):
 
     sizes = len(integral_offsets)
     values = ", ".join(str(i) for i in integral_offsets)
-    d["form_integral_offsets_init"] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    d[
+        "form_integral_offsets_init"
+    ] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
 
     code = []
 
@@ -148,12 +159,8 @@ def generator(ir, options):
     # Check that no keys are redundant or have been missed
     from string import Formatter
 
-    fields = [
-        fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
-    ]
-    assert set(fields) == set(
-        d.keys()
-    ), "Mismatch between keys in template and in formatting dict"
+    fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = form_template.factory.format_map(d)

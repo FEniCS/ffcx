@@ -17,22 +17,40 @@ logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
     "epsilon": (float, 1e-14, "machine precision, used for dropping zero terms in tables.", None),
-    "scalar_type": (str, "float64", "scalar type to use in generated code.",
-                    ("float32", "float64", "complex64", "complex128")),
+    "scalar_type": (
+        str,
+        "float64",
+        "scalar type to use in generated code.",
+        ("float32", "float64", "complex64", "complex128"),
+    ),
     "sum_factorization": (bool, False, "use sum factorization.", None),
-    "table_rtol": (float, 1e-6,
-                   "relative precision to use when comparing finite element table values for reuse.", None),
-    "table_atol": (float, 1e-9, "absolute precision to use when comparing finite element table values reuse.", None),
-    "verbosity": (int, 30,
-                  "logger verbosity, follows standard library levels, i.e. INFO=20, DEBUG=10, etc.", None)
+    "table_rtol": (
+        float,
+        1e-6,
+        "relative precision to use when comparing finite element table values for reuse.",
+        None,
+    ),
+    "table_atol": (
+        float,
+        1e-9,
+        "absolute precision to use when comparing finite element table values reuse.",
+        None,
+    ),
+    "verbosity": (
+        int,
+        30,
+        "logger verbosity, follows standard library levels, i.e. INFO=20, DEBUG=10, etc.",
+        None,
+    ),
 }
 
 
 @functools.lru_cache(maxsize=None)
 def _load_options():
     """Load options from JSON files."""
-    user_config_file = os.getenv("XDG_CONFIG_HOME", default=Path.home().joinpath(".config")) \
-        / Path("ffcx", "ffcx_options.json")
+    user_config_file = os.getenv("XDG_CONFIG_HOME", default=Path.home().joinpath(".config")) / Path(
+        "ffcx", "ffcx_options.json"
+    )
     try:
         with open(user_config_file) as f:
             user_options = json.load(f)

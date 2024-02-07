@@ -4,12 +4,12 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import basix.ufl
 import numpy as np
 import pytest
-
-import basix.ufl
-import ffcx.codegeneration.jit
 import ufl
+
+import ffcx.codegeneration.jit
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
@@ -37,12 +37,13 @@ def create_tensor_product_element(cell_type, degree, variant, shape=None):
 
 def generate_kernel(forms, dtype, options):
     """Generate kernel for given forms."""
-
     # use a different cache directory for each option
     sf = options.get("sum_factorization", False)
     cache_dir = f"./ffcx-cache-{sf}"
 
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cache_dir=cache_dir, options=options)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=cache_dir, options=options
+    )
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
@@ -64,7 +65,9 @@ def generate_kernel(forms, dtype, options):
 def test_bilinear_form(dtype, P, cell_type):
     gdim = cell_to_gdim(cell_type)
     element = create_tensor_product_element(cell_type, P, basix.LagrangeVariant.gll_warped)
-    coords = create_tensor_product_element(cell_type, 1, basix.LagrangeVariant.gll_warped, shape=(gdim, ))
+    coords = create_tensor_product_element(
+        cell_type, 1, basix.LagrangeVariant.gll_warped, shape=(gdim,)
+    )
     mesh = ufl.Mesh(coords)
     V = ufl.FunctionSpace(mesh, element)
 
@@ -79,36 +82,50 @@ def test_bilinear_form(dtype, P, cell_type):
 
     xdtype = dtype_to_scalar_dtype(dtype)
     if cell_type == basix.CellType.quadrilateral:
-        coords = np.array([[0.0, 0.0, 0.0],
-                           [1.0, 0.0, 0.0],
-                           [0.0, 1.0, 0.0],
-                           [1.0, 1.0, 0.0]], dtype=xdtype)
+        coords = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]], dtype=xdtype
+        )
     elif cell_type == basix.CellType.hexahedron:
-        coords = np.array([[0.0, 0.0, 0.0],
-                           [1.0, 0.0, 0.0],
-                           [0.0, 1.0, 0.0],
-                           [1.0, 1.0, 0.0],
-                           [0.0, 0.0, 1.0],
-                           [1.0, 0.0, 1.0],
-                           [0.0, 1.0, 1.0],
-                           [1.0, 1.0, 1.0]], dtype=xdtype)
+        coords = np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [0.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0],
+            ],
+            dtype=xdtype,
+        )
 
     c_type = dtype_to_c_type(dtype)
     c_xtype = dtype_to_c_type(xdtype)
     kernel, code, module = generate_kernel([a], dtype, options={"scalar_type": dtype})
     ffi = module.ffi
-    kernel(ffi.cast(f'{c_type} *', A.ctypes.data),
-           ffi.cast(f'{c_type} *', w.ctypes.data),
-           ffi.cast(f'{c_type} *', c.ctypes.data),
-           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+    )
 
     # Use sum factorization
     A1 = np.zeros((ndofs, ndofs), dtype=dtype)
-    kernel, code, module = generate_kernel([a], dtype, options={"scalar_type": dtype, "sum_factorization": True})
+    kernel, code, module = generate_kernel(
+        [a], dtype, options={"scalar_type": dtype, "sum_factorization": True}
+    )
     ffi = module.ffi
-    kernel(ffi.cast(f'{c_type} *', A1.ctypes.data),
-           ffi.cast(f'{c_type} *', w.ctypes.data),
-           ffi.cast(f'{c_type} *', c.ctypes.data),
-           ffi.cast(f'{c_xtype} *', coords.ctypes.data), ffi.NULL, ffi.NULL)
+    kernel(
+        ffi.cast(f"{c_type} *", A1.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+    )
 
     np.testing.assert_allclose(A, A1, rtol=1e-6, atol=1e-6)

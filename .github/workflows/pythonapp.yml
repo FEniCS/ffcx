@@ -47,11 +47,10 @@ jobs:
       - name: Static check with mypy
         run: mypy ffcx/
         if: matrix.python-version != '3.12'
-      - name: isort checks (non-blocking)
-        continue-on-error: true
-        run: isort --check .
-      - name: Check documentation style
-        run: pydocstyle .
+      - name: ruff checks
+        run: |
+          ruff check .
+          ruff format --check .
       - name: Run units tests
         run: python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
       - name: Upload to Coveralls

@@ -30,14 +30,13 @@ documentation = "https://docs.fenicsproject.org"
 ffcx = "ffcx:__main__.main"
 
 [project.optional-dependencies]
-lint = ["flake8", "pydocstyle[toml]"]
+lint = ["ruff"]
 docs = ["sphinx", "sphinx_rtd_theme"]
 optional = ["numba", "pygraphviz==1.7"]
 test = ["pytest >= 6.0", "sympy"]
 ci = [
     "coveralls",
     "coverage",
-    "isort",
     "pytest-cov",
     "pytest-xdist",
     "types-setuptools",
@@ -69,9 +68,6 @@ norecursedirs = [
 ]
 log_cli = true
 
-[tool.pydocstyle]
-convention = "google"
-
 [tool.mypy]
 # Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
 # Goal would be to make all of the below True long-term
@@ -92,3 +88,43 @@ module = [
     'ufl.*'
 ]
 ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+# exclude = ["./joss", "make_html.py"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+exclude = ["make_html.py"]
+[tool.ruff.lint]
+exclude = ["joss/"]
+select = [
+    # "N", # pep8-naming
+    "E",   # pycodestyle
+    "W",   # pycodestyle
+    "D",   # pydocstyle - used only in python/
+    "F",   # pyflakes
+    "I",   # isort
+    "RUF", # Ruff-specific rules
+    "UP",  # pyupgrade
+    "ICN", # flake8-import-conventions
+    "NPY", # numpy-specific rules
+    "FLY", # use f-string not static joins
+    "LOG", # https://docs.astral.sh/ruff/rules/#flake8-logging-log
+    # "ISC", # https://docs.astral.sh/ruff/rules/#flake8-implicit-str-concat-isc
+    # "B", https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    # "A", # https://docs.astral.sh/ruff/rules/#flake8-builtins-a
+]
+ignore = ["RUF005", "RUF012", "RUF015"]
+# ignore = ["UP007", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"test/*" = ["D"]
+# "demo/*" = ["D"]
+# "doc/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+

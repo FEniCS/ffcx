@@ -11,6 +11,7 @@ def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNo
 
     Args:
         code: List of LNodes to optimize.
+        quadrature_rule: TODO.
 
     Returns:
         Optimized list of LNodes.
@@ -34,6 +35,7 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
 
     Args:
         code: List of LNodes to fuse.
+        name: TODO.
 
     Returns:
         Fused list of LNodes.
@@ -143,7 +145,8 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     """Perform loop invariant code motion.
 
     Args:
-        code: List of LNodes to optimize.
+        section: List of LNodes to optimize.
+        quadrature_rule: TODO.
 
     Returns:
         Optimized list of LNodes.
@@ -182,7 +185,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 dependency = check_dependency(arg, inner_loop.index)
                 if not dependency:
                     hoist_candidates.append(arg)
-            if (len(hoist_candidates) > 1):
+            if len(hoist_candidates) > 1:
                 # create new temp
                 name = f"temp_{counter}"
                 counter += 1
@@ -194,8 +197,12 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 # create code for hoisted term
                 size = outer_loop.end.value - outer_loop.begin.value
                 pre_loop.append(L.ArrayDecl(temp, size, [0]))
-                body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates))
-                pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
+                body = L.Assign(
+                    L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates)
+                )
+                pre_loop.append(
+                    L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body])
+                )
 
     section.statements = pre_loop + section.statements
 
