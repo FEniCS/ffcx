@@ -27,7 +27,6 @@ ufcx_integral {factory_name} =
   .enabled_coefficients = {enabled_coefficients},
   .tabulate_tensor_float32 = {tabulate_tensor_float32},
   .tabulate_tensor_float64 = {tabulate_tensor_float64},
-  .tabulate_tensor_longdouble = {tabulate_tensor_longdouble},
   .tabulate_tensor_complex64 = {tabulate_tensor_complex64},
   .tabulate_tensor_complex128 = {tabulate_tensor_complex128},
   .needs_facet_permutations = {needs_facet_permutations},

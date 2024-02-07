@@ -58,7 +58,6 @@ def generator(ir, options):
 
     code["tabulate_tensor_float32"] = "NULL"
     code["tabulate_tensor_float64"] = "NULL"
-    code["tabulate_tensor_longdouble"] = "NULL"
     code["tabulate_tensor_complex64"] = "NULL"
     code["tabulate_tensor_complex128"] = "NULL"
     np_scalar_type=np.dtype(options["scalar_type"]).name
@@ -75,7 +74,6 @@ def generator(ir, options):
         coordinate_element=f"&{ir.coordinate_element}",
         tabulate_tensor_float32=code["tabulate_tensor_float32"],
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
-        tabulate_tensor_longdouble=code["tabulate_tensor_longdouble"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"])
 
