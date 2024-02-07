@@ -680,7 +680,7 @@ def _compute_expression_ir(expression, index, prefix, analysis, options, visuali
     # Build offsets for Constants
     original_constant_offsets = {}
     _offset = 0
-    for constant in ufl.algorithms.analysis.extract_constants(expression):
+    for constant in ufl.algorithms.analysis.extract_constants(original_expression):
         original_constant_offsets[constant] = _offset
         _offset += np.prod(constant.ufl_shape, dtype=int)
 

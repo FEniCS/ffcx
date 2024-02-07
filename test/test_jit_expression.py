@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2019-2022 Michal Habera and Jørgen S. Dokken
+# Copyright (C) 2019-2024 Michal Habera and Jørgen S. Dokken
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -7,6 +7,7 @@
 
 import cffi
 import numpy as np
+import pytest
 
 import basix
 import basix.ufl
@@ -208,3 +209,45 @@ def test_elimiate_zero_tables_tensor(compile_args):
     exact = exact_expr(points.T)
 
     assert np.allclose(exact, output)
+
+
+def test_grad_constant(compile_args):
+    """Test if numbering of constants are correct after UFL eliminates the constant inside the gradient."""
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
+    mesh = ufl.Mesh(c_el)
+
+    x = ufl.SpatialCoordinate(mesh)
+    first_constant = ufl.Constant(mesh)
+    second_constant = ufl.Constant(mesh)
+    expr = second_constant * ufl.Dx(x[0]**2 + first_constant, 0)
+
+    dtype = np.float64
+    points = np.array([[0.33, 0.25]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args)
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros(1, dtype=dtype)
+
+    # Define constants
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([3, 7], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    expression.tabulate_tensor_float64(
+        ffi.cast(f'{c_type} *', output.ctypes.data),
+        ffi.cast(f'{c_type} *', u_coeffs.ctypes.data),
+        ffi.cast(f'{c_type} *', consts.ctypes.data),
+        ffi.cast(f'{c_xtype} *', coords.ctypes.data),
+        ffi.cast('int *', entity_index.ctypes.data),
+        ffi.cast('uint8_t *', quad_perm.ctypes.data))
+
+    assert output[0] == pytest.approx(consts[1] * 2 * points[0, 0])
