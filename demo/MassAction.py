@@ -3,8 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-
-import numpy as np
+"""Mass action demo."""
 
 import basix
 import ufl

@@ -86,11 +86,12 @@ def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
                         visualise: bool = False):
     """Generate UFC code for a given UFL objects.
 
-    Options
-    -------
-    @param ufl_objects:
-        Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
-
+    Args:
+        ufl_objects: Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
+        object_names: Object names
+        prefix: Prefix
+        options: Options
+        visualise: Toggle visualisation
     """
     # Stage 1: analysis
     cpu_time = time()

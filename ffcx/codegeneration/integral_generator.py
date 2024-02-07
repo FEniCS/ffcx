@@ -3,6 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Integral generator."""
 
 import collections
 import logging
@@ -39,7 +40,10 @@ def extract_dtype(v, vops: List[Any]):
 
 
 class IntegralGenerator(object):
+    """Integral generator."""
+
     def __init__(self, ir, backend):
+        """Initialise."""
         # Store ir
         self.ir = ir
 
@@ -75,9 +79,10 @@ class IntegralGenerator(object):
         Scope is determined by quadrature_rule which identifies the
         quadrature loop scope or None if outside quadrature loops.
 
-        v is the ufl expression and vaccess is the LNodes
-        expression to access the value in the code.
-
+        Args:
+            quadrature_rule: Quadrature rule
+            v: the ufl expression
+            vaccess: the LNodes expression to access the value in the code
         """
         self.scopes[quadrature_rule][v] = vaccess
 
@@ -110,6 +115,7 @@ class IntegralGenerator(object):
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
     def get_temp_symbol(self, tempname, key):
+        """Get a temporary symbol."""
         key = (tempname,) + key
         s = self.temp_symbols.get(key)
         defined = s is not None
@@ -280,20 +286,21 @@ class IntegralGenerator(object):
         return [L.create_nested_for_loops([iq], code)]
 
     def generate_piecewise_partition(self, quadrature_rule):
+        """Generate a piecewise partition."""
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "piecewise", None)
 
     def generate_varying_partition(self, quadrature_rule):
-
+        """Generate a varying partition."""
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
-
+        """Generate a partition."""
         definitions = []
         intermediates = []
 
@@ -335,6 +342,7 @@ class IntegralGenerator(object):
         return definitions, intermediates
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
+        """Generate a dofblock partition."""
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
         quadparts = []
         blocks = [(blockmap, blockdata)
@@ -367,6 +375,7 @@ class IntegralGenerator(object):
         return quadparts, intermediates
 
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
+        """Get arg factors."""
         arg_factors = []
         tables = []
         for i in range(block_rank):

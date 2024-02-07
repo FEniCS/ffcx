@@ -29,6 +29,8 @@ uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
 
 class ModifiedTerminalElement(typing.NamedTuple):
+    """Modified terminal element."""
+
     element: basix.ufl._ElementBase
     averaged: str
     local_derivatives: typing.Tuple[int, ...]
@@ -36,6 +38,8 @@ class ModifiedTerminalElement(typing.NamedTuple):
 
 
 class UniqueTableReferenceT(typing.NamedTuple):
+    """Unique table reference."""
+
     name: str
     values: npt.NDArray[np.float64]
     offset: int
@@ -50,6 +54,7 @@ class UniqueTableReferenceT(typing.NamedTuple):
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
+    """Check if two tables are equal."""
     a = np.asarray(a)
     b = np.asarray(b)
     if a.shape != b.shape:
@@ -154,27 +159,18 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, ent
     """Generate a name for the psi table.
 
     Format:
-    FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value.
-
-    FE  - is a simple counter to distinguish the various bases, it will be
+        FE#_C#_D###[_AC|_AF|][_F|V][_Q#], where '#' will be an integer value and:
+        - FE is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
-
-    C   - is the component number if any (this does not yet take into account
+        - C is the component number if any (this does not yet take into account
           tensor valued functions)
-
-    D   - is the number of derivatives in each spatial direction if any.
+        - D is the number of derivatives in each spatial direction if any.
           If the element is defined in 3D, then D012 means d^3(*)/dydz^2.
-
-    AC  - marks that the element values are averaged over the cell
-
-    AF  - marks that the element values are averaged over the facet
-
-    F   - marks that the first array dimension enumerates facets on the cell
-
-    V   - marks that the first array dimension enumerates vertices on the cell
-
-    Q   - unique ID of quadrature rule, to distinguish between tables in a mixed quadrature rule setting
-
+        - AC marks that the element values are averaged over the cell
+        - AF marks that the element values are averaged over the facet
+        - F marks that the first array dimension enumerates facets on the cell
+        - V marks that the first array dimension enumerates vertices on the cell
+        - Q unique ID of quadrature rule, to distinguish between tables in a mixed quadrature rule setting
     """
     name = "FE%d" % element_counter
     if flat_component is not None:
@@ -188,6 +184,7 @@ def generate_psi_table_name(quadrature_rule, element_counter, averaged: str, ent
 
 
 def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement]:
+    """Get modified terminal element."""
     gd = mt.global_derivatives
     ld = mt.local_derivatives
     domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -236,6 +233,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
 
 
 def permute_quadrature_interval(points, reflections=0):
+    """Permuteq quadrature points for an interval."""
     output = points.copy()
     for p in output:
         assert len(p) < 2 or np.isclose(p[1], 0)
@@ -247,6 +245,7 @@ def permute_quadrature_interval(points, reflections=0):
 
 
 def permute_quadrature_triangle(points, reflections=0, rotations=0):
+    """Permuteq quadrature points for a triangle."""
     output = points.copy()
     for p in output:
         assert len(p) < 3 or np.isclose(p[2], 0)
@@ -260,6 +259,7 @@ def permute_quadrature_triangle(points, reflections=0, rotations=0):
 
 
 def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
+    """Permuteq quadrature points for a quadrilateral."""
     output = points.copy()
     for p in output:
         assert len(p) < 3 or np.isclose(p[2], 0)
@@ -448,15 +448,18 @@ def build_optimized_tables(quadrature_rule, cell, integral_type, entitytype,
 
 
 def is_zeros_table(table, rtol=default_rtol, atol=default_atol):
+    """Check if table values are all zero."""
     return (np.prod(table.shape) == 0
             or np.allclose(table, np.zeros(table.shape), rtol=rtol, atol=atol))
 
 
 def is_ones_table(table, rtol=default_rtol, atol=default_atol):
+    """Check if table values are all one."""
     return np.allclose(table, np.ones(table.shape), rtol=rtol, atol=atol)
 
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
+    """Check if table is a quadrature table."""
     _, num_entities, num_points, num_dofs = table.shape
     Id = np.eye(num_points)
     return (num_points == num_dofs and all(
@@ -464,6 +467,7 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
+    """Check if table is permuted."""
     return not all(
         np.allclose(table[0, :, :, :],
                     table[i, :, :, :], rtol=rtol, atol=atol)
@@ -471,6 +475,7 @@ def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
+    """Check if table is piecewise."""
     return all(
         np.allclose(table[0, :, 0, :],
                     table[0, :, i, :], rtol=rtol, atol=atol)
@@ -478,6 +483,7 @@ def is_piecewise_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
+    """Check if table is uniform."""
     return all(
         np.allclose(table[0, 0, :, :],
                     table[0, i, :, :], rtol=rtol, atol=atol)
@@ -485,6 +491,7 @@ def is_uniform_table(table, rtol=default_rtol, atol=default_atol):
 
 
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
+    """Analyse table type."""
     if is_zeros_table(table, rtol=rtol, atol=atol):
         # Table is empty or all values are 0.0
         ttype = "zeros"

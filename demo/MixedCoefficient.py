@@ -16,8 +16,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# Mixed coefficient.
+"""Mixed coefficient demo."""
+
 import basix.ufl
 from ufl import Coefficients, FunctionSpace, Mesh, dot, dS, dx
 

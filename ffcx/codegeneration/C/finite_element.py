@@ -7,6 +7,7 @@
 # Note: Much of the code in this file is a direct translation
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
+"""Generate UFC code for a finite element."""
 
 import logging
 
@@ -121,6 +122,7 @@ def generator(ir, options):
 
 
 def generate_custom_element(name, ir):
+    """Generate UFC code for a custom element."""
     d = {}
     d["factory_name"] = name
     d["cell_type"] = int(ir.cell_type)
@@ -194,6 +196,7 @@ def generate_custom_element(name, ir):
 
 
 def generate_custom_quadrature(name, ir):
+    """Generate UFC code for a custom quadrature rule."""
     npts = ir.points.shape[0]
     tdim = ir.points.shape[1]
 

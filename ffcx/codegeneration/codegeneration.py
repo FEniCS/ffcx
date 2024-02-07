@@ -8,7 +8,6 @@
 
 This module implements the generation of C code for the body of each
 UFC function from an intermediate representation (IR).
-
 """
 
 import logging
@@ -26,8 +25,7 @@ logger = logging.getLogger("ffcx")
 
 
 class CodeBlocks(typing.NamedTuple):
-    """
-    Storage of code blocks of the form (declaration, implementation).
+    """Storage of code blocks of the form (declaration, implementation).
 
     Blocks for elements, dofmaps, integrals, forms and expressions,
     and start and end of file output

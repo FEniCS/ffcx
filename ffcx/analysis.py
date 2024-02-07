@@ -24,11 +24,16 @@ logger = logging.getLogger("ffcx")
 
 
 class UFLData(typing.NamedTuple):
-    form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]  # Tuple of ufl form data
-    unique_elements: typing.List[basix.ufl._ElementBase]  # List of unique elements
+    """UFL data."""
+
+    # Tuple of ufl form data
+    form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]
+    # List of unique elements
+    unique_elements: typing.List[basix.ufl._ElementBase]
     # Lookup table from each unique element to its index in `unique_elements`
     element_numbers: typing.Dict[basix.ufl._ElementBase, int]
-    unique_coordinate_elements: typing.List[basix.ufl._ElementBase]  # List of unique coordinate elements
+    # List of unique coordinate elements
+    unique_coordinate_elements: typing.List[basix.ufl._ElementBase]
     # List of ufl Expressions as tuples (expression, points, original_expression)
     expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
 
@@ -36,26 +41,18 @@ class UFLData(typing.NamedTuple):
 def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLData:
     """Analyze ufl object(s).
 
-    Options
-    ----------
-    ufl_objects
-    options
-      FFCx options. These options take priority over all other set options.
+    Args:
+        ufl_objects: UFL objects
+        options: FFCx options. These options take priority over all other set options.
 
-    Returns a data structure holding
-    -------
-    form_datas
-        Form_data objects
-    unique_elements
-        Unique elements across all forms and expressions
-    element_numbers
-        Mapping to unique numbers for all elements
-    unique_coordinate_elements
-        Unique coordinate elements across all forms and expressions
-    expressions
-        List of all expressions after post-processing, with its
-        evaluation points and the original expression
-
+    Returns:
+        A data structure holding:
+            form_datas: Form_data objects
+            unique_elements: Unique elements across all forms and expressions
+            element_numbers: Mapping to unique numbers for all elements
+            unique_coordinate_elements: Unique coordinate elements across all forms and expressions
+            expressions: List of all expressions after post-processing, with its evaluation points
+                         and the original expression
     """
     logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")

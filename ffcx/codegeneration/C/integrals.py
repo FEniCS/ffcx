@@ -3,6 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Generate UFC code for an integral."""
 
 import logging
 
@@ -18,6 +19,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir, options):
+    """Generate C code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.integral_type}")
     logger.info(f"--- name: {ir.name}")

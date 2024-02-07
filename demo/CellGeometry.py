@@ -1,6 +1,9 @@
 # Copyright (C) 2013 Martin S. Alnaes
-#
-# A functional M involving a bunch of cell geometry quantities.
+"""Cell geometry demo.
+
+A functional M involving a bunch of cell geometry quantities.
+"""
+
 import basix.ufl
 from ufl import (CellVolume, Circumradius, Coefficient, FacetArea, FacetNormal,
                  FunctionSpace, Mesh, SpatialCoordinate, TrialFunction, ds, dx)

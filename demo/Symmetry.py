@@ -1,3 +1,5 @@
+"""Symmetry demo."""
+
 import basix.ufl
 from ufl import (FunctionSpace, Mesh, TestFunction, TrialFunction, dx, grad,
                  inner)

@@ -55,6 +55,7 @@ noargs = {}  # type: ignore
 
 @singledispatch
 def handler(v, fac, sf, F):
+    """Handler."""
     # Error checking
     if any(fac):
         raise RuntimeError(
@@ -66,6 +67,7 @@ def handler(v, fac, sf, F):
 
 @handler.register(Sum)
 def handle_sum(v, fac, sf, F):
+    """Handle a sum."""
     if len(fac) != 2:
         raise RuntimeError("Assuming binary sum here. This can be fixed if needed.")
 
@@ -101,6 +103,7 @@ def handle_sum(v, fac, sf, F):
 
 @handler.register(Product)
 def handle_product(v, fac, sf, F):
+    """Handle a product."""
     if len(fac) != 2:
         raise RuntimeError("Assuming binary product here. This can be fixed if needed.")
     fac0 = fac[0]
@@ -140,7 +143,7 @@ def handle_product(v, fac, sf, F):
 
 @handler.register(Conj)
 def handle_conj(v, fac, sf, F):
-
+    """Handle a conjugation."""
     fac = fac[0]
     if fac:
         factors = {}
@@ -155,6 +158,7 @@ def handle_conj(v, fac, sf, F):
 
 @handler.register(Division)
 def handle_division(v, fac, sf, F):
+    """Handle a division."""
     fac0 = fac[0]
     fac1 = fac[1]
     assert not fac1, "Cannot divide by arguments."
@@ -175,6 +179,7 @@ def handle_division(v, fac, sf, F):
 
 @handler.register(Conditional)
 def handle_conditional(v, fac, sf, F):
+    """Handle a conditional."""
     fac0 = fac[0]
     fac1 = fac[1]
     fac2 = fac[2]
@@ -210,35 +215,24 @@ def handle_conditional(v, fac, sf, F):
 
 
 def compute_argument_factorization(S, rank):
-    """Factorizes a scalar expression graph w.r.t. scalar Argument components.
+    """Factorize a scalar expression graph w.r.t. scalar Argument components.
 
-    The result is a triplet (AV, FV, IM):
+    Returns:
+        a triplet (AV, FV, IM), where:
+        - The scalar argument component subgraph:
+            AV[ai] = v
+          with the property
+            SV[arg_indices] == AV[:]
 
-      - The scalar argument component subgraph:
-
-          AV[ai] = v
-
-        with the property
-
-          SV[arg_indices] == AV[:]
-
-      - An expression graph vertex list with all non-argument factors:
-
-          FV[fi] = f
-
-        with the property that none of the expressions depend on Arguments.
-
-      - A dict representation of the final integrand of rank r:
-
-          IM = { (ai1_1, ..., ai1_r): fi1, (ai2_1, ..., ai2_r): fi2, }
-
-        This mapping represents the factorization of SV[-1] w.r.t. Arguments s.t.:
-
-          SV[-1] := sum(FV[fik] * product(AV[ai] for ai in aik) for aik, fik in IM.items())
-
-        where := means equivalence in the mathematical sense,
-        of course in a different technical representation.
-
+        - An expression graph vertex list with all non-argument factors:
+            FV[fi] = f
+          with the property that none of the expressions depend on Arguments.
+        - A dict representation of the final integrand of rank r:
+            IM = { (ai1_1, ..., ai1_r): fi1, (ai2_1, ..., ai2_r): fi2, }
+          This mapping represents the factorization of SV[-1] w.r.t. Arguments s.t.:
+            SV[-1] := sum(FV[fik] * product(AV[ai] for ai in aik) for aik, fik in IM.items())
+          where := means equivalence in the mathematical sense,
+          of course in a different technical representation.
     """
     # Extract argument component subgraph
     arg_indices = build_argument_indices(S)

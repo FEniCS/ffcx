@@ -14,11 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-03-20
-# Last changed: 2011-03-08
-#
-# Simple example of a form defined over exterior and interior facets.
+"""Facet integrals demo.
+
+Simple example of a form defined over exterior and interior facets.
+"""
+
 import basix.ufl
 from ufl import (FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  avg, ds, dS, grad, inner, jump)

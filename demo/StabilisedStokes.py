@@ -14,9 +14,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# The bilinear form a(u, v) and Linear form L(v) for the Stokes
-# equations using a mixed formulation (equal-order stabilized).
+"""Stabilised Stokes demo.
+
+The bilinear form a(u, v) and Linear form L(v) for the Stokes
+equations using a mixed formulation (equal-order stabilized).
+"""
+
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunctions,
                  TrialFunctions, div, dot, dx, grad, inner)

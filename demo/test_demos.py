@@ -1,3 +1,5 @@
+"""Test demos."""
+
 import os
 import sys
 
@@ -14,6 +16,7 @@ for file in os.listdir(demo_dir):
 @pytest.mark.parametrize("file", ufl_files)
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
 def test_demo(file, scalar_type):
+    """Test a demo."""
     if file in [
         "MixedGradient", "TraceElement",  # HDiv Trace
         "MixedElasticity",  # VectorElement of BDM

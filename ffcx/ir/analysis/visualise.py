@@ -12,7 +12,7 @@ from ufl.classes import (Argument, Division, FloatValue, Indexed, IntValue,
 
 
 def visualise_graph(Gx, filename):
-
+    """Visualise a graph."""
     try:
         import pygraphviz as pgv
     except ImportError:

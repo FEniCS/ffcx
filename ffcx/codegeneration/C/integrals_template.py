@@ -2,6 +2,7 @@
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
+"""Code generation strings for an integral."""
 
 declaration = """
 extern ufcx_integral {factory_name};

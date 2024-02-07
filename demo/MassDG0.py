@@ -14,8 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# The bilinear form for a mass matrix.
+"""DG mass matrix demo.
+
+The bilinear form for a mass matrix.
+"""
+
 import basix.ufl
 from ufl import FunctionSpace, Mesh, TestFunction, TrialFunction, dx, inner
 

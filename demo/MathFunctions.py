@@ -14,8 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# Test all algebra operators on Coefficients.
+"""Math function demo.
+
+Test all algebra operators on Coefficients.
+"""
+
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, acos, asin, atan, bessel_J,
                  bessel_Y, cos, dx, erf, exp, ln, sin, sqrt, tan)

@@ -14,6 +14,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+"""Trace element demo."""
+
 import basix.ufl
 from ufl import FunctionSpace, Mesh, TestFunction, avg, ds, dS
 

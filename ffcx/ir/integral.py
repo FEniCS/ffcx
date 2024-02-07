@@ -27,11 +27,13 @@ logger = logging.getLogger("ffcx")
 
 
 class ModifiedArgumentDataT(typing.NamedTuple):
+    """Modified argument data."""
     ma_index: int
     tabledata: UniqueTableReferenceT
 
 
 class BlockDataT(typing.NamedTuple):
+    """Block data."""
     ttypes: typing.Tuple[str, ...]  # list of table types for each block rank
     factor_indices_comp_indices: typing.List[typing.Tuple[int, int]]  # list of tuples (factor index, component index)
     all_factors_piecewise: bool  # True if all factors for this block are piecewise
@@ -45,6 +47,7 @@ class BlockDataT(typing.NamedTuple):
 
 def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_shape,
                         p, visualise):
+    """Compute intermediate representation for an integral."""
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -276,12 +279,14 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
 
 
 def analyse_dependencies(F, mt_unique_table_reference):
-    # Sets 'status' of all nodes to either: 'inactive', 'piecewise' or 'varying'
-    # Children of 'target' nodes are either 'piecewise' or 'varying'.
-    # All other nodes are 'inactive'.
-    # Varying nodes are identified by their tables ('tr'). All their parent
-    # nodes are also set to 'varying' - any remaining active nodes are 'piecewise'.
+    """Analyse dependencies.
 
+    Sets 'status' of all nodes to either: 'inactive', 'piecewise' or 'varying'
+    Children of 'target' nodes are either 'piecewise' or 'varying'.
+    All other nodes are 'inactive'.
+    Varying nodes are identified by their tables ('tr'). All their parent
+    nodes are also set to 'varying' - any remaining active nodes are 'piecewise'.
+    """
     # Set targets, and dependencies to 'active'
     targets = [i for i, v in F.nodes.items() if v.get('target')]
     for i, v in F.nodes.items():

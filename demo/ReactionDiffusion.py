@@ -14,9 +14,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# The bilinear form a(u, v) and linear form L(v) for a simple
-# reaction-diffusion equation using simplified tuple notation.
+"""Reaction-diffusion demo.
+
+The bilinear form a(u, v) and linear form L(v) for a simple
+reaction-diffusion equation using simplified tuple notation.
+"""
+
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
                  dx, grad, inner)

@@ -14,8 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# This example demonstrates how to create vectors component-wise
+"""Components demo.
+
+This example demonstrates how to create vectors component-wise.
+"""
+
 import basix.ufl
 from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, as_vector, dx,
                  inner)

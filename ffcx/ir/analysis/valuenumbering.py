@@ -25,6 +25,7 @@ class ValueNumberer(object):
     """
 
     def __init__(self, G):
+        """Initialise."""
         self.symbol_count = 0
         self.G = G
         self.V_symbols = []
@@ -56,10 +57,12 @@ class ValueNumberer(object):
         return begin
 
     def get_node_symbols(self, expr):
+        """Get node symbols."""
         idx = [i for i, v in self.G.nodes.items() if v['expression'] == expr][0]
         return self.V_symbols[idx]
 
     def compute_symbols(self):
+        """Compute symbols."""
         for i, v in self.G.nodes.items():
             expr = v['expression']
             symbol = None
@@ -118,16 +121,14 @@ class ValueNumberer(object):
         """Handle modified terminal.
 
         Modifiers:
-        ---------
-        terminal           - the underlying Terminal object
-        global_derivatives - tuple of ints, each meaning derivative in that global direction
-        local_derivatives  - tuple of ints, each meaning derivative in that local direction
-        reference_value    - bool, whether this is represented in reference frame
-        averaged           - None, 'facet' or 'cell'
-        restriction        - None, '+' or '-'
-        component          - tuple of ints, the global component of the Terminal
-        flat_component     - single int, flattened local component of the Terminal, considering symmetry
-
+            terminal: the underlying Terminal object
+            global_derivatives: tuple of ints, each meaning derivative in that global direction
+            local_derivatives: tuple of ints, each meaning derivative in that local direction
+            reference_value: bool, whether this is represented in reference frame
+            averaged: None, 'facet' or 'cell'
+            restriction: None, '+' or '-'
+            component: tuple of ints, the global component of the Terminal
+            flat_component: single int, flattened local component of the Terminal, considering symmetry
         """
         # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
         #     in which case the reference value shape of the element must be used.
@@ -185,8 +186,11 @@ class ValueNumberer(object):
             raise RuntimeError("Internal error in value numbering.")
         return symbols
 
-    # indexed is implemented as a fall-through operation
     def indexed(self, Aii):
+        """Return indexed value.
+
+        This is implemented as a fall-through operation.
+        """
         # Reuse symbols of arg A for Aii
         A = Aii.ufl_operands[0]
 
@@ -199,6 +203,7 @@ class ValueNumberer(object):
         return symbols
 
     def component_tensor(self, A):
+        """Component tensor."""
         # Reuse symbols of arg Aii for A
         Aii = A.ufl_operands[0]
 
@@ -211,6 +216,7 @@ class ValueNumberer(object):
         return symbols
 
     def list_tensor(self, v):
+        """List tensor."""
         symbols = []
         for row in v.ufl_operands:
             symbols.extend(self.get_node_symbols(row))
