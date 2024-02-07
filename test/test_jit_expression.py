@@ -212,9 +212,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
 
 
 def test_grad_constant(compile_args):
-    """
-    Test if numbering of constants are correct after UFL eliminates the constant inside the gradient
-    """
+    """Test if numbering of constants are correct after UFL eliminates the constant inside the gradient."""
     c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
     mesh = ufl.Mesh(c_el)
 
