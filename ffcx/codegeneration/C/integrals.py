@@ -60,7 +60,7 @@ def generator(ir, options):
     code["tabulate_tensor_float64"] = "NULL"
     code["tabulate_tensor_complex64"] = "NULL"
     code["tabulate_tensor_complex128"] = "NULL"
-    np_scalar_type=np.dtype(options["scalar_type"]).name
+    np_scalar_type = np.dtype(options["scalar_type"]).name
     code[f"tabulate_tensor_{np_scalar_type}"] = f"tabulate_tensor_{factory_name}"
 
     implementation = ufcx_integrals.factory.format(
