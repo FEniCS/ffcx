@@ -21,7 +21,7 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
         Corresponding C type.
     """
     # Note: Possible aliases, e.g. numpy.longdouble, should test against char ID
-    if np.dtype(dtype).charg == "g":
+    if np.dtype(dtype).char == "g":
         return "long double"
     if np.dtype(dtype) == np.intc:
         return "int"
