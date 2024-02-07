@@ -156,7 +156,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
     # Set default spacing for coordinate elements to be equispaced
-    for n, i in enumerate(form._integrals):
+    for i in form._integrals:
         element = i._ufl_domain._ufl_coordinate_element
         assert isinstance(element, basix.ufl._ElementBase)
 

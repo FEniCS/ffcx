@@ -551,7 +551,7 @@ def test_curl_curl(compile_args):
     )
 
 
-def lagrange_triangle_symbolic(order, corners=[(1, 0), (2, 0), (0, 1)], fun=lambda i: i):
+def lagrange_triangle_symbolic(order, corners=((1, 0), (2, 0), (0, 1)), fun=lambda i: i):
     from sympy import S
 
     poly_basis = [x**i * y**j for i in range(order + 1) for j in range(order + 1 - i)]
@@ -648,7 +648,7 @@ def test_lagrange_triangle(compile_args, order, dtype, sym_fun, ufl_fun):
 
 
 def lagrange_tetrahedron_symbolic(
-    order, corners=[(1, 0, 0), (2, 0, 0), (0, 1, 0), (0, 0, 1)], fun=lambda i: i
+    order, corners=((1, 0, 0), (2, 0, 0), (0, 1, 0), (0, 0, 1)), fun=lambda i: i
 ):
     from sympy import S
 

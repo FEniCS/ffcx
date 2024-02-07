@@ -302,7 +302,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
     """
     # Set targets, and dependencies to 'active'
     targets = [i for i, v in F.nodes.items() if v.get("target")]
-    for i, v in F.nodes.items():
+    for _, v in F.nodes.items():
         v["status"] = "inactive"
 
     while targets:
@@ -343,7 +343,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
                 varying_indices.append(j)
 
     # Any remaining active nodes must be 'piecewise'
-    for i, v in F.nodes.items():
+    for _, v in F.nodes.items():
         if v["status"] == "active":
             v["status"] = "piecewise"
 

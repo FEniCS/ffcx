@@ -212,7 +212,7 @@ class ExpressionGenerator:
 
         # Check if DOFs in dofrange are equally spaced.
         expand_loop = False
-        for i, bm in enumerate(blockmap):
+        for bm in blockmap:
             for a, b in zip(bm[1:-1], bm[2:]):
                 if b - a != bm[1] - bm[0]:
                     expand_loop = True
@@ -317,7 +317,7 @@ class ExpressionGenerator:
         definitions = []
         intermediates = []
 
-        for i, attr in F.nodes.items():
+        for _, attr in F.nodes.items():
             if attr["status"] != mode:
                 continue
             v = attr["expression"]

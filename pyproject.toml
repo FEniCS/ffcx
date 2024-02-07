@@ -8,7 +8,7 @@ version = "0.8.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
 requires-python = ">=3.8.0"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 authors = [
     { email = "fenics-steering-council@googlegroups.com" },
     { name = "FEniCS Steering Council" },
@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     "numpy>=1.21",
     "cffi",
-    "setuptools; python_version >= '3.12'",  # cffi with compilation support requires setuptools
+    "setuptools; python_version >= '3.12'",   # cffi with compilation support requires setuptools
     "fenics-basix >= 0.8.0.dev0, <0.9.0",
     "fenics-ufl >= 2023.3.0.dev0, <2023.4.0",
 ]
@@ -59,13 +59,8 @@ packages = [
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra"
-testpaths = [
-    "test"
-]
-norecursedirs = [
-    "libs",
-    "docs"
-]
+testpaths = ["test"]
+norecursedirs = ["libs", "docs"]
 log_cli = true
 
 [tool.mypy]
@@ -80,13 +75,7 @@ warn_unused_ignores = false
 show_error_codes = true
 
 [[tool.mypy.overrides]]
-module = [
-    'basix',
-    'cffi',
-    'numba.*',
-    'pygraphviz',
-    'ufl.*'
-]
+module = ['basix', 'cffi', 'numba.*', 'pygraphviz', 'ufl.*']
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -114,7 +103,7 @@ select = [
     "FLY", # use f-string not static joins
     "LOG", # https://docs.astral.sh/ruff/rules/#flake8-logging-log
     # "ISC", # https://docs.astral.sh/ruff/rules/#flake8-implicit-str-concat-isc
-    # "B", https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    # "B", # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     # "A", # https://docs.astral.sh/ruff/rules/#flake8-builtins-a
 ]
 ignore = ["RUF005", "RUF012", "RUF015"]
@@ -127,4 +116,3 @@ ignore = ["RUF005", "RUF012", "RUF015"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
-

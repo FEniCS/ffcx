@@ -108,8 +108,8 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
             logger.info(f"Waiting for {ready_name} to appear.")
             time.sleep(1)
         raise TimeoutError(
-            f"""JIT compilation timed out, probably due to a failed previous compile.
-        Try cleaning cache (e.g. remove {c_filename}) or increase timeout option."""
+            "JIT compilation timed out, probably due to a failed previous compile. "
+            f"Try cleaning cache (e.g. remove {c_filename}) or increase timeout option."
         )
 
 

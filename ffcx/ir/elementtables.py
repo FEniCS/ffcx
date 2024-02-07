@@ -236,40 +236,40 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
 
 
 def permute_quadrature_interval(points, reflections=0):
-    """Permuteq quadrature points for an interval."""
+    """Permute quadrature points for an interval."""
     output = points.copy()
     for p in output:
         assert len(p) < 2 or np.isclose(p[1], 0)
         assert len(p) < 3 or np.isclose(p[2], 0)
-    for i in range(reflections):
+    for _ in range(reflections):
         for n, p in enumerate(output):
             output[n] = [1 - p[0]]
     return output
 
 
 def permute_quadrature_triangle(points, reflections=0, rotations=0):
-    """Permuteq quadrature points for a triangle."""
+    """Permute quadrature points for a triangle."""
     output = points.copy()
     for p in output:
         assert len(p) < 3 or np.isclose(p[2], 0)
-    for i in range(rotations):
+    for _ in range(rotations):
         for n, p in enumerate(output):
             output[n] = [p[1], 1 - p[0] - p[1]]
-    for i in range(reflections):
+    for _ in range(reflections):
         for n, p in enumerate(output):
             output[n] = [p[1], p[0]]
     return output
 
 
 def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
-    """Permuteq quadrature points for a quadrilateral."""
+    """Permute quadrature points for a quadrilateral."""
     output = points.copy()
     for p in output:
         assert len(p) < 3 or np.isclose(p[2], 0)
-    for i in range(rotations):
+    for _ in range(rotations):
         for n, p in enumerate(output):
             output[n] = [p[1], 1 - p[0]]
-    for i in range(reflections):
+    for _ in range(reflections):
         for n, p in enumerate(output):
             output[n] = [p[1], p[0]]
     return output
