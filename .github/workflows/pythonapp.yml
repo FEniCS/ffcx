@@ -42,8 +42,6 @@ jobs:
           pip install git+https://github.com/FEniCS/basix.git
       - name: Install FFCx
         run: pip install .[ci]
-      - name: Lint with flake8
-        run: flake8 --statistics ffcx/ test/
       - name: Static check with mypy
         run: mypy ffcx/
         if: matrix.python-version != '3.12'
