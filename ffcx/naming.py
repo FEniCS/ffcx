@@ -8,18 +8,25 @@
 import hashlib
 import typing
 
+import basix.ufl
 import numpy as np
 import numpy.typing as npt
-
-import basix.ufl
-import ffcx
-import ffcx.codegeneration
 import ufl
 
+import ffcx
+import ffcx.codegeneration
 
-def compute_signature(ufl_objects: typing.List[
-    typing.Union[ufl.Form, basix.ufl._ElementBase,
-                 typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
+
+def compute_signature(
+    ufl_objects: list[
+        typing.Union[
+            ufl.Form,
+            basix.ufl._ElementBase,
+            tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]],
+        ]
+    ],
+    tag: str,
+) -> str:
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional 'tag'.
@@ -47,7 +54,7 @@ def compute_signature(ufl_objects: typing.List[
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains: typing.List[ufl.Mesh] = []
+            domains: list[ufl.Mesh] = []
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
             for arg in args:
@@ -69,9 +76,15 @@ def compute_signature(ufl_objects: typing.List[
             raise RuntimeError(f"Unknown ufl object type {ufl_object.__class__.__name__}")
 
     # Build combined signature
-    signatures = [object_signature, str(ffcx.__version__), ffcx.codegeneration.get_signature(), kind, tag]
+    signatures = [
+        object_signature,
+        str(ffcx.__version__),
+        ffcx.codegeneration.get_signature(),
+        kind,
+        tag,
+    ]
     string = ";".join(signatures)
-    return hashlib.sha1(string.encode('utf-8')).hexdigest()
+    return hashlib.sha1(string.encode("utf-8")).hexdigest()
 
 
 def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):

@@ -20,10 +20,9 @@ This example demonstrates how to create vectors component-wise.
 """
 
 import basix.ufl
-from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, as_vector, dx,
-                 inner)
+from ufl import Coefficient, FunctionSpace, Mesh, TestFunction, as_vector, dx, inner
 
-element = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, ))
+element = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,))
 domain = Mesh(element)
 space = FunctionSpace(domain, element)
 

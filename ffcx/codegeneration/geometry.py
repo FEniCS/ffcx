@@ -5,9 +5,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Geometry."""
 
+import basix
 import numpy as np
 
-import basix
 import ffcx.codegeneration.lnodes as L
 
 
@@ -110,7 +110,9 @@ def facet_reference_edge_vectors(tablename, cellname):
         if len(facet) == 3:
             edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
         elif len(facet) == 4:
-            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_edges]
+            edge_vectors += [
+                geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_edges
+            ]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 

@@ -10,7 +10,7 @@ from ffcx.codegeneration.definitions import FFCXBackendDefinitions
 from ffcx.codegeneration.symbols import FFCXBackendSymbols
 
 
-class FFCXBackend(object):
+class FFCXBackend:
     """Class collecting all aspects of the FFCx backend."""
 
     def __init__(self, ir, options):
@@ -20,7 +20,8 @@ class FFCXBackend(object):
 
         original_constant_offsets = ir.original_constant_offsets
 
-        self.symbols = FFCXBackendSymbols(coefficient_numbering,
-                                          coefficient_offsets, original_constant_offsets)
+        self.symbols = FFCXBackendSymbols(
+            coefficient_numbering, coefficient_offsets, original_constant_offsets
+        )
         self.access = FFCXBackendAccess(ir, self.symbols, options)
         self.definitions = FFCXBackendDefinitions(ir, self.access, options)
