@@ -74,7 +74,7 @@ warn_return_any = false
 warn_unused_ignores = false
 show_error_codes = true
 
-[tool.mypy.overrides]
+[[tool.mypy.overrides]]
 module = ['basix', 'cffi', 'numba.*', 'pygraphviz', 'ufl.*']
 ignore_missing_imports = true
 
