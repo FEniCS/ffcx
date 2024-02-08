@@ -47,26 +47,24 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    function_spaces: typing.Dict[
-        str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]
-    ]
-    original_coefficient_position: typing.List[int]
-    coefficient_names: typing.List[str]
-    constant_names: typing.List[str]
-    finite_elements: typing.List[str]
-    dofmaps: typing.List[str]
-    integral_names: typing.Dict[str, typing.List[str]]
-    subdomain_ids: typing.Dict[str, typing.List[int]]
+    function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    original_coefficient_position: list[int]
+    coefficient_names: list[str]
+    constant_names: list[str]
+    finite_elements: list[str]
+    dofmaps: list[str]
+    integral_names: dict[str, list[str]]
+    subdomain_ids: dict[str, list[int]]
 
 
 class CustomElementIR(typing.NamedTuple):
     """Intermediate representation of a custom element."""
 
     cell_type: basix.CellType
-    value_shape: typing.Tuple[int, ...]
+    value_shape: tuple[int, ...]
     wcoeffs: npt.NDArray[np.float64]
-    x: typing.List[typing.List[npt.NDArray[np.float64]]]
-    M: typing.List[typing.List[npt.NDArray[np.float64]]]
+    x: list[list[npt.NDArray[np.float64]]]
+    M: list[list[npt.NDArray[np.float64]]]
     map_type: basix.MapType
     sobolev_space: basix.SobolevSpace
     interpolation_nderivs: int
@@ -94,14 +92,14 @@ class ElementIR(typing.NamedTuple):
     topological_dimension: int
     geometric_dimension: int
     space_dimension: int
-    value_shape: typing.Tuple[int, ...]
-    reference_value_shape: typing.Tuple[int, ...]
+    value_shape: tuple[int, ...]
+    reference_value_shape: tuple[int, ...]
     degree: int
     num_sub_elements: int
     block_size: int
-    sub_elements: typing.List[str]
+    sub_elements: list[str]
     element_type: str
-    entity_dofs: typing.List[typing.List[typing.List[int]]]
+    entity_dofs: list[list[list[int]]]
     lagrange_variant: basix.LagrangeVariant
     dpc_variant: basix.DPCVariant
     basix_family: basix.ElementFamily
@@ -119,11 +117,11 @@ class DofMapIR(typing.NamedTuple):
     signature: str
     num_global_support_dofs: int
     num_element_support_dofs: int
-    entity_dofs: typing.List[typing.List[typing.List[int]]]
-    entity_closure_dofs: typing.List[typing.List[typing.List[int]]]
-    num_entity_closure_dofs: typing.List[typing.List[int]]
+    entity_dofs: list[list[list[int]]]
+    entity_closure_dofs: list[list[list[int]]]
+    num_entity_closure_dofs: list[list[int]]
     num_sub_dofmaps: int
-    sub_dofmaps: typing.List[str]
+    sub_dofmaps: list[str]
     block_size: int
 
 
@@ -131,25 +129,25 @@ class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
     integral_type: str
-    subdomain_id: typing.Union[str, typing.Tuple[int, ...], int]
+    subdomain_id: typing.Union[str, tuple[int, ...], int]
     rank: int
     geometric_dimension: int
     topological_dimension: int
     entitytype: str
     num_facets: int
     num_vertices: int
-    enabled_coefficients: typing.List[bool]
-    element_dimensions: typing.Dict[basix.ufl._ElementBase, int]
-    element_ids: typing.Dict[basix.ufl._ElementBase, int]
-    tensor_shape: typing.List[int]
-    coefficient_numbering: typing.Dict[ufl.Coefficient, int]
-    coefficient_offsets: typing.Dict[ufl.Coefficient, int]
-    original_constant_offsets: typing.Dict[ufl.Constant, int]
+    enabled_coefficients: list[bool]
+    element_dimensions: dict[basix.ufl._ElementBase, int]
+    element_ids: dict[basix.ufl._ElementBase, int]
+    tensor_shape: list[int]
+    coefficient_numbering: dict[ufl.Coefficient, int]
+    coefficient_offsets: dict[ufl.Coefficient, int]
+    original_constant_offsets: dict[ufl.Constant, int]
     options: dict
     cell_shape: str
-    unique_tables: typing.Dict[str, npt.NDArray[np.float64]]
-    unique_table_types: typing.Dict[str, str]
-    integrand: typing.Dict[QuadratureRule, dict]
+    unique_tables: dict[str, npt.NDArray[np.float64]]
+    unique_table_types: dict[str, str]
+    integrand: dict[QuadratureRule, dict]
     name: str
     needs_facet_permutations: bool
     coordinate_element: str
@@ -160,37 +158,35 @@ class ExpressionIR(typing.NamedTuple):
     """Intermediate representation of an expression."""
 
     name: str
-    element_dimensions: typing.Dict[basix.ufl._ElementBase, int]
+    element_dimensions: dict[basix.ufl._ElementBase, int]
     options: dict
-    unique_tables: typing.Dict[str, npt.NDArray[np.float64]]
-    unique_table_types: typing.Dict[str, str]
-    integrand: typing.Dict[QuadratureRule, dict]
-    coefficient_numbering: typing.Dict[ufl.Coefficient, int]
-    coefficient_offsets: typing.Dict[ufl.Coefficient, int]
+    unique_tables: dict[str, npt.NDArray[np.float64]]
+    unique_table_types: dict[str, str]
+    integrand: dict[QuadratureRule, dict]
+    coefficient_numbering: dict[ufl.Coefficient, int]
+    coefficient_offsets: dict[ufl.Coefficient, int]
     integral_type: str
     entitytype: str
-    tensor_shape: typing.List[int]
-    expression_shape: typing.List[int]
-    original_constant_offsets: typing.Dict[ufl.Constant, int]
+    tensor_shape: list[int]
+    expression_shape: list[int]
+    original_constant_offsets: dict[ufl.Constant, int]
     points: npt.NDArray[np.float64]
-    coefficient_names: typing.List[str]
-    constant_names: typing.List[str]
+    coefficient_names: list[str]
+    constant_names: list[str]
     needs_facet_permutations: bool
-    function_spaces: typing.Dict[
-        str, typing.Tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]
-    ]
+    function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
     name_from_uflfile: str
-    original_coefficient_positions: typing.List[int]
+    original_coefficient_positions: list[int]
 
 
 class DataIR(typing.NamedTuple):
     """Intermediate representation of data."""
 
-    elements: typing.List[ElementIR]
-    dofmaps: typing.List[DofMapIR]
-    integrals: typing.List[IntegralIR]
-    forms: typing.List[FormIR]
-    expressions: typing.List[ExpressionIR]
+    elements: list[ElementIR]
+    dofmaps: list[DofMapIR]
+    integrals: list[IntegralIR]
+    forms: list[FormIR]
+    expressions: list[ExpressionIR]
 
 
 def compute_ir(analysis: UFLData, object_names, prefix, options, visualise):
@@ -329,7 +325,7 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
 
 def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement):
     """Compute intermediate representation of a custom Basix element."""
-    ir: typing.Dict[str, typing.Any] = {}
+    ir: dict[str, typing.Any] = {}
     ir["cell_type"] = basix_element.cell_type
     ir["value_shape"] = basix_element.value_shape
     ir["wcoeffs"] = basix_element.wcoeffs
@@ -348,7 +344,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
 
 def _compute_custom_quadrature_ir(element: basix.ufl._ElementBase):
     """Compute intermediate representation of a custom Basix element."""
-    ir: typing.Dict[str, typing.Any] = {}
+    ir: dict[str, typing.Any] = {}
     ir["cell_shape"] = element.cell_type.name
     ir["points"], ir["weights"] = element.custom_quadrature()
 

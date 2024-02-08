@@ -11,7 +11,7 @@ import os
 import os.path
 import pprint
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger("ffcx")
 
@@ -45,7 +45,7 @@ FFCX_DEFAULT_OPTIONS = {
 }
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _load_options():
     """Load options from JSON files."""
     user_config_file = os.getenv("XDG_CONFIG_HOME", default=Path.home().joinpath(".config")) / Path(
@@ -97,7 +97,7 @@ def get_options(priority_options: Optional[dict] = None) -> dict:
           { "epsilon": 1e-7 }
 
     """
-    options: Dict[str, Any] = {}
+    options: dict[str, Any] = {}
 
     for opt, (_, value, _, _) in FFCX_DEFAULT_OPTIONS.items():
         options[opt] = value

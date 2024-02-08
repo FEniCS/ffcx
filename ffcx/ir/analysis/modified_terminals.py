@@ -37,10 +37,10 @@ class ModifiedTerminal:
         reference_value: bool,
         base_shape,
         base_symmetry,
-        component: typing.Tuple[int, ...],
+        component: tuple[int, ...],
         flat_component: int,
-        global_derivatives: typing.Tuple[int, ...],
-        local_derivatives: typing.Tuple[int, ...],
+        global_derivatives: tuple[int, ...],
+        local_derivatives: tuple[int, ...],
         averaged: typing.Union[None, str],
         restriction: typing.Union[None, str],
     ):

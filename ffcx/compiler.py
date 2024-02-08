@@ -80,10 +80,10 @@ def _print_timing(stage: int, timing: float):
 
 
 def compile_ufl_objects(
-    ufl_objects: typing.List[typing.Any],
-    object_names: typing.Dict = {},
+    ufl_objects: list[typing.Any],
+    object_names: dict = {},
     prefix: typing.Optional[str] = None,
-    options: typing.Dict = {},
+    options: dict = {},
     visualise: bool = False,
 ):
     """Generate UFC code for a given UFL objects.

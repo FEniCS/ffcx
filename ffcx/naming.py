@@ -18,11 +18,11 @@ import ffcx.codegeneration
 
 
 def compute_signature(
-    ufl_objects: typing.List[
+    ufl_objects: list[
         typing.Union[
             ufl.Form,
             basix.ufl._ElementBase,
-            typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]],
+            tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]],
         ]
     ],
     tag: str,
@@ -54,7 +54,7 @@ def compute_signature(
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains: typing.List[ufl.Mesh] = []
+            domains: list[ufl.Mesh] = []
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
             for arg in args:

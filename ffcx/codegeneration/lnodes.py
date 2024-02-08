@@ -24,9 +24,9 @@ Not supported:
 """
 
 import numbers
-import typing
+from collections.abc import Sequence
 from enum import Enum
-from typing import List, Optional, Sequence
+from typing import Optional
 
 import numpy as np
 import ufl
@@ -114,7 +114,7 @@ class DataType(Enum):
     NONE = 4
 
 
-def merge_dtypes(dtypes: typing.List[DataType]):
+def merge_dtypes(dtypes: list[DataType]):
     """Promote dtype to SCALAR or REAL if either argument matches."""
     if DataType.NONE in dtypes:
         raise ValueError(f"Invalid DataType in LNodes {dtypes}")
@@ -865,11 +865,11 @@ class Section(LNode):
     def __init__(
         self,
         name: str,
-        statements: List[LNode],
+        statements: list[LNode],
         declarations: Sequence[Declaration],
-        input: Optional[List[Symbol]] = None,
-        output: Optional[List[Symbol]] = None,
-        annotations: Optional[List[Annotation]] = None,
+        input: Optional[list[Symbol]] = None,
+        output: Optional[list[Symbol]] = None,
+        annotations: Optional[list[Annotation]] = None,
     ):
         """Initialise."""
         self.name = name
@@ -1127,7 +1127,7 @@ def ufl_to_lnodes(operator, *args):
         raise RuntimeError(f"Missing lookup for expr type {optype}.")
 
 
-def create_nested_for_loops(indices: List[MultiIndex], body):
+def create_nested_for_loops(indices: list[MultiIndex], body):
     """Create nested for loops over list of indices.
 
     The depth of the nested for loops is equal to the sub-indices for all

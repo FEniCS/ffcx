@@ -8,7 +8,7 @@
 import collections
 import logging
 from itertools import product
-from typing import Any, DefaultDict, Dict, Set
+from typing import Any
 
 import ufl
 
@@ -31,10 +31,10 @@ class ExpressionGenerator:
 
         self.ir = ir
         self.backend = backend
-        self.scope: Dict[Any, LNode] = {}
-        self._ufl_names: Set[Any] = set()
-        self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
-        self.shared_symbols: Dict[Any, Any] = {}
+        self.scope: dict[Any, LNode] = {}
+        self._ufl_names: set[Any] = set()
+        self.symbol_counters: collections.defaultdict[Any, int] = collections.defaultdict(int)
+        self.shared_symbols: dict[Any, Any] = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):
@@ -65,7 +65,7 @@ class ExpressionGenerator:
         ufl_geometry = {
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
         }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
+        cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():

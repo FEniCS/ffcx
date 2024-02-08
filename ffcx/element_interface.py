@@ -5,22 +5,20 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Finite element interface."""
 
-import typing
-
 import basix
 import basix.ufl
 import numpy as np
 import numpy.typing as npt
 
 
-def basix_index(indices: typing.Tuple[int]) -> int:
+def basix_index(indices: tuple[int]) -> int:
     """Get the Basix index of a derivative."""
     return basix.index(*indices)
 
 
 def create_quadrature(
-    cellname: str, degree: int, rule: str, elements: typing.List[basix.ufl._ElementBase]
-) -> typing.Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    cellname: str, degree: int, rule: str, elements: list[basix.ufl._ElementBase]
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Create a quadrature rule."""
     if cellname == "vertex":
         return (np.ones((1, 0), dtype=np.float64), np.ones(1, dtype=np.float64))

@@ -6,7 +6,7 @@
 """FFCx/UFC specific variable definitions."""
 
 import logging
-from typing import List, Union
+from typing import Union
 
 import ufl
 
@@ -86,7 +86,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, List]:
+    ) -> Union[L.Section, list]:
         """Return definition code for a terminal."""
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
@@ -111,7 +111,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, List]:
+    ) -> Union[L.Section, list]:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -146,7 +146,7 @@ class FFCXBackendDefinitions:
             mt.terminal, (ic.global_index) * bs + begin
         )
 
-        declaration: List[L.Declaration] = [L.VariableDecl(access, 0.0)]
+        declaration: list[L.Declaration] = [L.VariableDecl(access, 0.0)]
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
@@ -167,7 +167,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, List]:
+    ) -> Union[L.Section, list]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -222,7 +222,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, List]:
+    ) -> Union[L.Section, list]:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -248,7 +248,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, List]:
+    ) -> Union[L.Section, list]:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
@@ -258,6 +258,6 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, List]:
+    ) -> Union[L.Section, list]:
         """Return definition code for pass through terminals."""
         return []

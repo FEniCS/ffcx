@@ -7,7 +7,7 @@ name = "fenics-ffcx"
 version = "0.8.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
-requires-python = ">=3.8.0"
+requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [
     { email = "fenics-steering-council@googlegroups.com" },
@@ -86,12 +86,11 @@ indent-width = 4
 docstring-code-format = true
 
 [tool.ruff.lint]
-exclude = ["joss/"]
 select = [
     # "N", # pep8-naming
     "E",   # pycodestyle
     "W",   # pycodestyle
-    "D",   # pydocstyle - used only in python/
+    "D",   # pydocstyle
     "F",   # pyflakes
     "I",   # isort
     "RUF", # Ruff-specific rules

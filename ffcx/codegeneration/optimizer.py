@@ -1,12 +1,12 @@
 """Optimizer."""
 from collections import defaultdict
-from typing import List, Union
+from typing import Union
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
 
 
-def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNode]:
+def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNode]:
     """Optimize code.
 
     Args:
@@ -30,7 +30,7 @@ def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNo
     return code
 
 
-def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
+def fuse_sections(code: list[L.LNode], name) -> list[L.LNode]:
     """Fuse sections with the same name.
 
     Args:
@@ -40,12 +40,12 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     Returns:
         Fused list of LNodes.
     """
-    statements: List[L.LNode] = []
-    indices: List[int] = []
-    input: List[L.Symbol] = []
-    output: List[L.Symbol] = []
-    declarations: List[L.Declaration] = []
-    annotations: List[L.Annotation] = []
+    statements: list[L.LNode] = []
+    indices: list[int] = []
+    input: list[L.Symbol] = []
+    output: list[L.Symbol] = []
+    declarations: list[L.Declaration] = []
+    annotations: list[L.Annotation] = []
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
@@ -98,7 +98,7 @@ def fuse_loops(code: L.Section) -> L.Section:
     return L.Section(code.name, output_code, code.declarations, code.input, code.output)
 
 
-def get_statements(statement: Union[L.Statement, L.StatementList]) -> List[L.LNode]:
+def get_statements(statement: Union[L.Statement, L.StatementList]) -> list[L.LNode]:
     """Get statements from a statement list.
 
     Args:
@@ -177,7 +177,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             assert isinstance(lhs, L.ArrayAccess)  # Expecting ArrayAccess
             expressions[lhs].append(rhs)
 
-    pre_loop: List[L.LNode] = []
+    pre_loop: list[L.LNode] = []
     for lhs, rhs in expressions.items():
         for r in rhs:
             hoist_candidates = []

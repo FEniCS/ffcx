@@ -35,16 +35,14 @@ class ModifiedArgumentDataT(typing.NamedTuple):
 class BlockDataT(typing.NamedTuple):
     """Block data."""
 
-    ttypes: typing.Tuple[str, ...]  # list of table types for each block rank
-    factor_indices_comp_indices: typing.List[
-        typing.Tuple[int, int]
-    ]  # list of tuples (factor index, component index)
+    ttypes: tuple[str, ...]  # list of table types for each block rank
+    factor_indices_comp_indices: list[tuple[int, int]]  # list of (factor index, component index)
     all_factors_piecewise: bool  # True if all factors for this block are piecewise
-    unames: typing.Tuple[str, ...]  # list of unique FE table names for each block rank
-    restrictions: typing.Tuple[str, ...]  # restriction "+" | "-" | None for each block rank
+    unames: tuple[str, ...]  # list of unique FE table names for each block rank
+    restrictions: tuple[str, ...]  # restriction "+" | "-" | None for each block rank
     transposed: bool  # block is the transpose of another
     is_uniform: bool
-    ma_data: typing.Tuple[ModifiedArgumentDataT, ...]  # used in "full", "safe" and "partial"
+    ma_data: tuple[ModifiedArgumentDataT, ...]  # used in "full", "safe" and "partial"
     is_permuted: bool  # Do quad points on facets need to be permuted?
 
 

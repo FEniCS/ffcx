@@ -30,13 +30,13 @@ class CodeBlocks(typing.NamedTuple):
     and start and end of file output
     """
 
-    file_pre: typing.List[typing.Tuple[str, str]]
-    elements: typing.List[typing.Tuple[str, str]]
-    dofmaps: typing.List[typing.Tuple[str, str]]
-    integrals: typing.List[typing.Tuple[str, str]]
-    forms: typing.List[typing.Tuple[str, str]]
-    expressions: typing.List[typing.Tuple[str, str]]
-    file_post: typing.List[typing.Tuple[str, str]]
+    file_pre: list[tuple[str, str]]
+    elements: list[tuple[str, str]]
+    dofmaps: list[tuple[str, str]]
+    integrals: list[tuple[str, str]]
+    forms: list[tuple[str, str]]
+    expressions: list[tuple[str, str]]
+    file_post: list[tuple[str, str]]
 
 
 def generate_code(ir, options) -> CodeBlocks:

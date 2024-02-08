@@ -26,20 +26,18 @@ class UFLData(typing.NamedTuple):
     """UFL data."""
 
     # Tuple of ufl form data
-    form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]
+    form_data: tuple[ufl.algorithms.formdata.FormData, ...]
     # List of unique elements
-    unique_elements: typing.List[basix.ufl._ElementBase]
+    unique_elements: list[basix.ufl._ElementBase]
     # Lookup table from each unique element to its index in `unique_elements`
-    element_numbers: typing.Dict[basix.ufl._ElementBase, int]
+    element_numbers: dict[basix.ufl._ElementBase, int]
     # List of unique coordinate elements
-    unique_coordinate_elements: typing.List[basix.ufl._ElementBase]
+    unique_coordinate_elements: list[basix.ufl._ElementBase]
     # List of ufl Expressions as tuples (expression, points, original_expression)
-    expressions: typing.List[
-        typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]
-    ]
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
 
 
-def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLData:
+def analyze_ufl_objects(ufl_objects: list, options: dict) -> UFLData:
     """Analyze ufl object(s).
 
     Args:
@@ -112,7 +110,7 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
     )
 
 
-def _analyze_expression(expression: ufl.core.expr.Expr, options: typing.Dict):
+def _analyze_expression(expression: ufl.core.expr.Expr, options: dict):
     """Analyzes and preprocesses expressions."""
     preserve_geometry_types = (ufl.classes.Jacobian,)
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
@@ -134,7 +132,7 @@ def _analyze_expression(expression: ufl.core.expr.Expr, options: typing.Dict):
     return expression
 
 
-def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(form: ufl.form.Form, options: dict) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:

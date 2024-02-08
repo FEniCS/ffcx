@@ -8,7 +8,7 @@
 import collections
 import logging
 from numbers import Integral
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any
 
 import ufl
 
@@ -23,7 +23,7 @@ from ffcx.ir.representationutils import QuadratureRule
 logger = logging.getLogger("ffcx")
 
 
-def extract_dtype(v, vops: List[Any]):
+def extract_dtype(v, vops: list[Any]):
     """Extract dtype from ufl expression v and its operands."""
     dtypes = []
     for op in vops:
@@ -201,7 +201,7 @@ class IntegralGenerator:
             ufl.geometry.ReferenceNormal: "reference_facet_normals",
             ufl.geometry.FacetOrientation: "facet_orientation",
         }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
+        cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
@@ -418,7 +418,7 @@ class IntegralGenerator:
         return arg_factors, tables
 
     def generate_block_parts(
-        self, quadrature_rule: QuadratureRule, blockmap: Tuple, blocklist: List[BlockDataT]
+        self, quadrature_rule: QuadratureRule, blockmap: tuple, blocklist: list[BlockDataT]
     ):
         """Generate and return code parts for a given block.
 
@@ -429,8 +429,8 @@ class IntegralGenerator:
         quadloop-independent blocks.
         """
         # The parts to return
-        quadparts: List[L.LNode] = []
-        intermediates: List[L.LNode] = []
+        quadparts: list[L.LNode] = []
+        intermediates: list[L.LNode] = []
         tables = []
         vars = []
 
@@ -526,7 +526,7 @@ class IntegralGenerator:
         for indices in rhs_expressions:
             keep[indices] = rhs_expressions[indices]
 
-        body: List[L.LNode] = []
+        body: list[L.LNode] = []
 
         A = self.backend.symbols.element_tensor
         A_shape = self.ir.tensor_shape
