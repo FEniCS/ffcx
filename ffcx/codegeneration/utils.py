@@ -8,10 +8,10 @@
 import typing
 
 import numpy as np
-import numpy.typing as _npt
+import numpy.typing as npt
 
 
-def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
+def dtype_to_c_type(dtype: typing.Union[npt.DTypeLike, str]) -> str:
     """For a NumPy dtype, return the corresponding C type.
 
     Args:
@@ -37,7 +37,7 @@ def dtype_to_c_type(dtype: typing.Union[_npt.DTypeLike, str]) -> str:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
 
-def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> np.dtype:
+def dtype_to_scalar_dtype(dtype: typing.Union[npt.DTypeLike, str]) -> np.dtype:
     """For a NumPy dtype, return the corresponding real dtype.
 
     Args:
@@ -56,7 +56,7 @@ def dtype_to_scalar_dtype(dtype: typing.Union[_npt.DTypeLike, str]) -> np.dtype:
         raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
 
 
-def numba_ufcx_kernel_signature(dtype: _npt.DTypeLike, xdtype: _npt.DTypeLike):
+def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
     """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
 
     Args:
