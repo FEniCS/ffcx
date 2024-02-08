@@ -35,6 +35,7 @@ def format_code(code, options: dict):
 
 
 def write_code(code_h, code_c, prefix, output_dir):
+    """Write code to files."""
     _write_file(code_h, prefix, ".h", output_dir)
     _write_file(code_c, prefix, ".c", output_dir)
 

@@ -1,4 +1,3 @@
-
 import importlib
 
 import numpy as np
@@ -18,7 +17,7 @@ def test_gemm(dtype):
     A = L.Symbol("A", dtype=L.DataType.SCALAR)
     B = L.Symbol("B", dtype=L.DataType.SCALAR)
     C = L.Symbol("C", dtype=L.DataType.SCALAR)
-    code = [L.Comment(f"Matrix multiply A{p,r} = B{p,q} * C{q,r}")]
+    code = [L.Comment(f"Matrix multiply A{p, r} = B{p, q} * C{q, r}")]
 
     i = L.Symbol("i", dtype=L.DataType.INT)
     j = L.Symbol("j", dtype=L.DataType.INT)
@@ -36,8 +35,7 @@ def test_gemm(dtype):
     Q = CFormatter(dtype=dtype)
     c_scalar = dtype_to_c_type(dtype)
     decl = f"void gemm({c_scalar} *A, {c_scalar} *B, {c_scalar} *C)"
-    c_code = decl + "{\n" + \
-        Q.c_format(L.StatementList(code)) + "\n}\n"
+    c_code = decl + "{\n" + Q.c_format(L.StatementList(code)) + "\n}\n"
 
     ffibuilder = FFI()
     ffibuilder.cdef(decl + ";")
@@ -66,7 +64,7 @@ def test_gemv(dtype):
     y = L.Symbol("y", dtype=L.DataType.SCALAR)
     A = L.Symbol("A", dtype=L.DataType.SCALAR)
     x = L.Symbol("x", dtype=L.DataType.SCALAR)
-    code = [L.Comment(f"Matrix-vector multiply y({p}) = A{p,q} * x({q})")]
+    code = [L.Comment(f"Matrix-vector multiply y({p}) = A{p, q} * x({q})")]
 
     i = L.Symbol("i", dtype=L.DataType.INT)
     j = L.Symbol("j", dtype=L.DataType.INT)
@@ -80,8 +78,7 @@ def test_gemv(dtype):
     Q = CFormatter(dtype=dtype)
     c_scalar = dtype_to_c_type(dtype)
     decl = f"void gemm({c_scalar} *y, {c_scalar} *A, {c_scalar} *x)"
-    c_code = decl + "{\n" + \
-        Q.c_format(L.StatementList(code)) + "\n}\n"
+    c_code = decl + "{\n" + Q.c_format(L.StatementList(code)) + "\n}\n"
 
     ffibuilder = FFI()
     ffibuilder.cdef(decl + ";")

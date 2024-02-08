@@ -14,18 +14,20 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# This demo illustrates use of finite element spaces defined over
-# simplicies embedded in higher dimensions
+"""Projection manifold demo.
+
+This demo illustrates use of finite element spaces defined over
+simplicies embedded in higher dimensions.
+"""
+
 import basix.ufl
-from ufl import (FunctionSpace, Mesh, TestFunctions, TrialFunctions, div, dx,
-                 inner)
+from ufl import FunctionSpace, Mesh, TestFunctions, TrialFunctions, div, dx, inner
 
 # Define element over this domain
 V = basix.ufl.element("RT", "triangle", 1)
 Q = basix.ufl.element("DG", "triangle", 0)
 element = basix.ufl.mixed_element([V, Q])
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(3, )))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(3,)))
 space = FunctionSpace(domain, element)
 
 (u, p) = TrialFunctions(space)

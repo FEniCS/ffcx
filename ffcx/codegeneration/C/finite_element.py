@@ -7,13 +7,15 @@
 # Note: Much of the code in this file is a direct translation
 # from the old implementation in FFC, although some improvements
 # have been made to the generated code.
+"""Generate UFC code for a finite element."""
 
 import logging
+
+import ufl
 
 import ffcx.codegeneration.C.basix_custom_element_template as ufcx_basix_custom_finite_element
 import ffcx.codegeneration.C.finite_element_template as ufcx_finite_element
 import ffcx.codegeneration.C.quadrature_rule_template as ufcx_quadrature_rule
-import ufl
 
 logger = logging.getLogger("ffcx")
 index_type = "int"
@@ -28,7 +30,7 @@ def generator(ir, options):
 
     d = {}
     d["factory_name"] = ir.name
-    d["signature"] = f"\"{ir.signature}\""
+    d["signature"] = f'"{ir.signature}"'
     d["topological_dimension"] = ir.topological_dimension
     d["cell_shape"] = ir.cell_shape
     d["element_type"] = ir.element_type
@@ -63,7 +65,9 @@ def generator(ir, options):
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
         values = ", ".join(str(i) for i in ir.reference_value_shape)
         sizes = len(ir.reference_value_shape)
-        d["reference_value_shape_init"] = f"int reference_value_shape_{ir.name}[{sizes}] = {{{values}}};"
+        d[
+            "reference_value_shape_init"
+        ] = f"int reference_value_shape_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["reference_value_shape"] = "NULL"
         d["reference_value_shape_init"] = ""
@@ -72,32 +76,40 @@ def generator(ir, options):
         d["sub_elements"] = f"sub_elements_{ir.name}"
         values = ", ".join(f"&{el}" for el in ir.sub_elements)
         sizes = len(ir.sub_elements)
-        d["sub_elements_init"] = f"ufcx_finite_element* sub_elements_{ir.name}[{sizes}] = {{{values}}};"
+        d[
+            "sub_elements_init"
+        ] = f"ufcx_finite_element* sub_elements_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["sub_elements"] = "NULL"
         d["sub_elements_init"] = ""
 
     if ir.custom_element is not None:
         d["custom_element"] = f"&custom_element_{ir.name}"
-        d["custom_element_init"] = generate_custom_element(f"custom_element_{ir.name}", ir.custom_element)
+        d["custom_element_init"] = generate_custom_element(
+            f"custom_element_{ir.name}", ir.custom_element
+        )
     else:
         d["custom_element"] = "NULL"
         d["custom_element_init"] = ""
 
     if ir.custom_quadrature is not None:
         d["custom_quadrature"] = f"&custom_quadrature_{ir.name}"
-        d["custom_quadrature_init"] = generate_custom_quadrature(f"custom_quadrature_{ir.name}", ir.custom_quadrature)
+        d["custom_quadrature_init"] = generate_custom_quadrature(
+            f"custom_quadrature_{ir.name}", ir.custom_quadrature
+        )
     else:
         d["custom_quadrature"] = "NULL"
         d["custom_quadrature_init"] = ""
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
+
     fieldnames = [
         fname for _, fname, _, _ in Formatter().parse(ufcx_finite_element.factory) if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formatting dict"
+        d.keys()
+    ), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_finite_element.factory.format_map(d)
@@ -109,6 +121,7 @@ def generator(ir, options):
 
 
 def generate_custom_element(name, ir):
+    """Generate UFC code for a custom element."""
     d = {}
     d["factory_name"] = name
     d["cell_type"] = int(ir.cell_type)
@@ -169,11 +182,15 @@ def generate_custom_element(name, ir):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
+
     fieldnames = [
-        fname for _, fname, _, _ in Formatter().parse(ufcx_basix_custom_finite_element.factory) if fname
+        fname
+        for _, fname, _, _ in Formatter().parse(ufcx_basix_custom_finite_element.factory)
+        if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formatting dict"
+        d.keys()
+    ), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_basix_custom_finite_element.factory.format_map(d)
@@ -182,6 +199,7 @@ def generate_custom_element(name, ir):
 
 
 def generate_custom_quadrature(name, ir):
+    """Generate UFC code for a custom quadrature rule."""
     npts = ir.points.shape[0]
     tdim = ir.points.shape[1]
 
@@ -199,11 +217,13 @@ def generate_custom_quadrature(name, ir):
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
+
     fieldnames = [
         fname for _, fname, _, _ in Formatter().parse(ufcx_quadrature_rule.factory) if fname
     ]
     assert set(fieldnames) == set(
-        d.keys()), "Mismatch between keys in template and in formatting dict"
+        d.keys()
+    ), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = ufcx_quadrature_rule.factory.format_map(d)

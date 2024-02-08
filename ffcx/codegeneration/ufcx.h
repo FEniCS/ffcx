@@ -297,16 +297,6 @@ extern "C"
       const uint8_t* restrict quadrature_permutation);
 
   /// Tabulate integral into tensor A with compiled
-  /// quadrature rule and extended double precision
-  ///
-  /// @see ufcx_tabulate_tensor_single
-  typedef void(ufcx_tabulate_tensor_longdouble)(
-      long double* restrict A, const long double* restrict w,
-      const long double* restrict c, const long double* restrict coordinate_dofs,
-      const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
-
-  /// Tabulate integral into tensor A with compiled
   /// quadrature rule and complex single precision
   ///
   /// @see ufcx_tabulate_tensor_single
@@ -331,7 +321,6 @@ extern "C"
     const bool* enabled_coefficients;
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-    ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
@@ -351,7 +340,6 @@ extern "C"
     ///
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-    ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 

@@ -3,6 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Generate UFC code for an integral."""
 
 import logging
 
@@ -18,6 +19,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir, options):
+    """Generate C code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.integral_type}")
     logger.info(f"--- name: {ir.name}")
@@ -47,7 +49,9 @@ def generator(ir, options):
     if len(ir.enabled_coefficients) > 0:
         values = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
         sizes = len(ir.enabled_coefficients)
-        code["enabled_coefficients_init"] = f"bool enabled_coefficients_{ir.name}[{sizes}] = {{{values}}};"
+        code[
+            "enabled_coefficients_init"
+        ] = f"bool enabled_coefficients_{ir.name}[{sizes}] = {{{values}}};"
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""
@@ -55,6 +59,13 @@ def generator(ir, options):
 
     code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
+
+    code["tabulate_tensor_float32"] = "NULL"
+    code["tabulate_tensor_float64"] = "NULL"
+    code["tabulate_tensor_complex64"] = "NULL"
+    code["tabulate_tensor_complex128"] = "NULL"
+    np_scalar_type = np.dtype(options["scalar_type"]).name
+    code[f"tabulate_tensor_{np_scalar_type}"] = f"tabulate_tensor_{factory_name}"
 
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
@@ -64,7 +75,11 @@ def generator(ir, options):
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
-        np_scalar_type=np.dtype(options["scalar_type"]).name,
-        coordinate_element=f"&{ir.coordinate_element}")
+        coordinate_element=f"&{ir.coordinate_element}",
+        tabulate_tensor_float32=code["tabulate_tensor_float32"],
+        tabulate_tensor_float64=code["tabulate_tensor_float64"],
+        tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
+        tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
+    )
 
     return declaration, implementation

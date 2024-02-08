@@ -14,13 +14,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# The bilinear form for a mass matrix.
+"""DG mass matrix demo.
+
+The bilinear form for a mass matrix.
+"""
+
 import basix.ufl
 from ufl import FunctionSpace, Mesh, TestFunction, TrialFunction, dx, inner
 
 element = basix.ufl.element("DG", "tetrahedron", 0)
-domain = Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, )))
+domain = Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
 space = FunctionSpace(domain, element)
 
 v = TestFunction(space)

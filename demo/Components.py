@@ -14,13 +14,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# This example demonstrates how to create vectors component-wise
-import basix.ufl
-from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, as_vector,
-                 inner, dx)
+"""Components demo.
 
-element = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, ))
+This example demonstrates how to create vectors component-wise.
+"""
+
+import basix.ufl
+from ufl import Coefficient, FunctionSpace, Mesh, TestFunction, as_vector, dx, inner
+
+element = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,))
 domain = Mesh(element)
 space = FunctionSpace(domain, element)
 

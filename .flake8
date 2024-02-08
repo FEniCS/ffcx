@@ -1,8 +1,0 @@
-[flake8]
-max-line-length = 120
-exclude = .git,__pycache__,docs/source/conf.py,build,dist,libs
-ignore =
-    # Line length
-    W503,
-    # Variable names l, O, I, ...
-    E741,

@@ -10,16 +10,18 @@ import itertools
 import logging
 
 import numpy as np
-
 import ufl
-from ffcx.element_interface import (create_quadrature, map_facet_points,
-                                    reference_cell_vertices)
+
+from ffcx.element_interface import create_quadrature, map_facet_points, reference_cell_vertices
 
 logger = logging.getLogger("ffcx")
 
 
 class QuadratureRule:
+    """A quadrature rule."""
+
     def __init__(self, points, weights, tensor_factors=None):
+        """Initialise."""
         self.points = np.ascontiguousarray(points)  # TODO: change basix to make this unnecessary
         self.weights = weights
         self.tensor_factors = tensor_factors
@@ -27,27 +29,29 @@ class QuadratureRule:
         self._hash = None
 
     def __hash__(self):
+        """Hash."""
         if self._hash is None:
             self.hash_obj = hashlib.sha1(self.points)
             self._hash = int(self.hash_obj.hexdigest(), 32)
         return self._hash
 
     def __eq__(self, other):
+        """Check equality."""
         return np.allclose(self.points, other.points) and np.allclose(self.weights, other.weights)
 
     def id(self):
         """Return unique deterministic identifier.
 
-        Note
-        ----
-        This identifier is used to provide unique names to tables and symbols
-        in generated code.
-
+        Note:
+            This identifier is used to provide unique names to tables and symbols
+            in generated code.
         """
         return self.hash_obj.hexdigest()[-3:]
 
 
-def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elements, use_tensor_product=False):
+def create_quadrature_points_and_weights(
+    integral_type, cell, degree, rule, elements, use_tensor_product=False
+):
     """Create quadrature rule and return points and weights."""
     pts = None
     wts = None
@@ -57,20 +61,16 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elem
         if cell.cellname() in ["quadrilateral", "hexahedron"] and use_tensor_product:
             if cell.cellname() == "quadrilateral":
                 tensor_factors = [
-                    create_quadrature("interval", degree, rule, elements)
-                    for _ in range(2)]
+                    create_quadrature("interval", degree, rule, elements) for _ in range(2)
+                ]
             elif cell.cellname() == "hexahedron":
                 tensor_factors = [
-                    create_quadrature("interval", degree, rule, elements)
-                    for _ in range(3)]
-            pts = np.array([
-                tuple(i[0] for i in p)
-                for p in itertools.product(*[f[0] for f in tensor_factors])
-            ])
-            wts = np.array([
-                np.prod(p)
-                for p in itertools.product(*[f[1] for f in tensor_factors])
-            ])
+                    create_quadrature("interval", degree, rule, elements) for _ in range(3)
+                ]
+            pts = np.array(
+                [tuple(i[0] for i in p) for p in itertools.product(*[f[0] for f in tensor_factors])]
+            )
+            wts = np.array([np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors])])
         else:
             pts, wts = create_quadrature(cell.cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:

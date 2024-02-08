@@ -14,48 +14,44 @@ representation type.
 import logging
 import typing
 
+import basix.ufl
 import numpy as np
 import numpy.typing as npt
-
-import basix.ufl
 import ufl
 
 logger = logging.getLogger("ffcx")
 
 
 class UFLData(typing.NamedTuple):
-    form_data: typing.Tuple[ufl.algorithms.formdata.FormData, ...]  # Tuple of ufl form data
-    unique_elements: typing.List[basix.ufl._ElementBase]  # List of unique elements
+    """UFL data."""
+
+    # Tuple of ufl form data
+    form_data: tuple[ufl.algorithms.formdata.FormData, ...]
+    # List of unique elements
+    unique_elements: list[basix.ufl._ElementBase]
     # Lookup table from each unique element to its index in `unique_elements`
-    element_numbers: typing.Dict[basix.ufl._ElementBase, int]
-    unique_coordinate_elements: typing.List[basix.ufl._ElementBase]  # List of unique coordinate elements
+    element_numbers: dict[basix.ufl._ElementBase, int]
+    # List of unique coordinate elements
+    unique_coordinate_elements: list[basix.ufl._ElementBase]
     # List of ufl Expressions as tuples (expression, points, original_expression)
-    expressions: typing.List[typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
 
 
-def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLData:
+def analyze_ufl_objects(ufl_objects: list, options: dict) -> UFLData:
     """Analyze ufl object(s).
 
-    Options
-    ----------
-    ufl_objects
-    options
-      FFCx options. These options take priority over all other set options.
+    Args:
+        ufl_objects: UFL objects
+        options: FFCx options. These options take priority over all other set options.
 
-    Returns a data structure holding
-    -------
-    form_datas
-        Form_data objects
-    unique_elements
-        Unique elements across all forms and expressions
-    element_numbers
-        Mapping to unique numbers for all elements
-    unique_coordinate_elements
-        Unique coordinate elements across all forms and expressions
-    expressions
-        List of all expressions after post-processing, with its
-        evaluation points and the original expression
-
+    Returns:
+        A data structure holding:
+            form_datas: Form_data objects
+            unique_elements: Unique elements across all forms and expressions
+            element_numbers: Mapping to unique numbers for all elements
+            unique_coordinate_elements: Unique coordinate elements across all forms and expressions
+            expressions: List of all expressions after post-processing, with its evaluation points
+                         and the original expression
     """
     logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")
@@ -105,19 +101,28 @@ def analyze_ufl_objects(ufl_objects: typing.List, options: typing.Dict) -> UFLDa
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    return UFLData(form_data=form_data, unique_elements=unique_elements, element_numbers=element_numbers,
-                   unique_coordinate_elements=unique_coordinate_element_list, expressions=processed_expressions)
+    return UFLData(
+        form_data=form_data,
+        unique_elements=unique_elements,
+        element_numbers=element_numbers,
+        unique_coordinate_elements=unique_coordinate_element_list,
+        expressions=processed_expressions,
+    )
 
 
-def _analyze_expression(expression: ufl.core.expr.Expr, options: typing.Dict):
+def _analyze_expression(expression: ufl.core.expr.Expr, options: dict):
     """Analyzes and preprocesses expressions."""
-    preserve_geometry_types = (ufl.classes.Jacobian, )
+    preserve_geometry_types = (ufl.classes.Jacobian,)
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
     expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
-    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
+        expression, preserve_geometry_types
+    )
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
-    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(expression, preserve_geometry_types)
+    expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
+        expression, preserve_geometry_types
+    )
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
 
     complex_mode = np.issubdtype(options["scalar_type"], np.complexfloating)
@@ -127,7 +132,7 @@ def _analyze_expression(expression: ufl.core.expr.Expr, options: typing.Dict):
     return expression
 
 
-def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(form: ufl.form.Form, options: dict) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:
@@ -149,7 +154,7 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
     # Set default spacing for coordinate elements to be equispaced
-    for n, i in enumerate(form._integrals):
+    for i in form._integrals:
         element = i._ufl_domain._ufl_coordinate_element
         assert isinstance(element, basix.ufl._ElementBase)
 
@@ -165,7 +170,8 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
         preserve_geometry_types=(ufl.classes.Jacobian,),
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
-        complex_mode=complex_mode)
+        complex_mode=complex_mode,
+    )
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
@@ -212,15 +218,22 @@ def _analyze_form(form: ufl.form.Form, options: typing.Dict) -> ufl.algorithms.f
 
                 metadata.update({"quadrature_degree": qd, "quadrature_rule": qr})
             else:
-                metadata.update({"quadrature_points": custom_q[0], "quadrature_weights": custom_q[1],
-                                 "quadrature_rule": "custom"})
+                metadata.update(
+                    {
+                        "quadrature_points": custom_q[0],
+                        "quadrature_weights": custom_q[1],
+                        "quadrature_rule": "custom",
+                    }
+                )
 
             integral_data.integrals[i] = integral.reconstruct(metadata=metadata)
 
     return form_data
 
 
-def _has_custom_integrals(o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple]) -> bool:
+def _has_custom_integrals(
+    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],
+) -> bool:
     """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):
         return o.integral_type() in ufl.custom_integral_types

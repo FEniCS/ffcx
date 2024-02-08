@@ -3,26 +3,27 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Integral generator."""
 
 import collections
 import logging
-from typing import Any, Dict, List, Set, Tuple
+from numbers import Integral
+from typing import Any
+
+import ufl
 
 import ffcx.codegeneration.lnodes as L
-import ufl
 from ffcx.codegeneration import geometry
-from ffcx.codegeneration.definitions import (create_dof_index,
-                                             create_quadrature_index)
+from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
+from ffcx.codegeneration.optimizer import optimize
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT
 from ffcx.ir.representationutils import QuadratureRule
-from ffcx.codegeneration.optimizer import optimize
-from numbers import Integral
 
 logger = logging.getLogger("ffcx")
 
 
-def extract_dtype(v, vops: List[Any]):
+def extract_dtype(v, vops: list[Any]):
     """Extract dtype from ufl expression v and its operands."""
     dtypes = []
     for op in vops:
@@ -38,8 +39,11 @@ def extract_dtype(v, vops: List[Any]):
     return L.DataType.BOOL if is_cond else L.merge_dtypes(dtypes)
 
 
-class IntegralGenerator(object):
+class IntegralGenerator:
+    """Integral generator."""
+
     def __init__(self, ir, backend):
+        """Initialise."""
         # Store ir
         self.ir = ir
 
@@ -75,9 +79,10 @@ class IntegralGenerator(object):
         Scope is determined by quadrature_rule which identifies the
         quadrature loop scope or None if outside quadrature loops.
 
-        v is the ufl expression and vaccess is the LNodes
-        expression to access the value in the code.
-
+        Args:
+            quadrature_rule: Quadrature rule
+            v: the ufl expression
+            vaccess: the LNodes expression to access the value in the code
         """
         self.scopes[quadrature_rule][v] = vaccess
 
@@ -110,6 +115,7 @@ class IntegralGenerator(object):
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
     def get_temp_symbol(self, tempname, key):
+        """Get a temporary symbol."""
         key = (tempname,) + key
         s = self.temp_symbols.get(key)
         defined = s is not None
@@ -193,9 +199,9 @@ class IntegralGenerator(object):
             ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
             ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
             ufl.geometry.ReferenceNormal: "reference_facet_normals",
-            ufl.geometry.FacetOrientation: "facet_orientation"
+            ufl.geometry.FacetOrientation: "facet_orientation",
         }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
+        cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
 
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
@@ -203,7 +209,9 @@ class IntegralGenerator(object):
                 if mt is not None:
                     t = type(mt.terminal)
                     if t in ufl_geometry:
-                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
+                        cells[t].add(
+                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+                        )
 
         parts = []
         for i, cell_list in cells.items():
@@ -213,7 +221,10 @@ class IntegralGenerator(object):
         return parts
 
     def generate_element_tables(self):
-        """Generate static tables with precomputed element basisfunction values in quadrature points."""
+        """Generate static tables.
+
+        With precomputed element basis function values in quadrature points.
+        """
         parts = []
         tables = self.ir.unique_tables
         table_types = self.ir.unique_table_types
@@ -229,9 +240,13 @@ class IntegralGenerator(object):
             parts += self.declare_table(name, table)
 
         # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, [
-            "Precomputed values of basis functions and precomputations",
-            "FE* dimensions: [permutation][entities][points][dofs]"])
+        parts = L.commented_code_list(
+            parts,
+            [
+                "Precomputed values of basis functions and precomputations",
+                "FE* dimensions: [permutation][entities][points][dofs]",
+            ],
+        )
         return parts
 
     def declare_table(self, name, table):
@@ -280,34 +295,35 @@ class IntegralGenerator(object):
         return [L.create_nested_for_loops([iq], code)]
 
     def generate_piecewise_partition(self, quadrature_rule):
+        """Generate a piecewise partition."""
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "piecewise", None)
 
     def generate_varying_partition(self, quadrature_rule):
-
+        """Generate a varying partition."""
         # Get annotated graph of factorisation
         F = self.ir.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
 
     def generate_partition(self, symbol, F, mode, quadrature_rule):
-
+        """Generate a partition."""
         definitions = []
         intermediates = []
 
         for i, attr in F.nodes.items():
-            if attr['status'] != mode:
+            if attr["status"] != mode:
                 continue
-            v = attr['expression']
+            v = attr["expression"]
 
             # Generate code only if the expression is not already in cache
             if not self.get_var(quadrature_rule, v):
                 if v._ufl_is_literal_:
                     vaccess = L.ufl_to_lnodes(v)
-                elif (mt := attr.get('mt')):
-                    tabledata = attr.get('tr')
+                elif mt := attr.get("mt"):
+                    tabledata = attr.get("tr")
 
                     # Backend specific modified terminal translation
                     vaccess = self.backend.access.get(mt, tabledata, quadrature_rule)
@@ -335,11 +351,14 @@ class IntegralGenerator(object):
         return definitions, intermediates
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
+        """Generate a dofblock partition."""
         block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
         quadparts = []
-        blocks = [(blockmap, blockdata)
-                  for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions]
+        blocks = [
+            (blockmap, blockdata)
+            for blockmap, contributions in sorted(block_contributions.items())
+            for blockdata in contributions
+        ]
 
         block_groups = collections.defaultdict(list)
 
@@ -358,7 +377,8 @@ class IntegralGenerator(object):
         intermediates = []
         for blockmap in block_groups:
             block_quadparts, intermediate = self.generate_block_parts(
-                quadrature_rule, blockmap, block_groups[blockmap])
+                quadrature_rule, blockmap, block_groups[blockmap]
+            )
             intermediates += intermediate
 
             # Add computations
@@ -367,6 +387,7 @@ class IntegralGenerator(object):
         return quadparts, intermediates
 
     def get_arg_factors(self, blockdata, block_rank, quadrature_rule, iq, indices):
+        """Get arg factors."""
         arg_factors = []
         tables = []
         for i in range(block_rank):
@@ -388,15 +409,17 @@ class IntegralGenerator(object):
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor, arg_tables = self.backend.access.table_access(
-                    td, self.ir.entitytype, mt.restriction, iq, indices[i])
+                    td, self.ir.entitytype, mt.restriction, iq, indices[i]
+                )
 
             tables += arg_tables
             arg_factors.append(arg_factor)
 
         return arg_factors, tables
 
-    def generate_block_parts(self, quadrature_rule: QuadratureRule,
-                             blockmap: Tuple, blocklist: List[BlockDataT]):
+    def generate_block_parts(
+        self, quadrature_rule: QuadratureRule, blockmap: tuple, blocklist: list[BlockDataT]
+    ):
         """Generate and return code parts for a given block.
 
         Returns parts occurring before, inside, and after the quadrature
@@ -406,8 +429,8 @@ class IntegralGenerator(object):
         quadloop-independent blocks.
         """
         # The parts to return
-        quadparts: List[L.LNode] = []
-        intermediates: List[L.LNode] = []
+        quadparts: list[L.LNode] = []
+        intermediates: list[L.LNode] = []
         tables = []
         vars = []
 
@@ -419,7 +442,6 @@ class IntegralGenerator(object):
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
 
         for blockdata in blocklist:
-
             B_indices = []
             for i in range(block_rank):
                 table_ref = blockdata.ma_data[i].tabledata
@@ -429,7 +451,9 @@ class IntegralGenerator(object):
 
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
-                raise RuntimeError("Not expecting zero arguments to be left in dofblock generation.")
+                raise RuntimeError(
+                    "Not expecting zero arguments to be left in dofblock generation."
+                )
 
             if len(blockdata.factor_indices_comp_indices) > 1:
                 raise RuntimeError("Code generation for non-scalar integrals unsupported")
@@ -440,7 +464,7 @@ class IntegralGenerator(object):
             # Get factor expression
             F = self.ir.integrand[quadrature_rule]["factorization"]
 
-            v = F.nodes[factor_index]['expression']
+            v = F.nodes[factor_index]["expression"]
             f = self.get_var(quadrature_rule, v)
 
             # Quadrature weight was removed in representation, add it back now
@@ -476,7 +500,9 @@ class IntegralGenerator(object):
             assert not blockdata.transposed, "Not handled yet"
 
             # Fetch code to access modified arguments
-            arg_factors, table = self.get_arg_factors(blockdata, block_rank, quadrature_rule, iq, B_indices)
+            arg_factors, table = self.get_arg_factors(
+                blockdata, block_rank, quadrature_rule, iq, B_indices
+            )
             tables += table
 
             # Define B_rhs = fw * arg_factors
@@ -500,7 +526,7 @@ class IntegralGenerator(object):
         for indices in rhs_expressions:
             keep[indices] = rhs_expressions[indices]
 
-        body: List[L.LNode] = []
+        body: list[L.LNode] = []
 
         A = self.backend.symbols.element_tensor
         A_shape = self.ir.tensor_shape

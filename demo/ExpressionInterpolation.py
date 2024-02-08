@@ -14,9 +14,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# Defines an Expression which evaluates the several different functions at
-# a set of interpolation points
+"""Expression interpolation demo.
+
+Defines an Expression which evaluates the several different functions at
+a set of interpolation points.
+"""
 
 import basix
 import basix.ufl
@@ -24,12 +26,12 @@ from ufl import Coefficient, FunctionSpace, Mesh, grad
 
 # Define mesh
 cell = "triangle"
-v_el = basix.ufl.element("Lagrange", cell, 1, shape=(2, ))
+v_el = basix.ufl.element("Lagrange", cell, 1, shape=(2,))
 mesh = Mesh(v_el)
 
 # Define mixed function space
 el = basix.ufl.element("P", cell, 2)
-el_int = basix.ufl.element("Discontinuous Lagrange", cell, 1, shape=(2, ))
+el_int = basix.ufl.element("Discontinuous Lagrange", cell, 1, shape=(2,))
 me = basix.ufl.mixed_element([el, el_int])
 V = FunctionSpace(mesh, me)
 u = Coefficient(V)
@@ -55,9 +57,10 @@ quadrature_points, _ = basix.quadrature.make_quadrature(b_cell, q_degree, rule=b
 
 # Get interpolation points for output space
 family = basix.finite_element.string_to_family("Lagrange", cell)
-b_element = basix.create_element(family, b_cell, 4, basix.LagrangeVariant.gll_warped, discontinuous=True)
+b_element = basix.create_element(
+    family, b_cell, 4, basix.LagrangeVariant.gll_warped, discontinuous=True
+)
 interpolation_points = b_element.points
 
 # Create expressions that can be used for interpolation
-expressions = [(du0, interpolation_points), (du1, interpolation_points),
-               (powq, quadrature_points)]
+expressions = [(du0, interpolation_points), (du1, interpolation_points), (powq, quadrature_points)]

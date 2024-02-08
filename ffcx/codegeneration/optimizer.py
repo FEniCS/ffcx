@@ -1,22 +1,20 @@
-from typing import List, Union
-import ffcx.codegeneration.lnodes as L
+"""Optimizer."""
 from collections import defaultdict
+from typing import Union
+
+import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
 
 
-def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNode]:
+def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNode]:
     """Optimize code.
 
-    Parameters
-    ----------
-    code : list of LNodes
-        List of LNodes to optimize.
+    Args:
+        code: List of LNodes to optimize.
+        quadrature_rule: TODO.
 
-    Returns
-    -------
-    list of LNodes
+    Returns:
         Optimized list of LNodes.
-
     """
     # Fuse sections with the same name and same annotations
     code = fuse_sections(code, "Coefficient")
@@ -32,26 +30,22 @@ def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNo
     return code
 
 
-def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
+def fuse_sections(code: list[L.LNode], name) -> list[L.LNode]:
     """Fuse sections with the same name.
 
-    Parameters
-    ----------
-    code : list of LNodes
-        List of LNodes to fuse.
+    Args:
+        code: List of LNodes to fuse.
+        name: TODO.
 
-    Returns
-    -------
-    list of LNodes
+    Returns:
         Fused list of LNodes.
-
     """
-    statements: List[L.LNode] = []
-    indices: List[int] = []
-    input: List[L.Symbol] = []
-    output: List[L.Symbol] = []
-    declarations: List[L.Declaration] = []
-    annotations: List[L.Annotation] = []
+    statements: list[L.LNode] = []
+    indices: list[int] = []
+    input: list[L.Symbol] = []
+    output: list[L.Symbol] = []
+    declarations: list[L.Declaration] = []
+    annotations: list[L.Annotation] = []
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
@@ -83,16 +77,11 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
 def fuse_loops(code: L.Section) -> L.Section:
     """Fuse loops with the same range and same annotations.
 
-    Parameters
-    ----------
-    code : list of LNodes
-        List of LNodes to fuse.
+    Args:
+        code: List of LNodes to fuse.
 
-    Returns
-    -------
-    list of LNodes
+    Returns:
         Fused list of LNodes.
-
     """
     loops = defaultdict(list)
     output_code = []
@@ -109,19 +98,14 @@ def fuse_loops(code: L.Section) -> L.Section:
     return L.Section(code.name, output_code, code.declarations, code.input, code.output)
 
 
-def get_statements(statement: Union[L.Statement, L.StatementList]) -> List[L.LNode]:
+def get_statements(statement: Union[L.Statement, L.StatementList]) -> list[L.LNode]:
     """Get statements from a statement list.
 
-    Parameters
-    ----------
-    statement : LNode
-        Statement list.
+    Args:
+        statement: Statement list.
 
-    Returns
-    -------
-    list of LNodes
+    Returns:
         List of statements.
-
     """
     if isinstance(statement, L.StatementList):
         return [statement.expr for statement in statement.statements]
@@ -132,18 +116,12 @@ def get_statements(statement: Union[L.Statement, L.StatementList]) -> List[L.LNo
 def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
     """Check if a statement depends on a given index.
 
-    Parameters
-    ----------
-    statement : LNode
-        Statement to check.
-    index : L.Symbol
-        Index to check.
+    Args:
+        statement: Statement to check.
+        index: Index to check.
 
-    Returns
-    -------
-    bool
+    Returns:
         True if statement depends on index, False otherwise.
-
     """
     if isinstance(statement, L.ArrayAccess):
         if index in statement.indices:
@@ -166,16 +144,12 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
 def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     """Perform loop invariant code motion.
 
-    Parameters
-    ----------
-    code : list of LNodes
-        List of LNodes to optimize.
+    Args:
+        section: List of LNodes to optimize.
+        quadrature_rule: TODO.
 
-    Returns
-    -------
-    list of LNodes
+    Returns:
         Optimized list of LNodes.
-
     """
     assert L.Annotation.licm in section.annotations
 
@@ -203,7 +177,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             assert isinstance(lhs, L.ArrayAccess)  # Expecting ArrayAccess
             expressions[lhs].append(rhs)
 
-    pre_loop: List[L.LNode] = []
+    pre_loop: list[L.LNode] = []
     for lhs, rhs in expressions.items():
         for r in rhs:
             hoist_candidates = []
@@ -211,7 +185,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 dependency = check_dependency(arg, inner_loop.index)
                 if not dependency:
                     hoist_candidates.append(arg)
-            if (len(hoist_candidates) > 1):
+            if len(hoist_candidates) > 1:
                 # create new temp
                 name = f"temp_{counter}"
                 counter += 1
@@ -223,8 +197,12 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 # create code for hoisted term
                 size = outer_loop.end.value - outer_loop.begin.value
                 pre_loop.append(L.ArrayDecl(temp, size, [0]))
-                body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates))
-                pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
+                body = L.Assign(
+                    L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates)
+                )
+                pre_loop.append(
+                    L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body])
+                )
 
     section.statements = pre_loop + section.statements
 

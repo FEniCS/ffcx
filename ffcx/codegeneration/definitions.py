@@ -6,14 +6,14 @@
 """FFCx/UFC specific variable definitions."""
 
 import logging
+from typing import Union
 
-import ffcx.codegeneration.lnodes as L
-from ffcx.ir.elementtables import UniqueTableReferenceT
-from ffcx.ir.representationutils import QuadratureRule
-from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
-from typing import List, Union
 import ufl
 
+import ffcx.codegeneration.lnodes as L
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
+from ffcx.ir.elementtables import UniqueTableReferenceT
+from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
 
@@ -47,10 +47,11 @@ def create_dof_index(tabledata, dof_index_symbol):
     return L.MultiIndex(indices, ranges)
 
 
-class FFCXBackendDefinitions(object):
+class FFCXBackendDefinitions:
     """FFCx specific code definitions."""
 
     def __init__(self, ir, access, options):
+        """Initialise."""
         # Store ir and options
         self.integral_type = ir.integral_type
         self.entitytype = ir.entitytype
@@ -61,31 +62,38 @@ class FFCXBackendDefinitions(object):
         self.ir = ir
 
         # called, depending on the first argument type.
-        self.handler_lookup = {ufl.coefficient.Coefficient: self.coefficient,
-                               ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
-                               ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
-                               ufl.constant.Constant: self.pass_through,
-                               ufl.geometry.CellVertices: self.pass_through,
-                               ufl.geometry.FacetEdgeVectors: self.pass_through,
-                               ufl.geometry.CellEdgeVectors: self.pass_through,
-                               ufl.geometry.CellFacetJacobian: self.pass_through,
-                               ufl.geometry.ReferenceCellVolume: self.pass_through,
-                               ufl.geometry.ReferenceFacetVolume: self.pass_through,
-                               ufl.geometry.ReferenceCellEdgeVectors: self.pass_through,
-                               ufl.geometry.ReferenceFacetEdgeVectors: self.pass_through,
-                               ufl.geometry.ReferenceNormal: self.pass_through,
-                               ufl.geometry.CellOrientation: self.pass_through,
-                               ufl.geometry.FacetOrientation: self.pass_through}
+        self.handler_lookup = {
+            ufl.coefficient.Coefficient: self.coefficient,
+            ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
+            ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
+            ufl.constant.Constant: self.pass_through,
+            ufl.geometry.CellVertices: self.pass_through,
+            ufl.geometry.FacetEdgeVectors: self.pass_through,
+            ufl.geometry.CellEdgeVectors: self.pass_through,
+            ufl.geometry.CellFacetJacobian: self.pass_through,
+            ufl.geometry.ReferenceCellVolume: self.pass_through,
+            ufl.geometry.ReferenceFacetVolume: self.pass_through,
+            ufl.geometry.ReferenceCellEdgeVectors: self.pass_through,
+            ufl.geometry.ReferenceFacetEdgeVectors: self.pass_through,
+            ufl.geometry.ReferenceNormal: self.pass_through,
+            ufl.geometry.CellOrientation: self.pass_through,
+            ufl.geometry.FacetOrientation: self.pass_through,
+        }
 
-    def get(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-            quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+    def get(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for a terminal."""
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
         ttype = type(terminal)
 
         # Look for parent class of ttype or direct handler
-        while ttype not in self.handler_lookup and ttype.__bases__:  # noqa: E721
+        while ttype not in self.handler_lookup and ttype.__bases__:
             ttype = ttype.__bases__[0]
 
         # Get the handler from the lookup, or None if not found
@@ -97,8 +105,13 @@ class FFCXBackendDefinitions(object):
         # Call the handler
         return handler(mt, tabledata, quadrature_rule, access)
 
-    def coefficient(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                    quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+    def coefficient(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -129,9 +142,11 @@ class FFCXBackendDefinitions(object):
 
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
-        dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(mt.terminal, (ic.global_index) * bs + begin)
+        dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
+            mt.terminal, (ic.global_index) * bs + begin
+        )
 
-        declaration: List[L.Declaration] = [L.VariableDecl(access, 0.0)]
+        declaration: list[L.Declaration] = [L.VariableDecl(access, 0.0)]
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
@@ -146,8 +161,13 @@ class FFCXBackendDefinitions(object):
 
         return L.Section(name, code, declaration, input, output, annotations)
 
-    def _define_coordinate_dofs_lincomb(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                                        quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+    def _define_coordinate_dofs_lincomb(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -196,8 +216,13 @@ class FFCXBackendDefinitions(object):
 
         return L.Section(name, code, declaration, input, output, annotations)
 
-    def spatial_coordinate(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                           quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+    def spatial_coordinate(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -217,12 +242,22 @@ class FFCXBackendDefinitions(object):
         else:
             return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def jacobian(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                 quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+    def jacobian(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def pass_through(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-                     quadrature_rule: QuadratureRule, access: L.Symbol) -> Union[L.Section, List]:
+    def pass_through(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for pass through terminals."""
         return []

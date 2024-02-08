@@ -79,18 +79,22 @@ def _print_timing(stage: int, timing: float):
     logger.info(f"Compiler stage {stage} finished in {timing:.4f} seconds.")
 
 
-def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
-                        object_names: typing.Dict = {},
-                        prefix: typing.Optional[str] = None,
-                        options: typing.Dict = {},
-                        visualise: bool = False):
+def compile_ufl_objects(
+    ufl_objects: list[typing.Any],
+    object_names: dict = {},
+    prefix: typing.Optional[str] = None,
+    options: dict = {},
+    visualise: bool = False,
+):
     """Generate UFC code for a given UFL objects.
 
-    Options
-    -------
-    @param ufl_objects:
-        Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
-
+    Args:
+        ufl_objects: Objects to be compiled. Accepts elements, forms,
+          integrals or coordinate mappings. object_names: Object names
+        object_names: TODO.
+        prefix: Prefix
+        options: Options
+        visualise: Toggle visualisation
     """
     # Stage 1: analysis
     cpu_time = time()

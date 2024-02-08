@@ -3,27 +3,33 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Naming."""
 
 import hashlib
 import typing
 
+import basix.ufl
 import numpy as np
 import numpy.typing as npt
-
-import basix.ufl
-import ffcx
-import ffcx.codegeneration
 import ufl
 
+import ffcx
+import ffcx.codegeneration
 
-def compute_signature(ufl_objects: typing.List[
-    typing.Union[ufl.Form, basix.ufl._ElementBase,
-                 typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
+
+def compute_signature(
+    ufl_objects: list[
+        typing.Union[
+            ufl.Form,
+            basix.ufl._ElementBase,
+            tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]],
+        ]
+    ],
+    tag: str,
+) -> str:
     """Compute the signature hash.
 
-    Based on the UFL type of the objects and an additional optional
-    'tag'.
-
+    Based on the UFL type of the objects and an additional optional 'tag'.
     """
     object_signature = ""
     for ufl_object in ufl_objects:
@@ -48,7 +54,7 @@ def compute_signature(ufl_objects: typing.List[
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains: typing.List[ufl.Mesh] = []
+            domains: list[ufl.Mesh] = []
             for coeff in coeffs:
                 domains.append(*coeff.ufl_domains())
             for arg in args:
@@ -70,34 +76,45 @@ def compute_signature(ufl_objects: typing.List[
             raise RuntimeError(f"Unknown ufl object type {ufl_object.__class__.__name__}")
 
     # Build combined signature
-    signatures = [object_signature, str(ffcx.__version__), ffcx.codegeneration.get_signature(), kind, tag]
+    signatures = [
+        object_signature,
+        str(ffcx.__version__),
+        ffcx.codegeneration.get_signature(),
+        kind,
+        tag,
+    ]
     string = ";".join(signatures)
-    return hashlib.sha1(string.encode('utf-8')).hexdigest()
+    return hashlib.sha1(string.encode("utf-8")).hexdigest()
 
 
 def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
+    """Get integral name."""
     sig = compute_signature([original_form], str((prefix, integral_type, form_id, subdomain_id)))
     return f"integral_{sig}"
 
 
 def form_name(original_form, form_id, prefix):
+    """Get form name."""
     sig = compute_signature([original_form], str((prefix, form_id)))
     return f"form_{sig}"
 
 
 def finite_element_name(ufl_element, prefix):
+    """Get finite element name."""
     assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"element_{sig}"
 
 
 def dofmap_name(ufl_element, prefix):
+    """Get DOF map name."""
     assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"dofmap_{sig}"
 
 
 def expression_name(expression, prefix):
+    """Get expression name."""
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)
     return f"expression_{sig}"

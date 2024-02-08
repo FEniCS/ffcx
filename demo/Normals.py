@@ -14,17 +14,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# This example demonstrates how to use the facet normals
-# Merely project the normal onto a vector section.
+"""Normals demo.
+
+This example demonstrates how to use the facet normals
+Merely project the normal onto a vector section.
+"""
+
 import basix.ufl
-from ufl import (FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 inner, ds, triangle)
+from ufl import FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction, ds, inner, triangle
 
 cell = triangle
 
-element = basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, ))
-domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, )))
+element = basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2,))
+domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2,)))
 space = FunctionSpace(domain, element)
 
 n = FacetNormal(domain)
