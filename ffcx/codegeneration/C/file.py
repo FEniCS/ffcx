@@ -31,9 +31,7 @@ def generator(options):
     extra_c_includes = []
     if np.issubdtype(options["scalar_type"], np.complexfloating):
         extra_c_includes += ["complex.h"]
-    d["extra_c_includes"] = "\n".join(
-        f"#include <{header}>" for header in extra_c_includes
-    )
+    d["extra_c_includes"] = "\n".join(f"#include <{header}>" for header in extra_c_includes)
 
     # Format declaration code
     code_pre = (

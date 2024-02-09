@@ -20,11 +20,22 @@ Simple example of a form defined over exterior and interior facets.
 """
 
 import basix.ufl
-from ufl import (FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 avg, ds, dS, grad, inner, jump)
+from ufl import (
+    FacetNormal,
+    FunctionSpace,
+    Mesh,
+    TestFunction,
+    TrialFunction,
+    avg,
+    dS,
+    ds,
+    grad,
+    inner,
+    jump,
+)
 
 element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
 space = FunctionSpace(domain, element)
 
 u = TrialFunction(space)
@@ -32,7 +43,9 @@ v = TestFunction(space)
 
 n = FacetNormal(domain)
 
-a = inner(u, v) * ds \
-    + inner(u('+'), v('-')) * dS \
-    + inner(jump(u, n), avg(grad(v))) * dS \
+a = (
+    inner(u, v) * ds
+    + inner(u("+"), v("-")) * dS
+    + inner(jump(u, n), avg(grad(v))) * dS
     + inner(avg(grad(u)), jump(v, n)) * dS
+)

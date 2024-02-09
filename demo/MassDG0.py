@@ -23,7 +23,7 @@ import basix.ufl
 from ufl import FunctionSpace, Mesh, TestFunction, TrialFunction, dx, inner
 
 element = basix.ufl.element("DG", "tetrahedron", 0)
-domain = Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3, )))
+domain = Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
 space = FunctionSpace(domain, element)
 
 v = TestFunction(space)

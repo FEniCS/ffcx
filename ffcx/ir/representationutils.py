@@ -10,10 +10,9 @@ import itertools
 import logging
 
 import numpy as np
-
 import ufl
-from ffcx.element_interface import (create_quadrature, map_facet_points,
-                                    reference_cell_vertices)
+
+from ffcx.element_interface import create_quadrature, map_facet_points, reference_cell_vertices
 
 logger = logging.getLogger("ffcx")
 
@@ -50,7 +49,9 @@ class QuadratureRule:
         return self.hash_obj.hexdigest()[-3:]
 
 
-def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elements, use_tensor_product=False):
+def create_quadrature_points_and_weights(
+    integral_type, cell, degree, rule, elements, use_tensor_product=False
+):
     """Create quadrature rule and return points and weights."""
     pts = None
     wts = None
@@ -60,20 +61,16 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule, elem
         if cell.cellname() in ["quadrilateral", "hexahedron"] and use_tensor_product:
             if cell.cellname() == "quadrilateral":
                 tensor_factors = [
-                    create_quadrature("interval", degree, rule, elements)
-                    for _ in range(2)]
+                    create_quadrature("interval", degree, rule, elements) for _ in range(2)
+                ]
             elif cell.cellname() == "hexahedron":
                 tensor_factors = [
-                    create_quadrature("interval", degree, rule, elements)
-                    for _ in range(3)]
-            pts = np.array([
-                tuple(i[0] for i in p)
-                for p in itertools.product(*[f[0] for f in tensor_factors])
-            ])
-            wts = np.array([
-                np.prod(p)
-                for p in itertools.product(*[f[1] for f in tensor_factors])
-            ])
+                    create_quadrature("interval", degree, rule, elements) for _ in range(3)
+                ]
+            pts = np.array(
+                [tuple(i[0] for i in p) for p in itertools.product(*[f[0] for f in tensor_factors])]
+            )
+            wts = np.array([np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors])])
         else:
             pts, wts = create_quadrature(cell.cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:

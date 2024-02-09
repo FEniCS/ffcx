@@ -17,10 +17,10 @@
 """Trace element demo."""
 
 import basix.ufl
-from ufl import FunctionSpace, Mesh, TestFunction, avg, ds, dS
+from ufl import FunctionSpace, Mesh, TestFunction, avg, dS, ds
 
 element = basix.ufl.element("HDiv Trace", "triangle", 0)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
 space = FunctionSpace(domain, element)
 v = TestFunction(space)
 L = v * ds + avg(v) * dS

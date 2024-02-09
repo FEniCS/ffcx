@@ -7,8 +7,9 @@
 
 import logging
 
-import ffcx.codegeneration.lnodes as L
 import ufl
+
+import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
@@ -60,11 +61,10 @@ def format_mt_name(basename, mt):
     return access
 
 
-class FFCXBackendSymbols(object):
+class FFCXBackendSymbols:
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, coefficient_numbering, coefficient_offsets,
-                 original_constant_offsets):
+    def __init__(self, coefficient_numbering, coefficient_offsets, original_constant_offsets):
         """Initialise."""
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
@@ -120,8 +120,9 @@ class FFCXBackendSymbols(object):
         """Table of quadrature weights."""
         key = f"weights_{quadrature_rule.id()}"
         if key not in self.quadrature_weight_tables:
-            self.quadrature_weight_tables[key] = L.Symbol(f"weights_{quadrature_rule.id()}",
-                                                          dtype=L.DataType.REAL)
+            self.quadrature_weight_tables[key] = L.Symbol(
+                f"weights_{quadrature_rule.id()}", dtype=L.DataType.REAL
+            )
         return self.quadrature_weight_tables[key]
 
     def points_table(self, quadrature_rule):
@@ -151,8 +152,9 @@ class FFCXBackendSymbols(object):
         w = self.coefficients
         return w[offset + dof_index]
 
-    def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
-                                       block_size, dof_offset):
+    def coefficient_dof_access_blocked(
+        self, coefficient: ufl.Coefficient, index, block_size, dof_offset
+    ):
         """Blocked coefficient DOF access."""
         coeff_offset = self.coefficient_offsets[coefficient]
         w = self.coefficients
@@ -164,7 +166,7 @@ class FFCXBackendSymbols(object):
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
-        return L.Symbol(format_mt_name("w%d" % (c, ), mt), dtype=L.DataType.SCALAR)
+        return L.Symbol(format_mt_name("w%d" % (c,), mt), dtype=L.DataType.SCALAR)
 
     def constant_index_access(self, constant, index):
         """Constant index access."""
@@ -196,6 +198,5 @@ class FFCXBackendSymbols(object):
 
         # Return direct access to element table, reusing symbol if possible
         if tabledata.name not in self.element_tables:
-            self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
-                                                           dtype=L.DataType.REAL)
+            self.element_tables[tabledata.name] = L.Symbol(tabledata.name, dtype=L.DataType.REAL)
         return self.element_tables[tabledata.name][qp][entity][iq]

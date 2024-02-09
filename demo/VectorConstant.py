@@ -21,10 +21,19 @@ Poisson's equation using bilinear elements on bilinear mesh geometry.
 """
 
 import basix.ufl
-from ufl import (Coefficient, Constant, FunctionSpace, Mesh, TestFunction,
-                 TrialFunction, dx, grad, inner)
+from ufl import (
+    Coefficient,
+    Constant,
+    FunctionSpace,
+    Mesh,
+    TestFunction,
+    TrialFunction,
+    dx,
+    grad,
+    inner,
+)
 
-coords = basix.ufl.element("P", "triangle", 2, shape=(2, ))
+coords = basix.ufl.element("P", "triangle", 2, shape=(2,))
 mesh = Mesh(coords)
 dx = dx(mesh)
 
@@ -38,5 +47,5 @@ f = Coefficient(space)
 L = inner(f, v) * dx
 
 mu = Constant(mesh, shape=(3,))
-theta = - (mu[1] - 2) / mu[0] - (2 * (2 * mu[0] - 2) * (mu[0] - 1)) / (mu[0] * (mu[1] - 2))
+theta = -(mu[1] - 2) / mu[0] - (2 * (2 * mu[0] - 2) * (mu[0] - 1)) / (mu[0] * (mu[1] - 2))
 a = theta * inner(grad(u), grad(v)) * dx

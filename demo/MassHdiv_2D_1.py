@@ -20,7 +20,7 @@ import basix.ufl
 from ufl import FunctionSpace, Mesh, TestFunction, TrialFunction, dx, inner
 
 element = basix.ufl.element("BDM", "triangle", 1)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
 space = FunctionSpace(domain, element)
 
 v = TestFunction(space)

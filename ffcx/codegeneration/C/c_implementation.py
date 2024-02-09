@@ -142,8 +142,9 @@ math_table = {
 }
 
 
-class CFormatter(object):
+class CFormatter:
     """C formatter."""
+
     scalar_type: np.dtype
     real_type: np.dtype
 
