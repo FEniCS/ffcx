@@ -48,7 +48,7 @@ class FormIR(typing.NamedTuple):
     num_constants: int
     name_from_uflfile: str
     function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant,
-                           typing.Tuple[int]]]
+                           tuple[int]]]
     original_coefficient_position: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
@@ -174,7 +174,7 @@ class ExpressionIR(typing.NamedTuple):
     constant_names: list[str]
     needs_facet_permutations: bool
     function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant,
-                          typing.Tuple[int]]]
+                          tuple[int]]]
     name_from_uflfile: str
     original_coefficient_positions: list[int]
 

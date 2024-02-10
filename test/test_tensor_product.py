@@ -26,18 +26,8 @@ def cell_to_gdim(cell_type):
 def create_tensor_product_element(cell_type, degree, variant, shape=None):
     """Create tensor product element."""
     family = basix.ElementFamily.P
-<<<<<<< HEAD
-    ref = basix.create_element(family, cell_type, degree, variant)
-    factors = ref.get_tensor_product_representation()[0]
-    perm = factors[1]
-    dof_ordering = np.argsort(perm)
-    element = basix.create_element(family, cell_type, degree, variant,
-                                   dof_ordering=dof_ordering)
-    uflelement = basix.ufl._BasixElement(element)
-=======
     element = basix.create_tp_element(family, cell_type, degree, variant)
-    uflelement = basix.ufl.wrap_element(element, gdim=gdim)
->>>>>>> main
+    uflelement = basix.ufl.wrap_element(element)
     if shape is None:
         return uflelement
     else:
