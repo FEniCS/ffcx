@@ -107,7 +107,7 @@ def generator(ir, options):
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated (also for ufcx_form)
     for name, (
-        element, dofmap, cmap_family, cmap_degree, value_shape,
+        element, dofmap, cmap_family, cmap_degree, cmap_celltype, cmap_variant, value_shape,
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
         code += ["{"]
