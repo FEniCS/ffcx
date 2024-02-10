@@ -47,8 +47,9 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant,
-                           tuple[int]]]
+    function_spaces: dict[
+        str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, tuple[int]]
+    ]
     original_coefficient_position: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
@@ -173,8 +174,9 @@ class ExpressionIR(typing.NamedTuple):
     coefficient_names: list[str]
     constant_names: list[str]
     needs_facet_permutations: bool
-    function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant,
-                          tuple[int]]]
+    function_spaces: dict[
+        str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, tuple[int]]
+    ]
     name_from_uflfile: str
     original_coefficient_positions: list[int]
 
@@ -790,8 +792,15 @@ def _compute_expression_ir(
         family = cmap.family_name
         degree = cmap.degree
         value_shape = space.value_shape
-        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree,
-                    cmap.cell_type, cmap.lagrange_variant, value_shape)
+        fs[name] = (
+            finite_element_names[el],
+            dofmap_names[el],
+            family,
+            degree,
+            cmap.cell_type,
+            cmap.lagrange_variant,
+            value_shape,
+        )
 
     expression_name = object_names.get(id(original_expression), index)
 

@@ -139,7 +139,7 @@ def generator(ir, options):
         cmap_degree,
         cmap_celltype,
         cmap_variant,
-        value_shape
+        value_shape,
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
@@ -153,9 +153,11 @@ def generator(ir, options):
         if len(value_shape) == 0:
             code += [".value_shape = NULL"]
         else:
-            vs_code += [f"int value_shape_{ir.name}_{name}[{len(value_shape)}] = {{",
-                        "  " + ", ".join([f"{i}" for i in value_shape]),
-                        "};"]
+            vs_code += [
+                f"int value_shape_{ir.name}_{name}[{len(value_shape)}] = {{",
+                "  " + ", ".join([f"{i}" for i in value_shape]),
+                "};",
+            ]
             code += [f".value_shape = value_shape_{ir.name}_{name}"]
         code += ["};"]
 
