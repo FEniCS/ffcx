@@ -21,6 +21,7 @@ import numpy as np
 
 import ffcx
 import ffcx.naming
+from ffcx.codegeneration.C.file_template import libraries as _libraries
 
 logger = logging.getLogger("ffcx")
 root_logger = logging.getLogger()
@@ -372,6 +373,8 @@ def _compile_objects(
 ):
     import ffcx.compiler
 
+    libraries = _libraries + cffi_libraries if cffi_libraries is not None else _libraries
+
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
     _, code_body = ffcx.compiler.compile_ufl_objects(
@@ -379,13 +382,15 @@ def _compile_objects(
     )
 
     ffibuilder = cffi.FFI()
+
     ffibuilder.set_source(
         module_name,
         code_body,
         include_dirs=[ffcx.codegeneration.get_include_path()],
         extra_compile_args=cffi_extra_compile_args,
-        libraries=cffi_libraries,
+        libraries=libraries,
     )
+
     ffibuilder.cdef(decl)
 
     c_filename = cache_dir.joinpath(module_name + ".c")

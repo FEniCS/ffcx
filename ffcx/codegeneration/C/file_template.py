@@ -43,4 +43,6 @@ implementation_pre = """
 
 """
 
+libraries = ["m"]
+
 implementation_post = ""
