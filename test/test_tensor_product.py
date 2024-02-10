@@ -25,14 +25,13 @@ def cell_to_gdim(cell_type):
 
 def create_tensor_product_element(cell_type, degree, variant, shape=None):
     """Create tensor product element."""
-    gdim = cell_to_gdim(cell_type)
     family = basix.ElementFamily.P
     element = basix.create_tp_element(family, cell_type, degree, variant)
-    uflelement = basix.ufl.wrap_element(element, gdim=gdim)
+    uflelement = basix.ufl.wrap_element(element)
     if shape is None:
         return uflelement
     else:
-        return basix.ufl.blocked_element(uflelement, shape=shape, gdim=gdim)
+        return basix.ufl.blocked_element(uflelement, shape=shape)
 
 
 def generate_kernel(forms, dtype, options):

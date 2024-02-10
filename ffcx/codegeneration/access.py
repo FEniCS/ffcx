@@ -293,10 +293,10 @@ class FFCXBackendAccess:
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape == (gdim,)
+        assert coordinate_element.reference_value_shape == (gdim,)
         (ufl_scalar_element,) = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
-        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
+        assert scalar_element.reference_value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
         num_scalar_dofs = scalar_element.dim
@@ -327,10 +327,10 @@ class FFCXBackendAccess:
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape == (gdim,)
+        assert coordinate_element.reference_value_shape == (gdim,)
         (ufl_scalar_element,) = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
-        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
+        assert scalar_element.reference_value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
         num_scalar_dofs = scalar_element.dim
@@ -367,10 +367,10 @@ class FFCXBackendAccess:
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape == (gdim,)
+        assert coordinate_element.reference_value_shape == (gdim,)
         (ufl_scalar_element,) = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
-        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
+        assert scalar_element.reference_value_size == 1 and scalar_element.block_size == 1
 
         scalar_element = ufl_scalar_element
         num_scalar_dofs = scalar_element.dim

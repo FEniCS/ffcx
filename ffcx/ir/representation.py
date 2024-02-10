@@ -47,7 +47,9 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    function_spaces: dict[
+        str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, tuple[int]]
+    ]
     original_coefficient_position: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
@@ -90,9 +92,7 @@ class ElementIR(typing.NamedTuple):
     signature: str
     cell_shape: str
     topological_dimension: int
-    geometric_dimension: int
     space_dimension: int
-    value_shape: tuple[int, ...]
     reference_value_shape: tuple[int, ...]
     degree: int
     num_sub_elements: int
@@ -174,7 +174,9 @@ class ExpressionIR(typing.NamedTuple):
     coefficient_names: list[str]
     constant_names: list[str]
     needs_facet_permutations: bool
-    function_spaces: dict[str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant]]
+    function_spaces: dict[
+        str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, tuple[int]]
+    ]
     name_from_uflfile: str
     original_coefficient_positions: list[int]
 
@@ -289,7 +291,6 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["signature"] = repr(element)
     ir["cell_shape"] = element.cell_type.name
     ir["topological_dimension"] = cell.topological_dimension()
-    ir["geometric_dimension"] = cell.geometric_dimension()
     ir["space_dimension"] = element.dim + element.num_global_support_dofs
     ir["element_type"] = element.ufcx_element_type
     ir["lagrange_variant"] = element.lagrange_variant
@@ -298,7 +299,6 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["basix_cell"] = element.cell_type
     ir["discontinuous"] = element.discontinuous
     ir["degree"] = element.degree
-    ir["value_shape"] = element.value_shape
     ir["reference_value_shape"] = element.reference_value_shape
 
     ir["num_sub_elements"] = element.num_sub_elements
@@ -662,12 +662,15 @@ def _compute_form_ir(
         if not str(name).isidentifier():
             raise ValueError(f'Function name "{name}" must be a valid object identifier.')
         el = function.ufl_function_space().ufl_element()
-        cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        space = function.ufl_function_space()
+        domain = space.ufl_domain()
+        cmap = domain.ufl_coordinate_element()
         # Default point spacing for CoordinateElement is equispaced
         if not isinstance(cmap, basix.ufl._ElementBase) and cmap.variant() is None:
             cmap._sub_element._variant = "equispaced"
         family = cmap.family_name
         degree = cmap.degree
+        value_shape = space.value_shape
         fs[name] = (
             finite_element_names[el],
             dofmap_names[el],
@@ -675,6 +678,7 @@ def _compute_form_ir(
             degree,
             cmap.cell_type,
             cmap.lagrange_variant,
+            value_shape,
         )
 
     form_name = object_names.get(id(form_data.original_form), form_id)
@@ -782,10 +786,21 @@ def _compute_expression_ir(
         if not str(name).isidentifier():
             raise ValueError(f'Function name "{name}" must be a valid object identifier.')
         el = function.ufl_function_space().ufl_element()
-        cmap = function.ufl_function_space().ufl_domain().ufl_coordinate_element()
+        space = function.ufl_function_space()
+        domain = space.ufl_domain()
+        cmap = domain.ufl_coordinate_element()
         family = cmap.family_name
         degree = cmap.degree
-        fs[name] = (finite_element_names[el], dofmap_names[el], family, degree)
+        value_shape = space.value_shape
+        fs[name] = (
+            finite_element_names[el],
+            dofmap_names[el],
+            family,
+            degree,
+            cmap.cell_type,
+            cmap.lagrange_variant,
+            value_shape,
+        )
 
     expression_name = object_names.get(id(original_expression), index)
 

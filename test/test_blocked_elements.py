@@ -19,10 +19,7 @@ def test_finite_element(compile_args):
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 2
-    assert ufcx_element.geometric_dimension == 2
     assert ufcx_element.space_dimension == 3
-    assert ufcx_element.value_rank == 0
-    assert ufcx_element.value_size == 1
     assert ufcx_element.reference_value_rank == 0
     assert ufcx_element.reference_value_size == 1
     assert ufcx_element.block_size == 1
@@ -48,11 +45,7 @@ def test_vector_element(compile_args):
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 2
-    assert ufcx_element.geometric_dimension == 2
     assert ufcx_element.space_dimension == 6
-    assert ufcx_element.value_rank == 1
-    assert ufcx_element.value_shape[0] == 2
-    assert ufcx_element.value_size == 2
     assert ufcx_element.reference_value_rank == 1
     assert ufcx_element.reference_value_shape[0] == 2
     assert ufcx_element.reference_value_size == 2
@@ -79,12 +72,7 @@ def test_tensor_element(compile_args):
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 2
-    assert ufcx_element.geometric_dimension == 2
     assert ufcx_element.space_dimension == 12
-    assert ufcx_element.value_rank == 2
-    assert ufcx_element.value_shape[0] == 2
-    assert ufcx_element.value_shape[1] == 2
-    assert ufcx_element.value_size == 4
     assert ufcx_element.reference_value_rank == 2
     assert ufcx_element.reference_value_shape[0] == 2
     assert ufcx_element.reference_value_shape[1] == 2
@@ -114,11 +102,7 @@ def test_vector_quadrature_element(compile_args):
     ufcx_element, ufcx_dofmap = jit_compiled_elements[0]
 
     assert ufcx_element.topological_dimension == 3
-    assert ufcx_element.geometric_dimension == 3
     assert ufcx_element.space_dimension == 12
-    assert ufcx_element.value_rank == 1
-    assert ufcx_element.value_shape[0] == 3
-    assert ufcx_element.value_size == 3
     assert ufcx_element.reference_value_rank == 1
     assert ufcx_element.reference_value_shape[0] == 3
     assert ufcx_element.reference_value_size == 3
