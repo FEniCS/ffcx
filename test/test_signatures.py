@@ -36,7 +36,7 @@ def generate_kernel(forms, scalar_type, options):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64, np.complex64, np.complex128])
-def test_numba_kernel(dtype):
+def test_numba_kernel_signature(dtype):
     try:
         import numba
     except ImportError:
