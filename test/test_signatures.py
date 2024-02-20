@@ -16,10 +16,8 @@ import ffcx.codegeneration.utils as utils
 
 def generate_kernel(forms, scalar_type, options):
     """Generate kernel for given forms."""
-    # use a different cache directory for each option
-    cache_dir = "./cache"
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms)
 
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms, cache_dir=cache_dir)
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
 
@@ -57,12 +55,12 @@ def test_numba_kernel_signature(dtype):
 
     # Generate and compile the kernel
     kernel, code, module = generate_kernel([a], dtype, {})
-    xtype = utils.dtype_to_scalar_dtype(dtype)
 
     # Generate the Numba signature
+    xtype = utils.dtype_to_scalar_dtype(dtype)
     signature = utils.numba_ufcx_kernel_signature(dtype, xtype)
 
-    # Get the signature from the kernel
+    # Get the signature from the compiled kernel
     ffi = cffi.FFI()
     args = ffi.typeof(kernel).args
 
