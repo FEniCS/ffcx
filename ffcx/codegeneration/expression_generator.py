@@ -64,6 +64,7 @@ class ExpressionGenerator:
         # Currently we only support circumradius
         ufl_geometry = {
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
+            ufl.geometry.ReferenceNormal: "reference_facet_normals",
         }
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
 
