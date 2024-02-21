@@ -72,7 +72,7 @@ def generator(ir, options):
     d["num_coefficients"] = len(ir.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = ir.points.shape[0]
-    d["topological_dimension"] = ir.points.shape[1]
+    d["point_dimension"] = ir.points.shape[1]
     d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
     d["geom_type"] = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
     d["np_scalar_type"] = np.dtype(options["scalar_type"]).name
