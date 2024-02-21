@@ -324,4 +324,3 @@ def test_facet_expression(compile_args):
 
         # Check that facet normal is pointing out of the cell
         assert np.dot(midpoint - coords[i], output) > 0
-

@@ -66,13 +66,16 @@ class ExpressionGenerator:
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
             ufl.geometry.ReferenceNormal: "reference_facet_normals",
         }
+        # Types that are only supported for facet expressions
+        facet_types = [ufl.geometry.ReferenceNormal,]
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
-
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
                 mt = attr.get("mt")
                 if mt is not None:
                     t = type(mt.terminal)
+                    if self.ir.entitytype == "cell" and t in facet_types:
+                        raise RuntimeError(f"Expressions for cells do not support {t}.")
                     if t in ufl_geometry:
                         cells[t].add(
                             ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
