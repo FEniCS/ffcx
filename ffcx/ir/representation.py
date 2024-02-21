@@ -830,7 +830,9 @@ def _compute_expression_ir(
         elif tdim-1 == pdim:
             ir["entitytype"] = "facet"
         else:
-            raise ValueError(f"Expression on domain with topological dimension {tdim} with points of dimension {pdim} not supported.")
+            raise ValueError(
+                f"Expression on domain with topological dimension {tdim}"
+                + f"with points of dimension {pdim} not supported.")
     else:
         # For spatially invariant expressions, all expressions are evaluated in the cell
         ir["entitytype"] = "cell"
