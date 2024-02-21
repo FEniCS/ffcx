@@ -68,7 +68,7 @@ def test_matvec(compile_args):
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
 
     # Prepare NumPy array of points attached to the expression
-    length = expression.num_points * expression.topological_dimension
+    length = expression.num_points * expression.point_dimension
     points_kernel = np.frombuffer(
         ffi.buffer(expression.points, length * ffi.sizeof("double")), np.double
     )
