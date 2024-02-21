@@ -93,7 +93,10 @@ def get_ffcx_table_values(
 
     if integral_type == "expression":
         # FFCx tables for expression are generated as interior cell points
-        integral_type = "cell"
+        if entitytype == "cell":
+            integral_type = "cell"
+        else:
+            integral_type = "exterior_facet"
 
     if avg in ("cell", "facet"):
         # Redefine points to compute average tables
@@ -337,7 +340,6 @@ def build_optimized_tables(
         # the dofmap offset may differ due to restriction.
 
         tdim = cell.topological_dimension()
-
         if integral_type == "interior_facet":
             if tdim == 1:
                 t = get_ffcx_table_values(
