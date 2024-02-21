@@ -825,14 +825,15 @@ def _compute_expression_ir(
 
     ir["integral_type"] = "expression"
     if cell is not None:
-        if (tdim:=cell.topological_dimension()) == (pdim:=points.shape[1]) :
+        if (tdim := cell.topological_dimension()) == (pdim := points.shape[1]):
             ir["entitytype"] = "cell"
-        elif tdim-1 == pdim:
+        elif tdim - 1 == pdim:
             ir["entitytype"] = "facet"
         else:
             raise ValueError(
                 f"Expression on domain with topological dimension {tdim}"
-                + f"with points of dimension {pdim} not supported.")
+                + f"with points of dimension {pdim} not supported."
+            )
     else:
         # For spatially invariant expressions, all expressions are evaluated in the cell
         ir["entitytype"] = "cell"

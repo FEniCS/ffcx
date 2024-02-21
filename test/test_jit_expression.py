@@ -296,12 +296,14 @@ def test_facet_expression(compile_args):
     consts = np.array([], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
-    tangents = np.array([coords[1] - coords[2],
-                         coords[2] - coords[0],
-                         coords[0] - coords[1]])
-    midpoints = np.array([coords[1] + (coords[2]-coords[1])/2,
-                          coords[0] + (coords[2]-coords[0])/2,
-                          coords[1] + (coords[1]-coords[0])/2])
+    tangents = np.array([coords[1] - coords[2], coords[2] - coords[0], coords[0] - coords[1]])
+    midpoints = np.array(
+        [
+            coords[1] + (coords[2] - coords[1]) / 2,
+            coords[0] + (coords[2] - coords[0]) / 2,
+            coords[1] + (coords[1] - coords[0]) / 2,
+        ]
+    )
     for i, (tangent, midpoint) in enumerate(zip(tangents, midpoints)):
         # normalize tangent
         tangent /= np.linalg.norm(tangent)

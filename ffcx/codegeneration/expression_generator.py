@@ -73,7 +73,9 @@ class ExpressionGenerator:
                 mt = attr.get("mt")
                 if mt is not None:
                     t = type(mt.terminal)
-                    if self.ir.entitytype == "cell" and issubclass(t, ufl.geometry.GeometricFacetQuantity):
+                    if self.ir.entitytype == "cell" and issubclass(
+                        t, ufl.geometry.GeometricFacetQuantity
+                    ):
                         raise RuntimeError(f"Expressions for cells do not support {t}.")
                     if t in ufl_geometry:
                         cells[t].add(
