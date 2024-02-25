@@ -54,8 +54,7 @@ def test_matvec(compile_args):
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
 
     # Coords storage XYZXYZXYZ
-    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
-                      [0.0, 1.0, 0.0]], dtype=xdtype)
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
     expression.tabulate_tensor_float64(
         ffi.cast(f"{c_type} *", A.ctypes.data),
         ffi.cast(f"{c_type} *", w.ctypes.data),
@@ -78,8 +77,7 @@ def test_matvec(compile_args):
 
     # Check the value shape attached to the expression
     value_shape = np.frombuffer(
-        ffi.buffer(expression.value_shape,
-                   expression.num_components * ffi.sizeof("int")), np.intc
+        ffi.buffer(expression.value_shape, expression.num_components * ffi.sizeof("int")), np.intc
     )
     assert np.allclose(expr.ufl_shape, value_shape)
 
@@ -163,8 +161,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
     e = basix.ufl.element("P", cell, 1)
     V = ufl.FunctionSpace(mesh, e)
     u = ufl.Coefficient(V)
-    expr = ufl.sym(ufl.as_tensor(
-        [[u, u.dx(0).dx(0), 0], [u.dx(1), u.dx(1), 0], [0, 0, 0]]))
+    expr = ufl.sym(ufl.as_tensor([[u, u.dx(0).dx(0), 0], [u.dx(1), u.dx(1), 0], [0, 0, 0]]))
 
     # Get vertices of cell
     # Coords storage XYZXYZXYZ
@@ -252,8 +249,7 @@ def test_grad_constant(compile_args):
     output = np.zeros(1, dtype=dtype)
 
     # Define constants
-    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
-                      [0.0, 1.0, 0.0]], dtype=dtype)
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=dtype)
     u_coeffs = np.array([], dtype=dtype)
     consts = np.array([3, 7], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
@@ -295,14 +291,12 @@ def test_facet_expression(compile_args):
     output = np.zeros(3, dtype=dtype)
 
     # Define constants
-    coords = np.array([[0.3, 0.6, 0.1], [1.2, 0.4, 0.2],
-                      [1.3, 1.4, 0.3]], dtype=dtype)
+    coords = np.array([[0.3, 0.6, 0.1], [1.2, 0.4, 0.2], [1.3, 1.4, 0.3]], dtype=dtype)
     u_coeffs = np.array([], dtype=dtype)
     consts = np.array([], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
-    tangents = np.array(
-        [coords[1] - coords[2], coords[2] - coords[0], coords[0] - coords[1]])
+    tangents = np.array([coords[1] - coords[2], coords[2] - coords[0], coords[0] - coords[1]])
     midpoints = np.array(
         [
             coords[1] + (coords[2] - coords[1]) / 2,
