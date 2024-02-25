@@ -92,7 +92,8 @@ def get_ffcx_table_values(
         assert not avg
 
     if integral_type == "expression":
-        # FFCx tables for expression are generated as interior cell points
+        # FFCx tables for expression are generated as either interior cell points
+        # or points on a facet
         if entitytype == "cell":
             integral_type = "cell"
         else:

@@ -362,10 +362,10 @@ extern "C"
     int num_points;
 
     /// Dimension of evaluation point
-    int point_dimension;
+    int entity_dimension;
 
     /// Coordinates of evaluations points. Dimensions:
-    /// points[num_points][point_dimension]
+    /// points[num_points][entity_dimension]
     const double* points;
 
     /// Shape of expression. Dimension: value_shape[num_components]
