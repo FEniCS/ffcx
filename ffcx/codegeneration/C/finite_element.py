@@ -65,9 +65,9 @@ def generator(ir, options):
         d["reference_value_shape"] = f"reference_value_shape_{ir.name}"
         values = ", ".join(str(i) for i in ir.reference_value_shape)
         sizes = len(ir.reference_value_shape)
-        d[
-            "reference_value_shape_init"
-        ] = f"int reference_value_shape_{ir.name}[{sizes}] = {{{values}}};"
+        d["reference_value_shape_init"] = (
+            f"int reference_value_shape_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
         d["reference_value_shape"] = "NULL"
         d["reference_value_shape_init"] = ""
@@ -76,9 +76,9 @@ def generator(ir, options):
         d["sub_elements"] = f"sub_elements_{ir.name}"
         values = ", ".join(f"&{el}" for el in ir.sub_elements)
         sizes = len(ir.sub_elements)
-        d[
-            "sub_elements_init"
-        ] = f"ufcx_finite_element* sub_elements_{ir.name}[{sizes}] = {{{values}}};"
+        d["sub_elements_init"] = (
+            f"ufcx_finite_element* sub_elements_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
         d["sub_elements"] = "NULL"
         d["sub_elements_init"] = ""

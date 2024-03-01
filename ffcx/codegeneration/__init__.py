@@ -1,4 +1,5 @@
 """FFCx code generation."""
+
 import hashlib
 import os
 

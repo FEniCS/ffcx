@@ -61,18 +61,18 @@ def generator(ir, options):
     d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
     values = ", ".join(str(i) for i in entity_closure_dof_offsets)
     sizes = len(entity_dof_offsets)
-    d[
-        "entity_closure_dof_offsets_init"
-    ] = f"int entity_closure_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    d["entity_closure_dof_offsets_init"] = (
+        f"int entity_closure_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    )
 
     d["block_size"] = ir.block_size
 
     if len(ir.sub_dofmaps) > 0:
         values = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
         sizes = len(ir.sub_dofmaps)
-        d[
-            "sub_dofmaps_initialization"
-        ] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[{sizes}] = {{{values}}};"
+        d["sub_dofmaps_initialization"] = (
+            f"ufcx_dofmap* sub_dofmaps_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""

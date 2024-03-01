@@ -37,9 +37,9 @@ def generator(ir, options):
         values = ", ".join(str(i) for i in ir.original_coefficient_position)
         sizes = len(ir.original_coefficient_position)
 
-        d[
-            "original_coefficient_position_init"
-        ] = f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
+        d["original_coefficient_position_init"] = (
+            f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
@@ -48,9 +48,9 @@ def generator(ir, options):
     if len(ir.coefficient_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
         sizes = len(ir.coefficient_names)
-        d[
-            "coefficient_names_init"
-        ] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["coefficient_names_init"] = (
+            f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
         d["coefficient_names_init"] = ""
@@ -59,9 +59,9 @@ def generator(ir, options):
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)
         sizes = len(ir.constant_names)
-        d[
-            "constant_names_init"
-        ] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["constant_names_init"] = (
+            f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
@@ -71,9 +71,9 @@ def generator(ir, options):
         d["finite_elements"] = f"finite_elements_{ir.name}"
         values = ", ".join(f"&{el}" for el in ir.finite_elements)
         sizes = len(ir.finite_elements)
-        d[
-            "finite_elements_init"
-        ] = f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+        d["finite_elements_init"] = (
+            f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
         d["finite_elements"] = "NULL"
         d["finite_elements_init"] = ""
@@ -107,9 +107,9 @@ def generator(ir, options):
     if len(integrals) > 0:
         sizes = len(integrals)
         values = ", ".join(integrals)
-        d[
-            "form_integrals_init"
-        ] = f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
+        d["form_integrals_init"] = (
+            f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["form_integrals"] = f"form_integrals_{ir.name}"
         sizes = len(integral_ids)
         values = ", ".join(str(i) for i in integral_ids)
@@ -123,9 +123,9 @@ def generator(ir, options):
 
     sizes = len(integral_offsets)
     values = ", ".join(str(i) for i in integral_offsets)
-    d[
-        "form_integral_offsets_init"
-    ] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    d["form_integral_offsets_init"] = (
+        f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    )
 
     vs_code = []
     code = []
