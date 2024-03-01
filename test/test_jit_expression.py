@@ -68,7 +68,7 @@ def test_matvec(compile_args):
     assert np.allclose(A, 0.5 * np.dot(a_mat, f_mat).T)
 
     # Prepare NumPy array of points attached to the expression
-    length = expression.num_points * expression.topological_dimension
+    length = expression.num_points * expression.entity_dimension
     points_kernel = np.frombuffer(
         ffi.buffer(expression.points, length * ffi.sizeof("double")), np.double
     )
@@ -265,3 +265,64 @@ def test_grad_constant(compile_args):
     )
 
     assert output[0] == pytest.approx(consts[1] * 2 * points[0, 0])
+
+
+def test_facet_expression(compile_args):
+    """Test facet expression containing a facet normal on a manifold."""
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+
+    n = ufl.FacetNormal(mesh)
+    expr = n
+
+    dtype = np.float64
+    points = np.array([[0.5]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros(3, dtype=dtype)
+
+    # Define constants
+    coords = np.array([[0.3, 0.6, 0.1], [1.2, 0.4, 0.2], [1.3, 1.4, 0.3]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+    tangents = np.array([coords[1] - coords[2], coords[2] - coords[0], coords[0] - coords[1]])
+    midpoints = np.array(
+        [
+            coords[1] + (coords[2] - coords[1]) / 2,
+            coords[0] + (coords[2] - coords[0]) / 2,
+            coords[1] + (coords[1] - coords[0]) / 2,
+        ]
+    )
+    for i, (tangent, midpoint) in enumerate(zip(tangents, midpoints)):
+        # normalize tangent
+        tangent /= np.linalg.norm(tangent)
+        # Tabulate facet normal
+        output[:] = 0
+        entity_index[0] = i
+        expression.tabulate_tensor_float64(
+            ffi.cast(f"{c_type} *", output.ctypes.data),
+            ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+            ffi.cast(f"{c_type} *", consts.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", entity_index.ctypes.data),
+            ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        )
+        # Assert that facet normal is perpendicular to tangent
+        assert np.isclose(np.dot(output, tangent), 0)
+
+        # Check that norm of facet normal is 1
+        assert np.isclose(np.linalg.norm(output), 1)
+
+        # Check that facet normal is pointing out of the cell
+        assert np.dot(midpoint - coords[i], output) > 0

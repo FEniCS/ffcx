@@ -47,9 +47,9 @@ def generator(ir, options):
         d["original_coefficient_positions"] = f"original_coefficient_positions_{ir.name}"
         values = ", ".join(str(i) for i in ir.original_coefficient_positions)
         sizes = len(ir.original_coefficient_positions)
-        d[
-            "original_coefficient_positions_init"
-        ] = f"static int original_coefficient_positions_{ir.name}[{sizes}] = {{{values}}};"
+        d["original_coefficient_positions_init"] = (
+            f"static int original_coefficient_positions_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
         d["original_coefficient_positions"] = "NULL"
         d["original_coefficient_positions_init"] = ""
@@ -72,7 +72,7 @@ def generator(ir, options):
     d["num_coefficients"] = len(ir.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = ir.points.shape[0]
-    d["topological_dimension"] = ir.points.shape[1]
+    d["entity_dimension"] = ir.points.shape[1]
     d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
     d["geom_type"] = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
     d["np_scalar_type"] = np.dtype(options["scalar_type"]).name
@@ -82,9 +82,9 @@ def generator(ir, options):
     if len(ir.coefficient_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
         sizes = len(ir.coefficient_names)
-        d[
-            "coefficient_names_init"
-        ] = f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["coefficient_names_init"] = (
+            f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
         d["coefficient_names_init"] = ""
@@ -93,9 +93,9 @@ def generator(ir, options):
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)
         sizes = len(ir.constant_names)
-        d[
-            "constant_names_init"
-        ] = f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        d["constant_names_init"] = (
+            f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["constant_names"] = f"constant_names_{ir.name}"
     else:
         d["constant_names_init"] = ""
@@ -145,9 +145,9 @@ def generator(ir, options):
             for (name, _) in ir.function_spaces.items()
         )
         sizes = len(ir.function_spaces)
-        d[
-            "function_spaces_init"
-        ] = f"ufcx_function_space* function_spaces_{ir.name}[{sizes}] = {{{values}}};"
+        d["function_spaces_init"] = (
+            f"ufcx_function_space* function_spaces_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
         d["function_spaces"] = "NULL"
         d["function_spaces_init"] = ""

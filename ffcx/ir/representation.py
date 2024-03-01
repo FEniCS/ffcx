@@ -824,7 +824,19 @@ def _compute_expression_ir(
     ir["coefficient_offsets"] = offsets
 
     ir["integral_type"] = "expression"
-    ir["entitytype"] = "cell"
+    if cell is not None:
+        if (tdim := cell.topological_dimension()) == (pdim := points.shape[1]):
+            ir["entitytype"] = "cell"
+        elif tdim - 1 == pdim:
+            ir["entitytype"] = "facet"
+        else:
+            raise ValueError(
+                f"Expression on domain with topological dimension {tdim}"
+                + f"with points of dimension {pdim} not supported."
+            )
+    else:
+        # For spatially invariant expressions, all expressions are evaluated in the cell
+        ir["entitytype"] = "cell"
 
     # Build offsets for Constants
     original_constant_offsets = {}

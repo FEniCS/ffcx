@@ -49,9 +49,9 @@ def generator(ir, options):
     if len(ir.enabled_coefficients) > 0:
         values = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
         sizes = len(ir.enabled_coefficients)
-        code[
-            "enabled_coefficients_init"
-        ] = f"bool enabled_coefficients_{ir.name}[{sizes}] = {{{values}}};"
+        code["enabled_coefficients_init"] = (
+            f"bool enabled_coefficients_{ir.name}[{sizes}] = {{{values}}};"
+        )
         code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
     else:
         code["enabled_coefficients_init"] = ""
