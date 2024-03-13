@@ -168,6 +168,7 @@ class IntegralGenerator:
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
+
         return L.StatementList(parts)
 
     def generate_quadrature_tables(self):
