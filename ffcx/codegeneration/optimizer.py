@@ -31,12 +31,12 @@ def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNo
     return code
 
 
-def fuse_sections(code: list[L.LNode], name) -> list[L.LNode]:
+def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
     """Fuse sections with the same name.
 
     Args:
         code: List of LNodes to fuse.
-        name: TODO.
+        name: Common name used by the sections that should be fused
 
     Returns:
         Fused list of LNodes.
@@ -61,7 +61,7 @@ def fuse_sections(code: list[L.LNode], name) -> list[L.LNode]:
     # Remove duplicated inputs
     input = list(set(input))
     # Remove duplicated outputs
-    output = list(set(output))  # Shouldn't be necessary
+    output = list(set(output))
 
     section = L.Section(name, statements, declarations, input, output, annotations)
 

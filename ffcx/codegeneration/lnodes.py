@@ -888,7 +888,7 @@ class Section(LNode):
         """Check equality."""
         attributes = ("name", "input", "output", "annotations", "statements")
         return isinstance(other, type(self)) and all(
-            getattr(self, name) == getattr(self, name) for name in attributes
+            getattr(self, name) == getattr(other, name) for name in attributes
         )
 
 
