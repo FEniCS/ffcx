@@ -4,18 +4,19 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+from __future__ import annotations
+
 import basix.ufl
 import numpy as np
 import pytest
 import ufl
-from typing import List
+
 import ffcx.codegeneration.jit
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
-def compute_tensor(forms: List[ufl.form.Form] , dtype:str, compile_args: List[str]):
-    """Helper-function to compute matrix for a P1-Lagrange problem
-    """
+def compute_tensor(forms: list[ufl.form.Form], dtype: str, compile_args: list[str]):
+    """Helper-function to compute matrix for a P1-Lagrange problem"""
     compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
         forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
@@ -58,7 +59,6 @@ def compute_tensor(forms: List[ufl.form.Form] , dtype:str, compile_args: List[st
     ],
 )
 def test_submesh_codim0(dtype, compile_args):
-
     # Define coordinate element and element used in parent and sub-mesh
     element = basix.ufl.element("Lagrange", "triangle", 1)
     coordinate_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
@@ -72,7 +72,7 @@ def test_submesh_codim0(dtype, compile_args):
     subspace = ufl.FunctionSpace(sub_domain, element)
     v_sub = ufl.TestFunction(subspace)
 
-    # 
+    #
     a = ufl.inner(u_parent.dx(0), v_sub.dx(0)) * ufl.dx(domain=domain)
 
     A = compute_tensor([a], dtype, compile_args)
