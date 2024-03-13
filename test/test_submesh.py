@@ -58,7 +58,7 @@ def compute_tensor(forms: list[ufl.form.Form], dtype: str, compile_args: list[st
         "complex128",
     ],
 )
-def test_submesh_codim0(dtype, compile_args):
+def test_multiple_mesh_codim0(dtype, compile_args):
     # Define coordinate element and element used in parent and sub-mesh
     element = basix.ufl.element("Lagrange", "triangle", 1)
     coordinate_element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
