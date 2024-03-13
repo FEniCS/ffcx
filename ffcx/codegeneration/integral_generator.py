@@ -1,4 +1,6 @@
-# Copyright (C) 2015-2023 Martin Sandve Alnæs, Michal Habera, Igor Baratta, Chris Richardson
+# Copyright (C) 2015-2024 Martin Sandve Alnæs, Michal Habera, Igor Baratta, Chris Richardson
+#
+# Modified by Jørgen S. Dokken, 2024
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -265,8 +267,7 @@ class IntegralGenerator:
         # Generate varying partition
         definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule)
 
-        # Generate dofblock parts, some of this will be placed before or
-        # after quadloop
+        # Generate dofblock parts, some of this will be placed before or after quadloop
         tensor_comp, intermediates_fw = self.generate_dofblock_partition(quadrature_rule)
         assert all([isinstance(tc, L.Section) for tc in tensor_comp])
 
@@ -331,7 +332,10 @@ class IntegralGenerator:
 
                     if vdef:
                         assert isinstance(vdef, L.Section)
-                    definitions += [vdef]
+                    # Only add if definition is unique.
+                    # This can happen when using sub-meshes
+                    if vdef not in definitions:
+                        definitions += [vdef]
                 else:
                     # Get previously visited operands
                     vops = [self.get_var(quadrature_rule, op) for op in v.ufl_operands]
