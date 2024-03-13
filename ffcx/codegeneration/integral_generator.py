@@ -11,6 +11,7 @@ import collections
 import logging
 from numbers import Integral
 from typing import Any
+
 import ufl
 
 import ffcx.codegeneration.lnodes as L
