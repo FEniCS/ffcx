@@ -1074,3 +1074,68 @@ def test_integral_grouping(compile_args):
         ]
     )
     assert len(unique_integrals) == 2
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("permutation", [[0, 0], [0, 1], [1, 0], [1, 1]])
+def test_mixed_dim_form(compile_args, dtype, permutation):
+    # TODO Test 3D and non-simplex
+
+    k = 1
+    V_ele = basix.ufl.element("Lagrange", "triangle", k)
+    Vbar_ele = basix.ufl.element("Lagrange", "interval", k)
+
+    gdim = 2
+    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(gdim,)))
+    Vbar_domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(gdim,)))
+
+    V = ufl.FunctionSpace(V_domain, V_ele)
+    Vbar = ufl.FunctionSpace(Vbar_domain, Vbar_ele)
+
+    u = ufl.TrialFunction(V)
+    vbar = ufl.TestFunction(Vbar)
+
+    ds = ufl.Measure("ds", domain=V_domain)
+
+    forms = [ufl.inner(u, vbar) * ds]
+
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+    default_integral = form0.form_integrals[0]
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+    A = np.zeros((2, 3), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+    facet = np.array([0], dtype=np.intc)
+    perm = np.array(permutation, dtype=np.uint8)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
+
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+
+    kernel(
+        ffi.cast(f"{c_type}  *", A.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", facet.ctypes.data),
+        ffi.cast("uint8_t *", perm.ctypes.data),
+    )
+
+    expected_result = np.array(
+        [[0, np.sqrt(2) / 3, np.sqrt(2) / 6], [0, np.sqrt(2) / 6, np.sqrt(2) / 3]],
+        dtype=dtype,
+    )
+
+    assert np.allclose(A, expected_result)
+
+    # TODO Permutations
+    # if permutation[0] != permutation[1]:
+    #     expected_result = np.flipud(expected_result)

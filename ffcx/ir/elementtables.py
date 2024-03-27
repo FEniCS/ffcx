@@ -135,7 +135,12 @@ def get_ffcx_table_values(
     component_element, offset, stride = element.get_component_element(flat_component)
 
     for entity in range(num_entities):
-        entity_points = map_integral_points(points, integral_type, cell, entity)
+        if element.cell == cell:
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+        elif element.cell in cell.facet_types():
+            entity_points = points
+        else:
+            raise RuntimeError("Domain cell and element cell are not compatible")
         tbl = component_element.tabulate(deriv_order, entity_points)
         tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
