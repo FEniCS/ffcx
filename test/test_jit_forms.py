@@ -1082,12 +1082,16 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     # TODO Test 3D and non-simplex
 
     k = 1
-    V_ele = basix.ufl.element("Lagrange", "triangle", k)
-    Vbar_ele = basix.ufl.element("Lagrange", "interval", k)
+    ele_type = "Lagrange"
+    V_cell_type = "triangle"
+    Vbar_cell_type = "interval"
+
+    V_ele = basix.ufl.element(ele_type, V_cell_type, k)
+    Vbar_ele = basix.ufl.element(ele_type, Vbar_cell_type, k)
 
     gdim = 2
-    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(gdim,)))
-    Vbar_domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(gdim,)))
+    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+    Vbar_domain = ufl.Mesh(basix.ufl.element("Lagrange", Vbar_cell_type, 1, shape=(gdim,)))
 
     V = ufl.FunctionSpace(V_domain, V_ele)
     Vbar = ufl.FunctionSpace(Vbar_domain, Vbar_ele)
@@ -1098,12 +1102,9 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     ds = ufl.Measure("ds", domain=V_domain)
 
     forms = [ufl.inner(u, vbar) * ds]
-
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
-
-    ffi = module.ffi
     form0 = compiled_forms[0]
     default_integral = form0.form_integrals[0]
     kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
@@ -1120,6 +1121,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     c_type = dtype_to_c_type(dtype)
     c_xtype = dtype_to_c_type(xdtype)
 
+    ffi = module.ffi
     kernel(
         ffi.cast(f"{c_type}  *", A.ctypes.data),
         ffi.cast(f"{c_type}  *", w.ctypes.data),
