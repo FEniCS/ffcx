@@ -90,6 +90,7 @@ class ModifiedTerminal:
         # Restriction to one cell or the other for interior facet integrals
         self.restriction = restriction
 
+        # The element codimension
         self.codim = codim
 
     def as_tuple(self):
@@ -192,7 +193,7 @@ def analyse_modified_terminal(expr, cell=None):
     restriction = None
     averaged = None
     if cell is not None and expr.ufl_domain() is not None:
-        codim = cell.topological_dimension() - expr.ufl_domain().ufl_cell().topological_dimension()
+        codim = cell.topological_dimension() - expr.ufl_domain().topological_dimension()
     else:
         codim = 0
 

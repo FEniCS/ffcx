@@ -85,6 +85,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             if is_modified_terminal(v["expression"])
         }
 
+        # Check if we have a mixed-dimensional integral
         is_mixed_dim = False
         for domain in integrand.ufl_domains():
             if domain.topological_dimension() != cell.topological_dimension():
