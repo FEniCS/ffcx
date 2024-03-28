@@ -326,6 +326,11 @@ def build_optimized_tables(
     all_tensor_factors = []
     tensor_n = 0
 
+    is_mixed_dim = False
+    for ele in unique_elements:
+        if ele.cell.topological_dimension() != cell.topological_dimension():
+            is_mixed_dim = True
+
     for mt in modified_terminals:
         res = analysis.get(mt)
         if not res:
@@ -348,7 +353,7 @@ def build_optimized_tables(
         # TODO Check if mixed dim here by comparing cell to element. Pass is_facet_element
         # to get_ffcx_table_values instead of checking there
         tdim = cell.topological_dimension()
-        if integral_type == "interior_facet":
+        if integral_type == "interior_facet" or is_mixed_dim:
             if tdim == 1:
                 t = get_ffcx_table_values(
                     quadrature_rule.points,
