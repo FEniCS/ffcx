@@ -1136,8 +1136,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
         dtype=dtype,
     )
 
-    assert np.allclose(A, expected_result)
+    if permutation[0] != permutation[1]:
+        expected_result = np.flipud(expected_result)
 
-    # TODO Permutations
-    # if permutation[0] != permutation[1]:
-    #     expected_result = np.flipud(expected_result)
+    assert np.allclose(A, expected_result)

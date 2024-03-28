@@ -404,6 +404,7 @@ class FFCXBackendAccess:
         restriction: str,
         quadrature_index: L.MultiIndex,
         dof_index: L.MultiIndex,
+        is_facet_element: bool
     ):
         """Access element table for given entity, quadrature point, and dof index.
 
@@ -413,6 +414,7 @@ class FFCXBackendAccess:
             restriction: Restriction ("+", "-")
             quadrature_index: Quadrature index
             dof_index: Dof index
+            is_facet_element: Is this element a facet element in a mixed dimensional integral?
         """
         entity = self.symbols.entity(entitytype, restriction)
         iq_global_index = quadrature_index.global_index
@@ -430,7 +432,7 @@ class FFCXBackendAccess:
         # factorization
         if tabledata.is_permuted:
             qp = self.symbols.quadrature_permutation[0]
-            if restriction == "-":
+            if restriction == "-" or is_facet_element:
                 qp = self.symbols.quadrature_permutation[1]
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
