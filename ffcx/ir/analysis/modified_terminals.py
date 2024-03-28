@@ -190,7 +190,7 @@ def analyse_modified_terminal(expr, cell=None):
     reference_value = None
     restriction = None
     averaged = None
-    if cell is not None:
+    if cell is not None and expr.ufl_domain() is not None:
         is_facet_element = (expr.ufl_domain().ufl_cell() in cell.facet_types())
     else:
         is_facet_element = False

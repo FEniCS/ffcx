@@ -169,7 +169,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         for i, v in F.nodes.items():
             expr = v["expression"]
             if is_modified_terminal(expr):
-                mt = analyse_modified_terminal(expr)
+                mt = analyse_modified_terminal(expr, cell)
                 F.nodes[i]["mt"] = mt
                 tr = mt_table_reference.get(mt)
                 if tr is not None:
