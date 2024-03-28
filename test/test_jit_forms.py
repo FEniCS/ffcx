@@ -1099,9 +1099,12 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     u = ufl.TrialFunction(V)
     vbar = ufl.TestFunction(Vbar)
 
+    f = ufl.Coefficient(V)
+    g = ufl.Coefficient(Vbar)
+
     ds = ufl.Measure("ds", domain=V_domain)
 
-    forms = [ufl.inner(u, vbar) * ds]
+    forms = [ufl.inner(f * g * u, vbar) * ds]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
@@ -1110,7 +1113,8 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
 
     A = np.zeros((2, 3), dtype=dtype)
-    w = np.array([], dtype=dtype)
+    # FIXME Use more complex data
+    w = np.array([1, 1, 1, 1, 1], dtype=dtype)
     c = np.array([], dtype=dtype)
     facet = np.array([0], dtype=np.intc)
     perm = np.array(permutation, dtype=np.uint8)
