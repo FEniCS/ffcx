@@ -192,9 +192,7 @@ class FFCXBackendDefinitions:
         iq_symbol = self.symbols.quadrature_loop_index
         ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        FE, tables = self.access.table_access(
-            tabledata, self.entitytype, mt.restriction, iq, ic, 0
-        )
+        FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic, 0)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
