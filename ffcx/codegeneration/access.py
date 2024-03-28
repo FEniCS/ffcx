@@ -404,7 +404,7 @@ class FFCXBackendAccess:
         restriction: str,
         quadrature_index: L.MultiIndex,
         dof_index: L.MultiIndex,
-        is_facet_element: bool
+        is_facet_element: bool,
     ):
         """Access element table for given entity, quadrature point, and dof index.
 
