@@ -412,12 +412,8 @@ class IntegralGenerator:
                 arg_factor = 1
             else:
                 # Assuming B sparsity follows element table sparsity
-                is_facet_element = (
-                    self.ir.topological_dimension
-                    == mt.expr.ufl_domain().ufl_cell().topological_dimension()
-                )
                 arg_factor, arg_tables = self.backend.access.table_access(
-                    td, self.ir.entitytype, mt.restriction, iq, indices[i], is_facet_element
+                    td, self.ir.entitytype, mt.restriction, iq, indices[i], mt.is_facet_element
                 )
 
             tables += arg_tables

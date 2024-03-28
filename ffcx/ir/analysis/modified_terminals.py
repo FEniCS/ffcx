@@ -43,6 +43,7 @@ class ModifiedTerminal:
         local_derivatives: tuple[int, ...],
         averaged: typing.Union[None, str],
         restriction: typing.Union[None, str],
+        is_facet_element: bool,
     ):
         """Initialise.
 
@@ -87,6 +88,8 @@ class ModifiedTerminal:
 
         # Restriction to one cell or the other for interior facet integrals
         self.restriction = restriction
+
+        self.is_facet_element = is_facet_element
 
     def as_tuple(self):
         """Return a tuple with hashable values that uniquely identifies this modified terminal.
@@ -168,7 +171,7 @@ def strip_modified_terminal(v):
     return v
 
 
-def analyse_modified_terminal(expr):
+def analyse_modified_terminal(expr, cell=None):
     """Analyse a so-called 'modified terminal' expression.
 
     Return its properties in more compact form as a ModifiedTerminal object.
@@ -187,6 +190,10 @@ def analyse_modified_terminal(expr):
     reference_value = None
     restriction = None
     averaged = None
+    if cell is not None:
+        is_facet_element = (expr.ufl_domain().ufl_cell() in cell.facet_types())
+    else:
+        is_facet_element = False
 
     # Start with expr and strip away layers of modifiers
     t = expr
@@ -313,4 +320,5 @@ def analyse_modified_terminal(expr):
         local_derivatives,
         averaged,
         restriction,
+        is_facet_element,
     )
