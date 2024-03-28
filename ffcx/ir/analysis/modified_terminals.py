@@ -59,6 +59,7 @@ class ModifiedTerminal:
             local_derivatives: each entry is a derivative in that local direction
             averaged: Entity to average over (None, 'facet' or 'cell')
             restriction: The restriction (None, '+' or '-')
+            is_facet_element: Is this a facet element in a mixed domain integral?
         """
         # The original expression
         self.expr = expr
