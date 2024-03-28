@@ -85,7 +85,7 @@ def get_ffcx_table_values(
     entitytype,
     derivative_counts,
     flat_component,
-    is_facet_element,
+    codim,
 ):
     """Extract values from FFCx element table.
 
@@ -143,10 +143,12 @@ def get_ffcx_table_values(
     component_element, offset, stride = element.get_component_element(flat_component)
 
     for entity in range(num_entities):
-        if is_facet_element:
+        if codim == 0:
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+        elif codim == 1:
             entity_points = points
         else:
-            entity_points = map_integral_points(points, integral_type, cell, entity)
+            raise RuntimeError("Codimension > 1 isn't supported.")
         tbl = component_element.tabulate(deriv_order, entity_points)
         tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
@@ -369,7 +371,7 @@ def build_optimized_tables(
                     entitytype,
                     local_derivatives,
                     flat_component,
-                    mt.is_facet_element,
+                    mt.codim,
                 )
             elif tdim == 2:
                 new_table = []
@@ -384,7 +386,7 @@ def build_optimized_tables(
                             entitytype,
                             local_derivatives,
                             flat_component,
-                            mt.is_facet_element,
+                            mt.codim,
                         )
                     )
 
@@ -406,7 +408,7 @@ def build_optimized_tables(
                                     entitytype,
                                     local_derivatives,
                                     flat_component,
-                                    mt.is_facet_element,
+                                    mt.codim,
                                 )
                             )
                     t = new_table[0]
@@ -427,7 +429,7 @@ def build_optimized_tables(
                                     entitytype,
                                     local_derivatives,
                                     flat_component,
-                                    mt.is_facet_element,
+                                    mt.codim,
                                 )
                             )
                     t = new_table[0]
@@ -442,7 +444,7 @@ def build_optimized_tables(
                 entitytype,
                 local_derivatives,
                 flat_component,
-                mt.is_facet_element,
+                mt.codim,
             )
         # Clean up table
         tbl = clamp_table_small_numbers(t["array"], rtol=rtol, atol=atol)

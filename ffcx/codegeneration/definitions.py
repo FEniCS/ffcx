@@ -142,7 +142,7 @@ class FFCXBackendDefinitions:
 
         # Get access to element table
         FE, tables = self.access.table_access(
-            tabledata, self.entitytype, mt.restriction, iq, ic, mt.is_facet_element
+            tabledata, self.entitytype, mt.restriction, iq, ic, mt.codim
         )
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
             mt.terminal, (ic.global_index) * bs + begin
@@ -193,7 +193,7 @@ class FFCXBackendDefinitions:
         ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
         FE, tables = self.access.table_access(
-            tabledata, self.entitytype, mt.restriction, iq, ic, False
+            tabledata, self.entitytype, mt.restriction, iq, ic, 0
         )
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)

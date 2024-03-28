@@ -43,7 +43,7 @@ class ModifiedTerminal:
         local_derivatives: tuple[int, ...],
         averaged: typing.Union[None, str],
         restriction: typing.Union[None, str],
-        is_facet_element: bool,
+        codim: int,
     ):
         """Initialise.
 
@@ -59,7 +59,7 @@ class ModifiedTerminal:
             local_derivatives: each entry is a derivative in that local direction
             averaged: Entity to average over (None, 'facet' or 'cell')
             restriction: The restriction (None, '+' or '-')
-            is_facet_element: Is this a facet element in a mixed domain integral?
+            codim: The codimension of the element
         """
         # The original expression
         self.expr = expr
@@ -90,7 +90,7 @@ class ModifiedTerminal:
         # Restriction to one cell or the other for interior facet integrals
         self.restriction = restriction
 
-        self.is_facet_element = is_facet_element
+        self.codim = codim
 
     def as_tuple(self):
         """Return a tuple with hashable values that uniquely identifies this modified terminal.
@@ -192,9 +192,9 @@ def analyse_modified_terminal(expr, cell=None):
     restriction = None
     averaged = None
     if cell is not None and expr.ufl_domain() is not None:
-        is_facet_element = (expr.ufl_domain().ufl_cell() in cell.facet_types())
+        codim = cell.topological_dimension() - expr.ufl_domain().ufl_cell().topological_dimension()
     else:
-        is_facet_element = False
+        codim = 0
 
     # Start with expr and strip away layers of modifiers
     t = expr
@@ -321,5 +321,5 @@ def analyse_modified_terminal(expr, cell=None):
         local_derivatives,
         averaged,
         restriction,
-        is_facet_element,
+        codim,
     )
