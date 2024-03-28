@@ -300,6 +300,7 @@ def build_optimized_tables(
     modified_terminals,
     existing_tables,
     use_sum_factorization,
+    is_mixed_dim,
     rtol=default_rtol,
     atol=default_atol,
 ):
@@ -333,12 +334,6 @@ def build_optimized_tables(
 
     all_tensor_factors = []
     tensor_n = 0
-
-    # TODO Put this in IntegralIR
-    is_mixed_dim = False
-    for ele in unique_elements:
-        if ele.cell.topological_dimension() != cell.topological_dimension():
-            is_mixed_dim = True
 
     for mt in modified_terminals:
         res = analysis.get(mt)
