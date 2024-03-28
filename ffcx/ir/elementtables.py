@@ -357,8 +357,6 @@ def build_optimized_tables(
         # It should be possible to reuse the cached tables by name, but
         # the dofmap offset may differ due to restriction.
 
-        # TODO Check if mixed dim here by comparing cell to element. Pass is_facet_element
-        # to get_ffcx_table_values instead of checking there
         tdim = cell.topological_dimension()
         if integral_type == "interior_facet" or is_mixed_dim:
             if tdim == 1:

@@ -141,7 +141,6 @@ class FFCXBackendDefinitions:
         assert begin < end
 
         # Get access to element table
-        # FIXME Need to pass is_facet_element here
         FE, tables = self.access.table_access(
             tabledata, self.entitytype, mt.restriction, iq, ic, mt.is_facet_element
         )
