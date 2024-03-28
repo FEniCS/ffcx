@@ -405,6 +405,8 @@ def _compute_integral_ir(
         tdim = cell.topological_dimension()
         assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
+        # TODO Probably need to add mixed_dim here. Could compare form_data.argument_elements with
+        # form_data.coordinate_elements cell types (or itg_data.domain.ufl_cell())
         ir = {
             "integral_type": itg_data.integral_type,
             "subdomain_id": itg_data.subdomain_id,
