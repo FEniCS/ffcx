@@ -89,7 +89,7 @@ def create_quadrature_points_and_weights(
     return pts, wts, tensor_factors
 
 
-def integral_type_to_entity_dim(integral_type, tdim):
+def integral_type_to_entity_dim(integral_type: str, tdim: int) -> int:
     """Given integral_type and domain tdim, return the tdim of the integration entity."""
     if integral_type == "cell":
         entity_dim = tdim
@@ -106,7 +106,9 @@ def integral_type_to_entity_dim(integral_type, tdim):
     return entity_dim
 
 
-def map_integral_points(points, integral_type, cell, entity):
+def map_integral_points(
+    points: np.ndarray, integral_type: str, cell: ufl.classes.Cell, entity: int
+) -> np.ndarray:
     """Map points from reference entity to its parent reference cell."""
     tdim = cell.topological_dimension()
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)

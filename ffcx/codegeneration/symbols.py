@@ -95,7 +95,7 @@ class FFCXBackendSymbols:
         # Table for chunk of custom quadrature points (physical coordinates).
         self.custom_points_table = L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
-    def entity(self, entitytype, restriction):
+    def entity(self, entitytype: str, restriction: str) -> L.Symbol:
         """Entity index for lookup in element tables."""
         if entitytype == "cell":
             # Always 0 for cells (even with restriction)

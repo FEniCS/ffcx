@@ -7,12 +7,13 @@
 
 import logging
 import warnings
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import basix.ufl
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.symbols import FFCXBackendSymbols
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -23,7 +24,7 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendAccess:
     """FFCx specific formatter class."""
 
-    def __init__(self, ir, symbols, options):
+    def __init__(self, ir, symbols: FFCXBackendSymbols, options):
         """Initialise."""
         # Store ir and options
         self.entitytype = ir.entitytype
@@ -404,8 +405,11 @@ class FFCXBackendAccess:
         restriction: str,
         quadrature_index: L.MultiIndex,
         dof_index: L.MultiIndex,
-    ):
+    ) -> Tuple[List[L.LExpr], List[L.Symbol]]:
         """Access element table for given entity, quadrature point, and dof index.
+
+        The quadrature index and dof index can be multi-dimensional indices for elements
+        based of tensor products. Then the combined product of the tables is returned.
 
         Args:
             tabledata: Table data object
