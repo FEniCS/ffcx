@@ -242,7 +242,7 @@ def compile_forms(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(str(p["scalar_type"])).name)
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
             + UFC_INTEGRAL_DECL
@@ -323,7 +323,7 @@ def compile_expressions(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(str(p["scalar_type"])).name)
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
             + UFC_INTEGRAL_DECL
