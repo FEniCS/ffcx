@@ -210,9 +210,13 @@ def _analyze_form(form: ufl.form.Form, scalar_type: str) -> ufl.algorithms.formd
 
             if custom_q is None:
                 # Extract quadrature degree
+                qd = -1
                 if "quadrature_degree" in metadata.keys():
                     qd = metadata["quadrature_degree"]
-                else:
+
+                # Sending in a negative quadrature degree means that we want to be 
+                # able to customize it at a later stage.
+                if qd < 0:
                     qd = np.max(integral.metadata()["estimated_polynomial_degree"])
 
                 # Extract quadrature rule
