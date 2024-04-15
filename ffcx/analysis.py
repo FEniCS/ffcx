@@ -67,13 +67,15 @@ def analyze_ufl_objects(
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    elements = []
-    coordinate_elements = []
+    elements: list[ufl.AbstractFiniteElement] = []
+    coordinate_elements: list[ufl.AbstractFiniteElement] = []
 
     # Group objects by types
-    forms = []
-    expressions = []
-    processed_expressions = []
+    forms: list[ufl.form.Form] = []
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]] = []
+    processed_expressions: list[
+        tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]
+    ] = []
 
     for ufl_object in ufl_objects:
         if isinstance(ufl_object, ufl.form.Form):
