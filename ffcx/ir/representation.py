@@ -128,21 +128,20 @@ class DofMapIR(typing.NamedTuple):
 class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
-    integral_type: str  #
-    rank: int  #
-    entitytype: str  #
-    enabled_coefficients: list[bool]  #
+    integral_type: str
+    rank: int
+    entitytype: str
+    enabled_coefficients: list[bool]
     tensor_shape: list[int]
-    coefficient_numbering: dict[ufl.Coefficient, int]  #
-    coefficient_offsets: dict[ufl.Coefficient, int]  #
-    original_constant_offsets: dict[ufl.Constant, int]  #
+    coefficient_numbering: dict[ufl.Coefficient, int]
+    coefficient_offsets: dict[ufl.Coefficient, int]
+    original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[str, npt.NDArray[np.float64]]
     unique_table_types: dict[str, str]
-    integrand: dict[QuadratureRule, dict]  #
-    name: str  #
-    needs_facet_permutations: bool  #
-    coordinate_element: str  #
-    sum_factorization: bool
+    integrand: dict[QuadratureRule, dict]
+    name: str
+    needs_facet_permutations: bool
+    coordinate_element: str
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -403,9 +402,8 @@ def _compute_integral_ir(
             "entitytype": entitytype,
             "enabled_coefficients": itg_data.enabled_coefficients,
             "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()],
-            "sum_factorization": options["sum_factorization"] and itg_data.integral_type == "cell",
         }
-
+        use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         element_dimensions = {
@@ -514,7 +512,7 @@ def _compute_integral_ir(
                     degree,
                     scheme,
                     form_data.argument_elements,
-                    ir["sum_factorization"],
+                    use_sum_factorization,
                 )
 
             points = np.asarray(points)
