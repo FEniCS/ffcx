@@ -136,8 +136,6 @@ class IntegralIR(typing.NamedTuple):
     coefficient_numbering: dict[ufl.Coefficient, int]  #
     coefficient_offsets: dict[ufl.Coefficient, int]  #
     original_constant_offsets: dict[ufl.Constant, int]  #
-    options: dict
-    cell_shape: str
     unique_tables: dict[str, npt.NDArray[np.float64]]
     unique_table_types: dict[str, str]
     integrand: dict[QuadratureRule, dict]  #
@@ -404,7 +402,6 @@ def _compute_integral_ir(
             "rank": form_data.rank,
             "entitytype": entitytype,
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "cell_shape": cellname,
             "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()],
             "sum_factorization": options["sum_factorization"] and itg_data.integral_type == "cell",
         }
@@ -431,7 +428,7 @@ def _compute_integral_ir(
         cell = itg_data.domain.ufl_cell()
 
         # Group integrands with the same quadrature rule
-        grouped_integrands = {}
+        grouped_integrands: dict[QuadratureRule, list[ufl.core.expr.Expr]] = {}
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
@@ -526,10 +523,8 @@ def _compute_integral_ir(
 
             if rule not in grouped_integrands:
                 grouped_integrands[rule] = []
-
             grouped_integrands[rule].append(integral.integrand())
-
-        sorted_integrals = {}
+        sorted_integrals: dict[QuadratureRule, Integral] = {}
         for rule, integrands in grouped_integrands.items():
             integrands_summed = sorted_expr_sum(integrands)
 
@@ -574,14 +569,16 @@ def _compute_integral_ir(
         ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrands = {rule: integral.integrand() for rule, integral in sorted_integrals.items()}
+        integrand_map: dict[QuadratureRule, ufl.core.expr.Expr] = {
+            rule: integral.integrand() for rule, integral in sorted_integrals.items()
+        }
 
         # Build more specific intermediate representation
         integral_ir = compute_integral_ir(
             itg_data.domain.ufl_cell(),
             itg_data.integral_type,
             ir["entitytype"],
-            integrands,
+            integrand_map,
             ir["tensor_shape"],
             options,
             visualise,
@@ -849,7 +846,7 @@ def _compute_expression_ir(
     expression_ir = compute_integral_ir(
         cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape, options, visualise
     )
-
+    ir["options"] = options
     ir.update(expression_ir)
 
     return ExpressionIR(**ir)

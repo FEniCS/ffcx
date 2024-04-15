@@ -58,7 +58,6 @@ def generator(ir: IntegralIR, options):
         code["enabled_coefficients_init"] = ""
         code["enabled_coefficients"] = "NULL"
 
-    code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
     code["tabulate_tensor_float32"] = "NULL"
