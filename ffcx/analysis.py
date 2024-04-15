@@ -46,7 +46,7 @@ def analyze_ufl_objects(
         | ufl.Mesh
         | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
     ],
-    scalar_type: str,
+    scalar_type: npt.DTypeLike,
 ) -> UFLData:
     """Analyze ufl object(s).
 
@@ -122,7 +122,9 @@ def analyze_ufl_objects(
     )
 
 
-def _analyze_expression(expression: ufl.core.expr.Expr, scalar_type: str) -> ufl.core.expr.Expr:
+def _analyze_expression(
+    expression: ufl.core.expr.Expr, scalar_type: npt.DTypeLike
+) -> ufl.core.expr.Expr:
     """Analyzes and preprocesses expressions."""
     preserve_geometry_types = (ufl.classes.Jacobian,)
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
@@ -144,7 +146,9 @@ def _analyze_expression(expression: ufl.core.expr.Expr, scalar_type: str) -> ufl
     return expression
 
 
-def _analyze_form(form: ufl.form.Form, scalar_type: str) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(
+    form: ufl.form.Form, scalar_type: npt.DTypeLike
+) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:
