@@ -15,6 +15,8 @@ import os.path
 import pprint
 from pathlib import Path
 
+import numpy.typing as npt
+
 logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
@@ -70,8 +72,8 @@ def _load_options() -> tuple[dict, dict]:
 
 
 def get_options(
-    priority_options: dict[str, int | float | str] | None = None,
-) -> dict[str, int | float | str]:
+    priority_options: dict[str, npt.DTypeLike | int | float] | None = None,
+) -> dict[str, int | float | npt.DTypeLike]:
     """Return (a copy of) the merged option values for FFCX.
 
     Args:
@@ -101,7 +103,7 @@ def get_options(
           { "epsilon": 1e-7 }
 
     """
-    options: dict[str, str | int | float] = {}
+    options: dict[str, npt.DTypeLike | int | float] = {}
 
     for opt, (_, value, _, _) in FFCX_DEFAULT_OPTIONS.items():
         options[opt] = value  # type: ignore
@@ -114,8 +116,7 @@ def get_options(
     if priority_options is not None:
         options.update(priority_options)
 
-    logger.setLevel(int(options["verbosity"]))
-
+    logger.setLevel(int(options["verbosity"]))  # type: ignore
     logger.info("Final option values")
     logger.info(pprint.pformat(options))
 

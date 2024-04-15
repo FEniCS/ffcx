@@ -15,6 +15,8 @@ from __future__ import annotations
 import logging
 import typing
 
+import numpy.typing as npt
+
 from ffcx.codegeneration.C.dofmap import generator as dofmap_generator
 from ffcx.codegeneration.C.expressions import generator as expression_generator
 from ffcx.codegeneration.C.file import generator as file_generator
@@ -42,7 +44,7 @@ class CodeBlocks(typing.NamedTuple):
     file_post: list[tuple[str, str]]
 
 
-def generate_code(ir: DataIR, options: dict[str, int | float | str]) -> CodeBlocks:
+def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -> CodeBlocks:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")

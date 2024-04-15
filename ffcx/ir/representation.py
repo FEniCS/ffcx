@@ -197,7 +197,7 @@ def compute_ir(
     analysis: UFLData,
     object_names: dict[int, str],
     prefix: str,
-    options: dict[str, str | int | float],
+    options: dict[str, npt.DTypeLike | int | float],
     visualise: bool,
 ) -> DataIR:
     """Compute intermediate representation."""

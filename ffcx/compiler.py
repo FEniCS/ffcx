@@ -69,6 +69,8 @@ import logging
 import typing
 from time import time
 
+import numpy.typing as npt
+
 from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.codegeneration import generate_code
 from ffcx.formatting import format_code
@@ -83,7 +85,7 @@ def _print_timing(stage: int, timing: float):
 
 def compile_ufl_objects(
     ufl_objects: list[typing.Any],
-    options: dict[str, int | float | str],
+    options: dict[str, int | float | npt.DTypeLike],
     object_names: dict[int, str] | None = None,
     prefix: str | None = None,
     visualise: bool = False,

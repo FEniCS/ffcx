@@ -20,6 +20,7 @@ from pathlib import Path
 
 import cffi
 import numpy as np
+import numpy.typing as npt
 
 import ffcx
 import ffcx.naming
@@ -134,7 +135,7 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
 
 def compile_elements(
     elements,
-    options: dict[str, int | float | str] | None = None,
+    options: dict[str, int | float | npt.DTypeLike] | None = None,
     cache_dir=None,
     timeout=10,
     cffi_extra_compile_args=None,
@@ -171,7 +172,7 @@ def compile_elements(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(str(p["scalar_type"])).name)
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
         )
