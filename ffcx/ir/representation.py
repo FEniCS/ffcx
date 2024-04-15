@@ -403,7 +403,7 @@ def _compute_integral_ir(
             "enabled_coefficients": itg_data.enabled_coefficients,
             "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()],
         }
-        use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
+
         # Get element space dimensions
         unique_elements = element_numbers.keys()
         element_dimensions = {
@@ -427,6 +427,7 @@ def _compute_integral_ir(
 
         # Group integrands with the same quadrature rule
         grouped_integrands: dict[QuadratureRule, list[ufl.core.expr.Expr]] = {}
+        use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
