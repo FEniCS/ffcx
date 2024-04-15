@@ -241,7 +241,7 @@ def _analyze_form(form: ufl.form.Form, scalar_type: str) -> ufl.algorithms.formd
 
 
 def _has_custom_integrals(
-    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],
+    o: ufl.integral.Integral | ufl.classes.Form | list | tuple,
 ) -> bool:
     """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):

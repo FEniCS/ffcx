@@ -131,7 +131,7 @@ class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
     integral_type: str
-    subdomain_id: typing.Union[str, tuple[int, ...], int]
+    subdomain_id: str | tuple[int, ...] | int
     rank: int
     geometric_dimension: int
     topological_dimension: int
