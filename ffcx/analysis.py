@@ -193,8 +193,6 @@ def _analyze_form(form: ufl.form.Form, scalar_type: str) -> ufl.algorithms.formd
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
 
-        qd_default = -1
-        qr_default = "default"
 
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
@@ -211,15 +209,13 @@ def _analyze_form(form: ufl.form.Form, scalar_type: str) -> ufl.algorithms.formd
 
             if custom_q is None:
                 # Extract quadrature degree
-                qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
-                pd_estimated = np.max(integral.metadata()["estimated_polynomial_degree"])
-                if qd_metadata != qd_default:
-                    qd = qd_metadata
+                if "quadrature_degree" in metadata.keys():
+                    qd = metadata["quadrature_degree"]
                 else:
-                    qd = pd_estimated
+                    qd = np.max(integral.metadata()["estimated_polynomial_degree"])
 
                 # Extract quadrature rule
-                qr = integral.metadata().get("quadrature_rule", qr_default)
+                qr = integral.metadata().get("quadrature_rule", "default")
 
                 logger.info(f"Integral {i}, integral group {id}:")
                 logger.info(f"--- quadrature rule: {qr}")
