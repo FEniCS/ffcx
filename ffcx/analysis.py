@@ -11,6 +11,8 @@ including automatic selection of elements, degrees and form
 representation type.
 """
 
+from __future__ import annotations
+
 import logging
 import typing
 

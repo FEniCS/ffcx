@@ -16,6 +16,8 @@ should only need to use the data stored in the intermediate
 representation under the key "foo".
 """
 
+from __future__ import annotations
+
 import itertools
 import logging
 import typing
