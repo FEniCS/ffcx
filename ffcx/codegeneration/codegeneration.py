@@ -9,6 +9,7 @@
 This module implements the generation of C code for the body of each
 UFC function from an intermediate representation (IR).
 """
+
 from __future__ import annotations
 
 import logging

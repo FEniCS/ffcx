@@ -193,7 +193,6 @@ def _analyze_form(form: ufl.form.Form, scalar_type: str) -> ufl.algorithms.formd
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
 
-
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
             # If form contains a quadrature element, use the custom quadrature scheme
