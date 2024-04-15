@@ -14,11 +14,12 @@ from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
+from ffcx.ir.representation import IntegralIR
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
+def generator(ir: IntegralIR, options):
     """Generate C code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.integral_type}")
