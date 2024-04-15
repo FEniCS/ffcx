@@ -191,7 +191,13 @@ class DataIR(typing.NamedTuple):
     expressions: list[ExpressionIR]
 
 
-def compute_ir(analysis: UFLData, object_names, prefix, options, visualise):
+def compute_ir(
+    analysis: UFLData,
+    object_names: dict[int, str],
+    prefix: str,
+    options: dict[str, str | int | float],
+    visualise: bool,
+) -> DataIR:
     """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")

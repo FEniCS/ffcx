@@ -132,7 +132,7 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
 
 def compile_elements(
     elements,
-    options=None,
+    options: dict[str, int | float | str] | None = None,
     cache_dir=None,
     timeout=10,
     cffi_extra_compile_args=None,
@@ -169,7 +169,7 @@ def compile_elements(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
+            UFC_HEADER_DECL.format(np.dtype(str(p["scalar_type"])).name)
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
         )
@@ -239,7 +239,7 @@ def compile_forms(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
+            UFC_HEADER_DECL.format(np.dtype(str(p["scalar_type"])).name)
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
             + UFC_INTEGRAL_DECL
@@ -320,7 +320,7 @@ def compile_expressions(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
+            UFC_HEADER_DECL.format(np.dtype(str(p["scalar_type"])).name)
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
             + UFC_INTEGRAL_DECL

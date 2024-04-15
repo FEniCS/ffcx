@@ -9,6 +9,7 @@
 This module implements the generation of C code for the body of each
 UFC function from an intermediate representation (IR).
 """
+from __future__ import annotations
 
 import logging
 import typing
@@ -19,6 +20,7 @@ from ffcx.codegeneration.C.file import generator as file_generator
 from ffcx.codegeneration.C.finite_element import generator as finite_element_generator
 from ffcx.codegeneration.C.form import generator as form_generator
 from ffcx.codegeneration.C.integrals import generator as integral_generator
+from ffcx.ir.representation import DataIR
 
 logger = logging.getLogger("ffcx")
 
@@ -39,7 +41,7 @@ class CodeBlocks(typing.NamedTuple):
     file_post: list[tuple[str, str]]
 
 
-def generate_code(ir, options) -> CodeBlocks:
+def generate_code(ir: DataIR, options: dict[str, int | float | str]) -> CodeBlocks:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
