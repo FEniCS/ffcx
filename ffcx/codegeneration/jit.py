@@ -3,7 +3,9 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Just-in-time compolation."""
+"""Just-in-time compilation."""
+
+from __future__ import annotations
 
 import importlib
 import io
@@ -18,6 +20,7 @@ from pathlib import Path
 
 import cffi
 import numpy as np
+import numpy.typing as npt
 
 import ffcx
 import ffcx.naming
@@ -132,7 +135,7 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
 
 def compile_elements(
     elements,
-    options=None,
+    options: dict[str, int | float | npt.DTypeLike] | None = None,
     cache_dir=None,
     timeout=10,
     cffi_extra_compile_args=None,
@@ -169,7 +172,7 @@ def compile_elements(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
         )
@@ -239,7 +242,7 @@ def compile_forms(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
             + UFC_INTEGRAL_DECL
@@ -320,7 +323,7 @@ def compile_expressions(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_ELEMENT_DECL
             + UFC_DOFMAP_DECL
             + UFC_INTEGRAL_DECL

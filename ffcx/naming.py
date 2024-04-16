@@ -5,8 +5,9 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Naming."""
 
+from __future__ import annotations
+
 import hashlib
-import typing
 
 import basix.ufl
 import numpy as np
@@ -19,11 +20,7 @@ import ffcx.codegeneration
 
 def compute_signature(
     ufl_objects: list[
-        typing.Union[
-            ufl.Form,
-            basix.ufl._ElementBase,
-            tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]],
-        ]
+        ufl.Form | basix.ufl._ElementBase | tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]
     ],
     tag: str,
 ) -> str:
@@ -87,33 +84,41 @@ def compute_signature(
     return hashlib.sha1(string.encode("utf-8")).hexdigest()
 
 
-def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
+def integral_name(
+    original_form: ufl.form.Form,
+    integral_type: str,
+    form_id: int,
+    subdomain_id: tuple[int, ...] | tuple[str],
+    prefix: str,
+) -> str:
     """Get integral name."""
     sig = compute_signature([original_form], str((prefix, integral_type, form_id, subdomain_id)))
     return f"integral_{sig}"
 
 
-def form_name(original_form, form_id, prefix):
+def form_name(original_form: ufl.form.Form, form_id: int, prefix: str) -> str:
     """Get form name."""
     sig = compute_signature([original_form], str((prefix, form_id)))
     return f"form_{sig}"
 
 
-def finite_element_name(ufl_element, prefix):
+def finite_element_name(ufl_element: basix.ufl._ElementBase, prefix: str) -> str:
     """Get finite element name."""
     assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"element_{sig}"
 
 
-def dofmap_name(ufl_element, prefix):
+def dofmap_name(ufl_element: basix.ufl._ElementBase, prefix: str) -> str:
     """Get DOF map name."""
     assert isinstance(ufl_element, basix.ufl._ElementBase)
     sig = compute_signature([ufl_element], prefix)
     return f"dofmap_{sig}"
 
 
-def expression_name(expression, prefix):
+def expression_name(
+    expression: tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]], prefix: str
+) -> str:
     """Get expression name."""
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)

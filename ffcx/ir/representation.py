@@ -16,6 +16,8 @@ should only need to use the data stored in the intermediate
 representation under the key "foo".
 """
 
+from __future__ import annotations
+
 import itertools
 import logging
 import typing
@@ -180,7 +182,13 @@ class DataIR(typing.NamedTuple):
     expressions: list[ExpressionIR]
 
 
-def compute_ir(analysis: UFLData, object_names, prefix, options, visualise):
+def compute_ir(
+    analysis: UFLData,
+    object_names: dict[int, str],
+    prefix: str,
+    options: dict[str, npt.DTypeLike | int | float],
+    visualise: bool,
+) -> DataIR:
     """Compute intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 2: Computing intermediate representation of objects")
