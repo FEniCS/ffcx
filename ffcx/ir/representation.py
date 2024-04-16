@@ -131,36 +131,25 @@ class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
     integral_type: str
-    subdomain_id: str | tuple[int, ...] | int
     rank: int
-    geometric_dimension: int
-    topological_dimension: int
     entitytype: str
-    num_facets: int
-    num_vertices: int
     enabled_coefficients: list[bool]
-    element_dimensions: dict[basix.ufl._ElementBase, int]
-    element_ids: dict[basix.ufl._ElementBase, int]
     tensor_shape: list[int]
     coefficient_numbering: dict[ufl.Coefficient, int]
     coefficient_offsets: dict[ufl.Coefficient, int]
     original_constant_offsets: dict[ufl.Constant, int]
-    options: dict
-    cell_shape: str
     unique_tables: dict[str, npt.NDArray[np.float64]]
     unique_table_types: dict[str, str]
     integrand: dict[QuadratureRule, dict]
     name: str
     needs_facet_permutations: bool
     coordinate_element: str
-    sum_factorization: bool
 
 
 class ExpressionIR(typing.NamedTuple):
     """Intermediate representation of an expression."""
 
     name: str
-    element_dimensions: dict[basix.ufl._ElementBase, int]
     options: dict
     unique_tables: dict[str, npt.NDArray[np.float64]]
     unique_table_types: dict[str, str]
@@ -331,7 +320,9 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     return ElementIR(**ir)
 
 
-def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement):
+def _compute_custom_element_ir(
+    basix_element: basix.finite_element.FiniteElement,
+) -> CustomElementIR:
     """Compute intermediate representation of a custom Basix element."""
     ir: dict[str, typing.Any] = {}
     ir["cell_type"] = basix_element.cell_type
@@ -350,7 +341,7 @@ def _compute_custom_element_ir(basix_element: basix.finite_element.FiniteElement
     return CustomElementIR(**ir)
 
 
-def _compute_custom_quadrature_ir(element: basix.ufl._ElementBase):
+def _compute_custom_quadrature_ir(element: basix.ufl._ElementBase) -> QuadratureIR:
     """Compute intermediate representation of a custom Basix element."""
     ir: dict[str, typing.Any] = {}
     ir["cell_shape"] = element.cell_type.name
@@ -391,7 +382,7 @@ def _compute_dofmap_ir(element, element_numbers, dofmap_names):
 
 def _compute_integral_ir(
     form_data, form_index, element_numbers, integral_names, finite_element_names, options, visualise
-):
+) -> list[IntegralIR]:
     """Compute intermediate representation for form integrals."""
     _entity_types = {
         "cell": "cell",
@@ -415,31 +406,22 @@ def _compute_integral_ir(
 
         ir = {
             "integral_type": itg_data.integral_type,
-            "subdomain_id": itg_data.subdomain_id,
             "rank": form_data.rank,
-            "geometric_dimension": form_data.geometric_dimension,
-            "topological_dimension": tdim,
             "entitytype": entitytype,
-            "num_facets": cell.num_facets(),
-            "num_vertices": cell.num_vertices(),
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "cell_shape": cellname,
             "coordinate_element": finite_element_names[itg_data.domain.ufl_coordinate_element()],
-            "sum_factorization": options["sum_factorization"] and itg_data.integral_type == "cell",
         }
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
-        ir["element_dimensions"] = {
+        element_dimensions = {
             element: element.dim + element.num_global_support_dofs for element in unique_elements
         }
-
-        ir["element_ids"] = {element: i for i, element in enumerate(unique_elements)}
 
         # Create dimensions of primary indices, needed to reset the argument
         # 'A' given to tabulate_tensor() by the assembler.
         argument_dimensions = [
-            ir["element_dimensions"][element] for element in form_data.argument_elements
+            element_dimensions[element] for element in form_data.argument_elements
         ]
 
         # Compute shape of element tensor
@@ -452,7 +434,8 @@ def _compute_integral_ir(
         cell = itg_data.domain.ufl_cell()
 
         # Group integrands with the same quadrature rule
-        grouped_integrands = {}
+        grouped_integrands: dict[QuadratureRule, list[ufl.core.expr.Expr]] = {}
+        use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
@@ -538,7 +521,7 @@ def _compute_integral_ir(
                     degree,
                     scheme,
                     form_data.argument_elements,
-                    ir["sum_factorization"],
+                    use_sum_factorization,
                 )
 
             points = np.asarray(points)
@@ -547,10 +530,8 @@ def _compute_integral_ir(
 
             if rule not in grouped_integrands:
                 grouped_integrands[rule] = []
-
             grouped_integrands[rule].append(integral.integrand())
-
-        sorted_integrals = {}
+        sorted_integrals: dict[QuadratureRule, Integral] = {}
         for rule, integrands in grouped_integrands.items():
             integrands_summed = sorted_expr_sum(integrands)
 
@@ -580,7 +561,7 @@ def _compute_integral_ir(
         _offset = 0
         for k, el in zip(index_to_coeff, form_data.coefficient_elements):
             offsets[k[1]] = _offset
-            _offset += width * ir["element_dimensions"][el]
+            _offset += width * element_dimensions[el]
 
         # Copy offsets also into IR
         ir["coefficient_offsets"] = offsets
@@ -595,14 +576,16 @@ def _compute_integral_ir(
         ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrands = {rule: integral.integrand() for rule, integral in sorted_integrals.items()}
+        integrand_map: dict[QuadratureRule, ufl.core.expr.Expr] = {
+            rule: integral.integrand() for rule, integral in sorted_integrals.items()
+        }
 
         # Build more specific intermediate representation
         integral_ir = compute_integral_ir(
             itg_data.domain.ufl_cell(),
             itg_data.integral_type,
             ir["entitytype"],
-            integrands,
+            integrand_map,
             ir["tensor_shape"],
             options,
             visualise,
@@ -751,7 +734,7 @@ def _compute_expression_ir(
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
-    ir["element_dimensions"] = {
+    element_dimensions = {
         element: element.dim + element.num_global_support_dofs
         for element in analysis.unique_elements
     }
@@ -759,7 +742,7 @@ def _compute_expression_ir(
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expression)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
-    argument_dimensions = [ir["element_dimensions"][element] for element in argument_elements]
+    argument_dimensions = [element_dimensions[element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
     ir["tensor_shape"] = tensor_shape
@@ -826,7 +809,7 @@ def _compute_expression_ir(
     _offset = 0
     for i, el in enumerate(coefficient_elements):
         offsets[coefficients[i]] = _offset
-        _offset += ir["element_dimensions"][el]
+        _offset += element_dimensions[el]
 
     # Copy offsets also into IR
     ir["coefficient_offsets"] = offsets
@@ -870,7 +853,7 @@ def _compute_expression_ir(
     expression_ir = compute_integral_ir(
         cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape, options, visualise
     )
-
+    ir["options"] = options
     ir.update(expression_ir)
 
     return ExpressionIR(**ir)
