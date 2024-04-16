@@ -95,21 +95,21 @@ class FFCXBackendSymbols:
         # Table for chunk of custom quadrature points (physical coordinates).
         self.custom_points_table = L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
-    def entity(self, entitytype, restriction):
+    def entity(self, entity_type, restriction):
         """Entity index for lookup in element tables."""
-        if entitytype == "cell":
+        if entity_type == "cell":
             # Always 0 for cells (even with restriction)
             return L.LiteralInt(0)
 
-        if entitytype == "facet":
+        if entity_type == "facet":
             if restriction == "-":
                 return self.entity_local_index[1]
             else:
                 return self.entity_local_index[0]
-        elif entitytype == "vertex":
+        elif entity_type == "vertex":
             return self.entity_local_index[0]
         else:
-            logging.exception(f"Unknown entitytype {entitytype}")
+            logging.exception(f"Unknown entity_type {entity_type}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument iarg."""
@@ -175,14 +175,14 @@ class FFCXBackendSymbols:
         return c[offset + index]
 
     # TODO: Remove this, use table_access instead
-    def element_table(self, tabledata, entitytype, restriction):
+    def element_table(self, tabledata, entity_type, restriction):
         """Get an element table."""
-        entity = self.entity(entitytype, restriction)
+        entity = self.entity(entity_type, restriction)
 
         if tabledata.is_uniform:
             entity = 0
         else:
-            entity = self.entity(entitytype, restriction)
+            entity = self.entity(entity_type, restriction)
 
         if tabledata.is_piecewise:
             iq = 0

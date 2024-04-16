@@ -46,7 +46,7 @@ class BlockDataT(typing.NamedTuple):
     is_permuted: bool  # Do quad points on facets need to be permuted?
 
 
-def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_shape, p, visualise):
+def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_shape, p, visualise):
     """Compute intermediate representation for an integral."""
     # The intermediate representation dict we're building and returning
     # here
@@ -86,7 +86,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
             quadrature_rule,
             cell,
             integral_type,
-            entitytype,
+            entity_type,
             initial_terminals.values(),
             ir["unique_tables"],
             use_sum_factorization=p["sum_factorization"],

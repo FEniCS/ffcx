@@ -39,7 +39,7 @@ ufcx_form {factory_name} =
   .rank = {rank},
   .num_coefficients = {num_coefficients},
   .num_constants = {num_constants},
-  .original_coefficient_position = {original_coefficient_position},
+  .original_coefficient_positions = {original_coefficient_positions},
 
   .coefficient_name_map = {coefficient_names},
   .constant_name_map = {constant_names},

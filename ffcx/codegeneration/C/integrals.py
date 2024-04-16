@@ -22,11 +22,11 @@ logger = logging.getLogger("ffcx")
 def generator(ir: IntegralIR, options):
     """Generate C code for an integral."""
     logger.info("Generating code for integral:")
-    logger.info(f"--- type: {ir.integral_type}")
-    logger.info(f"--- name: {ir.name}")
+    logger.info(f"--- type: {ir.expression.integral_type}")
+    logger.info(f"--- name: {ir.expression.name}")
 
     """Generate code for an integral."""
-    factory_name = ir.name
+    factory_name = ir.expression.name
 
     # Format declaration
     declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
@@ -51,9 +51,9 @@ def generator(ir: IntegralIR, options):
         values = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
         sizes = len(ir.enabled_coefficients)
         code["enabled_coefficients_init"] = (
-            f"bool enabled_coefficients_{ir.name}[{sizes}] = {{{values}}};"
+            f"bool enabled_coefficients_{ir.expression.name}[{sizes}] = {{{values}}};"
         )
-        code["enabled_coefficients"] = f"enabled_coefficients_{ir.name}"
+        code["enabled_coefficients"] = f"enabled_coefficients_{ir.expression.name}"
     else:
         code["enabled_coefficients_init"] = ""
         code["enabled_coefficients"] = "NULL"
@@ -72,7 +72,7 @@ def generator(ir: IntegralIR, options):
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
-        needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
+        needs_facet_permutations="true" if ir.expression.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
         coordinate_element=f"&{ir.coordinate_element}",
