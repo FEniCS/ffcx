@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Collection of FFCx specific pieces for the code generation phase."""
 
+from __future__ import annotations
+
 from ffcx.codegeneration.access import FFCXBackendAccess
 from ffcx.codegeneration.definitions import FFCXBackendDefinitions
 from ffcx.codegeneration.symbols import FFCXBackendSymbols

@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Generate UFC code for an expression."""
 
+from __future__ import annotations
+
 import logging
 
 import numpy as np
