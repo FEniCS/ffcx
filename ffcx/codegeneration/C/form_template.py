@@ -23,7 +23,6 @@ factory = """
 // Code for form {factory_name}
 
 {original_coefficient_position_init}
-{dofmaps_init}
 {finite_elements_init}
 {form_integral_offsets_init}
 {form_integrals_init}
@@ -45,7 +44,6 @@ ufcx_form {factory_name} =
   .constant_name_map = {constant_names},
 
   .finite_elements = {finite_elements},
-  .dofmaps = {dofmaps},
 
   .form_integrals = {form_integrals},
   .form_integral_ids = {form_integral_ids},
