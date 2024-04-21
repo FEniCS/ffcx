@@ -352,6 +352,8 @@ class IntegralGenerator:
                 # Store access node for future reference
                 self.set_var(quadrature_rule, v, vaccess)
 
+        # Optimize definitions
+        definitions = optimize(definitions, quadrature_rule)
         return definitions, intermediates
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
