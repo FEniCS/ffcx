@@ -74,9 +74,9 @@ def main(args=None):
         # Generate code
         code_h, code_c = compiler.compile_ufl_objects(
             ufd.forms + ufd.expressions + ufd.elements,
-            ufd.object_names,
-            prefix=prefix,
             options=options,
+            object_names=ufd.object_names,
+            prefix=prefix,
             visualise=xargs.visualise,
         )
 

@@ -11,6 +11,8 @@ including automatic selection of elements, degrees and form
 representation type.
 """
 
+from __future__ import annotations
+
 import logging
 import typing
 
@@ -37,12 +39,20 @@ class UFLData(typing.NamedTuple):
     expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
 
 
-def analyze_ufl_objects(ufl_objects: list, options: dict) -> UFLData:
+def analyze_ufl_objects(
+    ufl_objects: list[
+        ufl.form.Form
+        | ufl.AbstractFiniteElement
+        | ufl.Mesh
+        | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
+    ],
+    scalar_type: npt.DTypeLike,
+) -> UFLData:
     """Analyze ufl object(s).
 
     Args:
         ufl_objects: UFL objects
-        options: FFCx options. These options take priority over all other set options.
+        scalar_type: Scalar type that should be used for the analysis
 
     Returns:
         A data structure holding:
@@ -57,13 +67,15 @@ def analyze_ufl_objects(ufl_objects: list, options: dict) -> UFLData:
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    elements = []
-    coordinate_elements = []
+    elements: list[ufl.AbstractFiniteElement] = []
+    coordinate_elements: list[ufl.AbstractFiniteElement] = []
 
     # Group objects by types
-    forms = []
-    expressions = []
-    processed_expressions = []
+    forms: list[ufl.form.Form] = []
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]] = []
+    processed_expressions: list[
+        tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]
+    ] = []
 
     for ufl_object in ufl_objects:
         if isinstance(ufl_object, ufl.form.Form):
@@ -79,14 +91,14 @@ def analyze_ufl_objects(ufl_objects: list, options: dict) -> UFLData:
         else:
             raise TypeError("UFL objects not recognised.")
 
-    form_data = tuple(_analyze_form(form, options) for form in forms)
+    form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
     for data in form_data:
         elements += data.unique_sub_elements
         coordinate_elements += data.coordinate_elements
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
-        processed_expression = _analyze_expression(original_expression, options)
+        processed_expression = _analyze_expression(original_expression, scalar_type)
         processed_expressions += [(processed_expression, points, original_expression)]
 
     elements += ufl.algorithms.analysis.extract_sub_elements(elements)
@@ -110,7 +122,9 @@ def analyze_ufl_objects(ufl_objects: list, options: dict) -> UFLData:
     )
 
 
-def _analyze_expression(expression: ufl.core.expr.Expr, options: dict):
+def _analyze_expression(
+    expression: ufl.core.expr.Expr, scalar_type: npt.DTypeLike
+) -> ufl.core.expr.Expr:
     """Analyzes and preprocesses expressions."""
     preserve_geometry_types = (ufl.classes.Jacobian,)
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
@@ -125,19 +139,21 @@ def _analyze_expression(expression: ufl.core.expr.Expr, options: dict):
     )
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
 
-    complex_mode = np.issubdtype(options["scalar_type"], np.complexfloating)
-    if not complex_mode:
+    # Remove complex nodes if scalar type is real valued
+    if not np.issubdtype(scalar_type, np.complexfloating):
         expression = ufl.algorithms.remove_complex_nodes.remove_complex_nodes(expression)
 
     return expression
 
 
-def _analyze_form(form: ufl.form.Form, options: dict) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(
+    form: ufl.form.Form, scalar_type: npt.DTypeLike
+) -> ufl.algorithms.formdata.FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:
         form: forms
-        options: options
+        scalar_type: Scalar type used for form. This is used to simplify real valued forms
 
     Returns:
         Form data computed by UFL with metadata attached
@@ -153,13 +169,12 @@ def _analyze_form(form: ufl.form.Form, options: dict) -> ufl.algorithms.formdata
     if _has_custom_integrals(form):
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
-    # Set default spacing for coordinate elements to be equispaced
+    # Check that coordinate element is based on basix.ufl._ElementBase
     for i in form._integrals:
-        element = i._ufl_domain._ufl_coordinate_element
-        assert isinstance(element, basix.ufl._ElementBase)
+        assert isinstance(i._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
 
     # Check for complex mode
-    complex_mode = np.issubdtype(options["scalar_type"], np.complexfloating)
+    complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
     form_data = ufl.algorithms.compute_form_data(
@@ -184,9 +199,6 @@ def _analyze_form(form: ufl.form.Form, options: dict) -> ufl.algorithms.formdata
         # all integrals in this integral data group, i.e. must be the
         # same for for the same (domain, itype, subdomain_id)
 
-        qd_default = -1
-        qr_default = "default"
-
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
             # If form contains a quadrature element, use the custom quadrature scheme
@@ -202,15 +214,17 @@ def _analyze_form(form: ufl.form.Form, options: dict) -> ufl.algorithms.formdata
 
             if custom_q is None:
                 # Extract quadrature degree
-                qd_metadata = integral.metadata().get("quadrature_degree", qd_default)
-                pd_estimated = np.max(integral.metadata()["estimated_polynomial_degree"])
-                if qd_metadata != qd_default:
-                    qd = qd_metadata
-                else:
-                    qd = pd_estimated
+                qd = -1
+                if "quadrature_degree" in metadata.keys():
+                    qd = metadata["quadrature_degree"]
+
+                # Sending in a negative quadrature degree means that we want to be
+                # able to customize it at a later stage.
+                if qd < 0:
+                    qd = np.max(integral.metadata()["estimated_polynomial_degree"])
 
                 # Extract quadrature rule
-                qr = integral.metadata().get("quadrature_rule", qr_default)
+                qr = integral.metadata().get("quadrature_rule", "default")
 
                 logger.info(f"Integral {i}, integral group {id}:")
                 logger.info(f"--- quadrature rule: {qr}")
@@ -232,7 +246,7 @@ def _analyze_form(form: ufl.form.Form, options: dict) -> ufl.algorithms.formdata
 
 
 def _has_custom_integrals(
-    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],
+    o: ufl.integral.Integral | ufl.classes.Form | list | tuple,
 ) -> bool:
     """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):

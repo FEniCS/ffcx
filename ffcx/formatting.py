@@ -13,13 +13,17 @@ ufcx_utils.
 
 """
 
+from __future__ import annotations
+
 import logging
 import os
+
+from ffcx.codegeneration.codegeneration import CodeBlocks
 
 logger = logging.getLogger("ffcx")
 
 
-def format_code(code, options: dict):
+def format_code(code: CodeBlocks) -> tuple[str, str]:
     """Format given code in UFC format. Returns two strings with header and source file contents."""
     logger.info(79 * "*")
     logger.info("Compiler stage 5: Formatting code")
