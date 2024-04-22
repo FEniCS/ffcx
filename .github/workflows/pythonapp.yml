@@ -13,7 +13,6 @@ on:
   pull_request:
     branches:
       - main
-
   workflow_dispatch:
 
 jobs:
@@ -22,107 +21,68 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.8', '3.9', '3.10', "3.11"]
-
-    env:
-      CC: gcc-10
-      CXX: g++-10
-
+        python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
       - name: Checkout FFCx
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
-
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
         run: brew install graphviz ninja pkg-config
-
       - name: Install FEniCS dependencies (Python)
         run: |
-          python -m pip install git+https://github.com/FEniCS/ufl.git@release
-          python -m pip install git+https://github.com/FEniCS/basix.git@release
-
+          pip install git+https://github.com/FEniCS/ufl.git
+          pip install git+https://github.com/FEniCS/basix.git
       - name: Install FFCx
-        run: |
-          python -m pip install .[ci]
-
-      - name: Lint with flake8
-        run: |
-          python -m flake8 --statistics ffcx/ test/
-
+        run: pip install .[ci]
       - name: Static check with mypy
+        run: mypy ffcx/
+        if: matrix.python-version != '3.12'
+      - name: ruff checks
         run: |
-          python -m mypy ffcx/
-        if: matrix.python-version != '3.11'
-
-      - name: isort checks (non-blocking)
-        continue-on-error: true
-        run: |
-          python3 -m isort --check .
-
-      - name: Check documentation style
-        run: |
-          python -m pydocstyle .
-
+          ruff check .
+          ruff format --check .
       - name: Run units tests
-        run: |
-          python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
-
+        run: python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: |
-          python -m coveralls
+        run: coveralls
         continue-on-error: true
-
       - name: Upload pytest results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
         # Use always() to always run this step to publish test results
         # when there are test failures
         if: always()
-
-      - name: Get UFL
-        uses: actions/checkout@v3
-        with:
-          path: ./ufl
-          repository: FEniCS/ufl
-          ref: main
-
-      - name: Run FFCx and UFL demos
+      - name: Run FFCx demos
         run: |
-          mv ufl/demo/* demo/
           pytest demo/test_demos.py
           rm -Rf ufl/
-
       - name: Build documentation
         run: |
           cd doc
           make html
-
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: doc-${{ matrix.os }}-${{ matrix.python-version }}
           path: doc/build/html/
           retention-days: 2
           if-no-files-found: error
-
       - name: Checkout FEniCS/docs
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: "FEniCS/docs"
           path: "docs"

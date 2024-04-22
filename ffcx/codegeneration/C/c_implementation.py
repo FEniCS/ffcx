@@ -3,13 +3,18 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""C implementation."""
 
 import warnings
+
+import numpy as np
+import numpy.typing as npt
+
 import ffcx.codegeneration.lnodes as L
-from ffcx.codegeneration.utils import scalar_to_value_type
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 math_table = {
-    "double": {
+    "float64": {
         "sqrt": "sqrt",
         "abs": "fabs",
         "cos": "cos",
@@ -34,7 +39,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "float": {
+    "float32": {
         "sqrt": "sqrtf",
         "abs": "fabsf",
         "cos": "cosf",
@@ -59,7 +64,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "long double": {
+    "longdouble": {
         "sqrt": "sqrtl",
         "abs": "fabsl",
         "cos": "cosl",
@@ -82,7 +87,7 @@ math_table = {
         "min_value": "fminl",
         "max_value": "fmaxl",
     },
-    "double _Complex": {
+    "complex128": {
         "sqrt": "csqrt",
         "abs": "cabs",
         "cos": "ccos",
@@ -108,7 +113,7 @@ math_table = {
         "bessel_y": "yn",
         "bessel_j": "jn",
     },
-    "float _Complex": {
+    "complex64": {
         "sqrt": "csqrtf",
         "abs": "cabsf",
         "cos": "ccosf",
@@ -137,21 +142,31 @@ math_table = {
 }
 
 
-class CFormatter(object):
-    def __init__(self, scalar) -> None:
-        self.scalar_type = scalar
-        self.real_type = scalar_to_value_type(scalar)
+class CFormatter:
+    """C formatter."""
 
-    def _dtype_to_name(self, dtype):
+    scalar_type: np.dtype
+    real_type: np.dtype
+
+    def __init__(self, dtype: npt.DTypeLike) -> None:
+        """Initialise."""
+        self.scalar_type = np.dtype(dtype)
+        self.real_type = dtype_to_scalar_dtype(dtype)
+
+    def _dtype_to_name(self, dtype) -> str:
+        """Convert dtype to C name."""
         if dtype == L.DataType.SCALAR:
-            return self.scalar_type
+            return dtype_to_c_type(self.scalar_type)
         if dtype == L.DataType.REAL:
-            return self.real_type
+            return dtype_to_c_type(self.real_type)
         if dtype == L.DataType.INT:
             return "int"
+        if dtype == L.DataType.BOOL:
+            return "bool"
         raise ValueError(f"Invalid dtype: {dtype}")
 
     def _format_number(self, x):
+        """Format a number."""
         # Use 16sf for precision (good for float64 or less)
         if isinstance(x, complex):
             return f"({x.real:.16}+I*{x.imag:.16})"
@@ -160,6 +175,7 @@ class CFormatter(object):
         return str(x)
 
     def _build_initializer_lists(self, values):
+        """Build initializer lists."""
         arr = "{"
         if len(values.shape) == 1:
             arr += ", ".join(self._format_number(v) for v in values)
@@ -169,12 +185,34 @@ class CFormatter(object):
         return arr
 
     def format_statement_list(self, slist) -> str:
+        """Format a statement list."""
         return "".join(self.c_format(s) for s in slist.statements)
 
+    def format_section(self, section) -> str:
+        """Format a section."""
+        # add new line before section
+        comments = "// ------------------------ \n"
+        comments += "// Section: " + section.name + "\n"
+        comments += "// Inputs: " + ", ".join(w.name for w in section.input) + "\n"
+        comments += "// Outputs: " + ", ".join(w.name for w in section.output) + "\n"
+        declarations = "".join(self.c_format(s) for s in section.declarations)
+
+        body = ""
+        if len(section.statements) > 0:
+            declarations += "{\n  "
+            body = "".join(self.c_format(s) for s in section.statements)
+            body = body.replace("\n", "\n  ")
+            body = body[:-2] + "}\n"
+
+        body += "// ------------------------ \n"
+        return comments + declarations + body
+
     def format_comment(self, c) -> str:
+        """Format a comment."""
         return "// " + c.comment + "\n"
 
     def format_array_decl(self, arr) -> str:
+        """Format an array declaration."""
         dtype = arr.symbol.dtype
         typename = self._dtype_to_name(dtype)
 
@@ -189,17 +227,20 @@ class CFormatter(object):
         return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
     def format_array_access(self, arr) -> str:
+        """Format an array access."""
         name = self.c_format(arr.array)
         indices = f"[{']['.join(self.c_format(i) for i in arr.indices)}]"
         return f"{name}{indices}"
 
     def format_variable_decl(self, v) -> str:
+        """Format a variable declaration."""
         val = self.c_format(v.value)
         symbol = self.c_format(v.symbol)
         typename = self._dtype_to_name(v.symbol.dtype)
         return f"{typename} {symbol} = {val};\n"
 
     def format_nary_op(self, oper) -> str:
+        """Format an n-ary operation."""
         # Format children
         args = [self.c_format(arg) for arg in oper.args]
 
@@ -212,6 +253,7 @@ class CFormatter(object):
         return f" {oper.op} ".join(args)
 
     def format_binary_op(self, oper) -> str:
+        """Format a binary operation."""
         # Format children
         lhs = self.c_format(oper.lhs)
         rhs = self.c_format(oper.rhs)
@@ -226,19 +268,23 @@ class CFormatter(object):
         return f"{lhs} {oper.op} {rhs}"
 
     def format_unary_op(self, oper) -> str:
+        """Format a unary operation."""
         arg = self.c_format(oper.arg)
         if oper.arg.precedence >= oper.precedence:
             return f"{oper.op}({arg})"
         return f"{oper.op}{arg}"
 
     def format_literal_float(self, val) -> str:
+        """Format a literal float."""
         value = self._format_number(val.value)
         return f"{value}"
 
     def format_literal_int(self, val) -> str:
+        """Format a literal int."""
         return f"{val.value}"
 
     def format_for_range(self, r) -> str:
+        """Format a for loop over a range."""
         begin = self.c_format(r.begin)
         end = self.c_format(r.end)
         index = self.c_format(r.index)
@@ -252,14 +298,17 @@ class CFormatter(object):
         return output
 
     def format_statement(self, s) -> str:
+        """Format a statement."""
         return self.c_format(s.expr)
 
     def format_assign(self, expr) -> str:
+        """Format an assignment."""
         rhs = self.c_format(expr.rhs)
         lhs = self.c_format(expr.lhs)
         return f"{lhs} {expr.op} {rhs};\n"
 
     def format_conditional(self, s) -> str:
+        """Format a conditional."""
         # Format children
         c = self.c_format(s.condition)
         t = self.c_format(s.true)
@@ -277,12 +326,15 @@ class CFormatter(object):
         return c + " ? " + t + " : " + f
 
     def format_symbol(self, s) -> str:
+        """Format a symbol."""
         return f"{s.name}"
 
     def format_multi_index(self, mi) -> str:
+        """Format a multi-index."""
         return self.c_format(mi.global_index)
 
     def format_math_function(self, c) -> str:
+        """Format a mathematical function."""
         # Get a table of functions for this type, if available
         arg_type = self.scalar_type
         if hasattr(c.args[0], "dtype"):
@@ -291,7 +343,7 @@ class CFormatter(object):
         else:
             warnings.warn(f"Syntax item without dtype {c.args[0]}")
 
-        dtype_math_table = math_table.get(arg_type, {})
+        dtype_math_table = math_table[arg_type.name]
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
@@ -299,6 +351,7 @@ class CFormatter(object):
         return f"{func}({args})"
 
     c_impl = {
+        "Section": format_section,
         "StatementList": format_statement_list,
         "Comment": format_comment,
         "ArrayDecl": format_array_decl,
@@ -333,6 +386,7 @@ class CFormatter(object):
     }
 
     def c_format(self, s) -> str:
+        """Format as C."""
         name = s.__class__.__name__
         try:
             return self.c_impl[name](self, s)

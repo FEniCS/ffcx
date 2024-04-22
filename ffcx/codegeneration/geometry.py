@@ -3,13 +3,16 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Geometry."""
 
-import numpy as np
-import ffcx.codegeneration.lnodes as L
 import basix
+import numpy as np
+
+import ffcx.codegeneration.lnodes as L
 
 
 def write_table(tablename, cellname):
+    """Write a table."""
     if tablename == "facet_edge_vertices":
         return facet_edge_vertices(tablename, cellname)
     if tablename == "reference_facet_jacobian":
@@ -30,6 +33,7 @@ def write_table(tablename, cellname):
 
 
 def facet_edge_vertices(tablename, cellname):
+    """Write facet edge vertices."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     triangle_edges = basix.topology(basix.CellType.triangle)[1]
@@ -53,6 +57,7 @@ def facet_edge_vertices(tablename, cellname):
 
 
 def reference_facet_jacobian(tablename, cellname):
+    """Write a reference facet jacobian."""
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_jacobians(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
@@ -60,6 +65,7 @@ def reference_facet_jacobian(tablename, cellname):
 
 
 def reference_cell_volume(tablename, cellname):
+    """Write a reference cell volume."""
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.volume(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
@@ -67,6 +73,7 @@ def reference_cell_volume(tablename, cellname):
 
 
 def reference_facet_volume(tablename, cellname):
+    """Write a reference facet volume."""
     celltype = getattr(basix.CellType, cellname)
     volumes = basix.cell.facet_reference_volumes(celltype)
     for i in volumes[1:]:
@@ -77,6 +84,7 @@ def reference_facet_volume(tablename, cellname):
 
 
 def reference_edge_vectors(tablename, cellname):
+    """Write reference edge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
@@ -87,6 +95,7 @@ def reference_edge_vectors(tablename, cellname):
 
 
 def facet_reference_edge_vectors(tablename, cellname):
+    """Write facet reference edge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
@@ -101,7 +110,9 @@ def facet_reference_edge_vectors(tablename, cellname):
         if len(facet) == 3:
             edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
         elif len(facet) == 4:
-            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_edges]
+            edge_vectors += [
+                geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_edges
+            ]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
@@ -111,6 +122,7 @@ def facet_reference_edge_vectors(tablename, cellname):
 
 
 def reference_facet_normals(tablename, cellname):
+    """Write reference facet normals."""
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_outward_normals(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
@@ -118,6 +130,7 @@ def reference_facet_normals(tablename, cellname):
 
 
 def facet_orientation(tablename, cellname):
+    """Write facet orientations."""
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_orientations(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)

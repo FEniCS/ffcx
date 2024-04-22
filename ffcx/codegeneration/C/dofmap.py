@@ -6,6 +6,7 @@
 #
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
+"""Generate UFC code for a DOF map."""
 
 import logging
 
@@ -60,14 +61,18 @@ def generator(ir, options):
     d["entity_closure_dof_offsets"] = f"entity_closure_dof_offsets_{ir.name}"
     values = ", ".join(str(i) for i in entity_closure_dof_offsets)
     sizes = len(entity_dof_offsets)
-    d["entity_closure_dof_offsets_init"] = f"int entity_closure_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    d["entity_closure_dof_offsets_init"] = (
+        f"int entity_closure_dof_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    )
 
     d["block_size"] = ir.block_size
 
     if len(ir.sub_dofmaps) > 0:
         values = ", ".join(f"&{dofmap}" for dofmap in ir.sub_dofmaps)
         sizes = len(ir.sub_dofmaps)
-        d["sub_dofmaps_initialization"] = f"ufcx_dofmap* sub_dofmaps_{ir.name}[{sizes}] = {{{values}}};"
+        d["sub_dofmaps_initialization"] = (
+            f"ufcx_dofmap* sub_dofmaps_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["sub_dofmaps"] = f"sub_dofmaps_{ir.name}"
     else:
         d["sub_dofmaps_initialization"] = ""
@@ -76,14 +81,10 @@ def generator(ir, options):
     # Check that no keys are redundant or have been missed
     from string import Formatter
 
-    fields = [
-        fname for _, fname, _, _ in Formatter().parse(ufcx_dofmap.factory) if fname
-    ]
+    fields = [fname for _, fname, _, _ in Formatter().parse(ufcx_dofmap.factory) if fname]
     # Remove square brackets from any field names
     fields = [f.split("[")[0] for f in fields]
-    assert set(fields) == set(
-        d.keys()
-    ), "Mismatch between keys in template and in formatting dict."
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict."
 
     # Format implementation code
     implementation = ufcx_dofmap.factory.format_map(d)

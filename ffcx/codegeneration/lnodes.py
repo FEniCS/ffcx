@@ -3,11 +3,33 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""LNodes.
+
+LNodes is intended as a minimal generic language description.
+Formatting is done later, depending on the target language.
+
+Supported:
+ Floating point (and complex) and integer variables and multidimensional arrays
+ Range loops
+ Simple arithmetic, +-*/
+ Math operations
+ Logic conditions
+ Comments
+Not supported:
+ Pointers
+ Function Calls
+ Flow control (if, switch, while)
+ Booleans
+ Strings
+"""
 
 import numbers
-import ufl
-import numpy as np
+from collections.abc import Sequence
 from enum import Enum
+from typing import Optional
+
+import numpy as np
+import ufl
 
 
 class PRECEDENCE:
@@ -40,45 +62,32 @@ class PRECEDENCE:
     LOWEST = 15
 
 
-"""LNodes is intended as a minimal generic language description.
-Formatting is done later, depending on the target language.
-
-Supported:
- Floating point (and complex) and integer variables and multidimensional arrays
- Range loops
- Simple arithmetic, +-*/
- Math operations
- Logic conditions
- Comments
-Not supported:
- Pointers
- Function Calls
- Flow control (if, switch, while)
- Booleans
- Strings
-"""
-
-
 def is_zero_lexpr(lexpr):
+    """Check if an expression is zero."""
     return (isinstance(lexpr, LiteralFloat) and lexpr.value == 0.0) or (
         isinstance(lexpr, LiteralInt) and lexpr.value == 0
     )
 
 
 def is_one_lexpr(lexpr):
+    """Check if an expression is one."""
     return (isinstance(lexpr, LiteralFloat) and lexpr.value == 1.0) or (
         isinstance(lexpr, LiteralInt) and lexpr.value == 1
     )
 
 
 def is_negative_one_lexpr(lexpr):
+    """Check if an expression is negative one."""
     return (isinstance(lexpr, LiteralFloat) and lexpr.value == -1.0) or (
         isinstance(lexpr, LiteralInt) and lexpr.value == -1
     )
 
 
 def float_product(factors):
-    """Build product of float factors, simplifying ones and zeros and returning 1.0 if empty sequence."""
+    """Build product of float factors.
+
+    Simplify ones and zeros and returning 1.0 if empty sequence.
+    """
     factors = [f for f in factors if not is_one_lexpr(f)]
     if len(factors) == 0:
         return LiteralFloat(1.0)
@@ -101,32 +110,36 @@ class DataType(Enum):
     REAL = 0
     SCALAR = 1
     INT = 2
-    NONE = 3
+    BOOL = 3
+    NONE = 4
 
 
-def merge_dtypes(dtype0, dtype1):
-    # Promote dtype to SCALAR or REAL if either argument matches
-    if DataType.NONE in (dtype0, dtype1):
-        raise ValueError(f"Invalid DataType in LNodes {dtype0, dtype1}")
-    if DataType.SCALAR in (dtype0, dtype1):
+def merge_dtypes(dtypes: list[DataType]):
+    """Promote dtype to SCALAR or REAL if either argument matches."""
+    if DataType.NONE in dtypes:
+        raise ValueError(f"Invalid DataType in LNodes {dtypes}")
+    if DataType.SCALAR in dtypes:
         return DataType.SCALAR
-    elif DataType.REAL in (dtype0, dtype1):
+    elif DataType.REAL in dtypes:
         return DataType.REAL
-    elif (dtype0 == DataType.INT and dtype1 == DataType.INT):
+    elif DataType.INT in dtypes:
         return DataType.INT
+    elif DataType.BOOL in dtypes:
+        return DataType.BOOL
     else:
-        raise ValueError(f"Can't get dtype for binary operation with {dtype0, dtype1}")
+        raise ValueError(f"Can't get dtype for operation with {dtypes}")
 
 
-class LNode(object):
+class LNode:
     """Base class for all AST nodes."""
 
     def __eq__(self, other):
-        name = self.__class__.__name__
-        raise NotImplementedError("Missing implementation of __eq__ in " + name)
+        """Check for equality."""
+        return NotImplemented
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        """Check for inequality."""
+        return NotImplemented
 
 
 class LExpr(LNode):
@@ -138,9 +151,11 @@ class LExpr(LNode):
     dtype = DataType.NONE
 
     def __getitem__(self, indices):
+        """Get an item."""
         return ArrayAccess(self, indices)
 
     def __neg__(self):
+        """Negate."""
         if isinstance(self, LiteralFloat):
             return LiteralFloat(-self.value)
         if isinstance(self, LiteralInt):
@@ -148,6 +163,7 @@ class LExpr(LNode):
         return Neg(self)
 
     def __add__(self, other):
+        """Add."""
         other = as_lexpr(other)
         if is_zero_lexpr(self):
             return other
@@ -158,6 +174,7 @@ class LExpr(LNode):
         return Add(self, other)
 
     def __radd__(self, other):
+        """Add."""
         other = as_lexpr(other)
         if is_zero_lexpr(self):
             return other
@@ -168,6 +185,7 @@ class LExpr(LNode):
         return Add(other, self)
 
     def __sub__(self, other):
+        """Subtract."""
         other = as_lexpr(other)
         if is_zero_lexpr(self):
             return -other
@@ -180,6 +198,7 @@ class LExpr(LNode):
         return Sub(self, other)
 
     def __rsub__(self, other):
+        """Subtract."""
         other = as_lexpr(other)
         if is_zero_lexpr(self):
             return other
@@ -190,6 +209,7 @@ class LExpr(LNode):
         return Sub(other, self)
 
     def __mul__(self, other):
+        """Multiply."""
         other = as_lexpr(other)
         if is_zero_lexpr(self):
             return self
@@ -208,6 +228,7 @@ class LExpr(LNode):
         return Mul(self, other)
 
     def __rmul__(self, other):
+        """Multiply."""
         other = as_lexpr(other)
         if is_zero_lexpr(self):
             return self
@@ -224,6 +245,7 @@ class LExpr(LNode):
         return Mul(other, self)
 
     def __div__(self, other):
+        """Divide."""
         other = as_lexpr(other)
         if is_zero_lexpr(other):
             raise ValueError("Division by zero!")
@@ -232,6 +254,7 @@ class LExpr(LNode):
         return Div(self, other)
 
     def __rdiv__(self, other):
+        """Divide."""
         other = as_lexpr(other)
         if is_zero_lexpr(self):
             raise ValueError("Division by zero!")
@@ -258,15 +281,13 @@ class LExprTerminal(LExpr):
     sideeffect = False
 
 
-# LExprTerminal types
-
-
 class LiteralFloat(LExprTerminal):
     """A floating point literal value."""
 
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
+        """Initialise."""
         assert isinstance(value, (float, complex))
         self.value = value
         if isinstance(value, complex):
@@ -275,12 +296,15 @@ class LiteralFloat(LExprTerminal):
             self.dtype = DataType.REAL
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, LiteralFloat) and self.value == other.value
 
     def __float__(self):
+        """Convert to float."""
         return float(self.value)
 
     def __repr__(self):
+        """Representation."""
         return str(self.value)
 
 
@@ -290,17 +314,21 @@ class LiteralInt(LExprTerminal):
     precedence = PRECEDENCE.LITERAL
 
     def __init__(self, value):
+        """Initialise."""
         assert isinstance(value, (int, np.number))
         self.value = value
         self.dtype = DataType.INT
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, LiteralInt) and self.value == other.value
 
     def __hash__(self):
+        """Hash."""
         return hash(self.value)
 
     def __repr__(self):
+        """Representation."""
         return str(self.value)
 
 
@@ -310,25 +338,32 @@ class Symbol(LExprTerminal):
     precedence = PRECEDENCE.SYMBOL
 
     def __init__(self, name: str, dtype):
+        """Initialise."""
         assert isinstance(name, str)
         assert name.replace("_", "").isalnum()
         self.name = name
         self.dtype = dtype
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, Symbol) and self.name == other.name
 
     def __hash__(self):
+        """Hash."""
         return hash(self.name)
 
     def __repr__(self):
+        """Representation."""
         return self.name
 
 
 class MultiIndex(LExpr):
     """A multi-index for accessing tensors flattened in memory."""
 
+    precedence = PRECEDENCE.SYMBOL
+
     def __init__(self, symbols: list, sizes: list):
+        """Initialise."""
         self.dtype = DataType.INT
         self.sizes = sizes
         self.symbols = [as_lexpr(sym) for sym in symbols]
@@ -342,17 +377,25 @@ class MultiIndex(LExpr):
             stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
             self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
 
+    @property
+    def dim(self):
+        """Dimension of the multi-index."""
+        return len(self.sizes)
+
     def size(self):
+        """Size of the multi-index."""
         return np.prod(self.sizes)
 
     def local_index(self, idx):
+        """Get the local index."""
         assert idx < len(self.symbols)
         return self.symbols[idx]
 
     def intersection(self, other):
+        """Get the intersection."""
         symbols = []
         sizes = []
-        for (sym, size) in zip(self.symbols, self.sizes):
+        for sym, size in zip(self.symbols, self.sizes):
             if sym in other.symbols:
                 i = other.symbols.index(sym)
                 assert other.sizes[i] == size
@@ -361,10 +404,14 @@ class MultiIndex(LExpr):
         return MultiIndex(symbols, sizes)
 
     def union(self, other):
-        # NB result may depend on order a.union(b) != b.union(a)
+        """Get the union.
+
+        Note:
+            Result may depend on order a.union(b) != b.union(a)
+        """
         symbols = self.symbols.copy()
         sizes = self.sizes.copy()
-        for (sym, size) in zip(other.symbols, other.sizes):
+        for sym, size in zip(other.symbols, other.sizes):
             if sym in symbols:
                 i = symbols.index(sym)
                 assert sizes[i] == size
@@ -374,52 +421,61 @@ class MultiIndex(LExpr):
         return MultiIndex(symbols, sizes)
 
     def difference(self, other):
+        """Get the difference."""
         symbols = []
         sizes = []
-        for (idx, size) in zip(self.symbols, self.sizes):
+        for idx, size in zip(self.symbols, self.sizes):
             if idx not in other.symbols:
                 symbols.append(idx)
                 sizes.append(size)
         return MultiIndex(symbols, sizes)
 
     def __hash__(self):
-        return hash(self.global_idx)
+        """Hash."""
+        return hash(self.global_index.__repr__)
 
 
 class PrefixUnaryOp(LExprOperator):
     """Base class for unary operators."""
 
     def __init__(self, arg):
+        """Initialise."""
         self.arg = as_lexpr(arg)
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, type(self)) and self.arg == other.arg
 
 
 class BinOp(LExprOperator):
+    """A binary operator."""
+
     def __init__(self, lhs, rhs):
+        """Initialise."""
         self.lhs = as_lexpr(lhs)
         self.rhs = as_lexpr(rhs)
 
     def __eq__(self, other):
-        return (
-            isinstance(other, type(self))
-            and self.lhs == other.lhs
-            and self.rhs == other.rhs
-        )
+        """Check equality."""
+        return isinstance(other, type(self)) and self.lhs == other.lhs and self.rhs == other.rhs
 
     def __hash__(self):
+        """Hash."""
         return hash(self.lhs) + hash(self.rhs)
 
     def __repr__(self):
+        """Representation."""
         return f"({self.lhs} {self.op} {self.rhs})"
 
 
 class ArithmeticBinOp(BinOp):
+    """An artithmetic binary operator."""
+
     def __init__(self, lhs, rhs):
+        """Initialise."""
         self.lhs = as_lexpr(lhs)
         self.rhs = as_lexpr(rhs)
-        self.dtype = merge_dtypes(self.lhs.dtype, self.rhs.dtype)
+        self.dtype = merge_dtypes([self.lhs.dtype, self.rhs.dtype])
 
 
 class NaryOp(LExprOperator):
@@ -428,9 +484,14 @@ class NaryOp(LExprOperator):
     op = ""
 
     def __init__(self, args):
+        """Initialise."""
         self.args = [as_lexpr(arg) for arg in args]
+        self.dtype = self.args[0].dtype
+        for arg in self.args:
+            self.dtype = merge_dtypes([self.dtype, arg.dtype])
 
     def __eq__(self, other):
+        """Check equality."""
         return (
             isinstance(other, type(self))
             and len(self.args) == len(other.args)
@@ -438,83 +499,113 @@ class NaryOp(LExprOperator):
         )
 
     def __repr__(self) -> str:
+        """Representation."""
         return f"{self.op} ".join(f"{i} " for i in self.args)
+
+    def __hash__(self):
+        """Hash."""
+        return hash(tuple(self.args))
 
 
 class Neg(PrefixUnaryOp):
+    """Negation operator."""
+
     precedence = PRECEDENCE.NEG
     op = "-"
 
     def __init__(self, arg):
+        """Initialise."""
         self.arg = as_lexpr(arg)
         self.dtype = self.arg.dtype
 
 
 class Not(PrefixUnaryOp):
+    """Not operator."""
+
     precedence = PRECEDENCE.NOT
     op = "!"
 
 
-# Binary operators
-# Arithmetic operators preserve the dtype of their operands
-# The other operations (logical) do not need a dtype
-
 class Add(ArithmeticBinOp):
+    """Add operator."""
+
     precedence = PRECEDENCE.ADD
     op = "+"
 
 
 class Sub(ArithmeticBinOp):
+    """Subtract operator."""
+
     precedence = PRECEDENCE.SUB
     op = "-"
 
 
 class Mul(ArithmeticBinOp):
+    """Multiply operator."""
+
     precedence = PRECEDENCE.MUL
     op = "*"
 
 
 class Div(ArithmeticBinOp):
+    """Division operator."""
+
     precedence = PRECEDENCE.DIV
     op = "/"
 
 
 class EQ(BinOp):
+    """Equality operator."""
+
     precedence = PRECEDENCE.EQ
     op = "=="
 
 
 class NE(BinOp):
+    """Inequality operator."""
+
     precedence = PRECEDENCE.NE
     op = "!="
 
 
 class LT(BinOp):
+    """Less than operator."""
+
     precedence = PRECEDENCE.LT
     op = "<"
 
 
 class GT(BinOp):
+    """Greater than operator."""
+
     precedence = PRECEDENCE.GT
     op = ">"
 
 
 class LE(BinOp):
+    """Less than or equal to operator."""
+
     precedence = PRECEDENCE.LE
     op = "<="
 
 
 class GE(BinOp):
+    """Greater than or equal to operator."""
+
     precedence = PRECEDENCE.GE
     op = ">="
 
 
 class And(BinOp):
+    """And operator."""
+
     precedence = PRECEDENCE.AND
     op = "&&"
 
 
 class Or(BinOp):
+    """Or operator."""
+
     precedence = PRECEDENCE.OR
     op = "||"
 
@@ -539,11 +630,13 @@ class MathFunction(LExprOperator):
     precedence = PRECEDENCE.HIGHEST
 
     def __init__(self, func, args):
+        """Initialise."""
         self.function = func
         self.args = [as_lexpr(arg) for arg in args]
         self.dtype = self.args[0].dtype
 
     def __eq__(self, other):
+        """Check equality."""
         return (
             isinstance(other, type(self))
             and self.function == other.function
@@ -559,34 +652,48 @@ class AssignOp(BinOp):
     sideeffect = True
 
     def __init__(self, lhs, rhs):
+        """Initialise."""
         assert isinstance(lhs, LNode)
         BinOp.__init__(self, lhs, rhs)
 
 
 class Assign(AssignOp):
+    """Assign operator."""
+
     op = "="
 
 
 class AssignAdd(AssignOp):
+    """Assign add operator."""
+
     op = "+="
 
 
 class AssignSub(AssignOp):
+    """Assign subtract operator."""
+
     op = "-="
 
 
 class AssignMul(AssignOp):
+    """Assign multiply operator."""
+
     op = "*="
 
 
 class AssignDiv(AssignOp):
+    """Assign division operator."""
+
     op = "/="
 
 
 class ArrayAccess(LExprOperator):
+    """Array access."""
+
     precedence = PRECEDENCE.SUBSCRIPT
 
     def __init__(self, array, indices):
+        """Initialise."""
         # Typecheck array argument
         if isinstance(array, Symbol):
             self.array = array
@@ -595,7 +702,7 @@ class ArrayAccess(LExprOperator):
             self.array = array.symbol
             self.dtype = array.symbol.dtype
         else:
-            raise ValueError("Unexpected array type %s." % (type(array).__name__,))
+            raise ValueError(f"Unexpected array type {type(array).__name__}")
 
         # Allow expressions or literals as indices
         if not isinstance(indices, (list, tuple)):
@@ -626,6 +733,7 @@ class ArrayAccess(LExprOperator):
         return ArrayAccess(self.array, self.indices + indices)
 
     def __eq__(self, other):
+        """Check equality."""
         return (
             isinstance(other, type(self))
             and self.array == other.array
@@ -633,22 +741,28 @@ class ArrayAccess(LExprOperator):
         )
 
     def __hash__(self):
+        """Hash."""
         return hash(self.array)
 
     def __repr__(self):
+        """Representation."""
         return str(self.array) + "[" + ", ".join(str(i) for i in self.indices) + "]"
 
 
 class Conditional(LExprOperator):
+    """Conditional."""
+
     precedence = PRECEDENCE.CONDITIONAL
 
     def __init__(self, condition, true, false):
+        """Initialise."""
         self.condition = as_lexpr(condition)
         self.true = as_lexpr(true)
         self.false = as_lexpr(false)
-        self.dtype = merge_dtypes(self.true.dtype, self.false.dtype)
+        self.dtype = merge_dtypes([self.true.dtype, self.false.dtype])
 
     def __eq__(self, other):
+        """Check equality."""
         return (
             isinstance(other, type(self))
             and self.condition == other.condition
@@ -670,19 +784,23 @@ def as_lexpr(node):
     elif isinstance(node, numbers.Real):
         return LiteralFloat(node)
     else:
-        raise RuntimeError("Unexpected LExpr type %s:\n%s" % (type(node), str(node)))
+        raise RuntimeError(f"Unexpected LExpr type {type(node)}:\n{node}")
 
 
 class Statement(LNode):
     """Make an expression into a statement."""
 
-    is_scoped = False
-
     def __init__(self, expr):
+        """Initialise."""
         self.expr = as_lexpr(expr)
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, type(self)) and self.expr == other.expr
+
+    def __hash__(self) -> int:
+        """Hash."""
+        return hash(self.expr)
 
 
 def as_statement(node):
@@ -699,9 +817,9 @@ def as_statement(node):
             return Statement(node)
         else:
             raise RuntimeError(
-                "Trying to create a statement of lexprOperator type %s:\n%s"
-                % (type(node), str(node))
+                f"Trying to create a statement of lexprOperator type {type(node)}:\n{node}"
             )
+
     elif isinstance(node, list):
         # Convenience case for list of statements
         if len(node) == 1:
@@ -709,36 +827,101 @@ def as_statement(node):
             return as_statement(node[0])
         else:
             return StatementList(node)
+    elif isinstance(node, Section):
+        return node
     else:
-        raise RuntimeError(
-            "Unexpected Statement type %s:\n%s" % (type(node), str(node))
+        raise RuntimeError(f"Unexpected Statement type {type(node)}:\n{node}")
+
+
+class Annotation(Enum):
+    """Annotation."""
+
+    fuse = 1  # fuse loops in section
+    unroll = 2  # unroll loop in section
+    licm = 3  # loop invariant code motion
+    factorize = 4  # apply sum factorization
+
+
+class Declaration(Statement):
+    """Base class for all declarations."""
+
+    def __init__(self, symbol):
+        """Initialise."""
+        self.symbol = symbol
+
+    def __eq__(self, other):
+        """Check equality."""
+        return isinstance(other, type(self)) and self.symbol == other.symbol
+
+
+def is_declaration(node) -> bool:
+    """Check if a node is a declaration."""
+    return isinstance(node, VariableDecl) or isinstance(node, ArrayDecl)
+
+
+class Section(LNode):
+    """A section of code with a name and a list of statements."""
+
+    def __init__(
+        self,
+        name: str,
+        statements: list[LNode],
+        declarations: Sequence[Declaration],
+        input: Optional[list[Symbol]] = None,
+        output: Optional[list[Symbol]] = None,
+        annotations: Optional[list[Annotation]] = None,
+    ):
+        """Initialise."""
+        self.name = name
+        self.statements = [as_statement(st) for st in statements]
+        self.annotations = annotations or []
+        self.input = input or []
+        self.declarations = declarations or []
+        self.output = output or []
+
+        for decl in self.declarations:
+            assert is_declaration(decl)
+            if decl.symbol not in self.output:
+                self.output.append(decl.symbol)
+
+    def __eq__(self, other):
+        """Check equality."""
+        attributes = ("name", "input", "output", "annotations", "statements")
+        return isinstance(other, type(self)) and all(
+            getattr(self, name) == getattr(other, name) for name in attributes
         )
 
 
 class StatementList(LNode):
-    """A simple sequence of statements. No new scopes are introduced."""
+    """A simple sequence of statements."""
 
     def __init__(self, statements):
+        """Initialise."""
         self.statements = [as_statement(st) for st in statements]
 
-    @property
-    def is_scoped(self):
-        return all(st.is_scoped for st in self.statements)
-
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, type(self)) and self.statements == other.statements
+
+    def __hash__(self) -> int:
+        """Hash."""
+        return hash(tuple(self.statements))
+
+    def __repr__(self):
+        """Representation."""
+        return f"StatementList({self.statements})"
 
 
 class Comment(Statement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
 
-    is_scoped = True
-
     def __init__(self, comment):
+        """Initialise."""
         assert isinstance(comment, str)
         self.comment = comment
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, type(self)) and self.comment == other.comment
 
 
@@ -758,13 +941,11 @@ def commented_code_list(code, comments):
 # Type and variable declarations
 
 
-class VariableDecl(Statement):
+class VariableDecl(Declaration):
     """Declare a variable, optionally define initial value."""
 
-    is_scoped = False
-
     def __init__(self, symbol, value=None):
-
+        """Initialise."""
         assert isinstance(symbol, Symbol)
         assert symbol.dtype is not None
         self.symbol = symbol
@@ -774,6 +955,7 @@ class VariableDecl(Statement):
         self.value = value
 
     def __eq__(self, other):
+        """Check equality."""
         return (
             isinstance(other, type(self))
             and self.typename == other.typename
@@ -782,7 +964,7 @@ class VariableDecl(Statement):
         )
 
 
-class ArrayDecl(Statement):
+class ArrayDecl(Declaration):
     """A declaration or definition of an array.
 
     Note that just setting values=0 is sufficient to initialize the
@@ -793,9 +975,8 @@ class ArrayDecl(Statement):
 
     """
 
-    is_scoped = False
-
     def __init__(self, symbol, sizes=None, values=None, const=False):
+        """Initialise."""
         assert isinstance(symbol, Symbol)
         self.symbol = symbol
         assert symbol.dtype
@@ -817,15 +998,22 @@ class ArrayDecl(Statement):
             self.values = values
 
         self.const = const
+        self.dtype = symbol.dtype
 
     def __eq__(self, other):
-        attributes = ("typename", "symbol", "sizes", "values")
+        """Check equality."""
+        attributes = ("dtype", "symbol", "sizes", "values")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
 
+    def __hash__(self) -> int:
+        """Hash."""
+        return hash(self.symbol)
+
 
 def is_simple_inner_loop(code):
+    """Check if code is a simple inner loop."""
     if isinstance(code, ForRange) and is_simple_inner_loop(code.body):
         return True
     if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
@@ -833,27 +1021,45 @@ def is_simple_inner_loop(code):
     return False
 
 
+def depth(code) -> int:
+    """Get depth of code."""
+    if isinstance(code, ForRange):
+        return 1 + depth(code.body)
+    if isinstance(code, StatementList):
+        return max([depth(c) for c in code.statements])
+    return 0
+
+
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
-    is_scoped = True
-
     def __init__(self, index, begin, end, body):
-        assert isinstance(index, Symbol)
+        """Initialise."""
+        assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
         self.index = index
         self.begin = as_lexpr(begin)
         self.end = as_lexpr(end)
         assert isinstance(body, list)
         self.body = StatementList(body)
 
+    def as_tuple(self):
+        """Convert to a tuple."""
+        return (self.index, self.begin, self.end, self.body)
+
     def __eq__(self, other):
+        """Check equality."""
         attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
             getattr(self, name) == getattr(self, name) for name in attributes
         )
 
+    def __hash__(self) -> int:
+        """Hash."""
+        return hash(self.as_tuple())
+
 
 def _math_function(op, *args):
+    """Get a math function."""
     name = op._ufl_handler_name_
     dtype = args[0].dtype
     if name in ("conj", "real") and dtype == DataType.REAL:
@@ -908,13 +1114,28 @@ _ufl_call_lookup = {
     ufl.mathfunctions.Atan2: _math_function,
     ufl.mathfunctions.MathFunction: _math_function,
     ufl.mathfunctions.BesselJ: _math_function,
-    ufl.mathfunctions.BesselY: _math_function}
+    ufl.mathfunctions.BesselY: _math_function,
+}
 
 
 def ufl_to_lnodes(operator, *args):
-    # Call appropriate handler, depending on the type of operator
+    """Call appropriate handler, depending on the type of operator."""
     optype = type(operator)
     if optype in _ufl_call_lookup:
         return _ufl_call_lookup[optype](operator, *args)
     else:
         raise RuntimeError(f"Missing lookup for expr type {optype}.")
+
+
+def create_nested_for_loops(indices: list[MultiIndex], body):
+    """Create nested for loops over list of indices.
+
+    The depth of the nested for loops is equal to the sub-indices for all
+    MultiIndex combined.
+    """
+    ranges = [r for idx in indices for r in idx.sizes]
+    indices = [idx.local_index(i) for idx in indices for i in range(len(idx.sizes))]
+    depth = len(ranges)
+    for i in reversed(range(depth)):
+        body = ForRange(indices[i], 0, ranges[i], body=[body])
+    return body

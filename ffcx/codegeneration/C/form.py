@@ -8,10 +8,11 @@
 #
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
+"""Generate UFC code for a form."""
 
 import logging
 
-import numpy
+import numpy as np
 
 from ffcx.codegeneration.C import form_template
 
@@ -36,37 +37,43 @@ def generator(ir, options):
         values = ", ".join(str(i) for i in ir.original_coefficient_position)
         sizes = len(ir.original_coefficient_position)
 
-        d["original_coefficient_position_init"] = \
+        d["original_coefficient_position_init"] = (
             f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
         d["original_coefficient_position"] = "NULL"
 
-    cnames = ir.coefficient_names
-    assert ir.num_coefficients == len(cnames)
-    if len(cnames) == 0:
-        code = ["return NULL;"]
+    if len(ir.coefficient_names) > 0:
+        values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
+        sizes = len(ir.coefficient_names)
+        d["coefficient_names_init"] = (
+            f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+        )
+        d["coefficient_names"] = f"coefficient_names_{ir.name}"
     else:
-        values = ", ".join(f'"{name}"' for name in cnames)
-        code = [f"static const char* names[{len(cnames)}] = {{{values}}};",
-                "return names;"]
-    d["coefficient_name_map"] = "\n".join(code)
+        d["coefficient_names_init"] = ""
+        d["coefficient_names"] = "NULL"
 
-    cstnames = ir.constant_names
-    if len(cstnames) == 0:
-        code = ["return NULL;"]
+    if len(ir.constant_names) > 0:
+        values = ", ".join(f'"{name}"' for name in ir.constant_names)
+        sizes = len(ir.constant_names)
+        d["constant_names_init"] = (
+            f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+        )
+        d["constant_names"] = f"constant_names_{ir.name}"
     else:
-        values = ", ".join(f'"{name}"' for name in cstnames)
-        code = [f"static const char* names[{len(cstnames)}] = {{{values}}};",
-                "return names;"]
-    d["constant_name_map"] = "\n".join(code)
+        d["constant_names_init"] = ""
+        d["constant_names"] = "NULL"
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
         values = ", ".join(f"&{el}" for el in ir.finite_elements)
         sizes = len(ir.finite_elements)
-        d["finite_elements_init"] = f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+        d["finite_elements_init"] = (
+            f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
         d["finite_elements"] = "NULL"
         d["finite_elements_init"] = ""
@@ -91,7 +98,7 @@ def generator(ir, options):
             unsorted_integrals += [f"&{name}"]
             unsorted_ids += [id]
 
-        id_sort = numpy.argsort(unsorted_ids)
+        id_sort = np.argsort(unsorted_ids)
         integrals += [unsorted_integrals[i] for i in id_sort]
         integral_ids += [unsorted_ids[i] for i in id_sort]
 
@@ -100,7 +107,9 @@ def generator(ir, options):
     if len(integrals) > 0:
         sizes = len(integrals)
         values = ", ".join(integrals)
-        d["form_integrals_init"] = f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
+        d["form_integrals_init"] = (
+            f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
+        )
         d["form_integrals"] = f"form_integrals_{ir.name}"
         sizes = len(integral_ids)
         values = ", ".join(str(i) for i in integral_ids)
@@ -114,8 +123,11 @@ def generator(ir, options):
 
     sizes = len(integral_offsets)
     values = ", ".join(str(i) for i in integral_offsets)
-    d["form_integral_offsets_init"] = f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    d["form_integral_offsets_init"] = (
+        f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
+    )
 
+    vs_code = []
     code = []
 
     # FIXME: Should be handled differently, revise how
@@ -127,6 +139,7 @@ def generator(ir, options):
         cmap_degree,
         cmap_celltype,
         cmap_variant,
+        value_shape,
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
@@ -135,7 +148,17 @@ def generator(ir, options):
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)}"]
+        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
+        code += [f".value_rank = {len(value_shape)},"]
+        if len(value_shape) == 0:
+            code += [".value_shape = NULL"]
+        else:
+            vs_code += [
+                f"int value_shape_{ir.name}_{name}[{len(value_shape)}] = {{",
+                "  " + ", ".join([f"{i}" for i in value_shape]),
+                "};",
+            ]
+            code += [f".value_shape = value_shape_{ir.name}_{name}"]
         code += ["};"]
 
     for name in ir.function_spaces.keys():
@@ -144,16 +167,13 @@ def generator(ir, options):
     code += ["return NULL;\n"]
 
     d["functionspace"] = "\n".join(code)
+    d["value_shape_init"] = "\n".join(vs_code)
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
 
-    fields = [
-        fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
-    ]
-    assert set(fields) == set(
-        d.keys()
-    ), "Mismatch between keys in template and in formatting dict"
+    fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = form_template.factory.format_map(d)

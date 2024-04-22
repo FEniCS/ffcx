@@ -8,14 +8,18 @@
 import logging
 
 import ufl
-from ffcx.ir.analysis.indexing import (map_component_tensor_arg_components,
-                                       map_indexed_arg_components)
+from ufl.pullback import SymmetricPullback
+
+from ffcx.ir.analysis.indexing import (
+    map_component_tensor_arg_components,
+    map_indexed_arg_components,
+)
 from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal
 
 logger = logging.getLogger("ffcx")
 
 
-class ValueNumberer(object):
+class ValueNumberer:
     """Maps scalar components to unique values.
 
     An algorithm to map the scalar components of an expression node to unique value numbers,
@@ -24,22 +28,25 @@ class ValueNumberer(object):
     """
 
     def __init__(self, G):
+        """Initialise."""
         self.symbol_count = 0
         self.G = G
         self.V_symbols = []
-        self.call_lookup = {ufl.classes.Expr: self.expr,
-                            ufl.classes.Argument: self.form_argument,
-                            ufl.classes.Coefficient: self.form_argument,
-                            ufl.classes.Grad: self._modified_terminal,
-                            ufl.classes.ReferenceGrad: self._modified_terminal,
-                            ufl.classes.FacetAvg: self._modified_terminal,
-                            ufl.classes.CellAvg: self._modified_terminal,
-                            ufl.classes.Restricted: self._modified_terminal,
-                            ufl.classes.ReferenceValue: self._modified_terminal,
-                            ufl.classes.Indexed: self.indexed,
-                            ufl.classes.ComponentTensor: self.component_tensor,
-                            ufl.classes.ListTensor: self.list_tensor,
-                            ufl.classes.Variable: self.variable}
+        self.call_lookup = {
+            ufl.classes.Expr: self.expr,
+            ufl.classes.Argument: self.form_argument,
+            ufl.classes.Coefficient: self.form_argument,
+            ufl.classes.Grad: self._modified_terminal,
+            ufl.classes.ReferenceGrad: self._modified_terminal,
+            ufl.classes.FacetAvg: self._modified_terminal,
+            ufl.classes.CellAvg: self._modified_terminal,
+            ufl.classes.Restricted: self._modified_terminal,
+            ufl.classes.ReferenceValue: self._modified_terminal,
+            ufl.classes.Indexed: self.indexed,
+            ufl.classes.ComponentTensor: self.component_tensor,
+            ufl.classes.ListTensor: self.list_tensor,
+            ufl.classes.Variable: self.variable,
+        }
 
     def new_symbols(self, n):
         """Generate new symbols with a running counter."""
@@ -55,12 +62,14 @@ class ValueNumberer(object):
         return begin
 
     def get_node_symbols(self, expr):
-        idx = [i for i, v in self.G.nodes.items() if v['expression'] == expr][0]
+        """Get node symbols."""
+        idx = [i for i, v in self.G.nodes.items() if v["expression"] == expr][0]
         return self.V_symbols[idx]
 
     def compute_symbols(self):
+        """Compute symbols."""
         for i, v in self.G.nodes.items():
-            expr = v['expression']
+            expr = v["expression"]
             symbol = None
             # First look for exact type match
             f = self.call_lookup.get(type(expr), False)
@@ -88,15 +97,15 @@ class ValueNumberer(object):
 
     def form_argument(self, v):
         """Create new symbols for expressions that represent new values."""
-        symmetry = v.ufl_function_space().ufl_element().symmetry()
+        e = v.ufl_function_space().ufl_element()
 
-        if symmetry:
+        if isinstance(e.pullback, SymmetricPullback):
             # Build symbols with symmetric components skipped
             symbols = []
             mapped_symbols = {}
             for c in ufl.permutation.compute_indices(v.ufl_shape):
                 # Build mapped component mc with symmetries from element considered
-                mc = symmetry.get(c, c)
+                mc = min(i for i, j in e.pullback._symmetry.items() if j == e.pullback._symmetry[c])
 
                 # Get existing symbol or create new and store with mapped component mc as key
                 s = mapped_symbols.get(mc)
@@ -117,16 +126,18 @@ class ValueNumberer(object):
         """Handle modified terminal.
 
         Modifiers:
-        ---------
-        terminal           - the underlying Terminal object
-        global_derivatives - tuple of ints, each meaning derivative in that global direction
-        local_derivatives  - tuple of ints, each meaning derivative in that local direction
-        reference_value    - bool, whether this is represented in reference frame
-        averaged           - None, 'facet' or 'cell'
-        restriction        - None, '+' or '-'
-        component          - tuple of ints, the global component of the Terminal
-        flat_component     - single int, flattened local component of the Terminal, considering symmetry
-
+            terminal: the underlying Terminal object
+            global_derivatives: tuple of ints, each meaning derivative
+                in that global direction
+            local_derivatives: tuple of ints, each meaning derivative in
+                that local direction
+            reference_value: bool, whether this is represented in
+                reference frame
+            averaged: None, 'facet' or 'cell'
+            restriction: None, '+' or '-'
+            component: tuple of ints, the global component of the Terminal
+                flat_component: single int, flattened local component of the
+            Terminal, considering symmetry
         """
         # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
         #     in which case the reference value shape of the element must be used.
@@ -137,7 +148,7 @@ class ValueNumberer(object):
         # v is not necessary scalar here, indexing in (0,...,0) picks the first scalar component
         # to analyse, which should be sufficient to get the base shape and derivatives
         if v.ufl_shape:
-            mt = analyse_modified_terminal(v[(0, ) * len(v.ufl_shape)])
+            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])
         else:
             mt = analyse_modified_terminal(v)
 
@@ -148,11 +159,11 @@ class ValueNumberer(object):
         if num_ld:
             domain = ufl.domain.extract_unique_domain(mt.terminal)
             tdim = domain.topological_dimension()
-            d_components = ufl.permutation.compute_indices((tdim, ) * num_ld)
+            d_components = ufl.permutation.compute_indices((tdim,) * num_ld)
         elif num_gd:
             domain = ufl.domain.extract_unique_domiain(mt.terminal)
             gdim = domain.geometric_dimension()
-            d_components = ufl.permutation.compute_indices((gdim, ) * num_gd)
+            d_components = ufl.permutation.compute_indices((gdim,) * num_gd)
         else:
             d_components = [()]
 
@@ -184,8 +195,11 @@ class ValueNumberer(object):
             raise RuntimeError("Internal error in value numbering.")
         return symbols
 
-    # indexed is implemented as a fall-through operation
     def indexed(self, Aii):
+        """Return indexed value.
+
+        This is implemented as a fall-through operation.
+        """
         # Reuse symbols of arg A for Aii
         A = Aii.ufl_operands[0]
 
@@ -198,6 +212,7 @@ class ValueNumberer(object):
         return symbols
 
     def component_tensor(self, A):
+        """Component tensor."""
         # Reuse symbols of arg Aii for A
         Aii = A.ufl_operands[0]
 
@@ -210,6 +225,7 @@ class ValueNumberer(object):
         return symbols
 
     def list_tensor(self, v):
+        """List tensor."""
         symbols = []
         for row in v.ufl_operands:
             symbols.extend(self.get_node_symbols(row))

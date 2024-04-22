@@ -40,40 +40,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout FFCx
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ffcx_ref }}
-
       - name: Upgrade pip and setuptools
         run: python -m pip install setuptools pip build --upgrade
-
       - name: Build sdist and wheel
         run: python -m build .
-
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           path: dist/*
-
   upload_pypi:
     name: Upload to PyPI (optional)
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: artifact
           path: dist
-
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.5.1
+        uses: pypa/gh-action-pypi-publish@release/v1
         if: ${{ github.event.inputs.pypi_publish == 'true' }}
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
           repository_url: https://upload.pypi.org/legacy/
-
       - name: Publish to Test PyPI
-        uses: pypa/gh-action-pypi-publish@v1.5.1
+        uses: pypa/gh-action-pypi-publish@release/v1
         if: ${{ github.event.inputs.test_pypi_publish == 'true' }}
         with:
           user: __token__

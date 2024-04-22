@@ -1,25 +1,41 @@
 # Copyright (C) 2013 Martin S. Alnaes
-#
-# A functional M involving a bunch of cell geometry quantities.
+"""Cell geometry demo.
+
+A functional M involving a bunch of cell geometry quantities.
+"""
+
 import basix.ufl
-from ufl import (CellVolume, Circumradius, Coefficient, FacetArea, FacetNormal,
-                 SpatialCoordinate, ds, dx, tetrahedron, TrialFunction)
+from ufl import (
+    CellVolume,
+    Circumradius,
+    Coefficient,
+    FacetArea,
+    FacetNormal,
+    FunctionSpace,
+    Mesh,
+    SpatialCoordinate,
+    TrialFunction,
+    ds,
+    dx,
+)
 from ufl.geometry import FacetEdgeVectors
 
-cell = tetrahedron
-V = basix.ufl.element("P", cell.cellname(), 1)
-u = Coefficient(V)
+V = basix.ufl.element("P", "tetrahedron", 1)
+domain = Mesh(basix.ufl.element("P", "tetrahedron", 1, shape=(3,)))
+space = FunctionSpace(domain, V)
+u = Coefficient(space)
 
-# TODO: Add all geometry for all cell types to this and other demo files, need for regression test.
-x = SpatialCoordinate(cell)
-n = FacetNormal(cell)
-vol = CellVolume(cell)
-rad = Circumradius(cell)
-area = FacetArea(cell)
+# TODO: Add all geometry for all cell types to this and other demo
+# files, need for regression test.
+x = SpatialCoordinate(domain)
+n = FacetNormal(domain)
+vol = CellVolume(domain)
+rad = Circumradius(domain)
+area = FacetArea(domain)
 
-M = u * (x[0] * vol * rad) * dx + u * (x[0] * vol * rad * area) * ds  # + u*area*avg(n[0]*x[0]*vol*rad)*dS
+M = u * (x[0] * vol * rad) * dx + u * (x[0] * vol * rad * area) * ds
 
 # Test some obscure functionality
-fev = FacetEdgeVectors(cell)
-v = TrialFunction(V)
+fev = FacetEdgeVectors(domain)
+v = TrialFunction(space)
 L = fev[0, 0] * v * ds

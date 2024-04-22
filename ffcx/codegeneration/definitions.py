@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2023 Martin Sandve Alnæs, Igor A. Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -6,63 +6,124 @@
 """FFCx/UFC specific variable definitions."""
 
 import logging
+from typing import Union
 
 import ufl
-from ffcx.element_interface import convert_element
+
 import ffcx.codegeneration.lnodes as L
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
+from ffcx.ir.elementtables import UniqueTableReferenceT
+from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
 
 
-class FFCXBackendDefinitions(object):
+def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
+    """Create a multi index for the quadrature loop."""
+    ranges = [0]
+    name = quadrature_index_symbol.name
+    indices = [L.Symbol(name, dtype=L.DataType.INT)]
+    if quadrature_rule:
+        ranges = [quadrature_rule.weights.size]
+        if quadrature_rule.has_tensor_factors:
+            dim = len(quadrature_rule.tensor_factors)
+            ranges = [factor[1].size for factor in quadrature_rule.tensor_factors]
+            indices = [L.Symbol(name + f"{i}", dtype=L.DataType.INT) for i in range(dim)]
+
+    return L.MultiIndex(indices, ranges)
+
+
+def create_dof_index(tabledata, dof_index_symbol):
+    """Create a multi index for the coefficient dofs."""
+    name = dof_index_symbol.name
+    if tabledata.has_tensor_factorisation:
+        dim = len(tabledata.tensor_factors)
+        ranges = [factor.values.shape[-1] for factor in tabledata.tensor_factors]
+        indices = [L.Symbol(f"{name}{i}", dtype=L.DataType.INT) for i in range(dim)]
+    else:
+        ranges = [tabledata.values.shape[-1]]
+        indices = [L.Symbol(name, dtype=L.DataType.INT)]
+
+    return L.MultiIndex(indices, ranges)
+
+
+class FFCXBackendDefinitions:
     """FFCx specific code definitions."""
 
-    def __init__(self, ir, symbols, options):
+    def __init__(self, ir, access, options):
+        """Initialise."""
         # Store ir and options
         self.integral_type = ir.integral_type
         self.entitytype = ir.entitytype
-        self.symbols = symbols
+        self.access = access
+        self.symbols = access.symbols
         self.options = options
 
         self.ir = ir
 
-        # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
-        self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
-                            ufl.constant.Constant: self.constant,
-                            ufl.geometry.Jacobian: self.jacobian,
-                            ufl.geometry.CellVertices: self._expect_physical_coords,
-                            ufl.geometry.FacetEdgeVectors: self._expect_physical_coords,
-                            ufl.geometry.CellEdgeVectors: self._expect_physical_coords,
-                            ufl.geometry.CellFacetJacobian: self._expect_table,
-                            ufl.geometry.ReferenceCellVolume: self._expect_table,
-                            ufl.geometry.ReferenceFacetVolume: self._expect_table,
-                            ufl.geometry.ReferenceCellEdgeVectors: self._expect_table,
-                            ufl.geometry.ReferenceFacetEdgeVectors: self._expect_table,
-                            ufl.geometry.ReferenceNormal: self._expect_table,
-                            ufl.geometry.CellOrientation: self._pass,
-                            ufl.geometry.FacetOrientation: self._expect_table,
-                            ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
+        self.handler_lookup = {
+            ufl.coefficient.Coefficient: self.coefficient,
+            ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
+            ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
+            ufl.constant.Constant: self.pass_through,
+            ufl.geometry.CellVertices: self.pass_through,
+            ufl.geometry.FacetEdgeVectors: self.pass_through,
+            ufl.geometry.CellEdgeVectors: self.pass_through,
+            ufl.geometry.CellFacetJacobian: self.pass_through,
+            ufl.geometry.ReferenceCellVolume: self.pass_through,
+            ufl.geometry.ReferenceFacetVolume: self.pass_through,
+            ufl.geometry.ReferenceCellEdgeVectors: self.pass_through,
+            ufl.geometry.ReferenceFacetEdgeVectors: self.pass_through,
+            ufl.geometry.ReferenceNormal: self.pass_through,
+            ufl.geometry.CellOrientation: self.pass_through,
+            ufl.geometry.FacetOrientation: self.pass_through,
+        }
 
-    def get(self, t, mt, tabledata, quadrature_rule, access):
-        # Call appropriate handler, depending on the type of t
-        ttype = type(t)
-        handler = self.call_lookup.get(ttype, False)
+    def get(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
+        """Return definition code for a terminal."""
+        # Call appropriate handler, depending on the type of terminal
+        terminal = mt.terminal
+        ttype = type(terminal)
 
-        if not handler:
-            # Look for parent class types instead
-            for k in self.call_lookup.keys():
-                if isinstance(t, k):
-                    handler = self.call_lookup[k]
-                    break
+        # Look for parent class of ttype or direct handler
+        while ttype not in self.handler_lookup and ttype.__bases__:
+            ttype = ttype.__bases__[0]
 
-        if handler:
-            return handler(t, mt, tabledata, quadrature_rule, access)
-        else:
-            raise RuntimeError("Not handled: %s", ttype)
+        # Get the handler from the lookup, or None if not found
+        handler = self.handler_lookup.get(ttype)
 
-    def coefficient(self, t, mt, tabledata, quadrature_rule, access):
+        if handler is None:
+            raise NotImplementedError(f"No handler for terminal type: {ttype}")
+
+        # Call the handler
+        return handler(mt, tabledata, quadrature_rule, access)
+
+    def coefficient(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for coefficients."""
+        # For applying tensor product to coefficients, we need to know if the coefficient
+        # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
+        # If both are true, we can apply the tensor product to the coefficient.
+
+        iq_symbol = self.symbols.quadrature_loop_index
+        ic_symbol = self.symbols.coefficient_dof_sum_index
+
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        ic = create_dof_index(tabledata, ic_symbol)
+
+        # Get properties of tables
         ttype = tabledata.ttype
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
@@ -71,55 +132,47 @@ class FFCXBackendDefinitions(object):
 
         if ttype == "zeros":
             logging.debug("Not expecting zero coefficients to get this far.")
-            return [], []
+            return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
         if ttype == "ones" and end - begin == 1:
-            return [], []
+            return []
 
         assert begin < end
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index
+        FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+        dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
+            mt.terminal, (ic.global_index) * bs + begin
+        )
 
-        code = []
-        pre_code = []
+        declaration: list[L.Declaration] = [L.VariableDecl(access, 0.0)]
+        body = [L.AssignAdd(access, dof_access * FE)]
+        code = [L.create_nested_for_loops([ic], body)]
 
-        if bs > 1 and not tabledata.is_piecewise:
-            # For bs > 1, the coefficient access has a stride of bs. e.g.: XYZXYZXYZ
-            # When memory access patterns are non-sequential, the number of cache misses increases.
-            # In turn, it results in noticeably reduced performance.
-            # In this case, we create temp arrays outside the quadrature to store the coefficients and
-            # have a sequential access pattern.
-            dof_access, dof_access_map = self.symbols.coefficient_dof_access_blocked(mt.terminal, ic, bs, begin)
+        name = type(mt.terminal).__name__
+        input = [dof_access.array, *tables]
+        output = [access]
+        annotations = [L.Annotation.fuse]
 
-            # If a map is necessary from stride 1 to bs, the code must be added before the quadrature loop.
-            if dof_access_map:
-                pre_code += [L.ArrayDecl(dof_access.array, sizes=num_dofs)]
-                pre_body = [L.Assign(dof_access, dof_access_map)]
-                pre_code += [L.ForRange(ic, 0, num_dofs, pre_body)]
-        else:
-            dof_access = self.symbols.coefficient_dof_access(mt.terminal, ic * bs + begin)
+        # assert input and output are Symbol objects
+        assert all(isinstance(i, L.Symbol) for i in input)
+        assert all(isinstance(o, L.Symbol) for o in output)
 
-        body = [L.AssignAdd(access, dof_access * FE[ic])]
-        code += [L.VariableDecl(access, 0.0)]
-        code += [L.ForRange(ic, 0, num_dofs, body)]
+        return L.Section(name, code, declaration, input, output, annotations)
 
-        return pre_code, code
-
-    def constant(self, t, mt, tabledata, quadrature_rule, access):
-        # Constants are not defined within the kernel.
-        # No definition is needed because access to them is directly
-        # via symbol c[], i.e. as passed into the kernel.
-        return [], []
-
-    def _define_coordinate_dofs_lincomb(self, e, mt, tabledata, quadrature_rule, access):
+    def _define_coordinate_dofs_lincomb(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = convert_element(coordinate_element).sub_element.dim
+        num_scalar_dofs = coordinate_element._sub_element.dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
@@ -133,18 +186,43 @@ class FFCXBackendDefinitions(object):
         assert ttype != "ones"
 
         # Get access to element table
-        FE = self.symbols.element_table(tabledata, self.entitytype, mt.restriction)
-        ic = self.symbols.coefficient_dof_sum_index
-        dof_access = self.symbols.domain_dof_access(ic, begin, 3, num_scalar_dofs, mt.restriction)
+        ic_symbol = self.symbols.coefficient_dof_sum_index
+        iq_symbol = self.symbols.quadrature_loop_index
+        ic = create_dof_index(tabledata, ic_symbol)
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        FE, tables = self.access.table_access(tabledata, self.entitytype, mt.restriction, iq, ic)
+
+        dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
+
+        # coordinate dofs is always 3d
+        dim = 3
+        offset = 0
+        if mt.restriction == "-":
+            offset = num_scalar_dofs * dim
 
         code = []
-        body = [L.AssignAdd(access, dof_access * FE[ic])]
-        code += [L.VariableDecl(access, 0.0)]
-        code += [L.ForRange(ic, 0, num_scalar_dofs, body)]
+        declaration = [L.VariableDecl(access, 0.0)]
+        body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
+        code = [L.create_nested_for_loops([ic], body)]
 
-        return [], code
+        name = type(mt.terminal).__name__
+        output = [access]
+        input = [dof_access, *tables]
+        annotations = [L.Annotation.fuse]
 
-    def spatial_coordinate(self, e, mt, tabledata, quadrature_rule, access):
+        # assert input and output are Symbol objects
+        assert all(isinstance(i, L.Symbol) for i in input)
+        assert all(isinstance(o, L.Symbol) for o in output)
+
+        return L.Section(name, code, declaration, input, output, annotations)
+
+    def spatial_coordinate(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -162,23 +240,24 @@ class FFCXBackendDefinitions(object):
                 logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         else:
-            return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+            return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def jacobian(self, e, mt, tabledata, quadrature_rule, access):
+    def jacobian(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
         """Return definition code for the Jacobian of x(X)."""
-        return self._define_coordinate_dofs_lincomb(e, mt, tabledata, quadrature_rule, access)
+        return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
-    def _expect_table(self, e, mt, tabledata, quadrature_rule, access):
-        """Return quantities referring to constant tables defined in the generated code."""
-        # TODO: Inject const static table here instead?
-        return [], []
-
-    def _expect_physical_coords(self, e, mt, tabledata, quadrature_rule, access):
-        """Return quantities referring to coordinate_dofs."""
-        # TODO: Generate more efficient inline code for Max/MinCell/FacetEdgeLength
-        #       and CellDiameter here rather than lowering these quantities?
-        return [], []
-
-    def _pass(self, *args, **kwargs):
-        """Return nothing."""
-        return [], []
+    def pass_through(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> Union[L.Section, list]:
+        """Return definition code for pass through terminals."""
+        return []

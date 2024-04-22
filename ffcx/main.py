@@ -16,6 +16,7 @@ import re
 import string
 
 import ufl
+
 from ffcx import __version__ as FFCX_VERSION
 from ffcx import compiler, formatting
 from ffcx.options import FFCX_DEFAULT_OPTIONS, get_options
@@ -23,22 +24,29 @@ from ffcx.options import FFCX_DEFAULT_OPTIONS, get_options
 logger = logging.getLogger("ffcx")
 
 parser = argparse.ArgumentParser(
-    description="FEniCS Form Compiler (FFCx, https://fenicsproject.org)")
-parser.add_argument(
-    "--version", action='version', version=f"%(prog)s (version {FFCX_VERSION})")
+    description="FEniCS Form Compiler (FFCx, https://fenicsproject.org)"
+)
+parser.add_argument("--version", action="version", version=f"%(prog)s (version {FFCX_VERSION})")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
-parser.add_argument("-p", "--profile", action='store_true', help="enable profiling")
+parser.add_argument("-p", "--profile", action="store_true", help="enable profiling")
 
 # Add all options from FFCx option system
-for opt_name, (opt_val, opt_desc) in FFCX_DEFAULT_OPTIONS.items():
-    parser.add_argument(f"--{opt_name}",
-                        type=type(opt_val), help=f"{opt_desc} (default={opt_val})")
+for opt_name, (arg_type, opt_val, opt_desc, choices) in FFCX_DEFAULT_OPTIONS.items():
+    if isinstance(opt_val, bool):
+        parser.add_argument(
+            f"--{opt_name}", action="store_true", help=f"{opt_desc} (default={opt_val})"
+        )
+    else:
+        parser.add_argument(
+            f"--{opt_name}", type=arg_type, choices=choices, help=f"{opt_desc} (default={opt_val})"
+        )
 
-parser.add_argument("ufl_file", nargs='+', help="UFL file(s) to be compiled")
+parser.add_argument("ufl_file", nargs="+", help="UFL file(s) to be compiled")
 
 
 def main(args=None):
+    """Run ffcx on a UFL file."""
     xargs = parser.parse_args(args)
 
     # Parse all other options
@@ -65,8 +73,12 @@ def main(args=None):
 
         # Generate code
         code_h, code_c = compiler.compile_ufl_objects(
-            ufd.forms + ufd.expressions + ufd.elements, ufd.object_names,
-            prefix=prefix, options=options, visualise=xargs.visualise)
+            ufd.forms + ufd.expressions + ufd.elements,
+            options=options,
+            object_names=ufd.object_names,
+            prefix=prefix,
+            visualise=xargs.visualise,
+        )
 
         # Write to file
         formatting.write_code(code_h, code_c, prefix, xargs.output_directory)

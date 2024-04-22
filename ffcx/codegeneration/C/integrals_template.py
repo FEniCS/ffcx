@@ -2,6 +2,7 @@
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
+"""Code generation strings for an integral."""
 
 declaration = """
 extern ufcx_integral {factory_name};
@@ -25,7 +26,10 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 ufcx_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
-  .tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},
+  .tabulate_tensor_float32 = {tabulate_tensor_float32},
+  .tabulate_tensor_float64 = {tabulate_tensor_float64},
+  .tabulate_tensor_complex64 = {tabulate_tensor_complex64},
+  .tabulate_tensor_complex128 = {tabulate_tensor_complex128},
   .needs_facet_permutations = {needs_facet_permutations},
   .coordinate_element = {coordinate_element},
 }};

@@ -3,47 +3,62 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Modified terminals."""
 
 import logging
+import typing
 
-from ufl.classes import (Argument, CellAvg, FacetAvg, FixedIndex, FormArgument,
-                         Grad, Indexed, Jacobian, ReferenceGrad,
-                         ReferenceValue, Restricted, SpatialCoordinate)
+from ufl.classes import (
+    Argument,
+    CellAvg,
+    FacetAvg,
+    FixedIndex,
+    FormArgument,
+    Grad,
+    Indexed,
+    Jacobian,
+    ReferenceGrad,
+    ReferenceValue,
+    Restricted,
+    SpatialCoordinate,
+)
 from ufl.permutation import build_component_numbering
-
-from ...element_interface import convert_element
 
 logger = logging.getLogger("ffcx")
 
 
-class ModifiedTerminal(object):
-    """A modified terminal expression is an object of a Terminal subtype.
+class ModifiedTerminal:
+    """A modified terminal."""
 
-    It is wrapped in terminal modifier types.
+    def __init__(
+        self,
+        expr,
+        terminal,
+        reference_value: bool,
+        base_shape,
+        base_symmetry,
+        component: tuple[int, ...],
+        flat_component: int,
+        global_derivatives: tuple[int, ...],
+        local_derivatives: tuple[int, ...],
+        averaged: typing.Union[None, str],
+        restriction: typing.Union[None, str],
+    ):
+        """Initialise.
 
-    The variables of this class are:
-
-        expr - The original UFL expression
-        terminal           - the underlying Terminal object
-
-        global_derivatives - tuple of ints, each meaning derivative in that global direction
-        local_derivatives  - tuple of ints, each meaning derivative in that local direction
-        reference_value    - bool, whether this is represented in reference frame
-        averaged           - None, 'facet' or 'cell'
-        restriction        - None, '+' or '-'
-
-        component          - tuple of ints, the global component of the Terminal
-        flat_component     - single int, flattened local component of the Terminal, considering symmetry
-
-
-        Possibly other component model:
-        - global_component
-        - reference_component
-        - flat_component
-    """
-
-    def __init__(self, expr, terminal, reference_value, base_shape, base_symmetry, component,
-                 flat_component, global_derivatives, local_derivatives, averaged, restriction):
+        Args:
+            expr: The original UFL expression
+            terminal: the underlying Terminal object
+            reference_value: whether this is represented in reference frame
+            base_shape: base shape
+            base_symmetry: base symmetry
+            component: the global component of the Terminal
+            flat_component: flattened local component of the Terminal, considering symmetry
+            global_derivatives: each entry is a derivative in that global direction
+            local_derivatives: each entry is a derivative in that local direction
+            averaged: Entity to average over (None, 'facet' or 'cell')
+            restriction: The restriction (None, '+' or '-')
+        """
         # The original expression
         self.expr = expr
 
@@ -114,25 +129,23 @@ class ModifiedTerminal(object):
         return (n, p, rv, fc, gd, ld, a, r)
 
     def __hash__(self):
+        """Hash."""
         return hash(self.as_tuple())
 
     def __eq__(self, other):
+        """Check equality."""
         return isinstance(other, ModifiedTerminal) and self.as_tuple() == other.as_tuple()
 
-    # def __lt__(self, other):
-    #    error("Shouldn't use this?")
-    #    # FIXME: Terminal is not sortable, so the as_tuple contents
-    #    # must be changed for this to work properly
-    #    return self.as_tuple() < other.as_tuple()
-
     def __str__(self):
+        """Format as string."""
         return (
             f"terminal:           {self.terminal}\n"
             f"global_derivatives: {self.global_derivatives}\n"
             f"local_derivatives:  {self.local_derivatives}\n"
             f"averaged:           {self.averaged}\n"
             f"component:          {self.component}\n"
-            f"restriction:        {self.restriction}")
+            f"restriction:        {self.restriction}"
+        )
 
 
 def is_modified_terminal(v):
@@ -192,14 +205,14 @@ def analyse_modified_terminal(expr):
             if reference_value is not None:
                 raise RuntimeError("Got twice pulled back terminal!")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             reference_value = True
 
         elif isinstance(t, ReferenceGrad):
             if not component:  # covers None or ()
                 raise RuntimeError("Got local gradient of terminal without prior indexing.")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             local_derivatives.append(component[-1])
             component = component[:-1]
 
@@ -207,7 +220,7 @@ def analyse_modified_terminal(expr):
             if not component:  # covers None or ()
                 raise RuntimeError("Got local gradient of terminal without prior indexing.")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             global_derivatives.append(component[-1])
             component = component[:-1]
 
@@ -216,28 +229,28 @@ def analyse_modified_terminal(expr):
                 raise RuntimeError("Got twice restricted terminal!")
 
             restriction = t._side
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
 
         elif isinstance(t, CellAvg):
             if averaged is not None:
                 raise RuntimeError("Got twice averaged terminal!")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             averaged = "cell"
 
         elif isinstance(t, FacetAvg):
             if averaged is not None:
                 raise RuntimeError("Got twice averaged terminal!")
 
-            t, = t.ufl_operands
+            (t,) = t.ufl_operands
             averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
-            raise RuntimeError("Missing handler for terminal modifier type {}, object is {}.".format(
-                type(t), repr(t)))
-
+            raise RuntimeError(
+                f"Missing handler for terminal modifier type {type(t)}, object is {t!r}."
+            )
         else:
-            raise RuntimeError("Unexpected type %s object %s." % (type(t), repr(t)))
+            raise RuntimeError(f"Unexpected type {type(t)} object {t}.")
 
     # Make canonical representation of derivatives
     global_derivatives = tuple(sorted(global_derivatives))
@@ -264,12 +277,12 @@ def analyse_modified_terminal(expr):
     # Get the shape of the core terminal or its reference value, this is
     # the shape that component refers to
     if isinstance(t, FormArgument):
-        element = convert_element(t.ufl_function_space().ufl_element())
+        element = t.ufl_function_space().ufl_element()
         if reference_value:
             # Ignoring symmetry, assuming already applied in conversion
             # to reference frame
             base_symmetry = {}
-            base_shape = element.reference_value_shape()
+            base_shape = element.reference_value_shape
         else:
             base_symmetry = element.symmetry()
             base_shape = t.ufl_shape
@@ -282,12 +295,22 @@ def analyse_modified_terminal(expr):
     if len(component) != len(base_shape):
         raise RuntimeError("Length of component does not match rank of (reference) terminal.")
     if not all(c >= 0 and c < d for c, d in zip(component, base_shape)):
-        raise RuntimeError("Component indices %s are outside value shape %s" % (component, base_shape))
+        raise RuntimeError("Component indices {component} are outside value shape {base_shape}.")
 
     # Flatten component
     vi2si, _ = build_component_numbering(base_shape, base_symmetry)
     flat_component = vi2si[component]
 
-    return ModifiedTerminal(expr, t, reference_value, base_shape, base_symmetry, component,
-                            flat_component, global_derivatives, local_derivatives, averaged,
-                            restriction)
+    return ModifiedTerminal(
+        expr,
+        t,
+        reference_value,
+        base_shape,
+        base_symmetry,
+        component,
+        flat_component,
+        global_derivatives,
+        local_derivatives,
+        averaged,
+        restriction,
+    )

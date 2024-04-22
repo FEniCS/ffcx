@@ -3,16 +3,18 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Expression generator."""
 
 import collections
 import logging
 from itertools import product
-from typing import Any, DefaultDict, Dict, Set
+from typing import Any
 
 import ufl
+
+import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
-import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.lnodes import LNode
 from ffcx.ir.representation import ExpressionIR
 
@@ -20,22 +22,26 @@ logger = logging.getLogger("ffcx")
 
 
 class ExpressionGenerator:
-    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
+    """Expression generator."""
 
+    def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
+        """Initialise."""
         if len(list(ir.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
 
         self.ir = ir
         self.backend = backend
-        self.scope: Dict[Any, LNode] = {}
-        self._ufl_names: Set[Any] = set()
-        self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
-        self.shared_symbols: Dict[Any, Any] = {}
+        self.scope: dict[Any, LNode] = {}
+        self._ufl_names: set[Any] = set()
+        self.symbol_counters: collections.defaultdict[Any, int] = collections.defaultdict(int)
+        self.shared_symbols: dict[Any, Any] = {}
         self.quadrature_rule = list(self.ir.integrand.keys())[0]
 
     def generate(self):
+        """Generate."""
         parts = []
         parts += self.generate_element_tables()
+
         # Generate the tables of geometry data that are needed
         parts += self.generate_geometry_tables()
         parts += self.generate_piecewise_partition()
@@ -58,16 +64,23 @@ class ExpressionGenerator:
         # Currently we only support circumradius
         ufl_geometry = {
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
+            ufl.geometry.ReferenceNormal: "reference_facet_normals",
         }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}
 
+        cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
         for integrand in self.ir.integrand.values():
             for attr in integrand["factorization"].nodes.values():
                 mt = attr.get("mt")
                 if mt is not None:
                     t = type(mt.terminal)
+                    if self.ir.entitytype == "cell" and issubclass(
+                        t, ufl.geometry.GeometricFacetQuantity
+                    ):
+                        raise RuntimeError(f"Expressions for cells do not support {t}.")
                     if t in ufl_geometry:
-                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
+                        cells[t].add(
+                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+                        )
 
         parts = []
         for i, cell_list in cells.items():
@@ -91,27 +104,29 @@ class ExpressionGenerator:
             parts += [decl]
 
         # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, [
-            "Precomputed values of basis functions",
-            "FE* dimensions: [entities][points][dofs]",
-        ])
+        parts = L.commented_code_list(
+            parts,
+            [
+                "Precomputed values of basis functions",
+                "FE* dimensions: [entities][points][dofs]",
+            ],
+        )
         return parts
 
     def generate_quadrature_loop(self):
         """Generate quadrature loop for this quadrature rule.
 
         In the context of expressions quadrature loop is not accumulated.
-
         """
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
-            body, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}")
+            body, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}"
+        )
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
-        preparts, quadparts = \
-            self.generate_dofblock_partition()
+        preparts, quadparts = self.generate_dofblock_partition()
         body += quadparts
 
         # Wrap body in loop or scope
@@ -122,7 +137,6 @@ class ExpressionGenerator:
             iq = self.backend.symbols.quadrature_loop_index
             num_points = self.quadrature_rule.points.shape[0]
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
-
         return preparts, quadparts
 
     def generate_varying_partition(self):
@@ -133,11 +147,16 @@ class ExpressionGenerator:
         arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "varying")
         parts = L.commented_code_list(
-            parts, f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}")
+            parts,
+            f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}",
+        )
         return parts
 
     def generate_piecewise_partition(self):
-        """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
+        """Generate factors of blocks which are constant.
+
+        I.e. do not depend on quadrature points).
+        """
         # Get annotated graph of factorisation
         F = self.ir.integrand[self.quadrature_rule]["factorization"]
 
@@ -153,15 +172,15 @@ class ExpressionGenerator:
         preparts = []
         quadparts = []
 
-        blocks = [(blockmap, blockdata)
-                  for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions]
+        blocks = [
+            (blockmap, blockdata)
+            for blockmap, contributions in sorted(block_contributions.items())
+            for blockdata in contributions
+        ]
 
         for blockmap, blockdata in blocks:
-
             # Define code for block depending on mode
-            block_preparts, block_quadparts = \
-                self.generate_block_parts(blockmap, blockdata)
+            block_preparts, block_quadparts = self.generate_block_parts(blockmap, blockdata)
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -198,7 +217,7 @@ class ExpressionGenerator:
 
         # Check if DOFs in dofrange are equally spaced.
         expand_loop = False
-        for i, bm in enumerate(blockmap):
+        for bm in blockmap:
             for a, b in zip(bm[1:-1], bm[2:]):
                 if b - a != bm[1] - bm[0]:
                     expand_loop = True
@@ -209,8 +228,9 @@ class ExpressionGenerator:
 
         if expand_loop:
             # If DOFs in dofrange are not equally spaced, then expand out the for loop
-            for A_indices, B_indices in zip(product(*blockmap),
-                                            product(*[range(len(b)) for b in blockmap])):
+            for A_indices, B_indices in zip(
+                product(*blockmap), product(*[range(len(b)) for b in blockmap])
+            ):
                 B_indices = tuple([iq] + list(B_indices))
                 A_indices = tuple([iq] + A_indices)
                 for fi_ci in blockdata.factor_indices_comp_indices:
@@ -220,7 +240,6 @@ class ExpressionGenerator:
                     multi_index = L.MultiIndex([A_indices[0], fi_ci[1]] + A_indices[1:], A_shape)
                     quadparts.append(L.AssignAdd(A[multi_index], Brhs))
         else:
-
             # Prepend dimensions of dofmap block with free index
             # for quadrature points and expression components
             B_indices = tuple([iq] + list(arg_indices))
@@ -255,8 +274,7 @@ class ExpressionGenerator:
                 body.append(L.AssignAdd(A[multi_index], Brhs))
 
             for i in reversed(range(block_rank)):
-                body = L.ForRange(
-                    B_indices[i + 1], 0, blockdims[i], body=body)
+                body = L.ForRange(B_indices[i + 1], 0, blockdims[i], body=body)
             quadparts += [body]
 
         return preparts, quadparts
@@ -264,13 +282,10 @@ class ExpressionGenerator:
     def get_arg_factors(self, blockdata, block_rank, indices):
         """Get argument factors (i.e. blocks).
 
-        Options
-        ----------
-        blockdata
-        block_rank
-        indices
-            Indices used to index element tables
-
+        Args:
+            blockdata: block data
+            block_rank: block rank
+            indices: Indices used to index element tables
         """
         arg_factors = []
         for i in range(block_rank):
@@ -296,6 +311,7 @@ class ExpressionGenerator:
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
     def get_var(self, v):
+        """Get a variable."""
         if v._ufl_is_literal_:
             return L.ufl_to_lnodes(v)
         f = self.scope.get(v)
@@ -304,30 +320,28 @@ class ExpressionGenerator:
     def generate_partition(self, symbol, F, mode):
         """Generate computations of factors of blocks."""
         definitions = []
-        pre_definitions = dict()
         intermediates = []
 
-        use_symbol_array = True
-
-        for i, attr in F.nodes.items():
-            if attr['status'] != mode:
+        for _, attr in F.nodes.items():
+            if attr["status"] != mode:
                 continue
-            v = attr['expression']
-            mt = attr.get('mt')
+            v = attr["expression"]
+            mt = attr.get("mt")
 
             if v._ufl_is_literal_:
                 vaccess = L.ufl_to_lnodes(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
-                tabledata = attr.get('tr')
+                tabledata = attr.get("tr")
 
                 # Backend specific modified terminal translation
-                vaccess = self.backend.access.get(mt.terminal, mt, tabledata, 0)
+                vaccess = self.backend.access.get(mt, tabledata, 0)
+                vdef = self.backend.definitions.get(mt, tabledata, 0, vaccess)
 
-                predef, vdef = self.backend.definitions.get(mt.terminal, mt, tabledata, 0, vaccess)
-                if predef:
-                    pre_definitions[str(predef[0].symbol.name)] = predef
+                if vdef:
+                    assert isinstance(vdef, L.Section)
+                    vdef = vdef.declarations + vdef.statements
 
                 # Store definitions of terminals in list
                 assert isinstance(vdef, list)
@@ -336,43 +350,16 @@ class ExpressionGenerator:
                 # Get previously visited operands
                 vops = [self.get_var(op) for op in v.ufl_operands]
 
-                # get parent operand
-                pid = F.in_edges[i][0] if F.in_edges[i] else -1
-                if pid and pid > i:
-                    parent_exp = F.nodes.get(pid)['expression']
-                else:
-                    parent_exp = None
-
                 # Mapping UFL operator to target language
                 self._ufl_names.add(v._ufl_handler_name_)
                 vexpr = L.ufl_to_lnodes(v, *vops)
 
-                # Create a new intermediate for each subexpression
-                # except boolean conditions and its childs
-                if isinstance(parent_exp, ufl.classes.Condition):
-                    # Skip intermediates for 'x' and 'y' in x<y
-                    # Avoid the creation of complex valued intermediates
-                    vaccess = vexpr
-                elif isinstance(v, ufl.classes.Condition):
-                    # Inline the conditions x < y, condition values
-                    # This removes the need to handle boolean intermediate variables.
-                    # With tensor-valued conditionals it may not be optimal but we
-                    # let the compiler take responsibility for optimizing those cases.
-                    vaccess = vexpr
-                elif any(op._ufl_is_literal_ for op in v.ufl_operands):
-                    # Skip intermediates for e.g. -2.0*x,
-                    # resulting in lines like z = y + -2.0*x
-                    vaccess = vexpr
-                else:
-                    # Record assignment of vexpr to intermediate variable
-                    j = len(intermediates)
-                    if use_symbol_array:
-                        vaccess = symbol[j]
-                        intermediates.append(L.Assign(vaccess, vexpr))
-                    else:
-                        scalar_type = self.backend.access.options["scalar_type"]
-                        vaccess = L.Symbol("%s_%d" % (symbol.name, j), dtype=L.DataType.SCALAR)
-                        intermediates.append(L.VariableDecl(f"const {scalar_type}", vaccess, vexpr))
+                is_cond = isinstance(v, ufl.classes.Condition)
+                dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
+
+                j = len(intermediates)
+                vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
+                intermediates.append(L.VariableDecl(vaccess, vexpr))
 
             # Store access node for future reference
             self.scope[v] = vaccess
@@ -381,14 +368,7 @@ class ExpressionGenerator:
         # and intermediate computations
         parts = []
 
-        for _, definition in pre_definitions.items():
-            parts += definition
+        parts += definitions
+        parts += intermediates
 
-        if definitions:
-            parts += definitions
-
-        if intermediates:
-            if use_symbol_array:
-                parts += [L.ArrayDecl(symbol, sizes=len(intermediates))]
-            parts += intermediates
         return parts

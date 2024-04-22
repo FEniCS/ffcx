@@ -6,15 +6,17 @@
 #
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
+"""Generate a file."""
 
 import logging
 import pprint
 import textwrap
 
-from ffcx.codegeneration.C import file_template
+import numpy as np
+
 from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
-
+from ffcx.codegeneration.C import file_template
 
 logger = logging.getLogger("ffcx")
 
@@ -27,11 +29,9 @@ def generator(options):
     d = {"ffcx_version": FFCX_VERSION, "ufcx_version": UFC_VERSION}
     d["options"] = textwrap.indent(pprint.pformat(options), "//  ")
     extra_c_includes = []
-    if "_Complex" in options["scalar_type"]:
+    if np.issubdtype(options["scalar_type"], np.complexfloating):
         extra_c_includes += ["complex.h"]
-    d["extra_c_includes"] = "\n".join(
-        f"#include <{header}>" for header in extra_c_includes
-    )
+    d["extra_c_includes"] = "\n".join(f"#include <{header}>" for header in extra_c_includes)
 
     # Format declaration code
     code_pre = (

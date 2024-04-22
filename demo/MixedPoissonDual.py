@@ -14,25 +14,28 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with DOLFINx. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2014-01-29
-# Last changed: 2014-01-29
-#
-# The bilinear form a(u, v) and linear form L(v) for a two-field
-# (mixed) formulation of Poisson's equation
+"""Mixed Poisson dual demo.
+
+The bilinear form a(u, v) and linear form L(v) for a two-field
+(mixed) formulation of Poisson's equation.
+"""
+
 import basix.ufl
-from ufl import Coefficient, TestFunctions, TrialFunctions, dot, ds, dx, grad
+from ufl import Coefficient, FunctionSpace, Mesh, TestFunctions, TrialFunctions, ds, dx, grad, inner
 
 DRT = basix.ufl.element("Discontinuous RT", "triangle", 2)
 P = basix.ufl.element("P", "triangle", 3)
 W = basix.ufl.mixed_element([DRT, P])
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+space = FunctionSpace(domain, W)
 
-(sigma, u) = TrialFunctions(W)
-(tau, v) = TestFunctions(W)
+(sigma, u) = TrialFunctions(space)
+(tau, v) = TestFunctions(space)
 
 P1 = basix.ufl.element("P", "triangle", 1)
-f = Coefficient(P1)
-g = Coefficient(P1)
+space = FunctionSpace(domain, P1)
+f = Coefficient(space)
+g = Coefficient(space)
 
-a = (dot(sigma, tau) + dot(grad(u), tau) + dot(sigma, grad(v))) * dx
-L = - f * v * dx - g * v * ds
+a = (inner(sigma, tau) + inner(grad(u), tau) + inner(sigma, grad(v))) * dx
+L = -inner(f, v) * dx - inner(g, v) * ds

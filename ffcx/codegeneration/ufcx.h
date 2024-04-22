@@ -1,5 +1,6 @@
 /// This is UFCx
-/// This code is released into the public domain.
+/// This software is released under the terms of the unlicense (see the file
+/// UNLICENSE).
 ///
 /// The FEniCS Project (http://www.fenicsproject.org/) 2006-2021.
 ///
@@ -10,9 +11,9 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 7
+#define UFCX_VERSION_MINOR 8
 #define UFCX_VERSION_MAINTENANCE 0
-#define UFCX_VERSION_RELEASE 1
+#define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
 #define UFCX_VERSION                                                            \
@@ -71,6 +72,7 @@ extern "C"
   /// Forward declarations
   typedef struct ufcx_finite_element ufcx_finite_element;
   typedef struct ufcx_basix_custom_finite_element ufcx_basix_custom_finite_element;
+  typedef struct ufcx_quadrature_rule ufcx_quadrature_rule;
   typedef struct ufcx_dofmap ufcx_dofmap;
   typedef struct ufcx_function_space ufcx_function_space;
 
@@ -90,20 +92,8 @@ extern "C"
     /// Topological dimension of the cell
     int topological_dimension;
 
-    /// Geometric dimension of the cell
-    int geometric_dimension;
-
     /// Dimension of the finite element function space
     int space_dimension;
-
-    /// Rank of the value space
-    int value_rank;
-
-    /// Dimension of the value space for axis i
-    int* value_shape;
-
-    /// Number of components of the value space
-    int value_size;
 
     /// Rank of the reference value space
     int reference_value_rank;
@@ -120,9 +110,6 @@ extern "C"
     /// Block size for a VectorElement. For a TensorElement, this is the
     /// product of the tensor's dimensions
     int block_size;
-
-    /// Family of the finite element function space
-    const char* family;
 
     /// Basix identifier of the family of the finite element function space
     int basix_family;
@@ -148,6 +135,9 @@ extern "C"
 
     /// Pointer to data to recreate the element if it is a custom Basix element
     ufcx_basix_custom_finite_element* custom_element;
+
+    /// Pointer to data to recreate the custom quadrature rule if the element has one
+    ufcx_quadrature_rule* custom_quadrature;
   } ufcx_finite_element;
 
   typedef struct ufcx_basix_custom_finite_element
@@ -193,21 +183,38 @@ extern "C"
     bool discontinuous;
 
     /// The highest degree full polynomial space contained in this element
-    int highest_complete_degree;
+    int embedded_subdegree;
 
     /// The number of derivatives needed when interpolating
     int interpolation_nderivs;
 
     /// The highest degree of a polynomial in the element
-    int highest_degree;
+    int embedded_superdegree;
 
     /// The polyset type of the element
     int polyset_type;
   } ufcx_basix_custom_finite_element;
 
+  typedef struct ufcx_quadrature_rule
+  {
+    /// Cell shape
+    ufcx_shape cell_shape;
+
+    /// The number of points
+    int npts;
+
+    /// The topological dimension of the cell
+    int topological_dimension;
+
+    /// The quadraute points
+    double* points;
+
+    /// The quadraute weights
+    double* weights;
+  } ufcx_quadrature_rule;
+
   typedef struct ufcx_dofmap
   {
-
     /// String identifying the dofmap
     const char* signature;
 
@@ -232,18 +239,6 @@ extern "C"
 
     /// Offset for closure dofs of each entity in entity_closure_dofs
     int *entity_closure_dof_offsets;
-
-    /// Number of dofs associated with each cell entity of dimension d
-    int *num_entity_dofs;
-
-    /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-    void (*tabulate_entity_dofs)(int* restrict dofs, int d, int i);
-
-    /// Number of dofs associated with the closure of each cell entity of dimension d
-    int *num_entity_closure_dofs;
-
-    /// Tabulate the local-to-local mapping of dofs on the closure of entity (d, i)
-    void (*tabulate_entity_closure_dofs)(int* restrict dofs, int d, int i);
 
     /// Number of sub dofmaps (for a mixed element)
     int num_sub_dofmaps;
@@ -302,16 +297,6 @@ extern "C"
       const uint8_t* restrict quadrature_permutation);
 
   /// Tabulate integral into tensor A with compiled
-  /// quadrature rule and extended double precision
-  ///
-  /// @see ufcx_tabulate_tensor_single
-  typedef void(ufcx_tabulate_tensor_longdouble)(
-      long double* restrict A, const long double* restrict w,
-      const long double* restrict c, const long double* restrict coordinate_dofs,
-      const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
-
-  /// Tabulate integral into tensor A with compiled
   /// quadrature rule and complex single precision
   ///
   /// @see ufcx_tabulate_tensor_single
@@ -336,7 +321,6 @@ extern "C"
     const bool* enabled_coefficients;
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-    ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
@@ -356,7 +340,6 @@ extern "C"
     ///
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-    ufcx_tabulate_tensor_longdouble* tabulate_tensor_longdouble;
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 
@@ -378,12 +361,11 @@ extern "C"
     /// Number of evaluation points
     int num_points;
 
-    /// Dimension of evaluation point, i.e. topological dimension of
-    /// reference cell
-    int topological_dimension;
+    /// Dimension of evaluation point
+    int entity_dimension;
 
     /// Coordinates of evaluations points. Dimensions:
-    /// points[num_points][topological_dimension]
+    /// points[num_points][entity_dimension]
     const double* points;
 
     /// Shape of expression. Dimension: value_shape[num_components]
@@ -435,11 +417,11 @@ extern "C"
     /// Original coefficient position for each coefficient
     int* original_coefficient_position;
 
-    /// Return list of names of coefficients
-    const char** (*coefficient_name_map)(void);
+    /// List of names of coefficients
+    const char** coefficient_name_map;
 
-    /// Return list of names of constants
-    const char** (*constant_name_map)(void);
+    /// List of names of constants
+    const char** constant_name_map;
 
     /// Get a finite element for the i-th argument function, where 0 <=
     /// i < r + n.
@@ -484,6 +466,12 @@ extern "C"
 
     /// The Basix variant of the finite element for the geometry map
     int geometry_basix_variant;
+
+    /// Rank of the value space
+    int value_rank;
+
+    /// Shape of the value space
+    int* value_shape;
   } ufcx_function_space;
 
 #ifdef __cplusplus

@@ -14,15 +14,30 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
+"""Facet restriction demo."""
+
 import basix.ufl
-from ufl import (Coefficient, TestFunction, TrialFunction, avg, derivative,
-                 dot, dS, dx, grad, inner)
+from ufl import (
+    Coefficient,
+    FunctionSpace,
+    Mesh,
+    TestFunction,
+    TrialFunction,
+    avg,
+    derivative,
+    dS,
+    dx,
+    grad,
+    inner,
+)
 
 element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+space = FunctionSpace(domain, element)
 
-v = TestFunction(element)
-w = Coefficient(element)
-L = inner(grad(w), grad(v)) * dx - dot(avg(grad(w)), avg(grad(v))) * dS
+v = TestFunction(space)
+w = Coefficient(space)
+L = inner(grad(w), grad(v)) * dx - inner(avg(grad(w)), avg(grad(v))) * dS
 
-u = TrialFunction(element)
+u = TrialFunction(space)
 a = derivative(L, w, u)

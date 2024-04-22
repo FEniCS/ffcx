@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2023 Martin Sandve Alnæs, Igor A. Baratta
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -6,14 +6,17 @@
 """FFCx/UFC specific symbol naming."""
 
 import logging
+
 import ufl
+
 import ffcx.codegeneration.lnodes as L
 
 logger = logging.getLogger("ffcx")
 
 
-# TODO: Get restriction postfix from somewhere central
 def ufcx_restriction_postfix(restriction):
+    """Get restriction postfix."""
+    # TODO: Get restriction postfix from somewhere central
     if restriction == "+":
         res = "_0"
     elif restriction == "-":
@@ -58,11 +61,11 @@ def format_mt_name(basename, mt):
     return access
 
 
-class FFCXBackendSymbols(object):
+class FFCXBackendSymbols:
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, coefficient_numbering, coefficient_offsets,
-                 original_constant_offsets):
+    def __init__(self, coefficient_numbering, coefficient_offsets, original_constant_offsets):
+        """Initialise."""
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
 
@@ -109,7 +112,7 @@ class FFCXBackendSymbols(object):
             logging.exception(f"Unknown entitytype {entitytype}")
 
     def argument_loop_index(self, iarg):
-        """Loop index for argument #iarg."""
+        """Loop index for argument iarg."""
         indices = ["i", "j", "k", "l"]
         return L.Symbol(indices[iarg], dtype=L.DataType.INT)
 
@@ -117,8 +120,9 @@ class FFCXBackendSymbols(object):
         """Table of quadrature weights."""
         key = f"weights_{quadrature_rule.id()}"
         if key not in self.quadrature_weight_tables:
-            self.quadrature_weight_tables[key] = L.Symbol(f"weights_{quadrature_rule.id()}",
-                                                          dtype=L.DataType.REAL)
+            self.quadrature_weight_tables[key] = L.Symbol(
+                f"weights_{quadrature_rule.id()}", dtype=L.DataType.REAL
+            )
         return self.quadrature_weight_tables[key]
 
     def points_table(self, quadrature_rule):
@@ -135,26 +139,23 @@ class FFCXBackendSymbols(object):
         return L.Symbol(format_mt_name("J", mt), dtype=L.DataType.REAL)
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
+        """Domain DOF access."""
         # FIXME: Add domain number or offset!
         offset = 0
         if restriction == "-":
             offset = num_scalar_dofs * 3
         return self.coordinate_dofs[3 * dof + component + offset]
 
-    def domain_dofs_access(self, gdim, num_scalar_dofs, restriction):
-        # FIXME: Add domain number or offset!
-        return [
-            self.domain_dof_access(dof, component, gdim, num_scalar_dofs, restriction)
-            for dof in range(num_scalar_dofs) for component in range(gdim)
-        ]
-
     def coefficient_dof_access(self, coefficient, dof_index):
+        """Coefficient DOF access."""
         offset = self.coefficient_offsets[coefficient]
         w = self.coefficients
         return w[offset + dof_index]
 
-    def coefficient_dof_access_blocked(self, coefficient: ufl.Coefficient, index,
-                                       block_size, dof_offset):
+    def coefficient_dof_access_blocked(
+        self, coefficient: ufl.Coefficient, index, block_size, dof_offset
+    ):
+        """Blocked coefficient DOF access."""
         coeff_offset = self.coefficient_offsets[coefficient]
         w = self.coefficients
         _w = L.Symbol(f"_w_{coeff_offset}_{dof_offset}", dtype=L.DataType.SCALAR)
@@ -165,14 +166,17 @@ class FFCXBackendSymbols(object):
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
-        return L.Symbol(format_mt_name("w%d" % (c, ), mt), dtype=L.DataType.SCALAR)
+        return L.Symbol(format_mt_name("w%d" % (c,), mt), dtype=L.DataType.SCALAR)
 
     def constant_index_access(self, constant, index):
+        """Constant index access."""
         offset = self.original_constant_offsets[constant]
         c = self.constants
         return c[offset + index]
 
+    # TODO: Remove this, use table_access instead
     def element_table(self, tabledata, entitytype, restriction):
+        """Get an element table."""
         entity = self.entity(entitytype, restriction)
 
         if tabledata.is_uniform:
@@ -194,6 +198,5 @@ class FFCXBackendSymbols(object):
 
         # Return direct access to element table, reusing symbol if possible
         if tabledata.name not in self.element_tables:
-            self.element_tables[tabledata.name] = L.Symbol(tabledata.name,
-                                                           dtype=L.DataType.REAL)
+            self.element_tables[tabledata.name] = L.Symbol(tabledata.name, dtype=L.DataType.REAL)
         return self.element_tables[tabledata.name][qp][entity][iq]

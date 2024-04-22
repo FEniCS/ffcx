@@ -1,3 +1,5 @@
+"""FFCx code generation."""
+
 import hashlib
 import os
 
@@ -12,12 +14,12 @@ _include_path = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_include_path():
-    """Return location of UFC header files."""
+    """Return location of UFCx header files."""
     return _include_path
 
 
 def _compute_signature():
-    # Compute signature of ufc header files
+    """Compute signature of UFCx header files."""
     h = hashlib.sha1()
     with open(os.path.join(get_include_path(), "ufcx.h")) as f:
         h.update(f.read().encode("utf-8"))

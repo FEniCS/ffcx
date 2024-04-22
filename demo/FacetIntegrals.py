@@ -14,23 +14,38 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-03-20
-# Last changed: 2011-03-08
-#
-# Simple example of a form defined over exterior and interior facets.
+"""Facet integrals demo.
+
+Simple example of a form defined over exterior and interior facets.
+"""
+
 import basix.ufl
-from ufl import (FacetNormal, TestFunction, TrialFunction, avg, ds, dS, grad,
-                 inner, jump, triangle)
+from ufl import (
+    FacetNormal,
+    FunctionSpace,
+    Mesh,
+    TestFunction,
+    TrialFunction,
+    avg,
+    dS,
+    ds,
+    grad,
+    inner,
+    jump,
+)
 
 element = basix.ufl.element("Discontinuous Lagrange", "triangle", 1)
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+space = FunctionSpace(domain, element)
 
-u = TrialFunction(element)
-v = TestFunction(element)
+u = TrialFunction(space)
+v = TestFunction(space)
 
-n = FacetNormal(triangle)
+n = FacetNormal(domain)
 
-a = u * v * ds \
-    + u('+') * v('-') * dS \
-    + inner(jump(u, n), avg(grad(v))) * dS \
+a = (
+    inner(u, v) * ds
+    + inner(u("+"), v("-")) * dS
+    + inner(jump(u, n), avg(grad(v))) * dS
     + inner(avg(grad(u)), jump(v, n)) * dS
+)

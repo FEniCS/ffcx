@@ -1,0 +1,67 @@
+name: Spack install
+
+on:
+  # Uncomment the below 'push' to trigger on push
+  # push:
+  #  branches:
+  #    - "**"
+  schedule:
+    # '*' is a special character in YAML, so string must be quoted
+    - cron: "0 2 * * SUN"
+  workflow_dispatch:
+    inputs:
+      spack_repo:
+        description: "Spack repository to test"
+        default: "spack/spack"
+        type: string
+      spack_ref:
+        description: "Spack repository branch/tag to test"
+        default: "develop"
+        type: string
+      ffcx_version:
+        description: "Spack build tag"
+        default: "main"
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ubuntu:latest
+    steps:
+      - name: Install Spack requirements
+        run: |
+          apt-get -y update
+          apt-get install -y bzip2 curl file git gzip make patch python3-minimal tar xz-utils
+          apt-get install -y g++ gfortran  # compilers
+
+      - name: Get Spack
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          path: ./spack
+          repository: spack/spack
+      - name: Get Spack
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          path: ./spack
+          repository: ${{ github.event.inputs.spack_repo }}
+          ref: ${{ github.event.inputs.spack_ref }}
+
+      - name: Install FFCx and run tests
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          . ./spack/share/spack/setup-env.sh
+          spack env create ffcx-main
+          spack env activate ffcx-main
+          spack add py-fenics-ffcx@main
+          spack install --test=root
+
+      - name: Install FFCx and run tests
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          . ./spack/share/spack/setup-env.sh
+          spack env create ffcx-testing
+          spack env activate ffcx-testing
+          spack add py-fenics-ffcx@${{ github.event.inputs.ffcx_version }}
+          spack install --test=root

@@ -2,6 +2,7 @@
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
+"""Code generation strings for a Basix custom element."""
 
 factory = """
 // Code for custom element {factory_name}
@@ -28,9 +29,9 @@ ufcx_basix_custom_finite_element {factory_name} =
   .map_type = {map_type},
   .sobolev_space = {sobolev_space},
   .discontinuous = {discontinuous},
-  .highest_complete_degree = {highest_complete_degree},
+  .embedded_subdegree = {embedded_subdegree},
   .interpolation_nderivs = {interpolation_nderivs},
-  .highest_degree = {highest_degree},
+  .embedded_superdegree = {embedded_superdegree},
   .polyset_type = {polyset_type}
 }};
 

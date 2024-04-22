@@ -15,24 +15,35 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
 #
-# The bilinear form a(u, v) and linear form L(v) for
-# Poisson's equation.
-#
-# Compile this form with FFCx: ffcx Poisson.ufl
-from ufl import (Coefficient, Constant, Mesh, TestFunction,
-                 TrialFunction, dx, grad, inner)
-import basix.ufl
+"""The bilinear form a(u, v) and linear form L(v) for Poisson's equation.
 
-mesh = Mesh(basix.ufl.element('P', "triangle", 2, shape=(2, )))
+Compile this form with FFCx: ffcx Poisson.ufl.
+"""
+
+import basix.ufl
+from ufl import (
+    Coefficient,
+    Constant,
+    FunctionSpace,
+    Mesh,
+    TestFunction,
+    TrialFunction,
+    dx,
+    grad,
+    inner,
+)
+
+mesh = Mesh(basix.ufl.element("P", "triangle", 2, shape=(2,)))
 
 e = basix.ufl.element("Lagrange", "triangle", 2)
+space = FunctionSpace(mesh, e)
 
-u = TrialFunction(e)
-v = TestFunction(e)
-f = Coefficient(e)
+u = TrialFunction(space)
+v = TestFunction(space)
+f = Coefficient(space)
 
-kappa1 = Constant(mesh.ufl_cell(), shape=(2, 2))
-kappa2 = Constant(mesh.ufl_cell(), shape=(2, 2))
+kappa1 = Constant(mesh, shape=(2, 2))
+kappa2 = Constant(mesh, shape=(2, 2))
 
 a = inner(kappa1, kappa2) * inner(grad(u), grad(v)) * dx
 L = f * v * dx

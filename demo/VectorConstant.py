@@ -14,14 +14,26 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# The bilinear form a(u, v) and linear form L(v) for
-# Poisson's equation using bilinear elements on bilinear mesh geometry.
-import basix.ufl
-from ufl import (Constant, Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 dx, grad, inner)
+"""Vector constant demo.
 
-coords = basix.ufl.element("P", "triangle", 2, shape=(2, ))
+The bilinear form a(u, v) and linear form L(v) for
+Poisson's equation using bilinear elements on bilinear mesh geometry.
+"""
+
+import basix.ufl
+from ufl import (
+    Coefficient,
+    Constant,
+    FunctionSpace,
+    Mesh,
+    TestFunction,
+    TrialFunction,
+    dx,
+    grad,
+    inner,
+)
+
+coords = basix.ufl.element("P", "triangle", 2, shape=(2,))
 mesh = Mesh(coords)
 dx = dx(mesh)
 
@@ -32,8 +44,8 @@ u = TrialFunction(space)
 v = TestFunction(space)
 f = Coefficient(space)
 
-L = f * v * dx
+L = inner(f, v) * dx
 
 mu = Constant(mesh, shape=(3,))
-theta = - (mu[1] - 2) / mu[0] - (2 * (2 * mu[0] - 2) * (mu[0] - 1)) / (mu[0] * (mu[1] - 2))
+theta = -(mu[1] - 2) / mu[0] - (2 * (2 * mu[0] - 2) * (mu[0] - 1)) / (mu[0] * (mu[1] - 2))
 a = theta * inner(grad(u), grad(v)) * dx

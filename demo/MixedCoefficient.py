@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2016 Miklós Homolya
 #
 # This file is part of FFCx.
@@ -16,17 +14,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFCx. If not, see <http://www.gnu.org/licenses/>.
-#
-# Mixed coefficient.
-import basix.ufl
-from ufl import Coefficients, dot, dS, dx
+"""Mixed coefficient demo."""
 
-DG = basix.ufl.element("DG", "triangle", 0, shape=(2, ))
+import basix.ufl
+from ufl import Coefficients, FunctionSpace, Mesh, dot, dS, dx
+
+DG = basix.ufl.element("DG", "triangle", 0, shape=(2,))
 CG = basix.ufl.element("Lagrange", "triangle", 2)
 RT = basix.ufl.element("RT", "triangle", 3)
 
 element = basix.ufl.mixed_element([DG, CG, RT])
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+space = FunctionSpace(domain, element)
 
-f, g, h = Coefficients(element)
+f, g, h = Coefficients(space)
 
-forms = [dot(f('+'), h('-')) * dS + g * dx]
+forms = [dot(f("+"), h("-")) * dS + g * dx]

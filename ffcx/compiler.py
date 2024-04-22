@@ -63,9 +63,13 @@ Compiler stages
 
 """
 
+from __future__ import annotations
+
 import logging
 import typing
 from time import time
+
+import numpy.typing as npt
 
 from ffcx.analysis import analyze_ufl_objects
 from ffcx.codegeneration.codegeneration import generate_code
@@ -79,27 +83,34 @@ def _print_timing(stage: int, timing: float):
     logger.info(f"Compiler stage {stage} finished in {timing:.4f} seconds.")
 
 
-def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
-                        object_names: typing.Dict = {},
-                        prefix: typing.Optional[str] = None,
-                        options: typing.Dict = {},
-                        visualise: bool = False):
+def compile_ufl_objects(
+    ufl_objects: list[typing.Any],
+    options: dict[str, int | float | npt.DTypeLike],
+    object_names: dict[int, str] | None = None,
+    prefix: str | None = None,
+    visualise: bool = False,
+) -> tuple[str, str]:
     """Generate UFC code for a given UFL objects.
 
-    Options
-    ----------
-    @param ufl_objects:
-        Objects to be compiled. Accepts elements, forms, integrals or coordinate mappings.
-
+    Args:
+        ufl_objects: Objects to be compiled. Accepts elements, forms,
+          integrals or coordinate mappings.
+        object_names: Map from object Python id to object name
+        prefix: Prefix
+        options: Options
+        visualise: Toggle visualisation
     """
+    _object_names = object_names if object_names is not None else {}
+    _prefix = prefix if prefix is not None else ""
+
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_ufl_objects(ufl_objects, options)
+    analysis = analyze_ufl_objects(ufl_objects, options["scalar_type"])  # type: ignore
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, object_names, prefix, options, visualise)
+    ir = compute_ir(analysis, _object_names, _prefix, options, visualise)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
@@ -109,7 +120,7 @@ def compile_ufl_objects(ufl_objects: typing.List[typing.Any],
 
     # Stage 4: format code
     cpu_time = time()
-    code_h, code_c = format_code(code, options)
+    code_h, code_c = format_code(code)
     _print_timing(4, time() - cpu_time)
 
     return code_h, code_c
