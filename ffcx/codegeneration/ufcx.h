@@ -107,6 +107,9 @@ extern "C"
     /// Maximum polynomial degree of the finite element function space
     int degree;
 
+    /// Is the value a symmetric 2-tensor
+    bool symmetric;
+
     /// Block size for a VectorElement. For a TensorElement, this is the
     /// product of the tensor's dimensions
     int block_size;

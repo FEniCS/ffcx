@@ -27,6 +27,7 @@ ufcx_finite_element {factory_name} =
   .reference_value_shape = {reference_value_shape},
   .reference_value_size = {reference_value_size},
   .degree = {degree},
+  .symmetric = {symmetric},
   .block_size = {block_size},
   .basix_family = {basix_family},
   .basix_cell = {basix_cell},
