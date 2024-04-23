@@ -41,6 +41,7 @@ def generator(ir, options):
     d["num_sub_elements"] = ir.num_sub_elements
     d["block_size"] = ir.block_size
     d["discontinuous"] = "true" if ir.discontinuous else "false"
+    d["symmetric"] = "true" if ir.symmetric else "false"
 
     if ir.lagrange_variant is None:
         d["lagrange_variant"] = -1
