@@ -97,6 +97,7 @@ class ElementIR(typing.NamedTuple):
     space_dimension: int
     reference_value_shape: tuple[int, ...]
     degree: int
+    symmetric: bool
     num_sub_elements: int
     block_size: int
     sub_elements: list[str]
@@ -296,6 +297,9 @@ def _compute_element_ir(element, element_numbers, finite_element_names):
     ir["basix_cell"] = element.cell_type
     ir["discontinuous"] = element.discontinuous
     ir["degree"] = element.degree
+    ir["symmetric"] = isinstance(element, basix.ufl._BlockedElement) and isinstance(
+        element._pullback, ufl.pullback.SymmetricPullback
+    )
     ir["reference_value_shape"] = element.reference_value_shape
 
     ir["num_sub_elements"] = element.num_sub_elements
