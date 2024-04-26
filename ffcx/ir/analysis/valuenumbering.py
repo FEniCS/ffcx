@@ -84,7 +84,7 @@ class ValueNumberer:
 
             if symbol is None:
                 # Nothing found
-                raise RuntimeError("Not expecting type %s here." % type(expr))
+                raise RuntimeError(f"Not expecting type {type(expr)} here.")
 
             self.V_symbols.append(symbol)
 
