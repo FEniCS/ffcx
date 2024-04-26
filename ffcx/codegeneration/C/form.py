@@ -69,23 +69,12 @@ def generator(ir, options):
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
-        values = ", ".join(f"&{el}" for el in ir.finite_elements)
+        values = ", ".join(f"{el}" for el in ir.finite_elements)
         sizes = len(ir.finite_elements)
-        d["finite_elements_init"] = (
-            f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
-        )
+        d["finite_elements_init"] = f"long int finite_elements_{ir.name}[{sizes}] = {{{values}}};"
     else:
         d["finite_elements"] = "NULL"
         d["finite_elements_init"] = ""
-
-    if len(ir.dofmaps) > 0:
-        d["dofmaps"] = f"dofmaps_{ir.name}"
-        values = ", ".join(f"&{dofmap}" for dofmap in ir.dofmaps)
-        sizes = len(ir.dofmaps)
-        d["dofmaps_init"] = f"ufcx_dofmap* dofmaps_{ir.name}[{sizes}] = {{{values}}};"
-    else:
-        d["dofmaps"] = "NULL"
-        d["dofmaps_init"] = ""
 
     integrals = []
     integral_ids = []
@@ -134,7 +123,6 @@ def generator(ir, options):
     # ufcx_function_space is generated
     for name, (
         element,
-        dofmap,
         cmap_family,
         cmap_degree,
         cmap_celltype,
@@ -143,8 +131,7 @@ def generator(ir, options):
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
-        code += [f".finite_element = &{element},"]
-        code += [f".dofmap = &{dofmap},"]
+        code += [f".finite_element = {element},"]
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
