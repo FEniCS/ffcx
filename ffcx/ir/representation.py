@@ -135,7 +135,7 @@ def compute_ir(
     # Compute object names
     # NOTE: This is done here for performance reasons, because repeated calls
     # within each IR computation would be expensive due to UFL signature computations
-    finite_element_hashes = {e: hash(e) for e in analysis.unique_elements}
+    finite_element_hashes = {e: e.basix_hash() for e in analysis.unique_elements}
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):

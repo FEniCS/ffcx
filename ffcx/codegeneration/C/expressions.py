@@ -116,7 +116,7 @@ def generator(ir, options):
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
         code += ["{"]
-        code += [f".finite_element = {element},"]
+        code += [f".finite_element = {0 if element is None else element}L,"]
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]

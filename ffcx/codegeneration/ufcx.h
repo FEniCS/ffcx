@@ -162,7 +162,7 @@ extern "C"
     bool needs_facet_permutations;
 
     /// Get the coordinate element associated with the geometry of the mesh.
-    long int coordinate_element;
+    unsigned long int coordinate_element;
   } ufcx_integral;
 
   typedef struct ufcx_expression
@@ -264,7 +264,7 @@ extern "C"
     ///
     /// @param i Argument number if 0 <= i < r Coefficient number j = i
     /// - r if r + j <= i < r + n
-    long int* finite_elements;
+    unsigned long int* finite_elements;
 
     /// List of cell, interior facet and exterior facet integrals
     ufcx_integral** form_integrals;
@@ -281,7 +281,7 @@ extern "C"
   typedef struct ufcx_function_space
   {
     /// Hash of the finite element
-    long int finite_element;
+    unsigned long int finite_element;
 
     /// The family of the finite element for the geometry map
     const char* geometry_family;
