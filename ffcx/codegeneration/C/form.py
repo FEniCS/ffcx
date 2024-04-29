@@ -72,7 +72,7 @@ def generator(ir, options):
         values = ", ".join(f"{0 if el is None else el}" for el in ir.finite_elements)
         sizes = len(ir.finite_elements)
         d["finite_elements_init"] = (
-            f"unsigned long int finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+            f"unsigned long long int finite_elements_{ir.name}[{sizes}] = {{{values}}};"
         )
     else:
         d["finite_elements"] = "NULL"
