@@ -69,7 +69,7 @@ def generator(ir, options):
 
     if len(ir.finite_elements) > 0:
         d["finite_elements"] = f"finite_elements_{ir.name}"
-        values = ", ".join(f"{0 if el is None else el}" for el in ir.finite_elements)
+        values = ", ".join(f"{0 if el is None else el}u" for el in ir.finite_elements)
         sizes = len(ir.finite_elements)
         d["finite_elements_init"] = (
             f"uint64_t finite_elements_{ir.name}[{sizes}] = {{{values}}};"
@@ -133,7 +133,7 @@ def generator(ir, options):
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
-        code += [f".finite_element = {0 if element is None else element},"]
+        code += [f".finite_element = {0 if element is None else element}u,"]
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
