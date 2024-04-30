@@ -37,6 +37,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Export GitHub Actions cache environment variables (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
@@ -44,11 +52,26 @@ jobs:
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
         run: brew install graphviz ninja pkg-config
+      - name: Install dependencies (non-Python, Windows)
+        if: runner.os == 'Windows'
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+        run: vcpkg install graphviz
 
-      - name: Install FEniCS dependencies (Python)
+      - name: Install FEniCS dependencies (Python, Unix)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
           pip install git+https://github.com/FEniCS/ufl.git
           pip install git+https://github.com/FEniCS/basix.git
+
+      - name: Install FEniCS dependencies (Python, Windows)
+        if: runner.os == 'Windows'
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+        run: |
+          pip install git+https://github.com/FEniCS/ufl.git
+          pip install git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
       - name: Install FFCx
         run: pip install .[ci]
 
