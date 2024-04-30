@@ -52,11 +52,6 @@ jobs:
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
         run: brew install graphviz ninja pkg-config
-      - name: Install dependencies (non-Python, Windows)
-        if: runner.os == 'Windows'
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-        run: vcpkg install graphviz
 
       - name: Install FEniCS dependencies (Python, Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
