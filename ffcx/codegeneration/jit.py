@@ -118,9 +118,16 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     - SOABI includes platform, Python version, debug flags
     - CFLAGS includes prefixes, arch targets
     """
+
+    def xstr(s):
+        if s is None:
+            return ""
+        else:
+            return str(s)
+
     return (
-        str(cffi_extra_compile_args)
-        + str(cffi_debug)
+        xstr(cffi_extra_compile_args)
+        + xstr(cffi_debug)
         + sysconfig.get_config_var("CFLAGS")
         + sysconfig.get_config_var("SOABI")
     )
