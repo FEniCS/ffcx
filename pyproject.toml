@@ -33,7 +33,7 @@ ffcx = "ffcx:__main__.main"
 lint = ["ruff"]
 docs = ["sphinx", "sphinx_rtd_theme"]
 optional = ["numba", "pygraphviz==1.7"]
-test = ["pytest >= 6.0", "sympy"]
+test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
     "coveralls",
     "coverage",
@@ -42,7 +42,6 @@ ci = [
     "types-setuptools",
     "mypy",
     "fenics-ffcx[docs]",
-    "fenics-ffcx[optional]",
     "fenics-ffcx[lint]",
     "fenics-ffcx[test]",
 ]
