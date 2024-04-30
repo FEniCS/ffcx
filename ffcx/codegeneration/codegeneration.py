@@ -14,13 +14,11 @@ from __future__ import annotations
 
 import logging
 import typing
+import sys
+from importlib import import_module
 
 import numpy.typing as npt
 
-from ffcx.codegeneration.C.expressions import generator as expression_generator
-from ffcx.codegeneration.C.file import generator as file_generator
-from ffcx.codegeneration.C.form import generator as form_generator
-from ffcx.codegeneration.C.integrals import generator as integral_generator
 from ffcx.ir.representation import DataIR
 
 logger = logging.getLogger("ffcx")
@@ -44,6 +42,21 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
+
+    lang = options.get("language", "C")
+    try:
+        # Built-in
+        mod = import_module(f"ffcx.codegeneration.{lang}")
+
+    except ImportError:
+        # User defined, in current directory
+        sys.path.append(".")
+        mod = import_module(f"{lang}")
+
+    integral_generator = mod.integrals.generator
+    form_generator = mod.form.generator
+    expression_generator = mod.expressions.generator
+    file_generator = mod.file.generator
 
     code_integrals = [integral_generator(integral_ir, options) for integral_ir in ir.integrals]
     code_forms = [form_generator(form_ir, options) for form_ir in ir.forms]

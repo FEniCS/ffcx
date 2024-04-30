@@ -28,6 +28,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("--version", action="version", version=f"%(prog)s (version {FFCX_VERSION})")
 parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
+parser.add_argument("-L", "--language", type=str, default="C", help="target language")
 parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
 parser.add_argument("-p", "--profile", action="store_true", help="enable profiling")
 
