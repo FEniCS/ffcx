@@ -3,6 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""C++ implementation."""
 
 import ffcx.codegeneration.lnodes as L
 
@@ -36,6 +37,7 @@ math_table = {
 
 
 def build_initializer_lists(values):
+    """Build initializer lists."""
     arr = "{"
     if len(values.shape) == 1:
         return "{" + ", ".join(str(v) for v in values) + "}"
@@ -45,12 +47,15 @@ def build_initializer_lists(values):
     return arr
 
 
-class CppFormatter(object):
+class CppFormatter:
+    """C++ formatter."""
     def __init__(self, scalar) -> None:
+        """Initialise."""
         self.scalar_type = "T"
         self.real_type = "U"
 
     def format_statement_list(self, slist) -> str:
+        """Format statement list."""
         return "".join(self.c_format(s) for s in slist.statements)
 
     def format_section(self, section) -> str:
@@ -73,9 +78,11 @@ class CppFormatter(object):
         return comments + declarations + body
 
     def format_comment(self, c) -> str:
+        """Format a comment."""
         return "// " + c.comment + "\n"
 
     def format_array_decl(self, arr) -> str:
+        """Format an array declaration."""
         dtype = arr.symbol.dtype
         assert dtype is not None
 
@@ -99,14 +106,17 @@ class CppFormatter(object):
         return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
     def format_array_access(self, arr) -> str:
+        """Format array access."""
         name = self.c_format(arr.array)
         indices = f"[{']['.join(self.c_format(i) for i in arr.indices)}]"
         return f"{name}{indices}"
 
     def format_multi_index(self, index) -> str:
+        """Format a multi-index."""
         return self.c_format(index.global_index)
 
     def format_variable_decl(self, v) -> str:
+        """Format a variable declaration."""
         val = self.c_format(v.value)
         symbol = self.c_format(v.symbol)
         assert v.symbol.dtype
@@ -117,6 +127,7 @@ class CppFormatter(object):
         return f"{typename} {symbol} = {val};\n"
 
     def format_nary_op(self, oper) -> str:
+        """Format an n-argument operation."""
         # Format children
         args = [self.c_format(arg) for arg in oper.args]
 
@@ -129,6 +140,7 @@ class CppFormatter(object):
         return f" {oper.op} ".join(args)
 
     def format_binary_op(self, oper) -> str:
+        """Format a binary operation."""
         # Format children
         lhs = self.c_format(oper.lhs)
         rhs = self.c_format(oper.rhs)
@@ -143,20 +155,25 @@ class CppFormatter(object):
         return f"{lhs} {oper.op} {rhs}"
 
     def format_neg(self, val) -> str:
+        """Format negation."""
         arg = self.c_format(val.arg)
         return f"-{arg}"
 
     def format_not(self, val) -> str:
+        """Format 'not' statement."""
         arg = self.c_format(val.arg)
         return f"{val.op}({arg})"
 
     def format_literal_float(self, val) -> str:
+        """Format a literal float number."""
         return f"{val.value}"
 
     def format_literal_int(self, val) -> str:
+        """Format a literal int number."""
         return f"{val.value}"
 
     def format_for_range(self, r) -> str:
+        """Format a loop over a range."""
         begin = self.c_format(r.begin)
         end = self.c_format(r.end)
         index = self.c_format(r.index)
@@ -170,14 +187,17 @@ class CppFormatter(object):
         return output
 
     def format_statement(self, s) -> str:
+        """Format a statement."""
         return self.c_format(s.expr)
 
     def format_assign(self, expr) -> str:
+        """Format an assignment statement."""
         rhs = self.c_format(expr.rhs)
         lhs = self.c_format(expr.lhs)
         return f"{lhs} {expr.op} {rhs};\n"
 
     def format_conditional(self, s) -> str:
+        """Format a conditional."""
         # Format children
         c = self.c_format(s.condition)
         t = self.c_format(s.true)
@@ -195,9 +215,11 @@ class CppFormatter(object):
         return c + " ? " + t + " : " + f
 
     def format_symbol(self, s) -> str:
+        """Format a symbol."""
         return f"{s.name}"
 
     def format_math_function(self, c) -> str:
+        """Format a math function."""
         # Get a function from the table, if available, else just use bare name
         func = math_table.get(c.function, c.function)
         args = ", ".join(self.c_format(arg) for arg in c.args)
@@ -239,6 +261,7 @@ class CppFormatter(object):
     }
 
     def c_format(self, s) -> str:
+        """Formatting function."""
         name = s.__class__.__name__
         try:
             return self.c_impl[name](self, s)

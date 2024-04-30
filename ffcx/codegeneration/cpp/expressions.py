@@ -3,13 +3,14 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Generate code for an expression."""
 
 import logging
 
-from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.expression_generator import ExpressionGenerator
+from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.C.c_implementation import CFormatter
+from ffcx.codegeneration.expression_generator import ExpressionGenerator
 
 logger = logging.getLogger("ffcx")
 

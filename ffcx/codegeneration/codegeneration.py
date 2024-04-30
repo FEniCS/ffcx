@@ -13,8 +13,8 @@ UFC function from an intermediate representation (IR).
 from __future__ import annotations
 
 import logging
-import typing
 import sys
+import typing
 from importlib import import_module
 
 import numpy.typing as npt

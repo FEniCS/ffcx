@@ -3,24 +3,24 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Integral generation."""
 
 import logging
 
-from ffcx.codegeneration.integral_generator import IntegralGenerator
-from ffcx.codegeneration.cpp import integrals_template as ufcx_integrals
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.cpp import integrals_template as ufcx_integrals
 from ffcx.codegeneration.cpp.cpp_implementation import CppFormatter
-
+from ffcx.codegeneration.integral_generator import IntegralGenerator
 
 logger = logging.getLogger("ffcx")
 
 
 def generator(ir, options):
+    """Generate code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.integral_type}")
     logger.info(f"--- name: {ir.name}")
 
-    """Generate code for an integral."""
     factory_name = ir.name
 
     # Format declaration

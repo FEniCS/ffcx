@@ -2,6 +2,7 @@
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2020.
+"""Templates for C++ form output."""
 
 declaration = """
 extern ufcx_form {factory_name};

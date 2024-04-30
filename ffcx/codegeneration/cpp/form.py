@@ -6,6 +6,7 @@
 
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
+"""Generate code for a form."""
 
 import logging
 

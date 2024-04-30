@@ -2,6 +2,7 @@
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018.
+"""Templates for C++ file output."""
 
 declaration_pre = """
 // This code conforms with the UFC specification version {ufcx_version}

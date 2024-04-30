@@ -3,6 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Code generation strings for an expression."""
 
 declaration = """
 extern ufcx_expression {factory_name};
@@ -45,7 +46,7 @@ ufcx_expression {factory_name} =
   .coefficient_names = {coefficient_names},
   .constant_names = {constant_names},
   .num_points = {num_points},
-  .topological_dimension = {topological_dimension},
+  .entity_dimension = {entity_dimension},
   .points = {points},
   .value_shape = {value_shape},
   .num_components = {num_components},
