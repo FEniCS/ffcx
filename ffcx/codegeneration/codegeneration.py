@@ -44,14 +44,13 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
     logger.info(79 * "*")
 
     lang = options.get("language", "C")
-    try:
-        # Built-in
-        mod = import_module(f"ffcx.codegeneration.{lang}")
+    # Built-in
+    mod = import_module(f"ffcx.codegeneration.{lang}")
 
     except ImportError:
-        # User defined, in current directory
-        sys.path.append(".")
-        mod = import_module(f"{lang}")
+         # User defined, in current directory
+         sys.path.append(".")
+         mod = import_module(f"{lang}")
 
     integral_generator = mod.integrals.generator
     form_generator = mod.form.generator
