@@ -12,7 +12,8 @@ import io
 import logging
 import os
 import re
-import sysconfig
+
+#import sysconfig
 import tempfile
 import time
 from contextlib import redirect_stdout
@@ -128,8 +129,8 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     return (
         xstr(cffi_extra_compile_args)
         + xstr(cffi_debug)
-        + sysconfig.get_config_var("CFLAGS")
-        + sysconfig.get_config_var("SOABI")
+        #+ sysconfig.get_config_var("CFLAGS")
+        #+ sysconfig.get_config_var("SOABI")
     )
 
 
