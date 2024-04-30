@@ -121,6 +121,8 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     return (
         str(cffi_extra_compile_args)
         + str(cffi_debug)
+        + sysconfig.get_config_var("CFLAGS")
+        + sysconfig.get_config_var("SOABI")
     )
 
 
