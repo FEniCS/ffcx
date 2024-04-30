@@ -25,6 +25,8 @@ jobs:
         include:
           - os: windows-latest
             python-version: '3.11'
+          - os: macos-latest
+            python-version: '3.12'
 
     steps:
       - name: Checkout FFCx
@@ -63,7 +65,7 @@ jobs:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: |
           pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+          pip install -v git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - name: Install FFCx
         run: pip install .[ci]
