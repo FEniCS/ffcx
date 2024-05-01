@@ -283,18 +283,6 @@ extern "C"
     /// Hash of the finite element
     long int finite_element;
 
-    /// The family of the finite element for the geometry map
-    const char* geometry_family;
-
-    /// The degree of the finite element for the geometry map
-    int geometry_degree;
-
-    /// The Basix cell of the finite element for the geometry map
-    int geometry_basix_cell;
-
-    /// The Basix variant of the finite element for the geometry map
-    int geometry_basix_variant;
-
     /// Rank of the value space
     int value_rank;
 

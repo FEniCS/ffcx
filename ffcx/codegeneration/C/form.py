@@ -132,10 +132,6 @@ def generator(ir, options):
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
         code += [f".finite_element = {element},"]
-        code += [f'.geometry_family = "{cmap_family}",']
-        code += [f".geometry_degree = {cmap_degree},"]
-        code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
         code += [f".value_rank = {len(value_shape)},"]
         if len(value_shape) == 0:
             code += [".value_shape = NULL"]
