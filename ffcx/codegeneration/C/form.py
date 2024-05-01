@@ -116,46 +116,6 @@ def generator(ir, options):
         f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
     )
 
-    vs_code = []
-    code = []
-
-    # FIXME: Should be handled differently, revise how
-    # ufcx_function_space is generated
-    for name, (
-        element,
-        cmap_family,
-        cmap_degree,
-        cmap_celltype,
-        cmap_variant,
-        value_shape,
-    ) in ir.function_spaces.items():
-        code += [f"static ufcx_function_space functionspace_{name} ="]
-        code += ["{"]
-        code += [f".finite_element = {element},"]
-        code += [f'.geometry_family = "{cmap_family}",']
-        code += [f".geometry_degree = {cmap_degree},"]
-        code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
-        code += [f".value_rank = {len(value_shape)},"]
-        if len(value_shape) == 0:
-            code += [".value_shape = NULL"]
-        else:
-            vs_code += [
-                f"int value_shape_{ir.name}_{name}[{len(value_shape)}] = {{",
-                "  " + ", ".join([f"{i}" for i in value_shape]),
-                "};",
-            ]
-            code += [f".value_shape = value_shape_{ir.name}_{name}"]
-        code += ["};"]
-
-    for name in ir.function_spaces.keys():
-        code += [f'if (strcmp(function_name, "{name}") == 0) return &functionspace_{name};']
-
-    code += ["return NULL;\n"]
-
-    d["functionspace"] = "\n".join(code)
-    d["value_shape_init"] = "\n".join(vs_code)
-
     # Check that no keys are redundant or have been missed
     from string import Formatter
 

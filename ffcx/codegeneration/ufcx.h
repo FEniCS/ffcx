@@ -62,7 +62,6 @@ extern "C"
 
   /// Forward declarations
   typedef struct ufcx_quadrature_rule ufcx_quadrature_rule;
-  typedef struct ufcx_function_space ufcx_function_space;
 
   // </HEADER_DECL>
 
@@ -213,13 +212,6 @@ extern "C"
     /// Rank, i.e. number of arguments
     int rank;
 
-    /// Function spaces for all functions in the Expression.
-    ///
-    /// Function spaces for coefficients are followed by
-    /// Arguments function spaces.
-    /// Dimensions: function_spaces[num_coefficients + rank]
-    ufcx_function_space** function_spaces;
-
   } ufcx_expression;
 
   /// This class defines the interface for the assembly of the global
@@ -276,31 +268,6 @@ extern "C"
     int* form_integral_offsets;
 
   } ufcx_form;
-
-  // FIXME: Formalise a UFCX 'function space'
-  typedef struct ufcx_function_space
-  {
-    /// Hash of the finite element
-    long int finite_element;
-
-    /// The family of the finite element for the geometry map
-    const char* geometry_family;
-
-    /// The degree of the finite element for the geometry map
-    int geometry_degree;
-
-    /// The Basix cell of the finite element for the geometry map
-    int geometry_basix_cell;
-
-    /// The Basix variant of the finite element for the geometry map
-    int geometry_basix_variant;
-
-    /// Rank of the value space
-    int value_rank;
-
-    /// Shape of the value space
-    int* value_shape;
-  } ufcx_function_space;
 
 #ifdef __cplusplus
 #undef restrict
