@@ -107,7 +107,7 @@ def generator(ir, options):
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated (also for ufcx_form)
     for name, (
-        element,
+        element_hash,
         cmap_family,
         cmap_degree,
         cmap_celltype,
@@ -116,7 +116,7 @@ def generator(ir, options):
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
         code += ["{"]
-        code += [f".finite_element = {0 if element is None else element}u,"]
+        code += [f".finite_element_hash = {0 if element_hash is None else element_hash}u,"]
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]

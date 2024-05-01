@@ -67,14 +67,16 @@ def generator(ir, options):
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
 
-    if len(ir.finite_elements) > 0:
-        d["finite_elements"] = f"finite_elements_{ir.name}"
-        values = ", ".join(f"{0 if el is None else el}u" for el in ir.finite_elements)
-        sizes = len(ir.finite_elements)
-        d["finite_elements_init"] = f"uint64_t finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+    if len(ir.finite_element_hashes) > 0:
+        d["finite_element_hashes"] = f"finite_element_hashes_{ir.name}"
+        values = ", ".join(f"{0 if el is None else el}u" for el in ir.finite_element_hashes)
+        sizes = len(ir.finite_element_hashes)
+        d["finite_element_hashes_init"] = (
+            f"uint64_t finite_element_hashes_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
-        d["finite_elements"] = "NULL"
-        d["finite_elements_init"] = ""
+        d["finite_element_hashes"] = "NULL"
+        d["finite_element_hashes_init"] = ""
 
     integrals = []
     integral_ids = []
@@ -122,7 +124,7 @@ def generator(ir, options):
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated
     for name, (
-        element,
+        element_hash,
         cmap_family,
         cmap_degree,
         cmap_celltype,
@@ -131,7 +133,7 @@ def generator(ir, options):
     ) in ir.function_spaces.items():
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
-        code += [f".finite_element = {0 if element is None else element}u,"]
+        code += [f".finite_element_hash = {0 if element_hash is None else element_hash}u,"]
         code += [f'.geometry_family = "{cmap_family}",']
         code += [f".geometry_degree = {cmap_degree},"]
         code += [f".geometry_basix_cell = {int(cmap_celltype)},"]

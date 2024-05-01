@@ -75,7 +75,7 @@ def generator(ir: IntegralIR, options):
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
-        coordinate_element=f"{0 if ir.coordinate_element is None else ir.coordinate_element}u",
+        coordinate_element_hash=f"{0 if ir.coordinate_element_hash is None else ir.coordinate_element_hash}u",
         tabulate_tensor_float32=code["tabulate_tensor_float32"],
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],

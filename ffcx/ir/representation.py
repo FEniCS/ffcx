@@ -54,7 +54,7 @@ class FormIR(typing.NamedTuple):
     original_coefficient_position: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
-    finite_elements: list[int]
+    finite_element_hashes: list[int]
     integral_names: dict[str, list[str]]
     subdomain_ids: dict[str, list[int]]
 
@@ -83,7 +83,7 @@ class IntegralIR(typing.NamedTuple):
     integrand: dict[QuadratureRule, dict]
     name: str
     needs_facet_permutations: bool
-    coordinate_element: int
+    coordinate_element_hash: int
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -229,7 +229,9 @@ def _compute_integral_ir(
             "rank": form_data.rank,
             "entitytype": entitytype,
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "coordinate_element": finite_element_hashes[itg_data.domain.ufl_coordinate_element()],
+            "coordinate_element_hash": finite_element_hashes[
+                itg_data.domain.ufl_coordinate_element()
+            ],
         }
 
         # Get element space dimensions
@@ -457,7 +459,7 @@ def _compute_form_ir(
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
-    ir["finite_elements"] = [
+    ir["finite_element_hashes"] = [
         finite_element_hashes[e]
         for e in form_data.argument_elements + form_data.coefficient_elements
     ]

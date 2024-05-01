@@ -23,7 +23,7 @@ factory = """
 // Code for form {factory_name}
 
 {original_coefficient_position_init}
-{finite_elements_init}
+{finite_element_hashes_init}
 {form_integral_offsets_init}
 {form_integrals_init}
 {form_integral_ids_init}
@@ -43,7 +43,7 @@ ufcx_form {factory_name} =
   .coefficient_name_map = {coefficient_names},
   .constant_name_map = {constant_names},
 
-  .finite_elements = {finite_elements},
+  .finite_element_hashes = {finite_element_hashes},
 
   .form_integrals = {form_integrals},
   .form_integral_ids = {form_integral_ids},
