@@ -60,28 +60,7 @@ extern "C"
     interior_facet = 2
   } ufcx_integral_type;
 
-  /// Forward declarations
-  typedef struct ufcx_quadrature_rule ufcx_quadrature_rule;
-
   // </HEADER_DECL>
-
-  typedef struct ufcx_quadrature_rule
-  {
-    /// Cell shape
-    ufcx_shape cell_shape;
-
-    /// The number of points
-    int npts;
-
-    /// The topological dimension of the cell
-    int topological_dimension;
-
-    /// The quadraute points
-    double* points;
-
-    /// The quadraute weights
-    double* weights;
-  } ufcx_quadrature_rule;
 
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
