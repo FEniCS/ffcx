@@ -43,45 +43,12 @@ extern "C"
 
   typedef enum
   {
-    interval = 10,
-    triangle = 20,
-    quadrilateral = 30,
-    tetrahedron = 40,
-    hexahedron = 50,
-    vertex = 60,
-    prism = 70,
-    pyramid = 80
-  } ufcx_shape;
-
-  typedef enum
-  {
     cell = 0,
     exterior_facet = 1,
     interior_facet = 2
   } ufcx_integral_type;
 
-  /// Forward declarations
-  typedef struct ufcx_quadrature_rule ufcx_quadrature_rule;
-
   // </HEADER_DECL>
-
-  typedef struct ufcx_quadrature_rule
-  {
-    /// Cell shape
-    ufcx_shape cell_shape;
-
-    /// The number of points
-    int npts;
-
-    /// The topological dimension of the cell
-    int topological_dimension;
-
-    /// The quadraute points
-    double* points;
-
-    /// The quadraute weights
-    double* weights;
-  } ufcx_quadrature_rule;
 
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
