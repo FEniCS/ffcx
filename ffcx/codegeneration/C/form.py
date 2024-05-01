@@ -121,14 +121,7 @@ def generator(ir, options):
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated
-    for name, (
-        element,
-        cmap_family,
-        cmap_degree,
-        cmap_celltype,
-        cmap_variant,
-        value_shape,
-    ) in ir.function_spaces.items():
+    for name, (element, value_shape) in ir.function_spaces.items():
         code += [f"static ufcx_function_space functionspace_{name} ="]
         code += ["{"]
         code += [f".finite_element = {element},"]
