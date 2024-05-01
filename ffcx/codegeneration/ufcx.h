@@ -43,18 +43,6 @@ extern "C"
 
   typedef enum
   {
-    interval = 10,
-    triangle = 20,
-    quadrilateral = 30,
-    tetrahedron = 40,
-    hexahedron = 50,
-    vertex = 60,
-    prism = 70,
-    pyramid = 80
-  } ufcx_shape;
-
-  typedef enum
-  {
     cell = 0,
     exterior_facet = 1,
     interior_facet = 2
