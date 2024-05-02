@@ -127,8 +127,8 @@ extern "C"
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
 
-    /// Get the coordinate element associated with the geometry of the mesh.
-    long int coordinate_element;
+    /// Get the hash of the coordinate element associated with the geometry of the mesh.
+    uint64_t coordinate_element_hash;
   } ufcx_integral;
 
   typedef struct ufcx_expression
@@ -223,7 +223,7 @@ extern "C"
     ///
     /// @param i Argument number if 0 <= i < r Coefficient number j = i
     /// - r if r + j <= i < r + n
-    long int* finite_elements;
+    uint64_t* finite_element_hashes;
 
     /// List of cell, interior facet and exterior facet integrals
     ufcx_integral** form_integrals;

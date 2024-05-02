@@ -67,14 +67,16 @@ def generator(ir, options):
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
 
-    if len(ir.finite_elements) > 0:
-        d["finite_elements"] = f"finite_elements_{ir.name}"
-        values = ", ".join(f"{el}" for el in ir.finite_elements)
-        sizes = len(ir.finite_elements)
-        d["finite_elements_init"] = f"long int finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+    if len(ir.finite_element_hashes) > 0:
+        d["finite_element_hashes"] = f"finite_element_hashes_{ir.name}"
+        values = ", ".join(f"{0 if el is None else el}ull" for el in ir.finite_element_hashes)
+        sizes = len(ir.finite_element_hashes)
+        d["finite_element_hashes_init"] = (
+            f"uint64_t finite_element_hashes_{ir.name}[{sizes}] = {{{values}}};"
+        )
     else:
-        d["finite_elements"] = "NULL"
-        d["finite_elements_init"] = ""
+        d["finite_element_hashes"] = "NULL"
+        d["finite_element_hashes_init"] = ""
 
     integrals = []
     integral_ids = []

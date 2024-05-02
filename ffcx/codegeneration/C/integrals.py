@@ -67,6 +67,8 @@ def generator(ir: IntegralIR, options):
     np_scalar_type = np.dtype(options["scalar_type"]).name
     code[f"tabulate_tensor_{np_scalar_type}"] = f"tabulate_tensor_{factory_name}"
 
+    element_hash = 0 if ir.coordinate_element_hash is None else ir.coordinate_element_hash
+
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
@@ -75,7 +77,7 @@ def generator(ir: IntegralIR, options):
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
-        coordinate_element=f"{ir.coordinate_element}",
+        coordinate_element_hash=f"{element_hash}ull",
         tabulate_tensor_float32=code["tabulate_tensor_float32"],
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
