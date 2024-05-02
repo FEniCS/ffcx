@@ -101,55 +101,6 @@ def generator(ir, options):
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
 
-    code = []
-    vs_code = []
-
-    # FIXME: Should be handled differently, revise how
-    # ufcx_function_space is generated (also for ufcx_form)
-    for name, (
-        element_hash,
-        cmap_family,
-        cmap_degree,
-        cmap_celltype,
-        cmap_variant,
-        value_shape,
-    ) in ir.function_spaces.items():
-        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
-        code += ["{"]
-        code += [f".finite_element_hash = {0 if element_hash is None else element_hash}u,"]
-        code += [f'.geometry_family = "{cmap_family}",']
-        code += [f".geometry_degree = {cmap_degree},"]
-        code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
-        code += [f".value_rank = {len(value_shape)},"]
-        if len(value_shape) == 0:
-            code += [".value_shape = NULL"]
-        else:
-            vs_code += [
-                f"int value_shape_{name}_{ir.name_from_uflfile}[{len(value_shape)}] = {{",
-                "  " + ", ".join([f"{i}" for i in value_shape]),
-                "};",
-            ]
-            code += [f".value_shape = value_shape_{name}_{ir.name_from_uflfile}"]
-        code += ["};"]
-
-    d["function_spaces_alloc"] = "\n".join(vs_code) + "\n" + "\n".join(code)
-    d["function_spaces"] = ""
-
-    if len(ir.function_spaces) > 0:
-        d["function_spaces"] = f"function_spaces_{ir.name}"
-        values = ", ".join(
-            f"&function_space_{name}_{ir.name_from_uflfile}"
-            for (name, _) in ir.function_spaces.items()
-        )
-        sizes = len(ir.function_spaces)
-        d["function_spaces_init"] = (
-            f"ufcx_function_space* function_spaces_{ir.name}[{sizes}] = {{{values}}};"
-        )
-    else:
-        d["function_spaces"] = "NULL"
-        d["function_spaces_init"] = ""
-
     # Check that no keys are redundant or have been missed
     from string import Formatter
 

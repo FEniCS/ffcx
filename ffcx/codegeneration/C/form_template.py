@@ -13,10 +13,6 @@ extern ufcx_form {factory_name};
 //
 extern ufcx_form* {name_from_uflfile};
 
-// Helper used to create function space using function name
-// i.e. name of the Python variable.
-//
-ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name);
 """
 
 factory = """
@@ -52,12 +48,6 @@ ufcx_form {factory_name} =
 
 // Alias name
 ufcx_form* {name_from_uflfile} = &{factory_name};
-
-{value_shape_init}
-ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name)
-{{
-{functionspace}
-}}
 
 // End of code for form {factory_name}
 """
