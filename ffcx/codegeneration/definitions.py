@@ -58,8 +58,6 @@ class FFCXBackendDefinitions:
         self.access = access
         self.options = options
 
-        # self.ir = ir
-
         # called, depending on the first argument type.
         self.handler_lookup = {
             ufl.coefficient.Coefficient: self.coefficient,
