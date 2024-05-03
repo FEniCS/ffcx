@@ -69,7 +69,8 @@ def generator(ir, options):
 
     if len(ir.finite_element_hashes) > 0:
         d["finite_element_hashes"] = f"finite_element_hashes_{ir.name}"
-        values = ", ".join(f"UINT64_C({0 if el is None else el})" for el in ir.finite_element_hashes)
+        values = ", ".join(
+            f"UINT64_C({0 if el is None else el})" for el in ir.finite_element_hashes)
         sizes = len(ir.finite_element_hashes)
         d["finite_element_hashes_init"] = (
             f"uint64_t finite_element_hashes_{ir.name}[{sizes}] = {{{values}}};"
