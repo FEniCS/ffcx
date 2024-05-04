@@ -34,6 +34,8 @@ extern "C"
 #define restrict
 #elif defined(__GNUC__) || defined(__GNUG__)
 #define restrict __restrict__
+#elif defined(_MSC_VER)
+#define restrict __restrict
 #else
 #define restrict
 #endif // restrict
