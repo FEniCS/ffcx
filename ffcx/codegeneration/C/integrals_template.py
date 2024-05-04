@@ -31,7 +31,7 @@ ufcx_integral {factory_name} =
   .tabulate_tensor_complex64 = {tabulate_tensor_complex64},
   .tabulate_tensor_complex128 = {tabulate_tensor_complex128},
   .needs_facet_permutations = {needs_facet_permutations},
-  .coordinate_element = {coordinate_element},
+  .coordinate_element_hash = {coordinate_element_hash},
 }};
 
 // End of code for integral {factory_name}
