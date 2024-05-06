@@ -35,16 +35,16 @@ jobs:
       - name: Install UFL and Basix (default branches/tags)
         if: github.event_name != 'workflow_dispatch'
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/ufl.git
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/basix.git
       - name: Install UFL and Basix (specified branches/tags)
         if: github.event_name == 'workflow_dispatch'
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git@${{ github.event.inputs.ufl_ref }}
-          python3 -m pip install git+https://github.com/FEniCS/basix.git@${{ github.event.inputs.basix_ref }}
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/ufl.git@${{ github.event.inputs.ufl_ref }}
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/basix.git@${{ github.event.inputs.basix_ref }}
       - name: Install FFCx
         run: |
-          pip3 install .
+          pip3 install --break-system-packages .
       - name: Get DOLFINx source (default branch/tag)
         if: github.event_name != 'workflow_dispatch'
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
           cmake --build build
           cmake --install build
       - name: Install DOLFINx (Python)
-        run: python3 -m pip -v install --check-build-dependencies --no-build-isolation dolfinx/python/
+        run: python3 -m pip -v install --break-system-packages --check-build-dependencies --no-build-isolation dolfinx/python/
       - name: Build DOLFINx C++ unit tests
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S dolfinx/cpp/test/
