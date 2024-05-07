@@ -60,12 +60,17 @@ def generator(ir: IntegralIR, options):
 
     code["tabulate_tensor"] = body
 
-    code["tabulate_tensor_float32"] = "NULL"
-    code["tabulate_tensor_float64"] = "NULL"
-    code["tabulate_tensor_complex64"] = "NULL"
-    code["tabulate_tensor_complex128"] = "NULL"
+    code["tabulate_tensor_float32"] = ".tabulate_tensor_float32 = NULL,"
+    code["tabulate_tensor_float64"] = ".tabulate_tensor_float64 = NULL,"
+    if True:
+        code["tabulate_tensor_complex64"] = ""
+        code["tabulate_tensor_complex128"] = ""
+    else:
+        code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
+        code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
+
     np_scalar_type = np.dtype(options["scalar_type"]).name
-    code[f"tabulate_tensor_{np_scalar_type}"] = f"tabulate_tensor_{factory_name}"
+    code[f"tabulate_tensor_{np_scalar_type}"] = f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
 
     element_hash = 0 if ir.coordinate_element_hash is None else ir.coordinate_element_hash
 
@@ -83,5 +88,7 @@ def generator(ir: IntegralIR, options):
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
     )
+
+    print(implementation)
 
     return declaration, implementation

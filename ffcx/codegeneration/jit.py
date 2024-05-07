@@ -46,28 +46,37 @@ UFC_INTEGRAL_DECL = "\n".join(
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_float64\).*?\);", ufcx_h, re.DOTALL)
 )
-
-# TODO: Strip __STDC_NO_COMPLEX__ on Unix. Remove definitions entirely on win32. 
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_complex64\).*?\);", ufcx_h, re.DOTALL)
 )
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_complex128\).*?\);", ufcx_h, re.DOTALL)
 )
-
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_longdouble\).*?\);", ufcx_h, re.DOTALL)
 )
 
-# TODO: Strip __STDC_NO_COMPLEX__ on Unix. Remove definitions entirely on win32. 
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall("typedef struct ufcx_integral.*?ufcx_integral;", ufcx_h, re.DOTALL)
 )
+
 UFC_EXPRESSION_DECL = "\n".join(
     re.findall("typedef struct ufcx_expression.*?ufcx_expression;", ufcx_h, re.DOTALL)
 )
 
-print(UFC_EXPRESSION_DECL)
+print(UFC_INTEGRAL_DECL)
+# If on win32 remove everything between __STDC_NO_COMPLEX__ macro check entirely.
+UFC_INTEGRAL_DECL, num_replaced = re.subn(
+    r"(\#ifdef __STDC_NO_COMPLEX__.*?__STDC_NO_COMPLEX__)",
+    "",
+    UFC_INTEGRAL_DECL,
+    flags=re.DOTALL,
+)
+print(UFC_INTEGRAL_DECL)
+assert num_replaced == 1
+# TODO: Otherwise assume implementation of _Complex and just remove
+# __STDC_NO_COMPLEX__ macros.
+
 
 def _compute_option_signature(options):
     """Return options signature (some options should not affect signature)."""
