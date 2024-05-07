@@ -63,44 +63,6 @@ class QuadratureIR(typing.NamedTuple):
     weights: npt.NDArray[np.float64]
 
 
-class ElementIR(typing.NamedTuple):
-    """Intermediate representation of an element."""
-
-    id: int
-    name: str
-    signature: str
-    cell_shape: str
-    topological_dimension: int
-    space_dimension: int
-    reference_value_shape: tuple[int, ...]
-    degree: int
-    num_sub_elements: int
-    block_size: int
-    sub_elements: list[str]
-    element_type: str
-    entity_dofs: list[list[list[int]]]
-    lagrange_variant: basix.LagrangeVariant
-    dpc_variant: basix.DPCVariant
-    basix_family: basix.ElementFamily
-    basix_cell: basix.CellType
-    discontinuous: bool
-    custom_quadrature: QuadratureIR
-
-
-class DofMapIR(typing.NamedTuple):
-    """Intermediate representation of a DOF map."""
-
-    id: int
-    name: str
-    signature: str
-    num_global_support_dofs: int
-    num_element_support_dofs: int
-    entity_dofs: list[list[list[int]]]
-    entity_closure_dofs: list[list[list[int]]]
-    num_entity_closure_dofs: list[list[int]]
-    num_sub_dofmaps: int
-    sub_dofmaps: list[str]
-    block_size: int
 
 
 class CommonExpressionIR(typing.NamedTuple):
