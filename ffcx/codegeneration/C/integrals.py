@@ -70,7 +70,9 @@ def generator(ir: IntegralIR, options):
         code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
 
     np_scalar_type = np.dtype(options["scalar_type"]).name
-    code[f"tabulate_tensor_{np_scalar_type}"] = f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
+    code[f"tabulate_tensor_{np_scalar_type}"] = (
+        f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
+    )
 
     element_hash = 0 if ir.coordinate_element_hash is None else ir.coordinate_element_hash
 
