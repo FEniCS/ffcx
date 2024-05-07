@@ -6,6 +6,7 @@
 
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
+"""Template for form output."""
 
 import logging
 
@@ -70,7 +71,7 @@ def generator(ir, options):
         if f not in fields:
             print(f, "not in fields")
 
-    if set(fields) != set(d.keys()): 
+    if set(fields) != set(d.keys()):
         print("Mismatch between keys in template and in formatting dict")
 
     # Format implementation code

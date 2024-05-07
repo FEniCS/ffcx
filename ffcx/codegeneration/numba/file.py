@@ -6,15 +6,16 @@
 #
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
+"""Generate file output for numba."""
+
 
 import logging
 import pprint
 import textwrap
 
-from ffcx.codegeneration.numba import file_template
 from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
-
+from ffcx.codegeneration.numba import file_template
 
 logger = logging.getLogger("ffcx")
 

@@ -2,12 +2,14 @@
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2018
+"""Template for integral output."""
 
 factory = """
 # Code for integral {factory_name}
 import numba
 
-def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs, _entity_local_index, _quadrature_permutation):
+def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs,
+                                   _entity_local_index, _quadrature_permutation):
 {tabulate_tensor}
 
 class {factory_name}(object):

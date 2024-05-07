@@ -37,14 +37,15 @@ class CodeBlocks(typing.NamedTuple):
     file_post: list[tuple[str, str]]
 
 
-def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[CodeBlocks, tuple[str, str]]:
+def generate_code(ir: DataIR,
+                  options: dict[str, int | float | npt.DTypeLike]) -> tuple[CodeBlocks,
+                                                                            tuple[str, str]]:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
     lang = options.get("language", "C")
-    
     try:
         # Built-in
         mod = import_module(f"ffcx.codegeneration.{lang}")

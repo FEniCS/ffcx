@@ -3,12 +3,13 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+"""Generate UFC code for an expression."""
 
 import logging
 
-from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
+from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.numba.numba_implementation import NumbaFormatter
 
 logger = logging.getLogger("ffcx")
@@ -70,7 +71,6 @@ def generator(ir, options):
     d["num_points"] = ir.points.shape[0]
     d["topological_dimension"] = ir.points.shape[1]
     d["scalar_type"] = options["scalar_type"]
-    
     d["rank"] = len(ir.tensor_shape)
 
     names = ", ".join(f'"{name}"' for name in ir.coefficient_names)

@@ -2,7 +2,7 @@
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2020.
-
+"""Template for file output."""
 
 factory = """
 # Code for form {factory_name}

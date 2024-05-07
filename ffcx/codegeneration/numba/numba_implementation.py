@@ -1,8 +1,9 @@
-
+"""Numba implementation for output."""
 import ffcx.codegeneration.lnodes as L
 
 
 def build_initializer_lists(values):
+    """Build list of values."""
     arr = "["
     if len(values.shape) == 1:
         return "[" + ", ".join(str(v) for v in values) + "]"
@@ -12,11 +13,14 @@ def build_initializer_lists(values):
     return arr
 
 
-class NumbaFormatter(object):
+class NumbaFormatter:
+    """Implementation for numba output backend."""
     def __init__(self, scalar) -> None:
+        """Initialise."""
         self.scalar_type = scalar
 
     def format_section(self, section):
+        """Format a section."""
         # add new line before section
         comments = "# ------------------------ \n"
         comments += "# Section: " + section.name + "\n"
@@ -27,20 +31,23 @@ class NumbaFormatter(object):
         body = ""
         if len(section.statements) > 0:
             body = "".join(self.c_format(s) for s in section.statements)
-        
+
         body += "# ------------------------ \n"
         return comments + declarations + body
 
     def format_statement_list(self, slist):
+        """Format a list of statements."""
         output = ""
         for s in slist.statements:
             output += self.c_format(s)
         return output
 
     def format_comment(self, c):
+        """Format a comment."""
         return "# " + c.comment + "\n"
 
     def format_array_decl(self, arr):
+        """Format an array declaration."""
         if arr.symbol.dtype == L.DataType.SCALAR:
             dtype = "A.dtype"
         elif arr.symbol.dtype == L.DataType.REAL:
@@ -55,19 +62,23 @@ class NumbaFormatter(object):
         return f"{symbol} = {av}\n"
 
     def format_array_access(self, arr):
+        """Format array access."""
         array = self.c_format(arr.array)
         idx = ", ".join(self.c_format(ix) for ix in arr.indices)
         return f"{array}[{idx}]"
 
     def format_multi_index(self, index):
+        """Format a multi-index."""
         return self.c_format(index.global_index)
 
     def format_variable_decl(self, v):
+        """Format a variable declaration."""
         sym = self.c_format(v.symbol)
         val = self.c_format(v.value)
         return f"{sym} = {val}\n"
 
     def format_nary_op(self, oper):
+        """Format a n argument operation."""
         # Format children
         args = [self.c_format(arg) for arg in oper.args]
 
@@ -80,6 +91,7 @@ class NumbaFormatter(object):
         return f" {oper.op} ".join(args)
 
     def format_binary_op(self, oper):
+        """Format a binary operation."""
         # Format children
         lhs = self.c_format(oper.lhs)
         rhs = self.c_format(oper.rhs)
@@ -94,14 +106,17 @@ class NumbaFormatter(object):
         return f"{lhs} {oper.op} {rhs}"
 
     def format_neg(self, val):
+        """Format unary negation."""
         arg = self.c_format(val.arg)
         return f"-{arg}"
 
     def format_not(self, val):
+        """Format not operation."""
         arg = self.c_format(val.arg)
         return f"not({arg})"
 
     def format_andor(self, oper):
+        """Format and or or operation."""
         # Format children
         lhs = self.c_format(oper.lhs)
         rhs = self.c_format(oper.rhs)
@@ -118,12 +133,15 @@ class NumbaFormatter(object):
         return f"{lhs} {opstr} {rhs}"
 
     def format_literal_float(self, val):
+        """Format a literal float."""
         return f"{val.value}"
 
     def format_literal_int(self, val):
+        """Format a literal int."""
         return f"{val.value}"
 
     def format_for_range(self, r):
+        """Format a loop over a range."""
         begin = self.c_format(r.begin)
         end = self.c_format(r.end)
         index = self.c_format(r.index)
@@ -134,14 +152,17 @@ class NumbaFormatter(object):
         return output
 
     def format_statement(self, s):
+        """Format a statement."""
         return self.c_format(s.expr)
 
     def format_assign(self, expr):
+        """Format assignment."""
         rhs = self.c_format(expr.rhs)
         lhs = self.c_format(expr.lhs)
         return f"{lhs} {expr.op} {rhs}\n"
 
     def format_conditional(self, s):
+        """Format a conditional."""
         # Format children
         c = self.c_format(s.condition)
         t = self.c_format(s.true)
@@ -159,9 +180,11 @@ class NumbaFormatter(object):
         return f"({t} if {c} else {f})"
 
     def format_symbol(self, s):
+        """Format a symbol."""
         return f"{s.name}"
 
     def format_mathfunction(self, f):
+        """Format a math function."""
         function_map = {"ln": "log", "acos": "arccos", "asin": "arcsin",
                         "atan": "arctan", "atan2": "arctan2", "acosh": "arccosh",
                         "asinh": "arcsinh", "atanh": "arctanh"}
@@ -210,6 +233,7 @@ class NumbaFormatter(object):
     }
 
     def c_format(self, s):
+        """Format output."""
         name = s.__class__.__name__
         try:
             return self.c_impl[name](self, s)
