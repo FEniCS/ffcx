@@ -6,6 +6,7 @@
 """Generate UFC code for an integral."""
 
 import logging
+import sys
 
 import numpy as np
 
@@ -62,8 +63,9 @@ def generator(ir: IntegralIR, options):
 
     code["tabulate_tensor_float32"] = ".tabulate_tensor_float32 = NULL"
     code["tabulate_tensor_float64"] = ".tabulate_tensor_float64 = NULL"
-    code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL"
-    code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL"
+    if not sys.platform.startswith("win32"):
+        code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL"
+        code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL"
     np_scalar_type = np.dtype(options["scalar_type"]).name
     code[f"tabulate_tensor_{np_scalar_type}"] = f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name}"
 
