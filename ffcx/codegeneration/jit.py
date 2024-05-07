@@ -46,16 +46,20 @@ UFC_INTEGRAL_DECL = "\n".join(
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_float64\).*?\);", ufcx_h, re.DOTALL)
 )
+
+# TODO: Strip __STDC_NO_COMPLEX__ on Unix. Remove definitions entirely on win32. 
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_complex64\).*?\);", ufcx_h, re.DOTALL)
 )
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_complex128\).*?\);", ufcx_h, re.DOTALL)
 )
+
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_longdouble\).*?\);", ufcx_h, re.DOTALL)
 )
 
+# TODO: Strip __STDC_NO_COMPLEX__ on Unix. Remove definitions entirely on win32. 
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall("typedef struct ufcx_integral.*?ufcx_integral;", ufcx_h, re.DOTALL)
 )
@@ -63,6 +67,7 @@ UFC_EXPRESSION_DECL = "\n".join(
     re.findall("typedef struct ufcx_expression.*?ufcx_expression;", ufcx_h, re.DOTALL)
 )
 
+print(UFC_EXPRESSION_DECL)
 
 def _compute_option_signature(options):
     """Return options signature (some options should not affect signature)."""
@@ -126,6 +131,7 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
         else:
             return str(s)
 
+    # TODO: SOABI not defined on win32
     return (
         xstr(cffi_extra_compile_args) + xstr(cffi_debug)
         # + sysconfig.get_config_var("CFLAGS")
