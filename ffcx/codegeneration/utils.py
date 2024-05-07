@@ -5,8 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utilities."""
 
-import typing
 import sys
+import typing
 
 import numpy as np
 import numpy.typing as npt
