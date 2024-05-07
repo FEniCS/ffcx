@@ -12,8 +12,8 @@ import io
 import logging
 import os
 import re
+import sys
 
-# import sysconfig
 import tempfile
 import time
 from contextlib import redirect_stdout
@@ -34,6 +34,15 @@ file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/ufcx.h") as f:
     ufcx_h = "".join(f.readlines())
 
+# Emulate C preprocessor on __STDC_NO_COMPLEX__
+if sys.platform.startswith("win32"):
+    # Remove macro statements and content
+    ufcx_h = re.sub(r"\#ifndef __STDC_NO_COMPLEX__.*?\#endif // __STDC_NO_COMPLEX__", "", ufcx_h, flags=re.DOTALL) 
+else:
+    # Remove only macros keeping content
+    ufcx_h = ufcx_h.replace("#ifndef __STDC_NO_COMPLEX__", "")
+    ufcx_h = ufcx_h.replace("#endif // __STDC_NO_COMPLEX__", "")
+
 header = ufcx_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
 UFC_HEADER_DECL = header + "\n"
@@ -52,9 +61,6 @@ UFC_INTEGRAL_DECL += "\n".join(
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_complex128\).*?\);", ufcx_h, re.DOTALL)
 )
-UFC_INTEGRAL_DECL += "\n".join(
-    re.findall(r"typedef void ?\(ufcx_tabulate_tensor_longdouble\).*?\);", ufcx_h, re.DOTALL)
-)
 
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall("typedef struct ufcx_integral.*?ufcx_integral;", ufcx_h, re.DOTALL)
@@ -63,19 +69,6 @@ UFC_INTEGRAL_DECL += "\n".join(
 UFC_EXPRESSION_DECL = "\n".join(
     re.findall("typedef struct ufcx_expression.*?ufcx_expression;", ufcx_h, re.DOTALL)
 )
-
-print(UFC_INTEGRAL_DECL)
-# If on win32 remove everything between __STDC_NO_COMPLEX__ macro check entirely.
-UFC_INTEGRAL_DECL, num_replaced = re.subn(
-    r"(\#ifdef __STDC_NO_COMPLEX__.*?__STDC_NO_COMPLEX__)",
-    "",
-    UFC_INTEGRAL_DECL,
-    flags=re.DOTALL,
-)
-print(UFC_INTEGRAL_DECL)
-assert num_replaced == 1
-# TODO: Otherwise assume implementation of _Complex and just remove
-# __STDC_NO_COMPLEX__ macros.
 
 
 def _compute_option_signature(options):

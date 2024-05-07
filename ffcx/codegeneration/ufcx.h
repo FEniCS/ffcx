@@ -98,7 +98,7 @@ extern "C"
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation);
 
-#ifdef __STDC_NO_COMPLEX__
+#ifndef __STDC_NO_COMPLEX__
   /// Tabulate integral into tensor A with compiled
   /// quadrature rule and complex single precision
   ///
@@ -110,7 +110,7 @@ extern "C"
       const uint8_t* restrict quadrature_permutation);
 #endif // __STDC_NO_COMPLEX__
 
-#ifdef __STDC_NO_COMPLEX__
+#ifndef __STDC_NO_COMPLEX__
   /// Tabulate integral into tensor A with compiled
   /// quadrature rule and complex double precision
   ///
@@ -127,7 +127,7 @@ extern "C"
     const bool* enabled_coefficients;
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-#ifdef __STDC_NO_COMPLEX__
+#ifndef __STDC_NO_COMPLEX__
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 #endif // __STDC_NO_COMPLEX__
@@ -148,7 +148,7 @@ extern "C"
     ///
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
-#ifdef __STDC_NO_COMPLEX__
+#ifndef __STDC_NO_COMPLEX__
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 #endif // __STDC_NO_COMPLEX__
