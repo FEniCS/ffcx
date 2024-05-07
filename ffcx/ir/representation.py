@@ -22,7 +22,6 @@ import logging
 import typing
 import warnings
 
-import basix
 import numpy as np
 import numpy.typing as npt
 import ufl
@@ -61,8 +60,6 @@ class QuadratureIR(typing.NamedTuple):
     cell_shape: str
     points: npt.NDArray[np.float64]
     weights: npt.NDArray[np.float64]
-
-
 
 
 class CommonExpressionIR(typing.NamedTuple):
