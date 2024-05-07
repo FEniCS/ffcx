@@ -13,7 +13,6 @@ import logging
 import os
 import re
 import sys
-
 import tempfile
 import time
 from contextlib import redirect_stdout
@@ -37,7 +36,12 @@ with open(file_dir + "/ufcx.h") as f:
 # Emulate C preprocessor on __STDC_NO_COMPLEX__
 if sys.platform.startswith("win32"):
     # Remove macro statements and content
-    ufcx_h = re.sub(r"\#ifndef __STDC_NO_COMPLEX__.*?\#endif // __STDC_NO_COMPLEX__", "", ufcx_h, flags=re.DOTALL) 
+    ufcx_h = re.sub(
+        r"\#ifndef __STDC_NO_COMPLEX__.*?\#endif // __STDC_NO_COMPLEX__",
+        "",
+        ufcx_h,
+        flags=re.DOTALL,
+    )
 else:
     # Remove only macros keeping content
     ufcx_h = ufcx_h.replace("#ifndef __STDC_NO_COMPLEX__", "")

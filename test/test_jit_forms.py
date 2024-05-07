@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import sys
+
 import basix.ufl
 import numpy as np
 import pytest
@@ -22,7 +24,7 @@ from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
             "float64",
             np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64),
         ),
-        (
+        pytest.param(
             "complex128",
             np.array(
                 [
@@ -31,6 +33,11 @@ from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
                     [-0.5 + 0j, 0.0 + 0j, 0.5 + 0j],
                 ],
                 dtype=np.complex128,
+            ),
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
             ),
         ),
     ],
@@ -115,7 +122,7 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
                 dtype=np.float64,
             ),
         ),
-        (
+        pytest.param(
             "complex128",
             np.array(
                 [
@@ -125,8 +132,13 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
                 ],
                 dtype=np.complex128,
             ),
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
         ),
-        (
+        pytest.param(
             "complex64",
             np.array(
                 [
@@ -135,6 +147,11 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
                     [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0],
                 ],
                 dtype=np.complex64,
+            ),
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
             ),
         ),
     ],
@@ -160,10 +177,15 @@ def test_mass_bilinear_form_2d(dtype, expected_result, compile_args):
             np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)
             - (1.0 / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64),
         ),
-        (
+        pytest.param(
             "complex128",
             np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.complex128)
             - (1.0j / 24.0) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.complex128),
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
         ),
     ],
 )
@@ -229,7 +251,7 @@ def test_helmholtz_form_2d(dtype, expected_result, compile_args):
                 dtype=np.float64,
             ),
         ),
-        (
+        pytest.param(
             "complex128",
             np.array(
                 [
@@ -239,6 +261,11 @@ def test_helmholtz_form_2d(dtype, expected_result, compile_args):
                     [-1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j, 1 / 6 + 0j],
                 ],
                 dtype=np.complex128,
+            ),
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
             ),
         ),
     ],
@@ -362,7 +389,20 @@ def test_subdomains(compile_args):
     assert ids[0] == 0 and ids[1] == 210
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
 def test_interior_facet_integral(dtype, compile_args):
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
@@ -417,7 +457,14 @@ def test_interior_facet_integral(dtype, compile_args):
     "dtype",
     [
         "float64",
-        "complex128",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
     ],
 )
 def test_conditional(dtype, compile_args):
@@ -808,6 +855,9 @@ def test_prism(compile_args):
     assert np.isclose(sum(b), 0.5)
 
 
+@pytest.mark.xfail(
+    sys.platform.startswith("win32"), raises=NotImplementedError, reason="missing _Complex"
+)
 def test_complex_operations(compile_args):
     dtype = "complex128"
     cell = "triangle"
