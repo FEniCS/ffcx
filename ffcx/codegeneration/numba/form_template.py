@@ -22,9 +22,6 @@ class {factory_name}(object):
   form_integral_ids = {form_integral_ids}
   form_integral_offsets = {form_integral_offsets}
 
-def function_space_{name_from_uflfile}(name):
-{functionspace}
-
 {name_from_uflfile} = {factory_name}
 
 # Name: {name_from_uflfile}

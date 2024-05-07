@@ -67,7 +67,7 @@ def generator(ir, options):
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="True" if ir.needs_facet_permutations else "False",
         scalar_type=options["scalar_type"],
-        coordinate_element=ir.coordinate_element,
+        coordinate_element=ir.coordinate_element_hash,
     )
 
     return "", implementation

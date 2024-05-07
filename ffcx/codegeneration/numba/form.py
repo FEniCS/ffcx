@@ -55,31 +55,6 @@ def generator(ir, options):
     offsets = ", ".join(str(i) for i in integral_offsets)
     d["form_integral_offsets"] = f"[{offsets}]"
 
-    code = []
-
-    # FIXME: Should be handled differently, revise how
-    # ufcx_function_space is generated
-    for name, (
-        element,
-        dofmap,
-        cmap_family,
-        cmap_degree,
-        cmap_celltype,
-        cmap_variant,
-    ) in ir.function_spaces.items():
-        code += [f"    functionspace_{name} = {{"]
-        code += [f"    finite_element: {element},"]
-        code += [f"    dofmap: {dofmap},"]
-        code += [f'    geometry_family: "{cmap_family}",']
-        code += [f"    geometry_degree: {cmap_degree},"]
-        code += [f"    geometry_basix_cell: {int(cmap_celltype)},"]
-        code += ["    }"]
-
-    for name in ir.function_spaces.keys():
-        code += [f'    if function_name=="{name}": return functionspace_{name}']
-
-    d["functionspace"] = "\n".join(code)
-
     # Check that no keys are redundant or have been missed
     from string import Formatter
 

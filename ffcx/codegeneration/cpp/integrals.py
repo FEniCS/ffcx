@@ -58,7 +58,7 @@ def generator(ir, options):
         scalar_type=options["scalar_type"],
         geom_type=options["scalar_type"],
         np_scalar_type=options["scalar_type"],
-        coordinate_element=ir.coordinate_element,
+        coordinate_element=ir.coordinate_element_hash,
     )
 
     return declaration + implementation, ""
