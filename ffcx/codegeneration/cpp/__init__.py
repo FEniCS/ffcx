@@ -1,3 +1,3 @@
 from . import form, expressions, integrals, file # noqa
 
-suffixes = (".hpp", ".cpp")
+suffixes = (".hpp", None)

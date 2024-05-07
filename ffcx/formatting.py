@@ -38,14 +38,16 @@ def format_code(code: CodeBlocks) -> tuple[str, str]:
     return code_h, code_c
 
 
-def write_code(code_h, code_c, prefix, output_dir):
+def write_code(code_h, code_c, prefix, suffixes, output_dir):
     """Write code to files."""
-    _write_file(code_h, prefix, ".h", output_dir)
-    _write_file(code_c, prefix, ".c", output_dir)
+    if suffixes[0] is not None:
+        _write_file(code_h, prefix, suffixes[0], output_dir)
+    if suffixes[1] is not None:
+        _write_file(code_c, prefix, suffixes[1], output_dir)
 
 
-def _write_file(output, prefix, postfix, output_dir):
+def _write_file(output, prefix, suffix, output_dir):
     """Write generated code to file."""
-    filename = os.path.join(output_dir, prefix + postfix)
+    filename = os.path.join(output_dir, prefix + suffix)
     with open(filename, "w") as hfile:
         hfile.write(output)

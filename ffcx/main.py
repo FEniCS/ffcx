@@ -73,7 +73,7 @@ def main(args=None):
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        code_h, code_c = compiler.compile_ufl_objects(
+        code_h, code_c, suffixes = compiler.compile_ufl_objects(
             ufd.forms + ufd.expressions + ufd.elements,
             options=options,
             object_names=ufd.object_names,
@@ -82,7 +82,7 @@ def main(args=None):
         )
 
         # Write to file
-        formatting.write_code(code_h, code_c, prefix, xargs.output_directory)
+        formatting.write_code(code_h, code_c, prefix, suffixes, xargs.output_directory)
 
         # Turn off profiling and write status to file
         if xargs.profile:

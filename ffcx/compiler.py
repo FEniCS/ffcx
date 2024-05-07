@@ -89,7 +89,7 @@ def compile_ufl_objects(
     object_names: dict[int, str] | None = None,
     prefix: str | None = None,
     visualise: bool = False,
-) -> tuple[str, str]:
+) -> tuple[str, str, tuple[str, str]]:
     """Generate UFC code for a given UFL objects.
 
     Args:
@@ -115,7 +115,7 @@ def compile_ufl_objects(
 
     # Stage 3: code generation
     cpu_time = time()
-    code = generate_code(ir, options)
+    code, suffixes = generate_code(ir, options)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: format code
@@ -123,4 +123,4 @@ def compile_ufl_objects(
     code_h, code_c = format_code(code)
     _print_timing(4, time() - cpu_time)
 
-    return code_h, code_c
+    return code_h, code_c, suffixes

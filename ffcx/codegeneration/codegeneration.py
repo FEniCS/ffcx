@@ -37,20 +37,23 @@ class CodeBlocks(typing.NamedTuple):
     file_post: list[tuple[str, str]]
 
 
-def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -> CodeBlocks:
+def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[CodeBlocks, tuple[str, str]]:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
     lang = options.get("language", "C")
-    # Built-in
-    mod = import_module(f"ffcx.codegeneration.{lang}")
-
+    
+    try:
+        # Built-in
+        mod = import_module(f"ffcx.codegeneration.{lang}")
     except ImportError:
-         # User defined, in current directory
-         sys.path.append(".")
-         mod = import_module(f"{lang}")
+        # User defined language (experimental)
+        store_path = sys.path
+        sys.path = ["."]
+        mod = import_module(f"{lang}")
+        sys.path = store_path
 
     integral_generator = mod.integrals.generator
     form_generator = mod.form.generator
@@ -69,4 +72,4 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
         forms=code_forms,
         expressions=code_expressions,
         file_post=[code_file_post],
-    )
+    ), mod.suffixes

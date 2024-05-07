@@ -292,7 +292,7 @@ def _compile_objects(
 
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
-    _, code_body = ffcx.compiler.compile_ufl_objects(
+    _, code_body, _ = ffcx.compiler.compile_ufl_objects(
         ufl_objects, prefix=module_name, options=options, visualise=visualise
     )
 
