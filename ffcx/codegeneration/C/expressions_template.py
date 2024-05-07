@@ -31,8 +31,6 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {points_init}
 {value_shape_init}
 {original_coefficient_positions_init}
-{function_spaces_alloc}
-{function_spaces_init}
 {coefficient_names_init}
 {constant_names_init}
 
@@ -51,7 +49,6 @@ ufcx_expression {factory_name} =
   .value_shape = {value_shape},
   .num_components = {num_components},
   .rank = {rank},
-  .function_spaces = {function_spaces}
 }};
 
 // Alias name

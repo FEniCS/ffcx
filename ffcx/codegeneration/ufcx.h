@@ -43,46 +43,12 @@ extern "C"
 
   typedef enum
   {
-    interval = 10,
-    triangle = 20,
-    quadrilateral = 30,
-    tetrahedron = 40,
-    hexahedron = 50,
-    vertex = 60,
-    prism = 70,
-    pyramid = 80
-  } ufcx_shape;
-
-  typedef enum
-  {
     cell = 0,
     exterior_facet = 1,
     interior_facet = 2
   } ufcx_integral_type;
 
-  /// Forward declarations
-  typedef struct ufcx_quadrature_rule ufcx_quadrature_rule;
-  typedef struct ufcx_function_space ufcx_function_space;
-
   // </HEADER_DECL>
-
-  typedef struct ufcx_quadrature_rule
-  {
-    /// Cell shape
-    ufcx_shape cell_shape;
-
-    /// The number of points
-    int npts;
-
-    /// The topological dimension of the cell
-    int topological_dimension;
-
-    /// The quadraute points
-    double* points;
-
-    /// The quadraute weights
-    double* weights;
-  } ufcx_quadrature_rule;
 
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
@@ -161,8 +127,8 @@ extern "C"
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
     bool needs_facet_permutations;
 
-    /// Get the coordinate element associated with the geometry of the mesh.
-    long int coordinate_element;
+    /// Get the hash of the coordinate element associated with the geometry of the mesh.
+    uint64_t coordinate_element_hash;
   } ufcx_integral;
 
   typedef struct ufcx_expression
@@ -213,13 +179,6 @@ extern "C"
     /// Rank, i.e. number of arguments
     int rank;
 
-    /// Function spaces for all functions in the Expression.
-    ///
-    /// Function spaces for coefficients are followed by
-    /// Arguments function spaces.
-    /// Dimensions: function_spaces[num_coefficients + rank]
-    ufcx_function_space** function_spaces;
-
   } ufcx_expression;
 
   /// This class defines the interface for the assembly of the global
@@ -264,7 +223,7 @@ extern "C"
     ///
     /// @param i Argument number if 0 <= i < r Coefficient number j = i
     /// - r if r + j <= i < r + n
-    long int* finite_elements;
+    uint64_t* finite_element_hashes;
 
     /// List of cell, interior facet and exterior facet integrals
     ufcx_integral** form_integrals;
@@ -276,31 +235,6 @@ extern "C"
     int* form_integral_offsets;
 
   } ufcx_form;
-
-  // FIXME: Formalise a UFCX 'function space'
-  typedef struct ufcx_function_space
-  {
-    /// Hash of the finite element
-    long int finite_element;
-
-    /// The family of the finite element for the geometry map
-    const char* geometry_family;
-
-    /// The degree of the finite element for the geometry map
-    int geometry_degree;
-
-    /// The Basix cell of the finite element for the geometry map
-    int geometry_basix_cell;
-
-    /// The Basix variant of the finite element for the geometry map
-    int geometry_basix_variant;
-
-    /// Rank of the value space
-    int value_rank;
-
-    /// Shape of the value space
-    int* value_shape;
-  } ufcx_function_space;
 
 #ifdef __cplusplus
 #undef restrict

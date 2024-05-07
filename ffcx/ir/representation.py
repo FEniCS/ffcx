@@ -22,8 +22,6 @@ import logging
 import typing
 import warnings
 
-import basix
-import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import ufl
@@ -48,13 +46,10 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    function_spaces: dict[
-        str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, tuple[int]]
-    ]
     original_coefficient_position: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
-    finite_elements: list[int]
+    finite_element_hashes: list[int]
     integral_names: dict[str, list[str]]
     subdomain_ids: dict[str, list[int]]
 
@@ -83,7 +78,7 @@ class IntegralIR(typing.NamedTuple):
     integrand: dict[QuadratureRule, dict]
     name: str
     needs_facet_permutations: bool
-    coordinate_element: int
+    coordinate_element_hash: int
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -105,9 +100,6 @@ class ExpressionIR(typing.NamedTuple):
     coefficient_names: list[str]
     constant_names: list[str]
     needs_facet_permutations: bool
-    function_spaces: dict[
-        str, tuple[str, str, str, int, basix.CellType, basix.LagrangeVariant, tuple[int]]
-    ]
     name_from_uflfile: str
     original_coefficient_positions: list[int]
 
@@ -135,7 +127,7 @@ def compute_ir(
     # Compute object names
     # NOTE: This is done here for performance reasons, because repeated calls
     # within each IR computation would be expensive due to UFL signature computations
-    finite_element_hashes = {e: hash(e) for e in analysis.unique_elements}
+    finite_element_hashes = {e: e.basix_hash() for e in analysis.unique_elements}
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
@@ -229,7 +221,9 @@ def _compute_integral_ir(
             "rank": form_data.rank,
             "entitytype": entitytype,
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "coordinate_element": finite_element_hashes[itg_data.domain.ufl_coordinate_element()],
+            "coordinate_element_hash": finite_element_hashes[
+                itg_data.domain.ufl_coordinate_element()
+            ],
         }
 
         # Get element space dimensions
@@ -457,38 +451,13 @@ def _compute_form_ir(
 
     ir["original_coefficient_position"] = form_data.original_coefficient_positions
 
-    ir["finite_elements"] = [
+    ir["finite_element_hashes"] = [
         finite_element_hashes[e]
         for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
-    fs = {}
-    for function in form_data.original_form.arguments() + tuple(form_data.reduced_coefficients):
-        name = object_names.get(id(function), str(function))
-        if not str(name).isidentifier():
-            raise ValueError(f'Function name "{name}" must be a valid object identifier.')
-        el = function.ufl_function_space().ufl_element()
-        space = function.ufl_function_space()
-        domain = space.ufl_domain()
-        cmap = domain.ufl_coordinate_element()
-        # Default point spacing for CoordinateElement is equispaced
-        if not isinstance(cmap, basix.ufl._ElementBase) and cmap.variant() is None:
-            cmap._sub_element._variant = "equispaced"
-        family = cmap.family_name
-        degree = cmap.degree
-        value_shape = space.value_shape
-        fs[name] = (
-            finite_element_hashes[el],
-            family,
-            degree,
-            cmap.cell_type,
-            cmap.lagrange_variant,
-            value_shape,
-        )
-
     form_name = object_names.get(id(form_data.original_form), form_id)
 
-    ir["function_spaces"] = fs
     ir["name_from_uflfile"] = f"form_{prefix}_{form_name}"
 
     # Store names of integrals and subdomain_ids for this form, grouped
@@ -584,30 +553,8 @@ def _compute_expression_ir(
         for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))
     ]
 
-    fs = {}
-    for function in tuple(original_coefficients) + tuple(arguments):
-        name = object_names.get(id(function), str(function))
-        if not str(name).isidentifier():
-            raise ValueError(f'Function name "{name}" must be a valid object identifier.')
-        el = function.ufl_function_space().ufl_element()
-        space = function.ufl_function_space()
-        domain = space.ufl_domain()
-        cmap = domain.ufl_coordinate_element()
-        family = cmap.family_name
-        degree = cmap.degree
-        value_shape = space.value_shape
-        fs[name] = (
-            finite_element_hashes[el],
-            family,
-            degree,
-            cmap.cell_type,
-            cmap.lagrange_variant,
-            value_shape,
-        )
-
     expression_name = object_names.get(id(original_expression), index)
 
-    ir["function_spaces"] = fs
     ir["name_from_uflfile"] = f"expression_{prefix}_{expression_name}"
 
     if len(argument_elements) > 1:
