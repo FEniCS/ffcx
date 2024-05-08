@@ -104,7 +104,6 @@ jobs:
       - name: Run FFCx demos
         run: |
           pytest demo/test_demos.py
-          rm -Rf ufl/
 
       - name: Build documentation
         run: |
