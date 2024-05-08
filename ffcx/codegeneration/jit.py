@@ -315,6 +315,14 @@ def _compile_objects(
         ufl_objects, prefix=module_name, options=options, visualise=visualise
     )
 
+    # Compile in C17 mode
+    if sys.platform.startswith("win32"):
+        CFFI_BASE_COMPILE_ARGS = ["/std:c17"]
+    else:
+        CFFI_BASE_COMPILE_ARGS = ["-std=c17"]
+
+    cffi_extra_compile_args += CFFI_BASE_COMPILE_ARGS
+
     ffibuilder = cffi.FFI()
 
     ffibuilder.set_source(

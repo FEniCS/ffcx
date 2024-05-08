@@ -31,8 +31,8 @@ extern "C"
 {
 
 #if defined(__clang__)
-#define restrict
-#elif defined(__GNUC__) || defined(__GNUG__)
+#define restrict __restrict
+#elif defined(__GNUG__)
 #define restrict __restrict__
 #elif defined(_MSC_VER)
 #define restrict __restrict
