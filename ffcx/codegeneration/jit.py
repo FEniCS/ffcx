@@ -159,6 +159,14 @@ def compile_forms(
     """Compile a list of UFL forms into UFC Python objects."""
     p = ffcx.options.get_options(options)
 
+    # Compile in C17 mode
+    if sys.platform.startswith("win32"):
+        CFFI_BASE_COMPILE_ARGS = ["/std:c17"]
+    else:
+        CFFI_BASE_COMPILE_ARGS = ["-std=c17"]
+
+    cffi_extra_compile_args += CFFI_BASE_COMPILE_ARGS
+
     # Get a signature for these forms
     module_name = "libffcx_forms_" + ffcx.naming.compute_signature(
         forms,
@@ -238,6 +246,14 @@ def compile_expressions(
     """
     p = ffcx.options.get_options(options)
 
+    # Compile in C17 mode
+    if sys.platform.startswith("win32"):
+        CFFI_BASE_COMPILE_ARGS = ["/std:c17"]
+    else:
+        CFFI_BASE_COMPILE_ARGS = ["-std=c17"]
+
+    cffi_extra_compile_args += CFFI_BASE_COMPILE_ARGS
+
     module_name = "libffcx_expressions_" + ffcx.naming.compute_signature(
         expressions,
         _compute_option_signature(p) + _compilation_signature(cffi_extra_compile_args, cffi_debug),
@@ -314,14 +330,6 @@ def _compile_objects(
     _, code_body = ffcx.compiler.compile_ufl_objects(
         ufl_objects, prefix=module_name, options=options, visualise=visualise
     )
-
-    # Compile in C17 mode
-    if sys.platform.startswith("win32"):
-        CFFI_BASE_COMPILE_ARGS = ["/std:c17"]
-    else:
-        CFFI_BASE_COMPILE_ARGS = ["-std=c17"]
-
-    cffi_extra_compile_args += CFFI_BASE_COMPILE_ARGS
 
     ffibuilder = cffi.FFI()
 
