@@ -36,6 +36,7 @@ extern "C"
 #define restrict __restrict__
 #elif defined(_MSC_VER)
 #define restrict __restrict
+#define __STDC_NO_COMPLEX__
 #else
 #define restrict
 #endif // restrict
@@ -248,5 +249,6 @@ extern "C"
 
 #ifdef __cplusplus
 #undef restrict
+#undef __STDC_NO_COMPLEX__
 }
 #endif
