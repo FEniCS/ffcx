@@ -18,7 +18,9 @@ import ffcx.codegeneration.utils as utils
 
 def generate_kernel(forms, scalar_type, options):
     """Generate kernel for given forms."""
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": scalar_type}
+    )
 
     for f, compiled_f in zip(forms, compiled_forms):
         assert compiled_f.rank == len(f.arguments())
