@@ -47,7 +47,10 @@ def test_demo(file, scalar_type):
         extra_flags = "/std:c17"
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
         assert (
-            os.system(f"cd {demo_dir} && " f'cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c') == 0
+            os.system(
+                f"cd {demo_dir} && " f'cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
+            )
+            == 0
         )
     else:
         opts = f"--scalar_type {scalar_type}"
