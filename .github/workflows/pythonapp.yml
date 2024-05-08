@@ -100,7 +100,7 @@ jobs:
       - name: Setup cl.exe
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
-      
+
       - name: Run FFCx demos
         run: |
           pytest demo/test_demos.py
