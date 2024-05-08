@@ -54,7 +54,9 @@ def test_demo(file, scalar_type):
         )
     else:
         opts = f"--scalar_type {scalar_type}"
-        extra_flags = "-std=c17 -Wunused-variable -Werror -fPIC -Wnoerror=implicit-function-declaration"
+        extra_flags = (
+            "-std=c17 -Wunused-variable -Werror -fPIC -Wnoerror=implicit-function-declaration"
+        )
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
         assert (
             os.system(
