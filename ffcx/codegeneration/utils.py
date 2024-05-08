@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utilities."""
 
-import sys
 import typing
 
 import numpy as np
@@ -31,15 +30,9 @@ def dtype_to_c_type(dtype: typing.Union[npt.DTypeLike, str]) -> str:
     elif np.dtype(dtype).char == "d":
         return "double"
     elif np.dtype(dtype) == np.complex64:
-        if sys.platform.startswith("win32"):
-            raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
-        else:
-            return "float _Complex"
+        return "float _Complex"
     elif np.dtype(dtype) == np.complex128:
-        if sys.platform.startswith("win32"):
-            raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
-        else:
-            return "double _Complex"
+        return "double _Complex"
     else:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
