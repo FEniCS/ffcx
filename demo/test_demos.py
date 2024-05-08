@@ -45,7 +45,9 @@ def test_demo(file, scalar_type):
     if sys.platform.startswith("win32"):
         opts = f"--scalar_type {scalar_type}"
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
-        assert os.system(f"cd {demo_dir} && " f'cl.exe /I "../ffcx/codegeneration" /c {file}.c') == 0
+        assert (
+            os.system(f"cd {demo_dir} && " f'cl.exe /I "../ffcx/codegeneration" /c {file}.c') == 0
+        )
     else:
         opts = f"--scalar_type {scalar_type}"
         extra_flags = "-Wunused-variable -Werror -fPIC "
