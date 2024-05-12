@@ -55,7 +55,8 @@ jobs:
           spack env create ffcx-main
           spack env activate ffcx-main
           spack add py-fenics-ffcx@main
-          spack install --test=root
+          spack install
+          # spack install --test=root
 
       - name: Install FFCx and run tests
         if: github.event_name == 'workflow_dispatch'
@@ -64,4 +65,5 @@ jobs:
           spack env create ffcx-testing
           spack env activate ffcx-testing
           spack add py-fenics-ffcx@${{ github.event.inputs.ffcx_version }}
-          spack install --test=root
+          spack install
+          # spack install --test=root
