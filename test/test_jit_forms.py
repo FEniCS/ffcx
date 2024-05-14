@@ -96,7 +96,7 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
     "dtype,expected_result",
     [
         (
-            "float32",
+            np.float32,
             np.array(
                 [
                     [1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0],
@@ -112,7 +112,7 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
         #       [1.0 / 24.0, 1.0 / 24.0, 1.0 / 12.0]],
         #      dtype=np.longdouble)),
         (
-            "float64",
+            np.float64,
             np.array(
                 [
                     [1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0],
@@ -123,7 +123,7 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
             ),
         ),
         pytest.param(
-            "complex128",
+            np.complex128,
             np.array(
                 [
                     [1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0],
@@ -139,7 +139,7 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
             ),
         ),
         pytest.param(
-            "complex64",
+            np.complex64,
             np.array(
                 [
                     [1.0 / 12.0, 1.0 / 24.0, 1.0 / 24.0],
