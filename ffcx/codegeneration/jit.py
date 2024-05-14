@@ -323,10 +323,6 @@ def _compile_objects(
             raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
         elif np.iscomplexobj(options["scalar_type"]):
             raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
-        else:
-            raise RuntimeError(
-                f"Could not determine if scalar_type {options['scalar_type']} is complex type"
-            )
 
     # Compile in C17 mode
     if sys.platform.startswith("win32"):
