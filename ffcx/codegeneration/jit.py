@@ -326,7 +326,7 @@ def _compile_objects(
 
     # Compile in C17 mode
     if sys.platform.startswith("win32"):
-        cffi_base_compile_args = ["/std:c17"]
+        cffi_base_compile_args = ["-std:c17"]
     else:
         cffi_base_compile_args = ["-std=c17"]
 
