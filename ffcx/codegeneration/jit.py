@@ -325,7 +325,10 @@ def _compile_objects(
             raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
 
     # Compile in C17 mode
-    cffi_base_compile_args = ["-std=c17"]
+    if sys.platform.startswith("win32"):
+        cffi_base_compile_args = ["/std:c17"]
+    else:
+        cffi_base_compile_args = ["-std=c17"]
 
     cffi_final_compile_args = cffi_base_compile_args + cffi_extra_compile_args
 
