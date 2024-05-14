@@ -14,6 +14,6 @@ import pytest
 def compile_args():
     """Compiler arguments."""
     if sys.platform.startswith("win32"):
-        return ["/Od"]
+        return ["-Od"]
     else:
         return ["-O1", "-Wall", "-Werror"]
