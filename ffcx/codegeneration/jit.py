@@ -318,8 +318,15 @@ def _compile_objects(
     # Raise error immediately prior to compilation if no support for C99
     # _Complex. Doing this here allows FFCx to be used for complex codegen on
     # Windows.
-    if sys.platform.startswith("win32") and "complex" in options["scalar_type"]:
-        raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
+    if sys.platform.startswith("win32"):
+        if isinstance(options["scalar_type"], str) and "complex" in options["scalar_type"]:
+            raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
+        elif np.iscomplexobj(options["scalar_type"]):
+            raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
+        else:
+            raise RuntimeError(
+                f"Could not determine if scalar_type {options['scalar_type']} is complex type"
+            )
 
     # Compile in C17 mode
     if sys.platform.startswith("win32"):
