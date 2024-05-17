@@ -1077,7 +1077,7 @@ def test_integral_grouping(compile_args):
 
 
 @pytest.mark.parametrize("dtype", ["float64"])
-@pytest.mark.parametrize("permutation", [[0, 0], [0, 1], [1, 0], [1, 1]])
+@pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form(compile_args, dtype, permutation):
     # TODO Test 3D and non-simplex
 
@@ -1140,7 +1140,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
         dtype=dtype,
     )
 
-    if permutation[0] != permutation[1]:
+    if permutation[0] == 1:
         expected_result = np.flipud(expected_result)
 
     assert np.allclose(A, expected_result)

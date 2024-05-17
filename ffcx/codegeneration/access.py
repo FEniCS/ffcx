@@ -432,7 +432,7 @@ class FFCXBackendAccess:
         # factorization
         if tabledata.is_permuted:
             qp = self.symbols.quadrature_permutation[0]
-            if restriction == "-" or (codim > 0):
+            if restriction == "-":
                 qp = self.symbols.quadrature_permutation[1]
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:

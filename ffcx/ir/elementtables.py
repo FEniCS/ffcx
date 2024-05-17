@@ -355,7 +355,7 @@ def build_optimized_tables(
         # the dofmap offset may differ due to restriction.
 
         tdim = cell.topological_dimension()
-        if integral_type == "interior_facet" or is_mixed_dim:
+        if integral_type == "interior_facet" or (is_mixed_dim and mt.codim == 0):
             if tdim == 1:
                 t = get_ffcx_table_values(
                     quadrature_rule.points,
