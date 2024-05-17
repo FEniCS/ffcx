@@ -355,11 +355,13 @@ def build_optimized_tables(
         # the dofmap offset may differ due to restriction.
 
         tdim = cell.topological_dimension()
-        codim = cell.topological_dimension() - element.cell.topological_dimension()
-        # TODO Throw runtime error
+        codim = tdim - element.cell.topological_dimension()
         assert codim >= 0
         if codim > 1:
             raise RuntimeError("Codimension > 1 isn't supported.")
+
+        # Only permute quadrature rules for interior facets integrals and for
+        # the codim zero element in mixed-dimensional integrals
         if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
             if tdim == 1:
                 t = get_ffcx_table_values(
