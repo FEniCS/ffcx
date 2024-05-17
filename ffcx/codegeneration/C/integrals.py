@@ -14,11 +14,12 @@ from ffcx.codegeneration.C import integrals_template as ufcx_integrals
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
+from ffcx.ir.representation import IntegralIR
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
+def generator(ir: IntegralIR, options):
     """Generate C code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.integral_type}")
@@ -57,7 +58,6 @@ def generator(ir, options):
         code["enabled_coefficients_init"] = ""
         code["enabled_coefficients"] = "NULL"
 
-    code["additional_includes_set"] = set()  # FIXME: Get this out of code[]
     code["tabulate_tensor"] = body
 
     code["tabulate_tensor_float32"] = "NULL"
@@ -67,6 +67,8 @@ def generator(ir, options):
     np_scalar_type = np.dtype(options["scalar_type"]).name
     code[f"tabulate_tensor_{np_scalar_type}"] = f"tabulate_tensor_{factory_name}"
 
+    element_hash = 0 if ir.coordinate_element_hash is None else ir.coordinate_element_hash
+
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
@@ -75,7 +77,7 @@ def generator(ir, options):
         needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
-        coordinate_element=f"&{ir.coordinate_element}",
+        coordinate_element_hash=f"UINT64_C({element_hash})",
         tabulate_tensor_float32=code["tabulate_tensor_float32"],
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],

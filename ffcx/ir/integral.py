@@ -52,9 +52,6 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
     # here
     ir = {}
 
-    # Pass on options for consumption in code generation
-    ir["options"] = p
-
     # Shared unique tables for all quadrature loops
     ir["unique_tables"] = {}
     ir["unique_table_types"] = {}

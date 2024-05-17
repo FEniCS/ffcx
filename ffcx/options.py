@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Options."""
 
+from __future__ import annotations
+
 import functools
 import json
 import logging
@@ -12,7 +14,8 @@ import os
 import os.path
 import pprint
 from pathlib import Path
-from typing import Any, Optional
+
+import numpy.typing as npt
 
 logger = logging.getLogger("ffcx")
 
@@ -47,7 +50,7 @@ FFCX_DEFAULT_OPTIONS = {
 
 
 @functools.cache
-def _load_options():
+def _load_options() -> tuple[dict, dict]:
     """Load options from JSON files."""
     user_config_file = os.getenv("XDG_CONFIG_HOME", default=Path.home().joinpath(".config")) / Path(
         "ffcx", "ffcx_options.json"
@@ -68,7 +71,9 @@ def _load_options():
     return (user_options, pwd_options)
 
 
-def get_options(priority_options: Optional[dict] = None) -> dict:
+def get_options(
+    priority_options: dict[str, npt.DTypeLike | int | float] | None = None,
+) -> dict[str, int | float | npt.DTypeLike]:
     """Return (a copy of) the merged option values for FFCX.
 
     Args:
@@ -98,10 +103,10 @@ def get_options(priority_options: Optional[dict] = None) -> dict:
           { "epsilon": 1e-7 }
 
     """
-    options: dict[str, Any] = {}
+    options: dict[str, npt.DTypeLike | int | float] = {}
 
     for opt, (_, value, _, _) in FFCX_DEFAULT_OPTIONS.items():
-        options[opt] = value
+        options[opt] = value  # type: ignore
 
     # NOTE: _load_options uses functools.lru_cache
     user_options, pwd_options = _load_options()
@@ -111,8 +116,7 @@ def get_options(priority_options: Optional[dict] = None) -> dict:
     if priority_options is not None:
         options.update(priority_options)
 
-    logger.setLevel(options["verbosity"])
-
+    logger.setLevel(int(options["verbosity"]))  # type: ignore
     logger.info("Final option values")
     logger.info(pprint.pformat(options))
 

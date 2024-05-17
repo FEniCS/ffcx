@@ -182,4 +182,4 @@ def reconstruct(o, *args):
             if isinstance(o, k):
                 return _reconstruct_call_lookup[k](o, *args)
         # Nothing found
-        raise RuntimeError("Not expecting expression of type %s in here." % type(o))
+        raise RuntimeError(f"Not expecting expression of type {type(o)} in here.")

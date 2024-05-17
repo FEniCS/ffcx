@@ -3,7 +3,9 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Just-in-time compolation."""
+"""Just-in-time compilation."""
+
+from __future__ import annotations
 
 import importlib
 import io
@@ -35,12 +37,6 @@ header = ufcx_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n
 header = header.replace("{", "{{").replace("}", "}}")
 UFC_HEADER_DECL = header + "\n"
 
-UFC_ELEMENT_DECL = "\n".join(
-    re.findall("typedef struct ufcx_finite_element.*?ufcx_finite_element;", ufcx_h, re.DOTALL)
-)
-UFC_DOFMAP_DECL = "\n".join(
-    re.findall("typedef struct ufcx_dofmap.*?ufcx_dofmap;", ufcx_h, re.DOTALL)
-)
 UFC_FORM_DECL = "\n".join(re.findall("typedef struct ufcx_form.*?ufcx_form;", ufcx_h, re.DOTALL))
 
 UFC_INTEGRAL_DECL = "\n".join(
@@ -130,83 +126,6 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     )
 
 
-def compile_elements(
-    elements,
-    options=None,
-    cache_dir=None,
-    timeout=10,
-    cffi_extra_compile_args=None,
-    cffi_verbose=False,
-    cffi_debug=None,
-    cffi_libraries=None,
-    visualise: bool = False,
-):
-    """Compile a list of UFL elements and dofmaps into Python objects."""
-    p = ffcx.options.get_options(options)
-
-    # Get a signature for these elements
-    module_name = "libffcx_elements_" + ffcx.naming.compute_signature(
-        elements,
-        _compute_option_signature(p) + _compilation_signature(cffi_extra_compile_args, cffi_debug),
-    )
-
-    names = []
-    for e in elements:
-        name = ffcx.naming.finite_element_name(e, module_name)
-        names.append(name)
-        name = ffcx.naming.dofmap_name(e, module_name)
-        names.append(name)
-
-    if cache_dir is not None:
-        cache_dir = Path(cache_dir)
-        obj, mod = get_cached_module(module_name, names, cache_dir, timeout)
-        if obj is not None:
-            # Pair up elements with dofmaps
-            obj = list(zip(obj[::2], obj[1::2]))
-            return obj, mod, (None, None)
-    else:
-        cache_dir = Path(tempfile.mkdtemp())
-
-    try:
-        decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
-            + UFC_ELEMENT_DECL
-            + UFC_DOFMAP_DECL
-        )
-        element_template = "extern ufcx_finite_element {name};\n"
-        dofmap_template = "extern ufcx_dofmap {name};\n"
-        for i in range(len(elements)):
-            decl += element_template.format(name=names[i * 2])
-            decl += dofmap_template.format(name=names[i * 2 + 1])
-
-        impl = _compile_objects(
-            decl,
-            elements,
-            names,
-            module_name,
-            p,
-            cache_dir,
-            cffi_extra_compile_args,
-            cffi_verbose,
-            cffi_debug,
-            cffi_libraries,
-            visualise=visualise,
-        )
-    except Exception as e:
-        try:
-            # remove c file so that it will not timeout next time
-            c_filename = cache_dir.joinpath(module_name + ".c")
-            os.replace(c_filename, c_filename.with_suffix(".c.failed"))
-        except Exception:
-            pass
-        raise e
-
-    objects, module = _load_objects(cache_dir, module_name, names)
-    # Pair up elements with dofmaps
-    objects = list(zip(objects[::2], objects[1::2]))
-    return objects, module, (decl, impl)
-
-
 def compile_forms(
     forms,
     options=None,
@@ -239,9 +158,7 @@ def compile_forms(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
-            + UFC_ELEMENT_DECL
-            + UFC_DOFMAP_DECL
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_INTEGRAL_DECL
             + UFC_FORM_DECL
         )
@@ -320,9 +237,7 @@ def compile_expressions(
 
     try:
         decl = (
-            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)
-            + UFC_ELEMENT_DECL
-            + UFC_DOFMAP_DECL
+            UFC_HEADER_DECL.format(np.dtype(p["scalar_type"]).name)  # type: ignore
             + UFC_INTEGRAL_DECL
             + UFC_FORM_DECL
             + UFC_EXPRESSION_DECL

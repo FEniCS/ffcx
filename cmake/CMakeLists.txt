@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(ufcx VERSION 0.7.0 DESCRIPTION "UFCx interface header for finite element kernels"
+project(ufcx VERSION 0.9.0 DESCRIPTION "UFCx interface header for finite element kernels"
   LANGUAGES C
   HOMEPAGE_URL https://github.com/fenics/ffcx)
 include(GNUInstallDirs)
@@ -39,4 +39,3 @@ install(FILES ${PROJECT_SOURCE_DIR}/../ffcx/codegeneration/ufcx.h TYPE INCLUDE)
 # Configure and install pkgconfig file
 configure_file(ufcx.pc.in ufcx.pc @ONLY)
 install(FILES ${PROJECT_BINARY_DIR}/ufcx.pc DESTINATION ${CMAKE_INSTALL_DATADIR}/pkgconfig)
-

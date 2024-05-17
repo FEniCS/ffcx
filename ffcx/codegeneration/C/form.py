@@ -67,25 +67,18 @@ def generator(ir, options):
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
 
-    if len(ir.finite_elements) > 0:
-        d["finite_elements"] = f"finite_elements_{ir.name}"
-        values = ", ".join(f"&{el}" for el in ir.finite_elements)
-        sizes = len(ir.finite_elements)
-        d["finite_elements_init"] = (
-            f"ufcx_finite_element* finite_elements_{ir.name}[{sizes}] = {{{values}}};"
+    if len(ir.finite_element_hashes) > 0:
+        d["finite_element_hashes"] = f"finite_element_hashes_{ir.name}"
+        values = ", ".join(
+            f"UINT64_C({0 if el is None else el})" for el in ir.finite_element_hashes
+        )
+        sizes = len(ir.finite_element_hashes)
+        d["finite_element_hashes_init"] = (
+            f"uint64_t finite_element_hashes_{ir.name}[{sizes}] = {{{values}}};"
         )
     else:
-        d["finite_elements"] = "NULL"
-        d["finite_elements_init"] = ""
-
-    if len(ir.dofmaps) > 0:
-        d["dofmaps"] = f"dofmaps_{ir.name}"
-        values = ", ".join(f"&{dofmap}" for dofmap in ir.dofmaps)
-        sizes = len(ir.dofmaps)
-        d["dofmaps_init"] = f"ufcx_dofmap* dofmaps_{ir.name}[{sizes}] = {{{values}}};"
-    else:
-        d["dofmaps"] = "NULL"
-        d["dofmaps_init"] = ""
+        d["finite_element_hashes"] = "NULL"
+        d["finite_element_hashes_init"] = ""
 
     integrals = []
     integral_ids = []
@@ -126,48 +119,6 @@ def generator(ir, options):
     d["form_integral_offsets_init"] = (
         f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
     )
-
-    vs_code = []
-    code = []
-
-    # FIXME: Should be handled differently, revise how
-    # ufcx_function_space is generated
-    for name, (
-        element,
-        dofmap,
-        cmap_family,
-        cmap_degree,
-        cmap_celltype,
-        cmap_variant,
-        value_shape,
-    ) in ir.function_spaces.items():
-        code += [f"static ufcx_function_space functionspace_{name} ="]
-        code += ["{"]
-        code += [f".finite_element = &{element},"]
-        code += [f".dofmap = &{dofmap},"]
-        code += [f'.geometry_family = "{cmap_family}",']
-        code += [f".geometry_degree = {cmap_degree},"]
-        code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
-        code += [f".value_rank = {len(value_shape)},"]
-        if len(value_shape) == 0:
-            code += [".value_shape = NULL"]
-        else:
-            vs_code += [
-                f"int value_shape_{ir.name}_{name}[{len(value_shape)}] = {{",
-                "  " + ", ".join([f"{i}" for i in value_shape]),
-                "};",
-            ]
-            code += [f".value_shape = value_shape_{ir.name}_{name}"]
-        code += ["};"]
-
-    for name in ir.function_spaces.keys():
-        code += [f'if (strcmp(function_name, "{name}") == 0) return &functionspace_{name};']
-
-    code += ["return NULL;\n"]
-
-    d["functionspace"] = "\n".join(code)
-    d["value_shape_init"] = "\n".join(vs_code)
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
