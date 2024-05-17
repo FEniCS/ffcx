@@ -355,7 +355,12 @@ def build_optimized_tables(
         # the dofmap offset may differ due to restriction.
 
         tdim = cell.topological_dimension()
-        if integral_type == "interior_facet" or (is_mixed_dim and mt.codim == 0):
+        codim = cell.topological_dimension() - element.cell.topological_dimension()
+        # TODO Throw runtime error
+        assert codim >= 0
+        if codim > 1:
+            raise RuntimeError("Codimension > 1 isn't supported.")
+        if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
             if tdim == 1:
                 t = get_ffcx_table_values(
                     quadrature_rule.points,
@@ -366,7 +371,7 @@ def build_optimized_tables(
                     entitytype,
                     local_derivatives,
                     flat_component,
-                    mt.codim,
+                    codim,
                 )
             elif tdim == 2:
                 new_table = []
@@ -381,7 +386,7 @@ def build_optimized_tables(
                             entitytype,
                             local_derivatives,
                             flat_component,
-                            mt.codim,
+                            codim,
                         )
                     )
 
@@ -403,7 +408,7 @@ def build_optimized_tables(
                                     entitytype,
                                     local_derivatives,
                                     flat_component,
-                                    mt.codim,
+                                    codim,
                                 )
                             )
                     t = new_table[0]
@@ -424,7 +429,7 @@ def build_optimized_tables(
                                     entitytype,
                                     local_derivatives,
                                     flat_component,
-                                    mt.codim,
+                                    codim,
                                 )
                             )
                     t = new_table[0]
@@ -439,7 +444,7 @@ def build_optimized_tables(
                 entitytype,
                 local_derivatives,
                 flat_component,
-                mt.codim,
+                codim,
             )
         # Clean up table
         tbl = clamp_table_small_numbers(t["array"], rtol=rtol, atol=atol)

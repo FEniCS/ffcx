@@ -43,7 +43,6 @@ class ModifiedTerminal:
         local_derivatives: tuple[int, ...],
         averaged: typing.Union[None, str],
         restriction: typing.Union[None, str],
-        codim: int,
     ):
         """Initialise.
 
@@ -59,7 +58,6 @@ class ModifiedTerminal:
             local_derivatives: each entry is a derivative in that local direction
             averaged: Entity to average over (None, 'facet' or 'cell')
             restriction: The restriction (None, '+' or '-')
-            codim: The codimension of the element
         """
         # The original expression
         self.expr = expr
@@ -89,9 +87,6 @@ class ModifiedTerminal:
 
         # Restriction to one cell or the other for interior facet integrals
         self.restriction = restriction
-
-        # The element codimension
-        self.codim = codim
 
     def as_tuple(self):
         """Return a tuple with hashable values that uniquely identifies this modified terminal.
@@ -173,7 +168,7 @@ def strip_modified_terminal(v):
     return v
 
 
-def analyse_modified_terminal(expr, cell=None):
+def analyse_modified_terminal(expr):
     """Analyse a so-called 'modified terminal' expression.
 
     Return its properties in more compact form as a ModifiedTerminal object.
@@ -192,10 +187,6 @@ def analyse_modified_terminal(expr, cell=None):
     reference_value = None
     restriction = None
     averaged = None
-    if cell is not None and expr.ufl_domain() is not None:
-        codim = cell.topological_dimension() - expr.ufl_domain().topological_dimension()
-    else:
-        codim = 0
 
     # Start with expr and strip away layers of modifiers
     t = expr
@@ -322,5 +313,4 @@ def analyse_modified_terminal(expr, cell=None):
         local_derivatives,
         averaged,
         restriction,
-        codim,
     )

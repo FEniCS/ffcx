@@ -404,7 +404,6 @@ class FFCXBackendAccess:
         restriction: str,
         quadrature_index: L.MultiIndex,
         dof_index: L.MultiIndex,
-        codim: int,
     ):
         """Access element table for given entity, quadrature point, and dof index.
 
@@ -414,7 +413,6 @@ class FFCXBackendAccess:
             restriction: Restriction ("+", "-")
             quadrature_index: Quadrature index
             dof_index: Dof index
-            codim: The codimension of the element
         """
         entity = self.symbols.entity(entitytype, restriction)
         iq_global_index = quadrature_index.global_index

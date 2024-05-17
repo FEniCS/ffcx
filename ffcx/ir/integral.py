@@ -77,7 +77,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         # terminal_data again after factorization if that's necessary.
 
         initial_terminals = {
-            i: analyse_modified_terminal(v["expression"], cell)
+            i: analyse_modified_terminal(v["expression"])
             for i, v in S.nodes.items()
             if is_modified_terminal(v["expression"])
         }
@@ -173,7 +173,7 @@ def compute_integral_ir(cell, integral_type, entitytype, integrands, argument_sh
         for i, v in F.nodes.items():
             expr = v["expression"]
             if is_modified_terminal(expr):
-                mt = analyse_modified_terminal(expr, cell)
+                mt = analyse_modified_terminal(expr)
                 F.nodes[i]["mt"] = mt
                 tr = mt_table_reference.get(mt)
                 if tr is not None:
