@@ -51,6 +51,11 @@ def test_demo(file, scalar_type):
                 f"cd {demo_dir} && " f'cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
             )
             == 0
+        assert (
+            os.system(
+                f"cd {demo_dir} && " f'clang-cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
+            )
+            == 0
         )
     else:
         opts = f"--scalar_type {scalar_type}"
