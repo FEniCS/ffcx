@@ -1081,13 +1081,12 @@ def test_integral_grouping(compile_args):
 def test_mixed_dim_form(compile_args, dtype, permutation):
     # TODO Test 3D and non-simplex
 
-    k = 1
     ele_type = "Lagrange"
     V_cell_type = "triangle"
     Vbar_cell_type = "interval"
 
-    V_ele = basix.ufl.element(ele_type, V_cell_type, k)
-    Vbar_ele = basix.ufl.element(ele_type, Vbar_cell_type, k)
+    V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
+    Vbar_ele = basix.ufl.element(ele_type, Vbar_cell_type, 1)
 
     gdim = 2
     V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
@@ -1104,7 +1103,8 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
 
     ds = ufl.Measure("ds", domain=V_domain)
 
-    forms = [ufl.inner(f * g * u, vbar) * ds]
+    n = ufl.FacetNormal(V_domain)
+    forms = [ufl.inner(f * g * ufl.grad(u), n * vbar) * ds]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
@@ -1112,9 +1112,9 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     default_integral = form0.form_integrals[0]
     kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
 
-    A = np.zeros((2, 3), dtype=dtype)
+    A = np.zeros((2, 6), dtype=dtype)
     # FIXME Use more complex data
-    w = np.array([1, 1, 1, 1, 1], dtype=dtype)
+    w = np.array([1, 1, 1, 1, 1, 1, 1, 1], dtype=dtype)
     c = np.array([], dtype=dtype)
     facet = np.array([0], dtype=np.intc)
     perm = np.array(permutation, dtype=np.uint8)
@@ -1136,7 +1136,10 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     )
 
     expected_result = np.array(
-        [[0, np.sqrt(2) / 3, np.sqrt(2) / 6], [0, np.sqrt(2) / 6, np.sqrt(2) / 3]],
+        [
+            [1.0, 0.83333333, 0.16666667, 2.0, -1.33333333, -2.66666667],
+            [1.0, 0.16666667, 0.83333333, 2.0, -2.66666667, -1.33333333],
+        ],
         dtype=dtype,
     )
 
