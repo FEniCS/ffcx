@@ -361,7 +361,9 @@ def build_optimized_tables(
             raise RuntimeError("Codimension > 1 isn't supported.")
 
         # Only permute quadrature rules for interior facets integrals and for
-        # the codim zero element in mixed-dimensional integrals
+        # the codim zero element in mixed-dimensional integrals. The latter is
+        # needed because a cell may see its sub-entities as being oriented
+        # differently to their global orientation
         if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
             if tdim == 1:
                 t = get_ffcx_table_values(
