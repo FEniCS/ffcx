@@ -72,7 +72,6 @@ jobs:
 
       - name: Static check with mypy
         run: mypy ffcx/
-        if: matrix.python-version != '3.12'
       - name: ruff checks
         run: |
           ruff check .
