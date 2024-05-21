@@ -10,22 +10,25 @@
 # old implementation in FFC
 """Generate UFC code for a form."""
 
+from __future__ import annotations
+
 import logging
 
 import numpy as np
 
 from ffcx.codegeneration.C import form_template
+from ffcx.ir.representation import FormIR
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
+def generator(ir: FormIR, options):
     """Generate UFC code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
 
-    d = {}
+    d: dict[str, int | str] = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
     d["signature"] = f'"{ir.signature}"'
@@ -33,17 +36,17 @@ def generator(ir, options):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    if len(ir.original_coefficient_position) > 0:
-        values = ", ".join(str(i) for i in ir.original_coefficient_position)
-        sizes = len(ir.original_coefficient_position)
+    if len(ir.original_coefficient_positions) > 0:
+        values = ", ".join(str(i) for i in ir.original_coefficient_positions)
+        sizes = len(ir.original_coefficient_positions)
 
         d["original_coefficient_position_init"] = (
             f"int original_coefficient_position_{ir.name}[{sizes}] = {{{values}}};"
         )
-        d["original_coefficient_position"] = f"original_coefficient_position_{ir.name}"
+        d["original_coefficient_positions"] = f"original_coefficient_position_{ir.name}"
     else:
         d["original_coefficient_position_init"] = ""
-        d["original_coefficient_position"] = "NULL"
+        d["original_coefficient_positions"] = "NULL"
 
     if len(ir.coefficient_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
