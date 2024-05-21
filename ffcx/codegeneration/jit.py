@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import sys
+import sysconfig
 import tempfile
 import time
 from contextlib import redirect_stdout
@@ -130,19 +131,16 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     - SOABI includes platform, Python version, debug flags
     - CFLAGS includes prefixes, arch targets
     """
-
-    def xstr(s):
-        if s is None:
-            return ""
-        else:
-            return str(s)
-
-    # TODO: SOABI not defined on win32
-    return (
-        xstr(cffi_extra_compile_args) + xstr(cffi_debug)
-        # + sysconfig.get_config_var("CFLAGS")
-        # + sysconfig.get_config_var("SOABI")
-    )
+    if sys.platform.startswith("win32"):
+        # NOTE: SOABI not defined on win32, EXT_SUFFIX contains e.g. '.cp312-win_amd64.pyd'
+        return cffi_extra_compile_args + cffi_debug + sysconfig.get_config_var("EXT_SUFFIX")
+    else:
+        return (
+            cffi_extra_compile_args
+            + cffi_debug
+            + sysconfig.get_config_var("CFLAGS")
+            + sysconfig.get_config_var("SOABI")
+        )
 
 
 def compile_forms(
