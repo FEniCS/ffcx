@@ -123,7 +123,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         )
 
 
-def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
+def _compilation_signature(cffi_extra_compile_args, cffi_debug):
     """Compute the compilation-inputs part of the signature.
 
     Used to avoid cache conflicts across Python versions, architectures, installs.
@@ -133,13 +133,17 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     """
     if sys.platform.startswith("win32"):
         # NOTE: SOABI not defined on win32, EXT_SUFFIX contains e.g. '.cp312-win_amd64.pyd'
-        return cffi_extra_compile_args + cffi_debug + sysconfig.get_config_var("EXT_SUFFIX")
+        return (
+            str(cffi_extra_compile_args)
+            + str(cffi_debug)
+            + str(sysconfig.get_config_var("EXT_SUFFIX"))
+        )
     else:
         return (
-            cffi_extra_compile_args
-            + cffi_debug
-            + sysconfig.get_config_var("CFLAGS")
-            + sysconfig.get_config_var("SOABI")
+            str(cffi_extra_compile_args)
+            + str(cffi_debug)
+            + str(sysconfig.get_config_var("CFLAGS"))
+            + str(sysconfig.get_config_var("SOABI"))
         )
 
 
@@ -150,7 +154,7 @@ def compile_forms(
     timeout=10,
     cffi_extra_compile_args=[],
     cffi_verbose=False,
-    cffi_debug=None,
+    cffi_debug=False,
     cffi_libraries=None,
     visualise: bool = False,
 ):
