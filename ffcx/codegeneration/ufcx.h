@@ -210,7 +210,7 @@ extern "C"
     int num_constants;
 
     /// Original coefficient position for each coefficient
-    int* original_coefficient_position;
+    int* original_coefficient_positions;
 
     /// List of names of coefficients
     const char** coefficient_name_map;

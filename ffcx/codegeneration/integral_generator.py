@@ -72,7 +72,9 @@ class IntegralGenerator:
     def init_scopes(self):
         """Initialize variable scope dicts."""
         # Reset variables, separate sets for each quadrature rule
-        self.scopes = {quadrature_rule: {} for quadrature_rule in self.ir.integrand.keys()}
+        self.scopes = {
+            quadrature_rule: {} for quadrature_rule in self.ir.expression.integrand.keys()
+        }
         self.scopes[None] = {}
 
     def set_var(self, quadrature_rule, v, vaccess):
@@ -157,7 +159,7 @@ class IntegralGenerator:
 
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
-        for rule in self.ir.integrand.keys():
+        for rule in self.ir.expression.integrand.keys():
             # Generate code to compute piecewise constant scalar factors
             all_preparts += self.generate_piecewise_partition(rule)
 
@@ -178,11 +180,11 @@ class IntegralGenerator:
         # No quadrature tables for custom (given argument) or point
         # (evaluation in single vertex)
         skip = ufl.custom_integral_types + ufl.measure.point_integral_types
-        if self.ir.integral_type in skip:
+        if self.ir.expression.integral_type in skip:
             return parts
 
         # Loop over quadrature rules
-        for quadrature_rule, integrand in self.ir.integrand.items():
+        for quadrature_rule, _ in self.ir.expression.integrand.items():
             # Generate quadrature weights array
             wsym = self.backend.symbols.weights_table(quadrature_rule)
             parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
@@ -205,7 +207,7 @@ class IntegralGenerator:
         }
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
 
-        for integrand in self.ir.integrand.values():
+        for integrand in self.ir.expression.integrand.values():
             for attr in integrand["factorization"].nodes.values():
                 mt = attr.get("mt")
                 if mt is not None:
@@ -228,9 +230,9 @@ class IntegralGenerator:
         With precomputed element basis function values in quadrature points.
         """
         parts = []
-        tables = self.ir.unique_tables
-        table_types = self.ir.unique_table_types
-        if self.ir.integral_type in ufl.custom_integral_types:
+        tables = self.ir.expression.unique_tables
+        table_types = self.ir.expression.unique_table_types
+        if self.ir.expression.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
         else:
@@ -298,14 +300,14 @@ class IntegralGenerator:
     def generate_piecewise_partition(self, quadrature_rule):
         """Generate a piecewise partition."""
         # Get annotated graph of factorisation
-        F = self.ir.integrand[quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "piecewise", None)
 
     def generate_varying_partition(self, quadrature_rule):
         """Generate a varying partition."""
         # Get annotated graph of factorisation
-        F = self.ir.integrand[quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[quadrature_rule]["factorization"]
         arraysymbol = L.Symbol(f"sv_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "varying", quadrature_rule)
 
@@ -358,7 +360,7 @@ class IntegralGenerator:
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule):
         """Generate a dofblock partition."""
-        block_contributions = self.ir.integrand[quadrature_rule]["block_contributions"]
+        block_contributions = self.ir.expression.integrand[quadrature_rule]["block_contributions"]
         quadparts = []
         blocks = [
             (blockmap, blockdata)
@@ -399,7 +401,7 @@ class IntegralGenerator:
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
-            scope = self.ir.integrand[quadrature_rule]["modified_arguments"]
+            scope = self.ir.expression.integrand[quadrature_rule]["modified_arguments"]
             mt = scope[mad.ma_index]
             arg_tables = []
 
@@ -415,7 +417,7 @@ class IntegralGenerator:
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor, arg_tables = self.backend.access.table_access(
-                    td, self.ir.entitytype, mt.restriction, iq, indices[i]
+                    td, self.ir.expression.entity_type, mt.restriction, iq, indices[i]
                 )
 
             tables += arg_tables
@@ -468,13 +470,13 @@ class IntegralGenerator:
             factor_index = blockdata.factor_indices_comp_indices[0][0]
 
             # Get factor expression
-            F = self.ir.integrand[quadrature_rule]["factorization"]
+            F = self.ir.expression.integrand[quadrature_rule]["factorization"]
 
             v = F.nodes[factor_index]["expression"]
             f = self.get_var(quadrature_rule, v)
 
             # Quadrature weight was removed in representation, add it back now
-            if self.ir.integral_type in ufl.custom_integral_types:
+            if self.ir.expression.integral_type in ufl.custom_integral_types:
                 weights = self.backend.symbols.custom_weights_table
                 weight = weights[iq.global_index]
             else:
@@ -535,7 +537,7 @@ class IntegralGenerator:
         body: list[L.LNode] = []
 
         A = self.backend.symbols.element_tensor
-        A_shape = self.ir.tensor_shape
+        A_shape = self.ir.expression.tensor_shape
         for indices in keep:
             multi_index = L.MultiIndex(list(indices), A_shape)
             for expression in keep[indices]:
