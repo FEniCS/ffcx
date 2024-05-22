@@ -19,7 +19,7 @@ def test_demo(file, scalar_type):
     """Test a demo."""
     if sys.platform.startswith("win32") and "complex" in scalar_type:
         # Skip complex demos on win32
-        pytest.skip()
+        pytest.skip(reason="_Complex not supported on Windows")
 
     if file in [
         "MixedGradient",
@@ -29,7 +29,7 @@ def test_demo(file, scalar_type):
         "_TensorProductElement",
     ]:
         # Skip demos that use elements not yet implemented in Basix
-        pytest.skip()
+        pytest.skip(reason="Element not yet implemented in Basix")
 
     if "complex" in scalar_type and file in [
         "BiharmonicHHJ",
@@ -37,10 +37,10 @@ def test_demo(file, scalar_type):
         "StabilisedStokes",
     ]:
         # Skip demos that are not implemented for complex scalars
-        pytest.skip()
+        pytest.skip(reason="Not implemented for complex types")
     elif "Complex" in file and scalar_type in ["float64", "float32"]:
         # Skip demos that are only implemented for complex scalars
-        pytest.skip()
+        pytest.skip(reason="Not implemented for real types")
 
     if sys.platform.startswith("win32"):
         opts = f"--scalar_type {scalar_type}"
