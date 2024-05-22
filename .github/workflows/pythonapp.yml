@@ -68,11 +68,10 @@ jobs:
           pip install -v git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - name: Install FFCx (Linux, with optional dependencies)
-        if: runner.os == "Linux"
+        if: runner.os == 'Linux'
         run: pip install .[ci,optional]
-      
-      - name: Install FFCx (other platforms)
-        if: runner.os != "Linux"
+      - name: Install FFCx (macOS, Windows)
+        if: runner.os != 'Linux'
         run: pip install .[ci]
 
       - name: Static check with mypy
@@ -101,7 +100,7 @@ jobs:
         # when there are test failures
         if: always()
 
-      - name: Setup cl.exe
+      - name: Setup cl.exe (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
