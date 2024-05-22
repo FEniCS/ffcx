@@ -58,6 +58,7 @@ def test_demo(file, scalar_type):
             )
         ) == 0
     else:
+        cc = os.environ.get("CC", "cc")
         opts = f"--scalar_type {scalar_type}"
         extra_flags = (
             "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
@@ -66,7 +67,7 @@ def test_demo(file, scalar_type):
         assert (
             os.system(
                 f"cd {demo_dir} && "
-                f"gcc -I../ffcx/codegeneration "
+                f"{cc} -I../ffcx/codegeneration "
                 f"{extra_flags} "
                 f"-c {file}.c"
             )
