@@ -150,7 +150,7 @@ def _compilation_signature(cffi_extra_compile_args, cffi_debug):
 
 
 def compile_forms(
-    forms: list[ufl.Expr],
+    forms: list[ufl.Form],
     options: dict = {},
     cache_dir: Path | None = None,
     timeout: int = 10,
