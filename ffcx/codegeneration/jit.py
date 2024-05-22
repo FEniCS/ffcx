@@ -21,6 +21,8 @@ from pathlib import Path
 
 import cffi
 import numpy as np
+import numpy.typing
+import ufl
 
 import ffcx
 import ffcx.naming
@@ -148,17 +150,29 @@ def _compilation_signature(cffi_extra_compile_args, cffi_debug):
 
 
 def compile_forms(
-    forms,
-    options=None,
-    cache_dir=None,
-    timeout=10,
-    cffi_extra_compile_args=[],
-    cffi_verbose=False,
-    cffi_debug=False,
-    cffi_libraries=None,
+    forms: list[ufl.Expr],
+    options: dict = {},
+    cache_dir: str | None = None,
+    timeout: int = 10,
+    cffi_extra_compile_args: list[str] = [],
+    cffi_verbose: bool = False,
+    cffi_debug: bool = False,
+    cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
-    """Compile a list of UFL forms into UFC Python objects."""
+    """Compile a list of UFL forms into UFC Python objects.
+
+    Args:
+        forms: List of ufl.form to compile.
+        options: Options
+        cache_dir: Cache directory
+        timeout: Timeout
+        cffi_extra_compile_args: Extra compilation args for CFFI
+        cffi_verbose: Use verbose compile
+        cffi_debug: Use compiler debug mode
+        cffi_libraries: libraries to use with compiler
+        visualise: Toggle visualisation
+    """
     p = ffcx.options.get_options(options)
 
     # Get a signature for these forms
@@ -215,14 +229,14 @@ def compile_forms(
 
 
 def compile_expressions(
-    expressions,
-    options=None,
-    cache_dir=None,
-    timeout=10,
-    cffi_extra_compile_args=[],
+    expressions: list[tuple[ufl.Expr, numpy.typing.ArrayLike]],
+    options: dict = {},
+    cache_dir: str | None = None,
+    timeout: int = 10,
+    cffi_extra_compile_args: list[str] = [],
     cffi_verbose: bool = False,
-    cffi_debug=None,
-    cffi_libraries=None,
+    cffi_debug: bool = False,
+    cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
     """Compile a list of UFL expressions into UFC Python objects.
