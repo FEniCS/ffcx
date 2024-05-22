@@ -22,40 +22,75 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
+        include:
+          - os: windows-latest
+            python-version: '3.11'
+          - os: macos-latest
+            python-version: '3.12'
+
     steps:
       - name: Checkout FFCx
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Export GitHub Actions cache environment variables (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
-        run: brew install graphviz ninja pkg-config
-      - name: Install FEniCS dependencies (Python)
+        run: brew install ninja pkg-config
+
+      - name: Install FEniCS dependencies (Python, Unix)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
           pip install git+https://github.com/FEniCS/ufl.git
           pip install git+https://github.com/FEniCS/basix.git
-      - name: Install FFCx
+
+      - name: Install FEniCS dependencies (Python, Windows)
+        if: runner.os == 'Windows'
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+        run: |
+          pip install git+https://github.com/FEniCS/ufl.git
+          pip install -v git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Install FFCx (Linux, with optional dependencies)
+        if: runner.os == 'Linux'
+        run: pip install .[ci,optional]
+      - name: Install FFCx (macOS, Windows)
+        if: runner.os != 'Linux'
         run: pip install .[ci]
+
       - name: Static check with mypy
         run: mypy ffcx/
       - name: ruff checks
         run: |
           ruff check .
           ruff format --check .
+
       - name: Run units tests
         run: python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: coveralls
         continue-on-error: true
+
       - name: Upload pytest results
         uses: actions/upload-artifact@v4
         with:
@@ -64,10 +99,15 @@ jobs:
         # Use always() to always run this step to publish test results
         # when there are test failures
         if: always()
+
+      - name: Setup cl.exe (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Run FFCx demos
         run: |
           pytest demo/test_demos.py
-          rm -Rf ufl/
+
       - name: Build documentation
         run: |
           cd doc
@@ -79,6 +119,7 @@ jobs:
           path: doc/build/html/
           retention-days: 2
           if-no-files-found: error
+
       - name: Checkout FEniCS/docs
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
         uses: actions/checkout@v4

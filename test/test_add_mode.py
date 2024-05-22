@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import sys
+
 import basix.ufl
 import numpy as np
 import pytest
@@ -18,8 +20,22 @@ from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
     [
         "float32",
         "float64",
-        "complex64",
-        "complex128",
+        pytest.param(
+            "complex64",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
     ],
 )
 def test_additive_facet_integral(dtype, compile_args):
@@ -79,8 +95,22 @@ def test_additive_facet_integral(dtype, compile_args):
     [
         "float32",
         "float64",
-        "complex64",
-        "complex128",
+        pytest.param(
+            "complex64",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
     ],
 )
 def test_additive_cell_integral(dtype, compile_args):

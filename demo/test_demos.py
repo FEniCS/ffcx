@@ -17,6 +17,10 @@ for file in os.listdir(demo_dir):
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
 def test_demo(file, scalar_type):
     """Test a demo."""
+    if sys.platform.startswith("win32") and "complex" in scalar_type:
+        # Skip complex demos on win32
+        pytest.skip(reason="_Complex not supported on Windows")
+
     if file in [
         "MixedGradient",
         "TraceElement",  # HDiv Trace
@@ -25,7 +29,7 @@ def test_demo(file, scalar_type):
         "_TensorProductElement",
     ]:
         # Skip demos that use elements not yet implemented in Basix
-        pytest.skip()
+        pytest.skip(reason="Element not yet implemented in Basix")
 
     if "complex" in scalar_type and file in [
         "BiharmonicHHJ",
@@ -33,21 +37,39 @@ def test_demo(file, scalar_type):
         "StabilisedStokes",
     ]:
         # Skip demos that are not implemented for complex scalars
-        pytest.skip()
+        pytest.skip(reason="Not implemented for complex types")
     elif "Complex" in file and scalar_type in ["float64", "float32"]:
         # Skip demos that are only implemented for complex scalars
-        pytest.skip()
+        pytest.skip(reason="Not implemented for real types")
 
-    opts = f"--scalar_type {scalar_type}"
-    extra_flags = "-Wunused-variable -Werror -fPIC "
-    assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
-    assert (
-        os.system(
-            f"cd {demo_dir} && "
-            "CPATH=../ffcx/codegeneration/ "
-            f"gcc -I/usr/include/python{sys.version_info.major}.{sys.version_info.minor} "
-            f"{extra_flags} "
-            f"-shared {file}.c -o {file}.so"
+    if sys.platform.startswith("win32"):
+        opts = f"--scalar_type {scalar_type}"
+        extra_flags = "/std:c17"
+        assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
+        assert (
+            os.system(
+                f"cd {demo_dir} && " f'cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
+            )
+        ) == 0
+        assert (
+            os.system(
+                f"cd {demo_dir} && "
+                f'clang-cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
+            )
+        ) == 0
+    else:
+        cc = os.environ.get("CC", "cc")
+        opts = f"--scalar_type {scalar_type}"
+        extra_flags = (
+            "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
         )
-        == 0
-    )
+        assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
+        assert (
+            os.system(
+                f"cd {demo_dir} && "
+                f"{cc} -I../ffcx/codegeneration "
+                f"{extra_flags} "
+                f"-c {file}.c"
+            )
+            == 0
+        )
