@@ -1080,8 +1080,14 @@ def test_integral_grouping(compile_args):
 @pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form(compile_args, dtype, permutation):
+    """Test that the local element tensor corresponding to a mixed-dimensional form is correct.
+    The form involves an integral over a facet of the cell. The trial function and a coefficient f
+    are of codim 0. The test function and a coefficient g are of codim 1. We compare against another
+    form where the test function and g are codim 0 but have the same trace on the facet.
+    """
+
     def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs):
-        """Helper function to create a form and compute the local element tensor"""
+        "Helper function to create a form and compute the local element tensor"
         V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
         W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
 
