@@ -1079,71 +1079,76 @@ def test_integral_grouping(compile_args):
 @pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form(compile_args, dtype, permutation):
+    def tabulate(ele_type, V_cell_type, W_cell_type, coeffs):
+        V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
+        W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
+
+        gdim = 2
+        V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+        W_domain = ufl.Mesh(basix.ufl.element("Lagrange", W_cell_type, 1, shape=(gdim,)))
+
+        V = ufl.FunctionSpace(V_domain, V_ele)
+        W = ufl.FunctionSpace(W_domain, W_ele)
+
+        u = ufl.TrialFunction(V)
+        q = ufl.TestFunction(W)
+
+        f = ufl.Coefficient(V)
+        g = ufl.Coefficient(W)
+
+        ds = ufl.Measure("ds", domain=V_domain)
+
+        n = ufl.FacetNormal(V_domain)
+        forms = [ufl.inner(f * g * ufl.grad(u), n * q) * ds]
+        compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+            forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+        )
+        form0 = compiled_forms[0]
+        default_integral = form0.form_integrals[0]
+        kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+        A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
+        # FIXME Use more complex data
+        w = np.array(coeffs, dtype=dtype)
+        c = np.array([], dtype=dtype)
+        facet = np.array([0], dtype=np.intc)
+        perm = np.array(permutation, dtype=np.uint8)
+
+        xdtype = dtype_to_scalar_dtype(dtype)
+        coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
+
+        c_type = dtype_to_c_type(dtype)
+        c_xtype = dtype_to_c_type(xdtype)
+
+        ffi = module.ffi
+        kernel(
+            ffi.cast(f"{c_type}  *", A.ctypes.data),
+            ffi.cast(f"{c_type}  *", w.ctypes.data),
+            ffi.cast(f"{c_type}  *", c.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", facet.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+        )
+
+        return A
+
     # TODO Test 3D and non-simplex
 
     ele_type = "Lagrange"
     V_cell_type = "triangle"
     Vbar_cell_type = "interval"
+    coeffs = [1, 1, 1, 1, 1, 1, 1, 1]
 
-    V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
-    Vbar_ele = basix.ufl.element(ele_type, Vbar_cell_type, 1)
+    A = tabulate(ele_type, V_cell_type, Vbar_cell_type, coeffs)
 
-    gdim = 2
-    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
-    Vbar_domain = ufl.Mesh(basix.ufl.element("Lagrange", Vbar_cell_type, 1, shape=(gdim,)))
-
-    V = ufl.FunctionSpace(V_domain, V_ele)
-    Vbar = ufl.FunctionSpace(Vbar_domain, Vbar_ele)
-
-    u = ufl.TrialFunction(V)
-    vbar = ufl.TestFunction(Vbar)
-
-    f = ufl.Coefficient(V)
-    g = ufl.Coefficient(Vbar)
-
-    ds = ufl.Measure("ds", domain=V_domain)
-
-    n = ufl.FacetNormal(V_domain)
-    forms = [ufl.inner(f * g * ufl.grad(u), n * vbar) * ds]
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
-    )
-    form0 = compiled_forms[0]
-    default_integral = form0.form_integrals[0]
-    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
-
-    A = np.zeros((2, 6), dtype=dtype)
-    # FIXME Use more complex data
-    w = np.array([1, 1, 1, 1, 1, 1, 1, 1], dtype=dtype)
-    c = np.array([], dtype=dtype)
-    facet = np.array([0], dtype=np.intc)
-    perm = np.array(permutation, dtype=np.uint8)
-
-    xdtype = dtype_to_scalar_dtype(dtype)
-    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
-
-    c_type = dtype_to_c_type(dtype)
-    c_xtype = dtype_to_c_type(xdtype)
-
-    ffi = module.ffi
-    kernel(
-        ffi.cast(f"{c_type}  *", A.ctypes.data),
-        ffi.cast(f"{c_type}  *", w.ctypes.data),
-        ffi.cast(f"{c_type}  *", c.ctypes.data),
-        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
-        ffi.cast("int *", facet.ctypes.data),
-        ffi.cast("uint8_t *", perm.ctypes.data),
-    )
-
-    expected_result = np.array(
-        [
-            [1.0, 0.83333333, 0.16666667, 2.0, -1.33333333, -2.66666667],
-            [1.0, 0.16666667, 0.83333333, 2.0, -2.66666667, -1.33333333],
-        ],
-        dtype=dtype,
-    )
+    coeffs_ref = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+    A_ref = tabulate(ele_type, V_cell_type, V_cell_type, coeffs_ref)
+    A_ref = A_ref[1:][:]
 
     if permutation[0] == 1:
-        expected_result = np.flipud(expected_result)
+        A_ref = np.flipud(A_ref)
 
-    assert np.allclose(A, expected_result)
+    assert np.allclose(A, A_ref)
+
+
+test_mixed_dim_form({}, "float64", [0])
