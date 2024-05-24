@@ -1080,7 +1080,8 @@ def test_integral_grouping(compile_args):
 @pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form(compile_args, dtype, permutation):
-    def tabulate(ele_type, V_cell_type, W_cell_type, coeffs):
+    def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs):
+        """Helper function to create a form and compute the local element tensor"""
         V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
         W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
 
@@ -1109,7 +1110,6 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
         kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
 
         A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
-        # FIXME Use more complex data
         w = np.array(coeffs, dtype=dtype)
         c = np.array([], dtype=dtype)
         facet = np.array([0], dtype=np.intc)
@@ -1133,20 +1133,35 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
 
         return A
 
+    # Define the element type
     ele_type = "Lagrange"
+    # Define the cell type for each space
     V_cell_type = "triangle"
     Vbar_cell_type = "interval"
+
+    # Coefficient data
+    # f is a quadratic on each edge that is 0 at the vertices and 1 at the midpoint
     f_data = [0, 0, 0, 1, 1, 1]
+    # g is a linear function along the edge that is 0 at one vertex and 1 at the other
     g_data = [0, 1]
+    # Collect coefficient data
     coeffs = f_data + g_data
 
-    A = tabulate(ele_type, V_cell_type, Vbar_cell_type, coeffs)
+    # Tabulate the tensor for the mixed-dimensional form
+    A = tabulate_tensor(ele_type, V_cell_type, Vbar_cell_type, coeffs)
 
+    # Compare to a reference result. Here, we compare against the same kernel but with
+    # the interval element replaced with a triangle.
+    # We create some data for g on the triangle whose trace coincides with g on the interval
     g_data = [0, 0, 1]
     coeffs_ref = f_data + g_data
-    A_ref = tabulate(ele_type, V_cell_type, V_cell_type, coeffs_ref)
+    A_ref = tabulate_tensor(ele_type, V_cell_type, V_cell_type, coeffs_ref)
+    # Remove the entries for the extra test DOF on the triangle element
     A_ref = A_ref[1:][:]
 
+    # If the permutation is 1, this means the triangle sees its edge as being flipped
+    # relative to the edge's global orientation. Thus the result is the same as swapping
+    # cols 1 and 2 and cols 4 and 5 of the reference result.
     if permutation[0] == 1:
         A_ref[:, [1, 2]] = A_ref[:, [2, 1]]
         A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
