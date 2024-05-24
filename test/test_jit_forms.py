@@ -1076,6 +1076,7 @@ def test_integral_grouping(compile_args):
     assert len(unique_integrals) == 2
 
 
+# TODO Test 3D and non-simplex
 @pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form(compile_args, dtype, permutation):
@@ -1132,23 +1133,24 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
 
         return A
 
-    # TODO Test 3D and non-simplex
-
     ele_type = "Lagrange"
     V_cell_type = "triangle"
     Vbar_cell_type = "interval"
-    coeffs = [1, 1, 1, 1, 1, 1, 1, 1]
+    f_data = [0, 0, 0, 1, 1, 1]
+    g_data = [0, 1]
+    coeffs = f_data + g_data
 
     A = tabulate(ele_type, V_cell_type, Vbar_cell_type, coeffs)
 
-    coeffs_ref = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+    g_data = [0, 0, 1]
+    coeffs_ref = f_data + g_data
     A_ref = tabulate(ele_type, V_cell_type, V_cell_type, coeffs_ref)
     A_ref = A_ref[1:][:]
 
+    print(A, "\n\n", A_ref)
     if permutation[0] == 1:
         A_ref = np.flipud(A_ref)
 
     assert np.allclose(A, A_ref)
-
 
 test_mixed_dim_form({}, "float64", [0])
