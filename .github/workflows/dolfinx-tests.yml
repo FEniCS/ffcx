@@ -65,7 +65,9 @@ jobs:
           cmake --build build
           cmake --install build
       - name: Install DOLFINx (Python)
-        run: python3 -m pip -v install --break-system-packages --check-build-dependencies --no-build-isolation dolfinx/python/
+        run: |
+          python3 -m pip -v install --break-system-packages nanobind scikit-build-core[pyproject]
+          python3 -m pip -v install --break-system-packages --check-build-dependencies --no-build-isolation dolfinx/python/
       - name: Build DOLFINx C++ unit tests
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S dolfinx/cpp/test/
@@ -74,6 +76,9 @@ jobs:
         run: |
           cd build/test
           ctest -V --output-on-failure -R unittests
+
+      - name: Install Python demo/test dependencies
+        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist scipy
       - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
       - name: Run DOLFINx Python demos
