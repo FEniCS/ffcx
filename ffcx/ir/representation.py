@@ -602,7 +602,7 @@ def _compute_expression_ir(
     if cell is None:
         assert (
             len(ir["original_coefficient_positions"]) == 0
-            and len(ir["original_constant_offsets"]) == 0
+            and len(base_ir["original_constant_offsets"]) == 0
         )
 
     expression_ir = compute_integral_ir(
