@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import basix.ufl
 import numpy as np
 import pytest
@@ -55,7 +57,14 @@ def compute_tensor(forms: list[ufl.form.Form], dtype: str, compile_args: list[st
     "dtype",
     [
         "float64",
-        "complex128",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
     ],
 )
 def test_multiple_mesh_codim0(dtype, compile_args):

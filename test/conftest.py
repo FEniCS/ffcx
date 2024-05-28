@@ -5,10 +5,15 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Test configuration."""
 
+import sys
+
 import pytest
 
 
 @pytest.fixture(scope="module")
 def compile_args():
     """Compiler arguments."""
-    return ["-O1", "-Wall", "-Werror"]
+    if sys.platform.startswith("win32"):
+        return ["-Od"]
+    else:
+        return ["-O1", "-Wall", "-Werror"]

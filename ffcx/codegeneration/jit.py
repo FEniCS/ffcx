@@ -12,6 +12,7 @@ import io
 import logging
 import os
 import re
+import sys
 import sysconfig
 import tempfile
 import time
@@ -20,6 +21,8 @@ from pathlib import Path
 
 import cffi
 import numpy as np
+import numpy.typing as npt
+import ufl
 
 import ffcx
 import ffcx.naming
@@ -32,6 +35,20 @@ root_logger = logging.getLogger()
 file_dir = os.path.dirname(os.path.abspath(__file__))
 with open(file_dir + "/ufcx.h") as f:
     ufcx_h = "".join(f.readlines())
+
+# Emulate C preprocessor on __STDC_NO_COMPLEX__
+if sys.platform.startswith("win32"):
+    # Remove macro statements and content
+    ufcx_h = re.sub(
+        r"\#ifndef __STDC_NO_COMPLEX__.*?\#endif // __STDC_NO_COMPLEX__",
+        "",
+        ufcx_h,
+        flags=re.DOTALL,
+    )
+else:
+    # Remove only macros keeping content
+    ufcx_h = ufcx_h.replace("#ifndef __STDC_NO_COMPLEX__", "")
+    ufcx_h = ufcx_h.replace("#endif // __STDC_NO_COMPLEX__", "")
 
 header = ufcx_h.split("<HEADER_DECL>")[1].split("</HEADER_DECL>")[0].strip(" /\n")
 header = header.replace("{", "{{").replace("}", "}}")
@@ -51,13 +68,11 @@ UFC_INTEGRAL_DECL += "\n".join(
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_complex128\).*?\);", ufcx_h, re.DOTALL)
 )
-UFC_INTEGRAL_DECL += "\n".join(
-    re.findall(r"typedef void ?\(ufcx_tabulate_tensor_longdouble\).*?\);", ufcx_h, re.DOTALL)
-)
 
 UFC_INTEGRAL_DECL += "\n".join(
     re.findall("typedef struct ufcx_integral.*?ufcx_integral;", ufcx_h, re.DOTALL)
 )
+
 UFC_EXPRESSION_DECL = "\n".join(
     re.findall("typedef struct ufcx_expression.*?ufcx_expression;", ufcx_h, re.DOTALL)
 )
@@ -110,7 +125,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         )
 
 
-def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
+def _compilation_signature(cffi_extra_compile_args, cffi_debug):
     """Compute the compilation-inputs part of the signature.
 
     Used to avoid cache conflicts across Python versions, architectures, installs.
@@ -118,26 +133,46 @@ def _compilation_signature(cffi_extra_compile_args=None, cffi_debug=None):
     - SOABI includes platform, Python version, debug flags
     - CFLAGS includes prefixes, arch targets
     """
-    return (
-        str(cffi_extra_compile_args)
-        + str(cffi_debug)
-        + sysconfig.get_config_var("CFLAGS")
-        + sysconfig.get_config_var("SOABI")
-    )
+    if sys.platform.startswith("win32"):
+        # NOTE: SOABI not defined on win32, EXT_SUFFIX contains e.g. '.cp312-win_amd64.pyd'
+        return (
+            str(cffi_extra_compile_args)
+            + str(cffi_debug)
+            + str(sysconfig.get_config_var("EXT_SUFFIX"))
+        )
+    else:
+        return (
+            str(cffi_extra_compile_args)
+            + str(cffi_debug)
+            + str(sysconfig.get_config_var("CFLAGS"))
+            + str(sysconfig.get_config_var("SOABI"))
+        )
 
 
 def compile_forms(
-    forms,
-    options=None,
-    cache_dir=None,
-    timeout=10,
-    cffi_extra_compile_args=None,
-    cffi_verbose=False,
-    cffi_debug=None,
-    cffi_libraries=None,
+    forms: list[ufl.Form],
+    options: dict = {},
+    cache_dir: Path | None = None,
+    timeout: int = 10,
+    cffi_extra_compile_args: list[str] = [],
+    cffi_verbose: bool = False,
+    cffi_debug: bool = False,
+    cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
-    """Compile a list of UFL forms into UFC Python objects."""
+    """Compile a list of UFL forms into UFC Python objects.
+
+    Args:
+        forms: List of ufl.form to compile.
+        options: Options
+        cache_dir: Cache directory
+        timeout: Timeout
+        cffi_extra_compile_args: Extra compilation args for CFFI
+        cffi_verbose: Use verbose compile
+        cffi_debug: Use compiler debug mode
+        cffi_libraries: libraries to use with compiler
+        visualise: Toggle visualisation
+    """
     p = ffcx.options.get_options(options)
 
     # Get a signature for these forms
@@ -194,14 +229,14 @@ def compile_forms(
 
 
 def compile_expressions(
-    expressions,
-    options=None,
-    cache_dir=None,
-    timeout=10,
-    cffi_extra_compile_args=None,
+    expressions: list[tuple[ufl.Expr, npt.NDArray[np.floating]]],
+    options: dict = {},
+    cache_dir: Path | None = None,
+    timeout: int = 10,
+    cffi_extra_compile_args: list[str] = [],
     cffi_verbose: bool = False,
-    cffi_debug=None,
-    cffi_libraries=None,
+    cffi_debug: bool = False,
+    cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
     """Compile a list of UFL expressions into UFC Python objects.
@@ -296,13 +331,30 @@ def _compile_objects(
         ufl_objects, prefix=module_name, options=options, visualise=visualise
     )
 
+    # Raise error immediately prior to compilation if no support for C99
+    # _Complex. Doing this here allows FFCx to be used for complex codegen on
+    # Windows.
+    if sys.platform.startswith("win32"):
+        if np.issubdtype(options["scalar_type"], np.complexfloating):
+            raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
+        elif isinstance(options["scalar_type"], str) and "complex" in options["scalar_type"]:
+            raise NotImplementedError("win32 platform does not support C99 _Complex numbers")
+
+    # Compile in C17 mode
+    if sys.platform.startswith("win32"):
+        cffi_base_compile_args = ["-std:c17"]
+    else:
+        cffi_base_compile_args = ["-std=c17"]
+
+    cffi_final_compile_args = cffi_base_compile_args + cffi_extra_compile_args
+
     ffibuilder = cffi.FFI()
 
     ffibuilder.set_source(
         module_name,
         code_body,
         include_dirs=[ffcx.codegeneration.get_include_path()],
-        extra_compile_args=cffi_extra_compile_args,
+        extra_compile_args=cffi_final_compile_args,
         libraries=libraries,
     )
 

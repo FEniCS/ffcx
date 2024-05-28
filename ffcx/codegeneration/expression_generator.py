@@ -26,7 +26,7 @@ class ExpressionGenerator:
 
     def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
         """Initialise."""
-        if len(list(ir.integrand.keys())) != 1:
+        if len(list(ir.expression.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
 
         self.ir = ir
@@ -35,7 +35,7 @@ class ExpressionGenerator:
         self._ufl_names: set[Any] = set()
         self.symbol_counters: collections.defaultdict[Any, int] = collections.defaultdict(int)
         self.shared_symbols: dict[Any, Any] = {}
-        self.quadrature_rule = list(self.ir.integrand.keys())[0]
+        self.quadrature_rule = next(iter(self.ir.expression.integrand.keys()))
 
     def generate(self):
         """Generate."""
@@ -68,12 +68,12 @@ class ExpressionGenerator:
         }
 
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
-        for integrand in self.ir.integrand.values():
+        for integrand in self.ir.expression.integrand.values():
             for attr in integrand["factorization"].nodes.values():
                 mt = attr.get("mt")
                 if mt is not None:
                     t = type(mt.terminal)
-                    if self.ir.entitytype == "cell" and issubclass(
+                    if self.ir.expression.entity_type == "cell" and issubclass(
                         t, ufl.geometry.GeometricFacetQuantity
                     ):
                         raise RuntimeError(f"Expressions for cells do not support {t}.")
@@ -93,7 +93,7 @@ class ExpressionGenerator:
         """Generate tables of FE basis evaluated at specified points."""
         parts = []
 
-        tables = self.ir.unique_tables
+        tables = self.ir.expression.unique_tables
         table_names = sorted(tables)
 
         for name in table_names:
@@ -142,7 +142,7 @@ class ExpressionGenerator:
     def generate_varying_partition(self):
         """Generate factors of blocks which are not cellwise constant."""
         # Get annotated graph of factorisation
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "varying")
@@ -158,7 +158,7 @@ class ExpressionGenerator:
         I.e. do not depend on quadrature points).
         """
         # Get annotated graph of factorisation
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol("sp", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "piecewise")
@@ -167,7 +167,9 @@ class ExpressionGenerator:
 
     def generate_dofblock_partition(self):
         """Generate assignments of blocks multiplied with their factors into final tensor A."""
-        block_contributions = self.ir.integrand[self.quadrature_rule]["block_contributions"]
+        block_contributions = self.ir.expression.integrand[self.quadrature_rule][
+            "block_contributions"
+        ]
 
         preparts = []
         quadparts = []
@@ -205,13 +207,13 @@ class ExpressionGenerator:
 
         arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
         assert not blockdata.transposed, "Not handled yet"
-        components = ufl.product(self.ir.expression_shape)
+        components = ufl.product(self.ir.expression.shape)
 
         num_points = self.quadrature_rule.points.shape[0]
-        A_shape = [num_points, components] + self.ir.tensor_shape
+        A_shape = [num_points, components] + self.ir.expression.tensor_shape
         A = self.backend.symbols.element_tensor
         iq = self.backend.symbols.quadrature_loop_index
 
@@ -291,9 +293,13 @@ class ExpressionGenerator:
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
-            mt = self.ir.integrand[self.quadrature_rule]["modified_arguments"][mad.ma_index]
+            mt = self.ir.expression.integrand[self.quadrature_rule]["modified_arguments"][
+                mad.ma_index
+            ]
 
-            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
+            table = self.backend.symbols.element_table(
+                td, self.ir.expression.entity_type, mt.restriction
+            )
 
             assert td.ttype != "zeros"
 
