@@ -94,9 +94,6 @@ def float_product(factors):
     elif len(factors) == 1:
         return factors[0]
     else:
-        for f in factors:
-            if is_zero_lexpr(f):
-                return f
         return Product(factors)
 
 
