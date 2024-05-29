@@ -86,7 +86,7 @@ def is_negative_one_lexpr(lexpr):
 def float_product(factors):
     """Build product of float factors.
 
-    Simplify ones and zeros and returning 1.0 if empty sequence.
+    Simplify ones and returning 1.0 if empty sequence.
     """
     factors = [f for f in factors if not is_one_lexpr(f)]
     if len(factors) == 0:
