@@ -46,7 +46,7 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     num_constants: int
     name_from_uflfile: str
-    original_coefficient_position: list[int]
+    original_coefficient_positions: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
     finite_element_hashes: list[int]
@@ -62,46 +62,40 @@ class QuadratureIR(typing.NamedTuple):
     weights: npt.NDArray[np.float64]
 
 
+class CommonExpressionIR(typing.NamedTuple):
+    """Common-ground for IntegralIR and ExpressionIR."""
+
+    integral_type: str
+    entity_type: str
+    tensor_shape: list[int]
+    coefficient_numbering: dict[ufl.Coefficient, int]
+    coefficient_offsets: dict[ufl.Coefficient, int]
+    original_constant_offsets: dict[ufl.Constant, int]
+    unique_tables: dict[str, npt.NDArray[np.float64]]
+    unique_table_types: dict[str, str]
+    integrand: dict[QuadratureRule, dict]
+    name: str
+    needs_facet_permutations: bool
+    shape: list[int]
+
+
 class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
-    integral_type: str
+    expression: CommonExpressionIR
     rank: int
-    entitytype: str
     enabled_coefficients: list[bool]
-    tensor_shape: list[int]
-    coefficient_numbering: dict[ufl.Coefficient, int]
-    coefficient_offsets: dict[ufl.Coefficient, int]
-    original_constant_offsets: dict[ufl.Constant, int]
-    unique_tables: dict[str, npt.NDArray[np.float64]]
-    unique_table_types: dict[str, str]
-    integrand: dict[QuadratureRule, dict]
-    name: str
-    needs_facet_permutations: bool
-    coordinate_element_hash: int
+    coordinate_element_hash: str
 
 
 class ExpressionIR(typing.NamedTuple):
-    """Intermediate representation of an expression."""
+    """Intermediate representation of a DOLFINx Expression."""
 
-    name: str
-    options: dict
-    unique_tables: dict[str, npt.NDArray[np.float64]]
-    unique_table_types: dict[str, str]
-    integrand: dict[QuadratureRule, dict]
-    coefficient_numbering: dict[ufl.Coefficient, int]
-    coefficient_offsets: dict[ufl.Coefficient, int]
-    integral_type: str
-    entitytype: str
-    tensor_shape: list[int]
-    expression_shape: list[int]
-    original_constant_offsets: dict[ufl.Constant, int]
-    points: npt.NDArray[np.float64]
+    expression: CommonExpressionIR
+    original_coefficient_positions: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
-    needs_facet_permutations: bool
     name_from_uflfile: str
-    original_coefficient_positions: list[int]
 
 
 class DataIR(typing.NamedTuple):
@@ -208,18 +202,22 @@ def _compute_integral_ir(
     irs = []
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
         logger.info(f"Computing IR for integral in integral group {itg_data_index}")
+        expression_ir = {}
 
         # Compute representation
-        entitytype = _entity_types[itg_data.integral_type]
+        entity_type = _entity_types[itg_data.integral_type]
         cell = itg_data.domain.ufl_cell()
         cellname = cell.cellname()
         tdim = cell.topological_dimension()
         assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
-        ir = {
+        expression_ir = {
             "integral_type": itg_data.integral_type,
+            "entity_type": entity_type,
+            "shape": (),
+        }
+        ir = {
             "rank": form_data.rank,
-            "entitytype": entitytype,
             "enabled_coefficients": itg_data.enabled_coefficients,
             "coordinate_element_hash": finite_element_hashes[
                 itg_data.domain.ufl_coordinate_element()
@@ -239,10 +237,10 @@ def _compute_integral_ir(
         ]
 
         # Compute shape of element tensor
-        if ir["integral_type"] == "interior_facet":
-            ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
+        if expression_ir["integral_type"] == "interior_facet":
+            expression_ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
         else:
-            ir["tensor_shape"] = argument_dimensions
+            expression_ir["tensor_shape"] = argument_dimensions
 
         integral_type = itg_data.integral_type
         cell = itg_data.domain.ufl_cell()
@@ -367,7 +365,7 @@ def _compute_integral_ir(
             coefficient_numbering[f] = i
 
         # Add coefficient numbering to IR
-        ir["coefficient_numbering"] = coefficient_numbering
+        expression_ir["coefficient_numbering"] = coefficient_numbering
 
         index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
         offsets = {}
@@ -378,7 +376,7 @@ def _compute_integral_ir(
             _offset += width * element_dimensions[el]
 
         # Copy offsets also into IR
-        ir["coefficient_offsets"] = offsets
+        expression_ir["coefficient_offsets"] = offsets
 
         # Build offsets for Constants
         original_constant_offsets = {}
@@ -387,7 +385,7 @@ def _compute_integral_ir(
             original_constant_offsets[constant] = _offset
             _offset += np.prod(constant.ufl_shape, dtype=int)
 
-        ir["original_constant_offsets"] = original_constant_offsets
+        expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
         integrand_map: dict[QuadratureRule, ufl.core.expr.Expr] = {
@@ -398,18 +396,18 @@ def _compute_integral_ir(
         integral_ir = compute_integral_ir(
             itg_data.domain.ufl_cell(),
             itg_data.integral_type,
-            ir["entitytype"],
+            expression_ir["entity_type"],
             integrand_map,
-            ir["tensor_shape"],
+            expression_ir["tensor_shape"],
             options,
             visualise,
         )
 
-        ir.update(integral_ir)
+        expression_ir.update(integral_ir)
 
         # Fetch name
-        ir["name"] = integral_names[(form_index, itg_data_index)]
-
+        expression_ir["name"] = integral_names[(form_index, itg_data_index)]
+        ir["expression"] = CommonExpressionIR(**expression_ir)
         irs.append(IntegralIR(**ir))
 
     return irs
@@ -449,7 +447,7 @@ def _compute_form_ir(
         for j, obj in enumerate(form_data.original_form.constants())
     ]
 
-    ir["original_coefficient_position"] = form_data.original_coefficient_positions
+    ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
     ir["finite_element_hashes"] = [
         finite_element_hashes[e]
@@ -498,10 +496,10 @@ def _compute_expression_ir(
 
     # Compute representation
     ir = {}
-
+    base_ir = {}
     original_expression = (expression[2], expression[1])
 
-    ir["name"] = naming.expression_name(original_expression, prefix)
+    base_ir["name"] = naming.expression_name(original_expression, prefix)
 
     original_expression = expression[2]
     points = expression[1]
@@ -527,9 +525,9 @@ def _compute_expression_ir(
     argument_dimensions = [element_dimensions[element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
-    ir["tensor_shape"] = tensor_shape
+    base_ir["tensor_shape"] = tensor_shape
 
-    ir["expression_shape"] = list(expression.ufl_shape)
+    base_ir["shape"] = list(expression.ufl_shape)
 
     coefficients = ufl.algorithms.extract_coefficients(expression)
     coefficient_numbering = {}
@@ -537,7 +535,7 @@ def _compute_expression_ir(
         coefficient_numbering[coeff] = i
 
     # Add coefficient numbering to IR
-    ir["coefficient_numbering"] = coefficient_numbering
+    base_ir["coefficient_numbering"] = coefficient_numbering
 
     original_coefficient_positions = []
     original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
@@ -571,14 +569,14 @@ def _compute_expression_ir(
         _offset += element_dimensions[el]
 
     # Copy offsets also into IR
-    ir["coefficient_offsets"] = offsets
+    base_ir["coefficient_offsets"] = offsets
 
-    ir["integral_type"] = "expression"
+    base_ir["integral_type"] = "expression"
     if cell is not None:
         if (tdim := cell.topological_dimension()) == (pdim := points.shape[1]):
-            ir["entitytype"] = "cell"
+            base_ir["entity_type"] = "cell"
         elif tdim - 1 == pdim:
-            ir["entitytype"] = "facet"
+            base_ir["entity_type"] = "facet"
         else:
             raise ValueError(
                 f"Expression on domain with topological dimension {tdim}"
@@ -586,7 +584,7 @@ def _compute_expression_ir(
             )
     else:
         # For spatially invariant expressions, all expressions are evaluated in the cell
-        ir["entitytype"] = "cell"
+        base_ir["entity_type"] = "cell"
 
     # Build offsets for Constants
     original_constant_offsets = {}
@@ -595,9 +593,7 @@ def _compute_expression_ir(
         original_constant_offsets[constant] = _offset
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
-    ir["original_constant_offsets"] = original_constant_offsets
-
-    ir["points"] = points
+    base_ir["original_constant_offsets"] = original_constant_offsets
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
@@ -606,13 +602,19 @@ def _compute_expression_ir(
     if cell is None:
         assert (
             len(ir["original_coefficient_positions"]) == 0
-            and len(ir["original_constant_offsets"]) == 0
+            and len(base_ir["original_constant_offsets"]) == 0
         )
 
     expression_ir = compute_integral_ir(
-        cell, ir["integral_type"], ir["entitytype"], integrands, tensor_shape, options, visualise
+        cell,
+        base_ir["integral_type"],
+        base_ir["entity_type"],
+        integrands,
+        tensor_shape,
+        options,
+        visualise,
     )
-    ir["options"] = options
-    ir.update(expression_ir)
 
+    base_ir.update(expression_ir)
+    ir["expression"] = CommonExpressionIR(**base_ir)
     return ExpressionIR(**ir)

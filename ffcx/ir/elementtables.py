@@ -82,7 +82,7 @@ def get_ffcx_table_values(
     integral_type,
     element,
     avg,
-    entitytype,
+    entity_type,
     derivative_counts,
     flat_component,
     codim,
@@ -102,7 +102,7 @@ def get_ffcx_table_values(
     if integral_type == "expression":
         # FFCx tables for expression are generated as either interior cell points
         # or points on a facet
-        if entitytype == "cell":
+        if entity_type == "cell":
             integral_type = "cell"
         else:
             integral_type = "exterior_facet"
@@ -175,7 +175,7 @@ def get_ffcx_table_values(
 
 
 def generate_psi_table_name(
-    quadrature_rule, element_counter, averaged: str, entitytype, derivative_counts, flat_component
+    quadrature_rule, element_counter, averaged: str, entity_type, derivative_counts, flat_component
 ):
     """Generate a name for the psi table.
 
@@ -200,7 +200,7 @@ def generate_psi_table_name(
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V"}[entitytype]
+    name += {"cell": "", "facet": "_F", "vertex": "_V"}[entity_type]
     name += f"_Q{quadrature_rule.id()}"
     return name
 
@@ -296,7 +296,7 @@ def build_optimized_tables(
     quadrature_rule,
     cell,
     integral_type,
-    entitytype,
+    entity_type,
     modified_terminals,
     existing_tables,
     use_sum_factorization,
@@ -307,7 +307,7 @@ def build_optimized_tables(
     """Build the element tables needed for a list of modified terminals.
 
     Input:
-      entitytype - str
+      entity_type - str
       modified_terminals - ordered sequence of unique modified terminals
       FIXME: Document
 
@@ -346,7 +346,7 @@ def build_optimized_tables(
         # Build name for this particular table
         element_number = element_numbers[element]
         name = generate_psi_table_name(
-            quadrature_rule, element_number, avg, entitytype, local_derivatives, flat_component
+            quadrature_rule, element_number, avg, entity_type, local_derivatives, flat_component
         )
 
         # FIXME - currently just recalculate the tables every time,
@@ -372,7 +372,7 @@ def build_optimized_tables(
                     integral_type,
                     element,
                     avg,
-                    entitytype,
+                    entity_type,
                     local_derivatives,
                     flat_component,
                     codim,
@@ -387,7 +387,7 @@ def build_optimized_tables(
                             integral_type,
                             element,
                             avg,
-                            entitytype,
+                            entity_type,
                             local_derivatives,
                             flat_component,
                             codim,
@@ -409,7 +409,7 @@ def build_optimized_tables(
                                     integral_type,
                                     element,
                                     avg,
-                                    entitytype,
+                                    entity_type,
                                     local_derivatives,
                                     flat_component,
                                     codim,
@@ -430,7 +430,7 @@ def build_optimized_tables(
                                     integral_type,
                                     element,
                                     avg,
-                                    entitytype,
+                                    entity_type,
                                     local_derivatives,
                                     flat_component,
                                     codim,
@@ -445,7 +445,7 @@ def build_optimized_tables(
                 integral_type,
                 element,
                 avg,
-                entitytype,
+                entity_type,
                 local_derivatives,
                 flat_component,
                 codim,
