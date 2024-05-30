@@ -40,17 +40,6 @@ ufcx_mixed_element = 1
 ufcx_quadrature_element = 2
 ufcx_basix_custom_element = 3
 
-def wrapper(scalar_type, real_type):
-
-    c_signature = numba.types.void(
-        numba.types.CPointer(numba.typeof(scalar_type())),
-        numba.types.CPointer(numba.typeof(scalar_type())),
-        numba.types.CPointer(numba.typeof(scalar_type())),
-        numba.types.CPointer(numba.typeof(real_type())),
-        numba.types.CPointer(numba.types.int32),
-        numba.types.CPointer(numba.types.int32))
-    return numba.cfunc(c_signature, nopython=True)
-
 """
 
 implementation_post = """
