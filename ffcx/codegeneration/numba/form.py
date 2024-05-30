@@ -29,7 +29,7 @@ def generator(ir, options):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    orig_coeff = ', '.join(str(i) for i in ir.original_coefficient_position)
+    orig_coeff = ', '.join(str(i) for i in ir.original_coefficient_positions)
     d["original_coefficient_position"] = f"[{orig_coeff}]"
 
     cnames = ir.coefficient_names

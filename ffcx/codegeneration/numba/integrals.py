@@ -18,11 +18,11 @@ logger = logging.getLogger("ffcx")
 def generator(ir, options):
     """Integral generator."""
     logger.info("Generating code for integral:")
-    logger.info(f"--- type: {ir.integral_type}")
-    logger.info(f"--- name: {ir.name}")
+    logger.info(f"--- type: {ir.expression.integral_type}")
+    logger.info(f"--- name: {ir.expression.name}")
 
     """Generate code for an integral."""
-    factory_name = ir.name
+    factory_name = ir.expression.name
 
     # Create FFCx backend
     backend = FFCXBackend(ir, options)
@@ -41,17 +41,17 @@ def generator(ir, options):
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
-    code["class_type"] = ir.integral_type + "_integral"
-    code["name"] = ir.name
+    code["class_type"] = ir.expression.integral_type + "_integral"
+    code["name"] = ir.expression.name
 
     vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
     code["enabled_coefficients"] = f"[{vals}]"
 
     tensor_size = 1
-    for dim in ir.tensor_shape:
+    for dim in ir.expression.tensor_shape:
         tensor_size *= dim
     n_coeff = len(ir.enabled_coefficients)
-    n_const = len(ir.original_constant_offsets)
+    n_const = len(ir.expression.original_constant_offsets)
     header = f"""
     A = numba.carray(_A, ({tensor_size}))
     w = numba.carray(_w, ({n_coeff}))
@@ -66,7 +66,7 @@ def generator(ir, options):
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         tabulate_tensor=code["tabulate_tensor"],
-        needs_facet_permutations="True" if ir.needs_facet_permutations else "False",
+        needs_facet_permutations="True" if ir.expression.needs_facet_permutations else "False",
         scalar_type=options["scalar_type"],
         coordinate_element=ir.coordinate_element_hash,
     )

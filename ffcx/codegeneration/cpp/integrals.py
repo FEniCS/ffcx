@@ -18,10 +18,11 @@ logger = logging.getLogger("ffcx")
 def generator(ir, options):
     """Generate code for an integral."""
     logger.info("Generating code for integral:")
-    logger.info(f"--- type: {ir.integral_type}")
-    logger.info(f"--- name: {ir.name}")
+    logger.info(f"--- type: {ir.expression.integral_type}")
+    logger.info(f"--- name: {ir.expression.name}")
 
-    factory_name = ir.name
+
+    factory_name = ir.expression.name
 
     # Format declaration
     declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
@@ -41,8 +42,8 @@ def generator(ir, options):
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
-    code["class_type"] = ir.integral_type + "_integral"
-    code["name"] = ir.name
+    code["class_type"] = ir.expression.integral_type + "_integral"
+    code["name"] = ir.expression.name
 
     vals = ", ".join("true" if i else "false" for i in ir.enabled_coefficients)
     code["enabled_coefficients"] = f"{{{vals}}}"
@@ -54,7 +55,7 @@ def generator(ir, options):
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         tabulate_tensor=code["tabulate_tensor"],
-        needs_facet_permutations="true" if ir.needs_facet_permutations else "false",
+        needs_facet_permutations="true" if ir.expression.needs_facet_permutations else "false",
         scalar_type=options["scalar_type"],
         geom_type=options["scalar_type"],
         np_scalar_type=options["scalar_type"],
