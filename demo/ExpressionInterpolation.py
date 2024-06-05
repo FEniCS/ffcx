@@ -49,7 +49,7 @@ q = Coefficient(Q)
 powq = 3 * q**2
 
 # Extract basix cell type
-b_cell = basix.cell.string_to_type(cell)
+b_cell = basix.CellType[cell]
 
 # Find quadrature points for quadrature element
 b_rule = basix.quadrature.string_to_type(q_rule)
