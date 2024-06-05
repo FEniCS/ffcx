@@ -30,7 +30,7 @@ def create_quadrature(
         for e in elements:
             polyset_type = basix.polyset_superset(celltype, polyset_type, e.polyset_type)
         return basix.make_quadrature(
-            celltype, degree, rule=_QuadratureType[rule], polyset_type=polyset_type
+            celltype, degree, rule=basix.quadrature.string_to_type(rule), polyset_type=polyset_type
         )
 
 
