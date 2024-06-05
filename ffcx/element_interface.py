@@ -10,7 +10,6 @@ import basix.ufl
 import numpy as np
 import numpy.typing as npt
 from basix import CellType as _CellType
-from basix import QuadratureType as _QuadratureType
 
 
 def basix_index(indices: tuple[int]) -> int:
