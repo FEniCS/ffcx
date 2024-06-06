@@ -1124,3 +1124,101 @@ def test_integral_grouping(compile_args):
         ]
     )
     assert len(unique_integrals) == 2
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("permutation", [[0], [1]])
+def test_mixed_dim_form(compile_args, dtype, permutation):
+    """Test that the local element tensor corresponding to a mixed-dimensional form is correct.
+    The form involves an integral over a facet of the cell. The trial function and a coefficient f
+    are of codim 0. The test function and a coefficient g are of codim 1. We compare against another
+    form where the test function and g are codim 0 but have the same trace on the facet.
+    """
+
+    def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs):
+        "Helper function to create a form and compute the local element tensor"
+        V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
+        W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
+
+        gdim = 2
+        V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+        W_domain = ufl.Mesh(basix.ufl.element("Lagrange", W_cell_type, 1, shape=(gdim,)))
+
+        V = ufl.FunctionSpace(V_domain, V_ele)
+        W = ufl.FunctionSpace(W_domain, W_ele)
+
+        u = ufl.TrialFunction(V)
+        q = ufl.TestFunction(W)
+
+        f = ufl.Coefficient(V)
+        g = ufl.Coefficient(W)
+
+        ds = ufl.Measure("ds", domain=V_domain)
+
+        n = ufl.FacetNormal(V_domain)
+        forms = [ufl.inner(f * g * ufl.grad(u), n * q) * ds]
+        compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+            forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+        )
+        form0 = compiled_forms[0]
+        default_integral = form0.form_integrals[0]
+        kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+        A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
+        w = np.array(coeffs, dtype=dtype)
+        c = np.array([], dtype=dtype)
+        facet = np.array([0], dtype=np.intc)
+        perm = np.array(permutation, dtype=np.uint8)
+
+        xdtype = dtype_to_scalar_dtype(dtype)
+        coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
+
+        c_type = dtype_to_c_type(dtype)
+        c_xtype = dtype_to_c_type(xdtype)
+
+        ffi = module.ffi
+        kernel(
+            ffi.cast(f"{c_type}  *", A.ctypes.data),
+            ffi.cast(f"{c_type}  *", w.ctypes.data),
+            ffi.cast(f"{c_type}  *", c.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", facet.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+        )
+
+        return A
+
+    # Define the element type
+    ele_type = "Lagrange"
+    # Define the cell type for each space
+    V_cell_type = "triangle"
+    Vbar_cell_type = "interval"
+
+    # Coefficient data
+    # f is a quadratic on each edge that is 0 at the vertices and 1 at the midpoint
+    f_data = [0, 0, 0, 1, 1, 1]
+    # g is a linear function along the edge that is 0 at one vertex and 1 at the other
+    g_data = [0, 1]
+    # Collect coefficient data
+    coeffs = f_data + g_data
+
+    # Tabulate the tensor for the mixed-dimensional form
+    A = tabulate_tensor(ele_type, V_cell_type, Vbar_cell_type, coeffs)
+
+    # Compare to a reference result. Here, we compare against the same kernel but with
+    # the interval element replaced with a triangle.
+    # We create some data for g on the triangle whose trace coincides with g on the interval
+    g_data = [0, 0, 1]
+    coeffs_ref = f_data + g_data
+    A_ref = tabulate_tensor(ele_type, V_cell_type, V_cell_type, coeffs_ref)
+    # Remove the entries for the extra test DOF on the triangle element
+    A_ref = A_ref[1:][:]
+
+    # If the permutation is 1, this means the triangle sees its edge as being flipped
+    # relative to the edge's global orientation. Thus the result is the same as swapping
+    # cols 1 and 2 and cols 4 and 5 of the reference result.
+    if permutation[0] == 1:
+        A_ref[:, [1, 2]] = A_ref[:, [2, 1]]
+        A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
+
+    assert np.allclose(A, A_ref)

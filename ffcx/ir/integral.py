@@ -82,6 +82,12 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
             if is_modified_terminal(v["expression"])
         }
 
+        # Check if we have a mixed-dimensional integral
+        is_mixed_dim = False
+        for domain in integrand.ufl_domains():
+            if domain.topological_dimension() != cell.topological_dimension():
+                is_mixed_dim = True
+
         mt_table_reference = build_optimized_tables(
             quadrature_rule,
             cell,
@@ -90,6 +96,7 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
             initial_terminals.values(),
             ir["unique_tables"],
             use_sum_factorization=p["sum_factorization"],
+            is_mixed_dim=is_mixed_dim,
             rtol=p["table_rtol"],
             atol=p["table_atol"],
         )
@@ -281,7 +288,9 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
         }
 
         restrictions = [i.restriction for i in initial_terminals.values()]
-        ir["needs_facet_permutations"] = "+" in restrictions and "-" in restrictions
+        ir["needs_facet_permutations"] = (
+            "+" in restrictions and "-" in restrictions
+        ) or is_mixed_dim
 
     return ir
 
