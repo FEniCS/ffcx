@@ -77,7 +77,15 @@ def clamp_table_small_numbers(
 
 
 def get_ffcx_table_values(
-    points, cell, integral_type, element, avg, entity_type, derivative_counts, flat_component
+    points,
+    cell,
+    integral_type,
+    element,
+    avg,
+    entity_type,
+    derivative_counts,
+    flat_component,
+    codim,
 ):
     """Extract values from FFCx element table.
 
@@ -135,7 +143,12 @@ def get_ffcx_table_values(
     component_element, offset, stride = element.get_component_element(flat_component)
 
     for entity in range(num_entities):
-        entity_points = map_integral_points(points, integral_type, cell, entity)
+        if codim == 0:
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+        elif codim == 1:
+            entity_points = points
+        else:
+            raise RuntimeError("Codimension > 1 isn't supported.")
         tbl = component_element.tabulate(deriv_order, entity_points)
         tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
@@ -287,6 +300,7 @@ def build_optimized_tables(
     modified_terminals,
     existing_tables,
     use_sum_factorization,
+    is_mixed_dim,
     rtol=default_rtol,
     atol=default_atol,
 ):
@@ -341,7 +355,16 @@ def build_optimized_tables(
         # the dofmap offset may differ due to restriction.
 
         tdim = cell.topological_dimension()
-        if integral_type == "interior_facet":
+        codim = tdim - element.cell.topological_dimension()
+        assert codim >= 0
+        if codim > 1:
+            raise RuntimeError("Codimension > 1 isn't supported.")
+
+        # Only permute quadrature rules for interior facets integrals and for
+        # the codim zero element in mixed-dimensional integrals. The latter is
+        # needed because a cell may see its sub-entities as being oriented
+        # differently to their global orientation
+        if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
             if tdim == 1:
                 t = get_ffcx_table_values(
                     quadrature_rule.points,
@@ -352,6 +375,7 @@ def build_optimized_tables(
                     entity_type,
                     local_derivatives,
                     flat_component,
+                    codim,
                 )
             elif tdim == 2:
                 new_table = []
@@ -366,6 +390,7 @@ def build_optimized_tables(
                             entity_type,
                             local_derivatives,
                             flat_component,
+                            codim,
                         )
                     )
 
@@ -387,6 +412,7 @@ def build_optimized_tables(
                                     entity_type,
                                     local_derivatives,
                                     flat_component,
+                                    codim,
                                 )
                             )
                     t = new_table[0]
@@ -407,6 +433,7 @@ def build_optimized_tables(
                                     entity_type,
                                     local_derivatives,
                                     flat_component,
+                                    codim,
                                 )
                             )
                     t = new_table[0]
@@ -421,6 +448,7 @@ def build_optimized_tables(
                 entity_type,
                 local_derivatives,
                 flat_component,
+                codim,
             )
         # Clean up table
         tbl = clamp_table_small_numbers(t["array"], rtol=rtol, atol=atol)
