@@ -1126,7 +1126,6 @@ def test_integral_grouping(compile_args):
     assert len(unique_integrals) == 2
 
 
-# TODO Test 3D and non-simplex
 @pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form(compile_args, dtype, permutation):
