@@ -84,7 +84,7 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
 
         # Check if we have a mixed-dimensional integral
         is_mixed_dim = False
-        for domain in integrand.ufl_domains():
+        for domain in ufl.domain.extract_domains(integrand):
             if domain.topological_dimension() != cell.topological_dimension():
                 is_mixed_dim = True
 

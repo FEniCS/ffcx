@@ -47,13 +47,13 @@ def compute_signature(
 
             domains: list[ufl.Mesh] = []
             for coeff in coeffs:
-                domains.append(*coeff.ufl_domains())
+                domains.append(*ufl.domain.extract_domains(coeff))
             for arg in args:
-                domains.append(*arg.ufl_function_space().ufl_domains())
+                domains.append(*ufl.domain.extract_domains(arg))
             for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
-                domains.append(*gc.ufl_domains())
+                domains.append(*ufl.domain.extract_domains(gc))
             for const in consts:
-                domains.append(const.ufl_domain())
+                domains.append(*ufl.domain.extract_domains(const))
             domains = ufl.algorithms.analysis.unique_tuple(domains)
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
