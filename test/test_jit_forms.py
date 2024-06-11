@@ -988,7 +988,7 @@ def test_facet_vertex_quadrature(compile_args):
     mesh = ufl.Mesh(c_el)
 
     x = ufl.SpatialCoordinate(mesh)
-    ds = ufl.Measure("ds", metadata={"quadrature_rule": "vertex"})
+    ds = ufl.Measure("ds", metadata={"quadrature_rule": "vertex", "quadrature_degree": 1})
     expr = x[0] + ufl.cos(x[1])
     b1 = expr * ds
     ds_c = ufl.Measure(
