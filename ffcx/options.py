@@ -20,6 +20,7 @@ import numpy.typing as npt
 logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
+    "cuda": (bool, False, "generate CUDA wrapped versions of tabulate tensor functions", None),
     "epsilon": (float, 1e-14, "machine precision, used for dropping zero terms in tables.", None),
     "scalar_type": (
         str,
