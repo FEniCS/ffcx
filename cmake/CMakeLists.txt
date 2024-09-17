@@ -9,6 +9,7 @@ file(SHA1 ${PROJECT_SOURCE_DIR}/../ffcx/codegeneration/ufcx.h UFCX_HASH)
 message("Test hash: ${UFCX_HASH}")
 
 add_library(${PROJECT_NAME} INTERFACE)
+target_compile_features(${PROJECT_NAME} INTERFACE c_std_17)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}
   INTERFACE $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
