@@ -30,7 +30,7 @@ ufcx_integral {factory_name} =
   {tabulate_tensor_float64}
   {tabulate_tensor_complex64}
   {tabulate_tensor_complex128}
-  {tabulate_tensor_cuda}
+  {tabulate_tensor_cuda_nvrtc}
   .needs_facet_permutations = {needs_facet_permutations},
   .coordinate_element_hash = {coordinate_element_hash},
 }};
@@ -40,13 +40,16 @@ ufcx_integral {factory_name} =
 
 cuda_wrapper = """
 
-// Begin CUDA wrapper for integral {factory_name}
-void tabulate_tensor_cuda_{factory_name}(int* num_program_headers,
+// Begin NVRTC CUDA wrapper for integral {factory_name}
+// The wrapper is compiled with a standard C++ compiler, and is called at runtime to generate
+// source code which is then compiled into a CUDA kernel at runtime via NVRTC.
+void tabulate_tensor_cuda_nvrtc_{factory_name}(int* num_program_headers,
                                          const char*** program_headers,
                                          const char*** program_include_names,
                                          const char** out_program_src,
                                          const char** tabulate_tensor_function_name)
 {{
+  // The below typedefs are needed due to issues with including stdint.h in NVRTC source code
   const char* program_src = ""
     "#define alignas(x)\\n"
     "#define restrict __restrict__\\n"
@@ -73,11 +76,13 @@ void tabulate_tensor_cuda_{factory_name}(int* num_program_headers,
   *tabulate_tensor_function_name = "tabulate_tensor_{factory_name}";
 }}
 
-// End CUDA wrapper for integral {factory_name}
+// End NVRTC CUDA wrapper for integral {factory_name}
 
 """
 
+
 def get_factory(options):
+    """Return the template string for constructing form integrals."""
     if options.get("cuda"):
         return cuda_wrapper + factory
     else:

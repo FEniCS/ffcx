@@ -126,6 +126,7 @@ extern "C"
 #endif // __STDC_NO_COMPLEX__
 
   /// Return CUDA C++ source code for the ufc_tabulate_tensor kernel
+  /// The resulting source code is passed to NVRTC for runtime compilation
   ///
   /// @param[out] num_program_headers
   ///         The number of headers required by the program
@@ -139,7 +140,7 @@ extern "C"
   /// @param[out] tabulate_tensor_function_name
   ///         The name of the device-side function.
   ///
-  typedef void(ufcx_tabulate_tensor_cuda)(
+  typedef void(ufcx_tabulate_tensor_cuda_nvrtc)(
       int* num_program_headers,
       const char*** program_headers,
       const char*** program_include_names,
@@ -155,7 +156,7 @@ extern "C"
     ufcx_tabulate_tensor_complex64* tabulate_tensor_complex64;
     ufcx_tabulate_tensor_complex128* tabulate_tensor_complex128;
 #endif // __STDC_NO_COMPLEX__
-    ufcx_tabulate_tensor_cuda* tabulate_tensor_cuda;
+    ufcx_tabulate_tensor_cuda_nvrtc* tabulate_tensor_cuda_nvrtc;
     bool needs_facet_permutations;
 
     /// Get the hash of the coordinate element associated with the geometry of the mesh.

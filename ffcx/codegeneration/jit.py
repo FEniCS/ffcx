@@ -69,7 +69,7 @@ UFC_INTEGRAL_DECL += "\n".join(
     re.findall(r"typedef void ?\(ufcx_tabulate_tensor_complex128\).*?\);", ufcx_h, re.DOTALL)
 )
 UFC_INTEGRAL_DECL += "\n".join(
-    re.findall(r"typedef void ?\(ufcx_tabulate_tensor_cuda\).*?\);", ufcx_h, re.DOTALL)
+    re.findall(r"typedef void ?\(ufcx_tabulate_tensor_cuda_nvrtc\).*?\);", ufcx_h, re.DOTALL)
 )
 
 UFC_INTEGRAL_DECL += "\n".join(
