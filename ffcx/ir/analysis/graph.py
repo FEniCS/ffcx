@@ -169,7 +169,7 @@ def rebuild_with_scalar_subexpressions(G):
                 if isinstance(vop, ufl.classes.MultiIndex):
                     # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(expr, ufl.classes.IndexSum):
-                        raise RuntimeError("Not expecting a %s." % type(expr))
+                        raise RuntimeError(f"Not expecting a {type(expr)}.")
                     sops.append(())
                 else:
                     # TODO: Build edge datastructure and use instead?

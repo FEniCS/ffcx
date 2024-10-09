@@ -13,18 +13,13 @@ extern ufcx_form {factory_name};
 //
 extern ufcx_form* {name_from_uflfile};
 
-// Helper used to create function space using function name
-// i.e. name of the Python variable.
-//
-ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name);
 """
 
 factory = """
 // Code for form {factory_name}
 
 {original_coefficient_position_init}
-{dofmaps_init}
-{finite_elements_init}
+{finite_element_hashes_init}
 {form_integral_offsets_init}
 {form_integrals_init}
 {form_integral_ids_init}
@@ -39,13 +34,12 @@ ufcx_form {factory_name} =
   .rank = {rank},
   .num_coefficients = {num_coefficients},
   .num_constants = {num_constants},
-  .original_coefficient_position = {original_coefficient_position},
+  .original_coefficient_positions = {original_coefficient_positions},
 
   .coefficient_name_map = {coefficient_names},
   .constant_name_map = {constant_names},
 
-  .finite_elements = {finite_elements},
-  .dofmaps = {dofmaps},
+  .finite_element_hashes = {finite_element_hashes},
 
   .form_integrals = {form_integrals},
   .form_integral_ids = {form_integral_ids},
@@ -54,12 +48,6 @@ ufcx_form {factory_name} =
 
 // Alias name
 ufcx_form* {name_from_uflfile} = &{factory_name};
-
-{value_shape_init}
-ufcx_function_space* functionspace_{name_from_uflfile}(const char* function_name)
-{{
-{functionspace}
-}}
 
 // End of code for form {factory_name}
 """

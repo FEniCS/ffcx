@@ -23,11 +23,11 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendAccess:
     """FFCx specific formatter class."""
 
-    def __init__(self, ir, symbols, options):
+    def __init__(self, entity_type: str, integral_type: str, symbols, options):
         """Initialise."""
         # Store ir and options
-        self.entitytype = ir.entitytype
-        self.integral_type = ir.integral_type
+        self.entity_type = entity_type
+        self.integral_type = integral_type
         self.symbols = symbols
         self.options = options
 
@@ -72,7 +72,7 @@ class FFCXBackendAccess:
                     break
 
         if handler:
-            return handler(mt, tabledata, quadrature_rule)
+            return handler(mt, tabledata, quadrature_rule)  # type: ignore
         else:
             raise RuntimeError(f"Not handled: {type(e)}")
 
@@ -400,7 +400,7 @@ class FFCXBackendAccess:
     def table_access(
         self,
         tabledata: UniqueTableReferenceT,
-        entitytype: str,
+        entity_type: str,
         restriction: str,
         quadrature_index: L.MultiIndex,
         dof_index: L.MultiIndex,
@@ -409,12 +409,12 @@ class FFCXBackendAccess:
 
         Args:
             tabledata: Table data object
-            entitytype: Entity type ("cell", "facet", "vertex")
+            entity_type: Entity type ("cell", "facet", "vertex")
             restriction: Restriction ("+", "-")
             quadrature_index: Quadrature index
             dof_index: Dof index
         """
-        entity = self.symbols.entity(entitytype, restriction)
+        entity = self.symbols.entity(entity_type, restriction)
         iq_global_index = quadrature_index.global_index
         ic_global_index = dof_index.global_index
         qp = 0  # quadrature permutation

@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Generate UFC code for an expression."""
 
+from __future__ import annotations
+
 import logging
 
 import numpy as np
@@ -14,17 +16,19 @@ from ffcx.codegeneration.C import expressions_template
 from ffcx.codegeneration.C.c_implementation import CFormatter
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
+from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
+def generator(ir: ExpressionIR, options):
     """Generate UFC code for an expression."""
     logger.info("Generating code for expression:")
-    logger.info(f"--- points: {ir.points}")
-    logger.info(f"--- name: {ir.name}")
-
-    factory_name = ir.name
+    assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
+    points = next(iter(ir.expression.integrand)).points
+    logger.info(f"--- points: {points}")
+    factory_name = ir.expression.name
+    logger.info(f"--- name: {factory_name}")
 
     # Format declaration
     declaration = expressions_template.declaration.format(
@@ -34,58 +38,56 @@ def generator(ir, options):
     backend = FFCXBackend(ir, options)
     eg = ExpressionGenerator(ir, backend)
 
-    d = {}
+    d: dict[str, str | int] = {}
     d["name_from_uflfile"] = ir.name_from_uflfile
-    d["factory_name"] = ir.name
-
+    d["factory_name"] = factory_name
     parts = eg.generate()
 
     CF = CFormatter(options["scalar_type"])
     d["tabulate_expression"] = CF.c_format(parts)
 
     if len(ir.original_coefficient_positions) > 0:
-        d["original_coefficient_positions"] = f"original_coefficient_positions_{ir.name}"
+        d["original_coefficient_positions"] = f"original_coefficient_positions_{factory_name}"
         values = ", ".join(str(i) for i in ir.original_coefficient_positions)
         sizes = len(ir.original_coefficient_positions)
         d["original_coefficient_positions_init"] = (
-            f"static int original_coefficient_positions_{ir.name}[{sizes}] = {{{values}}};"
+            f"static int original_coefficient_positions_{factory_name}[{sizes}] = {{{values}}};"
         )
     else:
         d["original_coefficient_positions"] = "NULL"
         d["original_coefficient_positions_init"] = ""
 
-    values = ", ".join(str(p) for p in ir.points.flatten())
-    sizes = ir.points.size
-    d["points_init"] = f"static double points_{ir.name}[{sizes}] = {{{values}}};"
-    d["points"] = f"points_{ir.name}"
+    values = ", ".join(str(p) for p in points.flatten())
+    sizes = points.size
+    d["points_init"] = f"static double points_{factory_name}[{sizes}] = {{{values}}};"
+    d["points"] = f"points_{factory_name}"
 
-    if len(ir.expression_shape) > 0:
-        values = ", ".join(str(i) for i in ir.expression_shape)
-        sizes = len(ir.expression_shape)
-        d["value_shape_init"] = f"static int value_shape_{ir.name}[{sizes}] = {{{values}}};"
-        d["value_shape"] = f"value_shape_{ir.name}"
+    if len(ir.expression.shape) > 0:
+        values = ", ".join(str(i) for i in ir.expression.shape)
+        sizes = len(ir.expression.shape)
+        d["value_shape_init"] = f"static int value_shape_{factory_name}[{sizes}] = {{{values}}};"
+        d["value_shape"] = f"value_shape_{factory_name}"
     else:
         d["value_shape_init"] = ""
         d["value_shape"] = "NULL"
-
-    d["num_components"] = len(ir.expression_shape)
-    d["num_coefficients"] = len(ir.coefficient_numbering)
+    d["num_components"] = len(ir.expression.shape)
+    d["num_coefficients"] = len(ir.expression.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
-    d["num_points"] = ir.points.shape[0]
-    d["entity_dimension"] = ir.points.shape[1]
+    d["num_points"] = points.shape[0]
+    d["entity_dimension"] = points.shape[1]
     d["scalar_type"] = dtype_to_c_type(options["scalar_type"])
     d["geom_type"] = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))
     d["np_scalar_type"] = np.dtype(options["scalar_type"]).name
 
-    d["rank"] = len(ir.tensor_shape)
+    d["rank"] = len(ir.expression.tensor_shape)
 
     if len(ir.coefficient_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.coefficient_names)
         sizes = len(ir.coefficient_names)
         d["coefficient_names_init"] = (
-            f"static const char* coefficient_names_{ir.name}[{sizes}] = {{{values}}};"
+            f"static const char* coefficient_names_{factory_name}[{sizes}] = {{{values}}};"
         )
-        d["coefficient_names"] = f"coefficient_names_{ir.name}"
+        d["coefficient_names"] = f"coefficient_names_{factory_name}"
     else:
         d["coefficient_names_init"] = ""
         d["coefficient_names"] = "NULL"
@@ -94,63 +96,12 @@ def generator(ir, options):
         values = ", ".join(f'"{name}"' for name in ir.constant_names)
         sizes = len(ir.constant_names)
         d["constant_names_init"] = (
-            f"static const char* constant_names_{ir.name}[{sizes}] = {{{values}}};"
+            f"static const char* constant_names_{factory_name}[{sizes}] = {{{values}}};"
         )
-        d["constant_names"] = f"constant_names_{ir.name}"
+        d["constant_names"] = f"constant_names_{factory_name}"
     else:
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
-
-    code = []
-    vs_code = []
-
-    # FIXME: Should be handled differently, revise how
-    # ufcx_function_space is generated (also for ufcx_form)
-    for name, (
-        element,
-        dofmap,
-        cmap_family,
-        cmap_degree,
-        cmap_celltype,
-        cmap_variant,
-        value_shape,
-    ) in ir.function_spaces.items():
-        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
-        code += ["{"]
-        code += [f".finite_element = &{element},"]
-        code += [f".dofmap = &{dofmap},"]
-        code += [f'.geometry_family = "{cmap_family}",']
-        code += [f".geometry_degree = {cmap_degree},"]
-        code += [f".geometry_basix_cell = {int(cmap_celltype)},"]
-        code += [f".geometry_basix_variant = {int(cmap_variant)},"]
-        code += [f".value_rank = {len(value_shape)},"]
-        if len(value_shape) == 0:
-            code += [".value_shape = NULL"]
-        else:
-            vs_code += [
-                f"int value_shape_{name}_{ir.name_from_uflfile}[{len(value_shape)}] = {{",
-                "  " + ", ".join([f"{i}" for i in value_shape]),
-                "};",
-            ]
-            code += [f".value_shape = value_shape_{name}_{ir.name_from_uflfile}"]
-        code += ["};"]
-
-    d["function_spaces_alloc"] = "\n".join(vs_code) + "\n" + "\n".join(code)
-    d["function_spaces"] = ""
-
-    if len(ir.function_spaces) > 0:
-        d["function_spaces"] = f"function_spaces_{ir.name}"
-        values = ", ".join(
-            f"&function_space_{name}_{ir.name_from_uflfile}"
-            for (name, _) in ir.function_spaces.items()
-        )
-        sizes = len(ir.function_spaces)
-        d["function_spaces_init"] = (
-            f"ufcx_function_space* function_spaces_{ir.name}[{sizes}] = {{{values}}};"
-        )
-    else:
-        d["function_spaces"] = "NULL"
-        d["function_spaces_init"] = ""
 
     # Check that no keys are redundant or have been missed
     from string import Formatter

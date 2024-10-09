@@ -8,6 +8,8 @@ import os
 import os.path
 import subprocess
 
+import pytest
+
 
 def test_cmdline_simple():
     os.chdir(os.path.dirname(__file__))
@@ -15,6 +17,11 @@ def test_cmdline_simple():
 
 
 def test_visualise():
+    try:
+        import pygraphviz  # noqa: F401
+    except ImportError:
+        pytest.skip("pygraphviz not installed")
+
     os.chdir(os.path.dirname(__file__))
     subprocess.run(["ffcx", "--visualise", "Poisson.py"])
     assert os.path.isfile("S.pdf")

@@ -77,7 +77,15 @@ def clamp_table_small_numbers(
 
 
 def get_ffcx_table_values(
-    points, cell, integral_type, element, avg, entitytype, derivative_counts, flat_component
+    points,
+    cell,
+    integral_type,
+    element,
+    avg,
+    entity_type,
+    derivative_counts,
+    flat_component,
+    codim,
 ):
     """Extract values from FFCx element table.
 
@@ -94,7 +102,7 @@ def get_ffcx_table_values(
     if integral_type == "expression":
         # FFCx tables for expression are generated as either interior cell points
         # or points on a facet
-        if entitytype == "cell":
+        if entity_type == "cell":
             integral_type = "cell"
         else:
             integral_type = "exterior_facet"
@@ -135,7 +143,12 @@ def get_ffcx_table_values(
     component_element, offset, stride = element.get_component_element(flat_component)
 
     for entity in range(num_entities):
-        entity_points = map_integral_points(points, integral_type, cell, entity)
+        if codim == 0:
+            entity_points = map_integral_points(points, integral_type, cell, entity)
+        elif codim == 1:
+            entity_points = points
+        else:
+            raise RuntimeError("Codimension > 1 isn't supported.")
         tbl = component_element.tabulate(deriv_order, entity_points)
         tbl = tbl[basix_index(derivative_counts)]
         component_tables.append(tbl)
@@ -162,7 +175,7 @@ def get_ffcx_table_values(
 
 
 def generate_psi_table_name(
-    quadrature_rule, element_counter, averaged: str, entitytype, derivative_counts, flat_component
+    quadrature_rule, element_counter, averaged: str, entity_type, derivative_counts, flat_component
 ):
     """Generate a name for the psi table.
 
@@ -187,7 +200,7 @@ def generate_psi_table_name(
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V"}[entitytype]
+    name += {"cell": "", "facet": "_F", "vertex": "_V"}[entity_type]
     name += f"_Q{quadrature_rule.id()}"
     return name
 
@@ -283,17 +296,18 @@ def build_optimized_tables(
     quadrature_rule,
     cell,
     integral_type,
-    entitytype,
+    entity_type,
     modified_terminals,
     existing_tables,
     use_sum_factorization,
+    is_mixed_dim,
     rtol=default_rtol,
     atol=default_atol,
 ):
     """Build the element tables needed for a list of modified terminals.
 
     Input:
-      entitytype - str
+      entity_type - str
       modified_terminals - ordered sequence of unique modified terminals
       FIXME: Document
 
@@ -332,7 +346,7 @@ def build_optimized_tables(
         # Build name for this particular table
         element_number = element_numbers[element]
         name = generate_psi_table_name(
-            quadrature_rule, element_number, avg, entitytype, local_derivatives, flat_component
+            quadrature_rule, element_number, avg, entity_type, local_derivatives, flat_component
         )
 
         # FIXME - currently just recalculate the tables every time,
@@ -341,17 +355,29 @@ def build_optimized_tables(
         # the dofmap offset may differ due to restriction.
 
         tdim = cell.topological_dimension()
-        if integral_type == "interior_facet":
-            if tdim == 1:
+        codim = tdim - element.cell.topological_dimension()
+        assert codim >= 0
+        if codim > 1:
+            raise RuntimeError("Codimension > 1 isn't supported.")
+
+        # Only permute quadrature rules for interior facets integrals and for
+        # the codim zero element in mixed-dimensional integrals. The latter is
+        # needed because a cell may see its sub-entities as being oriented
+        # differently to their global orientation
+        if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
+            if tdim == 1 or codim == 1:
+                # Do not add permutations if codim-1 as facets have already gotten a global
+                # orientation in DOLFINx
                 t = get_ffcx_table_values(
                     quadrature_rule.points,
                     cell,
                     integral_type,
                     element,
                     avg,
-                    entitytype,
+                    entity_type,
                     local_derivatives,
                     flat_component,
+                    codim,
                 )
             elif tdim == 2:
                 new_table = []
@@ -363,9 +389,10 @@ def build_optimized_tables(
                             integral_type,
                             element,
                             avg,
-                            entitytype,
+                            entity_type,
                             local_derivatives,
                             flat_component,
+                            codim,
                         )
                     )
 
@@ -384,9 +411,10 @@ def build_optimized_tables(
                                     integral_type,
                                     element,
                                     avg,
-                                    entitytype,
+                                    entity_type,
                                     local_derivatives,
                                     flat_component,
+                                    codim,
                                 )
                             )
                     t = new_table[0]
@@ -404,9 +432,10 @@ def build_optimized_tables(
                                     integral_type,
                                     element,
                                     avg,
-                                    entitytype,
+                                    entity_type,
                                     local_derivatives,
                                     flat_component,
+                                    codim,
                                 )
                             )
                     t = new_table[0]
@@ -418,9 +447,10 @@ def build_optimized_tables(
                 integral_type,
                 element,
                 avg,
-                entitytype,
+                entity_type,
                 local_derivatives,
                 flat_component,
+                codim,
             )
         # Clean up table
         tbl = clamp_table_small_numbers(t["array"], rtol=rtol, atol=atol)

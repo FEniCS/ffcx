@@ -17,10 +17,8 @@ import typing
 
 import numpy.typing as npt
 
-from ffcx.codegeneration.C.dofmap import generator as dofmap_generator
 from ffcx.codegeneration.C.expressions import generator as expression_generator
 from ffcx.codegeneration.C.file import generator as file_generator
-from ffcx.codegeneration.C.finite_element import generator as finite_element_generator
 from ffcx.codegeneration.C.form import generator as form_generator
 from ffcx.codegeneration.C.integrals import generator as integral_generator
 from ffcx.ir.representation import DataIR
@@ -31,13 +29,10 @@ logger = logging.getLogger("ffcx")
 class CodeBlocks(typing.NamedTuple):
     """Storage of code blocks of the form (declaration, implementation).
 
-    Blocks for elements, dofmaps, integrals, forms and expressions,
-    and start and end of file output
+    Blocks for integrals, forms and expressions, and start and end of file output
     """
 
     file_pre: list[tuple[str, str]]
-    elements: list[tuple[str, str]]
-    dofmaps: list[tuple[str, str]]
     integrals: list[tuple[str, str]]
     forms: list[tuple[str, str]]
     expressions: list[tuple[str, str]]
@@ -50,11 +45,6 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
-    # Generate code for finite_elements
-    code_finite_elements = [
-        finite_element_generator(element_ir, options) for element_ir in ir.elements
-    ]
-    code_dofmaps = [dofmap_generator(dofmap_ir, options) for dofmap_ir in ir.dofmaps]
     code_integrals = [integral_generator(integral_ir, options) for integral_ir in ir.integrals]
     code_forms = [form_generator(form_ir, options) for form_ir in ir.forms]
     code_expressions = [
@@ -63,8 +53,6 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
     code_file_pre, code_file_post = file_generator(options)
     return CodeBlocks(
         file_pre=[code_file_pre],
-        elements=code_finite_elements,
-        dofmaps=code_dofmaps,
         integrals=code_integrals,
         forms=code_forms,
         expressions=code_expressions,
