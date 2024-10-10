@@ -11,11 +11,11 @@ on:
         default: "main"
         type: string
       test_pypi_publish:
-        description: "Publish to Test PyPi (true | false)"
+        description: "Publish to Test PyPi"
         default: false
         type: boolean
       pypi_publish:
-        description: "Publish to PyPi (true | false)"
+        description: "Publish to PyPi"
         default: false
         type: boolean
 
@@ -26,11 +26,11 @@ on:
         default: "main"
         type: string
       test_pypi_publish:
-        description: "Publish to Test PyPi (true | false)"
+        description: "Publish to Test PyPi"
         default: false
         type: boolean
       pypi_publish:
-        description: "Publish to PyPi (true | false))"
+        description: "Publish to PyPi"
         default: false
         type: boolean
 
