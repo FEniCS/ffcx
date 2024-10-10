@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(ufcx VERSION 0.9.0 DESCRIPTION "UFCx interface header for finite element kernels"
+project(ufcx VERSION 0.10.0 DESCRIPTION "UFCx interface header for finite element kernels"
   LANGUAGES C
   HOMEPAGE_URL https://github.com/fenics/ffcx)
 include(GNUInstallDirs)
