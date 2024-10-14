@@ -134,4 +134,4 @@ def facet_orientation(tablename, cellname):
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_orientations(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
-    return L.ArrayDecl(symbol, values=out, const=True)
+    return L.ArrayDecl(symbol, values=np.asarray(out), const=True)

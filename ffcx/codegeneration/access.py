@@ -263,9 +263,8 @@ class FFCXBackendAccess:
         """Access a reference facet edge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
-            facet = self.symbols.entity("facet", mt.restriction)
-            return table[facet][mt.component[0]][mt.component[1]]
+            table = L.Symbol(f"{cellname}_facet_reference_edge_vectors", dtype=L.DataType.REAL)
+            return table[mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
                 "The reference cell facet edge vectors doesn't make sense for interval "
@@ -280,7 +279,7 @@ class FFCXBackendAccess:
         if cellname not in ("interval", "triangle", "tetrahedron"):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-        table = L.Symbol(f"{cellname}_facet_orientations", dtype=L.DataType.INT)
+        table = L.Symbol(f"{cellname}_facet_orientation", dtype=L.DataType.INT)
         facet = self.symbols.entity("facet", mt.restriction)
         return table[facet]
 
