@@ -365,7 +365,9 @@ def build_optimized_tables(
         # needed because a cell may see its sub-entities as being oriented
         # differently to their global orientation
         if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
-            if tdim == 1:
+            if tdim == 1 or codim == 1:
+                # Do not add permutations if codim-1 as facets have already gotten a global
+                # orientation in DOLFINx
                 t = get_ffcx_table_values(
                     quadrature_rule.points,
                     cell,
