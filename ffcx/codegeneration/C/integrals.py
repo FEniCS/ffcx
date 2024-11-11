@@ -60,6 +60,7 @@ def generator(ir: IntegralIR, options):
         code["enabled_coefficients"] = "NULL"
 
     code["tabulate_tensor"] = body
+    code["tabulate_tensor_quoted"] = body.replace('\n', '\\n"\n    "')
 
     code["tabulate_tensor_float32"] = ".tabulate_tensor_float32 = NULL,"
     code["tabulate_tensor_float64"] = ".tabulate_tensor_float64 = NULL,"
@@ -71,7 +72,7 @@ def generator(ir: IntegralIR, options):
         code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
     if options.get("cuda"):
         code["tabulate_tensor_cuda_nvrtc"] = (
-            f".tabulate_tensor_cuda_nvrtc = tabulate_tensor_cuda_nvrtc_{factory_name}"
+            f".tabulate_tensor_cuda_nvrtc = tabulate_tensor_cuda_nvrtc_{factory_name},"
         )
     else:
         code["tabulate_tensor_cuda_nvrtc"] = ""
@@ -88,6 +89,7 @@ def generator(ir: IntegralIR, options):
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
+        tabulate_tensor_quoted=code["tabulate_tensor_quoted"],
         needs_facet_permutations="true" if ir.expression.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),

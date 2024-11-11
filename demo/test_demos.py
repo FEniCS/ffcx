@@ -12,7 +12,6 @@ for file in os.listdir(demo_dir):
     if file.endswith(".py") and not file == "test_demos.py":
         ufl_files.append(file[:-3])
 
-
 @pytest.mark.parametrize("file", ufl_files)
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
 def test_demo(file, scalar_type):
@@ -73,3 +72,42 @@ def test_demo(file, scalar_type):
             )
             == 0
         )
+
+@pytest.mark.parametrize("scalar_type", ["float64", "float32"])
+def test_demo_nvrtc(scalar_type):
+    """Test generated CUDA code with NVRTC."""
+    file = "Components"
+    opts = f"--scalar_type {scalar_type} --cuda"
+    if sys.platform.startswith("win32"):
+        pytest.skip(reason="NVRTC support not tested on Windows")
+    else:
+        from nvidia import cuda_nvrtc
+        nvrtc_dir = os.path.dirname(os.path.realpath(cuda_nvrtc.__file__))
+        cc = os.environ.get("CC", "cc")
+        extra_flags = (
+            "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
+        )
+        assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
+        assert (
+            os.system(
+                f"cd {demo_dir} && "
+                f"{cc} -I../ffcx/codegeneration "
+                f"{extra_flags} "
+                f"-c {file}.c"
+            )
+            == 0
+        )
+        cxx = os.environ.get("CXX", "c++")
+        assert (
+            os.system(
+                f"cd {demo_dir} && "
+                f"{cxx} -I../ffcx/codegeneration -I{nvrtc_dir}/include -L{nvrtc_dir}/lib"
+                f" -o nvrtc_test nvrtc_test.cpp {file}.o -l:libnvrtc.so.12"
+            )
+            == 0
+        )
+        assert (
+            os.system(f"LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{nvrtc_dir}/lib {demo_dir}/nvrtc_test")
+            == 0
+        )
+
