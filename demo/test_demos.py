@@ -80,8 +80,8 @@ def test_demo_nvrtc(scalar_type):
     """Test generated CUDA code with NVRTC."""
     file = "Components"
     opts = f"--scalar_type {scalar_type} --cuda"
-    if sys.platform.startswith("win32"):
-        pytest.skip(reason="NVRTC support not tested on Windows")
+    if not sys.platform.startswith("linux"):
+        pytest.skip(reason="NVRTC support only tested on Linux")
     else:
         from nvidia import cuda_nvrtc
 
