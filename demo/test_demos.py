@@ -12,6 +12,7 @@ for file in os.listdir(demo_dir):
     if file.endswith(".py") and not file == "test_demos.py":
         ufl_files.append(file[:-3])
 
+
 @pytest.mark.parametrize("file", ufl_files)
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
 def test_demo(file, scalar_type):
@@ -73,6 +74,7 @@ def test_demo(file, scalar_type):
             == 0
         )
 
+
 @pytest.mark.parametrize("scalar_type", ["float64", "float32"])
 def test_demo_nvrtc(scalar_type):
     """Test generated CUDA code with NVRTC."""
@@ -82,6 +84,7 @@ def test_demo_nvrtc(scalar_type):
         pytest.skip(reason="NVRTC support not tested on Windows")
     else:
         from nvidia import cuda_nvrtc
+
         nvrtc_dir = os.path.dirname(os.path.realpath(cuda_nvrtc.__file__))
         cc = os.environ.get("CC", "cc")
         extra_flags = (
@@ -110,4 +113,3 @@ def test_demo_nvrtc(scalar_type):
             os.system(f"LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{nvrtc_dir}/lib {demo_dir}/nvrtc_test")
             == 0
         )
-

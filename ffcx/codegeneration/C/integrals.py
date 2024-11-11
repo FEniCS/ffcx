@@ -60,7 +60,7 @@ def generator(ir: IntegralIR, options):
         code["enabled_coefficients"] = "NULL"
 
     code["tabulate_tensor"] = body
-    code["tabulate_tensor_quoted"] = body.replace('\n', '\\n"\n    "')
+    code["tabulate_tensor_quoted"] = body.replace("\n", '\\n"\n    "')
 
     code["tabulate_tensor_float32"] = ".tabulate_tensor_float32 = NULL,"
     code["tabulate_tensor_float64"] = ".tabulate_tensor_float64 = NULL,"
