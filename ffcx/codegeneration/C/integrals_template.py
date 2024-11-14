@@ -83,7 +83,7 @@ void tabulate_tensor_cuda_nvrtc_{factory_name}(int* num_program_headers,
 
 def get_factory(options):
     """Return the template string for constructing form integrals."""
-    if options.get("cuda"):
+    if options.get("cuda_nvrtc"):
         return cuda_wrapper + factory
     else:
         return factory

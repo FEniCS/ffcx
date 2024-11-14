@@ -78,34 +78,66 @@ def test_demo(file, scalar_type):
 @pytest.mark.parametrize("scalar_type", ["float64", "float32"])
 def test_demo_nvrtc(scalar_type):
     """Test generated CUDA code with NVRTC."""
-    file = "Components"
-    opts = f"--scalar_type {scalar_type} --cuda"
-    if not sys.platform.startswith("linux"):
-        pytest.skip(reason="NVRTC support only tested on Linux")
-    else:
+    try:
         from nvidia import cuda_nvrtc
+    except ImportError:
+        pytest.skip(reason="Must have NVRTC pip package installed to run test.")
 
-        nvrtc_dir = os.path.dirname(os.path.realpath(cuda_nvrtc.__file__))
-        cc = os.environ.get("CC", "cc")
-        extra_flags = (
-            "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
-        )
+    files = [
+        "Components",
+        "FacetIntegrals",
+        "HyperElasticity",
+        "MathFunctions",
+        "StabilisedStokes",
+        "VectorPoisson",
+    ]
+    opts = f"--scalar_type {scalar_type} --cuda_nvrtc"
+    windows = sys.platform.startswith("win32")
+    nvrtc_dir = os.path.dirname(os.path.realpath(cuda_nvrtc.__file__))
+    for file in files:
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
+        if windows:
+            extra_flags = "/std:c17"
+            assert (
+                os.system(
+                    f"cd {demo_dir} && "
+                    f'cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
+                )
+            ) == 0
+        else:
+            cc = os.environ.get("CC", "cc")
+            extra_flags = (
+                "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
+            )
+            assert (
+                os.system(
+                    f"cd {demo_dir} && "
+                    f"{cc} -I../ffcx/codegeneration "
+                    f"{extra_flags} "
+                    f"-c {file}.c"
+                )
+                == 0
+            )
+
+    if windows:
         assert (
             os.system(
                 f"cd {demo_dir} && "
-                f"{cc} -I../ffcx/codegeneration "
-                f"{extra_flags} "
-                f"-c {file}.c"
+                f'cl.exe /I "../ffcx/codegeneration" /I "{nvrtc_dir}\\include" '
+                f'/link /LIBPATH:"{nvrtc_dir}\\lib" nvrtc_test.cpp '
+                f"{' '.join([file+'.obj' for file in files])} nvrtc.lib /OUT:nvrtc_test.exe"
             )
             == 0
         )
+        assert os.system(f"set PATH=%PATH%;{nvrtc_dir}\\lib && {demo_dir}\\nvrtc_test.exe") == 0
+    else:
         cxx = os.environ.get("CXX", "c++")
         assert (
             os.system(
                 f"cd {demo_dir} && "
-                f"{cxx} -I../ffcx/codegeneration -I{nvrtc_dir}/include -L{nvrtc_dir}/lib"
-                f" -o nvrtc_test nvrtc_test.cpp {file}.o -l:libnvrtc.so.12"
+                f"{cxx} -I../ffcx/codegeneration -I{nvrtc_dir}/include -L{nvrtc_dir}/lib "
+                f" -Werror -o nvrtc_test nvrtc_test.cpp "
+                f"{' '.join([file+'.o' for file in files])} -l:libnvrtc.so.12"
             )
             == 0
         )

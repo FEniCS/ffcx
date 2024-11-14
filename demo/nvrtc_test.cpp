@@ -1,15 +1,21 @@
 #include "Components.h"
+#include "FacetIntegrals.h"
+#include "HyperElasticity.h"
+#include "MathFunctions.h"
+#include "StabilisedStokes.h"
+#include "VectorPoisson.h"
 #include "ufcx.h"
 #include "nvrtc.h"
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 #include <sstream>
 #include <string>
+#include <vector>
 
-int main()
+void check_nvrtc_compilation(ufcx_form* form)
 {
   // extract kernel
-  ufcx_integral* integral = form_Components_L->form_integrals[0];
+  ufcx_integral* integral = form->form_integrals[0];
   ufcx_tabulate_tensor_cuda_nvrtc* kernel = integral->tabulate_tensor_cuda_nvrtc;
   // call kernel to get CUDA-wrapped source code
   int num_program_headers;
@@ -84,6 +90,21 @@ int main()
        << std::string(60, '-') << "\n";
     throw std::runtime_error(ss.str());
   }
+}
 
+int main()
+{
+  std::vector<ufcx_form*> forms = {
+    form_Components_L,
+    form_FacetIntegrals_a,
+    form_HyperElasticity_a_F, form_HyperElasticity_a_J,
+    form_MathFunctions_a,
+    form_StabilisedStokes_a, form_StabilisedStokes_L,
+    form_VectorPoisson_a, form_VectorPoisson_L  
+  };
+  
+  for (ufcx_form* form : forms) check_nvrtc_compilation(form);
+ 
   return 0;
 }
+

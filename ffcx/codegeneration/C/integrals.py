@@ -60,7 +60,6 @@ def generator(ir: IntegralIR, options):
         code["enabled_coefficients"] = "NULL"
 
     code["tabulate_tensor"] = body
-    code["tabulate_tensor_quoted"] = body.replace("\n", '\\n"\n    "')
 
     code["tabulate_tensor_float32"] = ".tabulate_tensor_float32 = NULL,"
     code["tabulate_tensor_float64"] = ".tabulate_tensor_float64 = NULL,"
@@ -70,12 +69,14 @@ def generator(ir: IntegralIR, options):
     else:
         code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
         code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
-    if options.get("cuda"):
+    if options.get("cuda_nvrtc"):
         code["tabulate_tensor_cuda_nvrtc"] = (
             f".tabulate_tensor_cuda_nvrtc = tabulate_tensor_cuda_nvrtc_{factory_name},"
         )
+        code["tabulate_tensor_quoted"] = body.replace("\n", '\\n"\n    "')
     else:
         code["tabulate_tensor_cuda_nvrtc"] = ""
+        code["tabulate_tensor_quoted"] = ""
 
     np_scalar_type = np.dtype(options["scalar_type"]).name
     code[f"tabulate_tensor_{np_scalar_type}"] = (
