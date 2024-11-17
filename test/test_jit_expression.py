@@ -323,3 +323,139 @@ def test_facet_expression(compile_args):
 
         # Check that facet normal is pointing out of the cell
         assert np.dot(midpoint - coords[i], output) > 0
+
+
+def test_facet_geometry_expressions(compile_args):
+    """Test various geometrical quantities for facet expressiors."""
+    cell = basix.CellType.triangle
+    c_el = basix.ufl.element("Lagrange", cell, 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+    dtype = np.float64
+    points = np.array([[0.5]], dtype=dtype)
+    c_type = "double"
+    c_xtype = "double"
+    ffi = cffi.FFI()
+
+    # Prepare reference geometry and working arrays
+    coords = np.array([[1, 0, 0], [3, 0, 0], [0, 2, 0]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.empty(1, dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+    ffi_const = ffi.cast(f"{c_type} *", consts.ctypes.data)
+    ffi_coeff = ffi.cast(f"{c_type} *", u_coeffs.ctypes.data)
+    ffi_coords = ffi.cast(f"{c_xtype} *", coords.ctypes.data)
+    ffi_ei = ffi.cast("int *", entity_index.ctypes.data)
+    ffi_qp = ffi.cast("uint8_t *", quad_perm.ctypes.data)
+
+    # Check CellFacetJacobian
+    obj_fj = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.geometry.CellFacetJacobian(mesh), points)], cffi_extra_compile_args=compile_args
+    )[0][0]
+    output = np.zeros((2, 1), dtype=dtype)
+    obj_det = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.geometry.FacetJacobianDeterminant(mesh), points)],
+        cffi_extra_compile_args=compile_args,
+    )[0][0]
+    output_det = np.zeros(1, dtype=dtype)
+    reference_facet_jacobians = basix.cell.facet_jacobians(cell)
+    for i, ref_fj in enumerate(reference_facet_jacobians):
+        output[:] = 0
+        entity_index[0] = i
+        obj_fj.tabulate_tensor_float64(
+            ffi.cast(f"{c_type} *", output.ctypes.data),
+            ffi_coeff,
+            ffi_const,
+            ffi_coords,
+            ffi_ei,
+            ffi_qp,
+        )
+        np.testing.assert_allclose(output, ref_fj)
+
+        obj_det.tabulate_tensor_float64(
+            ffi.cast(f"{c_type} *", output_det.ctypes.data),
+            ffi_coeff,
+            ffi_const,
+            ffi_coords,
+            ffi_ei,
+            ffi_qp,
+        )
+
+    # Check CellVolume
+    ref_fj_code = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.geometry.ReferenceFacetVolume(mesh), points)], cffi_extra_compile_args=compile_args
+    )[0][0]
+    output_fv = np.zeros(1, dtype=dtype)
+    reference_facet_volumes = basix.cell.facet_reference_volumes(cell)
+    for i, ref_fv in enumerate(reference_facet_volumes):
+        output_fv[:] = 0
+        entity_index[0] = i
+        ref_fj_code.tabulate_tensor_float64(
+            ffi.cast(f"{c_type} *", output_fv.ctypes.data),
+            ffi_coeff,
+            ffi_const,
+            ffi_coords,
+            ffi_ei,
+            ffi_qp,
+        )
+        np.testing.assert_allclose(output_fv, ref_fv)
+
+    # Check ReferenceCellEdgeVectors
+    ref_ev_code = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.geometry.ReferenceCellEdgeVectors(mesh), points)],
+        cffi_extra_compile_args=compile_args,
+    )[0][0]
+    output_ev = np.zeros((3, 2), dtype=dtype)
+    topology = basix.topology(cell)
+    geometry = basix.geometry(cell)
+    edge_vectors = np.array([geometry[j] - geometry[i] for i, j in topology[1]])
+    ref_ev_code.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output_ev.ctypes.data),
+        ffi_coeff,
+        ffi_const,
+        ffi_coords,
+        ffi_ei,
+        ffi_qp,
+    )
+    np.testing.assert_allclose(output_ev, edge_vectors)
+
+
+def test_facet_geometry_expressions_3D(compile_args):
+    cell = basix.CellType.tetrahedron
+    c_el = basix.ufl.element("Lagrange", cell, 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+    dtype = np.float64
+    points = np.array([[0.33, 0.33]], dtype=dtype)
+    c_type = "double"
+    c_xtype = "double"
+    ffi = cffi.FFI()
+
+    # Prepare reference geometry and working arrays
+    coords = np.array([[1, 0, 0], [3, 0, 0], [0, 2, 0], [0, 0, 1]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.empty(1, dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    # Check ReferenceFacetEdgeVectors
+    output = np.zeros((3, 3))
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    ref_fev = []
+    topology = basix.topology(cell)
+    geometry = basix.geometry(cell)
+    for facet in topology[-2]:
+        ref_fev += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
+
+    ref_fev_code = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.geometry.ReferenceFacetEdgeVectors(mesh), points)],
+        cffi_extra_compile_args=compile_args,
+    )[0][0]
+    ref_fev_code.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+    )
+    np.testing.assert_allclose(output, np.asarray(ref_fev)[:3, :])
