@@ -358,8 +358,8 @@ def test_facet_geometry_expressions(compile_args):
         cffi_extra_compile_args=compile_args,
     )[0][0]
     output_det = np.zeros(1, dtype=dtype)
-    reference_facet_jacobians = basix.cell.facet_jacobians(cell)
-    for i, ref_fj in enumerate(reference_facet_jacobians):
+    cell_facet_jacobians = basix.cell.facet_jacobians(cell)
+    for i, ref_fj in enumerate(cell_facet_jacobians):
         output[:] = 0
         entity_index[0] = i
         obj_fj.tabulate_tensor_float64(

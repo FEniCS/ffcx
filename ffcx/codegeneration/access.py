@@ -228,7 +228,7 @@ class FFCXBackendAccess:
         """Access a reference normal."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_normals", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_normals", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]]
         else:
@@ -238,7 +238,7 @@ class FFCXBackendAccess:
         """Access a cell facet jacobian."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_jacobian", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_cell_facet_jacobian", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":
@@ -250,7 +250,7 @@ class FFCXBackendAccess:
         """Access a reference cell edge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_cell_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError(
@@ -263,7 +263,7 @@ class FFCXBackendAccess:
         """Access a reference facet edge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
-            table = L.Symbol(f"{cellname}_facet_reference_edge_vectors", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_facet_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
