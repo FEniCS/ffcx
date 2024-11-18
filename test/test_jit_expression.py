@@ -367,7 +367,6 @@ def test_facet_geometry_expressions(compile_args):
         )
         np.testing.assert_allclose(output, ref_fj)
 
-
     # Check CellVolume
     ref_fj_code = ffcx.codegeneration.jit.compile_expressions(
         [(ufl.geometry.ReferenceFacetVolume(mesh), points)], cffi_extra_compile_args=compile_args
