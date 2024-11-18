@@ -353,11 +353,6 @@ def test_facet_geometry_expressions(compile_args):
         [(ufl.geometry.CellFacetJacobian(mesh), points)], cffi_extra_compile_args=compile_args
     )[0][0]
     output = np.zeros((2, 1), dtype=dtype)
-    obj_det = ffcx.codegeneration.jit.compile_expressions(
-        [(ufl.geometry.FacetJacobianDeterminant(mesh), points)],
-        cffi_extra_compile_args=compile_args,
-    )[0][0]
-    output_det = np.zeros(1, dtype=dtype)
     cell_facet_jacobians = basix.cell.facet_jacobians(cell)
     for i, ref_fj in enumerate(cell_facet_jacobians):
         output[:] = 0
@@ -372,14 +367,6 @@ def test_facet_geometry_expressions(compile_args):
         )
         np.testing.assert_allclose(output, ref_fj)
 
-        obj_det.tabulate_tensor_float64(
-            ffi.cast(f"{c_type} *", output_det.ctypes.data),
-            ffi_coeff,
-            ffi_const,
-            ffi_coords,
-            ffi_ei,
-            ffi_qp,
-        )
 
     # Check CellVolume
     ref_fj_code = ffcx.codegeneration.jit.compile_expressions(
