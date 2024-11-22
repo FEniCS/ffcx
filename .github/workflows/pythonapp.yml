@@ -57,7 +57,7 @@ jobs:
           sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
-        run: brew install ninja pkg-config
+        run: brew install ninja
 
       - name: Install FEniCS dependencies (Python, Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
