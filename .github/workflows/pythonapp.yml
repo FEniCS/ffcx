@@ -47,10 +47,9 @@ jobs:
 
       - name: Set up CMake
         if: runner.os == 'Windows'
-        run: echo "HERE"
-        # uses: lukka/get-cmake@latest
-        # with:
-        #   cmakeVersion: "~3.30.0"
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~3.30.0"
 
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
