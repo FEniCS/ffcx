@@ -114,7 +114,7 @@ class IntegralGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
+        name = f"{basename}{self.symbol_counters[basename]:d}"
         self.symbol_counters[basename] += 1
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 

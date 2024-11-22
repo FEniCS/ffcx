@@ -194,9 +194,9 @@ def generate_psi_table_name(
         - Q unique ID of quadrature rule, to distinguish between tables
           in a mixed quadrature rule setting
     """
-    name = "FE%d" % element_counter
+    name = f"FE{element_counter:d}"
     if flat_component is not None:
-        name += "_C%d" % flat_component
+        name += f"_C{flat_component:d}"
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
