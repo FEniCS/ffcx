@@ -365,7 +365,13 @@ class ExpressionGenerator:
                 vexpr = L.ufl_to_lnodes(v, *vops)
 
                 is_cond = isinstance(v, ufl.classes.Condition)
-                dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
+                is_real = isinstance(v, ufl.classes.Real)
+                if is_cond:
+                    dtype = L.DataType.BOOL
+                elif is_real:
+                    dtype = L.DataType.REAL
+                else:
+                    dtype = L.DataType.SCALAR
 
                 j = len(intermediates)
                 vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
