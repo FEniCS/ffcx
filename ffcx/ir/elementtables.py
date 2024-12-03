@@ -165,11 +165,11 @@ def get_ffcx_table_values(
     # Loop over entities and fill table blockwise (each block = points x dofs)
     # Reorder axes as (points, dofs) instead of (dofs, points)
     assert len(component_tables) == num_entities
-    num_points, num_dofs = component_tables[0].shape
-    shape = (1, num_entities, num_points, num_dofs)
+    num_points, num_dofs, value_size = component_tables[0].shape
+    shape = (1, num_entities, num_points, num_dofs, value_size)
     res = np.zeros(shape)
     for entity in range(num_entities):
-        res[:, entity, :, :] = component_tables[entity]
+        res[:, entity, :, :, :] = component_tables[entity]
 
     return {"array": res, "offset": offset, "stride": stride}
 
@@ -564,6 +564,7 @@ def is_ones_table(table, rtol=default_rtol, atol=default_atol):
 
 def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
     """Check if table is a quadrature table."""
+    print(table.shape)
     _, num_entities, num_points, num_dofs = table.shape
     Id = np.eye(num_points)
     return num_points == num_dofs and all(
