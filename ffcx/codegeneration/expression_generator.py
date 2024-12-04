@@ -61,10 +61,14 @@ class ExpressionGenerator:
 
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
-        # Currently we only support circumradius
         ufl_geometry = {
+            ufl.geometry.FacetEdgeVectors: "facet_edge_vectors",
+            ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-            ufl.geometry.ReferenceNormal: "reference_facet_normals",
+            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
+            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
+            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
+            ufl.geometry.ReferenceNormal: "reference_normals",
         }
 
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
@@ -312,7 +316,7 @@ class ExpressionGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
+        name = f"{basename}{self.symbol_counters[basename]:d}"
         self.symbol_counters[basename] += 1
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
@@ -361,7 +365,13 @@ class ExpressionGenerator:
                 vexpr = L.ufl_to_lnodes(v, *vops)
 
                 is_cond = isinstance(v, ufl.classes.Condition)
-                dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
+                is_real = isinstance(v, ufl.classes.Real)
+                if is_cond:
+                    dtype = L.DataType.BOOL
+                elif is_real:
+                    dtype = L.DataType.REAL
+                else:
+                    dtype = L.DataType.SCALAR
 
                 j = len(intermediates)
                 vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)

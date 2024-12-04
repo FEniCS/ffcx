@@ -114,7 +114,7 @@ class IntegralGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
+        name = f"{basename}{self.symbol_counters[basename]:d}"
         self.symbol_counters[basename] += 1
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
@@ -197,12 +197,12 @@ class IntegralGenerator:
         """Generate static tables of geometry data."""
         ufl_geometry = {
             ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
-            ufl.geometry.CellFacetJacobian: "reference_facet_jacobian",
+            ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
             ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
-            ufl.geometry.ReferenceCellEdgeVectors: "reference_edge_vectors",
-            ufl.geometry.ReferenceFacetEdgeVectors: "facet_reference_edge_vectors",
-            ufl.geometry.ReferenceNormal: "reference_facet_normals",
+            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
+            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
+            ufl.geometry.ReferenceNormal: "reference_normals",
             ufl.geometry.FacetOrientation: "facet_orientation",
         }
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore

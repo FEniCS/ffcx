@@ -323,3 +323,110 @@ def test_facet_expression(compile_args):
 
         # Check that facet normal is pointing out of the cell
         assert np.dot(midpoint - coords[i], output) > 0
+
+
+def test_facet_geometry_expressions(compile_args):
+    """Test various geometrical quantities for facet expressions."""
+    cell = basix.CellType.triangle
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    dtype = np.float64
+    points = np.array([[0.5]], dtype=dtype)
+    c_type = "double"
+    c_xtype = "double"
+    ffi = cffi.FFI()
+
+    # Prepare reference geometry and working arrays
+    coords = np.array([[1, 0, 0], [3, 0, 0], [0, 2, 0]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.empty(1, dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+    ffi_data = {
+        "const": ffi.cast(f"{c_type} *", consts.ctypes.data),
+        "coeff": ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        "coords": ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        "entity_index": ffi.cast("int *", entity_index.ctypes.data),
+        "quad_perm": ffi.cast("uint8_t *", quad_perm.ctypes.data),
+    }
+
+    def check_expression(expression_class, output_shape, entity_values, reference_values):
+        obj = ffcx.codegeneration.jit.compile_expressions(
+            [(expression_class(mesh), points)], cffi_extra_compile_args=compile_args
+        )[0][0]
+        output = np.zeros(output_shape, dtype=dtype)
+        for i, ref_val in enumerate(reference_values):
+            output[:] = 0
+            entity_index[0] = i
+            obj.tabulate_tensor_float64(
+                ffi.cast(f"{c_type} *", output.ctypes.data),
+                ffi_data["coeff"],
+                ffi_data["const"],
+                ffi_data["coords"],
+                ffi_data["entity_index"],
+                ffi_data["quad_perm"],
+            )
+            np.testing.assert_allclose(output, ref_val)
+
+    check_expression(
+        ufl.geometry.CellFacetJacobian, (2, 1), entity_index, basix.cell.facet_jacobians(cell)
+    )
+    check_expression(
+        ufl.geometry.ReferenceFacetVolume,
+        (1,),
+        entity_index,
+        basix.cell.facet_reference_volumes(cell),
+    )
+    check_expression(
+        ufl.geometry.ReferenceCellEdgeVectors,
+        (3, 2),
+        entity_index,
+        np.array(
+            [
+                [
+                    basix.geometry(cell)[j] - basix.geometry(cell)[i]
+                    for i, j in basix.topology(cell)[1]
+                ]
+            ]
+        ),
+    )
+
+
+def test_facet_geometry_expressions_3D(compile_args):
+    cell = basix.CellType.tetrahedron
+    c_el = basix.ufl.element("Lagrange", cell, 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+    dtype = np.float64
+    points = np.array([[0.33, 0.33]], dtype=dtype)
+    c_type = "double"
+    c_xtype = "double"
+    ffi = cffi.FFI()
+
+    # Prepare reference geometry and working arrays
+    coords = np.array([[1, 0, 0], [3, 0, 0], [0, 2, 0], [0, 0, 1]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.empty(1, dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    # Check ReferenceFacetEdgeVectors
+    output = np.zeros((3, 3))
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    ref_fev = []
+    topology = basix.topology(cell)
+    geometry = basix.geometry(cell)
+    for facet in topology[-2]:
+        ref_fev += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
+
+    ref_fev_code = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.geometry.ReferenceFacetEdgeVectors(mesh), points)],
+        cffi_extra_compile_args=compile_args,
+    )[0][0]
+    ref_fev_code.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+    )
+    np.testing.assert_allclose(output, np.asarray(ref_fev)[:3, :])

@@ -21,12 +21,12 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
         include:
           - os: windows-2022
-            python-version: '3.11'
+            python-version: "3.11"
           - os: macos-latest
-            python-version: '3.12'
+            python-version: "3.12"
 
     steps:
       - name: Checkout FFCx
@@ -45,13 +45,19 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+      - name: Set up CMake
+        if: runner.os == 'Windows'
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~3.30.0"
+
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
-        run: brew install ninja pkg-config
+        run: brew install ninja
 
       - name: Install FEniCS dependencies (Python, Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
