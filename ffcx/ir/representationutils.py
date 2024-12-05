@@ -88,7 +88,6 @@ def create_quadrature_points_and_weights(
         if len(edge_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
         pts, wts = create_quadrature(edge_types[0].cellname(), degree, rule, elements)
-        print(pts, wts, edge_types)
     elif integral_type in ufl.measure.point_integral_types:
         pts, wts = create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
