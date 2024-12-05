@@ -60,7 +60,6 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
 
     for quadrature_rule, integrand in integrands.items():
         expression = integrand
-
         # Rebalance order of nested terminal modifiers
         expression = balance_modifiers(expression)
 
@@ -87,7 +86,7 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
         for domain in ufl.domain.extract_domains(integrand):
             if domain.topological_dimension() != cell.topological_dimension():
                 is_mixed_dim = True
-
+        breakpoint()
         mt_table_reference = build_optimized_tables(
             quadrature_rule,
             cell,

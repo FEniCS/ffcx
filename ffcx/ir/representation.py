@@ -196,6 +196,7 @@ def _compute_integral_ir(
         "interior_facet": "facet",
         "vertex": "vertex",
         "custom": "cell",
+        "edge": "edge"
     }
 
     # Iterate over groups of integrals
@@ -267,10 +268,15 @@ def _compute_integral_ir(
                 # prescribed in certain cases.
 
                 degree = md["quadrature_degree"]
-                if integral_type != "cell":
+                if integral_type == "facet":
                     facet_types = cell.facet_types()
                     assert len(facet_types) == 1
                     cellname = facet_types[0].cellname()
+                elif integral_type == "edge":
+                    edge_types = cell.edge_types()
+                    assert len(edge_types) == 1
+                    cellname = edge_types[0].cellname()
+
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), "
@@ -463,7 +469,7 @@ def _compute_form_ir(
     # it has to know their names for codegen phase
     ir["integral_names"] = {}
     ir["subdomain_ids"] = {}
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
+    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "edge")
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
     for itg_index, itg_data in enumerate(form_data.integral_data):

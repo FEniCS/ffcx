@@ -12,7 +12,7 @@ import logging
 import numpy as np
 import ufl
 
-from ffcx.element_interface import create_quadrature, map_facet_points, reference_cell_vertices
+from ffcx.element_interface import create_quadrature, map_facet_points, reference_cell_vertices, map_edge_points
 
 logger = logging.getLogger("ffcx")
 
@@ -56,7 +56,6 @@ def create_quadrature_points_and_weights(
     pts = None
     wts = None
     tensor_factors = None
-
     if integral_type == "cell":
         if cell.cellname() in ["quadrilateral", "hexahedron"] and use_tensor_product:
             if cell.cellname() == "quadrilateral":
@@ -78,7 +77,13 @@ def create_quadrature_points_and_weights(
         # Raise exception for cells with more than one facet type e.g. prisms
         if len(facet_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule, elements)
+        pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule, elements) 
+    elif integral_type in ufl.measure.edge_integral_types:
+        edge_types = cell.edge_types()
+        if len(edge_types) > 1:
+            raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
+        pts, wts = create_quadrature(edge_types[0].cellname(), degree, rule, elements)
+        print(pts, wts, edge_types)
     elif integral_type in ufl.measure.point_integral_types:
         pts, wts = create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
@@ -95,6 +100,8 @@ def integral_type_to_entity_dim(integral_type, tdim):
         entity_dim = tdim
     elif integral_type in ufl.measure.facet_integral_types:
         entity_dim = tdim - 1
+    elif integral_type in ufl.measure.edge_integral_types:
+        entity_dim = tdim - 2
     elif integral_type in ufl.measure.point_integral_types:
         entity_dim = 0
     elif integral_type in ufl.custom_integral_types:
@@ -117,6 +124,9 @@ def map_integral_points(points, integral_type, cell, entity):
     elif entity_dim == tdim - 1:
         assert points.shape[1] == tdim - 1
         return np.asarray(map_facet_points(points, entity, cell.cellname()))
+    elif entity_dim == tdim - 2:
+        assert points.shape[1] == tdim - 2
+        return np.asarray(map_edge_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
         return np.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:

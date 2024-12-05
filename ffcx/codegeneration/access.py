@@ -43,6 +43,7 @@ class FFCXBackendAccess:
             ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
             ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
             ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
+            ufl.geometry.CellEdgeJacobian: self.cell_edge_jacobian
             ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
             ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
             ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
