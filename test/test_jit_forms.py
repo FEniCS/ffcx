@@ -1224,7 +1224,6 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     assert np.allclose(A, A_ref)
 
 
-
 @pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form_codim2(compile_args, dtype, permutation):
@@ -1250,10 +1249,9 @@ def test_mixed_dim_form_codim2(compile_args, dtype, permutation):
         q = ufl.TestFunction(W)
 
         f = ufl.Coefficient(V)
-        g = ufl.Coefficient(W)
 
         dl = ufl.Measure("dl", domain=V_domain)
-        forms = [u*f*q* dl]
+        forms = [u * f * q * dl]
         compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
             forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
         )
