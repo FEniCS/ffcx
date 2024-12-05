@@ -108,6 +108,8 @@ class FFCXBackendSymbols:
                 return self.entity_local_index[0]
         elif entity_type == "vertex":
             return self.entity_local_index[0]
+        elif entity_type == "edge":
+            return self.entity_local_index[0]
         else:
             logging.exception(f"Unknown entity_type {entity_type}")
 

@@ -43,7 +43,7 @@ class FFCXBackendAccess:
             ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
             ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
             ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
-            ufl.geometry.CellEdgeJacobian: self.cell_edge_jacobian
+            ufl.geometry.CellEdgeJacobian: self.cell_edge_jacobian,
             ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
             ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
             ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
@@ -244,6 +244,16 @@ class FFCXBackendAccess:
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError("The reference facet jacobian doesn't make sense for interval cell.")
+        else:
+            raise RuntimeError(f"Unhandled cell types {cellname}.")
+
+    def cell_edge_jacobian(self, mt, tabledata, num_points):
+        """Access a cell edge jacobian."""
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        if cellname in ("tetrahedron", "prism", "hexahedron"):
+            table = L.Symbol(f"{cellname}_cell_edge_jacobian", dtype=L.DataType.REAL)
+            edge = self.symbols.entity("edge", mt.restriction)
+            return table[edge][mt.component[0]][mt.component[1]]
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
