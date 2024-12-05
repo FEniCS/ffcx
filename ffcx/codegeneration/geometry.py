@@ -73,6 +73,7 @@ def cell_edge_jacobian(tablename, cellname):
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=out, const=True)
 
+
 def reference_cell_volume(tablename, cellname):
     """Write a reference cell volume."""
     celltype = getattr(basix.CellType, cellname)

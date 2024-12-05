@@ -406,7 +406,9 @@ def build_optimized_tables(
                             for ref in range(2):
                                 new_table.append(
                                     get_ffcx_table_values(
-                                        permute_quadrature_triangle(quadrature_rule.points, ref, rot),
+                                        permute_quadrature_triangle(
+                                            quadrature_rule.points, ref, rot
+                                        ),
                                         cell,
                                         integral_type,
                                         element,

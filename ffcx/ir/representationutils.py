@@ -12,7 +12,12 @@ import logging
 import numpy as np
 import ufl
 
-from ffcx.element_interface import create_quadrature, map_facet_points, reference_cell_vertices, map_edge_points
+from ffcx.element_interface import (
+    create_quadrature,
+    map_edge_points,
+    map_facet_points,
+    reference_cell_vertices,
+)
 
 logger = logging.getLogger("ffcx")
 
@@ -77,7 +82,7 @@ def create_quadrature_points_and_weights(
         # Raise exception for cells with more than one facet type e.g. prisms
         if len(facet_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule, elements) 
+        pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.edge_integral_types:
         edge_types = cell.edge_types()
         if len(edge_types) > 1:

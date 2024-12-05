@@ -62,8 +62,7 @@ def map_edge_points(
     edge_vertices = [geom[i] for i in basix.topology(_CellType[cellname])[-3][edge]]
     return np.asarray(
         [
-            edge_vertices[0]
-            + sum((i - edge_vertices[0]) * j for i, j in zip(edge_vertices[1:], p))
+            edge_vertices[0] + sum((i - edge_vertices[0]) * j for i, j in zip(edge_vertices[1:], p))
             for p in points
         ],
         dtype=np.float64,

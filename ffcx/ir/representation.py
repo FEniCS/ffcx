@@ -196,7 +196,7 @@ def _compute_integral_ir(
         "interior_facet": "facet",
         "vertex": "vertex",
         "custom": "cell",
-        "edge": "edge"
+        "edge": "edge",
     }
 
     # Iterate over groups of integrals
@@ -268,7 +268,7 @@ def _compute_integral_ir(
                 # prescribed in certain cases.
 
                 degree = md["quadrature_degree"]
-                if integral_type == "facet":
+                if "facet" in integral_type:
                     facet_types = cell.facet_types()
                     assert len(facet_types) == 1
                     cellname = facet_types[0].cellname()
