@@ -135,8 +135,7 @@ class FFCXBackendSymbols:
 
     def J_component(self, mt):
         """Jacobian component."""
-        # FIXME: Add domain number!
-        return L.Symbol(format_mt_name("J", mt), dtype=L.DataType.REAL)
+        return L.Symbol(format_mt_name(f"J{mt.expr.ufl_domain().ufl_id()}", mt), dtype=L.DataType.REAL)
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         """Domain DOF access."""
