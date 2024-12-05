@@ -1126,6 +1126,30 @@ def test_integral_grouping(compile_args):
     assert len(unique_integrals) == 2
 
 
+def test_derivative_domains(compile_args):
+    """Test a form with derivatives on two different domains will generate valid code."""
+
+    V_ele = basix.ufl.element("Lagrange", "triangle", 2)
+    W_ele = basix.ufl.element("Lagrange", "interval", 1)
+
+    gdim = 2
+    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(gdim,)))
+    W_domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(gdim,)))
+
+    V = ufl.FunctionSpace(V_domain, V_ele)
+    W = ufl.FunctionSpace(W_domain, W_ele)
+
+    u = ufl.TrialFunction(V)
+    q = ufl.TestFunction(W)
+
+    ds = ufl.Measure("ds", domain=V_domain)
+
+    forms = [ufl.inner(u.dx(0), q.dx(0)) * ds]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": np.float64}, cffi_extra_compile_args=compile_args
+    )
+
+
 @pytest.mark.parametrize("dtype", ["float64"])
 @pytest.mark.parametrize("permutation", [[0], [1]])
 def test_mixed_dim_form(compile_args, dtype, permutation):
