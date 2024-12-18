@@ -277,7 +277,7 @@ def _compute_integral_ir(
                     )
                 points = basix.cell.geometry(getattr(basix.CellType, cellname))
                 weights = np.array(
-                    [1.0 / points.shape[0] / basix.cell.volume(getattr(basix.CellType, cellname))]
+                    [basix.cell.volume(getattr(basix.CellType, cellname)) / points.shape[0]]
                     * points.shape[0]
                 )
             else:
