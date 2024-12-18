@@ -52,6 +52,7 @@ class FormIR(typing.NamedTuple):
     constant_names: list[str]
     finite_element_hashes: list[int]
     integral_names: dict[str, list[str]]
+    integral_domains: dict[str, list[str]]
     subdomain_ids: dict[str, list[int]]
 
 
@@ -74,7 +75,7 @@ class CommonExpressionIR(typing.NamedTuple):
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[str, npt.NDArray[np.float64]]
     unique_table_types: dict[str, str]
-    integrand: dict[QuadratureRule, dict]
+    integrand: dict[(str, QuadratureRule), dict]
     name: str
     needs_facet_permutations: bool
     shape: list[int]
@@ -146,6 +147,11 @@ def compute_ir(
     ]
     ir_integrals = list(itertools.chain(*irs))
 
+    integral_domains = {
+        i.expression.name: set(j[0] for j in i.expression.integrand.keys())
+        for a in irs for i in a
+    }
+
     ir_forms = [
         _compute_form_ir(
             fd,
@@ -153,6 +159,7 @@ def compute_ir(
             prefix,
             form_names,
             integral_names,
+            integral_domains,
             analysis.element_numbers,
             finite_element_hashes,
             object_names,
@@ -253,9 +260,11 @@ def _compute_integral_ir(
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
             tensor_factors = None
+            rules = {}
             if scheme == "custom":
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
+                rules[cell.cellname()] = (points, weights, None)
             elif scheme == "vertex":
                 # FIXME: Could this come from basix?
 
@@ -280,6 +289,7 @@ def _compute_integral_ir(
                 points = basix.cell.geometry(getattr(basix.CellType, cellname))
                 weights = np.array([1.0 / points.shape[0] / basix.cell.volume(
                     getattr(basix.CellType, cellname))] * points.shape[0])
+                rules[cellname] = (points, weights, None)
             else:
                 degree = md["quadrature_degree"]
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
@@ -290,27 +300,32 @@ def _compute_integral_ir(
                     form_data.argument_elements,
                     use_sum_factorization,
                 )
+                rules = {i: (points[i], weights[i], None if tensor_factors is None else tensor_factors[i]) for i in points}
 
-            points = np.asarray(points)
-            weights = np.asarray(weights)
-            rule = QuadratureRule(points, weights, tensor_factors)
+            for cell, (points, weights, tensor_factors) in rules.items():
+                points = np.asarray(points)
+                weights = np.asarray(weights)
+                rule = QuadratureRule(points, weights, tensor_factors)
 
-            if rule not in grouped_integrands:
-                grouped_integrands[rule] = []
-            grouped_integrands[rule].append(integral.integrand())
-        sorted_integrals: dict[QuadratureRule, Integral] = {}
-        for rule, integrands in grouped_integrands.items():
-            integrands_summed = sorted_expr_sum(integrands)
+                if cell not in grouped_integrands:
+                    grouped_integrands[cell] = {}
+                if rule not in grouped_integrands:
+                    grouped_integrands[cell][rule] = []
+                grouped_integrands[cell][rule].append(integral.integrand())
+        sorted_integrals: dict[str, dict[QuadratureRule, Integral]] = {cell: {} for cell in grouped_integrands}
+        for cell, integrands_by_cell in grouped_integrands.items():
+            for rule, integrands in integrands_by_cell.items():
+                integrands_summed = sorted_expr_sum(integrands)
 
-            integral_new = Integral(
-                integrands_summed,
-                itg_data.integral_type,
-                itg_data.domain,
-                itg_data.subdomain_id,
-                {},
-                None,
-            )
-            sorted_integrals[rule] = integral_new
+                integral_new = Integral(
+                    integrands_summed,
+                    itg_data.integral_type,
+                    itg_data.domain,
+                    itg_data.subdomain_id,
+                    {},
+                    None,
+                )
+                sorted_integrals[cell][rule] = integral_new
 
         # TODO: See if coefficient_numbering can be removed
         # Build coefficient numbering for UFC interface here, to avoid
@@ -343,8 +358,10 @@ def _compute_integral_ir(
         expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrand_map: dict[QuadratureRule, ufl.core.expr.Expr] = {
-            rule: integral.integrand() for rule, integral in sorted_integrals.items()
+        integrand_map: dict[str, dict[QuadratureRule, ufl.core.expr.Expr]] = {
+            cell: {
+                rule: integral.integrand() for rule, integral in cell_integrals.items()
+            } for cell, cell_integrals in sorted_integrals.items()
         }
 
         # Build more specific intermediate representation
@@ -374,6 +391,7 @@ def _compute_form_ir(
     prefix,
     form_names,
     integral_names,
+    integral_domains,
     element_numbers,
     finite_element_hashes,
     object_names,
@@ -416,11 +434,10 @@ def _compute_form_ir(
     # Store names of integrals and subdomain_ids for this form, grouped
     # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
-    ir["integral_names"] = {}
-    ir["subdomain_ids"] = {}
     ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
+    ir["integral_domains"] = {itg_type: [] for itg_type in ufcx_integral_types}
     for itg_index, itg_data in enumerate(form_data.integral_data):
         # UFL is using "otherwise" for default integrals (over whole mesh)
         # but FFCx needs integers, so otherwise = -1
@@ -431,7 +448,9 @@ def _compute_form_ir(
             raise ValueError("Integral subdomain IDs must be non-negative.")
         ir["subdomain_ids"][integral_type] += subdomain_ids
         for _ in range(len(subdomain_ids)):
-            ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
+            iname = integral_names[(form_id, itg_index)]
+            ir["integral_names"][integral_type] += [iname]
+            ir["integral_domains"][integral_type] += [integral_domains[iname]]
 
     return FormIR(**ir)
 

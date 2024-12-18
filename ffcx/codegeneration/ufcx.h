@@ -51,6 +51,17 @@ extern "C"
     interior_facet = 2
   } ufcx_integral_type;
 
+  typedef enum
+  {
+    interval = 0,
+    triangle = 1,
+    quadrilateral = 2,
+    tetrahedron = 3,
+    hexahedron = 4,
+    prism = 5,
+    pyramid = 6
+  } ufcx_cell_type;
+
   // </HEADER_DECL>
 
   /// Tabulate integral into tensor A with compiled quadrature rule
@@ -138,6 +149,8 @@ extern "C"
 
     /// Get the hash of the coordinate element associated with the geometry of the mesh.
     uint64_t coordinate_element_hash;
+
+    ufcx_cell_type domain;
   } ufcx_integral;
 
   typedef struct ufcx_expression

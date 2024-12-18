@@ -20,14 +20,14 @@ from ffcx.ir.representation import IntegralIR
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir: IntegralIR, options):
+def generator(ir: IntegralIR, domain: str, options):
     """Generate C code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
 
     """Generate code for an integral."""
-    factory_name = ir.expression.name
+    factory_name = f"{ir.expression.name}_{domain}"
 
     # Format declaration
     declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
@@ -39,7 +39,7 @@ def generator(ir: IntegralIR, options):
     ig = IntegralGenerator(ir, backend)
 
     # Generate code ast for the tabulate_tensor body
-    parts = ig.generate()
+    parts = ig.generate(domain)
 
     # Format code as string
     CF = CFormatter(options["scalar_type"])
@@ -52,9 +52,9 @@ def generator(ir: IntegralIR, options):
         values = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
         sizes = len(ir.enabled_coefficients)
         code["enabled_coefficients_init"] = (
-            f"bool enabled_coefficients_{ir.expression.name}[{sizes}] = {{{values}}};"
+            f"bool enabled_coefficients_{ir.expression.name}_{domain}[{sizes}] = {{{values}}};"
         )
-        code["enabled_coefficients"] = f"enabled_coefficients_{ir.expression.name}"
+        code["enabled_coefficients"] = f"enabled_coefficients_{ir.expression.name}_{domain}"
     else:
         code["enabled_coefficients_init"] = ""
         code["enabled_coefficients"] = "NULL"
@@ -89,6 +89,7 @@ def generator(ir: IntegralIR, options):
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
+        domain=domain,
     )
 
     return declaration, implementation

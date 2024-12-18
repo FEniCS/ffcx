@@ -1222,3 +1222,57 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
         A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
 
     assert np.allclose(A, A_ref)
+
+@pytest.mark.parametrize("dtype", ["float64"])
+def test_ds_prism(compile_args, dtype):
+    element = basix.ufl.element("Lagrange", "prism", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "prism", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+
+    a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.ds
+    forms = [a]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == len(f.arguments())
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+
+    offsets = form0.form_integral_offsets
+    cell = module.lib.cell
+    assert offsets[cell + 1] - offsets[cell] == 1
+    integral_id = form0.form_integral_ids[offsets[cell]]
+    assert integral_id == -1
+
+    default_integral = form0.form_integrals[offsets[cell]]
+
+    A = np.zeros((3, 3), dtype=dtype)
+    w = np.array([], dtype=dtype)
+
+    kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
+    c = np.array(kappa_value.flatten(), dtype=dtype)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([
+        [0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [0.0, 1.0, 1.0],
+    ], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    print(A)
+
+    assert 1 == 0
