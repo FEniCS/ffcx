@@ -57,6 +57,8 @@ def create_quadrature_points_and_weights(
     wts = None
     tensor_factors = None
 
+    pts = {}
+    wts = {}
     if integral_type == "cell":
         if cell.cellname() in ["quadrilateral", "hexahedron"] and use_tensor_product:
             if cell.cellname() == "quadrilateral":
@@ -67,20 +69,19 @@ def create_quadrature_points_and_weights(
                 tensor_factors = [
                     create_quadrature("interval", degree, rule, elements) for _ in range(3)
                 ]
-            pts = np.array(
+            pts["interval"] = np.array(
                 [tuple(i[0] for i in p) for p in itertools.product(*[f[0] for f in tensor_factors])]
             )
-            wts = np.array([np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors])])
+            wts["interval"] = np.array([np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors])])
         else:
-            pts, wts = create_quadrature(cell.cellname(), degree, rule, elements)
+            pts[cell.cellname()], wts[cell.cellname()] = create_quadrature(cell.cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:
-        facet_types = cell.facet_types()
-        # Raise exception for cells with more than one facet type e.g. prisms
-        if len(facet_types) > 1:
-            raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule, elements)
+        for ft in cell.facet_types():
+            pts[ft.cellname()], wts[ft.cellname()] = create_quadrature(
+                ft.cellname(), degree, rule, elements,
+            )
     elif integral_type in ufl.measure.point_integral_types:
-        pts, wts = create_quadrature("vertex", degree, rule, elements)
+        pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
         pass
     else:
@@ -115,8 +116,13 @@ def map_integral_points(points, integral_type, cell, entity):
         assert entity == 0
         return np.asarray(points)
     elif entity_dim == tdim - 1:
-        assert points.shape[1] == tdim - 1
-        return np.asarray(map_facet_points(points, entity, cell.cellname()))
+        if isinstance(points, dict):
+            for p in points.values():
+                assert p.shape[1] == tdim - 1
+            return np.asarray(map_facet_points(points, entity, cell.cellname()))
+        else:
+            assert points.shape[1] == tdim - 1
+            return np.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
         return np.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
