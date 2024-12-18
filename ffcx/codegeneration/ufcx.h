@@ -42,17 +42,6 @@ extern "C"
 #endif // restrict
 #endif // __cplusplus
 
-  // <HEADER_DECL>
-
-  typedef enum
-  {
-    cell = 0,
-    exterior_facet = 1,
-    interior_facet = 2
-  } ufcx_integral_type;
-
-  // </HEADER_DECL>
-
   /// Tabulate integral into tensor A with compiled quadrature rule
   ///
   /// @param[out] A
