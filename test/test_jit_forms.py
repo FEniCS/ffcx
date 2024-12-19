@@ -1230,7 +1230,7 @@ def test_ds_prism(compile_args, dtype):
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
 
-    a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.ds
+    a = ufl.inner(u, v) * ufl.ds
     forms = [a]
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
@@ -1244,17 +1244,36 @@ def test_ds_prism(compile_args, dtype):
 
     offsets = form0.form_integral_offsets
     cell = module.lib.cell
-    assert offsets[cell + 1] - offsets[cell] == 1
-    integral_id = form0.form_integral_ids[offsets[cell]]
-    assert integral_id == -1
+    exterior_facet = module.lib.exterior_facet
+    interior_facet = module.lib.interior_facet
+    assert offsets[cell + 1] - offsets[cell] == 0
+    assert offsets[exterior_facet + 1] - offsets[exterior_facet] == 2
+    assert offsets[interior_facet + 1] - offsets[interior_facet] == 0
 
-    default_integral = form0.form_integrals[offsets[cell]]
+    integral_id0 = form0.form_integral_ids[offsets[exterior_facet]]
+    integral_id1 = form0.form_integral_ids[offsets[exterior_facet] + 1]
+    assert integral_id0 == integral_id1 == -1
 
-    A = np.zeros((3, 3), dtype=dtype)
+    integral0 = form0.form_integrals[offsets[exterior_facet]]
+    integral1 = form0.form_integrals[offsets[exterior_facet] + 1]
+
+    if integral0.domain == module.lib.ufcx_triangle:
+        assert integral1.domain == module.lib.ufcx_quadrilateral
+        integral_tri = integral0
+        integral_quad = integral1
+    else:
+        assert integral0.domain == module.lib.ufcx_quadrilateral
+        assert integral1.domain == module.lib.ufcx_triangle
+        integral_tri = integral1
+        integral_quad = integral0
+
     w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+    entity_perm = np.array([0], dtype=np.uint8)
 
-    kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
-    c = np.array(kappa_value.flatten(), dtype=dtype)
+    # Test integral over triangle (facet 0)
+    A = np.zeros((6, 6), dtype=dtype)
+    entity_index = np.array([0], dtype=int)
 
     xdtype = dtype_to_scalar_dtype(dtype)
     coords = np.array([
@@ -1263,16 +1282,78 @@ def test_ds_prism(compile_args, dtype):
     ], dtype=xdtype)
 
     c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
-    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+    kernel = getattr(integral_tri, f"tabulate_tensor_{dtype}")
+
     kernel(
         ffi.cast(f"{c_type} *", A.ctypes.data),
         ffi.cast(f"{c_type} *", w.ctypes.data),
         ffi.cast(f"{c_type} *", c.ctypes.data),
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
-        ffi.NULL,
-        ffi.NULL,
+        ffi.cast(f"int *", entity_index.ctypes.data),
+        ffi.cast(f"uint8_t *", entity_perm.ctypes.data),
+    )
+
+    assert np.allclose(
+        A,
+        np.array([
+            [1 / 12, 1 / 24, 1 / 24, 0, 0, 0],
+            [1 / 24, 1 / 12, 1 / 24, 0, 0, 0],
+            [1 / 24, 1 / 24, 1 / 12, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+        ])
+    )
+
+    # Test integral over quadrilateral (facet 1)
+    A = np.zeros((6, 6), dtype=dtype)
+    entity_index = np.array([1], dtype=int)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([
+        [0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [0.0, 1.0, 1.0],
+    ], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    kernel = getattr(integral_tri, f"tabulate_tensor_{dtype}")
+
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast(f"int *", entity_index.ctypes.data),
+        ffi.cast(f"uint8_t *", entity_perm.ctypes.data),
     )
 
     print(A)
-
-    assert 1 == 0
+    for i, j in zip(
+        A,
+        np.array([
+            [1/9, 1/18, 0, 1/18, 1/36, 0],
+            [1/18, 1/9, 0, 1/36, 1/18, 0],
+            [0, 0, 0, 0, 0, 0],
+            [1/18, 1/36, 0, 1/9, 1/18, 0],
+            [1/36, 1/18, 0, 1/18, 1/9, 0],
+            [0, 0, 0, 0, 0, 0],
+        ])):
+        for a, b in zip(i, j):
+            if a > 1/100:
+                from math import gcd
+                numerator = int(a * 9 * 32 / b + 0.01)
+                g = gcd(numerator, 9 * 32)
+                print(a, b, a / b, a * 9 * 32 / b, "-->", numerator//g, "/", 9*32//g)
+    assert np.allclose(
+        A,
+        np.array([
+            [1/9, 1/18, 0, 1/18, 1/36, 0],
+            [1/18, 1/9, 0, 1/36, 1/18, 0],
+            [0, 0, 0, 0, 0, 0],
+            [1/18, 1/36, 0, 1/9, 1/18, 0],
+            [1/36, 1/18, 0, 1/18, 1/9, 0],
+            [0, 0, 0, 0, 0, 0],
+        ])
+    )

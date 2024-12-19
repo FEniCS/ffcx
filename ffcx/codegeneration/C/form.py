@@ -105,16 +105,15 @@ def generator(ir: FormIR, options):
         integral_ids += [unsorted_ids[i] for i in id_sort]
         integral_domains += [unsorted_domains[i] for i in id_sort]
 
-        integral_offsets.append(len(integrals))
+        integral_offsets.append(sum(len(d) for d in integral_domains))
 
     if len(integrals) > 0:
-        sizes = len(integrals)
+        sizes = sum(len(domains) for domains in integral_domains)
         values = ", ".join([f"{i}_{domain}" for i, domains in zip(integrals, integral_domains) for domain in domains])
         d["form_integrals_init"] = (
             f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         )
         d["form_integrals"] = f"form_integrals_{ir.name}"
-        sizes = len(integral_ids)
         values = ", ".join(f"{i}" for i in integral_ids for _ in integral_domains[i])
         d["form_integral_ids_init"] = f"int form_integral_ids_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
