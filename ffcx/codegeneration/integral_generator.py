@@ -176,7 +176,7 @@ class IntegralGenerator:
 
     def generate_quadrature_tables(self, domain: str):
         """Generate static tables of quadrature points and weights."""
-        parts = []
+        parts: list[L.LNode] = []
 
         # No quadrature tables for custom (given argument) or point
         # (evaluation in single vertex)
