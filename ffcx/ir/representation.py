@@ -305,7 +305,7 @@ def _compute_integral_ir(
                     i: (
                         points[i],
                         weights[i],
-                        None if tensor_factors is None else tensor_factors[i],
+                        tensor_factors[i] if i in tensor_factors else None,
                     )
                     for i in points
                 }
@@ -580,7 +580,7 @@ def _compute_expression_ir(
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
-    integrands = {rule: expression}
+    integrands = {"": {rule: expression}}
 
     if cell is None:
         assert (

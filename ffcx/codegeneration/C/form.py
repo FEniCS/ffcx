@@ -121,7 +121,7 @@ def generator(ir: FormIR, options):
             f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         )
         d["form_integrals"] = f"form_integrals_{ir.name}"
-        values = ", ".join(f"{i}" for i in integral_ids for _ in integral_domains[i])
+        values = ", ".join(f"{i}" for i, domains in zip(integral_ids, integral_domains) for _ in domains)
         d["form_integral_ids_init"] = f"int form_integral_ids_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
     else:

@@ -53,31 +53,29 @@ def create_quadrature_points_and_weights(
     integral_type, cell, degree, rule, elements, use_tensor_product=False
 ):
     """Create quadrature rule and return points and weights."""
-    pts = None
-    wts = None
-    tensor_factors = None
-
     pts = {}
     wts = {}
+    tensor_factors = {}
     if integral_type == "cell":
-        if cell.cellname() in ["quadrilateral", "hexahedron"] and use_tensor_product:
-            if cell.cellname() == "quadrilateral":
-                tensor_factors = [
+        cell_name = cell.cellname()
+        if cell_name in ["quadrilateral", "hexahedron"] and use_tensor_product:
+            if cell_name == "quadrilateral":
+                tensor_factors[cell_name] = [
                     create_quadrature("interval", degree, rule, elements) for _ in range(2)
                 ]
-            elif cell.cellname() == "hexahedron":
-                tensor_factors = [
+            elif cell_name == "hexahedron":
+                tensor_factors[cell_name] = [
                     create_quadrature("interval", degree, rule, elements) for _ in range(3)
                 ]
-            pts["interval"] = np.array(
-                [tuple(i[0] for i in p) for p in itertools.product(*[f[0] for f in tensor_factors])]
+            pts[cell_name] = np.array(
+                [tuple(i[0] for i in p) for p in itertools.product(*[f[0] for f in tensor_factors[cell_name]])]
             )
-            wts["interval"] = np.array(
-                [np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors])]
+            wts[cell_name] = np.array(
+                [np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors[cell_name]])]
             )
         else:
-            pts[cell.cellname()], wts[cell.cellname()] = create_quadrature(
-                cell.cellname(), degree, rule, elements
+            pts[cell_name], wts[cell_name] = create_quadrature(
+                cell_name, degree, rule, elements
             )
     elif integral_type in ufl.measure.facet_integral_types:
         for ft in cell.facet_types():
