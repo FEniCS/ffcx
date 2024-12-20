@@ -276,7 +276,7 @@ def _compute_integral_ir(
                         f"but requested degree is {degree}."
                     )
                 points = basix.cell.geometry(getattr(basix.CellType, cellname))
-                cell_volume = basix.cell.volume(getattr(basix.CellType, cellname)
+                cell_volume = basix.cell.volume(getattr(basix.CellType, cellname))
                 weights = np.full(points.shape[0], cell_volume / points.shape[0], dtype=points.dtype)
             else:
                 degree = md["quadrature_degree"]
