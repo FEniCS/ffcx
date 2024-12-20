@@ -75,7 +75,7 @@ class CommonExpressionIR(typing.NamedTuple):
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[str, dict[str, npt.NDArray[np.float64]]]
     unique_table_types: dict[str, dict[str, str]]
-    integrand: dict[(str, QuadratureRule), dict]
+    integrand: dict[tuple[str, QuadratureRule], dict]
     name: str
     needs_facet_permutations: bool
     shape: list[int]
@@ -253,7 +253,7 @@ def _compute_integral_ir(
         cell = itg_data.domain.ufl_cell()
 
         # Group integrands with the same quadrature rule
-        grouped_integrands: dict[QuadratureRule, list[ufl.core.expr.Expr]] = {}
+        grouped_integrands: dict[str, dict[QuadratureRule, list[ufl.core.expr.Expr]]] = {}
         use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
