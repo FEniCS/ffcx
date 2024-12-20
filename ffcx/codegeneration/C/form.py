@@ -93,12 +93,13 @@ def generator(ir: FormIR, options):
         unsorted_ids = []
         unsorted_domains = []
         for name, domains, id in zip(
-            ir.integral_names[itg_type], ir.integral_domains[itg_type], ir.subdomain_ids[itg_type],
+            ir.integral_names[itg_type],
+            ir.integral_domains[itg_type],
+            ir.subdomain_ids[itg_type],
         ):
             unsorted_integrals += [f"&{name}"]
             unsorted_ids += [id]
             unsorted_domains += [domains]
-
 
         id_sort = np.argsort(unsorted_ids)
         integrals += [unsorted_integrals[i] for i in id_sort]
@@ -109,7 +110,13 @@ def generator(ir: FormIR, options):
 
     if len(integrals) > 0:
         sizes = sum(len(domains) for domains in integral_domains)
-        values = ", ".join([f"{i}_{domain}" for i, domains in zip(integrals, integral_domains) for domain in domains])
+        values = ", ".join(
+            [
+                f"{i}_{domain}"
+                for i, domains in zip(integrals, integral_domains)
+                for domain in domains
+            ]
+        )
         d["form_integrals_init"] = (
             f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         )

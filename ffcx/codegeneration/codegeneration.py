@@ -50,8 +50,7 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
         for integral_ir in ir.integrals
         for domain in set(i[0] for i in integral_ir.expression.integrand.keys())
     ]
-    code_forms = [form_generator(form_ir, options) for form_ir in ir.forms
-    ]
+    code_forms = [form_generator(form_ir, options) for form_ir in ir.forms]
     code_expressions = [
         expression_generator(expression_ir, options) for expression_ir in ir.expressions
     ]

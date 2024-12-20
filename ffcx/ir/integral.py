@@ -59,6 +59,8 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
     ir["integrand"] = {}
 
     for integral_domain, integrands_on_domain in integrands.items():
+        ir["unique_tables"][integral_domain] = {}
+        ir["unique_table_types"][integral_domain] = {}
         for quadrature_rule, integrand in integrands_on_domain.items():
             expression = integrand
 
@@ -95,7 +97,7 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
                 integral_type,
                 entity_type,
                 initial_terminals.values(),
-                ir["unique_tables"],
+                ir["unique_tables"][integral_domain],
                 use_sum_factorization=p["sum_factorization"],
                 is_mixed_dim=is_mixed_dim,
                 rtol=p["table_rtol"],
@@ -278,8 +280,8 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
                     active_table_types[name] = table_types[name]
 
             # Add tables and types for this quadrature rule to global tables dict
-            ir["unique_tables"].update(active_tables)
-            ir["unique_table_types"].update(active_table_types)
+            ir["unique_tables"][integral_domain].update(active_tables)
+            ir["unique_table_types"][integral_domain].update(active_table_types)
             # Build IR dict for the given expressions
             # Store final ir for this num_points
             ir["integrand"][(integral_domain, quadrature_rule)] = {

@@ -146,7 +146,7 @@ class IntegralGenerator:
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
-        parts += self.generate_element_tables()
+        parts += self.generate_element_tables(domain)
 
         # Generate the tables of geometry data that are needed
         parts += self.generate_geometry_tables()
@@ -159,7 +159,7 @@ class IntegralGenerator:
 
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
-        for (cell, rule) in self.ir.expression.integrand.keys():
+        for cell, rule in self.ir.expression.integrand.keys():
             if domain == cell:
                 # Generate code to compute piecewise constant scalar factors
                 all_preparts += self.generate_piecewise_partition(rule, cell)
@@ -226,14 +226,14 @@ class IntegralGenerator:
 
         return parts
 
-    def generate_element_tables(self):
+    def generate_element_tables(self, domain: str):
         """Generate static tables.
 
         With precomputed element basis function values in quadrature points.
         """
         parts = []
-        tables = self.ir.expression.unique_tables
-        table_types = self.ir.expression.unique_table_types
+        tables = self.ir.expression.unique_tables[domain]
+        table_types = self.ir.expression.unique_table_types[domain]
         if self.ir.expression.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
@@ -362,7 +362,9 @@ class IntegralGenerator:
 
     def generate_dofblock_partition(self, quadrature_rule: QuadratureRule, domain: str):
         """Generate a dofblock partition."""
-        block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)]["block_contributions"]
+        block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
+            "block_contributions"
+        ]
         quadparts = []
         blocks = [
             (blockmap, blockdata)
@@ -428,7 +430,11 @@ class IntegralGenerator:
         return arg_factors, tables
 
     def generate_block_parts(
-        self, quadrature_rule: QuadratureRule, domain: str, blockmap: tuple, blocklist: list[BlockDataT]
+        self,
+        quadrature_rule: QuadratureRule,
+        domain: str,
+        blockmap: tuple,
+        blocklist: list[BlockDataT],
     ):
         """Generate and return code parts for a given block.
 
