@@ -85,6 +85,7 @@ class IntegralGenerator:
 
         Args:
             quadrature_rule: Quadrature rule
+            domain: The domain of the integral
             v: the ufl expression
             vaccess: the LNodes expression to access the value in the code
         """

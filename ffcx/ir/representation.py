@@ -21,8 +21,8 @@ import itertools
 import logging
 import typing
 import warnings
-import basix
 
+import basix
 import numpy as np
 import numpy.typing as npt
 import ufl
