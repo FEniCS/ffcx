@@ -250,7 +250,6 @@ def _compute_integral_ir(
             expression_ir["tensor_shape"] = argument_dimensions
 
         integral_type = itg_data.integral_type
-        cell = itg_data.domain.ufl_cell()
 
         # Group integrands with the same quadrature rule
         grouped_integrands: dict[str, dict[QuadratureRule, list[ufl.core.expr.Expr]]] = {}
@@ -293,6 +292,7 @@ def _compute_integral_ir(
                 rules[cellname] = (points, weights, None)
             else:
                 degree = md["quadrature_degree"]
+                cellname = cell.cellname()
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
                     integral_type,
                     cell,
@@ -310,20 +310,20 @@ def _compute_integral_ir(
                     for i in points
                 }
 
-            for cell, (points, weights, tensor_factors) in rules.items():
+            for cellname, (points, weights, tensor_factors) in rules.items():
                 points = np.asarray(points)
                 weights = np.asarray(weights)
                 rule = QuadratureRule(points, weights, tensor_factors)
 
-                if cell not in grouped_integrands:
-                    grouped_integrands[cell] = {}
+                if cellname not in grouped_integrands:
+                    grouped_integrands[cellname] = {}
                 if rule not in grouped_integrands:
-                    grouped_integrands[cell][rule] = []
-                grouped_integrands[cell][rule].append(integral.integrand())
+                    grouped_integrands[cellname][rule] = []
+                grouped_integrands[cellname][rule].append(integral.integrand())
         sorted_integrals: dict[str, dict[QuadratureRule, Integral]] = {
-            cell: {} for cell in grouped_integrands
+            cellname: {} for cellname in grouped_integrands
         }
-        for cell, integrands_by_cell in grouped_integrands.items():
+        for cellname, integrands_by_cell in grouped_integrands.items():
             for rule, integrands in integrands_by_cell.items():
                 integrands_summed = sorted_expr_sum(integrands)
 
@@ -335,7 +335,7 @@ def _compute_integral_ir(
                     {},
                     None,
                 )
-                sorted_integrals[cell][rule] = integral_new
+                sorted_integrals[cellname][rule] = integral_new
 
         # TODO: See if coefficient_numbering can be removed
         # Build coefficient numbering for UFC interface here, to avoid
@@ -369,8 +369,8 @@ def _compute_integral_ir(
 
         # Create map from number of quadrature points -> integrand
         integrand_map: dict[str, dict[QuadratureRule, ufl.core.expr.Expr]] = {
-            cell: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
-            for cell, cell_integrals in sorted_integrals.items()
+            cellname: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
+            for cellname, cell_integrals in sorted_integrals.items()
         }
 
         # Build more specific intermediate representation
