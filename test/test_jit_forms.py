@@ -1223,6 +1223,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
 
     assert np.allclose(A, A_ref)
 
+
 @pytest.mark.parametrize("dtype", ["float64"])
 def test_ds_prism(compile_args, dtype):
     element = basix.ufl.element("Lagrange", "prism", 1)
@@ -1276,10 +1277,17 @@ def test_ds_prism(compile_args, dtype):
     entity_index = np.array([0], dtype=int)
 
     xdtype = dtype_to_scalar_dtype(dtype)
-    coords = np.array([
-        [0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
-        [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [0.0, 1.0, 1.0],
-    ], dtype=xdtype)
+    coords = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+        ],
+        dtype=xdtype,
+    )
 
     c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
 
@@ -1296,29 +1304,38 @@ def test_ds_prism(compile_args, dtype):
 
     assert np.allclose(
         A,
-        np.array([
-            [1 / 12, 1 / 24, 1 / 24, 0, 0, 0],
-            [1 / 24, 1 / 12, 1 / 24, 0, 0, 0],
-            [1 / 24, 1 / 24, 1 / 12, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0],
-        ])
+        np.array(
+            [
+                [1 / 12, 1 / 24, 1 / 24, 0, 0, 0],
+                [1 / 24, 1 / 12, 1 / 24, 0, 0, 0],
+                [1 / 24, 1 / 24, 1 / 12, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+            ]
+        ),
     )
 
     # Test integral over quadrilateral (facet 1)
     A = np.zeros((6, 6), dtype=dtype)
-    entity_index = np.array([1], dtype=int)
+    entity_index = np.array([1], dtype=np.int64)
 
     xdtype = dtype_to_scalar_dtype(dtype)
-    coords = np.array([
-        [0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
-        [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [0.0, 1.0, 1.0],
-    ], dtype=xdtype)
+    coords = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+        ],
+        dtype=xdtype,
+    )
 
     c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
 
-    kernel = getattr(integral_tri, f"tabulate_tensor_{dtype}")
+    kernel = getattr(integral_quad, f"tabulate_tensor_{dtype}")
 
     kernel(
         ffi.cast(f"{c_type} *", A.ctypes.data),
@@ -1329,31 +1346,16 @@ def test_ds_prism(compile_args, dtype):
         ffi.cast(f"uint8_t *", entity_perm.ctypes.data),
     )
 
-    print(A)
-    for i, j in zip(
-        A,
-        np.array([
-            [1/9, 1/18, 0, 1/18, 1/36, 0],
-            [1/18, 1/9, 0, 1/36, 1/18, 0],
-            [0, 0, 0, 0, 0, 0],
-            [1/18, 1/36, 0, 1/9, 1/18, 0],
-            [1/36, 1/18, 0, 1/18, 1/9, 0],
-            [0, 0, 0, 0, 0, 0],
-        ])):
-        for a, b in zip(i, j):
-            if a > 1/100:
-                from math import gcd
-                numerator = int(a * 9 * 32 / b + 0.01)
-                g = gcd(numerator, 9 * 32)
-                print(a, b, a / b, a * 9 * 32 / b, "-->", numerator//g, "/", 9*32//g)
     assert np.allclose(
         A,
-        np.array([
-            [1/9, 1/18, 0, 1/18, 1/36, 0],
-            [1/18, 1/9, 0, 1/36, 1/18, 0],
-            [0, 0, 0, 0, 0, 0],
-            [1/18, 1/36, 0, 1/9, 1/18, 0],
-            [1/36, 1/18, 0, 1/18, 1/9, 0],
-            [0, 0, 0, 0, 0, 0],
-        ])
+        np.array(
+            [
+                [1 / 9, 1 / 18, 0, 1 / 18, 1 / 36, 0],
+                [1 / 18, 1 / 9, 0, 1 / 36, 1 / 18, 0],
+                [0, 0, 0, 0, 0, 0],
+                [1 / 18, 1 / 36, 0, 1 / 9, 1 / 18, 0],
+                [1 / 36, 1 / 18, 0, 1 / 18, 1 / 9, 0],
+                [0, 0, 0, 0, 0, 0],
+            ]
+        ),
     )

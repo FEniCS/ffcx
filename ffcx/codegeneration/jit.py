@@ -370,9 +370,6 @@ def _compile_objects(
     logger.info("Calling JIT C compiler")
     logger.info(79 * "#")
 
-    ## TODO: remove
-    cffi_final_compile_args.remove("-Werror")
-
     t0 = time.time()
     f = io.StringIO()
     # Temporarily set root logger handlers to string buffer only

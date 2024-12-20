@@ -223,7 +223,9 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
                 block_restrictions = tuple(block_restrictions)
 
                 # Check if each *each* factor corresponding to this argument is piecewise
-                all_factors_piecewise = all(F.nodes[ifi[0]]["status"] == "piecewise" for ifi in fi_ci)
+                all_factors_piecewise = all(
+                    F.nodes[ifi[0]]["status"] == "piecewise" for ifi in fi_ci
+                )
                 block_is_permuted = False
                 for name in unames:
                     if tables[name].shape[0] > 1:
