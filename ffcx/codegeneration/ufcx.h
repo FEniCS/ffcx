@@ -53,13 +53,14 @@ extern "C"
 
   typedef enum
   {
-    ufcx_interval = 0,
-    ufcx_triangle = 1,
-    ufcx_quadrilateral = 2,
-    ufcx_tetrahedron = 3,
-    ufcx_hexahedron = 4,
-    ufcx_prism = 5,
-    ufcx_pyramid = 6
+    ufcx_vertex = 0,
+    ufcx_interval = 1,
+    ufcx_triangle = 2,
+    ufcx_quadrilateral = 3,
+    ufcx_tetrahedron = 4,
+    ufcx_hexahedron = 5,
+    ufcx_prism = 6,
+    ufcx_pyramid = 7
   } ufcx_cell_type;
 
   // </HEADER_DECL>
