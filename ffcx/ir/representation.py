@@ -277,7 +277,9 @@ def _compute_integral_ir(
                     )
                 points = basix.cell.geometry(getattr(basix.CellType, cellname))
                 cell_volume = basix.cell.volume(getattr(basix.CellType, cellname))
-                weights = np.full(points.shape[0], cell_volume / points.shape[0], dtype=points.dtype)
+                weights = np.full(
+                    points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
+                )
             else:
                 degree = md["quadrature_degree"]
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
