@@ -68,15 +68,16 @@ def create_quadrature_points_and_weights(
                     create_quadrature("interval", degree, rule, elements) for _ in range(3)
                 ]
             pts[cell_name] = np.array(
-                [tuple(i[0] for i in p) for p in itertools.product(*[f[0] for f in tensor_factors[cell_name]])]
+                [
+                    tuple(i[0] for i in p)
+                    for p in itertools.product(*[f[0] for f in tensor_factors[cell_name]])
+                ]
             )
             wts[cell_name] = np.array(
                 [np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors[cell_name]])]
             )
         else:
-            pts[cell_name], wts[cell_name] = create_quadrature(
-                cell_name, degree, rule, elements
-            )
+            pts[cell_name], wts[cell_name] = create_quadrature(cell_name, degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:
         for ft in cell.facet_types():
             pts[ft.cellname()], wts[ft.cellname()] = create_quadrature(
