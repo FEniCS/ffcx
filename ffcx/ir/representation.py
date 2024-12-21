@@ -264,8 +264,6 @@ def _compute_integral_ir(
                 weights = md["quadrature_weights"]
                 rules[cell.cellname()] = (points, weights, None)
             elif scheme == "vertex":
-                # FIXME: Could this come from basix?
-
                 # The vertex scheme, i.e., averaging the function value in the
                 # vertices and multiplying with the simplex volume, is only of
                 # order 1 and inferior to other generic schemes in terms of
@@ -285,9 +283,9 @@ def _compute_integral_ir(
                         f"but requested degree is {degree}."
                     )
                 points = basix.cell.geometry(getattr(basix.CellType, cellname))
-                weights = np.array(
-                    [1.0 / points.shape[0] / basix.cell.volume(getattr(basix.CellType, cellname))]
-                    * points.shape[0]
+                cell_volume = basix.cell.volume(getattr(basix.CellType, cellname))
+                weights = np.full(
+                    points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
                 )
                 rules[cellname] = (points, weights, None)
             else:
