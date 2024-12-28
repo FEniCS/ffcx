@@ -198,6 +198,7 @@ class IntegralGenerator:
         ufl_geometry = {
             ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
             ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
+            ufl.geometry.CellEdgeJacobian: "cell_edge_jacobian",
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
             ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
             ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
@@ -221,7 +222,6 @@ class IntegralGenerator:
         for i, cell_list in cells.items():
             for c in cell_list:
                 parts.append(geometry.write_table(ufl_geometry[i], c))
-
         return parts
 
     def generate_element_tables(self):

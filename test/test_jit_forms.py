@@ -1213,12 +1213,136 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     A_ref = tabulate_tensor(ele_type, V_cell_type, V_cell_type, coeffs_ref)
     # Remove the entries for the extra test DOF on the triangle element
     A_ref = A_ref[1:][:]
-
+    print(A_ref)
+    print(A)
     # If the permutation is 1, this means the triangle sees its edge as being flipped
     # relative to the edge's global orientation. Thus the result is the same as swapping
     # cols 1 and 2 and cols 4 and 5 of the reference result.
     if permutation[0] == 1:
         A_ref[:, [1, 2]] = A_ref[:, [2, 1]]
         A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
+
+    assert np.allclose(A, A_ref)
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("permutation", [[0], [1]])
+@pytest.mark.parametrize("local_entity_index", [0, 1, 2, 3, 4, 5])
+def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_index):
+    """Test that the local element tensor corresponding to a mixed-dimensional form is correct.
+    The form involves an integral over a edge of the cell. The trial function and a coefficient f
+    are of codim 0. The test function and are of codim 2. We compare against another
+    form where the test function and g are codim 0 but have the same trace on the facet.
+    """
+
+    def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs, l_i):
+        "Helper function to create a form and compute the local element tensor"
+        V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
+        W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
+
+        gdim = 3
+        V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+        W_domain = ufl.Mesh(basix.ufl.element("Lagrange", W_cell_type, 1, shape=(gdim,)))
+
+        V = ufl.FunctionSpace(V_domain, V_ele)
+        W = ufl.FunctionSpace(W_domain, W_ele)
+
+        u = ufl.TrialFunction(V)
+        q = ufl.TestFunction(W)
+
+        f = ufl.Coefficient(V)
+
+        dl = ufl.Measure("dl", domain=V_domain)
+        forms = [u.dx(0) * f * q * dl]
+
+        compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+            forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+        )
+        form0 = compiled_forms[0]
+        default_integral = form0.form_integrals[0]
+        kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+        A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
+        w = np.array(coeffs, dtype=dtype)
+        c = np.array([], dtype=dtype)
+        edge = np.array([l_i], dtype=np.intc)
+        perm = np.array(permutation, dtype=np.uint8)
+
+        xdtype = dtype_to_scalar_dtype(dtype)
+        coords = np.array([[0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0,0.0, 1.3]], dtype=xdtype)
+
+        c_type = dtype_to_c_type(dtype)
+        c_xtype = dtype_to_c_type(xdtype)
+
+        ffi = module.ffi
+        kernel(
+            ffi.cast(f"{c_type}  *", A.ctypes.data),
+            ffi.cast(f"{c_type}  *", w.ctypes.data),
+            ffi.cast(f"{c_type}  *", c.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", edge.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+        )
+
+        return A
+
+    # Define the element type
+    ele_type = "Lagrange"
+    # Define the cell type for each space
+    V_cell_type = "tetrahedron"
+    Vbar_cell_type = "interval"
+
+    # Coefficient data
+    # f is a quadratic on each edge that is 0 at the vertices and 1 at the midpoint
+    f_data = [5, 6, 7, 1, 2, 3, 4, 5, 6]
+
+    # Collect coefficient data
+    coeffs = f_data
+
+    # Tabulate the tensor for the mixed-dimensional form
+    A = tabulate_tensor(ele_type, V_cell_type, Vbar_cell_type, coeffs, local_entity_index)
+
+    # Compare to a reference result. Here, we compare against the same kernel but with
+    # the interval element replaced with a triangle.
+    coeffs_ref = f_data
+    A_ref = tabulate_tensor(ele_type, V_cell_type, V_cell_type, coeffs_ref, local_entity_index)
+
+    # Find the local indices of the dofs that are on the edge
+    local_index_to_slice = {0: [2,3],
+                            1: [1,3],
+                            2: [1,2],
+                            3: [0,3],
+                            4: [0,2],
+                            5: [0,1]}
+
+
+    A_ref = A_ref[local_index_to_slice[local_entity_index]]
+
+    print(A_ref.T)
+    edge_flips = {0: [[2,3]],#,[5,6],[7,8]],
+                      1: [[1,3],[4,6],[7,9]],
+                      2: [[1,2],[4,5],[8,9]],
+                        3: [[0,3],[5,9],[4,8]],
+                        4: [[0,2],[4,7],[6,9]],
+                        5: [[0,1],[5,7],[6,8]]
+                }
+
+
+    # We only check a single edge flip (as it is 
+    if permutation[0] == 1:
+        if local_entity_index == 0:
+            for flips in edge_flips[local_entity_index]:
+                A_ref[:,flips] = A_ref[:,flips[::-1]]
+        A_ref[:] = A_ref[::-1]    
+    # # If the permutation is 1, this means the triangle sees its edge as being flipped
+    # # relative to the edge's global orientation. Thus the result is the same as swapping
+    # # cols 1 and 2 and cols 4 and 5 of the reference result.
+    # if permutation[0] == 1:
+    #     A_ref[:, [1, 2]] = A_ref[:, [2, 1]]
+    #     A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
+    # print(A.T)
+    print()
+    print(A_ref.T)
+    print(A.T)
 
     assert np.allclose(A, A_ref)
