@@ -389,9 +389,9 @@ class FFCXBackendAccess:
         # Get ridge vertices
         facet = self.symbols.entity("facet", mt.restriction)
         facet_ridge = mt.component[0]
-        facet_ridge_vertices = L.Symbol(f"{cellname}_facet_ridge_vertices", dtype=L.DataType.INT)
-        vertex0 = facet_ridge_vertices[facet][facet_ridge][0]
-        vertex1 = facet_ridge_vertices[facet][facet_ridge][1]
+        facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)
+        vertex0 = facet_edge_vertices[facet][facet_ridge][0]
+        vertex1 = facet_edge_vertices[facet][facet_ridge][1]
 
         # Get dofs and component
         component = mt.component[1]

@@ -13,8 +13,8 @@ import ffcx.codegeneration.lnodes as L
 
 def write_table(tablename, cellname):
     """Write a table."""
-    if tablename == "facet_ridge_vertices":
-        return facet_ridge_vertices(tablename, cellname)
+    if tablename == "facet_edge_vertices":
+        return facet_edge_vertices(tablename, cellname)
     if tablename == "cell_facet_jacobian":
         return cell_facet_jacobian(tablename, cellname)
     if tablename == "cell_ridge_jacobian":
@@ -34,7 +34,7 @@ def write_table(tablename, cellname):
     raise ValueError(f"Unknown geometry table name: {tablename}")
 
 
-def facet_ridge_vertices(tablename, cellname):
+def facet_edge_vertices(tablename, cellname):
     """Write facet ridge vertices."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
