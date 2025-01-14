@@ -254,7 +254,7 @@ class FFCXBackendAccess:
             ridge = self.symbols.entity("ridge", mt.restriction)
             return table[ridge][mt.component[0]][mt.component[1]]
         elif cellname in ["triangle", "quadrilateral"]:
-            raise RuntimeError("The reference facet jacobian doesn't make sense for 2D cells.")
+            raise RuntimeError("The ridge jacobian doesn't make sense for 2D cells.")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
