@@ -42,7 +42,7 @@ def facet_edge_vertices(tablename, cellname):
     quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
 
     if len(topology) != 4:
-        raise ValueError("Can only get facet ridges for 3D cells.")
+        raise ValueError("Can only get facet edges for 3D cells.")
 
     edge_vertices = []
     for facet in topology[-2]:
@@ -113,7 +113,7 @@ def reference_facet_edge_vectors(tablename, cellname):
     quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
 
     if len(topology) != 4:
-        raise ValueError("Can only get facet ridges for 3D cells.")
+        raise ValueError("Can only get facet edges for 3D cells.")
 
     edge_vectors = []
     for facet in topology[-2]:
