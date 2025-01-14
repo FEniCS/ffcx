@@ -13,20 +13,20 @@ import ffcx.codegeneration.lnodes as L
 
 def write_table(tablename, cellname):
     """Write a table."""
-    if tablename == "facet_edge_vertices":
-        return facet_edge_vertices(tablename, cellname)
+    if tablename == "facet_ridge_vertices":
+        return facet_ridge_vertices(tablename, cellname)
     if tablename == "cell_facet_jacobian":
         return cell_facet_jacobian(tablename, cellname)
-    if tablename == "cell_edge_jacobian":
-        return cell_edge_jacobian(tablename, cellname)
+    if tablename == "cell_ridge_jacobian":
+        return cell_ridge_jacobian(tablename, cellname)
     if tablename == "reference_cell_volume":
         return reference_cell_volume(tablename, cellname)
     if tablename == "reference_facet_volume":
         return reference_facet_volume(tablename, cellname)
-    if tablename == "reference_cell_edge_vectors":
-        return reference_cell_edge_vectors(tablename, cellname)
-    if tablename == "reference_facet_edge_vectors":
-        return reference_facet_edge_vectors(tablename, cellname)
+    if tablename == "reference_cell_ridge_vectors":
+        return reference_cell_ridge_vectors(tablename, cellname)
+    if tablename == "reference_facet_ridge_vectors":
+        return reference_facet_ridge_vectors(tablename, cellname)
     if tablename == "reference_normals":
         return reference_normals(tablename, cellname)
     if tablename == "facet_orientation":
@@ -34,26 +34,26 @@ def write_table(tablename, cellname):
     raise ValueError(f"Unknown geometry table name: {tablename}")
 
 
-def facet_edge_vertices(tablename, cellname):
-    """Write facet edge vertices."""
+def facet_ridge_vertices(tablename, cellname):
+    """Write facet ridge vertices."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
-    triangle_edges = basix.topology(basix.CellType.triangle)[1]
-    quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
+    triangle_ridges = basix.topology(basix.CellType.triangle)[1]
+    quadrilateral_ridges = basix.topology(basix.CellType.quadrilateral)[1]
 
     if len(topology) != 4:
-        raise ValueError("Can only get facet edges for 3D cells.")
+        raise ValueError("Can only get facet ridges for 3D cells.")
 
-    edge_vertices = []
+    ridge_vertices = []
     for facet in topology[-2]:
         if len(facet) == 3:
-            edge_vertices += [[[facet[i] for i in edge] for edge in triangle_edges]]
+            ridge_vertices += [[[facet[i] for i in ridge] for ridge in triangle_ridges]]
         elif len(facet) == 4:
-            edge_vertices += [[[facet[i] for i in edge] for edge in quadrilateral_edges]]
+            ridge_vertices += [[[facet[i] for i in ridge] for ridge in quadrilateral_ridges]]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
-    out = np.array(edge_vertices, dtype=int)
+    out = np.array(ridge_vertices, dtype=int)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.INT)
     return L.ArrayDecl(symbol, values=out, const=True)
 
@@ -66,7 +66,7 @@ def cell_facet_jacobian(tablename, cellname):
     return L.ArrayDecl(symbol, values=out, const=True)
 
 
-def cell_edge_jacobian(tablename, cellname):
+def cell_ridge_jacobian(tablename, cellname):
     """Write a reference facet jacobian."""
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.edge_jacobians(celltype)
@@ -93,40 +93,40 @@ def reference_facet_volume(tablename, cellname):
     return L.VariableDecl(symbol, volumes[0])
 
 
-def reference_cell_edge_vectors(tablename, cellname):
-    """Write reference edge vectors."""
+def reference_cell_ridge_vectors(tablename, cellname):
+    """Write reference ridge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
-    edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
-    out = np.array(edge_vectors)
+    ridge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
+    out = np.array(ridge_vectors)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=out, const=True)
 
 
-def reference_facet_edge_vectors(tablename, cellname):
-    """Write facet reference edge vectors."""
+def reference_facet_ridge_vectors(tablename, cellname):
+    """Write facet reference ridge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
-    triangle_edges = basix.topology(basix.CellType.triangle)[1]
-    quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
+    triangle_ridges = basix.topology(basix.CellType.triangle)[1]
+    quadrilateral_ridges = basix.topology(basix.CellType.quadrilateral)[1]
 
     if len(topology) != 4:
-        raise ValueError("Can only get facet edges for 3D cells.")
+        raise ValueError("Can only get facet ridges for 3D cells.")
 
-    edge_vectors = []
+    ridge_vectors = []
     for facet in topology[-2]:
         if len(facet) == 3:
-            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
+            ridge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_ridges]
         elif len(facet) == 4:
-            edge_vectors += [
-                geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_edges
+            ridge_vectors += [
+                geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_ridges
             ]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
-    out = np.array(edge_vectors)
+    out = np.array(ridge_vectors)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=out, const=True)
 

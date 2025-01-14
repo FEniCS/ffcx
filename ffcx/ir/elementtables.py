@@ -199,7 +199,7 @@ def generate_psi_table_name(
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V", "edge": "_E"}[entity_type]
+    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_E"}[entity_type]
     name += f"_Q{quadrature_rule.id()}"
     return name
 
@@ -246,8 +246,12 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     tdim = domain.topological_dimension()
-    local_derivatives: tuple[int, ...] = tuple(ld.count(i) for i in range(tdim))
-
+    local_derivatives: tuple[int, ...]
+    # Special handling if the element is defined on a vertex
+    if tdim == 0:
+        local_derivatives = (0,)
+    else:
+        local_derivatives = tuple(ld.count(i) for i in range(tdim))
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
 
@@ -442,25 +446,38 @@ def build_optimized_tables(
                                 )
                         t = new_table[0]
                         t["array"] = np.vstack([td["array"] for td in new_table])
-            elif entity_type == "edge":
-                new_table = []
-                for ref in range(2):
-                    new_table.append(
-                        get_ffcx_table_values(
-                            permute_quadrature_interval(quadrature_rule.points, ref),
-                            cell,
-                            integral_type,
-                            element,
-                            avg,
-                            entity_type,
-                            local_derivatives,
-                            flat_component,
-                            codim,
+            elif entity_type == "ridge":
+                if tdim > 2:
+                    new_table = []
+                    for ref in range(2):
+                        new_table.append(
+                            get_ffcx_table_values(
+                                permute_quadrature_interval(quadrature_rule.points, ref),
+                                cell,
+                                integral_type,
+                                element,
+                                avg,
+                                entity_type,
+                                local_derivatives,
+                                flat_component,
+                                codim,
+                            )
                         )
+                    t = new_table[0]
+                    t["array"] = np.vstack([td["array"] for td in new_table])
+                else:
+                    # If ridge integral over vertex no permutation is needed
+                    t = get_ffcx_table_values(
+                        quadrature_rule.points,
+                        cell,
+                        integral_type,
+                        element,
+                        avg,
+                        entity_type,
+                        local_derivatives,
+                        flat_component,
+                        codim,
                     )
-
-                t = new_table[0]
-                t["array"] = np.vstack([td["array"] for td in new_table])
         else:
             t = get_ffcx_table_values(
                 quadrature_rule.points,

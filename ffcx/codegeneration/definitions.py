@@ -68,7 +68,7 @@ class FFCXBackendDefinitions:
             ufl.geometry.FacetEdgeVectors: self.pass_through,
             ufl.geometry.CellEdgeVectors: self.pass_through,
             ufl.geometry.CellFacetJacobian: self.pass_through,
-            ufl.geometry.CellEdgeJacobian: self.pass_through,
+            ufl.geometry.CellRidgeJacobian: self.pass_through,
             ufl.geometry.ReferenceCellVolume: self.pass_through,
             ufl.geometry.ReferenceFacetVolume: self.pass_through,
             ufl.geometry.ReferenceCellEdgeVectors: self.pass_through,

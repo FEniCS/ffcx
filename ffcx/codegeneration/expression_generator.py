@@ -62,12 +62,12 @@ class ExpressionGenerator:
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
         ufl_geometry = {
-            ufl.geometry.FacetEdgeVectors: "facet_edge_vectors",
+            ufl.geometry.FacetEdgeVectors: "facet_ridge_vectors",
             ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
             ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
-            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
-            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
+            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_ridge_vectors",
+            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_ridge_vectors",
             ufl.geometry.ReferenceNormal: "reference_normals",
         }
 

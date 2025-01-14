@@ -83,11 +83,11 @@ def create_quadrature_points_and_weights(
         if len(facet_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
         pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule, elements)
-    elif integral_type in ufl.measure.edge_integral_types:
-        edge_types = cell.edge_types()
-        if len(edge_types) > 1:
+    elif integral_type in ufl.measure.ridge_integral_types:
+        ridge_types = cell.ridge_types()
+        if len(ridge_types) > 1:
             raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        pts, wts = create_quadrature(edge_types[0].cellname(), degree, rule, elements)
+        pts, wts = create_quadrature(ridge_types[0].cellname(), degree, rule, elements)
     elif integral_type in ufl.measure.point_integral_types:
         pts, wts = create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
@@ -104,7 +104,7 @@ def integral_type_to_entity_dim(integral_type, tdim):
         entity_dim = tdim
     elif integral_type in ufl.measure.facet_integral_types:
         entity_dim = tdim - 1
-    elif integral_type in ufl.measure.edge_integral_types:
+    elif integral_type in ufl.measure.ridge_integral_types:
         entity_dim = tdim - 2
     elif integral_type in ufl.measure.point_integral_types:
         entity_dim = 0
@@ -130,6 +130,10 @@ def map_integral_points(points, integral_type, cell, entity):
         return np.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == tdim - 2:
         assert points.shape[1] == tdim - 2
+        # Special handling of pushing forward 0D points to cell
+        if entity_dim == 0:
+            assert points.shape[1] == 0
+            points = np.zeros((1, 1))
         return np.asarray(map_edge_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
         return np.asarray([reference_cell_vertices(cell.cellname())[entity]])

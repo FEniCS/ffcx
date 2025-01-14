@@ -21,6 +21,7 @@ from ffcx.ir.analysis.graph import build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
+from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
 
@@ -46,8 +47,26 @@ class BlockDataT(typing.NamedTuple):
     is_permuted: bool  # Do quad points on facets need to be permuted?
 
 
-def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_shape, p, visualise):
-    """Compute intermediate representation for an integral."""
+def compute_integral_ir(
+    cell: ufl.Cell,
+    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
+    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    integrands: dict[QuadratureRule, tuple[ufl.core.expr.Expr, ...]],
+    argument_shape: tuple[int],
+    p: dict,
+    visualise: bool,
+):
+    """Compute intermediate representation for an integral.
+
+    Args:
+        cell: Cell of integration domain
+        integral_type: Type of integral over cell
+        entity_type: Corresponding entity of the cell that the integral is over
+        integrands: Dictionary mapping a quadrature rule to a sequence of integrands
+        argument_shape: Shape of the output tensor of the integral (used for tensor factorization)
+        p: Parameters used for clamping tables and for activating sum factorization
+        visualise: If True, store the graph representation of the integrand in a pdf file `S.pdf` and `F.pdf`
+    """
     # The intermediate representation dict we're building and returning
     # here
     ir = {}
@@ -57,7 +76,6 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
     ir["unique_table_types"] = {}
 
     ir["integrand"] = {}
-
     for quadrature_rule, integrand in integrands.items():
         expression = integrand
         # Rebalance order of nested terminal modifiers

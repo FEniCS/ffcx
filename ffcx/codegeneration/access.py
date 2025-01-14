@@ -40,14 +40,14 @@ class FFCXBackendAccess:
             ufl.geometry.CellCoordinate: self.cell_coordinate,
             ufl.geometry.FacetCoordinate: self.facet_coordinate,
             ufl.geometry.CellVertices: self.cell_vertices,
-            ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
-            ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
+            ufl.geometry.FacetEdgeVectors: self.facet_ridge_vectors,
+            ufl.geometry.CellEdgeVectors: self.cell_ridge_vectors,
             ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
-            ufl.geometry.CellEdgeJacobian: self.cell_edge_jacobian,
+            ufl.geometry.CellRidgeJacobian: self.cell_ridge_jacobian,
             ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
             ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
-            ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
-            ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
+            ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_ridge_vectors,
+            ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_ridge_vectors,
             ufl.geometry.ReferenceNormal: self.reference_normal,
             ufl.geometry.CellOrientation: self._pass,
             ufl.geometry.FacetOrientation: self.facet_orientation,
@@ -71,7 +71,6 @@ class FFCXBackendAccess:
                 if isinstance(e, k):
                     handler = self.call_lookup[k]
                     break
-
         if handler:
             return handler(mt, tabledata, quadrature_rule)  # type: ignore
         else:
@@ -247,38 +246,40 @@ class FFCXBackendAccess:
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-    def cell_edge_jacobian(self, mt, tabledata, num_points):
-        """Access a cell edge jacobian."""
+    def cell_ridge_jacobian(self, mt, tabledata, num_points):
+        """Access a cell ridge jacobian."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "prism", "hexahedron"):
-            table = L.Symbol(f"{cellname}_cell_edge_jacobian", dtype=L.DataType.REAL)
-            edge = self.symbols.entity("edge", mt.restriction)
-            return table[edge][mt.component[0]][mt.component[1]]
+            table = L.Symbol(f"{cellname}_cell_ridge_jacobian", dtype=L.DataType.REAL)
+            ridge = self.symbols.entity("ridge", mt.restriction)
+            return table[ridge][mt.component[0]][mt.component[1]]
+        elif cellname in ["triangle", "quadrilateral"]:
+            raise RuntimeError("The reference facet jacobian doesn't make sense for 2D cells.")
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-    def reference_cell_edge_vectors(self, mt, tabledata, num_points):
-        """Access a reference cell edge vector."""
+    def reference_cell_ridge_vectors(self, mt, tabledata, num_points):
+        """Access a reference cell ridge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_cell_edge_vectors", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_cell_ridge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError(
-                "The reference cell edge vectors doesn't make sense for interval cell."
+                "The reference cell ridge vectors doesn't make sense for interval cell."
             )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-    def reference_facet_edge_vectors(self, mt, tabledata, num_points):
-        """Access a reference facet edge vector."""
+    def reference_facet_ridge_vectors(self, mt, tabledata, num_points):
+        """Access a reference facet ridge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_edge_vectors", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_facet_ridge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
-                "The reference cell facet edge vectors doesn't make sense for interval "
+                "The reference cell facet ridge vectors doesn't make sense for interval "
                 "or triangle cell."
             )
         else:
@@ -318,8 +319,8 @@ class FFCXBackendAccess:
         expr = self.symbols.domain_dof_access(dof, component, gdim, num_scalar_dofs, mt.restriction)
         return expr
 
-    def cell_edge_vectors(self, mt, tabledata, num_points):
-        """Access a cell edge vector."""
+    def cell_ridge_vectors(self, mt, tabledata, num_points):
+        """Access a cell ridge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
@@ -330,7 +331,7 @@ class FFCXBackendAccess:
             pass
         elif cellname == "interval":
             raise RuntimeError(
-                "The physical cell edge vectors doesn't make sense for interval cell."
+                "The physical cell ridge vectors doesn't make sense for interval cell."
             )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
@@ -345,9 +346,9 @@ class FFCXBackendAccess:
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
         num_scalar_dofs = scalar_element.dim
 
-        # Get edge vertices
-        edge = mt.component[0]
-        vertex0, vertex1 = scalar_element.reference_topology[1][edge]
+        # Get ridge vertices
+        ridge = mt.component[0]
+        vertex0, vertex1 = scalar_element.reference_topology[1][ridge]
 
         # Get dofs and component
         (dof0,) = vertex_scalar_dofs[vertex0]
@@ -358,8 +359,8 @@ class FFCXBackendAccess:
             dof0, component, gdim, num_scalar_dofs, mt.restriction
         ) - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction)
 
-    def facet_edge_vectors(self, mt, tabledata, num_points):
-        """Access a facet edge vector."""
+    def facet_ridge_vectors(self, mt, tabledata, num_points):
+        """Access a facet ridge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
@@ -370,7 +371,7 @@ class FFCXBackendAccess:
             pass
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
-                f"The physical facet edge vectors doesn't make sense for {cellname} cell."
+                f"The physical facet ridge vectors doesn't make sense for {cellname} cell."
             )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
@@ -385,12 +386,12 @@ class FFCXBackendAccess:
         scalar_element = ufl_scalar_element
         num_scalar_dofs = scalar_element.dim
 
-        # Get edge vertices
+        # Get ridge vertices
         facet = self.symbols.entity("facet", mt.restriction)
-        facet_edge = mt.component[0]
-        facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)
-        vertex0 = facet_edge_vertices[facet][facet_edge][0]
-        vertex1 = facet_edge_vertices[facet][facet_edge][1]
+        facet_ridge = mt.component[0]
+        facet_ridge_vertices = L.Symbol(f"{cellname}_facet_ridge_vertices", dtype=L.DataType.INT)
+        vertex0 = facet_ridge_vertices[facet][facet_ridge][0]
+        vertex1 = facet_ridge_vertices[facet][facet_ridge][1]
 
         # Get dofs and component
         component = mt.component[1]
