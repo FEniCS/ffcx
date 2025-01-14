@@ -346,9 +346,9 @@ class FFCXBackendAccess:
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
         num_scalar_dofs = scalar_element.dim
 
-        # Get ridge vertices
-        ridge = mt.component[0]
-        vertex0, vertex1 = scalar_element.reference_topology[1][ridge]
+        # Get edge vertices
+        edge = mt.component[0]
+        vertex0, vertex1 = scalar_element.reference_topology[1][edge]
 
         # Get dofs and component
         (dof0,) = vertex_scalar_dofs[vertex0]
@@ -386,7 +386,7 @@ class FFCXBackendAccess:
         scalar_element = ufl_scalar_element
         num_scalar_dofs = scalar_element.dim
 
-        # Get ridge vertices
+        # Get edge vertices
         facet = self.symbols.entity("facet", mt.restriction)
         facet_ridge = mt.component[0]
         facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)

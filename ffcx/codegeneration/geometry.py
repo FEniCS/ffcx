@@ -35,7 +35,7 @@ def write_table(tablename, cellname):
 
 
 def facet_edge_vertices(tablename, cellname):
-    """Write facet ridge vertices."""
+    """Write facet edge vertices."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     triangle_edges = basix.topology(basix.CellType.triangle)[1]
