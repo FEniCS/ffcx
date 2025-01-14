@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-24.04]
         python-version: ["3.9", "3.10", "3.11", "3.12"]
         include:
           - os: windows-2022
@@ -54,7 +54,7 @@ jobs:
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
+          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libblas-dev
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
