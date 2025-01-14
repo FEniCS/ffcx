@@ -22,6 +22,7 @@ import logging
 import typing
 import warnings
 
+import basix
 import numpy as np
 import numpy.typing as npt
 import ufl
@@ -256,8 +257,6 @@ def _compute_integral_ir(
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
             elif scheme == "vertex":
-                # FIXME: Could this come from basix?
-
                 # The vertex scheme, i.e., averaging the function value in the
                 # vertices and multiplying with the simplex volume, is only of
                 # order 1 and inferior to other generic schemes in terms of
@@ -276,55 +275,11 @@ def _compute_integral_ir(
                         "Explicitly selected vertex quadrature (degree 1), "
                         f"but requested degree is {degree}."
                     )
-                if cellname == "tetrahedron":
-                    points, weights = (
-                        np.array(
-                            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-                        ),
-                        np.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]),
-                    )
-                elif cellname == "triangle":
-                    points, weights = (
-                        np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
-                        np.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]),
-                    )
-                elif cellname == "interval":
-                    # Trapezoidal rule
-                    points, weights = (np.array([[0.0], [1.0]]), np.array([1.0 / 2.0, 1.0 / 2.0]))
-                elif cellname == "quadrilateral":
-                    points, weights = (
-                        np.array([[0.0, 0], [1.0, 0.0], [0.0, 1.0], [1.0, 1]]),
-                        np.array([1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0]),
-                    )
-                elif cellname == "hexahedron":
-                    points, weights = (
-                        np.array(
-                            [
-                                [0.0, 0.0, 0.0],
-                                [1.0, 0.0, 0.0],
-                                [0.0, 1.0, 0.0],
-                                [1.0, 1.0, 0.0],
-                                [0.0, 0.0, 1.0],
-                                [1.0, 0.0, 1.0],
-                                [0.0, 1.0, 1.0],
-                                [1.0, 1.0, 1.0],
-                            ]
-                        ),
-                        np.array(
-                            [
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                            ]
-                        ),
-                    )
-                else:
-                    raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
+                points = basix.cell.geometry(getattr(basix.CellType, cellname))
+                cell_volume = basix.cell.volume(getattr(basix.CellType, cellname))
+                weights = np.full(
+                    points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
+                )
             else:
                 degree = md["quadrature_degree"]
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
