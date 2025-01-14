@@ -40,14 +40,14 @@ class FFCXBackendAccess:
             ufl.geometry.CellCoordinate: self.cell_coordinate,
             ufl.geometry.FacetCoordinate: self.facet_coordinate,
             ufl.geometry.CellVertices: self.cell_vertices,
-            ufl.geometry.FacetEdgeVectors: self.facet_ridge_vectors,
-            ufl.geometry.CellEdgeVectors: self.cell_ridge_vectors,
+            ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
+            ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
             ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
             ufl.geometry.CellRidgeJacobian: self.cell_ridge_jacobian,
             ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
             ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
-            ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_ridge_vectors,
-            ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_ridge_vectors,
+            ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
+            ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
             ufl.geometry.ReferenceNormal: self.reference_normal,
             ufl.geometry.CellOrientation: self._pass,
             ufl.geometry.FacetOrientation: self.facet_orientation,
@@ -258,11 +258,11 @@ class FFCXBackendAccess:
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-    def reference_cell_ridge_vectors(self, mt, tabledata, num_points):
+    def reference_cell_edge_vectors(self, mt, tabledata, num_points):
         """Access a reference cell ridge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_cell_ridge_vectors", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_cell_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError(
@@ -271,11 +271,11 @@ class FFCXBackendAccess:
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-    def reference_facet_ridge_vectors(self, mt, tabledata, num_points):
+    def reference_facet_edge_vectors(self, mt, tabledata, num_points):
         """Access a reference facet ridge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_ridge_vectors", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_facet_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
@@ -319,7 +319,7 @@ class FFCXBackendAccess:
         expr = self.symbols.domain_dof_access(dof, component, gdim, num_scalar_dofs, mt.restriction)
         return expr
 
-    def cell_ridge_vectors(self, mt, tabledata, num_points):
+    def cell_edge_vectors(self, mt, tabledata, num_points):
         """Access a cell ridge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -359,7 +359,7 @@ class FFCXBackendAccess:
             dof0, component, gdim, num_scalar_dofs, mt.restriction
         ) - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction)
 
-    def facet_ridge_vectors(self, mt, tabledata, num_points):
+    def facet_edge_vectors(self, mt, tabledata, num_points):
         """Access a facet ridge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)

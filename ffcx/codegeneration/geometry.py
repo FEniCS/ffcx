@@ -23,10 +23,10 @@ def write_table(tablename, cellname):
         return reference_cell_volume(tablename, cellname)
     if tablename == "reference_facet_volume":
         return reference_facet_volume(tablename, cellname)
-    if tablename == "reference_cell_ridge_vectors":
-        return reference_cell_ridge_vectors(tablename, cellname)
-    if tablename == "reference_facet_ridge_vectors":
-        return reference_facet_ridge_vectors(tablename, cellname)
+    if tablename == "reference_cell_edge_vectors":
+        return reference_cell_edge_vectors(tablename, cellname)
+    if tablename == "reference_facet_edge_vectors":
+        return reference_facet_edge_vectors(tablename, cellname)
     if tablename == "reference_normals":
         return reference_normals(tablename, cellname)
     if tablename == "facet_orientation":
@@ -93,18 +93,18 @@ def reference_facet_volume(tablename, cellname):
     return L.VariableDecl(symbol, volumes[0])
 
 
-def reference_cell_ridge_vectors(tablename, cellname):
+def reference_cell_edge_vectors(tablename, cellname):
     """Write reference ridge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
-    ridge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
-    out = np.array(ridge_vectors)
+    edge_vectors = [geometry[j] - geometry[i] for i, j in topology[1]]
+    out = np.array(edge_vectors)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=out, const=True)
 
 
-def reference_facet_ridge_vectors(tablename, cellname):
+def reference_facet_edge_vectors(tablename, cellname):
     """Write facet reference ridge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
@@ -115,18 +115,18 @@ def reference_facet_ridge_vectors(tablename, cellname):
     if len(topology) != 4:
         raise ValueError("Can only get facet ridges for 3D cells.")
 
-    ridge_vectors = []
+    edge_vectors = []
     for facet in topology[-2]:
         if len(facet) == 3:
-            ridge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_ridges]
+            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_ridges]
         elif len(facet) == 4:
-            ridge_vectors += [
+            edge_vectors += [
                 geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_ridges
             ]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
-    out = np.array(ridge_vectors)
+    out = np.array(edge_vectors)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=out, const=True)
 
