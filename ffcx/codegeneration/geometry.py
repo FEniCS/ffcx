@@ -38,8 +38,8 @@ def facet_ridge_vertices(tablename, cellname):
     """Write facet ridge vertices."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
-    triangle_ridges = basix.topology(basix.CellType.triangle)[1]
-    quadrilateral_ridges = basix.topology(basix.CellType.quadrilateral)[1]
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
 
     if len(topology) != 4:
         raise ValueError("Can only get facet ridges for 3D cells.")
@@ -47,9 +47,9 @@ def facet_ridge_vertices(tablename, cellname):
     ridge_vertices = []
     for facet in topology[-2]:
         if len(facet) == 3:
-            ridge_vertices += [[[facet[i] for i in ridge] for ridge in triangle_ridges]]
+            ridge_vertices += [[[facet[i] for i in ridge] for ridge in triangle_edges]]
         elif len(facet) == 4:
-            ridge_vertices += [[[facet[i] for i in ridge] for ridge in quadrilateral_ridges]]
+            ridge_vertices += [[[facet[i] for i in ridge] for ridge in quadrilateral_edges]]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
@@ -109,8 +109,8 @@ def reference_facet_edge_vectors(tablename, cellname):
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
-    triangle_ridges = basix.topology(basix.CellType.triangle)[1]
-    quadrilateral_ridges = basix.topology(basix.CellType.quadrilateral)[1]
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    quadrilateral_edges = basix.topology(basix.CellType.quadrilateral)[1]
 
     if len(topology) != 4:
         raise ValueError("Can only get facet ridges for 3D cells.")
@@ -118,10 +118,10 @@ def reference_facet_edge_vectors(tablename, cellname):
     edge_vectors = []
     for facet in topology[-2]:
         if len(facet) == 3:
-            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_ridges]
+            edge_vectors += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
         elif len(facet) == 4:
             edge_vectors += [
-                geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_ridges
+                geometry[facet[j]] - geometry[facet[i]] for i, j in quadrilateral_edges
             ]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
