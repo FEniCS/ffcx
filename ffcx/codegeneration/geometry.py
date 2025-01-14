@@ -44,16 +44,16 @@ def facet_edge_vertices(tablename, cellname):
     if len(topology) != 4:
         raise ValueError("Can only get facet ridges for 3D cells.")
 
-    ridge_vertices = []
+    edge_vertices = []
     for facet in topology[-2]:
         if len(facet) == 3:
-            ridge_vertices += [[[facet[i] for i in ridge] for ridge in triangle_edges]]
+            edge_vertices += [[[facet[i] for i in edge] for edge in triangle_edges]]
         elif len(facet) == 4:
-            ridge_vertices += [[[facet[i] for i in ridge] for ridge in quadrilateral_edges]]
+            edge_vertices += [[[facet[i] for i in edge] for edge in quadrilateral_edges]]
         else:
             raise ValueError("Only triangular and quadrilateral faces supported.")
 
-    out = np.array(ridge_vertices, dtype=int)
+    out = np.array(edge_vertices, dtype=int)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.INT)
     return L.ArrayDecl(symbol, values=out, const=True)
 
