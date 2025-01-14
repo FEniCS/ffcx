@@ -94,7 +94,7 @@ def reference_facet_volume(tablename, cellname):
 
 
 def reference_cell_edge_vectors(tablename, cellname):
-    """Write reference ridge vectors."""
+    """Write reference edge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)
@@ -105,7 +105,7 @@ def reference_cell_edge_vectors(tablename, cellname):
 
 
 def reference_facet_edge_vectors(tablename, cellname):
-    """Write facet reference ridge vectors."""
+    """Write facet reference edge vectors."""
     celltype = getattr(basix.CellType, cellname)
     topology = basix.topology(celltype)
     geometry = basix.geometry(celltype)

@@ -259,27 +259,27 @@ class FFCXBackendAccess:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_cell_edge_vectors(self, mt, tabledata, num_points):
-        """Access a reference cell ridge vector."""
+        """Access a reference cell edge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_cell_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError(
-                "The reference cell ridge vectors doesn't make sense for interval cell."
+                "The reference cell edge vectors doesn't make sense for interval cell."
             )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_facet_edge_vectors(self, mt, tabledata, num_points):
-        """Access a reference facet ridge vector."""
+        """Access a reference facet edge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_facet_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
-                "The reference cell facet ridge vectors doesn't make sense for interval "
+                "The reference cell facet edge vectors doesn't make sense for interval "
                 "or triangle cell."
             )
         else:
@@ -320,7 +320,7 @@ class FFCXBackendAccess:
         return expr
 
     def cell_edge_vectors(self, mt, tabledata, num_points):
-        """Access a cell ridge vector."""
+        """Access a cell edge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
@@ -331,7 +331,7 @@ class FFCXBackendAccess:
             pass
         elif cellname == "interval":
             raise RuntimeError(
-                "The physical cell ridge vectors doesn't make sense for interval cell."
+                "The physical cell edge vectors doesn't make sense for interval cell."
             )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
@@ -360,7 +360,7 @@ class FFCXBackendAccess:
         ) - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction)
 
     def facet_edge_vectors(self, mt, tabledata, num_points):
-        """Access a facet ridge vector."""
+        """Access a facet edge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
@@ -371,7 +371,7 @@ class FFCXBackendAccess:
             pass
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
-                f"The physical facet ridge vectors doesn't make sense for {cellname} cell."
+                f"The physical facet edge vectors doesn't make sense for {cellname} cell."
             )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
