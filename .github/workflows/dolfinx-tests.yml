@@ -20,6 +20,9 @@ on:
         description: "UFL branch or tag"
         default: "main"
         type: string
+  # Weekly build on Mondays at 8 am
+  schedule:
+    - cron: "0 8 * * 1"
 
 jobs:
   build:
