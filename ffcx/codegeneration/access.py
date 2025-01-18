@@ -43,6 +43,7 @@ class FFCXBackendAccess:
             ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
             ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
             ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
+            ufl.geometry.CellRidgeJacobian: self.cell_ridge_jacobian,
             ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
             ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
             ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
@@ -70,7 +71,6 @@ class FFCXBackendAccess:
                 if isinstance(e, k):
                     handler = self.call_lookup[k]
                     break
-
         if handler:
             return handler(mt, tabledata, quadrature_rule)  # type: ignore
         else:
@@ -246,6 +246,18 @@ class FFCXBackendAccess:
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
+    def cell_ridge_jacobian(self, mt, tabledata, num_points):
+        """Access a cell ridge jacobian."""
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        if cellname in ("tetrahedron", "prism", "hexahedron"):
+            table = L.Symbol(f"{cellname}_cell_ridge_jacobian", dtype=L.DataType.REAL)
+            ridge = self.symbols.entity("ridge", mt.restriction)
+            return table[ridge][mt.component[0]][mt.component[1]]
+        elif cellname in ["triangle", "quadrilateral"]:
+            raise RuntimeError("The ridge jacobian doesn't make sense for 2D cells.")
+        else:
+            raise RuntimeError(f"Unhandled cell types {cellname}.")
+
     def reference_cell_edge_vectors(self, mt, tabledata, num_points):
         """Access a reference cell edge vector."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
@@ -376,10 +388,10 @@ class FFCXBackendAccess:
 
         # Get edge vertices
         facet = self.symbols.entity("facet", mt.restriction)
-        facet_edge = mt.component[0]
+        edge_ridge = mt.component[0]
         facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)
-        vertex0 = facet_edge_vertices[facet][facet_edge][0]
-        vertex1 = facet_edge_vertices[facet][facet_edge][1]
+        vertex0 = facet_edge_vertices[facet][edge_ridge][0]
+        vertex1 = facet_edge_vertices[facet][edge_ridge][1]
 
         # Get dofs and component
         component = mt.component[1]

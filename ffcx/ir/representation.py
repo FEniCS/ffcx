@@ -197,6 +197,7 @@ def _compute_integral_ir(
         "interior_facet": "facet",
         "vertex": "vertex",
         "custom": "cell",
+        "ridge": "ridge",
     }
 
     # Iterate over groups of integrals
@@ -266,10 +267,15 @@ def _compute_integral_ir(
                 # prescribed in certain cases.
 
                 degree = md["quadrature_degree"]
-                if integral_type != "cell":
+                if "facet" in integral_type:
                     facet_types = cell.facet_types()
                     assert len(facet_types) == 1
                     cellname = facet_types[0].cellname()
+                elif integral_type == "ridge":
+                    ridge_types = cell.ridge_types()
+                    assert len(ridge_types) == 1
+                    cellname = ridge_types[0].cellname()
+
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), "
@@ -294,7 +300,6 @@ def _compute_integral_ir(
             points = np.asarray(points)
             weights = np.asarray(weights)
             rule = QuadratureRule(points, weights, tensor_factors)
-
             if rule not in grouped_integrands:
                 grouped_integrands[rule] = []
             grouped_integrands[rule].append(integral.integrand())
@@ -418,7 +423,7 @@ def _compute_form_ir(
     # it has to know their names for codegen phase
     ir["integral_names"] = {}
     ir["subdomain_ids"] = {}
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
+    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "ridge")
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
     for itg_index, itg_data in enumerate(form_data.integral_data):

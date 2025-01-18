@@ -90,5 +90,4 @@ def generator(ir: IntegralIR, options):
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
     )
-
     return declaration, implementation
