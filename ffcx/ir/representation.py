@@ -120,9 +120,9 @@ def compute_ir(
     logger.info(79 * "*")
 
     # Compute object names
-    # NOTE: This is done here for performance reasons, because repeated calls
-    # within each IR computation would be expensive due to UFL signature computations
-    finite_element_hashes = {e: e.basix_hash() for e in analysis.unique_elements}
+    # NOTE: This is done here for performance reasons, because repeated
+    # calls within each IR computation would be expensive due to UFL
+    # signature computations.
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
@@ -138,7 +138,6 @@ def compute_ir(
             i,
             analysis.element_numbers,
             integral_names,
-            finite_element_hashes,
             options,
             visualise,
         )
@@ -153,8 +152,6 @@ def compute_ir(
             prefix,
             form_names,
             integral_names,
-            analysis.element_numbers,
-            finite_element_hashes,
             object_names,
         )
         for (i, fd) in enumerate(analysis.form_data)
@@ -169,7 +166,6 @@ def compute_ir(
             options,
             visualise,
             object_names,
-            finite_element_hashes,
         )
         for i, expr in enumerate(analysis.expressions)
     ]
@@ -186,7 +182,6 @@ def _compute_integral_ir(
     form_index,
     element_numbers,
     integral_names,
-    finite_element_hashes,
     options,
     visualise,
 ) -> list[IntegralIR]:
@@ -216,9 +211,7 @@ def _compute_integral_ir(
             "integral_type": itg_data.integral_type,
             "entity_type": entity_type,
             "shape": (),
-            "coordinate_element_hash": finite_element_hashes[
-                itg_data.domain.ufl_coordinate_element()
-            ],
+            "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
         }
         ir = {
             "rank": form_data.rank,
@@ -374,8 +367,6 @@ def _compute_form_ir(
     prefix,
     form_names,
     integral_names,
-    element_numbers,
-    finite_element_hashes,
     object_names,
 ) -> FormIR:
     """Compute intermediate representation of form."""
@@ -405,8 +396,7 @@ def _compute_form_ir(
     ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
     ir["finite_element_hashes"] = [
-        finite_element_hashes[e]
-        for e in form_data.argument_elements + form_data.coefficient_elements
+        e.basix_hash() for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
     form_name = object_names.get(id(form_data.original_form), form_id)
@@ -444,7 +434,6 @@ def _compute_expression_ir(
     options,
     visualise,
     object_names,
-    finite_element_hashes,
 ):
     """Compute intermediate representation of expression."""
     logger.info(f"Computing IR for expression {index}")
