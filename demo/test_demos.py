@@ -21,8 +21,6 @@ def test_demo(file, scalar_type):
         # Skip complex demos on win32
         pytest.skip(reason="_Complex not supported on Windows")
 
-    if file == "Symmetry":
-        pytest.xfail("Demo currently failing. See https://github.com/FEniCS/ufl/issues/343.")
     if file in [
         "MixedGradient",
         "TraceElement",  # HDiv Trace
