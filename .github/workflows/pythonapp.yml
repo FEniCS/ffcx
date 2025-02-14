@@ -15,6 +15,10 @@ on:
       - main
   workflow_dispatch:
 
+  # Weekly build on Mondays at 8 am
+  schedule:
+    - cron: "0 8 * * 1"
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -54,7 +58,7 @@ jobs:
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
+          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libblas-dev liblapack-dev
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
