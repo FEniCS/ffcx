@@ -223,9 +223,6 @@ def _compute_integral_ir(
         ir = {
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
-            # "coordinate_element_hash": finite_element_hashes[
-            #     itg_data.domain.ufl_coordinate_element()
-            # ],
         }
 
         # Get element space dimensions
@@ -552,11 +549,6 @@ def _compute_expression_ir(
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
-
-    # print(
-    #     "TTTT:",
-    #     type(ufl.domain.extract_unique_domain(expression).ufl_coordinate_element().basix_hash()),
-    # )
     base_ir["coordinate_element_hash"] = (
         ufl.domain.extract_unique_domain(expression).ufl_coordinate_element().basix_hash()
     )
