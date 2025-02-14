@@ -78,6 +78,7 @@ class CommonExpressionIR(typing.NamedTuple):
     name: str
     needs_facet_permutations: bool
     shape: list[int]
+    coordinate_element_hash: str
 
 
 class IntegralIR(typing.NamedTuple):
@@ -86,7 +87,6 @@ class IntegralIR(typing.NamedTuple):
     expression: CommonExpressionIR
     rank: int
     enabled_coefficients: list[bool]
-    coordinate_element_hash: str
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -216,13 +216,16 @@ def _compute_integral_ir(
             "integral_type": itg_data.integral_type,
             "entity_type": entity_type,
             "shape": (),
+            "coordinate_element_hash": finite_element_hashes[
+                itg_data.domain.ufl_coordinate_element()
+            ],
         }
         ir = {
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "coordinate_element_hash": finite_element_hashes[
-                itg_data.domain.ufl_coordinate_element()
-            ],
+            # "coordinate_element_hash": finite_element_hashes[
+            #     itg_data.domain.ufl_coordinate_element()
+            # ],
         }
 
         # Get element space dimensions
@@ -549,6 +552,14 @@ def _compute_expression_ir(
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
+
+    # print(
+    #     "TTTT:",
+    #     type(ufl.domain.extract_unique_domain(expression).ufl_coordinate_element().basix_hash()),
+    # )
+    base_ir["coordinate_element_hash"] = (
+        ufl.domain.extract_unique_domain(expression).ufl_coordinate_element().basix_hash()
+    )
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)

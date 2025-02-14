@@ -74,7 +74,11 @@ def generator(ir: IntegralIR, options):
         f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
     )
 
-    element_hash = 0 if ir.coordinate_element_hash is None else ir.coordinate_element_hash
+    element_hash = (
+        0
+        if ir.expression.coordinate_element_hash is None
+        else ir.expression.coordinate_element_hash
+    )
 
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,

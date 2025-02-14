@@ -103,6 +103,8 @@ def generator(ir: ExpressionIR, options):
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
 
+    d["coordinate_element_hash"] = f"UINT64_C({ir.expression.coordinate_element_hash})"
+
     # Check that no keys are redundant or have been missed
     from string import Formatter
 

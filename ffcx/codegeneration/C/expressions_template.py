@@ -49,6 +49,7 @@ ufcx_expression {factory_name} =
   .value_shape = {value_shape},
   .num_components = {num_components},
   .rank = {rank},
+  .coordinate_element_hash = {coordinate_element_hash};
 }};
 
 // Alias name
