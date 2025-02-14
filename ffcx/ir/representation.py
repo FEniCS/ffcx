@@ -37,6 +37,13 @@ from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points
 logger = logging.getLogger("ffcx")
 
 
+def basix_cell_from_string(string: str) -> basix.CellType:
+    """Convert a string to a Basix CellType."""
+    if string == "vertex":
+        return basix.CellType.point
+    return getattr(basix.CellType, string)
+
+
 class FormIR(typing.NamedTuple):
     """Intermediate representation of a form."""
 
@@ -275,8 +282,8 @@ def _compute_integral_ir(
                         "Explicitly selected vertex quadrature (degree 1), "
                         f"but requested degree is {degree}."
                     )
-                points = basix.cell.geometry(getattr(basix.CellType, cellname))
-                cell_volume = basix.cell.volume(getattr(basix.CellType, cellname))
+                points = basix.cell.geometry(basix_cell_from_string(cellname))
+                cell_volume = basix.cell.volume(basix_cell_from_string(cellname))
                 weights = np.full(
                     points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
                 )
