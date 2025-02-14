@@ -12,6 +12,7 @@ import logging
 from numbers import Integral
 from typing import Any
 
+import basix
 import ufl
 
 import ffcx.codegeneration.lnodes as L
@@ -129,7 +130,7 @@ class IntegralGenerator:
             self.temp_symbols[key] = s
         return s, defined
 
-    def generate(self, domain: str):
+    def generate(self, domain: basix.CellType):
         """Generate entire tabulate_tensor body.
 
         Assumes that the code returned from here will be wrapped in a
@@ -175,7 +176,7 @@ class IntegralGenerator:
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self, domain: str):
+    def generate_quadrature_tables(self, domain: basix.CellType):
         """Generate static tables of quadrature points and weights."""
         parts: list[L.LNode] = []
 
@@ -227,7 +228,7 @@ class IntegralGenerator:
 
         return parts
 
-    def generate_element_tables(self, domain: str):
+    def generate_element_tables(self, domain: basix.CellType):
         """Generate static tables.
 
         With precomputed element basis function values in quadrature points.
@@ -267,7 +268,7 @@ class IntegralGenerator:
         self.backend.symbols.element_tables[name] = table_symbol
         return [L.ArrayDecl(table_symbol, values=table, const=True)]
 
-    def generate_quadrature_loop(self, quadrature_rule: QuadratureRule, domain: str):
+    def generate_quadrature_loop(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
         """Generate quadrature loop with for this quadrature_rule."""
         # Generate varying partition
         definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule, domain)
@@ -300,14 +301,14 @@ class IntegralGenerator:
 
         return [L.create_nested_for_loops([iq], code)]
 
-    def generate_piecewise_partition(self, quadrature_rule, domain: str):
+    def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
         # Get annotated graph of factorisation
         F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "piecewise", None, None)
 
-    def generate_varying_partition(self, quadrature_rule, domain: str):
+    def generate_varying_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a varying partition."""
         # Get annotated graph of factorisation
         F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
@@ -361,7 +362,7 @@ class IntegralGenerator:
         definitions = optimize(definitions, quadrature_rule)
         return definitions, intermediates
 
-    def generate_dofblock_partition(self, quadrature_rule: QuadratureRule, domain: str):
+    def generate_dofblock_partition(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
         """Generate a dofblock partition."""
         block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
             "block_contributions"
@@ -433,7 +434,7 @@ class IntegralGenerator:
     def generate_block_parts(
         self,
         quadrature_rule: QuadratureRule,
-        domain: str,
+        domain: basix.CellType,
         blockmap: tuple,
         blocklist: list[BlockDataT],
     ):

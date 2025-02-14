@@ -52,7 +52,7 @@ class FormIR(typing.NamedTuple):
     constant_names: list[str]
     finite_element_hashes: list[int]
     integral_names: dict[str, list[str]]
-    integral_domains: dict[str, list[str]]
+    integral_domains: dict[str, list[basix.CellType]]
     subdomain_ids: dict[str, list[int]]
 
 
@@ -75,7 +75,7 @@ class CommonExpressionIR(typing.NamedTuple):
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[str, dict[str, npt.NDArray[np.float64]]]
     unique_table_types: dict[str, dict[str, str]]
-    integrand: dict[tuple[str, QuadratureRule], dict]
+    integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
     name: str
     needs_facet_permutations: bool
     shape: list[int]
@@ -213,9 +213,9 @@ def _compute_integral_ir(
 
         # Compute representation
         entity_type = _entity_types[itg_data.integral_type]
-        cell = itg_data.domain.ufl_cell()
-        cellname = cell.cellname()
-        tdim = cell.topological_dimension()
+        ufl_cell = itg_data.domain.ufl_cell()
+        cell_type = getattr(basix.CellType, ufl_cell.cellname())
+        tdim = ufl_cell.topological_dimension()
         assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
         expression_ir = {
@@ -252,7 +252,9 @@ def _compute_integral_ir(
         integral_type = itg_data.integral_type
 
         # Group integrands with the same quadrature rule
-        grouped_integrands: dict[str, dict[QuadratureRule, list[ufl.core.expr.Expr]]] = {}
+        grouped_integrands: dict[
+            basix.CellType, dict[QuadratureRule, list[ufl.core.expr.Expr]]
+        ] = {}
         use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
@@ -262,7 +264,7 @@ def _compute_integral_ir(
             if scheme == "custom":
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
-                rules[cell.cellname()] = (points, weights, None)
+                rules[cell_type] = (points, weights, None)
             elif scheme == "vertex":
                 # The vertex scheme, i.e., averaging the function value in the
                 # vertices and multiplying with the simplex volume, is only of
@@ -274,33 +276,32 @@ def _compute_integral_ir(
 
                 degree = md["quadrature_degree"]
                 if integral_type != "cell":
-                    facet_types = cell.facet_types()
+                    facet_types = basix.cell.sub_entity_types(cell_type)[-2]
                     assert len(facet_types) == 1
-                    cellname = facet_types[0].cellname()
+                    cell_type = facet_types[0]
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), "
                         f"but requested degree is {degree}."
                     )
-                points = basix.cell.geometry(getattr(basix.CellType, cellname))
-                cell_volume = basix.cell.volume(getattr(basix.CellType, cellname))
+                points = basix.cell.geometry(cell_type)
+                cell_volume = basix.cell.volume(cell_type)
                 weights = np.full(
                     points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
                 )
-                rules[cellname] = (points, weights, None)
+                rules[cell_type] = (points, weights, None)
             else:
                 degree = md["quadrature_degree"]
-                cellname = cell.cellname()
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
                     integral_type,
-                    cell,
+                    ufl_cell,
                     degree,
                     scheme,
                     form_data.argument_elements,
                     use_sum_factorization,
                 )
                 rules = {
-                    i: (
+                    getattr(basix.CellType, i): (
                         points[i],
                         weights[i],
                         tensor_factors[i] if i in tensor_factors else None,
@@ -308,20 +309,20 @@ def _compute_integral_ir(
                     for i in points
                 }
 
-            for cellname, (points, weights, tensor_factors) in rules.items():
+            for cell_type, (points, weights, tensor_factors) in rules.items():
                 points = np.asarray(points)
                 weights = np.asarray(weights)
                 rule = QuadratureRule(points, weights, tensor_factors)
 
-                if cellname not in grouped_integrands:
-                    grouped_integrands[cellname] = {}
+                if cell_type not in grouped_integrands:
+                    grouped_integrands[cell_type] = {}
                 if rule not in grouped_integrands:
-                    grouped_integrands[cellname][rule] = []
-                grouped_integrands[cellname][rule].append(integral.integrand())
+                    grouped_integrands[cell_type][rule] = []
+                grouped_integrands[cell_type][rule].append(integral.integrand())
         sorted_integrals: dict[str, dict[QuadratureRule, Integral]] = {
-            cellname: {} for cellname in grouped_integrands
+            cell_type: {} for cell_type in grouped_integrands
         }
-        for cellname, integrands_by_cell in grouped_integrands.items():
+        for cell_type, integrands_by_cell in grouped_integrands.items():
             for rule, integrands in integrands_by_cell.items():
                 integrands_summed = sorted_expr_sum(integrands)
 
@@ -333,7 +334,7 @@ def _compute_integral_ir(
                     {},
                     None,
                 )
-                sorted_integrals[cellname][rule] = integral_new
+                sorted_integrals[cell_type][rule] = integral_new
 
         # TODO: See if coefficient_numbering can be removed
         # Build coefficient numbering for UFC interface here, to avoid
@@ -366,9 +367,9 @@ def _compute_integral_ir(
         expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrand_map: dict[str, dict[QuadratureRule, ufl.core.expr.Expr]] = {
-            cellname: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
-            for cellname, cell_integrals in sorted_integrals.items()
+        integrand_map: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]] = {
+            cell_type: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
+            for cell_type, cell_integrals in sorted_integrals.items()
         }
 
         # Build more specific intermediate representation

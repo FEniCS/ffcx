@@ -112,7 +112,7 @@ def generator(ir: FormIR, options):
         sizes = sum(len(domains) for domains in integral_domains)
         values = ", ".join(
             [
-                f"{i}_{domain}"
+                f"{i}_{domain.name}"
                 for i, domains in zip(integrals, integral_domains)
                 for domain in domains
             ]
