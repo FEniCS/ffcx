@@ -39,6 +39,8 @@ def test_matvec(compile_args):
     ffi = cffi.FFI()
     expression = obj[0]
 
+    assert mesh.ufl_coordinate_element().basix_hash() == expression.coordinate_element_hash
+
     dtype = np.float64
     c_type = "double"
     xdtype = np.float64
