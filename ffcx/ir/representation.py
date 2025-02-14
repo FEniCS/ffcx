@@ -7,7 +7,8 @@
 """Compiler stage 2: Code representation.
 
 Module computes intermediate representations of forms. For each UFC
-function, we extract the data needed for code generation at a later stage.
+function, we extract the data needed for code generation at a later
+stage.
 
 The representation should conform strictly to the naming and order of
 functions in UFC. Thus, for code generation of the function "foo", one
@@ -427,7 +428,7 @@ def _compute_form_ir(
 
 
 def _compute_expression_ir(
-    expression,
+    expr,
     index,
     prefix,
     analysis,
@@ -435,22 +436,22 @@ def _compute_expression_ir(
     visualise,
     object_names,
 ):
-    """Compute intermediate representation of expression."""
-    logger.info(f"Computing IR for expression {index}")
+    """Compute intermediate representation of an Expression."""
+    logger.info(f"Computing IR for Expression {index}")
 
     # Compute representation
     ir = {}
     base_ir = {}
-    original_expression = (expression[2], expression[1])
+    original_expr = (expr[2], expr[1])
 
-    base_ir["name"] = naming.expression_name(original_expression, prefix)
+    base_ir["name"] = naming.expression_name(original_expr, prefix)
 
-    original_expression = expression[2]
-    points = expression[1]
-    expression = expression[0]
+    original_expr = expr[2]
+    points = expr[1]
+    expr = expr[0]
 
     try:
-        cell = ufl.domain.extract_unique_domain(expression).ufl_cell()
+        cell = ufl.domain.extract_unique_domain(expr).ufl_cell()
     except AttributeError:
         # This case corresponds to a spatially constant expression
         # without any dependencies
@@ -464,16 +465,16 @@ def _compute_expression_ir(
     }
 
     # Extract dimensions for elements of arguments only
-    arguments = ufl.algorithms.extract_arguments(expression)
+    arguments = ufl.algorithms.extract_arguments(expr)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
     argument_dimensions = [element_dimensions[element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
     base_ir["tensor_shape"] = tensor_shape
 
-    base_ir["shape"] = list(expression.ufl_shape)
+    base_ir["shape"] = list(expr.ufl_shape)
 
-    coefficients = ufl.algorithms.extract_coefficients(expression)
+    coefficients = ufl.algorithms.extract_coefficients(expr)
     coefficient_numbering = {}
     for i, coeff in enumerate(coefficients):
         coefficient_numbering[coeff] = i
@@ -482,7 +483,7 @@ def _compute_expression_ir(
     base_ir["coefficient_numbering"] = coefficient_numbering
 
     original_coefficient_positions = []
-    original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
+    original_coefficients = ufl.algorithms.extract_coefficients(original_expr)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
 
@@ -492,12 +493,11 @@ def _compute_expression_ir(
 
     ir["constant_names"] = [
         object_names.get(id(obj), f"c{j}")
-        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))
+        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expr))
     ]
 
-    expression_name = object_names.get(id(original_expression), index)
-
-    ir["name_from_uflfile"] = f"expression_{prefix}_{expression_name}"
+    expr_name = object_names.get(id(original_expr), index)
+    ir["name_from_uflfile"] = f"expression_{prefix}_{expr_name}"
 
     if len(argument_elements) > 1:
         raise RuntimeError("Expression with more than one Argument not implemented.")
@@ -533,18 +533,18 @@ def _compute_expression_ir(
     # Build offsets for Constants
     original_constant_offsets = {}
     _offset = 0
-    for constant in ufl.algorithms.analysis.extract_constants(original_expression):
+    for constant in ufl.algorithms.analysis.extract_constants(original_expr):
         original_constant_offsets[constant] = _offset
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
     base_ir["coordinate_element_hash"] = (
-        ufl.domain.extract_unique_domain(expression).ufl_coordinate_element().basix_hash()
+        ufl.domain.extract_unique_domain(expr).ufl_coordinate_element().basix_hash()
     )
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
-    integrands = {rule: expression}
+    integrands = {rule: expr}
 
     if cell is None:
         assert (
