@@ -37,6 +37,13 @@ from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points
 logger = logging.getLogger("ffcx")
 
 
+def basix_cell_from_string(string: str) -> basix.CellType:
+    """Convert a string to a Basix CellType."""
+    if string == "vertex":
+        return basix.CellType.point
+    return getattr(basix.CellType, string)
+
+
 class FormIR(typing.NamedTuple):
     """Intermediate representation of a form."""
 
@@ -214,7 +221,7 @@ def _compute_integral_ir(
         # Compute representation
         entity_type = _entity_types[itg_data.integral_type]
         ufl_cell = itg_data.domain.ufl_cell()
-        cell_type = getattr(basix.CellType, ufl_cell.cellname())
+        cell_type = basix_cell_from_string(ufl_cell.cellname())
         tdim = ufl_cell.topological_dimension()
         assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
@@ -301,7 +308,7 @@ def _compute_integral_ir(
                     use_sum_factorization,
                 )
                 rules = {
-                    getattr(basix.CellType, i): (
+                    basix_cell_from_string(i): (
                         points[i],
                         weights[i],
                         tensor_factors[i] if i in tensor_factors else None,
