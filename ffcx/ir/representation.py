@@ -277,7 +277,7 @@ def _compute_integral_ir(
                 degree = md["quadrature_degree"]
                 if integral_type != "cell":
                     facet_types = basix.cell.subentity_types(cell_type)[-2]
-                    assert len(facet_types) == 1
+                    assert len(set(facet_types)) == 1
                     cell_type = facet_types[0]
                 if degree > 1:
                     warnings.warn(
