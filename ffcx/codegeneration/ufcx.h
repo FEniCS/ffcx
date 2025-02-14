@@ -138,6 +138,8 @@ extern "C"
 
     /// Get the hash of the coordinate element associated with the geometry of the mesh.
     uint64_t coordinate_element_hash;
+
+    uint8_t domain;
   } ufcx_integral;
 
   typedef struct ufcx_expression
