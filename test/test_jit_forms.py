@@ -1258,13 +1258,13 @@ def test_ds_prism(compile_args, dtype):
     integral0 = form0.form_integrals[offsets[exterior_facet]]
     integral1 = form0.form_integrals[offsets[exterior_facet] + 1]
 
-    if integral0.domain == module.lib.ufcx_triangle:
-        assert integral1.domain == module.lib.ufcx_quadrilateral
+    if basix.CellType(integral0.domain) == basix.CellType.triangle:
+        assert basix.CellType(integral1.domain) == basix.CellType.quadrilateral
         integral_tri = integral0
         integral_quad = integral1
     else:
-        assert integral0.domain == module.lib.ufcx_quadrilateral
-        assert integral1.domain == module.lib.ufcx_triangle
+        assert basix.CellType(integral0.domain) == basix.CellType.quadrilateral
+        assert basix.CellType(integral1.domain) == basix.CellType.triangle
         integral_tri = integral1
         integral_quad = integral0
 

@@ -8,6 +8,7 @@
 import logging
 import sys
 
+import basix
 import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
@@ -26,7 +27,6 @@ def generator(ir: IntegralIR, domain: str, options):
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
 
-    """Generate code for an integral."""
     factory_name = f"{ir.expression.name}_{domain}"
 
     # Format declaration
@@ -89,7 +89,7 @@ def generator(ir: IntegralIR, domain: str, options):
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
-        domain=domain,
+        domain=int(getattr(basix.CellType, domain)),
     )
 
     return declaration, implementation
