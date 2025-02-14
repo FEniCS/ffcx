@@ -59,7 +59,6 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
     ir["integrand"] = {}
 
     for integral_domain, integrands_on_domain in integrands.items():
-        from IPython import embed; embed()
         ir["unique_tables"][integral_domain] = {}
         ir["unique_table_types"][integral_domain] = {}
         for quadrature_rule, integrand in integrands_on_domain.items():
