@@ -80,8 +80,8 @@ class CommonExpressionIR(typing.NamedTuple):
     coefficient_numbering: dict[ufl.Coefficient, int]
     coefficient_offsets: dict[ufl.Coefficient, int]
     original_constant_offsets: dict[ufl.Constant, int]
-    unique_tables: dict[str, dict[str, npt.NDArray[np.float64]]]
-    unique_table_types: dict[str, dict[str, str]]
+    unique_tables: dict[str, dict[basix.CellType, npt.NDArray[np.float64]]]
+    unique_table_types: dict[basix.CellType, dict[str, str]]
     integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
     name: str
     needs_facet_permutations: bool
