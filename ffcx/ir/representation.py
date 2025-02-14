@@ -276,7 +276,7 @@ def _compute_integral_ir(
 
                 degree = md["quadrature_degree"]
                 if integral_type != "cell":
-                    facet_types = basix.cell.sub_entity_types(cell_type)[-2]
+                    facet_types = basix.cell.subentity_types(cell_type)[-2]
                     assert len(facet_types) == 1
                     cell_type = facet_types[0]
                 if degree > 1:
@@ -319,7 +319,7 @@ def _compute_integral_ir(
                 if rule not in grouped_integrands:
                     grouped_integrands[cell_type][rule] = []
                 grouped_integrands[cell_type][rule].append(integral.integrand())
-        sorted_integrals: dict[str, dict[QuadratureRule, Integral]] = {
+        sorted_integrals: dict[basix.CellType, dict[QuadratureRule, Integral]] = {
             cell_type: {} for cell_type in grouped_integrands
         }
         for cell_type, integrands_by_cell in grouped_integrands.items():
