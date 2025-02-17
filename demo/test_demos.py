@@ -21,16 +21,6 @@ def test_demo(file, scalar_type):
         # Skip complex demos on win32
         pytest.skip(reason="_Complex not supported on Windows")
 
-    if file in [
-        "MixedGradient",
-        "TraceElement",  # HDiv Trace
-        "MixedElasticity",  # VectorElement of BDM
-        "RestrictedElement",
-        "_TensorProductElement",
-    ]:
-        # Skip demos that use elements not yet implemented in Basix
-        pytest.skip(reason="Element not yet implemented in Basix")
-
     if "complex" in scalar_type and file in [
         "BiharmonicHHJ",
         "BiharmonicRegge",
