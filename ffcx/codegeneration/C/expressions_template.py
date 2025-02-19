@@ -23,7 +23,8 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
                                     const {scalar_type}* restrict c,
                                     const {geom_type}* restrict coordinate_dofs,
                                     const int* restrict entity_local_index,
-                                    const uint8_t* restrict quadrature_permutation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    void* user_data)
 {{
 {tabulate_expression}
 }}

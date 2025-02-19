@@ -64,6 +64,7 @@ def test_matvec(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
 
     # Check the computation against correct NumPy value
@@ -133,6 +134,7 @@ def test_rank1(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
 
     f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
@@ -203,6 +205,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
 
     def exact_expr(x):
@@ -261,6 +264,7 @@ def test_grad_constant(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,  
     )
 
     assert output[0] == pytest.approx(consts[1] * 2 * points[0, 0])
@@ -316,6 +320,7 @@ def test_facet_expression(compile_args):
             ffi.cast(f"{c_xtype} *", coords.ctypes.data),
             ffi.cast("int *", entity_index.ctypes.data),
             ffi.cast("uint8_t *", quad_perm.ctypes.data),
+            ffi.NULL,
         )
         # Assert that facet normal is perpendicular to tangent
         assert np.isclose(np.dot(output, tangent), 0)
@@ -366,6 +371,7 @@ def test_facet_geometry_expressions(compile_args):
                 ffi_data["coords"],
                 ffi_data["entity_index"],
                 ffi_data["quad_perm"],
+                ffi.NULL,
             )
             np.testing.assert_allclose(output, ref_val)
 
@@ -430,5 +436,6 @@ def test_facet_geometry_expressions_3D(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
     np.testing.assert_allclose(output, np.asarray(ref_fev)[:3, :])
