@@ -264,7 +264,7 @@ def test_grad_constant(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
-        ffi.NULL,  
+        ffi.NULL,
     )
 
     assert output[0] == pytest.approx(consts[1] * 2 * points[0, 0])
