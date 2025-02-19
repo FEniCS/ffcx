@@ -86,7 +86,7 @@ extern "C"
   /// For integrals not on interior facets, this argument has no effect and a
   /// null pointer can be passed. For interior facets the array will have size 2
   /// (one permutation for each cell adjacent to the facet).
-  /// @param[in] user_data Custom user data passed to the tabulate function. 
+  /// @param[in] custom_data Custom user data passed to the tabulate function. 
   /// For example, a struct with additional data needed for the tabulate function.
   /// See the implementation of runtime integrals for further details.
   typedef void(ufcx_tabulate_tensor_float32)(
@@ -94,7 +94,7 @@ extern "C"
       const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      void* user_data);
+      void* custom_data);
 
   /// Tabulate integral into tensor A with compiled
   /// quadrature rule and double precision
@@ -105,7 +105,7 @@ extern "C"
       const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      void* user_data);
+      void* custom_data);
 
 #ifndef __STDC_NO_COMPLEX__
   /// Tabulate integral into tensor A with compiled
@@ -117,7 +117,7 @@ extern "C"
       const float _Complex* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      void* user_data);
+      void* custom_data);
 #endif // __STDC_NO_COMPLEX__
 
 #ifndef __STDC_NO_COMPLEX__
@@ -130,7 +130,7 @@ extern "C"
       const double _Complex* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
       const uint8_t* restrict quadrature_permutation,
-      void* user_data);
+      void* custom_data);
 #endif // __STDC_NO_COMPLEX__
 
   typedef struct ufcx_integral
