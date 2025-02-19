@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - "**"
+      - sclaus/add-void-to-kernels
     tags:
       - "v*"
   pull_request:
