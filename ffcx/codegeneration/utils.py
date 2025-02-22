@@ -96,6 +96,7 @@ if numba is not None:
     @numba.extending.intrinsic
     def empty_void_pointer(typingctx):
         """Custom intrinsic to return an empty void* pointer.
+
         This function creates a void pointer initialized to null (0).
         This is used to pass a nullptr to the UFCx tabulate_tensor interface.
 
@@ -104,7 +105,7 @@ if numba is not None:
 
         Returns:
             A Numba signature and a code generation function that returns a void pointer.
-        """  # noqa: D205
+        """
 
         def codegen(context, builder, signature, args):
             null_ptr = context.get_constant(numba.types.voidptr, 0)
