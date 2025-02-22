@@ -98,6 +98,7 @@ if numba is not None:
         """Custom intrinsic to return an empty void* pointer.
         This function creates a void pointer initialized to null (0).
         This is used to pass a nullptr to the UFCx tabulate_tensor interface.
+
         Args:
             typingctx: The typing context.
 
@@ -125,7 +126,8 @@ if numba is not None:
             arr: The NumPy array to get the void pointer from.
 
         Returns:
-            A Numba signature and a code generation function that returns a void pointer to the array's data.
+            A Numba signature and a code generation function that returns a void pointer
+            to the array's data.
         """
         if not isinstance(arr, numba.types.Array):
             raise TypeError("Expected a NumPy array")
