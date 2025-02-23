@@ -69,7 +69,7 @@ def compute_integral_ir(
     """
     # The intermediate representation dict we're building and returning
     # here
-    ir = {}
+    ir: dict[str, typing.Any] = {}
 
     # Shared unique tables for all quadrature loops
     ir["unique_tables"] = {}
@@ -122,7 +122,7 @@ def compute_integral_ir(
         tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get("target", False)]
-        num_components = np.int32(np.prod(expression.ufl_shape))
+        num_components = np.int32(np.prod(expression.ufl_shape))  # type: ignore
 
         if "zeros" in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
@@ -146,7 +146,7 @@ def compute_integral_ir(
                 for comp in S.nodes[target]["component"]:
                     assert expressions[comp] is None
                     expressions[comp] = S.nodes[target]["expression"]
-            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))
+            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))  # type: ignore
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
@@ -161,7 +161,7 @@ def compute_integral_ir(
 
         # Get the 'target' nodes that are factors of arguments, and insert in dict
         FV_targets = [i for i, v in F.nodes.items() if v.get("target", False)]
-        argument_factorization = {}
+        argument_factorization: dict[tuple[int, ...], list[tuple[int, int]]] = {}
 
         for fi in FV_targets:
             # Number of blocks using this factor must agree with number of components
@@ -179,10 +179,10 @@ def compute_integral_ir(
                 k += 1
 
         # Get list of indices in F which are the arguments (should be at start)
-        argkeys = set()
+        _argkeys: set[int] = set()
         for w in argument_factorization:
-            argkeys = argkeys | set(w)
-        argkeys = list(argkeys)
+            _argkeys = _argkeys | set(w)
+        argkeys = list(_argkeys)
 
         # Build set of modified_terminals for each mt factorized vertex in F
         # and attach tables, if appropriate
@@ -213,27 +213,25 @@ def compute_integral_ir(
             ttypes = tuple(tr.ttype for tr in trs)
             assert not any(tt == "zeros" for tt in ttypes)
 
-            blockmap = []
+            _blockmap = []
             for tr in trs:
                 begin = tr.offset
                 num_dofs = tr.values.shape[3]
                 dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
-                blockmap.append(dofmap)
+                _blockmap.append(dofmap)
 
-            blockmap = tuple(blockmap)
+            blockmap = tuple(_blockmap)
             block_is_uniform = all(tr.is_uniform for tr in trs)
 
             # Collect relevant restrictions to identify blocks correctly
             # in interior facet integrals
-            block_restrictions = []
+            _block_restrictions: list[str] = []
             for i, ai in enumerate(ma_indices):
-                if trs[i].is_uniform:
-                    r = None
-                else:
+                if not trs[i].is_uniform:
                     r = F.nodes[ai]["mt"].restriction
 
-                block_restrictions.append(r)
-            block_restrictions = tuple(block_restrictions)
+                _block_restrictions.append(r)
+            block_restrictions = tuple(_block_restrictions)
 
             # Check if each *each* factor corresponding to this argument is piecewise
             all_factors_piecewise = all(F.nodes[ifi[0]]["status"] == "piecewise" for ifi in fi_ci)
