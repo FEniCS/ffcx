@@ -133,6 +133,8 @@ class FFCXBackendDefinitions:
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
         begin = tabledata.offset
+        assert bs is not None
+        assert begin is not None
         end = begin + bs * (num_dofs - 1) + 1
 
         if ttype == "zeros":

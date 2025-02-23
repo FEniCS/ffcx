@@ -91,6 +91,8 @@ class FFCXBackendAccess:
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+        assert begin is not None
+        assert tabledata.block_size is not None
         end = begin + tabledata.block_size * (num_dofs - 1) + 1
 
         if ttype == "ones" and (end - begin) == 1:
@@ -442,6 +444,7 @@ class FFCXBackendAccess:
             ], symbols
         else:
             FE = []
+            assert tabledata.tensor_factors is not None
             for i in range(dof_index.dim):
                 factor = tabledata.tensor_factors[i]
                 iq_i = quadrature_index.local_index(i)

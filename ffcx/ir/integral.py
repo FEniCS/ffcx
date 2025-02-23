@@ -19,7 +19,11 @@ from ufl.classes import QuadratureWeight
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
-from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
+from ffcx.ir.analysis.modified_terminals import (
+    ModifiedTerminal,
+    analyse_modified_terminal,
+    is_modified_terminal,
+)
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
 
@@ -53,7 +57,7 @@ def compute_integral_ir(
     """Compute intermediate representation for an integral."""
     # The intermediate representation dict we're building and returning
     # here
-    ir = {}
+    ir: dict[str, typing.Any] = {}
 
     # Shared unique tables for all quadrature loops
     ir["unique_tables"] = {}
@@ -79,7 +83,7 @@ def compute_integral_ir(
         # efficiently before argument factorization. We can build
         # terminal_data again after factorization if that's necessary.
 
-        initial_terminals = {
+        initial_terminals: dict[int, ModifiedTerminal] = {
             i: analyse_modified_terminal(v["expression"])
             for i, v in S.nodes.items()
             if is_modified_terminal(v["expression"])
@@ -133,7 +137,7 @@ def compute_integral_ir(
                 for comp in S.nodes[target]["component"]:
                     assert expressions[comp] is None
                     expressions[comp] = S.nodes[target]["expression"]
-            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))
+            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))  # type: ignore
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
@@ -148,14 +152,12 @@ def compute_integral_ir(
 
         # Get the 'target' nodes that are factors of arguments, and insert in dict
         FV_targets = [i for i, v in F.nodes.items() if v.get("target", False)]
-        argument_factorization = {}
-
+        argument_factorization: dict[tuple[int, ...], list[tuple[int, int]]] = {}
         for fi in FV_targets:
             # Number of blocks using this factor must agree with number of components
             # to which this factor contributes. I.e. there are more blocks iff there are more
             # components
             assert len(F.nodes[fi]["target"]) == len(F.nodes[fi]["component"])
-
             k = 0
             for w in F.nodes[fi]["target"]:
                 comp = F.nodes[fi]["component"][k]
@@ -166,10 +168,10 @@ def compute_integral_ir(
                 k += 1
 
         # Get list of indices in F which are the arguments (should be at start)
-        argkeys = set()
+        _argkeys: set[int] = set()
         for w in argument_factorization:
-            argkeys = argkeys | set(w)
-        argkeys = list(argkeys)
+            _argkeys = _argkeys | set(w)
+        argkeys = list(_argkeys)
 
         # Build set of modified_terminals for each mt factorized vertex in F
         # and attach tables, if appropriate
@@ -200,27 +202,28 @@ def compute_integral_ir(
             ttypes = tuple(tr.ttype for tr in trs)
             assert not any(tt == "zeros" for tt in ttypes)
 
-            blockmap = []
+            _blockmap: list[tuple[int, ...]] = []
             for tr in trs:
+                assert tr is not None
                 begin = tr.offset
+                assert begin is not None
                 num_dofs = tr.values.shape[3]
+                assert tr.block_size is not None
                 dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
-                blockmap.append(dofmap)
+                _blockmap.append(dofmap)
 
-            blockmap = tuple(blockmap)
+            blockmap = tuple(_blockmap)
             block_is_uniform = all(tr.is_uniform for tr in trs)
 
             # Collect relevant restrictions to identify blocks correctly
             # in interior facet integrals
-            block_restrictions = []
+            _block_restrictions: list[str] = []
             for i, ai in enumerate(ma_indices):
-                if trs[i].is_uniform:
-                    r = None
-                else:
+                if not trs[i].is_uniform:
                     r = F.nodes[ai]["mt"].restriction
+                    _block_restrictions.append(r)
 
-                block_restrictions.append(r)
-            block_restrictions = tuple(block_restrictions)
+            block_restrictions: tuple[str, ...] = tuple(_block_restrictions)
 
             # Check if each *each* factor corresponding to this argument is piecewise
             all_factors_piecewise = all(F.nodes[ifi[0]]["status"] == "piecewise" for ifi in fi_ci)
@@ -255,6 +258,7 @@ def compute_integral_ir(
             tr = v.get("tr")
             if tr is not None and F.nodes[i]["status"] != "inactive":
                 if tr.has_tensor_factorisation:
+                    assert tr.tensor_factors is not None
                     for t in tr.tensor_factors:
                         active_table_names.add(t.name)
                 else:
@@ -265,6 +269,7 @@ def compute_integral_ir(
             for blockdata in contributions:
                 for mad in blockdata.ma_data:
                     if mad.tabledata.has_tensor_factorisation:
+                        assert mad.tabledata.tensor_factors is not None
                         for t in mad.tabledata.tensor_factors:
                             active_table_names.add(t.name)
                     else:
