@@ -311,7 +311,7 @@ def build_optimized_tables(
     is_mixed_dim: bool,
     rtol: float = default_rtol,
     atol: float = default_atol,
-) -> dict[typing.Union[ModifiedTerminal ,str], UniqueTableReferenceT]:
+) -> dict[typing.Union[ModifiedTerminal, str], UniqueTableReferenceT]:
     """Build the element tables needed for a list of modified terminals.
 
     Args:
