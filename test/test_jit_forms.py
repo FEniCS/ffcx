@@ -69,6 +69,8 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
 
     default_integral = form0.form_integrals[offsets[cell]]
 
+    assert domain.ufl_coordinate_element().basix_hash() == default_integral.coordinate_element_hash
+
     A = np.zeros((3, 3), dtype=dtype)
     w = np.array([], dtype=dtype)
 

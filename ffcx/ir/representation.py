@@ -7,7 +7,8 @@
 """Compiler stage 2: Code representation.
 
 Module computes intermediate representations of forms. For each UFC
-function, we extract the data needed for code generation at a later stage.
+function, we extract the data needed for code generation at a later
+stage.
 
 The representation should conform strictly to the naming and order of
 functions in UFC. Thus, for code generation of the function "foo", one
@@ -22,6 +23,7 @@ import logging
 import typing
 import warnings
 
+import basix
 import numpy as np
 import numpy.typing as npt
 import ufl
@@ -77,6 +79,7 @@ class CommonExpressionIR(typing.NamedTuple):
     name: str
     needs_facet_permutations: bool
     shape: list[int]
+    coordinate_element_hash: str
 
 
 class IntegralIR(typing.NamedTuple):
@@ -85,7 +88,6 @@ class IntegralIR(typing.NamedTuple):
     expression: CommonExpressionIR
     rank: int
     enabled_coefficients: list[bool]
-    coordinate_element_hash: str
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -119,9 +121,9 @@ def compute_ir(
     logger.info(79 * "*")
 
     # Compute object names
-    # NOTE: This is done here for performance reasons, because repeated calls
-    # within each IR computation would be expensive due to UFL signature computations
-    finite_element_hashes = {e: e.basix_hash() for e in analysis.unique_elements}
+    # NOTE: This is done here for performance reasons, because repeated
+    # calls within each IR computation would be expensive due to UFL
+    # signature computations.
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
@@ -137,7 +139,6 @@ def compute_ir(
             i,
             analysis.element_numbers,
             integral_names,
-            finite_element_hashes,
             options,
             visualise,
         )
@@ -152,8 +153,6 @@ def compute_ir(
             prefix,
             form_names,
             integral_names,
-            analysis.element_numbers,
-            finite_element_hashes,
             object_names,
         )
         for (i, fd) in enumerate(analysis.form_data)
@@ -168,7 +167,6 @@ def compute_ir(
             options,
             visualise,
             object_names,
-            finite_element_hashes,
         )
         for i, expr in enumerate(analysis.expressions)
     ]
@@ -185,7 +183,6 @@ def _compute_integral_ir(
     form_index,
     element_numbers,
     integral_names,
-    finite_element_hashes,
     options,
     visualise,
 ) -> list[IntegralIR]:
@@ -216,13 +213,11 @@ def _compute_integral_ir(
             "integral_type": itg_data.integral_type,
             "entity_type": entity_type,
             "shape": (),
+            "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
         }
         ir = {
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "coordinate_element_hash": finite_element_hashes[
-                itg_data.domain.ufl_coordinate_element()
-            ],
         }
 
         # Get element space dimensions
@@ -257,8 +252,6 @@ def _compute_integral_ir(
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
             elif scheme == "vertex":
-                # FIXME: Could this come from basix?
-
                 # The vertex scheme, i.e., averaging the function value in the
                 # vertices and multiplying with the simplex volume, is only of
                 # order 1 and inferior to other generic schemes in terms of
@@ -282,55 +275,11 @@ def _compute_integral_ir(
                         "Explicitly selected vertex quadrature (degree 1), "
                         f"but requested degree is {degree}."
                     )
-                if cellname == "tetrahedron":
-                    points, weights = (
-                        np.array(
-                            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-                        ),
-                        np.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]),
-                    )
-                elif cellname == "triangle":
-                    points, weights = (
-                        np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
-                        np.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]),
-                    )
-                elif cellname == "interval":
-                    # Trapezoidal rule
-                    points, weights = (np.array([[0.0], [1.0]]), np.array([1.0 / 2.0, 1.0 / 2.0]))
-                elif cellname == "quadrilateral":
-                    points, weights = (
-                        np.array([[0.0, 0], [1.0, 0.0], [0.0, 1.0], [1.0, 1]]),
-                        np.array([1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0]),
-                    )
-                elif cellname == "hexahedron":
-                    points, weights = (
-                        np.array(
-                            [
-                                [0.0, 0.0, 0.0],
-                                [1.0, 0.0, 0.0],
-                                [0.0, 1.0, 0.0],
-                                [1.0, 1.0, 0.0],
-                                [0.0, 0.0, 1.0],
-                                [1.0, 0.0, 1.0],
-                                [0.0, 1.0, 1.0],
-                                [1.0, 1.0, 1.0],
-                            ]
-                        ),
-                        np.array(
-                            [
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                            ]
-                        ),
-                    )
-                else:
-                    raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
+                points = basix.cell.geometry(getattr(basix.CellType, cellname))
+                cell_volume = basix.cell.volume(getattr(basix.CellType, cellname))
+                weights = np.full(
+                    points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
+                )
             else:
                 degree = md["quadrature_degree"]
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
@@ -424,8 +373,6 @@ def _compute_form_ir(
     prefix,
     form_names,
     integral_names,
-    element_numbers,
-    finite_element_hashes,
     object_names,
 ) -> FormIR:
     """Compute intermediate representation of form."""
@@ -455,8 +402,7 @@ def _compute_form_ir(
     ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
     ir["finite_element_hashes"] = [
-        finite_element_hashes[e]
-        for e in form_data.argument_elements + form_data.coefficient_elements
+        e.basix_hash() for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
     form_name = object_names.get(id(form_data.original_form), form_id)
@@ -487,31 +433,30 @@ def _compute_form_ir(
 
 
 def _compute_expression_ir(
-    expression,
+    expr,
     index,
     prefix,
     analysis,
     options,
     visualise,
     object_names,
-    finite_element_hashes,
 ):
-    """Compute intermediate representation of expression."""
-    logger.info(f"Computing IR for expression {index}")
+    """Compute intermediate representation of an Expression."""
+    logger.info(f"Computing IR for Expression {index}")
 
     # Compute representation
     ir = {}
     base_ir = {}
-    original_expression = (expression[2], expression[1])
+    original_expr = (expr[2], expr[1])
 
-    base_ir["name"] = naming.expression_name(original_expression, prefix)
+    base_ir["name"] = naming.expression_name(original_expr, prefix)
 
-    original_expression = expression[2]
-    points = expression[1]
-    expression = expression[0]
+    original_expr = expr[2]
+    points = expr[1]
+    expr = expr[0]
 
     try:
-        cell = ufl.domain.extract_unique_domain(expression).ufl_cell()
+        cell = ufl.domain.extract_unique_domain(expr).ufl_cell()
     except AttributeError:
         # This case corresponds to a spatially constant expression
         # without any dependencies
@@ -525,16 +470,16 @@ def _compute_expression_ir(
     }
 
     # Extract dimensions for elements of arguments only
-    arguments = ufl.algorithms.extract_arguments(expression)
+    arguments = ufl.algorithms.extract_arguments(expr)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
     argument_dimensions = [element_dimensions[element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
     base_ir["tensor_shape"] = tensor_shape
 
-    base_ir["shape"] = list(expression.ufl_shape)
+    base_ir["shape"] = list(expr.ufl_shape)
 
-    coefficients = ufl.algorithms.extract_coefficients(expression)
+    coefficients = ufl.algorithms.extract_coefficients(expr)
     coefficient_numbering = {}
     for i, coeff in enumerate(coefficients):
         coefficient_numbering[coeff] = i
@@ -543,7 +488,7 @@ def _compute_expression_ir(
     base_ir["coefficient_numbering"] = coefficient_numbering
 
     original_coefficient_positions = []
-    original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
+    original_coefficients = ufl.algorithms.extract_coefficients(original_expr)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
 
@@ -553,12 +498,11 @@ def _compute_expression_ir(
 
     ir["constant_names"] = [
         object_names.get(id(obj), f"c{j}")
-        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))
+        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expr))
     ]
 
-    expression_name = object_names.get(id(original_expression), index)
-
-    ir["name_from_uflfile"] = f"expression_{prefix}_{expression_name}"
+    expr_name = object_names.get(id(original_expr), index)
+    ir["name_from_uflfile"] = f"expression_{prefix}_{expr_name}"
 
     if len(argument_elements) > 1:
         raise RuntimeError("Expression with more than one Argument not implemented.")
@@ -594,15 +538,18 @@ def _compute_expression_ir(
     # Build offsets for Constants
     original_constant_offsets = {}
     _offset = 0
-    for constant in ufl.algorithms.analysis.extract_constants(original_expression):
+    for constant in ufl.algorithms.analysis.extract_constants(original_expr):
         original_constant_offsets[constant] = _offset
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
+    base_ir["coordinate_element_hash"] = (
+        ufl.domain.extract_unique_domain(expr).ufl_coordinate_element().basix_hash()
+    )
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
-    integrands = {rule: expression}
+    integrands = {rule: expr}
 
     if cell is None:
         assert (
