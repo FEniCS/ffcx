@@ -311,7 +311,7 @@ def build_optimized_tables(
     is_mixed_dim: bool,
     rtol: float = default_rtol,
     atol: float = default_atol,
-) -> dict[ModifiedTerminal | str, UniqueTableReferenceT]:
+) -> dict[typing.Union[ModifiedTerminal ,str], UniqueTableReferenceT]:
     """Build the element tables needed for a list of modified terminals.
 
     Args:
@@ -504,7 +504,7 @@ def build_optimized_tables(
         if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
             raise RuntimeError("Sum factorization not available for this quadrature rule.")
 
-        tensor_factors: list[UniqueTableReferenceT] | None = None
+        tensor_factors: typing.Optional[list[UniqueTableReferenceT]] = None
         tensor_perm = None
         if (
             use_sum_factorization
