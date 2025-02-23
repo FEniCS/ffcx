@@ -21,16 +21,6 @@ def test_demo(file, scalar_type):
         # Skip complex demos on win32
         pytest.skip(reason="_Complex not supported on Windows")
 
-    if file in [
-        "MixedGradient",
-        "TraceElement",  # HDiv Trace
-        "MixedElasticity",  # VectorElement of BDM
-        "RestrictedElement",
-        "_TensorProductElement",
-    ]:
-        # Skip demos that use elements not yet implemented in Basix
-        pytest.skip(reason="Element not yet implemented in Basix")
-
     if "complex" in scalar_type and file in [
         "BiharmonicHHJ",
         "BiharmonicRegge",
@@ -48,7 +38,7 @@ def test_demo(file, scalar_type):
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
         assert (
             os.system(
-                f"cd {demo_dir} && " f'cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
+                f'cd {demo_dir} && cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
             )
         ) == 0
         assert (
@@ -65,12 +55,7 @@ def test_demo(file, scalar_type):
         )
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
         assert (
-            os.system(
-                f"cd {demo_dir} && "
-                f"{cc} -I../ffcx/codegeneration "
-                f"{extra_flags} "
-                f"-c {file}.c"
-            )
+            os.system(f"cd {demo_dir} && {cc} -I../ffcx/codegeneration {extra_flags} -c {file}.c")
             == 0
         )
 
