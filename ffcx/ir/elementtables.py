@@ -47,15 +47,15 @@ class UniqueTableReferenceT(typing.NamedTuple):
 
     name: str
     values: npt.NDArray[np.float64]
-    offset: int | None
-    block_size: int | None
-    ttype: str | None
+    offset: typing.Optional[int]
+    block_size: typing.Optional[int]
+    ttype: typing.Optional[str]
     is_piecewise: bool
     is_uniform: bool
     is_permuted: bool
     has_tensor_factorisation: bool
-    tensor_factors: list[typing.Any] | None
-    tensor_permutation: np.typing.NDArray[np.int32] | None
+    tensor_factors: typing.Optional[list[typing.Any]]
+    tensor_permutation: typing.Optional[np.typing.NDArray[np.int32]]
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -348,7 +348,7 @@ def build_optimized_tables(
         set(ufl.algorithms.analysis.extract_sub_elements(all_elements))
     )
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
-    mt_tables: dict[ModifiedTerminal | str, UniqueTableReferenceT] = {}
+    mt_tables: dict[typing.Union[ModifiedTerminal, str], UniqueTableReferenceT] = {}
 
     _existing_tables = existing_tables.copy()
 
