@@ -11,6 +11,7 @@ from typing import Union
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -50,7 +51,9 @@ def create_dof_index(tabledata, dof_index_symbol):
 class FFCXBackendDefinitions:
     """FFCx specific code definitions."""
 
-    def __init__(self, entity_type: str, integral_type: str, access, options):
+    entity_type: entity_types
+
+    def __init__(self, entity_type: entity_types, integral_type: str, access, options):
         """Initialise."""
         # Store ir and options
         self.integral_type = integral_type

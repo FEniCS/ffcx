@@ -16,6 +16,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 
+from ffcx.definitions import entity_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
@@ -46,7 +47,9 @@ class BlockDataT(typing.NamedTuple):
     is_permuted: bool  # Do quad points on facets need to be permuted?
 
 
-def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_shape, p, visualise):
+def compute_integral_ir(
+    cell, integral_type: str, entity_type: entity_types, integrands, argument_shape, p, visualise
+):
     """Compute intermediate representation for an integral."""
     # The intermediate representation dict we're building and returning
     # here

@@ -13,8 +13,11 @@ import numpy as np
 import numpy.typing as npt
 import ufl
 
+from ffcx.definitions import entity_types
 from ffcx.element_interface import basix_index
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.representationutils import (
+    QuadratureRule,
     create_quadrature_points_and_weights,
     integral_type_to_entity_dim,
     map_integral_points,
@@ -82,7 +85,7 @@ def get_ffcx_table_values(
     integral_type,
     element,
     avg,
-    entity_type,
+    entity_type: entity_types,
     derivative_counts,
     flat_component,
     codim,
@@ -175,7 +178,12 @@ def get_ffcx_table_values(
 
 
 def generate_psi_table_name(
-    quadrature_rule, element_counter, averaged: str, entity_type, derivative_counts, flat_component
+    quadrature_rule: QuadratureRule,
+    element_counter,
+    averaged: str,
+    entity_type: entity_types,
+    derivative_counts,
+    flat_component,
 ):
     """Generate a name for the psi table.
 
@@ -293,26 +301,33 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 
 def build_optimized_tables(
-    quadrature_rule,
-    cell,
-    integral_type,
-    entity_type,
-    modified_terminals,
-    existing_tables,
-    use_sum_factorization,
-    is_mixed_dim,
-    rtol=default_rtol,
-    atol=default_atol,
-):
+    quadrature_rule: QuadratureRule,
+    cell: ufl.Cell,
+    integral_type: str,
+    entity_type: entity_types,
+    modified_terminals: ModifiedTerminal,
+    existing_tables: dict[str, np.ndarray],
+    use_sum_factorization: bool,
+    is_mixed_dim: bool,
+    rtol: float = default_rtol,
+    atol: float = default_atol,
+) -> dict[ModifiedTerminal, UniqueTableReferenceT]:
     """Build the element tables needed for a list of modified terminals.
 
-    Input:
-      entity_type - str
-      modified_terminals - ordered sequence of unique modified terminals
-      FIXME: Document
+    Args:
+        quadrature_rule: The quadrature rule relating to the tables.
+        cell: The cell type of the domain the tables will be used with.
+        entity_type: On what entity (vertex,edge,facet,cell) the tables are evaluated at.
+        integral_type: The type of integral the tables are used for.
+        modified_terminals: ordered sequence of unique modified terminals
+        existing_tables: Register of tables that already exist and reused.
+        use_sum_factorization: Use sum factorization for tensor product elements.
+        is_mixed_dim: Mixed dimensionality of the domain.
+        rtol: Relative tolerance for comparing tables.
+        atol: Absolute tolerance for comparing tables.
 
-    Output:
-      mt_tables - dict(ModifiedTerminal: table data)
+    Returns:
+      mt_tables - Dictionary mapping each modified terminal to the a unique table reference.
     """
     # Add to element tables
     analysis = {}
