@@ -199,7 +199,7 @@ def generate_psi_table_name(
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_E"}[entity_type]
+    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_R"}[entity_type]
     name += f"_Q{quadrature_rule.id()}"
     return name
 
