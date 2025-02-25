@@ -110,6 +110,7 @@ def test_bilinear_form(dtype, P, cell_type):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     # Use sum factorization
@@ -123,6 +124,7 @@ def test_bilinear_form(dtype, P, cell_type):
         ffi.cast(f"{c_type} *", w.ctypes.data),
         ffi.cast(f"{c_type} *", c.ctypes.data),
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
