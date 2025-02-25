@@ -65,7 +65,8 @@ def compute_integral_ir(
         integrands: Dictionary mapping a quadrature rule to a sequence of integrands
         argument_shape: Shape of the output tensor of the integral (used for tensor factorization)
         p: Parameters used for clamping tables and for activating sum factorization
-        visualise: If True, store the graph representation of the integrand in a pdf file `S.pdf` and `F.pdf`
+        visualise: If True, store the graph representation of the integrand in a pdf file
+            `S.pdf` and `F.pdf`
     """
     # The intermediate representation dict we're building and returning
     # here
