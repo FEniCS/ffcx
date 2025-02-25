@@ -21,6 +21,7 @@ from ffcx.ir.analysis.graph import build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
+from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
 
@@ -46,21 +47,38 @@ class BlockDataT(typing.NamedTuple):
     is_permuted: bool  # Do quad points on facets need to be permuted?
 
 
-def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_shape, p, visualise):
-    """Compute intermediate representation for an integral."""
+def compute_integral_ir(
+    cell: ufl.Cell,
+    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
+    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    integrands: dict[QuadratureRule, tuple[ufl.core.expr.Expr, ...]],
+    argument_shape: tuple[int],
+    p: dict,
+    visualise: bool,
+):
+    """Compute intermediate representation for an integral.
+
+    Args:
+        cell: Cell of integration domain
+        integral_type: Type of integral over cell
+        entity_type: Corresponding entity of the cell that the integral is over
+        integrands: Dictionary mapping a quadrature rule to a sequence of integrands
+        argument_shape: Shape of the output tensor of the integral (used for tensor factorization)
+        p: Parameters used for clamping tables and for activating sum factorization
+        visualise: If True, store the graph representation of the integrand in a pdf file
+            `S.pdf` and `F.pdf`
+    """
     # The intermediate representation dict we're building and returning
     # here
-    ir = {}
+    ir: dict[str, typing.Any] = {}
 
     # Shared unique tables for all quadrature loops
     ir["unique_tables"] = {}
     ir["unique_table_types"] = {}
 
     ir["integrand"] = {}
-
     for quadrature_rule, integrand in integrands.items():
         expression = integrand
-
         # Rebalance order of nested terminal modifiers
         expression = balance_modifiers(expression)
 
@@ -87,7 +105,6 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
         for domain in ufl.domain.extract_domains(integrand):
             if domain.topological_dimension() != cell.topological_dimension():
                 is_mixed_dim = True
-
         mt_table_reference = build_optimized_tables(
             quadrature_rule,
             cell,
@@ -106,7 +123,7 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
         tables = {v.name: v.values for v in mt_table_reference.values()}
 
         S_targets = [i for i, v in S.nodes.items() if v.get("target", False)]
-        num_components = np.int32(np.prod(expression.ufl_shape))
+        num_components = np.int32(np.prod(expression.ufl_shape))  # type: ignore
 
         if "zeros" in table_types.values():
             # If there are any 'zero' tables, replace symbolically and rebuild graph
@@ -130,7 +147,7 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
                 for comp in S.nodes[target]["component"]:
                     assert expressions[comp] is None
                     expressions[comp] = S.nodes[target]["expression"]
-            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))
+            expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))  # type: ignore
 
             # Rebuild scalar list-based graph representation
             S = build_scalar_graph(expression)
@@ -145,7 +162,7 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
 
         # Get the 'target' nodes that are factors of arguments, and insert in dict
         FV_targets = [i for i, v in F.nodes.items() if v.get("target", False)]
-        argument_factorization = {}
+        argument_factorization: dict[tuple[int, ...], list[tuple[int, int]]] = {}
 
         for fi in FV_targets:
             # Number of blocks using this factor must agree with number of components
@@ -163,10 +180,10 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
                 k += 1
 
         # Get list of indices in F which are the arguments (should be at start)
-        argkeys = set()
+        _argkeys: set[int] = set()
         for w in argument_factorization:
-            argkeys = argkeys | set(w)
-        argkeys = list(argkeys)
+            _argkeys = _argkeys | set(w)
+        argkeys = list(_argkeys)
 
         # Build set of modified_terminals for each mt factorized vertex in F
         # and attach tables, if appropriate
@@ -197,27 +214,25 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
             ttypes = tuple(tr.ttype for tr in trs)
             assert not any(tt == "zeros" for tt in ttypes)
 
-            blockmap = []
+            _blockmap = []
             for tr in trs:
                 begin = tr.offset
                 num_dofs = tr.values.shape[3]
                 dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
-                blockmap.append(dofmap)
+                _blockmap.append(dofmap)
 
-            blockmap = tuple(blockmap)
+            blockmap = tuple(_blockmap)
             block_is_uniform = all(tr.is_uniform for tr in trs)
 
             # Collect relevant restrictions to identify blocks correctly
             # in interior facet integrals
-            block_restrictions = []
+            _block_restrictions: list[str] = []
             for i, ai in enumerate(ma_indices):
-                if trs[i].is_uniform:
-                    r = None
-                else:
+                if not trs[i].is_uniform:
                     r = F.nodes[ai]["mt"].restriction
 
-                block_restrictions.append(r)
-            block_restrictions = tuple(block_restrictions)
+                _block_restrictions.append(r)
+            block_restrictions = tuple(_block_restrictions)
 
             # Check if each *each* factor corresponding to this argument is piecewise
             all_factors_piecewise = all(F.nodes[ifi[0]]["status"] == "piecewise" for ifi in fi_ci)
@@ -291,7 +306,6 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
         ir["needs_facet_permutations"] = (
             "+" in restrictions and "-" in restrictions
         ) or is_mixed_dim
-
     return ir
 
 
