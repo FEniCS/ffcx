@@ -125,15 +125,35 @@ if numba is not None:
         Args:
             typingctx: The typing context.
             arr: The NumPy array to get the void pointer from.
+            In a multi-dimensional NumPy array, the memory is laid out in a contiguous
+            block of memory in either row-major (C-style) or
+            column-major (Fortran-style) order.
+            By default, NumPy uses row-major order.
 
         Returns:
             A Numba signature and a code generation function that returns a void pointer
-            to the array's data.
+            to the first element of the contiguous block of memory that stores the array's
+            data in row-major order by default.
         """
         if not isinstance(arr, numba.types.Array):
             raise TypeError("Expected a NumPy array")
 
         def codegen(context, builder, signature, args):
+            """Generate LLVM IR code to convert a NumPy array to a void* pointer.
+
+            This function generates the necessary LLVM IR instructions to:
+            1. Allocate memory for the array on the stack.
+            2. Cast the allocated memory to a void* pointer.
+
+            Args:
+                context: The LLVM context.
+                builder: The LLVM IR builder.
+                signature: The function signature.
+                args: The input arguments (NumPy array).
+
+            Returns:
+                A void* pointer to the array's data.
+            """
             [arr] = args
             raw_ptr = numba.core.cgutils.alloca_once_value(builder, arr)
             void_ptr = builder.bitcast(raw_ptr, context.get_value_type(numba.types.voidptr))
