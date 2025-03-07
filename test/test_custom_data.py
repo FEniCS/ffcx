@@ -5,63 +5,67 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import numpy as np
-from cffi import FFI
-
-# Define custom tabulate tensor function in C with a struct
-# Step 1: Define the function in C and set up the CFFI builder
-ffibuilder = FFI()
-ffibuilder.set_source(
-    "_cffi_kernelA",
-    r"""
-    typedef struct {
-        uint8_t size;
-        double* values;
-    } cell_data;
-
-    void tabulate_tensor_integral_add_values(double* restrict A,
-                                            const double* restrict w,
-                                            const double* restrict c,
-                                            const double* restrict coordinate_dofs,
-                                            const int* restrict entity_local_index,
-                                            const uint8_t* restrict quadrature_permutation,
-                                            void* custom_data)
-    {
-        // Cast the void* custom_data to cell_data*
-        cell_data* custom_data_ptr = (cell_data*)custom_data;
-
-        // Access the custom data
-        uint8_t size = custom_data_ptr->size;
-        double* values = custom_data_ptr->values;
-
-        // Use the values in your computations
-        for (uint8_t i = 0; i < size; i++) {
-            A[0] += values[i];
-        }
-    }
-    """,
-)
-ffibuilder.cdef(
-    """
-    typedef struct {
-        uint8_t size;
-        double* values;
-    } cell_data;
-
-    void tabulate_tensor_integral_add_values(double* restrict A,
-                                            const double* restrict w,
-                                            const double* restrict c,
-                                            const double* restrict coordinate_dofs,
-                                            const int* restrict entity_local_index,
-                                            const uint8_t* restrict quadrature_permutation,
-                                            void* custom_data);
-    """
-)
-
-# Step 2: Compile the C code
-ffibuilder.compile(verbose=True)
+import pytest
 
 
 def test_tabulate_tensor_integral_add_values():
+    pytest.importorskip("cffi")
+
+    from cffi import FFI
+
+    # Define custom tabulate tensor function in C with a struct
+    # Step 1: Define the function in C and set up the CFFI builder
+    ffibuilder = FFI()
+    ffibuilder.set_source(
+        "_cffi_kernelA",
+        r"""
+        typedef struct {
+            uint8_t size;
+            double* values;
+        } cell_data;
+
+        void tabulate_tensor_integral_add_values(double* restrict A,
+                                                const double* restrict w,
+                                                const double* restrict c,
+                                                const double* restrict coordinate_dofs,
+                                                const int* restrict entity_local_index,
+                                                const uint8_t* restrict quadrature_permutation,
+                                                void* custom_data)
+        {
+            // Cast the void* custom_data to cell_data*
+            cell_data* custom_data_ptr = (cell_data*)custom_data;
+
+            // Access the custom data
+            uint8_t size = custom_data_ptr->size;
+            double* values = custom_data_ptr->values;
+
+            // Use the values in your computations
+            for (uint8_t i = 0; i < size; i++) {
+                A[0] += values[i];
+            }
+        }
+        """,
+    )
+    ffibuilder.cdef(
+        """
+        typedef struct {
+            uint8_t size;
+            double* values;
+        } cell_data;
+
+        void tabulate_tensor_integral_add_values(double* restrict A,
+                                                const double* restrict w,
+                                                const double* restrict c,
+                                                const double* restrict coordinate_dofs,
+                                                const int* restrict entity_local_index,
+                                                const uint8_t* restrict quadrature_permutation,
+                                                void* custom_data);
+        """
+    )
+
+    # Step 2: Compile the C code
+    ffibuilder.compile(verbose=True)
+
     # Step 3: Import the compiled library
     from _cffi_kernelA import ffi, lib
 
@@ -89,7 +93,7 @@ def test_tabulate_tensor_integral_add_values():
     quadrature_permutation_ptr = ffi.cast("uint8_t*", quadrature_permutation.ctypes.data)
 
     # Use ffi.from_buffer to create a CFFI pointer from the NumPy array
-    values_ptr = ffi.from_buffer(values)
+    values_ptr = ffi.cast("double*", values.ctypes.data)
 
     # Allocate memory for the struct
     custom_data = ffi.new("cell_data*")
