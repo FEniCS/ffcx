@@ -10,7 +10,7 @@ on:
     inputs:
       dolfinx_ref:
         description: "DOLFINx branch or tag"
-        default: "main"
+        default: "sclaus2/add-void-to-kernels"
         type: string
       basix_ref:
         description: "Basix branch or tag"
