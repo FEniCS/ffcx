@@ -84,7 +84,7 @@ def create_quadrature_points_and_weights(
     elif integral_type == "expression":
         pass
     else:
-        logging.exception(f"Unknown integral type: {integral_type}")
+        logger.exception(f"Unknown integral type: {integral_type}")
 
     return pts, wts, tensor_factors
 
