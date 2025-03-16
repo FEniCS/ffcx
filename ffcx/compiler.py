@@ -122,5 +122,4 @@ def compile_ufl_objects(
     cpu_time = time()
     code_h, code_c = format_code(code)
     _print_timing(4, time() - cpu_time)
-
     return code_h, code_c
