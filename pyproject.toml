@@ -79,9 +79,12 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["ffcx.*", "ffcx.ir.*", "ffcx.codegeneration.*"]
-disallow_untyped_defs = false
-disallow_any_unimported = false
+disallow_any_unimported = false # most of these come from UFL
+
+[[tool.mypy.overrides]]
+module = ["ffcx.ir.*", "ffcx.codegeneration.*"]
 check_untyped_defs = false
+disallow_untyped_defs = false 
 
 [tool.ruff]
 line-length = 100
