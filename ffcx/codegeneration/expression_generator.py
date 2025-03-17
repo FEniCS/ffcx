@@ -97,7 +97,7 @@ class ExpressionGenerator:
         """Generate tables of FE basis evaluated at specified points."""
         parts = []
 
-        tables = self.ir.expression.unique_tables
+        tables = self.ir.expression.unique_tables[self.quadrature_rule[0]]
         table_names = sorted(tables)
 
         for name in table_names:
@@ -125,7 +125,7 @@ class ExpressionGenerator:
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
-            body, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}"
+            body, f"Points loop body setup quadrature loop {self.quadrature_rule[1].id()}"
         )
 
         # Generate dofblock parts, some of this
@@ -139,7 +139,7 @@ class ExpressionGenerator:
             quadparts = []
         else:
             iq = self.backend.symbols.quadrature_loop_index
-            num_points = self.quadrature_rule.points.shape[0]
+            num_points = self.quadrature_rule[1].points.shape[0]
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
         return preparts, quadparts
 
@@ -148,11 +148,11 @@ class ExpressionGenerator:
         # Get annotated graph of factorisation
         F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
+        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule[1].id()}", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "varying")
         parts = L.commented_code_list(
             parts,
-            f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}",
+            f"Unstructured varying computations for quadrature rule {self.quadrature_rule[1].id()}",
         )
         return parts
 
@@ -216,7 +216,7 @@ class ExpressionGenerator:
         assert not blockdata.transposed, "Not handled yet"
         components = ufl.product(self.ir.expression.shape)
 
-        num_points = self.quadrature_rule.points.shape[0]
+        num_points = self.quadrature_rule[1].points.shape[0]
         A_shape = [num_points, components] + self.ir.expression.tensor_shape
         A = self.backend.symbols.element_tensor
         iq = self.backend.symbols.quadrature_loop_index
