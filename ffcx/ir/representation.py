@@ -578,11 +578,7 @@ def _compute_expression_ir(
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
-<<<<<<< HEAD
-    integrands = {"": {rule: expression}}
-=======
-    integrands = {rule: expr}
->>>>>>> main
+    integrands = {"": {rule: expr}}
 
     if cell is None:
         assert (
