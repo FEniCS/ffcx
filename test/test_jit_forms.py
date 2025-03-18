@@ -1343,6 +1343,7 @@ def test_ds_prism(compile_args, dtype):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", entity_perm.ctypes.data),
+        ffi.NULL,
     )
 
     assert np.allclose(
@@ -1387,6 +1388,7 @@ def test_ds_prism(compile_args, dtype):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", entity_perm.ctypes.data),
+        ffi.NULL,
     )
 
     assert np.allclose(
