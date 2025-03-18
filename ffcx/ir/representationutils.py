@@ -53,38 +53,45 @@ def create_quadrature_points_and_weights(
     integral_type, cell, degree, rule, elements, use_tensor_product=False
 ):
     """Create quadrature rule and return points and weights."""
-    pts = None
-    wts = None
-    tensor_factors = None
-
+    pts = {}
+    wts = {}
+    tensor_factors = {}
     if integral_type == "cell":
-        if cell.cellname() in ["quadrilateral", "hexahedron"] and use_tensor_product:
-            if cell.cellname() == "quadrilateral":
-                tensor_factors = [
+        cell_name = cell.cellname()
+        if cell_name in ["quadrilateral", "hexahedron"] and use_tensor_product:
+            if cell_name == "quadrilateral":
+                tensor_factors[cell_name] = [
                     create_quadrature("interval", degree, rule, elements) for _ in range(2)
                 ]
-            elif cell.cellname() == "hexahedron":
-                tensor_factors = [
+            elif cell_name == "hexahedron":
+                tensor_factors[cell_name] = [
                     create_quadrature("interval", degree, rule, elements) for _ in range(3)
                 ]
-            pts = np.array(
-                [tuple(i[0] for i in p) for p in itertools.product(*[f[0] for f in tensor_factors])]
+            pts[cell_name] = np.array(
+                [
+                    tuple(i[0] for i in p)
+                    for p in itertools.product(*[f[0] for f in tensor_factors[cell_name]])
+                ]
             )
-            wts = np.array([np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors])])
+            wts[cell_name] = np.array(
+                [np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors[cell_name]])]
+            )
         else:
-            pts, wts = create_quadrature(cell.cellname(), degree, rule, elements)
+            pts[cell_name], wts[cell_name] = create_quadrature(cell_name, degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:
-        facet_types = cell.facet_types()
-        # Raise exception for cells with more than one facet type e.g. prisms
-        if len(facet_types) > 1:
-            raise Exception(f"Cell type {cell} not supported for integral type {integral_type}.")
-        pts, wts = create_quadrature(facet_types[0].cellname(), degree, rule, elements)
+        for ft in cell.facet_types():
+            pts[ft.cellname()], wts[ft.cellname()] = create_quadrature(
+                ft.cellname(),
+                degree,
+                rule,
+                elements,
+            )
     elif integral_type in ufl.measure.point_integral_types:
-        pts, wts = create_quadrature("vertex", degree, rule, elements)
+        pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
         pass
     else:
-        logging.exception(f"Unknown integral type: {integral_type}")
+        logger.exception(f"Unknown integral type: {integral_type}")
 
     return pts, wts, tensor_factors
 
@@ -115,8 +122,13 @@ def map_integral_points(points, integral_type, cell, entity):
         assert entity == 0
         return np.asarray(points)
     elif entity_dim == tdim - 1:
-        assert points.shape[1] == tdim - 1
-        return np.asarray(map_facet_points(points, entity, cell.cellname()))
+        if isinstance(points, dict):
+            for p in points.values():
+                assert p.shape[1] == tdim - 1
+            return np.asarray(map_facet_points(points, entity, cell.cellname()))
+        else:
+            assert points.shape[1] == tdim - 1
+            return np.asarray(map_facet_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
         return np.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:

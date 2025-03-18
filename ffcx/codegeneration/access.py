@@ -242,7 +242,14 @@ class FFCXBackendAccess:
     def cell_facet_jacobian(self, mt, tabledata, num_points):
         """Access a cell facet jacobian."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
-        if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
+        if cellname in (
+            "triangle",
+            "tetrahedron",
+            "quadrilateral",
+            "hexahedron",
+            "prism",
+            "pyramid",
+        ):
             table = L.Symbol(f"{cellname}_cell_facet_jacobian", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]

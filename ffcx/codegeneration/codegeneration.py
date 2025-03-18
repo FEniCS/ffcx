@@ -47,7 +47,11 @@ def generate_code(
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
-    code_integrals = [integral_generator(integral_ir, options) for integral_ir in ir.integrals]
+    code_integrals = [
+        integral_generator(integral_ir, domain, options)
+        for integral_ir in ir.integrals
+        for domain in set(i[0] for i in integral_ir.expression.integrand.keys())
+    ]
     code_forms = [form_generator(form_ir, options) for form_ir in ir.forms]
     code_expressions = [
         expression_generator(expression_ir, options) for expression_ir in ir.expressions

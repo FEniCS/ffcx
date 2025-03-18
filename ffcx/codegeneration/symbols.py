@@ -110,7 +110,7 @@ class FFCXBackendSymbols:
         elif entity_type == "vertex":
             return self.entity_local_index[0]
         else:
-            logging.exception(f"Unknown entity_type {entity_type}")
+            logger.exception(f"Unknown entity_type {entity_type}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument iarg."""
@@ -136,8 +136,9 @@ class FFCXBackendSymbols:
 
     def J_component(self, mt):
         """Jacobian component."""
-        # FIXME: Add domain number!
-        return L.Symbol(format_mt_name("J", mt), dtype=L.DataType.REAL)
+        return L.Symbol(
+            format_mt_name(f"J{mt.expr.ufl_domain().ufl_id()}", mt), dtype=L.DataType.REAL
+        )
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         """Domain DOF access."""
