@@ -20,7 +20,7 @@ def test_tabulate_tensor_integral_add_values():
         "_cffi_kernelA",
         r"""
         typedef struct {
-            uint8_t size;
+            size_t size;
             double* values;
         } cell_data;
 
@@ -36,11 +36,11 @@ def test_tabulate_tensor_integral_add_values():
             cell_data* custom_data_ptr = (cell_data*)custom_data;
 
             // Access the custom data
-            uint8_t size = custom_data_ptr->size;
+            size_t size = custom_data_ptr->size;
             double* values = custom_data_ptr->values;
 
             // Use the values in your computations
-            for (uint8_t i = 0; i < size; i++) {
+            for (size_t i = 0; i < size; i++) {
                 A[0] += values[i];
             }
         }
@@ -49,7 +49,7 @@ def test_tabulate_tensor_integral_add_values():
     ffibuilder.cdef(
         """
         typedef struct {
-            uint8_t size;
+            size_t size;
             double* values;
         } cell_data;
 
@@ -70,8 +70,8 @@ def test_tabulate_tensor_integral_add_values():
     from _cffi_kernelA import ffi, lib
 
     # Define cell data
-    size = 2
     values = np.array([2.0, 1.0], dtype=np.float64)
+    size = len(values)
     expected_result = np.array([3.0], dtype=np.float64)
 
     # Define the input arguments

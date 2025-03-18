@@ -124,16 +124,16 @@ if numba is not None:
 
         Args:
             typingctx: The typing context.
-            arr: The NumPy array to get the void pointer from.
+            arr: The NumPy array to get the void pointer to the first element from.
             In a multi-dimensional NumPy array, the memory is laid out in a contiguous
-            block of memory in either row-major (C-style) or
-            column-major (Fortran-style) order.
-            By default, NumPy uses row-major order.
+            block of memory, see
+            https://numpy.org/doc/stable/reference/arrays.ndarray.html#internal-memory-layout-of-an-ndarray
 
         Returns:
-            A Numba signature and a code generation function that returns a void pointer
-            to the first element of the contiguous block of memory that stores the array's
-            data in row-major order by default.
+            sig: A Numba signature, which specifies the numba type (here voidptr),
+            codegen: A code generation function, which returns the LLVM IR to cast
+            the raw data pointer to the first element of the of the contiguous block of memory
+            of the NumPy array to void*.
         """
         if not isinstance(arr, numba.types.Array):
             raise TypeError("Expected a NumPy array")
