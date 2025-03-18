@@ -86,6 +86,7 @@ def test_additive_facet_integral(dtype, compile_args):
             ffi.cast(f"{c_xtype} *", coords.ctypes.data),
             ffi.cast("int *", facets.ctypes.data),
             ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
         )
         assert np.isclose(A.sum(), np.sqrt(12) * (i + 1))
 
@@ -158,6 +159,7 @@ def test_additive_cell_integral(dtype, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     A0 = np.array(A)
@@ -167,6 +169,7 @@ def test_additive_cell_integral(dtype, compile_args):
             ffi.cast(f"{c_type} *", w.ctypes.data),
             ffi.cast(f"{c_type} *", c.ctypes.data),
             ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.NULL,
             ffi.NULL,
             ffi.NULL,
         )
