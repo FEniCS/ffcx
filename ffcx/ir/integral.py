@@ -140,7 +140,7 @@ def compute_integral_ir(
                     for comp in S.nodes[target]["component"]:
                         assert expressions[comp] is None
                         expressions[comp] = S.nodes[target]["expression"]
-                expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))
+                expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))  # type: ignore
 
                 # Rebuild scalar list-based graph representation
                 S = build_scalar_graph(expression)
@@ -173,10 +173,10 @@ def compute_integral_ir(
                     k += 1
 
             # Get list of indices in F which are the arguments (should be at start)
-            argkeys: set[int] = set()
+            _argkeys: set[int] = set()
             for w in argument_factorization:
-                argkeys = argkeys | set(w)
-            argkeys = list(argkeys)
+                _argkeys = _argkeys | set(w)
+            argkeys = list(_argkeys)
 
             # Build set of modified_terminals for each mt factorized vertex in F
             # and attach tables, if appropriate
@@ -216,12 +216,13 @@ def compute_integral_ir(
                     assert tr.block_size is not None
                     dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
                     _blockmap.append(dofmap)
+                blockmap = tuple(_blockmap)
 
                 block_is_uniform = all(tr.is_uniform for tr in trs)
 
                 # Collect relevant restrictions to identify blocks correctly
                 # in interior facet integrals
-   
+
                 # Collect relevant restrictions to identify blocks correctly
                 # in interior facet integrals
                 _block_restrictions: list[str] = []
@@ -267,8 +268,9 @@ def compute_integral_ir(
                 tr = v.get("tr")
                 if tr is not None and F.nodes[i]["status"] != "inactive":
                     if tr.has_tensor_factorisation:
+                        assert tr.tensor_factors is not None
                         for t in tr.tensor_factors:
-                           active_table_names.add(t.name)
+                            active_table_names.add(t.name)
                     else:
                         active_table_names.add(tr.name)
 
@@ -277,6 +279,7 @@ def compute_integral_ir(
                 for blockdata in contributions:
                     for mad in blockdata.ma_data:
                         if mad.tabledata.has_tensor_factorisation:
+                            assert mad.tabledata.tensor_factors is not None
                             for t in mad.tabledata.tensor_factors:
                                 active_table_names.add(t.name)
                         else:
