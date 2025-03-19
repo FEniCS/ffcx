@@ -13,6 +13,7 @@ import basix.ufl
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -23,7 +24,9 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendAccess:
     """FFCx specific formatter class."""
 
-    def __init__(self, entity_type: str, integral_type: str, symbols, options):
+    entity_type: entity_types
+
+    def __init__(self, entity_type: entity_types, integral_type: str, symbols, options):
         """Initialise."""
         # Store ir and options
         self.entity_type = entity_type
@@ -88,6 +91,8 @@ class FFCXBackendAccess:
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+        assert begin is not None
+        assert tabledata.block_size is not None
         end = begin + tabledata.block_size * (num_dofs - 1) + 1
 
         if ttype == "ones" and (end - begin) == 1:
@@ -406,7 +411,7 @@ class FFCXBackendAccess:
     def table_access(
         self,
         tabledata: UniqueTableReferenceT,
-        entity_type: str,
+        entity_type: entity_types,
         restriction: str,
         quadrature_index: L.MultiIndex,
         dof_index: L.MultiIndex,
@@ -415,7 +420,7 @@ class FFCXBackendAccess:
 
         Args:
             tabledata: Table data object
-            entity_type: Entity type ("cell", "facet", "vertex")
+            entity_type: Entity type
             restriction: Restriction ("+", "-")
             quadrature_index: Quadrature index
             dof_index: Dof index
@@ -446,6 +451,7 @@ class FFCXBackendAccess:
             ], symbols
         else:
             FE = []
+            assert tabledata.tensor_factors is not None
             for i in range(dof_index.dim):
                 factor = tabledata.tensor_factors[i]
                 iq_i = quadrature_index.local_index(i)

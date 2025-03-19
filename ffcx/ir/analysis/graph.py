@@ -6,6 +6,7 @@
 """Linearized data structure for the computational graph."""
 
 import logging
+import typing
 
 import numpy as np
 import ufl
@@ -73,7 +74,7 @@ def build_graph_vertices(expressions, skip_terminal_modifiers=False):
     return G
 
 
-def build_scalar_graph(expression):
+def build_scalar_graph(expression) -> ExpressionGraph:
     """Build list representation of expression graph covering the given expressions."""
     # Populate with vertices
     G = build_graph_vertices([expression], skip_terminal_modifiers=False)
@@ -86,7 +87,7 @@ def build_scalar_graph(expression):
     G = build_graph_vertices(scalar_expressions, skip_terminal_modifiers=True)
 
     # Compute graph edges
-    V_deps = []
+    V_deps: list[typing.Union[tuple[()], list[int]]] = []
     for i, v in G.nodes.items():
         expr = v["expression"]
         if expr._ufl_is_terminal_ or expr._ufl_is_terminal_modifier_:

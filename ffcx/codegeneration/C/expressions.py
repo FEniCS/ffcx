@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 import numpy as np
 
@@ -38,7 +39,7 @@ def generator(ir: ExpressionIR, options):
     backend = FFCXBackend(ir, options)
     eg = ExpressionGenerator(ir, backend)
 
-    d: dict[str, str | int] = {}
+    d: dict[str, typing.Union[str, int]] = {}
     d["name_from_uflfile"] = ir.name_from_uflfile
     d["factory_name"] = factory_name
     parts = eg.generate()
