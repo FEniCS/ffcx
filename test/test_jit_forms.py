@@ -89,6 +89,7 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     assert np.allclose(A, np.trace(kappa_value) * expected_result)
@@ -233,6 +234,7 @@ def test_helmholtz_form_2d(dtype, expected_result, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     np.testing.assert_allclose(A, expected_result)
@@ -305,6 +307,7 @@ def test_laplace_bilinear_form_3d(dtype, expected_result, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     assert np.allclose(A, expected_result)
@@ -342,6 +345,7 @@ def test_form_coefficient(compile_args):
         ffi.cast("double  *", coords.ctypes.data),
         ffi.NULL,
         ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
     )
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
@@ -452,6 +456,7 @@ def test_interior_facet_integral(dtype, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", facets.ctypes.data),
         ffi.cast("uint8_t *", perms.ctypes.data),
+        ffi.NULL,
     )
 
 
@@ -512,6 +517,7 @@ def test_conditional(dtype, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=dtype)
@@ -528,6 +534,7 @@ def test_conditional(dtype, compile_args):
         ffi.cast(f"{c_type} *", w2.ctypes.data),
         ffi.cast(f"{c_type} *", c.ctypes.data),
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -579,6 +586,7 @@ def test_custom_quadrature(compile_args):
         ffi.cast("double *", w.ctypes.data),
         ffi.cast("double *", c.ctypes.data),
         ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -688,6 +696,7 @@ def test_lagrange_triangle(compile_args, order, dtype, sym_fun, ufl_fun):
         ffi.cast(f"{c_type} *", w.ctypes.data),
         ffi.NULL,
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -817,6 +826,7 @@ def test_lagrange_tetrahedron(compile_args, order, dtype, sym_fun, ufl_fun):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     # Check that the result is the same as for sympy
@@ -850,6 +860,7 @@ def test_prism(compile_args):
         ffi.NULL,
         ffi.NULL,
         ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -898,6 +909,7 @@ def test_complex_operations(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     expected_result = np.array(
@@ -916,6 +928,7 @@ def test_complex_operations(compile_args):
         ffi.cast(f"{c_type} *", w1.ctypes.data),
         ffi.cast(f"{c_type} *", c.ctypes.data),
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -980,6 +993,7 @@ def test_interval_vertex_quadrature(compile_args):
         ffi.cast("double *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
     assert np.isclose(J[0], (0.5 * a + 0.5 * b) * np.abs(b - a))
 
@@ -1033,6 +1047,7 @@ def test_facet_vertex_quadrature(compile_args):
             ffi.cast("double *", coords.ctypes.data),
             ffi.cast("int *", facets.ctypes.data),
             ffi.NULL,
+            ffi.NULL,
         )
         solutions.append(J[0])
         # Test against exact result
@@ -1084,6 +1099,7 @@ def test_manifold_derivatives(compile_args):
         ffi.cast("double  *", coords.ctypes.data),
         ffi.NULL,
         ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
     )
 
     assert np.isclose(J[0], 0.0)
@@ -1210,6 +1226,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
             ffi.cast(f"{c_xtype} *", coords.ctypes.data),
             ffi.cast("int *", facet.ctypes.data),
             ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
         )
 
         return A
@@ -1326,6 +1343,7 @@ def test_ds_prism(compile_args, dtype):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", entity_perm.ctypes.data),
+        ffi.NULL,
     )
 
     assert np.allclose(
@@ -1370,6 +1388,7 @@ def test_ds_prism(compile_args, dtype):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", entity_perm.ctypes.data),
+        ffi.NULL,
     )
 
     assert np.allclose(
