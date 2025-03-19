@@ -317,9 +317,9 @@ def build_optimized_tables(
     Args:
         quadrature_rule: The quadrature rule relating to the tables.
         cell: The cell type of the domain the tables will be used with.
-        entity_type: On what entity (vertex,edge,facet,cell) the tables are evaluated at.
+        entity_type: The entity type (vertex,edge,facet,cell) that the tables are evaluated for.
         integral_type: The type of integral the tables are used for.
-        modified_terminals: ordered sequence of unique modified terminals
+        modified_terminals: Ordered sequence of unique modified terminals
         existing_tables: Register of tables that already exist and reused.
         use_sum_factorization: Use sum factorization for tensor product elements.
         is_mixed_dim: Mixed dimensionality of the domain.
