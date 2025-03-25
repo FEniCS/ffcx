@@ -18,7 +18,7 @@ on:
         type: string
       ufl_ref:
         description: "UFL branch or tag"
-        default: "main"
+        default: "dokken/multiple_coordinate_elements"
         type: string
   # Weekly build on Mondays at 8 am
   schedule:

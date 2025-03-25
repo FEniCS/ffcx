@@ -219,7 +219,7 @@ def _compute_integral_ir(
         ufl_cell = itg_data.domain.ufl_cell()
         cell_type = basix_cell_from_string(ufl_cell.cellname())
         tdim = ufl_cell.topological_dimension()
-        assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
+        assert all(tdim == e.cell.topological_dimension() for itg in itg_data.integrals for e in itg.ufl_domain().ufl_coordinate_elements())
 
         expression_ir = {
             "integral_type": itg_data.integral_type,

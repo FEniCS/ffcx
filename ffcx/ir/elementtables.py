@@ -246,7 +246,8 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
 
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
-    tdim = domain.topological_dimension()
+    assert len(domain.ufl_coordinate_elements()) == 1  # TODO: remove this assumption
+    tdim = domain.ufl_coordinate_element().cell.topological_dimension()
     local_derivatives: tuple[int, ...] = tuple(ld.count(i) for i in range(tdim))
 
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)

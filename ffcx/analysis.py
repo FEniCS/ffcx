@@ -83,7 +83,8 @@ def analyze_ufl_objects(
         elif isinstance(ufl_object, ufl.AbstractFiniteElement):
             elements.append(ufl_object)
         elif isinstance(ufl_object, ufl.Mesh):
-            coordinate_elements.append(ufl_object.ufl_coordinate_element())
+            assert len(ufl_object.ufl_coordinate_elements()[0]) == 0  # TODO
+            coordinate_elements.append(ufl_object.ufl_coordinate_elements()[0])
         elif isinstance(ufl_object[0], ufl.core.expr.Expr):
             original_expression = ufl_object[0]
             points = np.asarray(ufl_object[1])
@@ -171,7 +172,8 @@ def _analyze_form(
 
     # Check that coordinate element is based on basix.ufl._ElementBase
     for i in form._integrals:
-        assert isinstance(i._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
+        for e in i._ufl_domain._ufl_coordinate_elements:
+            assert isinstance(e, basix.ufl._ElementBase)
 
     # Check for complex mode
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)

@@ -88,8 +88,9 @@ def compute_integral_ir(cell, integral_type, entity_type, integrands, argument_s
             # Check if we have a mixed-dimensional integral
             is_mixed_dim = False
             for domain in ufl.domain.extract_domains(integrand):
-                if domain.topological_dimension() != cell.topological_dimension():
-                    is_mixed_dim = True
+                for e in domain.ufl_coordinate_elements():
+                    if e.cell.topological_dimension() != cell.topological_dimension():
+                        is_mixed_dim = True
 
             mt_table_reference = build_optimized_tables(
                 quadrature_rule,
