@@ -111,7 +111,7 @@ class FFCXBackendSymbols:
         elif entity_type == "ridge":
             return self.entity_local_index[0]
         else:
-            logging.exception(f"Unknown entity_type {entity_type}")
+            logger.exception(f"Unknown entity_type {entity_type}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument iarg."""
