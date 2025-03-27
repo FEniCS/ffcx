@@ -1460,6 +1460,7 @@ def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_in
             ffi.cast(f"{c_xtype} *", coords.ctypes.data),
             ffi.cast("int *", edge.ctypes.data),
             ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
         )
 
         return A
