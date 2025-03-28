@@ -1256,11 +1256,31 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     A_ref = tabulate_tensor(ele_type, V_cell_type, V_cell_type, coeffs_ref)
     # Remove the entries for the extra test DOF on the triangle element
     A_ref = A_ref[1:][:]
-    print(A_ref)
-    print(A)
-    # If the permutation is 1, this means the triangle sees its edge as being flipped
-    # relative to the edge's global orientation. Thus the result is the same as swapping
-    # cols 1 and 2 and cols 4 and 5 of the reference result.
+
+    # The orientation of the interval is assumed to be fixed (since it is given uniquely
+    # by its global orientation in the mesh). Let us focus on local facet 0. It can have
+    # two possible orientations depending on the cell topology:
+    #
+    # 2   1          1   1
+    # | \  \         | \  \
+    # |  \  \   or   |  \  \
+    # 0---1  0       0---2  0
+    #
+    # In the second case, local facet 0 is flipped relative to the interval. If we look at
+    # the degrees of freedom second-order Lagrange on the triangle and first-order Lagrange
+    # on the interval, we have
+    # 
+    # 2    1           1    1
+    # | \   \          | \   \
+    # 4  3   \         5  3   \
+    # |    \  \    or  |    \  \
+    # 0--5--1  0       0--4--2  0
+    #
+    # Since the trial function is defined on the triangle, the second case (where the
+    # permutation is 1) is thus the same as swapping cols 1 and 2 and cols 4 and 5 of the
+    # first case result.
+    # NOTE: Although we choose to fix the orientation of the interval, the same result
+    # can be obtained by fixing the triangle and considering flipping the interval.
     if permutation[0] == 1:
         A_ref[:, [1, 2]] = A_ref[:, [2, 1]]
         A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
@@ -1411,7 +1431,10 @@ def test_ds_prism(compile_args, dtype):
 @pytest.mark.parametrize("permutation", [[0], [1]])
 @pytest.mark.parametrize("local_entity_index", [0, 1, 2, 3, 4, 5])
 def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_index):
-    # TODO DOCUMENT
+    """Test that the local element tensor corresponding to a mixed-dimensional form of codim 2 is
+    correct. The form involves an integral over an edge of the cell. The trial function and a coefficient f
+    are of codim 0. The test function is of codim 2.
+    """
     def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs, l_i):
         V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
         W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
@@ -1487,7 +1510,8 @@ def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_in
 
     A_ref = A_ref[local_index_to_slice[local_entity_index]]
 
-    # TODO Document and explain other mixed dim integral test better
+    # See test_mixed_dim_form for an explanation of the permutation logic. Here, for simplicity,
+    # we choose to fix the orientation of the tet and flip the interval.
     if permutation[0] == 1:
         A_ref[[0, 1], :] = A_ref[[1, 0], :]
 
