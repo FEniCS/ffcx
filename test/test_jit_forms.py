@@ -1492,3 +1492,101 @@ def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_in
         A_ref[[0, 1], :] = A_ref[[1, 0], :]
 
     assert np.allclose(A, A_ref)
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("local_entity_index", [0, 1, 2])
+def test_mixed_dim_form_codim2_2D(compile_args, dtype, local_entity_index):
+    """Test that mixed assembly between 2D and 0D gives a consistent result"""
+
+    # Define the element type
+    ele_type = "Lagrange"
+    # Define the cell type for each space
+    V_cell_type = "triangle"
+    W_cell_type = "point"
+
+    # Coefficient data
+    coeffs = [3, 4, 7, 8, 5, 2]
+
+    # Tabulate the tensor for the mixed-dimensional form
+    V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
+    W_ele = basix.ufl.element(ele_type, W_cell_type, 0, discontinuous=True)
+
+    gdim = 2
+    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+    W_domain = ufl.Mesh(
+        basix.ufl.element("Lagrange", W_cell_type, 0, shape=(gdim,), discontinuous=True)
+    )
+
+    V = ufl.FunctionSpace(V_domain, V_ele)
+    W = ufl.FunctionSpace(W_domain, W_ele)
+
+    u = ufl.TrialFunction(V)
+    q = ufl.TestFunction(W)
+
+    f = ufl.Coefficient(V)
+
+    dr = ufl.Measure("dr", domain=V_domain)
+    x = ufl.SpatialCoordinate(V_domain)
+    forms = [u.dx(0) * f * q * x[1] * dr]
+
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    form0 = compiled_forms[0]
+    default_integral = form0.form_integrals[0]
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+    A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
+    w = np.array(coeffs, dtype=dtype)
+    c = np.array([], dtype=dtype)
+    edge = np.array([local_entity_index], dtype=np.intc)
+    perm = np.zeros(1, dtype=np.uint8)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[-0.1, 0.2, 0.0], [2.5, 0.0, 0.0], [0.0, 2.0, 0.0]], dtype=xdtype)
+
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+
+    ffi = module.ffi
+    kernel(
+        ffi.cast(f"{c_type}  *", A.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", edge.ctypes.data),
+        ffi.cast("uint8_t *", perm.ctypes.data),
+    )
+
+    # Tabulate reference solution, equivalent of assembling a vector with the same spaces from V
+    # and vertex quadrature
+    vertices = basix.topology(basix.cell.CellType.triangle)[0]
+    vertex_coords = basix.geometry(basix.cell.CellType.triangle)
+    qp = np.array(vertex_coords[vertices[local_entity_index]])
+    qw = np.ones(qp.shape[0], dtype=xdtype)
+    assert len(qw) == 1
+    dx = ufl.Measure(
+        "dx",
+        domain=V_domain,
+        metadata={"quadrature_rule": "custom", "quadrature_points": qp, "quadrature_weights": qw},
+    )
+    forms = [u.dx(0) * f * x[1] / abs(ufl.JacobianDeterminant(V_domain)) * dx]
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    form0 = compiled_forms[0]
+    default_integral = form0.form_integrals[0]
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+    b = np.zeros(V_ele.dim, dtype=dtype)
+    ffi = module.ffi
+    kernel(
+        ffi.cast(f"{c_type}  *", b.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", edge.ctypes.data),
+        ffi.cast("uint8_t *", perm.ctypes.data),
+    )
+    np.testing.assert_allclose(A[0, :], b)
