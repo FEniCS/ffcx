@@ -32,7 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.ir.integral import compute_integral_ir
+from ffcx.ir.integral import compute_integral_ir, CommonExpressionIR
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
@@ -72,22 +72,6 @@ class QuadratureIR(typing.NamedTuple):
     weights: npt.NDArray[np.float64]
 
 
-class CommonExpressionIR(typing.NamedTuple):
-    """Common-ground for IntegralIR and ExpressionIR."""
-
-    integral_type: str
-    entity_type: str
-    tensor_shape: list[int]
-    coefficient_numbering: dict[ufl.Coefficient, int]
-    coefficient_offsets: dict[ufl.Coefficient, int]
-    original_constant_offsets: dict[ufl.Constant, int]
-    unique_tables: dict[str, dict[basix.CellType, npt.NDArray[np.float64]]]
-    unique_table_types: dict[basix.CellType, dict[str, str]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
-    name: str
-    needs_facet_permutations: bool
-    shape: list[int]
-    coordinate_element_hash: str
 
 
 class IntegralIR(typing.NamedTuple):
@@ -284,7 +268,7 @@ def _compute_integral_ir(
                 elif integral_type == "ridge":
                     ridge_types = basix.cell.subentity_types(cell_type)[-3]
                     assert len(set(ridge_types)) == 1
-                    cell_type = ridge_types[0].cellname()
+                    cell_type = ridge_types[0]
 
                 if degree > 1:
                     warnings.warn(
