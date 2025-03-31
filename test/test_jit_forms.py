@@ -1269,7 +1269,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     # In the second case, local facet 0 is flipped relative to the interval. If we look at
     # the degrees of freedom second-order Lagrange on the triangle and first-order Lagrange
     # on the interval, we have
-    # 
+    #
     # 2    1           1    1
     # | \   \          | \   \
     # 4  3   \         5  3   \
@@ -1435,6 +1435,7 @@ def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_in
     correct. The form involves an integral over an edge of the cell. The trial function and a coefficient f
     are of codim 0. The test function is of codim 2.
     """
+
     def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs, l_i):
         V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
         W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
@@ -1581,6 +1582,7 @@ def test_mixed_dim_form_codim2_2D(compile_args, dtype, local_entity_index):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", edge.ctypes.data),
         ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
     )
 
     # Tabulate reference solution, equivalent of assembling a vector with the same spaces from V
@@ -1612,5 +1614,6 @@ def test_mixed_dim_form_codim2_2D(compile_args, dtype, local_entity_index):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", edge.ctypes.data),
         ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
     )
     np.testing.assert_allclose(A[0, :], b)
