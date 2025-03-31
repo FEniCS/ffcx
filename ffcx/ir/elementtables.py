@@ -557,7 +557,7 @@ def build_optimized_tables(
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
                 for k in all_tensor_factors:
                     if k.values.shape == sub_tbl.shape and np.allclose(k.values, sub_tbl):
-                        tensor_factors.append(i)
+                        tensor_factors.append(k)
                         break
                 else:
                     # FIXME: The inputs here does not match the type-hints of unique_table_reference
@@ -587,7 +587,6 @@ def build_optimized_tables(
 
         offset = cell_offset + t["offset"]
         block_size = t["stride"]
-
         # tables is just np.arrays, mt_tables hold metadata too
         # FIXME: type-hinting of tensor factors is not correct
         mt_tables[mt] = UniqueTableReferenceT(
