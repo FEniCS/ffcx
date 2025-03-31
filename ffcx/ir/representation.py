@@ -32,6 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
+from ffcx.definitions import entity_types
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
@@ -76,7 +77,7 @@ class CommonExpressionIR(typing.NamedTuple):
     """Common-ground for IntegralIR and ExpressionIR."""
 
     integral_type: str
-    entity_type: str
+    entity_type: entity_types
     tensor_shape: list[int]
     coefficient_numbering: dict[ufl.Coefficient, int]
     coefficient_offsets: dict[ufl.Coefficient, int]
@@ -120,7 +121,7 @@ def compute_ir(
     analysis: UFLData,
     object_names: dict[int, str],
     prefix: str,
-    options: dict[str, npt.DTypeLike | int | float],
+    options: dict[str, typing.Union[npt.DTypeLike, int, float]],
     visualise: bool,
 ) -> DataIR:
     """Compute intermediate representation."""
