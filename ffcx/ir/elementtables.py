@@ -14,7 +14,9 @@ import numpy.typing as npt
 import ufl
 
 from ffcx.element_interface import basix_index
+from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.representationutils import (
+    QuadratureRule,
     create_quadrature_points_and_weights,
     integral_type_to_entity_dim,
     map_integral_points,
@@ -296,26 +298,34 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 
 def build_optimized_tables(
-    quadrature_rule,
-    cell,
-    integral_type,
-    entity_type,
-    modified_terminals,
-    existing_tables,
-    use_sum_factorization,
-    is_mixed_dim,
-    rtol=default_rtol,
-    atol=default_atol,
-):
+    quadrature_rule: QuadratureRule,
+    cell: ufl.Cell,
+    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
+    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    modified_terminals: typing.Iterable[ModifiedTerminal],
+    existing_tables: dict[str, npt.NDArray[np.float64]],
+    use_sum_factorization: bool,
+    is_mixed_dim: bool,
+    rtol: float = default_rtol,
+    atol: float = default_atol,
+) -> dict[typing.Union[str, ModifiedTerminal], UniqueTableReferenceT]:
     """Build the element tables needed for a list of modified terminals.
 
-    Input:
-      entity_type - str
-      modified_terminals - ordered sequence of unique modified terminals
-      FIXME: Document
+    Args:
+        quadrature_rule - The quadrature rule used for the tables.
+        cell: The cell of the integration domain.
+        integral_type: The type of integral.
+        entity_type: Corresponding entity of the cell that the integral is over
+        modified_terminals: Ordered sequence of unique modified terminals
+        existing_tables: The tables that already exist.
+        use_sum_factorization: Whether to use sum factorization.
+        is_mixed_dim: Whether the integral is mixed-dimensional, in the sense that the
+            terminals are defined on another mesh than the integration domain,
+        rtol: Relative tolerance for clamping tables to -1,0 or 1
+        atol: Absolute tolerance for clamping tables to -1,0 or 1
 
-    Output:
-      mt_tables - dict(ModifiedTerminal: table data)
+    Returns:
+        A dictionary mapping each modified terminal to a unique table reference.
     """
     # Add to element tables
     analysis = {}
@@ -331,11 +341,11 @@ def build_optimized_tables(
         set(ufl.algorithms.analysis.extract_sub_elements(all_elements))
     )
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
-    mt_tables = {}
+    mt_tables: dict[typing.Union[str, ModifiedTerminal], UniqueTableReferenceT] = {}
 
     _existing_tables = existing_tables.copy()
 
-    all_tensor_factors = []
+    all_tensor_factors: list[UniqueTableReferenceT] = []
     tensor_n = 0
 
     for mt in modified_terminals:
@@ -366,10 +376,14 @@ def build_optimized_tables(
         # Only permute quadrature rules for interior facets integrals and for
         # the codim zero element in mixed-dimensional integrals. The latter is
         # needed because a cell may see its sub-entities as being oriented
-        # differently to their global orientation#
-        if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
+        # differently to their global orientation
+        if (
+            integral_type == "interior_facet"
+            or integral_type == "ridge"
+            or (is_mixed_dim and codim == 0)
+        ):
             if entity_type == "facet":
-                if tdim == 1 or codim == 1 or codim == 2:
+                if tdim == 1 or codim == 1:
                     # Do not add permutations if codim-1 as facets have already gotten a global
                     # orientation in DOLFINx
                     t = get_ffcx_table_values(
@@ -447,7 +461,21 @@ def build_optimized_tables(
                         t = new_table[0]
                         t["array"] = np.vstack([td["array"] for td in new_table])
             elif entity_type == "ridge":
-                if tdim > 2:
+                if tdim < 3 or codim == 2:
+                    # If ridge integral over vertex no permutation is needed, or if it is a single domain ridge integral,
+                    # as ridges has a global orientation in DOLFINx.
+                    t = get_ffcx_table_values(
+                        quadrature_rule.points,
+                        cell,
+                        integral_type,
+                        element,
+                        avg,
+                        entity_type,
+                        local_derivatives,
+                        flat_component,
+                        codim,
+                    )
+                else:
                     new_table = []
                     for ref in range(2):
                         new_table.append(
@@ -465,19 +493,6 @@ def build_optimized_tables(
                         )
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
-                else:
-                    # If ridge integral over vertex no permutation is needed
-                    t = get_ffcx_table_values(
-                        quadrature_rule.points,
-                        cell,
-                        integral_type,
-                        element,
-                        avg,
-                        entity_type,
-                        local_derivatives,
-                        flat_component,
-                        codim,
-                    )
         else:
             t = get_ffcx_table_values(
                 quadrature_rule.points,
@@ -506,15 +521,16 @@ def build_optimized_tables(
             tbl = tbl[:1, :, :, :]
 
         # Check for existing identical table
-        new_table = True
+        is_new_table = True
         for table_name in _existing_tables:
+            # FIXME: should we pass in atol and rtol here?
             if equal_tables(tbl, _existing_tables[table_name]):
                 name = table_name
                 tbl = _existing_tables[name]
-                new_table = False
+                is_new_table = False
                 break
 
-        if new_table:
+        if is_new_table:
             _existing_tables[name] = tbl
 
         cell_offset = 0
@@ -522,7 +538,7 @@ def build_optimized_tables(
         if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
             raise RuntimeError("Sum factorization not available for this quadrature rule.")
 
-        tensor_factors = None
+        tensor_factors: typing.Union[list[typing.Union[UniqueTableReferenceT, int]], None] = None
         tensor_perm = None
         if (
             use_sum_factorization
@@ -538,23 +554,24 @@ def build_optimized_tables(
                 d = local_derivatives[i]
                 sub_tbl = j.tabulate(d, pts)[d]
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
-                for i in all_tensor_factors:
-                    if i.values.shape == sub_tbl.shape and np.allclose(i.values, sub_tbl):
+                for k in all_tensor_factors:
+                    if k.values.shape == sub_tbl.shape and np.allclose(k.values, sub_tbl):
                         tensor_factors.append(i)
                         break
                 else:
+                    # FIXME: The inputs here does not match the type-hints of unique_table_reference
                     ut = UniqueTableReferenceT(
                         f"FE_TF{tensor_n}",
                         sub_tbl,
-                        None,
-                        None,
-                        None,
+                        None,  # type: ignore
+                        None,  # type: ignore
+                        None,  # type: ignore
                         False,
                         False,
                         False,
                         False,
-                        None,
-                        None,
+                        None,  # type: ignore
+                        None,  # type: ignore
                     )
                     all_tensor_factors.append(ut)
                     tensor_factors.append(ut)
@@ -571,6 +588,7 @@ def build_optimized_tables(
         block_size = t["stride"]
 
         # tables is just np.arrays, mt_tables hold metadata too
+        # FIXME: type-hinting of tensor factors is not correct
         mt_tables[mt] = UniqueTableReferenceT(
             name,
             tbl,
@@ -581,8 +599,8 @@ def build_optimized_tables(
             tabletype in uniform_ttypes,
             is_permuted,
             tensor_factors is not None,
-            tensor_factors,
-            tensor_perm,
+            tensor_factors,  # type: ignore
+            tensor_perm,  # type: ignore
         )
 
     return mt_tables

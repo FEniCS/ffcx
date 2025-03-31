@@ -1618,3 +1618,82 @@ def test_mixed_dim_form_codim2_2D(compile_args, dtype, local_entity_index):
         ffi.NULL,
     )
     np.testing.assert_allclose(A[0, :], b)
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("permutation", [[0], [1]])
+def test_ridge_integral(compile_args, dtype, permutation):
+    """Test that one can assemble a ridge integral on a single domain."""
+    y_ext = 1.7
+    z_ext = 1.3
+
+    def tabulate_tensor(ele_type, V_cell_type, l_i):
+        V_ele = basix.ufl.element(ele_type, V_cell_type, 1)
+
+        gdim = 3
+        domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+
+        V = ufl.FunctionSpace(domain, V_ele)
+        x = ufl.SpatialCoordinate(domain)
+        u = ufl.TestFunction(V)
+
+        dr = ufl.Measure("dr", domain=domain)
+        forms = [u * x[2] * dr]
+
+        compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+            forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+        )
+        form0 = compiled_forms[0]
+        default_integral = form0.form_integrals[0]
+        kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+        A = np.zeros((V_ele.dim,), dtype=dtype)
+        w = np.array([], dtype=dtype)
+        c = np.array([], dtype=dtype)
+        edge = np.array([l_i], dtype=np.intc)
+        perm = np.array(permutation, dtype=np.uint8)
+
+        xdtype = dtype_to_scalar_dtype(dtype)
+        coords = np.array(
+            [[0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [0.0, y_ext, 0.0], [0.0, 0.0, z_ext]], dtype=xdtype
+        )
+
+        c_type = dtype_to_c_type(dtype)
+        c_xtype = dtype_to_c_type(xdtype)
+
+        ffi = module.ffi
+        kernel(
+            ffi.cast(f"{c_type}  *", A.ctypes.data),
+            ffi.cast(f"{c_type}  *", w.ctypes.data),
+            ffi.cast(f"{c_type}  *", c.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", edge.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
+        )
+
+        return A
+
+    # Define the element type
+    ele_type = "Lagrange"
+    # Define the cell type for each space
+    V_cell_type = "tetrahedron"
+
+    # Tabulate the tensor for the mixed-dimensional form
+    b = tabulate_tensor(ele_type, V_cell_type, 0)
+
+    # Ref first ridge integral length
+    rl = np.sqrt(y_ext**2 + z_ext**2) / y_ext
+
+    # Compute z as a function of y along the ridge
+    y = sympy.Symbol("y")
+    z = z_ext - z_ext / y_ext * y
+    # Define the test functions along the ridge
+    phi_2 = y / y_ext
+    phi_3 = 1 - y / y_ext
+
+    # Use sympy for numerical integration
+    b_2 = sympy.integrate(phi_2 * z * rl, (y, 0, y_ext))
+    b_3 = sympy.integrate(phi_3 * z * rl, (y, 0, y_ext))
+    b_ref = np.array([0, 0, b_2, b_3], dtype=b.dtype)
+    np.testing.assert_allclose(b_ref, b, atol=1e-10)

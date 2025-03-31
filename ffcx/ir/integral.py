@@ -20,7 +20,11 @@ from ufl.classes import QuadratureWeight
 
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
-from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, is_modified_terminal
+from ffcx.ir.analysis.modified_terminals import (
+    ModifiedTerminal,
+    analyse_modified_terminal,
+    is_modified_terminal,
+)
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
 from ffcx.ir.representationutils import QuadratureRule
@@ -121,7 +125,7 @@ def compute_integral_ir(
             # efficiently before argument factorization. We can build
             # terminal_data again after factorization if that's necessary.
 
-            initial_terminals = {
+            initial_terminals: dict[int, ModifiedTerminal] = {
                 i: analyse_modified_terminal(v["expression"])
                 for i, v in S.nodes.items()
                 if is_modified_terminal(v["expression"])
@@ -244,6 +248,7 @@ def compute_integral_ir(
 
                 _blockmap: list[tuple[int, ...]] = []
                 for tr in trs:
+                    assert tr is not None
                     begin = tr.offset
                     num_dofs = tr.values.shape[3]
                     dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
