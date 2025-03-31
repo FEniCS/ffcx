@@ -334,7 +334,7 @@ def build_optimized_tables(
         If ``use_sum_factorization`` is turned on, the map also contains the map
         from the unique table reference for the tensor product factorization
         to the name of the modified terminal.
-   """
+    """
     # Add to element tables
     analysis = {}
     for mt in modified_terminals:

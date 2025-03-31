@@ -37,7 +37,7 @@ class CommonExpressionIR(typing.NamedTuple):
     """Common-ground for IntegralIR and ExpressionIR."""
 
     integral_type: str
-    entity_type: str
+    entity_type: entity_types
     tensor_shape: list[int]
     coefficient_numbering: dict[ufl.Coefficient, int]
     coefficient_offsets: dict[ufl.Coefficient, int]

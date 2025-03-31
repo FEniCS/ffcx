@@ -33,7 +33,6 @@ from ufl.sorting import sorted_expr_sum
 from ffcx import naming
 from ffcx.analysis import UFLData
 from ffcx.ir.integral import CommonExpressionIR, compute_integral_ir
-from ffcx.definitions import entity_types
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
