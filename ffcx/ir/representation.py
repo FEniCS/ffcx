@@ -32,7 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.ir.integral import compute_integral_ir, CommonExpressionIR
+from ffcx.ir.integral import CommonExpressionIR, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
@@ -70,8 +70,6 @@ class QuadratureIR(typing.NamedTuple):
     cell_shape: str
     points: npt.NDArray[np.float64]
     weights: npt.NDArray[np.float64]
-
-
 
 
 class IntegralIR(typing.NamedTuple):

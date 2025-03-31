@@ -5,7 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import sys
-import pytest
+
 import basix.ufl
 import numpy as np
 import pytest
@@ -1431,9 +1431,10 @@ def test_ds_prism(compile_args, dtype):
 @pytest.mark.parametrize("permutation", [[0], [1]])
 @pytest.mark.parametrize("local_entity_index", [0, 1, 2, 3, 4, 5])
 def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_index):
-    """Test that the local element tensor corresponding to a mixed-dimensional form of codim 2 is
-    correct. The form involves an integral over an edge of the cell. The trial function and a coefficient f
-    are of codim 0. The test function is of codim 2.
+    """Test that the local element tensor corresponding to a mixed-dimensional
+    form of codim 2 is correct. The form involves an integral over an edge of
+    the cell. The trial function and a coefficient `f` are of codim 0.
+    The test function is of codim 2.
     """
 
     def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs, l_i):

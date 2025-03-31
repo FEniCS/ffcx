@@ -10,7 +10,9 @@ import itertools
 import logging
 import typing
 
+import basix
 import numpy as np
+import numpy.typing as npt
 import ufl
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
@@ -22,9 +24,9 @@ from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, is_mo
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
 from ffcx.ir.representationutils import QuadratureRule
-import numpy.typing as npt
-import basix
+
 logger = logging.getLogger("ffcx")
+
 
 class CommonExpressionIR(typing.NamedTuple):
     """Common-ground for IntegralIR and ExpressionIR."""
@@ -58,7 +60,9 @@ class BlockDataT(typing.NamedTuple):
     factor_indices_comp_indices: list[tuple[int, int]]  # list of (factor index, component index)
     all_factors_piecewise: bool  # True if all factors for this block are piecewise
     unames: tuple[str, ...]  # list of unique FE table names for each block rank
-    restrictions: tuple[typing.Union[str,None], ...]  # restriction "+" | "-" | None for each block rank
+    restrictions: tuple[
+        typing.Union[str, None], ...
+    ]  # restriction "+" | "-" | None for each block rank
     transposed: bool  # block is the transpose of another
     is_uniform: bool
     ma_data: tuple[ModifiedArgumentDataT, ...]  # used in "full", "safe" and "partial"
@@ -238,7 +242,7 @@ def compute_integral_ir(
                 ttypes = tuple(tr.ttype for tr in trs)
                 assert not any(tt == "zeros" for tt in ttypes)
 
-                _blockmap: list[tuple[int,...]] = []
+                _blockmap: list[tuple[int, ...]] = []
                 for tr in trs:
                     begin = tr.offset
                     num_dofs = tr.values.shape[3]
@@ -405,4 +409,3 @@ def replace_quadratureweight(expression):
 
     replace_map = {q: 1.0 for q in r}
     return ufl.algorithms.replace(expression, replace_map)
-
