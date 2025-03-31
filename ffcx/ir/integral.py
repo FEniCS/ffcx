@@ -18,6 +18,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 
+from ffcx.definitions import entity_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import (
@@ -194,7 +195,7 @@ def compute_integral_ir(
 
             # Get the 'target' nodes that are factors of arguments, and insert in dict
             FV_targets = [i for i, v in F.nodes.items() if v.get("target", False)]
-            argument_factorization: dict[tuple[int, int], list[tuple[int, int]]] = {}
+            argument_factorization: dict[tuple[int, ...], list[tuple[int, int]]] = {}
 
             for fi in FV_targets:
                 # Number of blocks using this factor must agree with number of components
@@ -250,24 +251,24 @@ def compute_integral_ir(
                 for tr in trs:
                     assert tr is not None
                     begin = tr.offset
+                    assert begin is not None
                     num_dofs = tr.values.shape[3]
+                    assert tr.block_size is not None
                     dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
                     _blockmap.append(dofmap)
-
                 blockmap = tuple(_blockmap)
+
                 block_is_uniform = all(tr.is_uniform for tr in trs)
 
                 # Collect relevant restrictions to identify blocks correctly
                 # in interior facet integrals
-                _block_restrictions: list[typing.Union[None, str]] = []
+                _block_restrictions: list[str] = []
                 for i, ai in enumerate(ma_indices):
-                    if trs[i].is_uniform:
-                        r = None
-                    else:
+                    if not trs[i].is_uniform:
                         r = F.nodes[ai]["mt"].restriction
+                        _block_restrictions.append(r)
 
-                    _block_restrictions.append(r)
-                block_restrictions = tuple(_block_restrictions)
+                block_restrictions: tuple[str, ...] = tuple(_block_restrictions)
 
                 # Check if each *each* factor corresponding to this argument is piecewise
                 all_factors_piecewise = all(
@@ -304,6 +305,7 @@ def compute_integral_ir(
                 tr = v.get("tr")
                 if tr is not None and F.nodes[i]["status"] != "inactive":
                     if tr.has_tensor_factorisation:
+                        assert tr.tensor_factors is not None
                         for t in tr.tensor_factors:
                             active_table_names.add(t.name)
                     else:
@@ -314,6 +316,7 @@ def compute_integral_ir(
                 for blockdata in contributions:
                     for mad in blockdata.ma_data:
                         if mad.tabledata.has_tensor_factorisation:
+                            assert mad.tabledata.tensor_factors is not None
                             for t in mad.tabledata.tensor_factors:
                                 active_table_names.add(t.name)
                         else:

@@ -10,6 +10,7 @@ import logging
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.definitions import entity_types
 
 logger = logging.getLogger("ffcx")
 
@@ -95,7 +96,7 @@ class FFCXBackendSymbols:
         # Table for chunk of custom quadrature points (physical coordinates).
         self.custom_points_table = L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
-    def entity(self, entity_type, restriction):
+    def entity(self, entity_type: entity_types, restriction):
         """Entity index for lookup in element tables."""
         if entity_type == "cell":
             # Always 0 for cells (even with restriction)
@@ -178,7 +179,7 @@ class FFCXBackendSymbols:
         return c[offset + index]
 
     # TODO: Remove this, use table_access instead
-    def element_table(self, tabledata, entity_type, restriction):
+    def element_table(self, tabledata, entity_type: entity_types, restriction):
         """Get an element table."""
         entity = self.entity(entity_type, restriction)
 

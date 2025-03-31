@@ -33,6 +33,7 @@ from ufl.sorting import sorted_expr_sum
 from ffcx import naming
 from ffcx.analysis import UFLData
 from ffcx.ir.integral import CommonExpressionIR, compute_integral_ir
+from ffcx.definitions import entity_types
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
@@ -102,7 +103,7 @@ def compute_ir(
     analysis: UFLData,
     object_names: dict[int, str],
     prefix: str,
-    options: dict[str, npt.DTypeLike | int | float],
+    options: dict[str, typing.Union[npt.DTypeLike, int, float]],
     visualise: bool,
 ) -> DataIR:
     """Compute intermediate representation."""

@@ -13,6 +13,7 @@ import numpy as np
 import numpy.typing as npt
 import ufl
 
+from ffcx.definitions import entity_types
 from ffcx.element_interface import basix_index
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.representationutils import (
@@ -46,15 +47,15 @@ class UniqueTableReferenceT(typing.NamedTuple):
 
     name: str
     values: npt.NDArray[np.float64]
-    offset: int
-    block_size: int
-    ttype: str
+    offset: typing.Optional[int]
+    block_size: typing.Optional[int]
+    ttype: typing.Optional[str]
     is_piecewise: bool
     is_uniform: bool
     is_permuted: bool
     has_tensor_factorisation: bool
-    tensor_factors: list[typing.Any]
-    tensor_permutation: np.typing.NDArray[np.int32]
+    tensor_factors: typing.Optional[list[typing.Any]]
+    tensor_permutation: typing.Optional[np.typing.NDArray[np.int32]]
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -84,7 +85,7 @@ def get_ffcx_table_values(
     integral_type,
     element,
     avg,
-    entity_type,
+    entity_type: entity_types,
     derivative_counts,
     flat_component,
     codim,
@@ -126,7 +127,7 @@ def get_ffcx_table_values(
         elif avg == "facet":
             integral_type = "exterior_facet"
 
-        if isinstance(element, basix.ufl.QuadratureElement):
+        if isinstance(element, basix.ufl._QuadratureElement):
             points = element._points
             weights = element._weights
         else:
@@ -176,7 +177,12 @@ def get_ffcx_table_values(
 
 
 def generate_psi_table_name(
-    quadrature_rule, element_counter, averaged: str, entity_type, derivative_counts, flat_component
+    quadrature_rule: QuadratureRule,
+    element_counter,
+    averaged: str,
+    entity_type: entity_types,
+    derivative_counts,
+    flat_component,
 ):
     """Generate a name for the psi table.
 
@@ -301,7 +307,7 @@ def build_optimized_tables(
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell,
     integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
-    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    entity_type: entity_types,
     modified_terminals: typing.Iterable[ModifiedTerminal],
     existing_tables: dict[str, npt.NDArray[np.float64]],
     use_sum_factorization: bool,
@@ -313,20 +319,22 @@ def build_optimized_tables(
 
     Args:
         quadrature_rule: The quadrature rule used for the tables.
-        cell: The cell of the integration domain.
-        integral_type: The type of integral.
-        entity_type: Corresponding entity of the cell that the integral is over
+        cell: The cell type of the domain the tables will be used with.
+        entity_type: The entity type (vertex,edge,facet,cell) that the tables are evaluated for.
+        integral_type: The type of integral the tables are used for.
         modified_terminals: Ordered sequence of unique modified terminals
-        existing_tables: The tables that already exist.
-        use_sum_factorization: Whether to use sum factorization.
-        is_mixed_dim: Whether the integral is mixed-dimensional, in the sense that the
-            terminals are defined on another mesh than the integration domain,
+        existing_tables: Register of tables that already exist and reused.
+        use_sum_factorization: Use sum factorization for tensor product elements.
+        is_mixed_dim: Mixed dimensionality of the domain.
         rtol: Relative tolerance for clamping tables to -1,0 or 1
         atol: Absolute tolerance for clamping tables to -1,0 or 1
 
     Returns:
-        A dictionary mapping each modified terminal to a unique table reference.
-    """
+        Dictionary mapping each modified terminal to the a unique table reference.
+        If ``use_sum_factorization`` is turned on, the map also contains the map
+        from the unique table reference for the tensor product factorization
+        to the name of the modified terminal.
+   """
     # Add to element tables
     analysis = {}
     for mt in modified_terminals:
@@ -539,7 +547,7 @@ def build_optimized_tables(
         if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
             raise RuntimeError("Sum factorization not available for this quadrature rule.")
 
-        tensor_factors: typing.Union[list[typing.Union[UniqueTableReferenceT, int]], None] = None
+        tensor_factors: typing.Optional[list[UniqueTableReferenceT]] = None
         tensor_perm = None
         if (
             use_sum_factorization
@@ -555,9 +563,11 @@ def build_optimized_tables(
                 d = local_derivatives[i]
                 sub_tbl = j.tabulate(d, pts)[d]
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
-                for k in all_tensor_factors:
-                    if k.values.shape == sub_tbl.shape and np.allclose(k.values, sub_tbl):
-                        tensor_factors.append(k)
+                for tensor_factor in all_tensor_factors:
+                    if tensor_factor.values.shape == sub_tbl.shape and np.allclose(
+                        tensor_factor.values, sub_tbl
+                    ):
+                        tensor_factors.append(tensor_factor)
                         break
                 else:
                     # FIXME: The inputs here does not match the type-hints of unique_table_reference
