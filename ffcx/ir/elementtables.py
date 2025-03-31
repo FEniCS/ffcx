@@ -312,7 +312,7 @@ def build_optimized_tables(
     """Build the element tables needed for a list of modified terminals.
 
     Args:
-        quadrature_rule - The quadrature rule used for the tables.
+        quadrature_rule: The quadrature rule used for the tables.
         cell: The cell of the integration domain.
         integral_type: The type of integral.
         entity_type: Corresponding entity of the cell that the integral is over
