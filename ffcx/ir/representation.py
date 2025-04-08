@@ -263,7 +263,7 @@ def _compute_integral_ir(
             "integral_type": itg_data.integral_type,
             "entity_type": entity_type,
             "shape": (),
-            "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
+            "coordinate_element_hash": itg_data.domain.ufl_cargo().geometry.cmap.hash(),
         }
         ir = {
             "rank": form_data.rank,
