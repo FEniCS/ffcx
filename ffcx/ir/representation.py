@@ -476,8 +476,10 @@ def _compute_form_ir(
     ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
     subdomain_ids: dict[str, list[int]] = {itg_type: [] for itg_type in ufcx_integral_types}
     integral_names_dict: dict[str, list[str]] = {itg_type: [] for itg_type in ufcx_integral_types}
-    integral_domains_dict: dict[str, list[basix.CellType]] = {itg_type: [] for itg_type in ufcx_integral_types}
-    
+    integral_domains_dict: dict[str, list[basix.CellType]] = {
+        itg_type: [] for itg_type in ufcx_integral_types
+    }
+
     for itg_index, itg_data in enumerate(form_data.integral_data):
         # UFL is using "otherwise" for default integrals (over whole mesh)
         # but FFCx needs integers, so otherwise = -1
@@ -514,7 +516,7 @@ def _compute_form_ir(
         finite_element_hashes=finite_element_hashes,
         integral_names=integral_names_dict,
         integral_domains=integral_domains_dict,
-        subdomain_ids=subdomain_ids
+        subdomain_ids=subdomain_ids,
     )
 
 
@@ -570,9 +572,7 @@ def _compute_expression_ir(
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
 
-    coefficient_names = [
-        object_names.get(id(obj), f"w{j}") for j, obj in enumerate(coefficients)
-    ]
+    coefficient_names = [object_names.get(id(obj), f"w{j}") for j, obj in enumerate(coefficients)]
 
     constant_names = [
         object_names.get(id(obj), f"c{j}")
@@ -627,13 +627,9 @@ def _compute_expression_ir(
     integrands = {"": {rule: expr_val}}
 
     if cell is None:
-        assert (
-            len(original_coefficient_positions) == 0
-            and len(original_constant_offsets) == 0
-        )
+        assert len(original_coefficient_positions) == 0 and len(original_constant_offsets) == 0
 
     # For expressions, ensure entity_type is one of the allowed values from the Literal type
-    # This cast is necessary because mypy doesn't recognize that our assignment ensures the correct type
     entity_type_arg: entity_types = entity_type  # Explicit cast to help mypy
 
     expression_ir = compute_integral_ir(
@@ -660,7 +656,7 @@ def _compute_expression_ir(
         name=name,
         needs_facet_permutations=expression_ir["needs_facet_permutations"],
         shape=shape,
-        coordinate_element_hash=coordinate_element_hash
+        coordinate_element_hash=coordinate_element_hash,
     )
 
     return ExpressionIR(
@@ -668,5 +664,5 @@ def _compute_expression_ir(
         original_coefficient_positions=original_coefficient_positions,
         coefficient_names=coefficient_names,
         constant_names=constant_names,
-        name_from_uflfile=name_from_uflfile
+        name_from_uflfile=name_from_uflfile,
     )

@@ -88,9 +88,9 @@ def _compute_option_signature(options: dict) -> str:
 
 
 def get_cached_module(
-    module_name: str, 
-    object_names: list[str], 
-    cache_dir: Path, 
+    module_name: str,
+    object_names: list[str],
+    cache_dir: Path,
     timeout: int
 ) -> tuple[Optional[list[Any]], Optional[types.ModuleType]]:
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
@@ -138,7 +138,7 @@ def get_cached_module(
 
 
 def _compilation_signature(
-    cffi_extra_compile_args: list[str], 
+    cffi_extra_compile_args: list[str],
     cffi_debug: bool
 ) -> str:
     """Compute the compilation-inputs part of the signature.
@@ -409,8 +409,8 @@ def _compile_objects(
 
 
 def _load_objects(
-    cache_dir: Path, 
-    module_name: str, 
+    cache_dir: Path,
+    module_name: str,
     object_names: list[str]
 ) -> tuple[list[Any], types.ModuleType]:
     # Create module finder that searches the compile path
