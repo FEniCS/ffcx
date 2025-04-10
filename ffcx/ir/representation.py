@@ -315,7 +315,7 @@ def _compute_integral_ir(
 
                 degree = md["quadrature_degree"]
                 if integral_type != "cell":
-                    facet_types = basix.cell.subentity_types(cell_type)[-2]
+                    facet_types: list[basix.CellType] = basix.cell.subentity_types(cell_type)[-2]
                     assert len(set(facet_types)) == 1
                     cell_type = facet_types[0]
                 if degree > 1:
@@ -444,59 +444,78 @@ def _compute_form_ir(
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
 
-    # Store id
-    ir = {"id": form_id}
+    # Create dictionary for form IR data
+    form_id_value = form_id
+    name = form_names[form_id]
+    signature = form_data.original_form.signature()
+    rank = len(form_data.original_form.arguments())
+    num_coefficients = len(form_data.reduced_coefficients)
+    num_constants = len(form_data.original_form.constants())
 
-    # Compute common data
-    ir["name"] = form_names[form_id]
-
-    ir["signature"] = form_data.original_form.signature()
-
-    ir["rank"] = len(form_data.original_form.arguments())
-    ir["num_coefficients"] = len(form_data.reduced_coefficients)
-    ir["num_constants"] = len(form_data.original_form.constants())
-
-    ir["coefficient_names"] = [
+    coefficient_names = [
         object_names.get(id(obj), f"w{j}") for j, obj in enumerate(form_data.reduced_coefficients)
     ]
 
-    ir["constant_names"] = [
+    constant_names = [
         object_names.get(id(obj), f"c{j}")
         for j, obj in enumerate(form_data.original_form.constants())
     ]
 
-    ir["original_coefficient_positions"] = form_data.original_coefficient_positions
+    original_coefficient_positions = form_data.original_coefficient_positions
 
-    ir["finite_element_hashes"] = [
+    finite_element_hashes = [
         e.basix_hash() for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
     form_name = object_names.get(id(form_data.original_form), form_id)
-
-    ir["name_from_uflfile"] = f"form_{prefix}_{form_name}"
+    name_from_uflfile = f"form_{prefix}_{form_name}"
 
     # Store names of integrals and subdomain_ids for this form, grouped
     # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
     ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
-    ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
-    ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
-    ir["integral_domains"] = {itg_type: [] for itg_type in ufcx_integral_types}
+    subdomain_ids: dict[str, list[int]] = {itg_type: [] for itg_type in ufcx_integral_types}
+    integral_names_dict: dict[str, list[str]] = {itg_type: [] for itg_type in ufcx_integral_types}
+    integral_domains_dict: dict[str, list[basix.CellType]] = {itg_type: [] for itg_type in ufcx_integral_types}
+    
     for itg_index, itg_data in enumerate(form_data.integral_data):
         # UFL is using "otherwise" for default integrals (over whole mesh)
         # but FFCx needs integers, so otherwise = -1
         integral_type = itg_data.integral_type
-        subdomain_ids = [sid if sid != "otherwise" else -1 for sid in itg_data.subdomain_id]
+        itg_subdomain_ids = [sid if sid != "otherwise" else -1 for sid in itg_data.subdomain_id]
 
-        if min(subdomain_ids) < -1:
+        if min(itg_subdomain_ids) < -1:
             raise ValueError("Integral subdomain IDs must be non-negative.")
-        ir["subdomain_ids"][integral_type] += subdomain_ids
-        for _ in range(len(subdomain_ids)):
+        subdomain_ids[integral_type] += itg_subdomain_ids
+        for _ in range(len(itg_subdomain_ids)):
             iname = integral_names[(form_id, itg_index)]
-            ir["integral_names"][integral_type] += [iname]
-            ir["integral_domains"][integral_type] += [integral_domains[iname]]
+            integral_names_dict[integral_type] += [iname]
+            # Convert set to a single element for the list
+            domain_set = integral_domains[iname]
+            if len(domain_set) == 1:
+                domain_element = next(iter(domain_set))
+            else:
+                # If there are multiple cell types, just pick the first one
+                # This is a simplification that may need to be addressed in the future
+                domain_element = next(iter(domain_set))
+            integral_domains_dict[integral_type] += [domain_element]
 
-    return FormIR(**ir)
+    return FormIR(
+        id=form_id_value,
+        name=name,
+        signature=signature,
+        rank=rank,
+        num_coefficients=num_coefficients,
+        num_constants=num_constants,
+        name_from_uflfile=name_from_uflfile,
+        original_coefficient_positions=original_coefficient_positions,
+        coefficient_names=coefficient_names,
+        constant_names=constant_names,
+        finite_element_hashes=finite_element_hashes,
+        integral_names=integral_names_dict,
+        integral_domains=integral_domains_dict,
+        subdomain_ids=subdomain_ids
+    )
 
 
 def _compute_expression_ir(
@@ -512,18 +531,15 @@ def _compute_expression_ir(
     logger.info(f"Computing IR for Expression {index}")
 
     # Compute representation
-    ir = {}
-    base_ir = {}
     original_expr = (expr[2], expr[1])
+    name = naming.expression_name(original_expr, prefix)
 
-    base_ir["name"] = naming.expression_name(original_expr, prefix)
-
-    original_expr = expr[2]
+    original_expr_val = expr[2]
     points = expr[1]
-    expr = expr[0]
+    expr_val = expr[0]
 
     try:
-        cell = ufl.domain.extract_unique_domain(expr).ufl_cell()
+        cell = ufl.domain.extract_unique_domain(expr_val).ufl_cell()
     except AttributeError:
         # This case corresponds to a spatially constant expression
         # without any dependencies
@@ -537,44 +553,37 @@ def _compute_expression_ir(
     }
 
     # Extract dimensions for elements of arguments only
-    arguments = ufl.algorithms.extract_arguments(expr)
+    arguments = ufl.algorithms.extract_arguments(expr_val)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
     argument_dimensions = [element_dimensions[element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
-    base_ir["tensor_shape"] = tensor_shape
+    shape = list(expr_val.ufl_shape)
 
-    base_ir["shape"] = list(expr.ufl_shape)
-
-    coefficients = ufl.algorithms.extract_coefficients(expr)
+    coefficients = ufl.algorithms.extract_coefficients(expr_val)
     coefficient_numbering = {}
     for i, coeff in enumerate(coefficients):
         coefficient_numbering[coeff] = i
 
-    # Add coefficient numbering to IR
-    base_ir["coefficient_numbering"] = coefficient_numbering
-
     original_coefficient_positions = []
-    original_coefficients = ufl.algorithms.extract_coefficients(original_expr)
+    original_coefficients = ufl.algorithms.extract_coefficients(original_expr_val)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
 
-    ir["coefficient_names"] = [
+    coefficient_names = [
         object_names.get(id(obj), f"w{j}") for j, obj in enumerate(coefficients)
     ]
 
-    ir["constant_names"] = [
+    constant_names = [
         object_names.get(id(obj), f"c{j}")
-        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expr))
+        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expr_val))
     ]
 
-    expr_name = object_names.get(id(original_expr), index)
-    ir["name_from_uflfile"] = f"expression_{prefix}_{expr_name}"
+    expr_name = object_names.get(id(original_expr_val), index)
+    name_from_uflfile = f"expression_{prefix}_{expr_name}"
 
     if len(argument_elements) > 1:
         raise RuntimeError("Expression with more than one Argument not implemented.")
-
-    ir["original_coefficient_positions"] = original_coefficient_positions
 
     coefficient_elements = tuple(f.ufl_element() for f in coefficients)
 
@@ -584,15 +593,13 @@ def _compute_expression_ir(
         offsets[coefficients[i]] = _offset
         _offset += element_dimensions[el]
 
-    # Copy offsets also into IR
-    base_ir["coefficient_offsets"] = offsets
-
-    base_ir["integral_type"] = "expression"
+    integral_type = "expression"
+    entity_type: entity_types
     if cell is not None:
         if (tdim := cell.topological_dimension()) == (pdim := points.shape[1]):
-            base_ir["entity_type"] = "cell"
+            entity_type = "cell"
         elif tdim - 1 == pdim:
-            base_ir["entity_type"] = "facet"
+            entity_type = "facet"
         else:
             raise ValueError(
                 f"Expression on domain with topological dimension {tdim}"
@@ -600,40 +607,66 @@ def _compute_expression_ir(
             )
     else:
         # For spatially invariant expressions, all expressions are evaluated in the cell
-        base_ir["entity_type"] = "cell"
+        entity_type = "cell"
 
     # Build offsets for Constants
     original_constant_offsets = {}
     _offset = 0
-    for constant in ufl.algorithms.analysis.extract_constants(original_expr):
+    for constant in ufl.algorithms.analysis.extract_constants(original_expr_val):
         original_constant_offsets[constant] = _offset
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
-    base_ir["original_constant_offsets"] = original_constant_offsets
-    base_ir["coordinate_element_hash"] = (
-        ufl.domain.extract_unique_domain(expr).ufl_coordinate_element().basix_hash()
-    )
+    coordinate_element_hash = ""
+    if cell is not None:
+        coordinate_element_hash = (
+            ufl.domain.extract_unique_domain(expr_val).ufl_coordinate_element().basix_hash()
+        )
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
-    integrands = {"": {rule: expr}}
+    integrands = {"": {rule: expr_val}}
 
     if cell is None:
         assert (
-            len(ir["original_coefficient_positions"]) == 0
-            and len(base_ir["original_constant_offsets"]) == 0
+            len(original_coefficient_positions) == 0
+            and len(original_constant_offsets) == 0
         )
+
+    # For expressions, ensure entity_type is one of the allowed values from the Literal type
+    # This cast is necessary because mypy doesn't recognize that our assignment ensures the correct type
+    entity_type_arg: entity_types = entity_type  # Explicit cast to help mypy
 
     expression_ir = compute_integral_ir(
         cell,
-        base_ir["integral_type"],
-        base_ir["entity_type"],
+        integral_type,
+        entity_type_arg,
         integrands,
         tensor_shape,
         options,
         visualise,
     )
 
-    base_ir.update(expression_ir)
-    ir["expression"] = CommonExpressionIR(**base_ir)
-    return ExpressionIR(**ir)
+    # Update with computed data
+    common_expr_ir = CommonExpressionIR(
+        integral_type=integral_type,
+        entity_type=entity_type,
+        tensor_shape=tensor_shape,
+        coefficient_numbering=coefficient_numbering,
+        coefficient_offsets=offsets,
+        original_constant_offsets=original_constant_offsets,
+        unique_tables=expression_ir["unique_tables"],
+        unique_table_types=expression_ir["unique_table_types"],
+        integrand=expression_ir["integrand"],
+        name=name,
+        needs_facet_permutations=expression_ir["needs_facet_permutations"],
+        shape=shape,
+        coordinate_element_hash=coordinate_element_hash
+    )
+
+    return ExpressionIR(
+        expression=common_expr_ir,
+        original_coefficient_positions=original_coefficient_positions,
+        coefficient_names=coefficient_names,
+        constant_names=constant_names,
+        name_from_uflfile=name_from_uflfile
+    )

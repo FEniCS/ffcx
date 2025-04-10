@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import io
 import logging
 import os
@@ -91,7 +92,7 @@ def get_cached_module(
     object_names: list[str], 
     cache_dir: Path, 
     timeout: int
-) -> tuple[Optional[list], Optional[types.ModuleType]]:
+) -> tuple[Optional[list[Any]], Optional[types.ModuleType]]:
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = Path(cache_dir)
     c_filename = cache_dir.joinpath(module_name).with_suffix(".c")
@@ -120,7 +121,10 @@ def get_cached_module(
                 if spec is None:
                     raise ModuleNotFoundError("Unable to find JIT module.")
                 compiled_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(compiled_module)
+                if spec.loader is not None:
+                    spec.loader.exec_module(compiled_module)
+                else:
+                    raise ImportError(f"Module {module_name} has no loader")
 
                 compiled_objects = [getattr(compiled_module.lib, name) for name in object_names]
                 return compiled_objects, compiled_module
@@ -165,7 +169,7 @@ def compile_forms(
     cffi_debug: bool = False,
     cffi_libraries: list[str] = [],
     visualise: bool = False,
-) -> tuple[list[Any], types.ModuleType, tuple[Optional[str], Optional[str]]]:
+) -> tuple[list[Any], Optional[types.ModuleType], tuple[Optional[str], Optional[str]]]:
     """Compile a list of UFL forms into UFC Python objects.
 
     Args:
@@ -244,7 +248,7 @@ def compile_expressions(
     cffi_debug: bool = False,
     cffi_libraries: list[str] = [],
     visualise: bool = False,
-) -> tuple[list[Any], types.ModuleType, tuple[Optional[str], Optional[str]]]:
+) -> tuple[list[Any], Optional[types.ModuleType], tuple[Optional[str], Optional[str]]]:
     """Compile a list of UFL expressions into UFC Python objects.
 
     Args:
@@ -424,7 +428,10 @@ def _load_objects(
 
     # Load module
     compiled_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(compiled_module)
+    if spec.loader is not None:
+        spec.loader.exec_module(compiled_module)
+    else:
+        raise ImportError(f"Module {module_name} has no loader")
 
     compiled_objects = []
     for name in object_names:
