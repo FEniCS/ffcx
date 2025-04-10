@@ -88,10 +88,7 @@ def _compute_option_signature(options: dict) -> str:
 
 
 def get_cached_module(
-    module_name: str,
-    object_names: list[str],
-    cache_dir: Path,
-    timeout: int
+    module_name: str, object_names: list[str], cache_dir: Path, timeout: int
 ) -> tuple[Optional[list[Any]], Optional[types.ModuleType]]:
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = Path(cache_dir)
@@ -137,10 +134,7 @@ def get_cached_module(
         )
 
 
-def _compilation_signature(
-    cffi_extra_compile_args: list[str],
-    cffi_debug: bool
-) -> str:
+def _compilation_signature(cffi_extra_compile_args: list[str], cffi_debug: bool) -> str:
     """Compute the compilation-inputs part of the signature.
 
     Used to avoid cache conflicts across Python versions, architectures, installs.
@@ -150,13 +144,9 @@ def _compilation_signature(
     """
     if sys.platform.startswith("win32"):
         # NOTE: SOABI not defined on win32, EXT_SUFFIX contains e.g. '.cp312-win_amd64.pyd'
-        return (
-            f"{cffi_extra_compile_args}{cffi_debug}{sysconfig.get_config_var('EXT_SUFFIX')}"
-        )
+        return f"{cffi_extra_compile_args}{cffi_debug}{sysconfig.get_config_var('EXT_SUFFIX')}"
     else:
-        return (
-            f"{cffi_extra_compile_args}{cffi_debug}{sysconfig.get_config_var('CFLAGS')}{sysconfig.get_config_var('SOABI')}"
-        )
+        return f"{cffi_extra_compile_args}{cffi_debug}{sysconfig.get_config_var('CFLAGS')}{sysconfig.get_config_var('SOABI')}"
 
 
 def compile_forms(
@@ -409,9 +399,7 @@ def _compile_objects(
 
 
 def _load_objects(
-    cache_dir: Path,
-    module_name: str,
-    object_names: list[str]
+    cache_dir: Path, module_name: str, object_names: list[str]
 ) -> tuple[list[Any], types.ModuleType]:
     # Create module finder that searches the compile path
     finder = importlib.machinery.FileFinder(
