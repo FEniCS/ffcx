@@ -146,8 +146,8 @@ def _compilation_signature(cffi_extra_compile_args: list[str], cffi_debug: bool)
         # NOTE: SOABI not defined on win32, EXT_SUFFIX contains e.g. '.cp312-win_amd64.pyd'
         return f"{cffi_extra_compile_args}{cffi_debug}{sysconfig.get_config_var('EXT_SUFFIX')}"
     else:
-        soabi = sysconfig.get_config_var('SOABI')
-        cflags = sysconfig.get_config_var('CFLAGS')
+        soabi = sysconfig.get_config_var("SOABI")
+        cflags = sysconfig.get_config_var("CFLAGS")
         return f"{cffi_extra_compile_args}{cffi_debug}{cflags}{soabi}"
 
 
