@@ -62,7 +62,7 @@ def main(args: Optional[Sequence[str]] = None) -> int:
         # Remove weird characters (file system allows more than the C
         # preprocessor)
         prefix = file.stem
-        prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
+        prefix = re.subn(f"[^{string.ascii_letters + string.digits + '_'}]", "!", prefix)[0]
         prefix = re.subn("!+", "_", prefix)[0]
 
         # Turn on profiling

@@ -32,8 +32,8 @@ def format_code(code: CodeBlocks) -> tuple[str, str]:
     code_c = ""
     code_h = ""
     for parts_code in code:
-        code_h += "".join([c[0] for c in parts_code])
-        code_c += "".join([c[1] for c in parts_code])
+        code_h += "".join(c[0] for c in parts_code)
+        code_c += "".join(c[1] for c in parts_code)
 
     return code_h, code_c
 
@@ -46,6 +46,6 @@ def write_code(code_h: str, code_c: str, prefix: str, output_dir: str) -> None:
 
 def _write_file(output: str, prefix: str, postfix: str, output_dir: str) -> None:
     """Write generated code to file."""
-    filename = os.path.join(output_dir, prefix + postfix)
+    filename = os.path.join(output_dir, f"{prefix}{postfix}")
     with open(filename, "w") as hfile:
         hfile.write(output)

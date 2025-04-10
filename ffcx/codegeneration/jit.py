@@ -16,9 +16,11 @@ import sys
 import sysconfig
 import tempfile
 import time
+import types
 import typing
 from contextlib import redirect_stdout
 from pathlib import Path
+from typing import Any, Optional, Union
 
 import cffi
 import numpy as np
@@ -79,12 +81,17 @@ UFC_EXPRESSION_DECL = "\n".join(
 )
 
 
-def _compute_option_signature(options):
+def _compute_option_signature(options: dict) -> str:
     """Return options signature (some options should not affect signature)."""
     return str(sorted(options.items()))
 
 
-def get_cached_module(module_name, object_names, cache_dir, timeout):
+def get_cached_module(
+    module_name: str, 
+    object_names: list[str], 
+    cache_dir: Path, 
+    timeout: int
+) -> tuple[Optional[list], Optional[types.ModuleType]]:
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = Path(cache_dir)
     c_filename = cache_dir.joinpath(module_name).with_suffix(".c")
@@ -99,7 +106,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
             pass
         return None, None
     except FileExistsError:
-        logger.info("Cached C file already exists: " + str(c_filename))
+        logger.info(f"Cached C file already exists: {c_filename}")
         finder = importlib.machinery.FileFinder(
             str(cache_dir),
             (importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES),
@@ -126,7 +133,10 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         )
 
 
-def _compilation_signature(cffi_extra_compile_args, cffi_debug):
+def _compilation_signature(
+    cffi_extra_compile_args: list[str], 
+    cffi_debug: bool
+) -> str:
     """Compute the compilation-inputs part of the signature.
 
     Used to avoid cache conflicts across Python versions, architectures, installs.
@@ -137,16 +147,11 @@ def _compilation_signature(cffi_extra_compile_args, cffi_debug):
     if sys.platform.startswith("win32"):
         # NOTE: SOABI not defined on win32, EXT_SUFFIX contains e.g. '.cp312-win_amd64.pyd'
         return (
-            str(cffi_extra_compile_args)
-            + str(cffi_debug)
-            + str(sysconfig.get_config_var("EXT_SUFFIX"))
+            f"{cffi_extra_compile_args}{cffi_debug}{sysconfig.get_config_var('EXT_SUFFIX')}"
         )
     else:
         return (
-            str(cffi_extra_compile_args)
-            + str(cffi_debug)
-            + str(sysconfig.get_config_var("CFLAGS"))
-            + str(sysconfig.get_config_var("SOABI"))
+            f"{cffi_extra_compile_args}{cffi_debug}{sysconfig.get_config_var('CFLAGS')}{sysconfig.get_config_var('SOABI')}"
         )
 
 
@@ -160,7 +165,7 @@ def compile_forms(
     cffi_debug: bool = False,
     cffi_libraries: list[str] = [],
     visualise: bool = False,
-):
+) -> tuple[list[Any], types.ModuleType, tuple[Optional[str], Optional[str]]]:
     """Compile a list of UFL forms into UFC Python objects.
 
     Args:
@@ -239,7 +244,7 @@ def compile_expressions(
     cffi_debug: bool = False,
     cffi_libraries: list[str] = [],
     visualise: bool = False,
-):
+) -> tuple[list[Any], types.ModuleType, tuple[Optional[str], Optional[str]]]:
     """Compile a list of UFL expressions into UFC Python objects.
 
     Args:
@@ -310,18 +315,18 @@ def compile_expressions(
 
 
 def _compile_objects(
-    decl,
-    ufl_objects,
-    object_names,
-    module_name,
-    options,
-    cache_dir,
-    cffi_extra_compile_args,
-    cffi_verbose,
-    cffi_debug,
-    cffi_libraries,
+    decl: str,
+    ufl_objects: Union[list[ufl.Form], list[tuple[ufl.Expr, npt.NDArray[np.floating]]]],
+    object_names: list[str],
+    module_name: str,
+    options: dict,
+    cache_dir: Path,
+    cffi_extra_compile_args: list[str],
+    cffi_verbose: bool,
+    cffi_debug: bool,
+    cffi_libraries: list[str],
     visualise: bool = False,
-):
+) -> str:
     import ffcx.compiler
 
     libraries = _libraries + cffi_libraries if cffi_libraries is not None else _libraries
@@ -399,7 +404,11 @@ def _compile_objects(
     return code_body
 
 
-def _load_objects(cache_dir, module_name, object_names):
+def _load_objects(
+    cache_dir: Path, 
+    module_name: str, 
+    object_names: list[str]
+) -> tuple[list[Any], types.ModuleType]:
     # Create module finder that searches the compile path
     finder = importlib.machinery.FileFinder(
         str(cache_dir),

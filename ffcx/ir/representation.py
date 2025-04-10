@@ -230,12 +230,12 @@ def compute_ir(
 
 
 def _compute_integral_ir(
-    form_data,
-    form_index,
-    element_numbers,
-    integral_names,
-    options,
-    visualise,
+    form_data: ufl.classes.Form,
+    form_index: int,
+    element_numbers: dict[typing.Any, int],
+    integral_names: dict[tuple[int, int], str],
+    options: dict[str, typing.Union[npt.DTypeLike, int, float, bool]],
+    visualise: bool,
 ) -> list[IntegralIR]:
     """Compute intermediate representation for form integrals."""
     _entity_types = {
@@ -433,13 +433,13 @@ def _compute_integral_ir(
 
 
 def _compute_form_ir(
-    form_data,
-    form_id,
-    prefix,
-    form_names,
-    integral_names,
-    integral_domains,
-    object_names,
+    form_data: ufl.classes.Form,
+    form_id: int,
+    prefix: str,
+    form_names: dict[int, str],
+    integral_names: dict[tuple[int, int], str],
+    integral_domains: dict[str, set[basix.CellType]],
+    object_names: dict[int, str],
 ) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
@@ -500,14 +500,14 @@ def _compute_form_ir(
 
 
 def _compute_expression_ir(
-    expr,
-    index,
-    prefix,
-    analysis,
-    options,
-    visualise,
-    object_names,
-):
+    expr: tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr],
+    index: int,
+    prefix: str,
+    analysis: UFLData,
+    options: dict[str, typing.Union[npt.DTypeLike, int, float, bool]],
+    visualise: bool,
+    object_names: dict[int, str],
+) -> ExpressionIR:
     """Compute intermediate representation of an Expression."""
     logger.info(f"Computing IR for Expression {index}")
 
