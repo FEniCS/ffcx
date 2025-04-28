@@ -18,7 +18,7 @@ dependencies = [
     "cffi",
     "setuptools; python_version >= '3.12'",   # cffi with compilation support requires setuptools
     "fenics-basix >= 0.10.0.dev0, <0.11.0",
-    "fenics-ufl >= 2024.3.0.dev0, <2024.4.0",
+    "fenics-ufl >= 2024.3.0.dev0, < 2025.2.0",
 ]
 
 [project.urls]
