@@ -36,7 +36,7 @@ class UFLData(typing.NamedTuple):
     # List of unique coordinate elements
     unique_coordinate_elements: list[basix.ufl._ElementBase]
     # List of ufl Expressions as tuples (expression, points, original_expression)
-    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
 
 
 def analyze_ufl_objects(
@@ -115,6 +115,7 @@ def analyze_ufl_objects(
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
+    
     return UFLData(
         form_data=form_data,
         unique_elements=unique_elements,
