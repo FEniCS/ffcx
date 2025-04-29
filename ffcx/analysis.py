@@ -115,7 +115,6 @@ def analyze_ufl_objects(
     # Compute dict (map) from element to index
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
 
-    
     return UFLData(
         form_data=form_data,
         unique_elements=unique_elements,
