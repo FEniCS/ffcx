@@ -39,7 +39,9 @@ class CodeBlocks(typing.NamedTuple):
     file_post: list[tuple[str, str]]
 
 
-def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -> CodeBlocks:
+def generate_code(
+    ir: DataIR, options: dict[str, typing.Union[int, float, npt.DTypeLike]]
+) -> CodeBlocks:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")

@@ -32,6 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
+from ffcx.definitions import entity_types
 from ffcx.ir.integral import compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
@@ -40,9 +41,46 @@ logger = logging.getLogger("ffcx")
 
 def basix_cell_from_string(string: str) -> basix.CellType:
     """Convert a string to a Basix CellType."""
+    # Note: vertex -> point, rest identity
     if string == "vertex":
         return basix.CellType.point
-    return getattr(basix.CellType, string)
+    elif string == "interval":
+        return basix.CellType.interval
+    elif string == "triangle":
+        return basix.CellType.triangle
+    elif string == "tetrahedron":
+        return basix.CellType.tetrahedron
+    elif string == "quadrilateral":
+        return basix.CellType.quadrilateral
+    elif string == "hexahedron":
+        return basix.CellType.hexahedron
+    elif string == "prism":
+        return basix.CellType.prism
+    elif string == "pyramid":
+        return basix.CellType.pyramid
+    else:
+        raise KeyError(f"Can not map '{string}' to a basix type.")
+
+    # TODO: Replace on 31 Oct 2025 with (Python 3.9 does not support match):
+    # match string:
+    #     case "vertex":
+    #         return basix.CellType.point
+    #     case "interval":
+    #         return basix.CellType.interval
+    #     case "triangle":
+    #         return basix.CellType.triangle
+    #     case "tetrahedron":
+    #         return basix.CellType.tetrahedron
+    #     case "quadrilateral":
+    #         return basix.CellType.quadrilateral
+    #     case "hexahedron":
+    #         return basix.CellType.hexahedron
+    #     case "prism":
+    #         return basix.CellType.prism
+    #     case "pyramid":
+    #         return basix.CellType.pyramid
+    #     case _:
+    #         raise KeyError(f"Can not map '{string}' to a basix type.")
 
 
 class FormIR(typing.NamedTuple):
@@ -76,7 +114,7 @@ class CommonExpressionIR(typing.NamedTuple):
     """Common-ground for IntegralIR and ExpressionIR."""
 
     integral_type: str
-    entity_type: str
+    entity_type: entity_types
     tensor_shape: list[int]
     coefficient_numbering: dict[ufl.Coefficient, int]
     coefficient_offsets: dict[ufl.Coefficient, int]
@@ -120,7 +158,7 @@ def compute_ir(
     analysis: UFLData,
     object_names: dict[int, str],
     prefix: str,
-    options: dict[str, npt.DTypeLike | int | float],
+    options: dict[str, typing.Union[npt.DTypeLike, int, float]],
     visualise: bool,
 ) -> DataIR:
     """Compute intermediate representation."""

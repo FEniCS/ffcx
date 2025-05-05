@@ -912,7 +912,7 @@ class StatementList(LNode):
 class Comment(Statement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
 
-    def __init__(self, comment):
+    def __init__(self, comment: str):
         """Initialise."""
         assert isinstance(comment, str)
         self.comment = comment
