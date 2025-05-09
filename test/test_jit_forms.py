@@ -1442,3 +1442,45 @@ def test_point_measure_rank_0(compile_args, gdim, dtype):
                 ffi.NULL,
             )
             assert np.isclose(J[0], coords[3 * i], atol=1e-6 if dtype == np.float32 else 1e-12)
+
+
+@pytest.mark.parametrize("gdim", [1, 2, 3])
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_point_measure_rank_1(compile_args, gdim, dtype):
+    geometry = "interval" if gdim == 1 else ("triangle" if gdim == 2 else "tetrahedron")
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", geometry, 1, shape=(gdim,), dtype=dtype))
+    element = basix.ufl.element("Lagrange", geometry, 1)
+    dP = ufl.Measure("dP")
+    x = ufl.SpatialCoordinate(domain)
+    V = ufl.FunctionSpace(domain, element)
+    v = ufl.TestFunction(V)
+    F = x[0] * v * dP
+
+    (form0,), module, _ = ffcx.codegeneration.jit.compile_forms(
+        [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    assert form0.rank == 1
+
+    ffi = module.ffi
+    kernel = getattr(
+        form0.form_integrals[0],
+        f"tabulate_tensor_{'float32' if dtype == np.float32 else 'float64'}",
+    )
+
+    for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
+        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0, 0, 0, 0, 0, 0, 1], dtype=dtype)
+
+        for i in range(gdim):
+            J = np.zeros(gdim, dtype=dtype)
+            e = np.array([i], dtype=np.int32)
+            kernel(
+                ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", J.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+                ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", coords.ctypes.data),
+                ffi.cast("int *", e.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+            )
+            assert np.isclose(J[i], coords[3 * i], atol=1e-6 if dtype == np.float32 else 1e-12)
+            assert np.allclose(np.delete(J, [i]), 0)
