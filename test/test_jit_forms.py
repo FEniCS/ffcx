@@ -1404,3 +1404,36 @@ def test_ds_prism(compile_args, dtype):
             ]
         ),
     )
+
+
+@pytest.mark.parametrize("dtype", [np.float64])
+def test_point_measure(compile_args, dtype):
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(1,)))
+
+    dP = ufl.Measure("dP")
+    x = ufl.SpatialCoordinate(domain)
+    F = x[0] * dP
+    forms = [F]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args, cffi_debug=True
+    )
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+    assert form0.rank == 0
+    default_integral = form0.form_integrals[0]
+    for a, b in [(0, 1), (1, 0), (2, 0), (5, -2)]:
+        J = np.zeros(1, dtype=np.float64)
+        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0], dtype=np.float64)
+        e = np.array([0], dtype=np.int32)
+        kernel = getattr(default_integral, "tabulate_tensor_float64")
+        kernel(
+            ffi.cast("double *", J.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast("int *", e.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+        )
+        assert np.isclose(J[0], a)
