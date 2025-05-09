@@ -1406,34 +1406,49 @@ def test_ds_prism(compile_args, dtype):
     )
 
 
-@pytest.mark.parametrize("dtype", [np.float64])
-def test_point_measure(compile_args, dtype):
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(1,)))
-
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_point_measure_rank_0(compile_args, dtype):
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(1,), dtype=dtype))
     dP = ufl.Measure("dP")
     x = ufl.SpatialCoordinate(domain)
     F = x[0] * dP
-    forms = [F]
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
-        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args, cffi_debug=True
+
+    (form0,), module, _ = ffcx.codegeneration.jit.compile_forms(
+        [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
+    assert form0.rank == 0
 
     ffi = module.ffi
-    form0 = compiled_forms[0]
-    assert form0.rank == 0
-    default_integral = form0.form_integrals[0]
-    for a, b in [(0, 1), (1, 0), (2, 0), (5, -2)]:
-        J = np.zeros(1, dtype=np.float64)
-        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0], dtype=np.float64)
+    kernel = getattr(
+        form0.form_integrals[0],
+        f"tabulate_tensor_{'float32' if dtype == np.float32 else 'float64'}",
+    )
+
+    for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
+        J = np.zeros(1, dtype=dtype)
+        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0], dtype=dtype)
         e = np.array([0], dtype=np.int32)
-        kernel = getattr(default_integral, "tabulate_tensor_float64")
+
         kernel(
-            ffi.cast("double *", J.ctypes.data),
+            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", J.ctypes.data),
             ffi.NULL,
             ffi.NULL,
-            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", coords.ctypes.data),
             ffi.cast("int *", e.ctypes.data),
             ffi.NULL,
             ffi.NULL,
         )
-        assert np.isclose(J[0], a)
+        assert np.isclose(J[0], a, atol=1e-6 if dtype == np.float32 else 1e-12)
+
+        J[0] = 0
+        e[0] = 1
+        kernel(
+            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", J.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", coords.ctypes.data),
+            ffi.cast("int *", e.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+        )
+        assert np.isclose(J[0], b, atol=1e-6 if dtype == np.float32 else 1e-12)
