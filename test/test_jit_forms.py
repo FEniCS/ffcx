@@ -1406,9 +1406,11 @@ def test_ds_prism(compile_args, dtype):
     )
 
 
+@pytest.mark.parametrize("gdim", [1, 2, 3])
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_point_measure_rank_0(compile_args, dtype):
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(1,), dtype=dtype))
+def test_point_measure_rank_0(compile_args, gdim, dtype):
+    geometry = "interval" if gdim == 1 else ("triangle" if gdim == 2 else "tetrahedron")
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", geometry, 1, shape=(gdim,), dtype=dtype))
     dP = ufl.Measure("dP")
     x = ufl.SpatialCoordinate(domain)
     F = x[0] * dP
@@ -1425,30 +1427,18 @@ def test_point_measure_rank_0(compile_args, dtype):
     )
 
     for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
-        J = np.zeros(1, dtype=dtype)
-        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0], dtype=dtype)
-        e = np.array([0], dtype=np.int32)
+        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0, 0, 0, 0, 0, 0, 1], dtype=dtype)
 
-        kernel(
-            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", J.ctypes.data),
-            ffi.NULL,
-            ffi.NULL,
-            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", coords.ctypes.data),
-            ffi.cast("int *", e.ctypes.data),
-            ffi.NULL,
-            ffi.NULL,
-        )
-        assert np.isclose(J[0], a, atol=1e-6 if dtype == np.float32 else 1e-12)
-
-        J[0] = 0
-        e[0] = 1
-        kernel(
-            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", J.ctypes.data),
-            ffi.NULL,
-            ffi.NULL,
-            ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", coords.ctypes.data),
-            ffi.cast("int *", e.ctypes.data),
-            ffi.NULL,
-            ffi.NULL,
-        )
-        assert np.isclose(J[0], b, atol=1e-6 if dtype == np.float32 else 1e-12)
+        for i in range(gdim):
+            J = np.zeros(1, dtype=dtype)
+            e = np.array([i], dtype=np.int32)
+            kernel(
+                ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", J.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+                ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", coords.ctypes.data),
+                ffi.cast("int *", e.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+            )
+            assert np.isclose(J[0], coords[3 * i], atol=1e-6 if dtype == np.float32 else 1e-12)
