@@ -1445,21 +1445,27 @@ def test_point_measure_rank_0(compile_args, gdim, dtype):
 
 
 @pytest.mark.parametrize("gdim", [1, 2, 3])
+@pytest.mark.parametrize("rank", [0, 1, 2])
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_point_measure_rank_1(compile_args, gdim, dtype):
+def test_point_measure(compile_args, gdim, rank, dtype):
     geometry = "interval" if gdim == 1 else ("triangle" if gdim == 2 else "tetrahedron")
     domain = ufl.Mesh(basix.ufl.element("Lagrange", geometry, 1, shape=(gdim,), dtype=dtype))
     element = basix.ufl.element("Lagrange", geometry, 1)
     dP = ufl.Measure("dP")
     x = ufl.SpatialCoordinate(domain)
     V = ufl.FunctionSpace(domain, element)
-    v = ufl.TestFunction(V)
-    F = x[0] * v * dP
+    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+    if rank == 0:
+        F = x[0] * dP
+    elif rank == 1:
+        F = x[0] * v * dP
+    else:
+        F = x[0] * u * v * dP
 
     (form0,), module, _ = ffcx.codegeneration.jit.compile_forms(
         [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
-    assert form0.rank == 1
+    assert form0.rank == rank
 
     ffi = module.ffi
     kernel = getattr(
@@ -1470,9 +1476,9 @@ def test_point_measure_rank_1(compile_args, gdim, dtype):
     for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
         coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0, 0, 0, 0, 0, 0, 1], dtype=dtype)
 
-        for i in range(gdim):
-            J = np.zeros(gdim, dtype=dtype)
-            e = np.array([i], dtype=np.int32)
+        for vertex in range(gdim + 1):
+            J = np.zeros((gdim + 1) ** 2, dtype=dtype)
+            e = np.array([vertex], dtype=np.int32)
             kernel(
                 ffi.cast(f"{'float' if dtype == np.float32 else 'double'} *", J.ctypes.data),
                 ffi.NULL,
@@ -1482,5 +1488,6 @@ def test_point_measure_rank_1(compile_args, gdim, dtype):
                 ffi.NULL,
                 ffi.NULL,
             )
-            assert np.isclose(J[i], coords[3 * i], atol=1e2 * np.finfo(dtype).eps)
-            assert np.allclose(np.delete(J, [i]), 0)
+            idx = (rank > 0) * vertex + (rank > 1) * vertex * (gdim + 1)
+            assert np.isclose(J[idx], coords[vertex * 3], atol=1e2 * np.finfo(dtype).eps)
+            assert np.allclose(np.delete(J, [idx]), 0)
