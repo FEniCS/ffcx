@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import os
 import sys
 
 import basix.ufl
@@ -1408,7 +1409,25 @@ def test_ds_prism(compile_args, dtype):
 
 @pytest.mark.parametrize("geometry", [("interval", 1), ("triangle", 2), ("tetrahedron", 3)])
 @pytest.mark.parametrize("rank", [0, 1, 2])
-@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.complex64, np.complex128])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.float32,
+        np.float64,
+        pytest.param(
+            np.complex64,
+            marks=pytest.mark.skipif(
+                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
+            ),
+        ),
+        pytest.param(
+            np.complex128,
+            marks=pytest.mark.skipif(
+                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
+            ),
+        ),
+    ],
+)
 def test_point_measure(compile_args, geometry, rank, dtype):
     cell, gdim = geometry
     rdtype = np.real(dtype(0)).dtype
