@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2020 Garth N. Wells & Matthew Scroggs
+# Copyright (C) 2018-2025 Garth N. Wells, Matthew Scroggs and Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -1441,7 +1441,7 @@ def test_point_measure_rank_0(compile_args, gdim, dtype):
                 ffi.NULL,
                 ffi.NULL,
             )
-            assert np.isclose(J[0], coords[3 * i], atol=1e-6 if dtype == np.float32 else 1e-12)
+            assert np.isclose(J[0], coords[3 * i], atol=1e2 * np.finfo(dtype).eps)
 
 
 @pytest.mark.parametrize("gdim", [1, 2, 3])
@@ -1482,5 +1482,5 @@ def test_point_measure_rank_1(compile_args, gdim, dtype):
                 ffi.NULL,
                 ffi.NULL,
             )
-            assert np.isclose(J[i], coords[3 * i], atol=1e-6 if dtype == np.float32 else 1e-12)
+            assert np.isclose(J[i], coords[3 * i], atol=1e2 * np.finfo(dtype).eps)
             assert np.allclose(np.delete(J, [i]), 0)
