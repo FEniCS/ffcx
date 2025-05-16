@@ -1444,13 +1444,13 @@ def test_point_measure_rank_0(compile_args, gdim, dtype):
             assert np.isclose(J[0], coords[3 * i], atol=1e2 * np.finfo(dtype).eps)
 
 
-@pytest.mark.parametrize("gdim", [1, 2, 3])
+@pytest.mark.parametrize("geometry", [("interval", 1), ("triangle", 2), ("tetrahedron", 3)])
 @pytest.mark.parametrize("rank", [0, 1, 2])
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_point_measure(compile_args, gdim, rank, dtype):
-    geometry = "interval" if gdim == 1 else ("triangle" if gdim == 2 else "tetrahedron")
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", geometry, 1, shape=(gdim,), dtype=dtype))
-    element = basix.ufl.element("Lagrange", geometry, 1)
+def test_point_measure(compile_args, geometry, rank, dtype):
+    cell, gdim = geometry
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(gdim,), dtype=dtype))
+    element = basix.ufl.element("Lagrange", cell, 1)
     dP = ufl.Measure("dP")
     x = ufl.SpatialCoordinate(domain)
     V = ufl.FunctionSpace(domain, element)
