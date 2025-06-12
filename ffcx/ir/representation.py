@@ -610,8 +610,10 @@ def _compute_expression_ir(
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
+
+    expr_domain = ufl.domain.extract_unique_domain(expr)
     base_ir["coordinate_element_hash"] = (
-        ufl.domain.extract_unique_domain(expr).ufl_coordinate_element().basix_hash()
+        expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )
 
     weights = np.array([1.0] * points.shape[0])
