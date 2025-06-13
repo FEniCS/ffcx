@@ -439,3 +439,46 @@ def test_facet_geometry_expressions_3D(compile_args):
         ffi.NULL,
     )
     np.testing.assert_allclose(output, np.asarray(ref_fev)[:3, :])
+
+
+def test_coordinate_free_expression(compile_args):
+    """Test evaluation of expressions that do not have a coordinate element (a domain)."""
+    # Test simple constant vector
+    expr = ufl.as_vector([1.0, 0.0])
+
+    points = np.array([[0.0, 0.0], [0.1, 0.1], [0.0, 1.0]])
+    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    dtype = np.float64
+    c_type = "double"
+
+    # 2 components for vector, 3 evaluation points
+    A = np.zeros((3, 2), dtype=dtype)
+
+    # No coefficients or constants needed for this domainless expression
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    # Coordinates are not used for domainless expressions but still required
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=dtype)
+
+    expression.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_type} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    # Check that the expression evaluates to [1, 0] at all points
+    expected = np.array([[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]])
+    assert np.allclose(A, expected)
