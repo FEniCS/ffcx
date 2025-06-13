@@ -2,4 +2,4 @@
 
 from typing import Literal
 
-entity_types = Literal["cell", "facet", "vertex"]
+entity_types = Literal["cell", "facet", "vertex", "ridge"]
