@@ -205,7 +205,7 @@ class CFormatter:
             body = body[:-2] + "}\n"
 
         body += "// ------------------------ \n"
-        return comments + declarations + body
+        return str(comments + declarations + body)
 
     def format_comment(self, c: L.Comment) -> str:
         """Format a comment."""

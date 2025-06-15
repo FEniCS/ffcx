@@ -60,20 +60,24 @@ def generator(ir: FormIR, options):
         d["coefficient_names"] = "NULL"
 
     d["num_constants"] = ir.num_constants
-    result = str(ir.constants_ranks).replace("[", "{").replace("]", "}")
-    print(result)
-    d["constants_ranks"] = result
-    # result = ','.join(str(x0) for x0 in x for x in ir.constants_shapes)
-    # print(result)
-    print(str(ir.constants_shapes))
-    result = (
-        str(ir.constants_shapes)
-        .replace("[", "{")
-        .replace("]", "}")
-        .replace("(", "{")
-        .replace(")", "}")
-    )
-    d["constants_shapes"] = result
+    if ir.num_constants > 0:
+        result = str(ir.constants_ranks).replace("[", "{").replace("]", "}")
+        d["constants_ranks"] = result
+        # result = ','.join(str(x0) for x0 in x for x in ir.constants_shapes)
+        # print(result)
+        print(str(ir.constants_shapes))
+        result = (
+            str(ir.constants_shapes)
+            .replace("[", "{")
+            .replace("]", "}")
+            .replace("(", "{")
+            .replace(")", "}")
+        )
+        print(result)
+        d["constants_shapes"] = result
+    else:
+        d["constants_ranks"] = "NULL"
+        d["constants_shapes"] = "NULL"
 
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)
