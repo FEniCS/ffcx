@@ -236,10 +236,10 @@ extern "C"
     int num_constants;
 
     /// Ranks of constants
-    int* constants_rank;
+    const int* constant_ranks;
 
     /// Shapes of constants
-    int** constants_shape;
+    const int** constant_shapes;
 
     /// List of names of constants
     const char** constant_name_map;

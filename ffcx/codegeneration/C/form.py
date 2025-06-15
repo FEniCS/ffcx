@@ -61,23 +61,32 @@ def generator(ir: FormIR, options):
 
     d["num_constants"] = ir.num_constants
     if ir.num_constants > 0:
-        result = str(ir.constants_ranks).replace("[", "{").replace("]", "}")
-        d["constants_ranks"] = result
-        # result = ','.join(str(x0) for x0 in x for x in ir.constants_shapes)
-        # print(result)
-        print(str(ir.constants_shapes))
-        result = (
-            str(ir.constants_shapes)
-            .replace("[", "{")
-            .replace("]", "}")
-            .replace("(", "{")
-            .replace(")", "}")
+        result = str(ir.constant_ranks).replace("[", "{").replace("]", "}")
+        d["constant_ranks_init"] = (
+            f"static const int constant_ranks_{ir.name}[{ir.num_constants}] = {result};"
         )
-        print(result)
-        d["constants_shapes"] = result
+        d["constant_ranks"] = f"constant_ranks_{ir.name}"
+
+
+        result0 = [
+            f"static const int constant_shapes_{ir.name}_{i}[{len(shape)}] = "
+            f"{str(shape).replace('(', '{').replace(')', '}')};"
+            for i, shape in enumerate(ir.constant_shapes)
+        ]
+        names = [f"constant_shapes_{ir.name}_{i}" for i in range(ir.num_constants)]
+        result1 = f"static const int* constant_shapes_{ir.name}[{ir.num_constants}] = " + "{"
+        for name in names:
+            result1 += f"{name},"
+        result1 += "};"
+        result0.append(result1)
+
+        d["constant_shapes_init"] = "\n".join(result0)
+        d["constant_shapes"] = f"constant_shapes_{ir.name}"
     else:
-        d["constants_ranks"] = "NULL"
-        d["constants_shapes"] = "NULL"
+        d["constant_ranks_init"] = ""
+        d["constant_ranks"] = "NULL"
+        d["constant_shapes_init"] = ""
+        d["constant_shapes"] = "NULL"
 
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)

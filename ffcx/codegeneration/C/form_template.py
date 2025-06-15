@@ -26,6 +26,8 @@ factory = """
 
 {coefficient_names_init}
 {constant_names_init}
+{constant_ranks_init}
+{constant_shapes_init}
 
 ufcx_form {factory_name} =
 {{
@@ -38,8 +40,8 @@ ufcx_form {factory_name} =
   .coefficient_name_map = {coefficient_names},
 
   .num_constants = {num_constants},
-  .constants_ranks = {constants_ranks},
-  .constants_shapes = {constants_shapes},
+  .constant_ranks = {constant_ranks},
+  .constant_shapes = {constant_shapes},
   .constant_name_map = {constant_names},
 
   .finite_element_hashes = {finite_element_hashes},

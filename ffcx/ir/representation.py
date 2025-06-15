@@ -95,8 +95,8 @@ class FormIR(typing.NamedTuple):
     original_coefficient_positions: list[int]
     coefficient_names: list[str]
     num_constants: int
-    constants_ranks: list[int]
-    constants_shapes: list[list[int]]
+    constant_ranks: list[int]
+    constant_shapes: list[list[int]]
     constant_names: list[str]
     finite_element_hashes: list[int]
     integral_names: dict[str, list[str]]
@@ -462,8 +462,8 @@ def _compute_form_ir(
     ]
 
     ir["num_constants"] = len(form_data.original_form.constants())
-    ir["constants_ranks"] = [len(obj.ufl_shape) for obj in form_data.original_form.constants()]
-    ir["constants_shapes"] = [obj.ufl_shape for obj in form_data.original_form.constants()]
+    ir["constant_ranks"] = [len(obj.ufl_shape) for obj in form_data.original_form.constants()]
+    ir["constant_shapes"] = [obj.ufl_shape for obj in form_data.original_form.constants()]
 
     ir["constant_names"] = [
         object_names.get(id(obj), f"c{j}")
