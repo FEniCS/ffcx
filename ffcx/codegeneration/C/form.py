@@ -35,7 +35,6 @@ def generator(ir: FormIR, options):
     d["signature"] = f'"{ir.signature}"'
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
-    d["num_constants"] = ir.num_constants
 
     if len(ir.original_coefficient_positions) > 0:
         values = ", ".join(str(i) for i in ir.original_coefficient_positions)
@@ -59,6 +58,22 @@ def generator(ir: FormIR, options):
     else:
         d["coefficient_names_init"] = ""
         d["coefficient_names"] = "NULL"
+
+    d["num_constants"] = ir.num_constants
+    result = str(ir.constants_ranks).replace("[", "{").replace("]", "}")
+    print(result)
+    d["constants_ranks"] = result
+    # result = ','.join(str(x0) for x0 in x for x in ir.constants_shapes)
+    # print(result)
+    print(str(ir.constants_shapes))
+    result = (
+        str(ir.constants_shapes)
+        .replace("[", "{")
+        .replace("]", "}")
+        .replace("(", "{")
+        .replace(")", "}")
+    )
+    d["constants_shapes"] = result
 
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)
