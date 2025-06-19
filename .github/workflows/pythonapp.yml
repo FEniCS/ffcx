@@ -80,7 +80,6 @@ jobs:
       - name: Install FFCx (Linux, with optional dependencies)
         if: runner.os == 'Linux'
         run: | 
-          pip install nvidia-pyindex # NVIDIA has its own pypi index
           pip install .[ci,optional]
       - name: Install FFCx (macOS, Windows)
         if: runner.os != 'Linux'
