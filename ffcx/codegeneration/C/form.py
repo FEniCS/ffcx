@@ -71,11 +71,15 @@ def generator(ir: FormIR, options):
             f"static const int constant_shapes_{ir.name}_{i}[{len(shape)}] = "
             f"{str(shape).replace('(', '{').replace(')', '}')};"
             for i, shape in enumerate(ir.constant_shapes)
+            if len(shape) > 0
         ]
         names = [f"constant_shapes_{ir.name}_{i}" for i in range(ir.num_constants)]
         result1 = f"static const int* constant_shapes_{ir.name}[{ir.num_constants}] = " + "{"
-        for name in names:
-            result1 += f"{name},\n"
+        for rank, name in zip(ir.constant_ranks, names):
+            if rank > 0:
+                result1 += f"{name},\n"
+            else:
+                result1 += f"NULL,\n"
         result1 += "};"
         result0.append(result1)
 
