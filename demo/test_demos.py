@@ -88,12 +88,7 @@ def test_demo_nvrtc(scalar_type):
     for file in files:
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
         assert (
-            os.system(
-                f"cd {demo_dir} && "
-                f"{cc} -I../ffcx/codegeneration "
-                f"{extra_flags} "
-                f"-c {file}.c"
-            )
+            os.system(f"cd {demo_dir} && {cc} -I../ffcx/codegeneration {extra_flags} -c {file}.c")
             == 0
         )
 
@@ -103,7 +98,7 @@ def test_demo_nvrtc(scalar_type):
             f"cd {demo_dir} && "
             f"{cxx} -I../ffcx/codegeneration -I{nvrtc_dir}/include -L{nvrtc_dir}/lib "
             f" -Werror -o nvrtc_test nvrtc_test.cpp "
-            f"{' '.join([file+'.o' for file in files])} -l:libnvrtc.so.12"
+            f"{' '.join([file + '.o' for file in files])} -l:libnvrtc.so.12"
         )
         == 0
     )
