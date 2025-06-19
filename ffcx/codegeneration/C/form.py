@@ -24,7 +24,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir: FormIR, options):
-    """Generate UFC code for a form."""
+    """Generate UFCx code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
@@ -79,7 +79,7 @@ def generator(ir: FormIR, options):
             if rank > 0:
                 result1 += f"{name},\n"
             else:
-                result1 += f"NULL,\n"
+                result1 += "NULL,\n"
         result1 += "};"
         result0.append(result1)
 
