@@ -82,9 +82,9 @@ def generator(ir: FormIR, options):
         d["constant_shapes_init"] = "\n".join(result0)
         d["constant_shapes"] = f"constant_shapes_{ir.name}"
     else:
-        d["constant_ranks_init"] = "NULL"
+        d["constant_ranks_init"] = ""
         d["constant_ranks"] = "NULL"
-        d["constant_shapes_init"] = "NULL"
+        d["constant_shapes_init"] = ""
         d["constant_shapes"] = "NULL"
 
     if len(ir.constant_names) > 0:
