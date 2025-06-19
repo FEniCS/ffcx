@@ -89,6 +89,7 @@ def test_laplace_bilinear_form_2d(dtype, expected_result, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     assert np.allclose(A, np.trace(kappa_value) * expected_result)
@@ -233,6 +234,7 @@ def test_helmholtz_form_2d(dtype, expected_result, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     np.testing.assert_allclose(A, expected_result)
@@ -305,6 +307,7 @@ def test_laplace_bilinear_form_3d(dtype, expected_result, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     assert np.allclose(A, expected_result)
@@ -342,6 +345,7 @@ def test_form_coefficient(compile_args):
         ffi.cast("double  *", coords.ctypes.data),
         ffi.NULL,
         ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
     )
 
     A_analytic = np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]], dtype=np.float64) / 24.0
@@ -452,6 +456,7 @@ def test_interior_facet_integral(dtype, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", facets.ctypes.data),
         ffi.cast("uint8_t *", perms.ctypes.data),
+        ffi.NULL,
     )
 
 
@@ -512,6 +517,7 @@ def test_conditional(dtype, compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     expected_result = np.array([[2, -1, -1], [-1, 1, 0], [-1, 0, 1]], dtype=dtype)
@@ -528,6 +534,7 @@ def test_conditional(dtype, compile_args):
         ffi.cast(f"{c_type} *", w2.ctypes.data),
         ffi.cast(f"{c_type} *", c.ctypes.data),
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -579,6 +586,7 @@ def test_custom_quadrature(compile_args):
         ffi.cast("double *", w.ctypes.data),
         ffi.cast("double *", c.ctypes.data),
         ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -688,6 +696,7 @@ def test_lagrange_triangle(compile_args, order, dtype, sym_fun, ufl_fun):
         ffi.cast(f"{c_type} *", w.ctypes.data),
         ffi.NULL,
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -817,6 +826,7 @@ def test_lagrange_tetrahedron(compile_args, order, dtype, sym_fun, ufl_fun):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     # Check that the result is the same as for sympy
@@ -850,6 +860,7 @@ def test_prism(compile_args):
         ffi.NULL,
         ffi.NULL,
         ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -898,6 +909,7 @@ def test_complex_operations(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
 
     expected_result = np.array(
@@ -916,6 +928,7 @@ def test_complex_operations(compile_args):
         ffi.cast(f"{c_type} *", w1.ctypes.data),
         ffi.cast(f"{c_type} *", c.ctypes.data),
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
         ffi.NULL,
         ffi.NULL,
     )
@@ -980,6 +993,7 @@ def test_interval_vertex_quadrature(compile_args):
         ffi.cast("double *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
     assert np.isclose(J[0], (0.5 * a + 0.5 * b) * np.abs(b - a))
 
@@ -1033,6 +1047,7 @@ def test_facet_vertex_quadrature(compile_args):
             ffi.cast("double *", coords.ctypes.data),
             ffi.cast("int *", facets.ctypes.data),
             ffi.NULL,
+            ffi.NULL,
         )
         solutions.append(J[0])
         # Test against exact result
@@ -1084,6 +1099,7 @@ def test_manifold_derivatives(compile_args):
         ffi.cast("double  *", coords.ctypes.data),
         ffi.NULL,
         ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
     )
 
     assert np.isclose(J[0], 0.0)
@@ -1126,6 +1142,30 @@ def test_integral_grouping(compile_args):
         ]
     )
     assert len(unique_integrals) == 2
+
+
+def test_derivative_domains(compile_args):
+    """Test a form with derivatives on two different domains will generate valid code."""
+
+    V_ele = basix.ufl.element("Lagrange", "triangle", 2)
+    W_ele = basix.ufl.element("Lagrange", "interval", 1)
+
+    gdim = 2
+    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(gdim,)))
+    W_domain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(gdim,)))
+
+    V = ufl.FunctionSpace(V_domain, V_ele)
+    W = ufl.FunctionSpace(W_domain, W_ele)
+
+    u = ufl.TrialFunction(V)
+    q = ufl.TestFunction(W)
+
+    ds = ufl.Measure("ds", domain=V_domain)
+
+    forms = [ufl.inner(u.dx(0), q.dx(0)) * ds]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": np.float64}, cffi_extra_compile_args=compile_args
+    )
 
 
 @pytest.mark.parametrize("dtype", ["float64"])
@@ -1186,6 +1226,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
             ffi.cast(f"{c_xtype} *", coords.ctypes.data),
             ffi.cast("int *", facet.ctypes.data),
             ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
         )
 
         return A
@@ -1224,3 +1265,142 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
         A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
 
     assert np.allclose(A, A_ref)
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+def test_ds_prism(compile_args, dtype):
+    element = basix.ufl.element("Lagrange", "prism", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "prism", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+
+    a = ufl.inner(u, v) * ufl.ds
+    forms = [a]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    for f, compiled_f in zip(forms, compiled_forms):
+        assert compiled_f.rank == len(f.arguments())
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+
+    offsets = form0.form_integral_offsets
+    cell = module.lib.cell
+    exterior_facet = module.lib.exterior_facet
+    interior_facet = module.lib.interior_facet
+    assert offsets[cell + 1] - offsets[cell] == 0
+    assert offsets[exterior_facet + 1] - offsets[exterior_facet] == 2
+    assert offsets[interior_facet + 1] - offsets[interior_facet] == 0
+
+    integral_id0 = form0.form_integral_ids[offsets[exterior_facet]]
+    integral_id1 = form0.form_integral_ids[offsets[exterior_facet] + 1]
+    assert integral_id0 == integral_id1 == -1
+
+    integral0 = form0.form_integrals[offsets[exterior_facet]]
+    integral1 = form0.form_integrals[offsets[exterior_facet] + 1]
+
+    if basix.CellType(integral0.domain) == basix.CellType.triangle:
+        assert basix.CellType(integral1.domain) == basix.CellType.quadrilateral
+        integral_tri = integral0
+        integral_quad = integral1
+    else:
+        assert basix.CellType(integral0.domain) == basix.CellType.quadrilateral
+        assert basix.CellType(integral1.domain) == basix.CellType.triangle
+        integral_tri = integral1
+        integral_quad = integral0
+
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+    entity_perm = np.array([0], dtype=np.uint8)
+
+    # Test integral over triangle (facet 0)
+    A = np.zeros((6, 6), dtype=dtype)
+    entity_index = np.array([0], dtype=int)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+        ],
+        dtype=xdtype,
+    )
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    kernel = getattr(integral_tri, f"tabulate_tensor_{dtype}")
+
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", entity_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    assert np.allclose(
+        A,
+        np.array(
+            [
+                [1 / 12, 1 / 24, 1 / 24, 0, 0, 0],
+                [1 / 24, 1 / 12, 1 / 24, 0, 0, 0],
+                [1 / 24, 1 / 24, 1 / 12, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+            ]
+        ),
+    )
+
+    # Test integral over quadrilateral (facet 1)
+    A = np.zeros((6, 6), dtype=dtype)
+    entity_index = np.array([1], dtype=np.int64)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+        ],
+        dtype=xdtype,
+    )
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    kernel = getattr(integral_quad, f"tabulate_tensor_{dtype}")
+
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", entity_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    assert np.allclose(
+        A,
+        np.array(
+            [
+                [1 / 9, 1 / 18, 0, 1 / 18, 1 / 36, 0],
+                [1 / 18, 1 / 9, 0, 1 / 36, 1 / 18, 0],
+                [0, 0, 0, 0, 0, 0],
+                [1 / 18, 1 / 36, 0, 1 / 9, 1 / 18, 0],
+                [1 / 36, 1 / 18, 0, 1 / 18, 1 / 9, 0],
+                [0, 0, 0, 0, 0, 0],
+            ]
+        ),
+    )

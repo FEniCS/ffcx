@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 import numpy as np
 
@@ -25,7 +26,7 @@ def generator(ir: ExpressionIR, options):
     """Generate UFC code for an expression."""
     logger.info("Generating code for expression:")
     assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
-    points = next(iter(ir.expression.integrand)).points
+    points = next(iter(ir.expression.integrand))[1].points
     logger.info(f"--- points: {points}")
     factory_name = ir.expression.name
     logger.info(f"--- name: {factory_name}")
@@ -38,7 +39,7 @@ def generator(ir: ExpressionIR, options):
     backend = FFCXBackend(ir, options)
     eg = ExpressionGenerator(ir, backend)
 
-    d: dict[str, str | int] = {}
+    d: dict[str, typing.Union[str, int]] = {}
     d["name_from_uflfile"] = ir.name_from_uflfile
     d["factory_name"] = factory_name
     parts = eg.generate()

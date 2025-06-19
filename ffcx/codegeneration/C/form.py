@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import logging
+import typing
 
 import numpy as np
 
@@ -28,7 +29,7 @@ def generator(ir: FormIR, options):
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
 
-    d: dict[str, int | str] = {}
+    d: dict[str, typing.Union[int, str]] = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
     d["signature"] = f'"{ir.signature}"'
@@ -86,29 +87,44 @@ def generator(ir: FormIR, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
+    integral_domains = []
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet"):
         unsorted_integrals = []
         unsorted_ids = []
-        for name, id in zip(ir.integral_names[itg_type], ir.subdomain_ids[itg_type]):
+        unsorted_domains = []
+        for name, domains, id in zip(
+            ir.integral_names[itg_type],
+            ir.integral_domains[itg_type],
+            ir.subdomain_ids[itg_type],
+        ):
             unsorted_integrals += [f"&{name}"]
             unsorted_ids += [id]
+            unsorted_domains += [domains]
 
         id_sort = np.argsort(unsorted_ids)
         integrals += [unsorted_integrals[i] for i in id_sort]
         integral_ids += [unsorted_ids[i] for i in id_sort]
+        integral_domains += [unsorted_domains[i] for i in id_sort]
 
-        integral_offsets.append(len(integrals))
+        integral_offsets.append(sum(len(d) for d in integral_domains))
 
     if len(integrals) > 0:
-        sizes = len(integrals)
-        values = ", ".join(integrals)
+        sizes = sum(len(domains) for domains in integral_domains)
+        values = ", ".join(
+            [
+                f"{i}_{domain.name}"
+                for i, domains in zip(integrals, integral_domains)
+                for domain in domains
+            ]
+        )
         d["form_integrals_init"] = (
             f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         )
         d["form_integrals"] = f"form_integrals_{ir.name}"
-        sizes = len(integral_ids)
-        values = ", ".join(str(i) for i in integral_ids)
+        values = ", ".join(
+            f"{i}" for i, domains in zip(integral_ids, integral_domains) for _ in domains
+        )
         d["form_integral_ids_init"] = f"int form_integral_ids_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
     else:

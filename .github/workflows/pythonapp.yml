@@ -25,7 +25,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         include:
           - os: windows-2022
             python-version: "3.11"
@@ -85,7 +85,8 @@ jobs:
         run: pip install .[ci]
 
       - name: Static check with mypy
-        run: mypy ffcx/
+        run: mypy -p ffcx
+
       - name: ruff checks
         run: |
           ruff check .
