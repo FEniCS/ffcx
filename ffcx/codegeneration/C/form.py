@@ -61,29 +61,29 @@ def generator(ir: FormIR, options):
 
     d["num_constants"] = ir.num_constants
     if ir.num_constants > 0:
-        result = str(ir.constant_ranks).replace("[", "{").replace("]", "}")
         d["constant_ranks_init"] = (
-            f"static const int constant_ranks_{ir.name}[{ir.num_constants}] = {result};"
+            f"static const int constant_ranks_{ir.name}[{ir.num_constants}] = "
+            f"{str(ir.constant_ranks).replace('[', '{').replace(']', '}')};"
         )
         d["constant_ranks"] = f"constant_ranks_{ir.name}"
 
-        result0 = [
+        shapes = [
             f"static const int constant_shapes_{ir.name}_{i}[{len(shape)}] = "
             f"{str(shape).replace('(', '{').replace(')', '}')};"
             for i, shape in enumerate(ir.constant_shapes)
             if len(shape) > 0
         ]
         names = [f"constant_shapes_{ir.name}_{i}" for i in range(ir.num_constants)]
-        result1 = f"static const int* constant_shapes_{ir.name}[{ir.num_constants}] = " + "{"
+        shapes1 = f"static const int* constant_shapes_{ir.name}[{ir.num_constants}] = " + "{"
         for rank, name in zip(ir.constant_ranks, names):
             if rank > 0:
-                result1 += f"{name},\n"
+                shapes1 += f"{name},\n"
             else:
-                result1 += "NULL,\n"
-        result1 += "};"
-        result0.append(result1)
+                shapes1 += "NULL,\n"
+        shapes1 += "};"
+        shapes.append(shapes1)
 
-        d["constant_shapes_init"] = "\n".join(result0)
+        d["constant_shapes_init"] = "\n".join(shapes)
         d["constant_shapes"] = f"constant_shapes_{ir.name}"
     else:
         d["constant_ranks_init"] = ""
