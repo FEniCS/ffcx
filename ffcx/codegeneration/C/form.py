@@ -69,7 +69,7 @@ def generator(ir: FormIR, options):
 
         shapes = [
             f"static const int constant_shapes_{ir.name}_{i}[{len(shape)}] = "
-            f"{{{str(shape)[1, -1]}}};"
+            f"{{{str(shape)[1:-1]}}};"
             for i, shape in enumerate(ir.constant_shapes)
             if len(shape) > 0
         ]
