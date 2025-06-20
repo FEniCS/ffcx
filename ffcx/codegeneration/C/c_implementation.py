@@ -191,10 +191,12 @@ class CFormatter:
     def format_section(self, section) -> str:
         """Format a section."""
         # add new line before section
-        comments = "// ------------------------ \n"
-        comments += "// Section: " + section.name + "\n"
-        comments += "// Inputs: " + ", ".join(w.name for w in section.input) + "\n"
-        comments += "// Outputs: " + ", ".join(w.name for w in section.output) + "\n"
+        comments = (
+            f"// ------------------------ \n"
+            f"// Section: {section.name}\n"
+            f"// Inputs: {', '.join(w.name for w in section.input)}\n"
+            f"// Outputs: {', '.join(w.name for w in section.output)}\n"
+        )
         declarations = "".join(self.c_format(s) for s in section.declarations)
 
         body = ""
