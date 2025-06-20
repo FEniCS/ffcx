@@ -63,9 +63,10 @@ def test_demo(file, scalar_type):
 @pytest.mark.parametrize("scalar_type", ["float64", "float32"])
 def test_demo_nvrtc(scalar_type):
     """Test generated CUDA code with NVRTC."""
-    try:
-        from nvidia import cuda_nvrtc
-    except ImportError:
+    import importlib.util
+
+    spec = importlib.util.find_spec("nvidia.cuda_nvrtc")
+    if spec is None:
         pytest.skip(reason="Must have NVRTC pip package installed to run test.")
 
     if sys.platform.startswith("win32"):
@@ -80,7 +81,7 @@ def test_demo_nvrtc(scalar_type):
         "VectorPoisson",
     ]
     opts = f"--scalar_type {scalar_type} --cuda_nvrtc"
-    nvrtc_dir = os.path.dirname(os.path.realpath(cuda_nvrtc.__file__))
+    nvrtc_dir = os.path.realpath(spec.submodule_search_locations[0])
     cc = os.environ.get("CC", "cc")
     extra_flags = (
         "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
