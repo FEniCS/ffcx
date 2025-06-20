@@ -65,8 +65,9 @@ def test_demo_nvrtc(scalar_type):
     """Test generated CUDA code with NVRTC."""
     import importlib.util
 
-    spec = importlib.util.find_spec("nvidia.cuda_nvrtc")
-    if spec is None:
+    try:
+        spec = importlib.util.find_spec("nvidia.cuda_nvrtc")
+    except ModuleNotFoundError:
         pytest.skip(reason="Must have NVRTC pip package installed to run test.")
 
     if sys.platform.startswith("win32"):
