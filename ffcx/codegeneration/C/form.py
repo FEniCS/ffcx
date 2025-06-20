@@ -24,7 +24,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir: FormIR, options):
-    """Generate UFC code for a form."""
+    """Generate UFCx code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
@@ -35,7 +35,6 @@ def generator(ir: FormIR, options):
     d["signature"] = f'"{ir.signature}"'
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
-    d["num_constants"] = ir.num_constants
 
     if len(ir.original_coefficient_positions) > 0:
         values = ", ".join(str(i) for i in ir.original_coefficient_positions)
@@ -59,6 +58,38 @@ def generator(ir: FormIR, options):
     else:
         d["coefficient_names_init"] = ""
         d["coefficient_names"] = "NULL"
+
+    d["num_constants"] = ir.num_constants
+    if ir.num_constants > 0:
+        d["constant_ranks_init"] = (
+            f"static const int constant_ranks_{ir.name}[{ir.num_constants}] = "
+            f"{{{str(ir.constant_ranks)[1:-1]}}};"
+        )
+        d["constant_ranks"] = f"constant_ranks_{ir.name}"
+
+        shapes = [
+            f"static const int constant_shapes_{ir.name}_{i}[{len(shape)}] = "
+            f"{{{str(shape)[1:-1]}}};"
+            for i, shape in enumerate(ir.constant_shapes)
+            if len(shape) > 0
+        ]
+        names = [f"constant_shapes_{ir.name}_{i}" for i in range(ir.num_constants)]
+        shapes1 = f"static const int* constant_shapes_{ir.name}[{ir.num_constants}] = " + "{"
+        for rank, name in zip(ir.constant_ranks, names):
+            if rank > 0:
+                shapes1 += f"{name},\n"
+            else:
+                shapes1 += "NULL,\n"
+        shapes1 += "};"
+        shapes.append(shapes1)
+
+        d["constant_shapes_init"] = "\n".join(shapes)
+        d["constant_shapes"] = f"constant_shapes_{ir.name}"
+    else:
+        d["constant_ranks_init"] = ""
+        d["constant_ranks"] = "NULL"
+        d["constant_shapes_init"] = ""
+        d["constant_shapes"] = "NULL"
 
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)

@@ -21,7 +21,7 @@
 #else
 #define UFCX_VERSION                                                           \
   UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".de" \
-                                                                         "v0"
+                     "v0"
 #endif
 
 #include <stdbool.h>
@@ -86,15 +86,14 @@ extern "C"
   /// For integrals not on interior facets, this argument has no effect and a
   /// null pointer can be passed. For interior facets the array will have size 2
   /// (one permutation for each cell adjacent to the facet).
-  /// @param[in] custom_data Custom user data passed to the tabulate function. 
-  /// For example, a struct with additional data needed for the tabulate function.
-  /// See the implementation of runtime integrals for further details.
+  /// @param[in] custom_data Custom user data passed to the tabulate function.
+  /// For example, a struct with additional data needed for the tabulate
+  /// function. See the implementation of runtime integrals for further details.
   typedef void(ufcx_tabulate_tensor_float32)(
       float* restrict A, const float* restrict w, const float* restrict c,
       const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation,
-      void* custom_data);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 
   /// Tabulate integral into tensor A with compiled
   /// quadrature rule and double precision
@@ -104,8 +103,7 @@ extern "C"
       double* restrict A, const double* restrict w, const double* restrict c,
       const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation,
-      void* custom_data);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 
 #ifndef __STDC_NO_COMPLEX__
   /// Tabulate integral into tensor A with compiled
@@ -116,8 +114,7 @@ extern "C"
       float _Complex* restrict A, const float _Complex* restrict w,
       const float _Complex* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation,
-      void* custom_data);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 #endif // __STDC_NO_COMPLEX__
 
 #ifndef __STDC_NO_COMPLEX__
@@ -129,8 +126,7 @@ extern "C"
       double _Complex* restrict A, const double _Complex* restrict w,
       const double _Complex* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation,
-      void* custom_data);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 #endif // __STDC_NO_COMPLEX__
 
   typedef struct ufcx_integral
@@ -230,14 +226,20 @@ extern "C"
     /// Number of coefficients (n)
     int num_coefficients;
 
-    /// Number of constants
-    int num_constants;
-
     /// Original coefficient position for each coefficient
     int* original_coefficient_positions;
 
     /// List of names of coefficients
     const char** coefficient_name_map;
+
+    /// Number of constants
+    int num_constants;
+
+    /// Ranks of constants
+    const int* constant_ranks;
+
+    /// Shapes of constants
+    const int** constant_shapes;
 
     /// List of names of constants
     const char** constant_name_map;
