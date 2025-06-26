@@ -34,7 +34,7 @@ class UFLData(typing.NamedTuple):
     # Lookup table from each unique element to its index in `unique_elements`
     element_numbers: dict[basix.ufl._ElementBase, int]
     # List of unique coordinate elements
-    unique_coordinate_elements: list[ufl.AbstractFiniteElement]
+    unique_coordinate_elements: list[basix.ufl._ElementBase]
     # List of ufl Expressions as tuples (expression, points, original_expression)
     expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
 
