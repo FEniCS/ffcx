@@ -18,7 +18,7 @@ import ffcx.codegeneration
 
 
 def compute_signature(
-    ufl_objects: list[ufl.Form | tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]],
+    ufl_objects: list[ufl.Form] | list[tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]],
     tag: str,
 ) -> str:
     """Compute the signature hash.

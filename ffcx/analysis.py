@@ -179,7 +179,7 @@ def _analyze_form(
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data = ufl.algorithms.compute_form_data(
+    form_data: ufl.algorithms.formdata.FormData = ufl.algorithms.compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
