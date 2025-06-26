@@ -69,8 +69,8 @@ def analyze_ufl_objects(
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    elements: list[ufl.AbstractFiniteElement] = []
-    coordinate_elements: list[ufl.AbstractFiniteElement] = []
+    elements: list[basix.ufl._ElementBase] = []
+    coordinate_elements: list[basix.ufl._ElementBase] = []
 
     # Group objects by types
     forms: list[ufl.form.Form] = []
