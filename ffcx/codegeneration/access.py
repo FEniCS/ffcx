@@ -75,7 +75,7 @@ class FFCXBackendAccess:
                     break
 
         if handler:
-            return handler(mt, tabledata, quadrature_rule)  # type: ignore
+            return handler(mt, tabledata, quadrature_rule)
         else:
             raise RuntimeError(f"Not handled: {type(e)}")
 
