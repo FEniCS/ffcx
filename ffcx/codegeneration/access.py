@@ -65,7 +65,7 @@ class FFCXBackendAccess:
         """Format a terminal."""
         e = mt.terminal
         # Call appropriate handler, depending on the type of e
-        handler = self.call_lookup.get(type(e), False)
+        handler = self.call_lookup.get(type(e), False)  # type: ignore
 
         if not handler:
             # Look for parent class types instead
