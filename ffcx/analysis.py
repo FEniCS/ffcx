@@ -43,7 +43,7 @@ def analyze_ufl_objects(
     ufl_objects: list[
         typing.Union[
             ufl.form.Form,
-            ufl.AbstractFiniteElement,
+            basix.ufl._ElementBase,
             ufl.Mesh,
             tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]],
         ]
