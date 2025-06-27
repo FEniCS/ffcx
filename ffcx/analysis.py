@@ -43,7 +43,7 @@ def analyze_ufl_objects(
     ufl_objects: list[
         typing.Union[
             ufl.form.Form,
-            ufl.AbstractFiniteElement,
+            basix.ufl._ElementBase,
             ufl.Mesh,
             tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]],
         ]
@@ -69,8 +69,8 @@ def analyze_ufl_objects(
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    elements: list[ufl.AbstractFiniteElement] = []
-    coordinate_elements: list[ufl.AbstractFiniteElement] = []
+    elements: list[basix.ufl._ElementBase] = []
+    coordinate_elements: list[basix.ufl._ElementBase] = []
 
     # Group objects by types
     forms: list[ufl.form.Form] = []
@@ -179,7 +179,7 @@ def _analyze_form(
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data = ufl.algorithms.compute_form_data(
+    form_data: ufl.algorithms.formdata.FormData = ufl.algorithms.compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
@@ -248,7 +248,7 @@ def _analyze_form(
 
 
 def _has_custom_integrals(
-    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],
+    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],  # type: ignore
 ) -> bool:
     """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):
