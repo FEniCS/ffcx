@@ -1,9 +1,10 @@
-# Copyright (C) 2018-2020 Garth N. Wells & Matthew Scroggs
+# Copyright (C) 2018-2025 Garth N. Wells, Matthew Scroggs and Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import os
 import sys
 
 import basix.ufl
@@ -1404,3 +1405,82 @@ def test_ds_prism(compile_args, dtype):
             ]
         ),
     )
+
+
+@pytest.mark.parametrize("geometry", [("interval", 1), ("triangle", 2), ("tetrahedron", 3)])
+@pytest.mark.parametrize("rank", [0, 1, 2])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.float32,
+        np.float64,
+        pytest.param(
+            np.complex64,
+            marks=pytest.mark.skipif(
+                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
+            ),
+        ),
+        pytest.param(
+            np.complex128,
+            marks=pytest.mark.skipif(
+                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
+            ),
+        ),
+    ],
+)
+def test_point_measure(compile_args, geometry, rank, dtype):
+    cell, gdim = geometry
+    rdtype = np.real(dtype(0)).dtype
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(gdim,), dtype=rdtype))
+    element = basix.ufl.element("Lagrange", cell, 1)
+    dP = ufl.Measure("dP")
+    x = ufl.SpatialCoordinate(domain)
+    V = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+    if rank == 0:
+        F = x[0] * dP
+    elif rank == 1:
+        F = x[0] * ufl.conj(v) * dP
+    else:
+        F = x[0] * u * ufl.conj(v) * dP
+
+    (form0,), module, _ = ffcx.codegeneration.jit.compile_forms(
+        [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    assert form0.rank == rank
+
+    def np_to_str(type):
+        if type == np.float32:
+            return "float32"
+        if type == np.float64:
+            return "float64"
+        if type == np.complex64:
+            return "complex64"
+        if type == np.complex128:
+            return "complex128"
+        assert False
+
+    ffi = module.ffi
+    kernel = getattr(
+        form0.form_integrals[0],
+        f"tabulate_tensor_{np_to_str(dtype)}",
+    )
+
+    for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
+        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0, 0, 0, 0, 0, 0, 1], dtype=rdtype)
+
+        for vertex in range(gdim + 1):
+            J = np.zeros((gdim + 1) ** 2, dtype=dtype)
+            e = np.array([vertex], dtype=np.int32)
+            kernel(
+                ffi.cast(f"{dtype_to_c_type(dtype)} *", J.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+                ffi.cast(f"{dtype_to_c_type(rdtype)} *", coords.ctypes.data),
+                ffi.cast("int *", e.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+            )
+            idx = (rank > 0) * vertex + (rank > 1) * vertex * (gdim + 1)
+            assert np.isclose(J[idx], coords[vertex * 3], atol=1e2 * np.finfo(dtype).eps)
+            assert np.allclose(np.delete(J, [idx]), 0)
