@@ -26,17 +26,22 @@ factory = """
 
 {coefficient_names_init}
 {constant_names_init}
+{constant_ranks_init}
+{constant_shapes_init}
 
 ufcx_form {factory_name} =
 {{
 
   .signature = {signature},
   .rank = {rank},
-  .num_coefficients = {num_coefficients},
-  .num_constants = {num_constants},
-  .original_coefficient_positions = {original_coefficient_positions},
 
+  .num_coefficients = {num_coefficients},
+  .original_coefficient_positions = {original_coefficient_positions},
   .coefficient_name_map = {coefficient_names},
+
+  .num_constants = {num_constants},
+  .constant_ranks = {constant_ranks},
+  .constant_shapes = {constant_shapes},
   .constant_name_map = {constant_names},
 
   .finite_element_hashes = {finite_element_hashes},
