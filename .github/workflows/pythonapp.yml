@@ -85,7 +85,10 @@ jobs:
         run: pip install .[ci]
 
       - name: Static check with mypy
-        run: mypy -p ffcx
+        run: |
+          mypy -p ffcx
+          mypy test
+          mypy demo
 
       - name: ruff checks
         run: |
