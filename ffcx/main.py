@@ -73,8 +73,7 @@ def main(args: Optional[Sequence[str]] = None) -> int:
     for filename in xargs.ufl_file:
         # Remove weird characters (file system allows more than the C
         # preprocessor)
-        file_p = pathlib.Path(filename)
-        file_p = str(file_p.stem)
+        file_p = pathlib.Path(filename).stem
         file_p = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", file_p)[0]
         file_p = re.subn("!+", "_", file_p)[0]
 
