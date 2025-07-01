@@ -1404,3 +1404,16 @@ def test_ds_prism(compile_args, dtype):
             ]
         ),
     )
+
+
+
+element = basix.ufl.element("Lagrange", "triangle", 1)
+domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+space = ufl.FunctionSpace(domain, element)
+u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+dI = ufl.Measure("dSI", domain=domain)
+a0 = ufl.inner(u("+"), v("-")) * ufl.dS
+forms = [a0]
+compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(forms)
+
+print(code[1])
