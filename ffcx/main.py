@@ -29,9 +29,23 @@ parser = argparse.ArgumentParser(
     description="FEniCS Form Compiler (FFCx, https://fenicsproject.org)"
 )
 parser.add_argument("--version", action="version", version=f"%(prog)s (version {FFCX_VERSION})")
-parser.add_argument("-o", "--output-directory", type=str, default=".", help="output directory")
-parser.add_argument("--visualise", action="store_true", help="visualise the IR graph")
-parser.add_argument("-p", "--profile", action="store_true", help="enable profiling")
+parser.add_argument("-o", "--output-directory", type=str, default=".", help="Output directory")
+parser.add_argument(
+    "-f",
+    "--outfile",
+    type=str,
+    default=None,
+    help="Generated code filename stem. Defaults to the stem of the UFL file name.",
+)
+parser.add_argument(
+    "-n",
+    "--namespace",
+    type=str,
+    default=None,
+    help="Namespace prefix used in the generated code. Defaults to the stem of the UFL file name.",
+)
+parser.add_argument("--visualise", action="store_true", help="Visualise the IR graph.")
+parser.add_argument("-p", "--profile", action="store_true", help="Enable profiling.")
 
 # Add all options from FFCx option system
 for opt_name, (arg_type, opt_val, opt_desc, choices) in FFCX_DEFAULT_OPTIONS.items():
@@ -57,13 +71,17 @@ def main(args: Optional[Sequence[str]] = None) -> int:
 
     # Call parser and compiler for each file
     for filename in xargs.ufl_file:
-        file = pathlib.Path(filename)
-
         # Remove weird characters (file system allows more than the C
         # preprocessor)
-        prefix = file.stem
-        prefix = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", prefix)[0]
-        prefix = re.subn("!+", "_", prefix)[0]
+        file_p = pathlib.Path(filename)
+        file_p = file_p.stem
+        file_p = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", file_p)[0]
+        file_p = re.subn("!+", "_", file_p)[0]
+
+        if xargs.namespace is None:
+            namespace = file_p
+        else:
+            namespace = xargs.namespace
 
         # Turn on profiling
         if xargs.profile:
@@ -78,11 +96,15 @@ def main(args: Optional[Sequence[str]] = None) -> int:
             ufd.forms + ufd.expressions + ufd.elements,
             options=options,
             object_names=ufd.object_names,
-            prefix=prefix,
+            prefix=namespace,
             visualise=xargs.visualise,
         )
 
         # Write to file
+        if xargs.outfile is None:
+            prefix = file_p
+        else:
+            prefix = xargs.outfile
         formatting.write_code(code_h, code_c, prefix, xargs.output_directory)
 
         # Turn off profiling and write status to file
