@@ -74,7 +74,7 @@ def main(args: Optional[Sequence[str]] = None) -> int:
         # Remove weird characters (file system allows more than the C
         # preprocessor)
         file_p = pathlib.Path(filename)
-        file_p = file_p.stem
+        file_p = str(file_p.stem)
         file_p = re.subn("[^{}]".format(string.ascii_letters + string.digits + "_"), "!", file_p)[0]
         file_p = re.subn("!+", "_", file_p)[0]
 
