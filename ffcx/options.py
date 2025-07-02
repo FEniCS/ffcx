@@ -27,7 +27,7 @@ FFCX_DEFAULT_OPTIONS = {
         "Scalar type to use in generated code.",
         ("float32", "float64", "complex64", "complex128"),
     ),
-    "sum_factorization": (bool, False, "Use sum factorization.", None),
+    "sum_factorization": (bool, False, "Use sum factorization for tensor-product cells.", None),
     "table_rtol": (
         float,
         1e-6,

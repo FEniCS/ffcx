@@ -8,7 +8,7 @@
 #
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
-"""Generate UFC code for a form."""
+"""Generate UFCx code for a form."""
 
 from __future__ import annotations
 

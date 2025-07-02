@@ -161,7 +161,7 @@ def compile_forms(
     cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
-    """Compile a list of UFL forms into UFC Python objects.
+    """Compile a list of UFL forms into UFCx Python objects.
 
     Args:
         forms: List of ufl.form to compile.
@@ -240,7 +240,7 @@ def compile_expressions(
     cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
-    """Compile a list of UFL expressions into UFC Python objects.
+    """Compile a list of UFL expressions into UFCx Python objects.
 
     Args:
         expressions: List of (UFL expression, evaluation points).
