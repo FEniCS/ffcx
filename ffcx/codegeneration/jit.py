@@ -329,7 +329,7 @@ def _compile_objects(
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
     _, code_body = ffcx.compiler.compile_ufl_objects(
-        ufl_objects, prefix=module_name, options=options, visualise=visualise
+        ufl_objects, namespace=module_name, options=options, visualise=visualise
     )
 
     # Raise error immediately prior to compilation if no support for C99
