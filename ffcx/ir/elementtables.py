@@ -462,7 +462,6 @@ def build_optimized_tables(
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
         else:
-            breakpoint()
             t = get_ffcx_table_values(
                 quadrature_rule.points,
                 cell,
