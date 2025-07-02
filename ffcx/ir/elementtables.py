@@ -255,8 +255,21 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     tdim = domain.topological_dimension()
-    local_derivatives: tuple[int, ...] = tuple(ld.count(i) for i in range(tdim))
-
+    # The input `ld` is a tuple containing the index access of a recursive application of
+    # reference gradient, e.g. [0, 1, 2] means that the modified terminal is
+    # a reference_grad(reference_grad(reference_grad(expr)))[0][1][2],
+    # we have a derivative in each direction (x, y, z).
+    # This is converted into a tuple indicating the counts of derivatives in each direction.
+    # This means that if we have a reference_value as a modified terminal, the
+    # local_derivatives that we store in the `ModifiedTerminalElement` should be a tuple of
+    # length topological dimension with only zeros. This is later used to access the correct
+    # table values from `basix.tabulate`.
+    # To access the correct table values for a 0D domains, we need this index to be `(0, )`,
+    # as `basix.index` does not exist for 0D domains.
+    num_derivatives_per_ref_component = 1 if tdim == 0 else tdim
+    local_derivatives: tuple[int, ...] = tuple(
+        ld.count(i) for i in range(num_derivatives_per_ref_component)
+    )
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
 
