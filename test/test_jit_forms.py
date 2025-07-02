@@ -1406,7 +1406,20 @@ def test_ds_prism(compile_args, dtype):
     )
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
 def test_vertex_mesh(compile_args, dtype):
     """Test that a mesh with only vertices can be created and used."""
 

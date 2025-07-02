@@ -267,7 +267,9 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
     # To access the correct table values for a 0D domains, we need this index to be `(0, )`,
     # as `basix.index` does not exist for 0D domains.
     num_derivatives_per_ref_component = 1 if tdim == 0 else tdim
-    local_derivatives: tuple[int, ...] = tuple(ld.count(i) for i in range(num_derivatives_per_ref_component))
+    local_derivatives: tuple[int, ...] = tuple(
+        ld.count(i) for i in range(num_derivatives_per_ref_component)
+    )
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
 
