@@ -255,7 +255,8 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
     tdim = domain.topological_dimension()
-    local_derivatives: tuple[int, ...] = tuple(ld.count(i) for i in range(tdim))
+    num_derivatives = max(1, tdim)  # Handle 0-D domains, which for instance happens with sub-meshes
+    local_derivatives: tuple[int, ...] = tuple(ld.count(i) for i in range(num_derivatives))
 
     return ModifiedTerminalElement(element, mt.averaged, local_derivatives, fc)
 
@@ -461,6 +462,7 @@ def build_optimized_tables(
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
         else:
+            breakpoint()
             t = get_ffcx_table_values(
                 quadrature_rule.points,
                 cell,
