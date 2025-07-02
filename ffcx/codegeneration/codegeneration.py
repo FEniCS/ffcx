@@ -6,8 +6,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 4: Code generation.
 
-This module implements the generation of C code for the body of each
-UFC function from an intermediate representation (IR).
+This module implements the generation of C code for the body of each UFC
+function from an intermediate representation (IR).
 """
 
 from __future__ import annotations
@@ -29,7 +29,8 @@ logger = logging.getLogger("ffcx")
 class CodeBlocks(typing.NamedTuple):
     """Storage of code blocks of the form (declaration, implementation).
 
-    Blocks for integrals, forms and expressions, and start and end of file output
+    Blocks for integrals, forms and expressions, and start and end of
+    file output.
     """
 
     file_pre: list[tuple[str, str]]

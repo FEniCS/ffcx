@@ -24,7 +24,7 @@ FFCX_DEFAULT_OPTIONS = {
     "scalar_type": (
         str,
         "float64",
-        "scalar type to use in generated code.",
+        "Scalar type to use in generated code.",
         ("float32", "float64", "complex64", "complex128"),
     ),
     "sum_factorization": (bool, False, "Use sum factorization.", None),

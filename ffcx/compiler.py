@@ -60,7 +60,6 @@ Compiler stages
    This stage examines the generated C++ code and formats it according
    to the UFC format, generating as output one or more .h/.c files
    conforming to the UFC format.
-
 """
 
 from __future__ import annotations
@@ -87,7 +86,7 @@ def compile_ufl_objects(
     ufl_objects: list[typing.Any],
     options: dict[str, int | float | npt.DTypeLike],
     object_names: dict[int, str] | None = None,
-    prefix: str | None = None,
+    namespace: str | None = None,
     visualise: bool = False,
 ) -> tuple[str, str]:
     """Generate UFC code for a given UFL objects.
@@ -96,12 +95,12 @@ def compile_ufl_objects(
         ufl_objects: Objects to be compiled. Accepts elements, forms,
           integrals or coordinate mappings.
         object_names: Map from object Python id to object name
-        prefix: Prefix
+        namespace: Convenience namespace/prefix for generated code.
         options: Options
         visualise: Toggle visualisation
     """
     _object_names = object_names if object_names is not None else {}
-    _prefix = prefix if prefix is not None else ""
+    _namespace = namespace if namespace is not None else ""
 
     # Stage 1: analysis
     cpu_time = time()
@@ -110,7 +109,7 @@ def compile_ufl_objects(
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, _object_names, _prefix, options, visualise)
+    ir = compute_ir(analysis, _object_names, _namespace, options, visualise)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
