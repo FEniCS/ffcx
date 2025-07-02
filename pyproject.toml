@@ -16,9 +16,9 @@ authors = [
 dependencies = [
     "numpy>=1.21",
     "cffi",
-    "setuptools; python_version >= '3.12'",   # cffi with compilation support requires setuptools
-    "fenics-basix >= 0.10.0.dev0, <0.11.0",
-    "fenics-ufl >= 2024.3.0.dev0, <2024.4.0",
+    "setuptools;python_version>='3.12'",   # cffi with compilation support requires setuptools
+    "fenics-basix>=0.10.0.dev0",
+    "fenics-ufl>=2025.2.0.dev0",
 ]
 
 [project.urls]
@@ -65,17 +65,27 @@ log_cli = true
 [tool.mypy]
 # Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
 # Goal would be to make all of the below True long-term
-disallow_untyped_defs = false
-disallow_any_unimported = false
-no_implicit_optional = false
-check_untyped_defs = false
-warn_return_any = false
-warn_unused_ignores = false
+disallow_untyped_defs = true
+disallow_any_unimported = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
 show_error_codes = true
+disable_error_code = ["attr-defined"]
 
 [[tool.mypy.overrides]]
 module = ['basix', 'cffi', 'numba.*', 'pygraphviz', 'ufl.*']
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["ffcx.*", "ffcx.ir.*", "ffcx.codegeneration.*"]
+disallow_any_unimported = false # most of these come from UFL
+
+[[tool.mypy.overrides]]
+module = ["ffcx.ir.*", "ffcx.codegeneration.*"]
+check_untyped_defs = false
+disallow_untyped_defs = false 
 
 [tool.ruff]
 line-length = 100

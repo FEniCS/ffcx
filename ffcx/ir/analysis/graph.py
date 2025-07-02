@@ -31,6 +31,7 @@ class ExpressionGraph:
         self.nodes = {}
         self.out_edges = {}
         self.in_edges = {}
+        self.e2i = {}
 
     def number_of_nodes(self):
         """Get number of nodes."""
@@ -51,7 +52,7 @@ class ExpressionGraph:
         self.in_edges[node2] += [node1]
 
 
-def build_graph_vertices(expressions, skip_terminal_modifiers=False):
+def build_graph_vertices(expressions, skip_terminal_modifiers=False) -> ExpressionGraph:
     """Build graph vertices."""
     # Count unique expression nodes
     G = ExpressionGraph()

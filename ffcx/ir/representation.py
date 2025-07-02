@@ -40,9 +40,46 @@ logger = logging.getLogger("ffcx")
 
 def basix_cell_from_string(string: str) -> basix.CellType:
     """Convert a string to a Basix CellType."""
+    # Note: vertex -> point, rest identity
     if string == "vertex":
         return basix.CellType.point
-    return getattr(basix.CellType, string)
+    elif string == "interval":
+        return basix.CellType.interval
+    elif string == "triangle":
+        return basix.CellType.triangle
+    elif string == "tetrahedron":
+        return basix.CellType.tetrahedron
+    elif string == "quadrilateral":
+        return basix.CellType.quadrilateral
+    elif string == "hexahedron":
+        return basix.CellType.hexahedron
+    elif string == "prism":
+        return basix.CellType.prism
+    elif string == "pyramid":
+        return basix.CellType.pyramid
+    else:
+        raise KeyError(f"Can not map '{string}' to a basix type.")
+
+    # TODO: Replace on 31 Oct 2025 with (Python 3.9 does not support match):
+    # match string:
+    #     case "vertex":
+    #         return basix.CellType.point
+    #     case "interval":
+    #         return basix.CellType.interval
+    #     case "triangle":
+    #         return basix.CellType.triangle
+    #     case "tetrahedron":
+    #         return basix.CellType.tetrahedron
+    #     case "quadrilateral":
+    #         return basix.CellType.quadrilateral
+    #     case "hexahedron":
+    #         return basix.CellType.hexahedron
+    #     case "prism":
+    #         return basix.CellType.prism
+    #     case "pyramid":
+    #         return basix.CellType.pyramid
+    #     case _:
+    #         raise KeyError(f"Can not map '{string}' to a basix type.")
 
 
 class FormIR(typing.NamedTuple):
@@ -53,10 +90,12 @@ class FormIR(typing.NamedTuple):
     signature: str
     rank: int
     num_coefficients: int
-    num_constants: int
     name_from_uflfile: str
     original_coefficient_positions: list[int]
     coefficient_names: list[str]
+    num_constants: int
+    constant_ranks: list[int]
+    constant_shapes: list[list[int]]
     constant_names: list[str]
     finite_element_hashes: list[int]
     integral_names: dict[str, list[str]]
@@ -404,11 +443,14 @@ def _compute_form_ir(
 
     ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
-    ir["num_constants"] = len(form_data.original_form.constants())
 
     ir["coefficient_names"] = [
         object_names.get(id(obj), f"w{j}") for j, obj in enumerate(form_data.reduced_coefficients)
     ]
+
+    ir["num_constants"] = len(form_data.original_form.constants())
+    ir["constant_ranks"] = [len(obj.ufl_shape) for obj in form_data.original_form.constants()]
+    ir["constant_shapes"] = [obj.ufl_shape for obj in form_data.original_form.constants()]
 
     ir["constant_names"] = [
         object_names.get(id(obj), f"c{j}")
@@ -560,8 +602,10 @@ def _compute_expression_ir(
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
+
+    expr_domain = ufl.domain.extract_unique_domain(expr)
     base_ir["coordinate_element_hash"] = (
-        ufl.domain.extract_unique_domain(expr).ufl_coordinate_element().basix_hash()
+        expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )
 
     weights = np.array([1.0] * points.shape[0])
