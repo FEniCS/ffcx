@@ -12,7 +12,12 @@ import logging
 import numpy as np
 import ufl
 
-from ffcx.element_interface import create_quadrature, map_facet_points, reference_cell_vertices
+from ffcx.element_interface import (
+    create_quadrature,
+    map_edge_points,
+    map_facet_points,
+    reference_cell_vertices,
+)
 
 logger = logging.getLogger("ffcx")
 
@@ -86,6 +91,14 @@ def create_quadrature_points_and_weights(
                 rule,
                 elements,
             )
+    elif integral_type in ufl.measure.ridge_integral_types:
+        for rt in cell.ridge_types():
+            pts[rt.cellname()], wts[rt.cellname()] = create_quadrature(
+                rt.cellname(),
+                degree,
+                rule,
+                elements,
+            )
     elif integral_type in ufl.measure.point_integral_types:
         pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
@@ -102,6 +115,8 @@ def integral_type_to_entity_dim(integral_type, tdim):
         entity_dim = tdim
     elif integral_type in ufl.measure.facet_integral_types:
         entity_dim = tdim - 1
+    elif integral_type in ufl.measure.ridge_integral_types:
+        entity_dim = tdim - 2
     elif integral_type in ufl.measure.point_integral_types:
         entity_dim = 0
     elif integral_type in ufl.custom_integral_types:
@@ -122,13 +137,15 @@ def map_integral_points(points, integral_type, cell, entity):
         assert entity == 0
         return np.asarray(points)
     elif entity_dim == tdim - 1:
-        if isinstance(points, dict):
-            for p in points.values():
-                assert p.shape[1] == tdim - 1
-            return np.asarray(map_facet_points(points, entity, cell.cellname()))
-        else:
-            assert points.shape[1] == tdim - 1
-            return np.asarray(map_facet_points(points, entity, cell.cellname()))
+        assert points.shape[1] == tdim - 1
+        return np.asarray(map_facet_points(points, entity, cell.cellname()))
+    elif entity_dim == tdim - 2:
+        assert points.shape[1] == tdim - 2
+        # Special handling of pushing forward 0D points to cell
+        if entity_dim == 0:
+            assert points.shape[1] == 0
+            points = np.zeros((1, 1))
+        return np.asarray(map_edge_points(points, entity, cell.cellname()))
     elif entity_dim == 0:
         return np.asarray([reference_cell_vertices(cell.cellname())[entity]])
     else:
