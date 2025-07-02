@@ -1404,3 +1404,50 @@ def test_ds_prism(compile_args, dtype):
             ]
         ),
     )
+
+@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+def test_vertex_mesh(compile_args, dtype):
+    """Test that a mesh with only vertices can be created and used."""
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    cell = basix.CellType.point
+    c_el = basix.ufl.element("Lagrange", cell, 0, shape=(2,), discontinuous=True,
+                             dtype=xdtype)
+    msh = ufl.Mesh(c_el)
+
+    el = basix.ufl.element("Lagrange", cell, 0, discontinuous=True, dtype=xdtype)
+    V = ufl.FunctionSpace(msh, el)
+    u = ufl.Coefficient(V)
+    dx = ufl.Measure("dx", domain=msh)
+    Jh = u * dx
+
+    forms = [Jh]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype} ,cffi_extra_compile_args=compile_args
+    )
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
+    default_integral = form0.form_integrals[0]
+    J = np.zeros(1, dtype=dtype)
+    coords = np.array([2.0, 3.0, 0.0], dtype=xdtype)
+    coeffs = np.array([-5.2], dtype=dtype)
+    w = np.array(coeffs, dtype=dtype)
+    c = np.array([], dtype=dtype)
+
+
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type}  *", J.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    assert np.isclose(J[0], coeffs[0])
