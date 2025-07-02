@@ -6,8 +6,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Compiler stage 4: Code generation.
 
-This module implements the generation of C code for the body of each UFC
-function from an intermediate representation (IR).
+This module implements the generation of C code for the body of each
+UFCx function from an intermediate representation (IR).
 """
 
 from __future__ import annotations
