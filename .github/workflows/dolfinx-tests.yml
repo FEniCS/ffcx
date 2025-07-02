@@ -81,7 +81,7 @@ jobs:
           ctest -V --output-on-failure -R unittests
 
       - name: Install Python demo/test dependencies
-        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist scipy
+        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist "scipy<=1.15"
       - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
       - name: Run DOLFINx Python demos
