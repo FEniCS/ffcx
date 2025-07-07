@@ -58,3 +58,50 @@ def test_demo(file, scalar_type):
             os.system(f"cd {demo_dir} && {cc} -I../ffcx/codegeneration {extra_flags} -c {file}.c")
             == 0
         )
+
+
+@pytest.mark.parametrize("scalar_type", ["float64", "float32"])
+def test_demo_nvrtc(scalar_type):
+    """Test generated CUDA code with NVRTC."""
+    import importlib.util
+
+    try:
+        spec = importlib.util.find_spec("nvidia.cuda_nvrtc")
+    except ModuleNotFoundError:
+        pytest.skip(reason="Must have NVRTC pip package installed to run test.")
+
+    if sys.platform.startswith("win32"):
+        pytest.skip(reason="NVRTC CUDA wrappers not currently supported for Windows.")
+
+    files = [
+        "Components",
+        "FacetIntegrals",
+        "HyperElasticity",
+        "MathFunctions",
+        "StabilisedStokes",
+        "VectorPoisson",
+    ]
+    opts = f"--scalar_type {scalar_type} --cuda_nvrtc"
+    nvrtc_dir = os.path.realpath(spec.submodule_search_locations[0])
+    cc = os.environ.get("CC", "cc")
+    extra_flags = (
+        "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
+    )
+    for file in files:
+        assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
+        assert (
+            os.system(f"cd {demo_dir} && {cc} -I../ffcx/codegeneration {extra_flags} -c {file}.c")
+            == 0
+        )
+
+    cxx = os.environ.get("CXX", "c++")
+    assert (
+        os.system(
+            f"cd {demo_dir} && "
+            f"{cxx} -I../ffcx/codegeneration -I{nvrtc_dir}/include -L{nvrtc_dir}/lib "
+            f" -Werror -o nvrtc_test nvrtc_test.cpp "
+            f"{' '.join([file + '.o' for file in files])} -l:libnvrtc.so.12"
+        )
+        == 0
+    )
+    assert os.system(f"LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{nvrtc_dir}/lib {demo_dir}/nvrtc_test") == 0
