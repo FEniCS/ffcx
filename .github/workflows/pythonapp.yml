@@ -67,7 +67,7 @@ jobs:
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
           pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git
+          pip install git+https://github.com/FEniCS/basix.git@dokken/multiple_coordinate_elements
 
       - name: Install FEniCS dependencies (Python, Windows)
         if: runner.os == 'Windows'
