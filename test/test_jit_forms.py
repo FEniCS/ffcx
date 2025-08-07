@@ -1437,6 +1437,7 @@ def test_point_measure(compile_args, geometry, rank, dtype):
     x = ufl.SpatialCoordinate(domain)
     V = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+    # With a Lagrange space for test and trial functions, all these forms should evaluate as the x-coordinate times an indicator for alignment between the argument(s) and the vertices .
     if rank == 0:
         F = x[0] * dP
     elif rank == 1:
@@ -1467,6 +1468,10 @@ def test_point_measure(compile_args, geometry, rank, dtype):
     )
 
     for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
+        # General geometry for simplices of gdim 1,2 and 3.
+        # gdim 1: creates the interval (a, b)
+        # gdim 2: creates the triangle with vertices (a, 0), (b, 0), (0,0)
+        # gdim 3: creates the tetrahedron with vertices (a, 0, 0), (b, 0, 0), (0, 0, 0), (0, 0, 1)
         coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0, 0, 0, 0, 0, 0, 1], dtype=rdtype)
 
         for vertex in range(gdim + 1):
