@@ -1457,6 +1457,8 @@ def test_point_measure(compile_args, geometry, rank, dtype):
         f"tabulate_tensor_{dtype().dtype.name}",
     )
 
+    vertex_count = domain.ufl_coordinate_element().basix_element.points.shape[0]
+
     for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
         # General geometry for simplices of gdim 1,2 and 3.
         # gdim 1: creates the interval (a, b)
@@ -1464,8 +1466,8 @@ def test_point_measure(compile_args, geometry, rank, dtype):
         # gdim 3: creates the tetrahedron with vertices (a, 0, 0), (b, 0, 0), (0, 0, 0), (0, 0, 1)
         coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0, 0, 0, 0, 0, 0, 1], dtype=rdtype)
 
-        for vertex in range(gdim + 1):
-            J = np.zeros((gdim + 1) ** 2, dtype=dtype)
+        for vertex in range(vertex_count):
+            J = np.zeros(vertex_count**2, dtype=dtype)
             e = np.array([vertex], dtype=np.int32)
             kernel(
                 ffi.cast(f"{dtype_to_c_type(dtype)} *", J.ctypes.data),
@@ -1476,6 +1478,6 @@ def test_point_measure(compile_args, geometry, rank, dtype):
                 ffi.NULL,
                 ffi.NULL,
             )
-            idx = (rank > 0) * vertex + (rank > 1) * vertex * (gdim + 1)
+            idx = (rank > 0) * vertex + (rank > 1) * vertex * vertex_count
             assert np.isclose(J[idx], coords[vertex * 3], atol=1e2 * np.finfo(dtype).eps)
             assert np.allclose(np.delete(J, [idx]), 0)
