@@ -1437,7 +1437,8 @@ def test_point_measure(compile_args, geometry, rank, dtype):
     x = ufl.SpatialCoordinate(domain)
     V = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
-    # With a Lagrange space for test and trial functions, all these forms should evaluate as the x-coordinate times an indicator for alignment between the argument(s) and the vertices .
+    # With a Lagrange space for test and trial functions, all these forms should evaluate as the
+    # x-coordinate times an indicator for alignment between the argument(s) and the vertices.
     if rank == 0:
         F = x[0] * dP
     elif rank == 1:
@@ -1450,21 +1451,10 @@ def test_point_measure(compile_args, geometry, rank, dtype):
     )
     assert form0.rank == rank
 
-    def np_to_str(type):
-        if type == np.float32:
-            return "float32"
-        if type == np.float64:
-            return "float64"
-        if type == np.complex64:
-            return "complex64"
-        if type == np.complex128:
-            return "complex128"
-        assert False
-
     ffi = module.ffi
     kernel = getattr(
         form0.form_integrals[0],
-        f"tabulate_tensor_{np_to_str(dtype)}",
+        f"tabulate_tensor_{dtype().dtype.name}",
     )
 
     for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
