@@ -1428,7 +1428,7 @@ def test_ds_prism(compile_args, dtype):
         ),
     ],
 )
-def test_point_measure(compile_args, geometry, rank, dtype):
+def test_vertex_integral(compile_args, geometry, rank, dtype):
     cell, gdim = geometry
     rdtype = np.real(dtype(0)).dtype
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(gdim,), dtype=rdtype))
