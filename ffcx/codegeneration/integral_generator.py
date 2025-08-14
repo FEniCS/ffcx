@@ -180,8 +180,7 @@ class IntegralGenerator:
         """Generate static tables of quadrature points and weights."""
         parts: list[L.LNode] = []
 
-        # No quadrature tables for custom (given argument) or point
-        # (evaluation in single vertex)
+        # No quadrature tables for custom (given argument)
         skip = ufl.custom_integral_types
         if self.ir.expression.integral_type in skip:
             return parts
