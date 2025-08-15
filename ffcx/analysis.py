@@ -203,6 +203,13 @@ def _analyze_form(
 
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
+
+            # Vertex integrals do not support discontinuous integrands.
+            if integral.integral_type() == "vertex":
+                elements = ufl.algorithms.extract_elements(integral)
+                if any(e.discontinuous for e in elements):
+                    raise TypeError("Vertex integrals not supported for discontinuous elements.")
+
             # If form contains a quadrature element, use the custom quadrature scheme
             custom_q = None
             for e in ufl.algorithms.extract_elements(integral):
