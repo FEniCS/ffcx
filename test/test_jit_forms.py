@@ -1428,11 +1428,12 @@ def test_ds_prism(compile_args, dtype):
         ),
     ],
 )
-def test_vertex_integral(compile_args, geometry, rank, dtype):
+@pytest.mark.parametrize("element_type", ["Lagrange", "Discontinuous Lagrange"])
+def test_vertex_integral(compile_args, geometry, rank, dtype, element_type):
     cell, gdim = geometry
     rdtype = np.real(dtype(0)).dtype
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(gdim,), dtype=rdtype))
-    element = basix.ufl.element("Lagrange", cell, 1)
+    element = basix.ufl.element(element_type, cell, 1)
     dP = ufl.Measure("dP")
     x = ufl.SpatialCoordinate(domain)
     V = ufl.FunctionSpace(domain, element)
@@ -1445,6 +1446,17 @@ def test_vertex_integral(compile_args, geometry, rank, dtype):
         F = x[0] * ufl.conj(v) * dP
     else:
         F = x[0] * u * ufl.conj(v) * dP
+
+    if element.discontinuous:
+        if rank == 0:
+            # No elements involved in assembly.
+            return
+
+        with pytest.raises(TypeError):
+            ffcx.codegeneration.jit.compile_forms(
+                [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+            )
+        return
 
     (form0,), module, _ = ffcx.codegeneration.jit.compile_forms(
         [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
@@ -1482,73 +1494,3 @@ def test_vertex_integral(compile_args, geometry, rank, dtype):
             assert np.isclose(coords[vertex * 3], J[idx], atol=1e-6)
             # Check all other entries are not touched
             assert np.allclose(np.delete(J, [idx]), 0)
-
-
-@pytest.mark.parametrize("geometry", [("interval", 1), ("triangle", 2), ("tetrahedron", 3)])
-@pytest.mark.parametrize("rank", [1, 2])
-@pytest.mark.parametrize(
-    "dtype",
-    [
-        np.float32,
-        np.float64,
-        pytest.param(
-            np.complex64,
-            marks=pytest.mark.skipif(
-                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
-            ),
-        ),
-        pytest.param(
-            np.complex128,
-            marks=pytest.mark.skipif(
-                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
-            ),
-        ),
-    ],
-)
-def test_vertex_integral_raises(compile_args, geometry, rank, dtype):
-    cell, gdim = geometry
-    rdtype = np.real(dtype(0)).dtype
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(gdim,), dtype=rdtype))
-
-    # Dicontinous test/trial space
-    element = basix.ufl.element("Discontinuous Lagrange", cell, 1)
-    dP = ufl.Measure("dP")
-    x = ufl.SpatialCoordinate(domain)
-    V = ufl.FunctionSpace(domain, element)
-    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
-
-    if rank == 0:
-        F = x[0] * dP
-    elif rank == 1:
-        F = x[0] * ufl.conj(v) * dP
-    else:
-        F = x[0] * u * ufl.conj(v) * dP
-
-    if rank > 0:
-        with pytest.raises(TypeError):
-            ffcx.codegeneration.jit.compile_forms(
-                [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
-            )
-
-    # Dicontinous coefficient with continuous arguments.
-    element = basix.ufl.element("Lagrange", cell, 1)
-    dP = ufl.Measure("dP")
-    x = ufl.SpatialCoordinate(domain)
-    V = ufl.FunctionSpace(domain, element)
-    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
-
-    element_f = basix.ufl.element("Discontinuous Lagrange", cell, 1)
-    V_f = ufl.FunctionSpace(domain, element_f)
-    f = ufl.Coefficient(V_f)
-
-    if rank == 0:
-        F = f * x[0] * dP
-    elif rank == 1:
-        F = f * x[0] * ufl.conj(v) * dP
-    else:
-        F = f * x[0] * u * ufl.conj(v) * dP
-
-    with pytest.raises(TypeError):
-        ffcx.codegeneration.jit.compile_forms(
-            [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
-        )
