@@ -11,8 +11,9 @@ on:
     tags:
       - "v*"
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
 
   # Weekly build on Mondays at 8 am
