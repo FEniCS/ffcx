@@ -1479,7 +1479,7 @@ def test_vertex_integral(compile_args, geometry, rank, dtype):
                 ffi.NULL,
             )
             idx = (rank > 0) * vertex + (rank > 1) * vertex * vertex_count
-            assert np.isclose(J[idx], coords[vertex * 3], atol=1e2 * np.finfo(dtype).eps)
+            assert np.isclose(J[idx], coords[vertex * 3], rtol=1e2 * np.finfo(dtype).eps)
             assert np.allclose(np.delete(J, [idx]), 0)
 
 
