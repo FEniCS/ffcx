@@ -4,8 +4,9 @@ name: DOLFINx integration
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dolfinx_ref:
@@ -81,7 +82,7 @@ jobs:
           ctest -V --output-on-failure -R unittests
 
       - name: Install Python demo/test dependencies
-        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist "scipy<=1.15"
+        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist "scipy<=1.15" pyvista networkx
       - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
       - name: Run DOLFINx Python demos
