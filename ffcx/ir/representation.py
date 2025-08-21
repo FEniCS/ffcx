@@ -483,7 +483,7 @@ def _compute_form_ir(
     # Store names of integrals and subdomain_ids for this form, grouped
     # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
+    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex")
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_domains"] = {itg_type: [] for itg_type in ufcx_integral_types}

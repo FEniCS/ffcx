@@ -11,8 +11,9 @@ on:
     tags:
       - "v*"
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
 
   # Weekly build on Mondays at 8 am
@@ -34,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout FFCx
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -133,7 +134,7 @@ jobs:
 
       - name: Checkout FEniCS/docs
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.12 }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: "FEniCS/docs"
           path: "docs"
