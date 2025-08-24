@@ -158,11 +158,11 @@ class ValueNumberer:
         assert not (num_ld and num_gd)
         if num_ld:
             domain = ufl.domain.extract_unique_domain(mt.terminal)
-            tdim = domain.topological_dimension()
+            tdim = domain.ufl_cell().topological_dimension()
             d_components = ufl.permutation.compute_indices((tdim,) * num_ld)
         elif num_gd:
             domain = ufl.domain.extract_unique_domiain(mt.terminal)
-            gdim = domain.geometric_dimension()
+            gdim = domain.geometric_dimension
             d_components = ufl.permutation.compute_indices((gdim,) * num_gd)
         else:
             d_components = [()]

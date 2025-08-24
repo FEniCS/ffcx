@@ -299,7 +299,7 @@ class FFCXBackendAccess:
         """Access a cell vertex."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        gdim = domain.geometric_dimension()
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         # Get dimension and dofmap of scalar element
@@ -324,7 +324,7 @@ class FFCXBackendAccess:
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
-        gdim = domain.geometric_dimension()
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
@@ -364,7 +364,7 @@ class FFCXBackendAccess:
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         cellname = domain.ufl_cell().cellname()
-        gdim = domain.geometric_dimension()
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("tetrahedron", "hexahedron"):

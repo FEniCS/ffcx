@@ -19,7 +19,7 @@ on:
         type: string
       ufl_ref:
         description: "UFL branch or tag"
-        default: "main"
+        default: "dokken/multiple_coordinate_elements"
         type: string
   # Weekly build on Mondays at 8 am
   schedule:
@@ -55,7 +55,7 @@ jobs:
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
-          ref: main
+          ref: mscroggs/ufl_coordinate_elements
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v5
