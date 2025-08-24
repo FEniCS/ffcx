@@ -22,7 +22,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(options):
-    """Generate UFC code for file output."""
+    """Generate UFCx code for file output."""
     logger.info("Generating code for file")
 
     # Attributes
