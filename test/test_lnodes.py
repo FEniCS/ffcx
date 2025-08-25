@@ -57,7 +57,7 @@ def test_gemm(dtype):
         gemm(pA, pB, pC)
         assert np.all(A == q)
 
-    # Raises 'Support for `[tool.setuptools]` in `pyproject.toml` is still *beta*.' on older versions
+    # Raises 'Support for `[tool.setuptools]` in `pyproject.toml` is still *beta*.'
     if sys.version >= (3, 12):
         assert len(record) == 0
 
@@ -110,6 +110,6 @@ def test_gemv(dtype):
         gemv(py, pA, px)
         assert np.all(y == result)
 
-    # Raises 'Support for `[tool.setuptools]` in `pyproject.toml` is still *beta*.' on older versions
+    # Raises 'Support for `[tool.setuptools]` in `pyproject.toml` is still *beta*.'
     if sys.version >= (3, 12):
         assert len(record) == 0
