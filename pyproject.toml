@@ -17,7 +17,7 @@ authors = [
 dependencies = [
     "numpy>=1.21",
     "cffi",
-    "setuptools;python_version>='3.12'",   # cffi with compilation support requires setuptools
+    "setuptools>=77.0.3;python_version>='3.12'",   # cffi with compilation support requires setuptools
     "fenics-basix>=0.10.0.dev0",
     "fenics-ufl>=2025.2.0.dev0",
 ]
