@@ -8,7 +8,8 @@ version = "0.10.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = "LGPL-3.0-or-later"
+license-files = ["COPYING*"]
 authors = [
     { email = "fenics-steering-council@googlegroups.com" },
     { name = "FEniCS Steering Council" },
