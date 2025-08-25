@@ -999,6 +999,7 @@ def test_interval_vertex_quadrature(compile_args):
     assert np.isclose(J[0], (0.5 * a + 0.5 * b) * np.abs(b - a))
 
 
+@pytest.mark.filterwarnings("ignore:Explicitly selected vertex")
 def test_facet_vertex_quadrature(compile_args):
     """Test facet vertex quadrature"""
     c_el = basix.ufl.element("Lagrange", "quadrilateral", 1, shape=(2,))
@@ -1471,7 +1472,7 @@ def test_vertex_integral(compile_args, geometry, rank, dtype, element_type):
 
     vertex_count = domain.ufl_coordinate_element().basix_element.points.shape[0]
 
-    for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
+    for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=rdtype):
         # General geometry for simplices of gdim 1,2 and 3.
         # gdim 1: creates the interval (a, b)
         # gdim 2: creates the triangle with vertices (a, 0), (b, 0), (0,0)
