@@ -37,7 +37,7 @@ optional = ["numba", "pygraphviz==1.9"]
 test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
     "coveralls",
-    "coverage",
+    "coverage>=7.0.0",
     "pytest-cov",
     "pytest-xdist",
     "types-setuptools",
