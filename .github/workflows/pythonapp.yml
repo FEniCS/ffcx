@@ -94,7 +94,7 @@ jobs:
           ruff format --check .
 
       - name: Run units tests
-        run: python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+        run: python -m pytest -n auto -W error --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
 
       - name: Upload to Coveralls
         if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' }}
