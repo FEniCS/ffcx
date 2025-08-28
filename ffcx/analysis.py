@@ -95,8 +95,8 @@ def analyze_ufl_objects(
 
     form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
     for data in form_data:
-        elements += data.unique_sub_elements
-        coordinate_elements += data.coordinate_elements
+        elements += data.unique_sub_elements  # type: ignore
+        coordinate_elements += data.coordinate_elements  # type: ignore
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
@@ -192,7 +192,7 @@ def _analyze_form(
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
-    for id, integral_data in enumerate(form_data.integral_data):
+    for id, integral_data in enumerate(form_data.integral_data):  # type: ignore
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
         # (but possibly different metadata).
@@ -203,6 +203,13 @@ def _analyze_form(
 
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
+
+            # Vertex integrals do not support discontinuous integrands.
+            if integral.integral_type() == "vertex":
+                elements = ufl.algorithms.extract_elements(integral)
+                if any(e.discontinuous for e in elements):
+                    raise TypeError("Vertex integrals not supported for discontinuous elements.")
+
             # If form contains a quadrature element, use the custom quadrature scheme
             custom_q = None
             for e in ufl.algorithms.extract_elements(integral):
@@ -248,7 +255,7 @@ def _analyze_form(
 
 
 def _has_custom_integrals(
-    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],  # type: ignore
+    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],
 ) -> bool:
     """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):

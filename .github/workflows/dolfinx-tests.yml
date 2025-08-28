@@ -4,8 +4,9 @@ name: DOLFINx integration
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dolfinx_ref:
@@ -34,7 +35,7 @@ jobs:
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install UFL and Basix (default branches/tags)
         if: github.event_name != 'workflow_dispatch'
         run: |
@@ -50,38 +51,32 @@ jobs:
           pip3 install --break-system-packages .
       - name: Get DOLFINx source (default branch/tag)
         if: github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
           ref: main
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
           ref: ${{ github.event.inputs.dolfinx_ref }}
       - name: Install DOLFINx (C++)
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -DBUILD_TESTING=true -B build -S dolfinx/cpp/
           cmake --build build
           cmake --install build
+      - name: Run DOLFINx C++ unit tests
+        working-directory: build
+        run: ctest -V --output-on-failure -R unittests
       - name: Install DOLFINx (Python)
         run: |
           python3 -m pip -v install --break-system-packages nanobind scikit-build-core[pyproject]
           python3 -m pip -v install --break-system-packages --check-build-dependencies --no-build-isolation dolfinx/python/
-      - name: Build DOLFINx C++ unit tests
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S dolfinx/cpp/test/
-          cmake --build build/test
-      - name: Run DOLFINx C++ unit tests
-        run: |
-          cd build/test
-          ctest -V --output-on-failure -R unittests
-
       - name: Install Python demo/test dependencies
-        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist "scipy<=1.15"
+        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist scipy pyvista networkx
       - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
       - name: Run DOLFINx Python demos
