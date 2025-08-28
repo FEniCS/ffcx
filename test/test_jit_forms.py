@@ -1407,7 +1407,6 @@ def test_ds_prism(compile_args, dtype):
     )
 
 
-
 @pytest.mark.parametrize("geometry", [("interval", 1), ("triangle", 2), ("tetrahedron", 3)])
 @pytest.mark.parametrize("rank", [0, 1, 2])
 @pytest.mark.parametrize(
