@@ -139,7 +139,8 @@ class FFCXBackendSymbols:
     def J_component(self, mt):
         """Jacobian component."""
         return L.Symbol(
-            format_mt_name(f"J{mt.expr.ufl_domain().ufl_id()}", mt), dtype=L.DataType.REAL
+            format_mt_name(f"J{ufl.domain.extract_unique_domain(mt.expr).ufl_id()}", mt),
+            dtype=L.DataType.REAL,
         )
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
