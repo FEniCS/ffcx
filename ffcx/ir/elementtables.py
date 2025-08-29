@@ -223,7 +223,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise RuntimeError("Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()
+        element = mt.terminal.ufl_function_space().ufl_element()  # type: ignore
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
@@ -579,7 +579,7 @@ def build_optimized_tables(
                         tensor_factors.append(tensor_factor)
                         break
                 else:
-                    # FIXME: The inputs here does not match the type-hints of unique_table_reference
+                    # FIXME: The inputs here does not m atch the type-hints of unique_table_reference
                     ut = UniqueTableReferenceT(
                         f"FE_TF{tensor_n}",
                         sub_tbl,
@@ -618,8 +618,8 @@ def build_optimized_tables(
             tabletype in uniform_ttypes,
             is_permuted,
             tensor_factors is not None,
-            tensor_factors,  # type: ignore
-            tensor_perm,  # type: ignore
+            tensor_factors,
+            tensor_perm,
         )
 
     return mt_tables
