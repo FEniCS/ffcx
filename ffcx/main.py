@@ -49,6 +49,8 @@ parser.add_argument("ufl_file", nargs="+", help="UFL file(s) to be compiled")
 
 def main(args: Optional[Sequence[str]] = None) -> int:
     """Run ffcx on a UFL file."""
+    logging.captureWarnings(capture=True)
+
     xargs = parser.parse_args(args)
 
     # Parse all other options
