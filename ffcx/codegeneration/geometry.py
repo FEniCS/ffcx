@@ -17,6 +17,8 @@ def write_table(tablename, cellname):
         return facet_edge_vertices(tablename, cellname)
     if tablename == "cell_facet_jacobian":
         return cell_facet_jacobian(tablename, cellname)
+    if tablename == "cell_ridge_jacobian":
+        return cell_ridge_jacobian(tablename, cellname)
     if tablename == "reference_cell_volume":
         return reference_cell_volume(tablename, cellname)
     if tablename == "reference_facet_volume":
@@ -60,6 +62,14 @@ def cell_facet_jacobian(tablename, cellname):
     """Write a reference facet jacobian."""
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.facet_jacobians(celltype)
+    symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
+    return L.ArrayDecl(symbol, values=out, const=True)
+
+
+def cell_ridge_jacobian(tablename, cellname):
+    """Write a reference ridge jacobian."""
+    celltype = getattr(basix.CellType, cellname)
+    out = basix.cell.edge_jacobians(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=out, const=True)
 

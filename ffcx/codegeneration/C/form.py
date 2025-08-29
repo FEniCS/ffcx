@@ -120,7 +120,7 @@ def generator(ir: FormIR, options):
     integral_offsets = [0]
     integral_domains = []
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
-    for itg_type in ("cell", "exterior_facet", "interior_facet", "vertex"):
+    for itg_type in ("cell", "exterior_facet", "interior_facet", "vertex", "ridge"):
         unsorted_integrals = []
         unsorted_ids = []
         unsorted_domains = []

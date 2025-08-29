@@ -32,8 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.definitions import entity_types
-from ffcx.ir.integral import compute_integral_ir
+from ffcx.ir.integral import CommonExpressionIR, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
@@ -110,24 +109,6 @@ class QuadratureIR(typing.NamedTuple):
     cell_shape: str
     points: npt.NDArray[np.float64]
     weights: npt.NDArray[np.float64]
-
-
-class CommonExpressionIR(typing.NamedTuple):
-    """Common-ground for IntegralIR and ExpressionIR."""
-
-    integral_type: str
-    entity_type: entity_types
-    tensor_shape: list[int]
-    coefficient_numbering: dict[ufl.Coefficient, int]
-    coefficient_offsets: dict[ufl.Coefficient, int]
-    original_constant_offsets: dict[ufl.Constant, int]
-    unique_tables: dict[str, dict[basix.CellType, npt.NDArray[np.float64]]]
-    unique_table_types: dict[basix.CellType, dict[str, str]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
-    name: str
-    needs_facet_permutations: bool
-    shape: list[int]
-    coordinate_element_hash: str
 
 
 class IntegralIR(typing.NamedTuple):
@@ -250,6 +231,7 @@ def _compute_integral_ir(
         "interior_facet": "facet",
         "vertex": "vertex",
         "custom": "cell",
+        "ridge": "ridge",
     }
 
     # Iterate over groups of integrals
@@ -320,10 +302,15 @@ def _compute_integral_ir(
                 # prescribed in certain cases.
 
                 degree = md["quadrature_degree"]
-                if integral_type != "cell":
+                if "facet" in integral_type:
                     facet_types = basix.cell.subentity_types(cell_type)[-2]
                     assert len(set(facet_types)) == 1
                     cell_type = facet_types[0]
+                elif integral_type == "ridge":
+                    ridge_types = basix.cell.subentity_types(cell_type)[-3]
+                    assert len(set(ridge_types)) == 1
+                    cell_type = ridge_types[0]
+
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), "
@@ -487,7 +474,7 @@ def _compute_form_ir(
     # Store names of integrals and subdomain_ids for this form, grouped
     # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex")
+    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "ridge")
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_domains"] = {itg_type: [] for itg_type in ufcx_integral_types}

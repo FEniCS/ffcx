@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2025 Garth N. Wells, Matthew Scroggs and Paul T. Kühner
+# Copyright (C) 2018-2025 Garth N. Wells, Matthew Scroggs, Paul T. Kühner and Jørgen S. Dokken
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -1259,9 +1259,30 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     # Remove the entries for the extra test DOF on the triangle element
     A_ref = A_ref[1:][:]
 
-    # If the permutation is 1, this means the triangle sees its edge as being flipped
-    # relative to the edge's global orientation. Thus the result is the same as swapping
-    # cols 1 and 2 and cols 4 and 5 of the reference result.
+    # The orientation of the interval is assumed to be fixed (since it is given uniquely
+    # by its global orientation in the mesh). Let us focus on local facet 0. It can have
+    # two possible orientations depending on the cell topology:
+    #
+    # 2   1          1   1
+    # | \  \         | \  \
+    # |  \  \   or   |  \  \
+    # 0---1  0       0---2  0
+    #
+    # In the second case, local facet 0 is flipped relative to the interval. If we look at
+    # the degrees of freedom second-order Lagrange on the triangle and first-order Lagrange
+    # on the interval, we have
+    #
+    # 2    1           1    1
+    # | \   \          | \   \
+    # 4  3   \         5  3   \
+    # |    \  \    or  |    \  \
+    # 0--5--1  0       0--4--2  0
+    #
+    # Since the trial function is defined on the triangle, the second case (where the
+    # permutation is 1) is thus the same as swapping cols 1 and 2 and cols 4 and 5 of the
+    # first case result.
+    # NOTE: Although we choose to fix the orientation of the interval, the same result
+    # can be obtained by fixing the triangle and considering flipping the interval.
     if permutation[0] == 1:
         A_ref[:, [1, 2]] = A_ref[:, [2, 1]]
         A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
@@ -1555,3 +1576,275 @@ def test_vertex_mesh(compile_args, dtype):
     )
 
     assert np.isclose(J[0], coeffs[0])
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("permutation", [[0], [1]])
+@pytest.mark.parametrize("local_entity_index", [0, 1, 2, 3, 4, 5])
+def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_index):
+    """Test that the local element tensor corresponding to a mixed-dimensional
+    form of codim 2 is correct. The form involves an integral over an edge of
+    the cell. The trial function and a coefficient `f` are of codim 0.
+    The test function is of codim 2.
+    """
+
+    def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs, l_i):
+        V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
+        W_ele = basix.ufl.element(ele_type, W_cell_type, 1)
+
+        gdim = 3
+        V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+        W_domain = ufl.Mesh(basix.ufl.element("Lagrange", W_cell_type, 1, shape=(gdim,)))
+
+        V = ufl.FunctionSpace(V_domain, V_ele)
+        W = ufl.FunctionSpace(W_domain, W_ele)
+
+        u = ufl.TrialFunction(V)
+        q = ufl.TestFunction(W)
+
+        f = ufl.Coefficient(V)
+
+        dr = ufl.Measure("dr", domain=V_domain)
+        forms = [u.dx(0) * f * q * dr]
+
+        compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+            forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+        )
+        form0 = compiled_forms[0]
+        default_integral = form0.form_integrals[0]
+        kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+        A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
+        w = np.array(coeffs, dtype=dtype)
+        c = np.array([], dtype=dtype)
+        edge = np.array([l_i], dtype=np.intc)
+        perm = np.array(permutation, dtype=np.uint8)
+
+        xdtype = dtype_to_scalar_dtype(dtype)
+        coords = np.array(
+            [[0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 1.3]], dtype=xdtype
+        )
+
+        c_type = dtype_to_c_type(dtype)
+        c_xtype = dtype_to_c_type(xdtype)
+
+        ffi = module.ffi
+        kernel(
+            ffi.cast(f"{c_type}  *", A.ctypes.data),
+            ffi.cast(f"{c_type}  *", w.ctypes.data),
+            ffi.cast(f"{c_type}  *", c.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", edge.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
+        )
+
+        return A
+
+    # Define the element type
+    ele_type = "Lagrange"
+    # Define the cell type for each space
+    V_cell_type = "tetrahedron"
+    Vbar_cell_type = "interval"
+
+    # Coefficient data
+    f_data = [5.0, 6.0, 7.0, -1.0, 2.0, 3.0, 5.0, 5.0, 6.0, 2.0]
+    coeff_data = f_data
+
+    # Tabulate the tensor for the mixed-dimensional form
+    A = tabulate_tensor(ele_type, V_cell_type, Vbar_cell_type, coeff_data, local_entity_index)
+
+    # Compare to a reference result. Here, we compare against the same form but with
+    # the interval element replaced with a triangle.
+    A_ref = tabulate_tensor(ele_type, V_cell_type, V_cell_type, coeff_data, local_entity_index)
+
+    # Map from local edge index to (local) DOF indices on that edge
+    local_index_to_slice = {0: [2, 3], 1: [1, 3], 2: [1, 2], 3: [0, 3], 4: [0, 2], 5: [0, 1]}
+
+    A_ref = A_ref[local_index_to_slice[local_entity_index]]
+
+    # See test_mixed_dim_form for an explanation of the permutation logic. Here, for simplicity,
+    # we choose to fix the orientation of the tet and flip the interval.
+    if permutation[0] == 1:
+        A_ref[[0, 1], :] = A_ref[[1, 0], :]
+
+    assert np.allclose(A, A_ref)
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("local_entity_index", [0, 1, 2])
+def test_mixed_dim_form_codim2_2D(compile_args, dtype, local_entity_index):
+    """Test that mixed assembly between 2D and 0D gives a consistent result"""
+
+    # Define the element type
+    ele_type = "Lagrange"
+    # Define the cell type for each space
+    V_cell_type = "triangle"
+    W_cell_type = "point"
+
+    # Coefficient data
+    coeffs = [3, 4, 7, 8, 5, 2]
+
+    # Tabulate the tensor for the mixed-dimensional form
+    V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
+    W_ele = basix.ufl.element(ele_type, W_cell_type, 0, discontinuous=True)
+
+    gdim = 2
+    V_domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+    W_domain = ufl.Mesh(
+        basix.ufl.element("Lagrange", W_cell_type, 0, shape=(gdim,), discontinuous=True)
+    )
+
+    V = ufl.FunctionSpace(V_domain, V_ele)
+    W = ufl.FunctionSpace(W_domain, W_ele)
+
+    u = ufl.TrialFunction(V)
+    q = ufl.TestFunction(W)
+
+    f = ufl.Coefficient(V)
+
+    dr = ufl.Measure("dr", domain=V_domain)
+    x = ufl.SpatialCoordinate(V_domain)
+    forms = [u.dx(0) * f * q * x[1] * dr]
+
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    form0 = compiled_forms[0]
+    default_integral = form0.form_integrals[0]
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+    A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
+    w = np.array(coeffs, dtype=dtype)
+    c = np.array([], dtype=dtype)
+    edge = np.array([local_entity_index], dtype=np.intc)
+    perm = np.zeros(1, dtype=np.uint8)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[-0.1, 0.2, 0.0], [2.5, 0.0, 0.0], [0.0, 2.0, 0.0]], dtype=xdtype)
+
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+
+    ffi = module.ffi
+    kernel(
+        ffi.cast(f"{c_type}  *", A.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", edge.ctypes.data),
+        ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    # Tabulate reference solution, equivalent of assembling a vector with the same spaces from V
+    # and vertex quadrature
+    vertices = basix.topology(basix.cell.CellType.triangle)[0]
+    vertex_coords = basix.geometry(basix.cell.CellType.triangle)
+    qp = np.array(vertex_coords[vertices[local_entity_index]])
+    qw = np.ones(qp.shape[0], dtype=xdtype)
+    assert len(qw) == 1
+    dx = ufl.Measure(
+        "dx",
+        domain=V_domain,
+        metadata={"quadrature_rule": "custom", "quadrature_points": qp, "quadrature_weights": qw},
+    )
+    forms = [u.dx(0) * f * x[1] / abs(ufl.JacobianDeterminant(V_domain)) * dx]
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    form0 = compiled_forms[0]
+    default_integral = form0.form_integrals[0]
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+    b = np.zeros(V_ele.dim, dtype=dtype)
+    ffi = module.ffi
+    kernel(
+        ffi.cast(f"{c_type}  *", b.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", edge.ctypes.data),
+        ffi.cast("uint8_t *", perm.ctypes.data),
+        ffi.NULL,
+    )
+    np.testing.assert_allclose(A[0, :], b)
+
+
+@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("permutation", [[0], [1]])
+def test_ridge_integral(compile_args, dtype, permutation):
+    """Test that one can assemble a ridge integral on a single domain."""
+    y_ext = 1.7
+    z_ext = 1.3
+
+    def tabulate_tensor(ele_type, V_cell_type, l_i):
+        V_ele = basix.ufl.element(ele_type, V_cell_type, 1)
+
+        gdim = 3
+        domain = ufl.Mesh(basix.ufl.element("Lagrange", V_cell_type, 1, shape=(gdim,)))
+
+        V = ufl.FunctionSpace(domain, V_ele)
+        x = ufl.SpatialCoordinate(domain)
+        u = ufl.TestFunction(V)
+
+        dr = ufl.Measure("dr", domain=domain)
+        forms = [u * x[2] * dr]
+
+        compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+            forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+        )
+        form0 = compiled_forms[0]
+        default_integral = form0.form_integrals[0]
+        kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+
+        A = np.zeros((V_ele.dim,), dtype=dtype)
+        w = np.array([], dtype=dtype)
+        c = np.array([], dtype=dtype)
+        edge = np.array([l_i], dtype=np.intc)
+        perm = np.array(permutation, dtype=np.uint8)
+
+        xdtype = dtype_to_scalar_dtype(dtype)
+        coords = np.array(
+            [[0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [0.0, y_ext, 0.0], [0.0, 0.0, z_ext]], dtype=xdtype
+        )
+
+        c_type = dtype_to_c_type(dtype)
+        c_xtype = dtype_to_c_type(xdtype)
+
+        ffi = module.ffi
+        kernel(
+            ffi.cast(f"{c_type}  *", A.ctypes.data),
+            ffi.cast(f"{c_type}  *", w.ctypes.data),
+            ffi.cast(f"{c_type}  *", c.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", edge.ctypes.data),
+            ffi.cast("uint8_t *", perm.ctypes.data),
+            ffi.NULL,
+        )
+
+        return A
+
+    # Define the element type
+    ele_type = "Lagrange"
+    # Define the cell type for each space
+    V_cell_type = "tetrahedron"
+
+    # Tabulate the tensor for the mixed-dimensional form
+    b = tabulate_tensor(ele_type, V_cell_type, 0)
+
+    # Ref first ridge integral length
+    rl = np.sqrt(y_ext**2 + z_ext**2) / y_ext
+
+    # Compute z as a function of y along the ridge
+    y = sympy.Symbol("y")
+    z = z_ext - z_ext / y_ext * y
+    # Define the test functions along the ridge
+    phi_2 = y / y_ext
+    phi_3 = 1 - y / y_ext
+
+    # Use sympy for numerical integration
+    b_2 = sympy.integrate(phi_2 * z * rl, (y, 0, y_ext))
+    b_3 = sympy.integrate(phi_3 * z * rl, (y, 0, y_ext))
+    b_ref = np.array([0, 0, b_2, b_3], dtype=b.dtype)
+    np.testing.assert_allclose(b_ref, b, atol=1e-10)

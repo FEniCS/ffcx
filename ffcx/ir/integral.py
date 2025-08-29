@@ -10,7 +10,9 @@ import itertools
 import logging
 import typing
 
+import basix
 import numpy as np
+import numpy.typing as npt
 import ufl
 from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
@@ -26,8 +28,27 @@ from ffcx.ir.analysis.modified_terminals import (
 )
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
+from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
+
+
+class CommonExpressionIR(typing.NamedTuple):
+    """Common-ground for IntegralIR and ExpressionIR."""
+
+    integral_type: str
+    entity_type: entity_types
+    tensor_shape: list[int]
+    coefficient_numbering: dict[ufl.Coefficient, int]
+    coefficient_offsets: dict[ufl.Coefficient, int]
+    original_constant_offsets: dict[ufl.Constant, int]
+    unique_tables: dict[str, dict[basix.CellType, npt.NDArray[np.float64]]]
+    unique_table_types: dict[basix.CellType, dict[str, str]]
+    integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
+    name: str
+    needs_facet_permutations: bool
+    shape: list[int]
+    coordinate_element_hash: str
 
 
 class ModifiedArgumentDataT(typing.NamedTuple):
@@ -44,7 +65,9 @@ class BlockDataT(typing.NamedTuple):
     factor_indices_comp_indices: list[tuple[int, int]]  # list of (factor index, component index)
     all_factors_piecewise: bool  # True if all factors for this block are piecewise
     unames: tuple[str, ...]  # list of unique FE table names for each block rank
-    restrictions: tuple[str, ...]  # restriction "+" | "-" | None for each block rank
+    restrictions: tuple[
+        typing.Union[str, None], ...
+    ]  # restriction "+" | "-" | None for each block rank
     transposed: bool  # block is the transpose of another
     is_uniform: bool
     ma_data: tuple[ModifiedArgumentDataT, ...]  # used in "full", "safe" and "partial"
@@ -52,9 +75,26 @@ class BlockDataT(typing.NamedTuple):
 
 
 def compute_integral_ir(
-    cell, integral_type: str, entity_type: entity_types, integrands, argument_shape, p, visualise
+    cell: ufl.Cell,
+    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
+    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    integrands: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]],
+    argument_shape: tuple[int],
+    p: dict,
+    visualise: bool,
 ):
-    """Compute intermediate representation for an integral."""
+    """Compute intermediate representation for an integral.
+
+    Args:
+        cell: Cell of integration domain
+        integral_type: Type of integral over cell
+        entity_type: Corresponding entity of the cell that the integral is over
+        integrands: Dictionary mapping a quadrature rule to a sequence of integrands
+        argument_shape: Shape of the output tensor of the integral (used for tensor factorization)
+        p: Parameters used for clamping tables and for activating sum factorization
+        visualise: If True, store the graph representation of the integrand in a pdf file
+            `S.pdf` and `F.pdf`
+    """
     # The intermediate representation dict we're building and returning
     # here
     ir: dict[str, typing.Any] = {"needs_facet_permutations": False}
@@ -133,14 +173,14 @@ def compute_integral_ir(
                         v["expression"] = v["expression"]._ufl_expr_reconstruct_(*deps)
 
                 # Recreate expression with correct ufl_shape
-                expressions = [
-                    None,
-                ] * num_components
+                expressions = np.empty(num_components, dtype=CommonExpressionIR)
+
                 for target in S_targets:
                     for comp in S.nodes[target]["component"]:
                         assert expressions[comp] is None
                         expressions[comp] = S.nodes[target]["expression"]
-                expression = ufl.as_tensor(np.reshape(expressions, expression.ufl_shape))  # type: ignore
+                expression = ufl.as_tensor(expressions.reshape(expression.ufl_shape))
+                assert all([expr is not None for expr in expressions])
 
                 # Rebuild scalar list-based graph representation
                 S = build_scalar_graph(expression)
@@ -219,9 +259,6 @@ def compute_integral_ir(
                 blockmap = tuple(_blockmap)
 
                 block_is_uniform = all(tr.is_uniform for tr in trs)
-
-                # Collect relevant restrictions to identify blocks correctly
-                # in interior facet integrals
 
                 # Collect relevant restrictions to identify blocks correctly
                 # in interior facet integrals

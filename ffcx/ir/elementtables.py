@@ -144,11 +144,10 @@ def get_ffcx_table_values(
     # Extract arrays for the right scalar component
     component_tables = []
     component_element, offset, stride = element.get_component_element(flat_component)
-
     for entity in range(num_entities):
         if codim == 0:
             entity_points = map_integral_points(points, integral_type, cell, entity)
-        elif codim == 1:
+        elif codim == 1 or codim == 2:
             entity_points = points
         else:
             raise RuntimeError("Codimension > 1 isn't supported.")
@@ -208,7 +207,7 @@ def generate_psi_table_name(
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V"}[entity_type]
+    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_R"}[entity_type]
     name += f"_Q{quadrature_rule.id()}"
     return name
 
@@ -316,19 +315,19 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell,
-    integral_type: str,
+    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell", "vertex"],
     entity_type: entity_types,
     modified_terminals: typing.Iterable[ModifiedTerminal],
-    existing_tables: dict[str, np.ndarray],
+    existing_tables: dict[str, npt.NDArray[np.float64]],
     use_sum_factorization: bool,
     is_mixed_dim: bool,
     rtol: float = default_rtol,
     atol: float = default_atol,
-) -> dict[typing.Union[ModifiedTerminal, str], UniqueTableReferenceT]:
+) -> dict[typing.Union[str, ModifiedTerminal], UniqueTableReferenceT]:
     """Build the element tables needed for a list of modified terminals.
 
     Args:
-        quadrature_rule: The quadrature rule relating to the tables.
+        quadrature_rule: The quadrature rule used for the tables.
         cell: The cell type of the domain the tables will be used with.
         entity_type: The entity type (vertex,edge,facet,cell) that the tables are evaluated for.
         integral_type: The type of integral the tables are used for.
@@ -336,16 +335,14 @@ def build_optimized_tables(
         existing_tables: Register of tables that already exist and reused.
         use_sum_factorization: Use sum factorization for tensor product elements.
         is_mixed_dim: Mixed dimensionality of the domain.
-        rtol: Relative tolerance for comparing tables.
-        atol: Absolute tolerance for comparing tables.
+        rtol: Relative tolerance for clamping tables to -1,0 or 1
+        atol: Absolute tolerance for clamping tables to -1,0 or 1
 
     Returns:
-      mt_tables:
         Dictionary mapping each modified terminal to the a unique table reference.
         If ``use_sum_factorization`` is turned on, the map also contains the map
         from the unique table reference for the tensor product factorization
         to the name of the modified terminal.
-
     """
     # Add to element tables
     analysis = {}
@@ -361,7 +358,7 @@ def build_optimized_tables(
         set(ufl.algorithms.analysis.extract_sub_elements(all_elements))
     )
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
-    mt_tables: dict[typing.Union[ModifiedTerminal, str], UniqueTableReferenceT] = {}
+    mt_tables: dict[typing.Union[str, ModifiedTerminal], UniqueTableReferenceT] = {}
 
     _existing_tables = existing_tables.copy()
 
@@ -390,87 +387,128 @@ def build_optimized_tables(
         tdim = cell.topological_dimension()
         codim = tdim - element.cell.topological_dimension()
         assert codim >= 0
-        if codim > 1:
-            raise RuntimeError("Codimension > 1 isn't supported.")
+        if codim > 2:
+            raise RuntimeError("Codimension > 2 isn't supported.")
 
         # Only permute quadrature rules for interior facets integrals and for
         # the codim zero element in mixed-dimensional integrals. The latter is
         # needed because a cell may see its sub-entities as being oriented
         # differently to their global orientation
-        if integral_type == "interior_facet" or (is_mixed_dim and codim == 0):
-            if tdim == 1 or codim == 1:
-                # Do not add permutations if codim-1 as facets have already gotten a global
-                # orientation in DOLFINx
-                t = get_ffcx_table_values(
-                    quadrature_rule.points,
-                    cell,
-                    integral_type,
-                    element,
-                    avg,
-                    entity_type,
-                    local_derivatives,
-                    flat_component,
-                    codim,
-                )
-            elif tdim == 2:
-                new_table = []
-                for ref in range(2):
-                    new_table.append(
-                        get_ffcx_table_values(
-                            permute_quadrature_interval(quadrature_rule.points, ref),
-                            cell,
-                            integral_type,
-                            element,
-                            avg,
-                            entity_type,
-                            local_derivatives,
-                            flat_component,
-                            codim,
-                        )
+        if (
+            integral_type == "interior_facet"
+            or integral_type == "ridge"
+            or (is_mixed_dim and codim == 0)
+        ):
+            if entity_type == "facet":
+                if tdim == 1 or codim == 1:
+                    # Do not add permutations if codim-1 as facets have already gotten a global
+                    # orientation in DOLFINx
+                    t = get_ffcx_table_values(
+                        quadrature_rule.points,
+                        cell,
+                        integral_type,
+                        element,
+                        avg,
+                        entity_type,
+                        local_derivatives,
+                        flat_component,
+                        codim,
                     )
-
-                t = new_table[0]
-                t["array"] = np.vstack([td["array"] for td in new_table])
-            elif tdim == 3:
-                cell_type = cell.cellname()
-                if cell_type == "tetrahedron":
+                elif tdim == 2:
                     new_table = []
-                    for rot in range(3):
-                        for ref in range(2):
-                            new_table.append(
-                                get_ffcx_table_values(
-                                    permute_quadrature_triangle(quadrature_rule.points, ref, rot),
-                                    cell,
-                                    integral_type,
-                                    element,
-                                    avg,
-                                    entity_type,
-                                    local_derivatives,
-                                    flat_component,
-                                    codim,
-                                )
+                    for ref in range(2):
+                        new_table.append(
+                            get_ffcx_table_values(
+                                permute_quadrature_interval(quadrature_rule.points, ref),
+                                cell,
+                                integral_type,
+                                element,
+                                avg,
+                                entity_type,
+                                local_derivatives,
+                                flat_component,
+                                codim,
                             )
+                        )
+
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
-                elif cell_type == "hexahedron":
-                    new_table = []
-                    for rot in range(4):
-                        for ref in range(2):
-                            new_table.append(
-                                get_ffcx_table_values(
-                                    permute_quadrature_quadrilateral(
-                                        quadrature_rule.points, ref, rot
-                                    ),
-                                    cell,
-                                    integral_type,
-                                    element,
-                                    avg,
-                                    entity_type,
-                                    local_derivatives,
-                                    flat_component,
-                                    codim,
+                elif tdim == 3:
+                    cell_type = cell.cellname()
+                    if cell_type == "tetrahedron":
+                        new_table = []
+                        for rot in range(3):
+                            for ref in range(2):
+                                new_table.append(
+                                    get_ffcx_table_values(
+                                        permute_quadrature_triangle(
+                                            quadrature_rule.points, ref, rot
+                                        ),
+                                        cell,
+                                        integral_type,
+                                        element,
+                                        avg,
+                                        entity_type,
+                                        local_derivatives,
+                                        flat_component,
+                                        codim,
+                                    )
                                 )
+                        t = new_table[0]
+                        t["array"] = np.vstack([td["array"] for td in new_table])
+                    elif cell_type == "hexahedron":
+                        new_table = []
+                        for rot in range(4):
+                            for ref in range(2):
+                                new_table.append(
+                                    get_ffcx_table_values(
+                                        permute_quadrature_quadrilateral(
+                                            quadrature_rule.points, ref, rot
+                                        ),
+                                        cell,
+                                        integral_type,
+                                        element,
+                                        avg,
+                                        entity_type,
+                                        local_derivatives,
+                                        flat_component,
+                                        codim,
+                                    )
+                                )
+                        t = new_table[0]
+                        t["array"] = np.vstack([td["array"] for td in new_table])
+            elif entity_type == "ridge":
+                if tdim < 3 or codim == 2:
+                    # If ridge integral over vertex no permutation is needed,
+                    # or if it is a single domain ridge integral,
+                    # as ridges has a global orientation in DOLFINx.
+                    t = get_ffcx_table_values(
+                        quadrature_rule.points,
+                        cell,
+                        integral_type,
+                        element,
+                        avg,
+                        entity_type,
+                        local_derivatives,
+                        flat_component,
+                        codim,
+                    )
+                else:
+                    new_table = []
+                    for ref in range(2):
+                        new_table.append(
+                            get_ffcx_table_values(
+                                permute_quadrature_interval(quadrature_rule.points, ref),
+                                cell,
+                                integral_type,
+                                element,
+                                avg,
+                                entity_type,
+                                local_derivatives,
+                                flat_component,
+                                codim,
                             )
+                        )
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
         else:
@@ -503,6 +541,7 @@ def build_optimized_tables(
         # Check for existing identical table
         is_new_table = True
         for table_name in _existing_tables:
+            # FIXME: should we pass in atol and rtol here?
             if equal_tables(tbl, _existing_tables[table_name]):
                 name = table_name
                 tbl = _existing_tables[name]
@@ -540,6 +579,8 @@ def build_optimized_tables(
                         tensor_factors.append(tensor_factor)
                         break
                 else:
+                    # FIXME: The inputs here does not match the type-hints of
+                    # unique_table_reference
                     ut = UniqueTableReferenceT(
                         f"FE_TF{tensor_n}",
                         sub_tbl,
@@ -566,8 +607,8 @@ def build_optimized_tables(
 
         offset = cell_offset + t["offset"]
         block_size = t["stride"]
-
         # tables is just np.arrays, mt_tables hold metadata too
+        # FIXME: type-hinting of tensor factors is not correct
         mt_tables[mt] = UniqueTableReferenceT(
             name,
             tbl,
