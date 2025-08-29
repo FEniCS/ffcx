@@ -223,7 +223,7 @@ def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise RuntimeError("Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()  # type: ignore
+        element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
@@ -583,15 +583,15 @@ def build_optimized_tables(
                     ut = UniqueTableReferenceT(
                         f"FE_TF{tensor_n}",
                         sub_tbl,
-                        None,  # type: ignore
-                        None,  # type: ignore
-                        None,  # type: ignore
+                        None,
+                        None,
+                        None,
                         False,
                         False,
                         False,
                         False,
-                        None,  # type: ignore
-                        None,  # type: ignore
+                        None,
+                        None,
                     )
                     all_tensor_factors.append(ut)
                     tensor_factors.append(ut)
