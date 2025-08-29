@@ -67,7 +67,7 @@ def cell_facet_jacobian(tablename, cellname):
 
 
 def cell_ridge_jacobian(tablename, cellname):
-    """Write a reference facet jacobian."""
+    """Write a reference ridge jacobian."""
     celltype = getattr(basix.CellType, cellname)
     out = basix.cell.edge_jacobians(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)

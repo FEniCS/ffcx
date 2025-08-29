@@ -315,7 +315,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell,
-    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
+    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell", "vertex"],
     entity_type: entity_types,
     modified_terminals: typing.Iterable[ModifiedTerminal],
     existing_tables: dict[str, npt.NDArray[np.float64]],
