@@ -579,7 +579,8 @@ def build_optimized_tables(
                         tensor_factors.append(tensor_factor)
                         break
                 else:
-                    # FIXME: The inputs here does not m atch the type-hints of unique_table_reference
+                    # FIXME: The inputs here does not match the type-hints of
+                    # unique_table_reference
                     ut = UniqueTableReferenceT(
                         f"FE_TF{tensor_n}",
                         sub_tbl,
