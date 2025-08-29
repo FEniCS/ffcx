@@ -1495,3 +1495,63 @@ def test_vertex_integral(compile_args, geometry, rank, dtype, element_type):
             assert np.isclose(coords[vertex * 3], J[idx], atol=1e2 * np.finfo(dtype).eps)
             # Check all other entries are not touched
             assert np.allclose(np.delete(J, [idx]), 0)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_vertex_mesh(compile_args, dtype):
+    """Test that a mesh with only vertices can be created and used."""
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    cell = basix.CellType.point
+    c_el = basix.ufl.element("Lagrange", cell, 0, shape=(2,), discontinuous=True, dtype=xdtype)
+    msh = ufl.Mesh(c_el)
+
+    el = basix.ufl.element("Lagrange", cell, 0, discontinuous=True, dtype=xdtype)
+    V = ufl.FunctionSpace(msh, el)
+    u = ufl.Coefficient(V)
+    dx = ufl.Measure("dx", domain=msh)
+    Jh = u * dx
+
+    forms = [Jh]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
+    default_integral = form0.form_integrals[0]
+    J = np.zeros(1, dtype=dtype)
+    coords = np.array([2.0, 3.0, 0.0], dtype=xdtype)
+    coeffs = np.array([-5.2], dtype=dtype)
+    w = np.array(coeffs, dtype=dtype)
+    c = np.array([], dtype=dtype)
+
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type}  *", J.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    assert np.isclose(J[0], coeffs[0])
