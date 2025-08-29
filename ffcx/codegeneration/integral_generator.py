@@ -225,6 +225,7 @@ class IntegralGenerator:
         for i, cell_list in cells.items():
             for c in cell_list:
                 parts.append(geometry.write_table(ufl_geometry[i], c))
+
         return parts
 
     def generate_element_tables(self, domain: basix.CellType):
