@@ -49,7 +49,9 @@ extern "C"
   {
     cell = 0,
     exterior_facet = 1,
-    interior_facet = 2
+    interior_facet = 2,
+    vertex = 3,
+    ridge = 4,
   } ufcx_integral_type;
 
   // </HEADER_DECL>

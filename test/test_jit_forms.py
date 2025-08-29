@@ -1,9 +1,10 @@
-# Copyright (C) 2018-2025 Garth N. Wells, Matthew Scroggs & Jørgen S. Dokken
+# Copyright (C) 2018-2025 Garth N. Wells, Matthew Scroggs, Paul T. Kühner and Jørgen S. Dokken
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import os
 import sys
 
 import basix.ufl
@@ -1425,6 +1426,155 @@ def test_ds_prism(compile_args, dtype):
             ]
         ),
     )
+
+
+@pytest.mark.parametrize("geometry", [("interval", 1), ("triangle", 2), ("tetrahedron", 3)])
+@pytest.mark.parametrize("rank", [0, 1, 2])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.float32,
+        np.float64,
+        pytest.param(
+            np.complex64,
+            marks=pytest.mark.skipif(
+                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
+            ),
+        ),
+        pytest.param(
+            np.complex128,
+            marks=pytest.mark.skipif(
+                os.name == "nt", reason="win32 platform does not support C99 _Complex numbers"
+            ),
+        ),
+    ],
+)
+@pytest.mark.parametrize("element_type", ["Lagrange", "Discontinuous Lagrange"])
+def test_vertex_integral(compile_args, geometry, rank, dtype, element_type):
+    cell, gdim = geometry
+    rdtype = np.real(dtype(0)).dtype
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(gdim,), dtype=rdtype))
+    element = basix.ufl.element(element_type, cell, 1)
+    dP = ufl.Measure("dP")
+    x = ufl.SpatialCoordinate(domain)
+    V = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+    # With a Lagrange space for test and trial functions, all these forms should evaluate as the
+    # x-coordinate times an indicator for alignment between the argument(s) and the vertices.
+    if rank == 0:
+        F = x[0] * dP
+    elif rank == 1:
+        F = x[0] * ufl.conj(v) * dP
+    else:
+        F = x[0] * u * ufl.conj(v) * dP
+
+    if element.discontinuous:
+        if rank == 0:
+            # No elements involved in assembly.
+            return
+
+        with pytest.raises(TypeError):
+            ffcx.codegeneration.jit.compile_forms(
+                [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+            )
+        return
+
+    (form0,), module, _ = ffcx.codegeneration.jit.compile_forms(
+        [F], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    assert form0.rank == rank
+
+    ffi = module.ffi
+    kernel = getattr(
+        form0.form_integrals[0],
+        f"tabulate_tensor_{dtype().dtype.name}",
+    )
+
+    vertex_count = domain.ufl_coordinate_element().basix_element.points.shape[0]
+
+    for a, b in np.array([(0, 1), (1, 0), (2, 0), (5, -2)], dtype=dtype):
+        # General geometry for simplices of gdim 1,2 and 3.
+        # gdim 1: creates the interval (a, b)
+        # gdim 2: creates the triangle with vertices (a, 0), (b, 0), (0,0)
+        # gdim 3: creates the tetrahedron with vertices (a, 0, 0), (b, 0, 0), (0, 0, 0), (0, 0, 1)
+        coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0, 0, 0, 0, 0, 0, 1], dtype=rdtype)
+
+        for vertex in range(vertex_count):
+            J = np.zeros(vertex_count**2, dtype=dtype)
+            e = np.array([vertex], dtype=np.int32)
+            kernel(
+                ffi.cast(f"{dtype_to_c_type(dtype)} *", J.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+                ffi.cast(f"{dtype_to_c_type(rdtype)} *", coords.ctypes.data),
+                ffi.cast("int *", e.ctypes.data),
+                ffi.NULL,
+                ffi.NULL,
+            )
+            idx = (rank > 0) * vertex + (rank > 1) * vertex * vertex_count
+            assert np.isclose(coords[vertex * 3], J[idx], atol=1e2 * np.finfo(dtype).eps)
+            # Check all other entries are not touched
+            assert np.allclose(np.delete(J, [idx]), 0)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_vertex_mesh(compile_args, dtype):
+    """Test that a mesh with only vertices can be created and used."""
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    cell = basix.CellType.point
+    c_el = basix.ufl.element("Lagrange", cell, 0, shape=(2,), discontinuous=True, dtype=xdtype)
+    msh = ufl.Mesh(c_el)
+
+    el = basix.ufl.element("Lagrange", cell, 0, discontinuous=True, dtype=xdtype)
+    V = ufl.FunctionSpace(msh, el)
+    u = ufl.Coefficient(V)
+    dx = ufl.Measure("dx", domain=msh)
+    Jh = u * dx
+
+    forms = [Jh]
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
+    default_integral = form0.form_integrals[0]
+    J = np.zeros(1, dtype=dtype)
+    coords = np.array([2.0, 3.0, 0.0], dtype=xdtype)
+    coeffs = np.array([-5.2], dtype=dtype)
+    w = np.array(coeffs, dtype=dtype)
+    c = np.array([], dtype=dtype)
+
+    c_type = dtype_to_c_type(dtype)
+    c_xtype = dtype_to_c_type(xdtype)
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type}  *", J.ctypes.data),
+        ffi.cast(f"{c_type}  *", w.ctypes.data),
+        ffi.cast(f"{c_type}  *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    assert np.isclose(J[0], coeffs[0])
 
 
 @pytest.mark.parametrize("dtype", ["float64"])
