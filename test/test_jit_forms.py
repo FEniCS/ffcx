@@ -1495,7 +1495,7 @@ def test_vertex_integral(compile_args, geometry, rank, dtype, element_type):
             # Check all other entries are not touched
             assert np.allclose(np.delete(J, [idx]), 0)
 
-            
+
 @pytest.mark.parametrize(
     "dtype",
     [
