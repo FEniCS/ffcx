@@ -90,4 +90,5 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
         domain=int(domain),
     )
+
     return declaration, implementation
