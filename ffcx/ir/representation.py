@@ -175,10 +175,14 @@ def compute_ir(
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
-        form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)
-        for itg_index, itg_data in enumerate(fd.integral_data):
+        form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)  # type: ignore
+        for itg_index, itg_data in enumerate(fd.integral_data):  # type: ignore
             integral_names[(fd_index, itg_index)] = naming.integral_name(
-                fd.original_form, itg_data.integral_type, fd_index, itg_data.subdomain_id, prefix
+                fd.original_form,  # type: ignore
+                itg_data.integral_type,
+                fd_index,
+                itg_data.subdomain_id,
+                prefix,
             )
 
     irs = [
