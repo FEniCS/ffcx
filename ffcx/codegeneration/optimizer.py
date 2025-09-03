@@ -1,7 +1,6 @@
 """Optimizer."""
 
 from collections import defaultdict
-from typing import Union
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
@@ -99,7 +98,7 @@ def fuse_loops(code: L.Section) -> L.Section:
     return L.Section(code.name, output_code, code.declarations, code.input, code.output)
 
 
-def get_statements(statement: Union[L.Statement, L.StatementList]) -> list[L.LNode]:
+def get_statements(statement: L.Statement | L.StatementList) -> list[L.LNode]:
     """Get statements from a statement list.
 
     Args:

@@ -5,8 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utilities."""
 
-import typing
-
 import numpy as np
 import numpy.typing as npt
 
@@ -16,7 +14,7 @@ except ImportError:
     numba = None
 
 
-def dtype_to_c_type(dtype: typing.Union[npt.DTypeLike, str]) -> str:
+def dtype_to_c_type(dtype: npt.DTypeLike | str) -> str:
     """For a NumPy dtype, return the corresponding C type.
 
     Args:
@@ -42,7 +40,7 @@ def dtype_to_c_type(dtype: typing.Union[npt.DTypeLike, str]) -> str:
         raise RuntimeError(f"Unknown NumPy type for: {dtype}")
 
 
-def dtype_to_scalar_dtype(dtype: typing.Union[npt.DTypeLike, str]) -> np.dtype:
+def dtype_to_scalar_dtype(dtype: npt.DTypeLike | str) -> np.dtype:
     """For a NumPy dtype, return the corresponding real dtype.
 
     Args:

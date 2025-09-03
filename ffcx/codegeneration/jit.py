@@ -16,7 +16,6 @@ import sys
 import sysconfig
 import tempfile
 import time
-import typing
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -153,7 +152,7 @@ def _compilation_signature(cffi_extra_compile_args, cffi_debug):
 def compile_forms(
     forms: list[ufl.Form],
     options: dict = {},
-    cache_dir: typing.Optional[Path] = None,
+    cache_dir: Path | None = None,
     timeout: int = 10,
     cffi_extra_compile_args: list[str] = [],
     cffi_verbose: bool = False,
@@ -232,7 +231,7 @@ def compile_forms(
 def compile_expressions(
     expressions: list[tuple[ufl.Expr, npt.NDArray[np.floating]]],  # type: ignore
     options: dict = {},
-    cache_dir: typing.Optional[Path] = None,
+    cache_dir: Path | None = None,
     timeout: int = 10,
     cffi_extra_compile_args: list[str] = [],
     cffi_verbose: bool = False,

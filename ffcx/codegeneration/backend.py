@@ -7,8 +7,6 @@
 
 from __future__ import annotations
 
-import typing
-
 from ffcx.codegeneration.access import FFCXBackendAccess
 from ffcx.codegeneration.definitions import FFCXBackendDefinitions
 from ffcx.codegeneration.symbols import FFCXBackendSymbols
@@ -18,7 +16,7 @@ from ffcx.ir.representation import ExpressionIR, IntegralIR
 class FFCXBackend:
     """Class collecting all aspects of the FFCx backend."""
 
-    def __init__(self, ir: typing.Union[IntegralIR, ExpressionIR], options):
+    def __init__(self, ir: IntegralIR | ExpressionIR, options):
         """Initialise."""
         coefficient_numbering = ir.expression.coefficient_numbering
         coefficient_offsets = ir.expression.coefficient_offsets

@@ -41,12 +41,10 @@ class UFLData(typing.NamedTuple):
 
 def analyze_ufl_objects(
     ufl_objects: list[
-        typing.Union[
-            ufl.form.Form,
-            basix.ufl._ElementBase,
-            ufl.Mesh,
-            tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]],
-        ]
+        ufl.form.Form
+        | basix.ufl._ElementBase
+        | ufl.Mesh
+        | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
     ],
     scalar_type: npt.DTypeLike,
 ) -> UFLData:
@@ -255,7 +253,7 @@ def _analyze_form(
 
 
 def _has_custom_integrals(
-    o: typing.Union[ufl.integral.Integral, ufl.classes.Form, list, tuple],
+    o: ufl.integral.Integral | ufl.classes.Form | list | tuple,
 ) -> bool:
     """Check for custom integrals."""
     if isinstance(o, ufl.integral.Integral):

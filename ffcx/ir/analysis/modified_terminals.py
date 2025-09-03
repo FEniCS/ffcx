@@ -6,7 +6,6 @@
 """Modified terminals."""
 
 import logging
-import typing
 
 from ufl.classes import (
     Argument,
@@ -41,8 +40,8 @@ class ModifiedTerminal:
         flat_component: int,
         global_derivatives: tuple[int, ...],
         local_derivatives: tuple[int, ...],
-        averaged: typing.Union[None, str],
-        restriction: typing.Union[None, str],
+        averaged: None | str,
+        restriction: None | str,
     ):
         """Initialise.
 

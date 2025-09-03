@@ -26,7 +26,6 @@ Not supported:
 import numbers
 from collections.abc import Sequence
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 import ufl
@@ -864,9 +863,9 @@ class Section(LNode):
         name: str,
         statements: list[LNode],
         declarations: Sequence[Declaration],
-        input: Optional[list[Symbol]] = None,
-        output: Optional[list[Symbol]] = None,
-        annotations: Optional[list[Annotation]] = None,
+        input: list[Symbol] | None = None,
+        output: list[Symbol] | None = None,
+        annotations: list[Annotation] | None = None,
     ):
         """Initialise."""
         self.name = name
