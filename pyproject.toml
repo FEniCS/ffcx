@@ -7,7 +7,7 @@ name = "fenics-ffcx"
 version = "0.10.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "LGPL-3.0-or-later"
 license-files = ["COPYING*"]
 authors = [
