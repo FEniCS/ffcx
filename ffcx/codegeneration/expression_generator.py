@@ -7,7 +7,7 @@
 
 import collections
 import logging
-from itertools import product
+from itertools import pairwise, product
 from typing import Any
 
 import ufl
@@ -224,7 +224,7 @@ class ExpressionGenerator:
         # Check if DOFs in dofrange are equally spaced.
         expand_loop = False
         for bm in blockmap:
-            for a, b in zip(bm[1:-1], bm[2:]):
+            for a, b in pairwise(bm):
                 if b - a != bm[1] - bm[0]:
                     expand_loop = True
                     break

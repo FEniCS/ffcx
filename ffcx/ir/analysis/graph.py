@@ -237,7 +237,7 @@ def _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers
                 ops[i] = None
                 break
         else:
-            if not isinstance(expr, (ufl.classes.MultiIndex, ufl.classes.Label)):
+            if not isinstance(expr, ufl.classes.MultiIndex | ufl.classes.Label):
                 count = len(e2i)
                 e2i[expr] = count
             stack.pop()

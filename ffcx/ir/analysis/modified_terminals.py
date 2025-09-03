@@ -259,7 +259,7 @@ def analyse_modified_terminal(expr):
     reference_value = reference_value or False
 
     # Consistency check
-    if isinstance(t, (SpatialCoordinate, Jacobian)):
+    if isinstance(t, SpatialCoordinate | Jacobian):
         pass
     else:
         if local_derivatives and not reference_value:

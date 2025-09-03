@@ -260,7 +260,7 @@ def _has_custom_integrals(
         return o.integral_type() in ufl.custom_integral_types
     elif isinstance(o, ufl.classes.Form):
         return any(_has_custom_integrals(itg) for itg in o.integrals())
-    elif isinstance(o, (list, tuple)):
+    elif isinstance(o, list | tuple):
         return any(_has_custom_integrals(itg) for itg in o)
     else:
         raise NotImplementedError

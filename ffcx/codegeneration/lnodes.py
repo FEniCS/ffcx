@@ -284,7 +284,7 @@ class LiteralFloat(LExprTerminal):
 
     def __init__(self, value):
         """Initialise."""
-        assert isinstance(value, (float, complex))
+        assert isinstance(value, float | complex)
         self.value = value
         if isinstance(value, complex):
             self.dtype = DataType.SCALAR
@@ -311,7 +311,7 @@ class LiteralInt(LExprTerminal):
 
     def __init__(self, value):
         """Initialise."""
-        assert isinstance(value, (int, np.number))
+        assert isinstance(value, int | np.number)
         self.value = value
         self.dtype = DataType.INT
 
@@ -701,7 +701,7 @@ class ArrayAccess(LExprOperator):
             raise ValueError(f"Unexpected array type {type(array).__name__}")
 
         # Allow expressions or literals as indices
-        if not isinstance(indices, (list, tuple)):
+        if not isinstance(indices, list | tuple):
             indices = (indices,)
         self.indices = tuple(as_lexpr(i) for i in indices)
 
@@ -927,7 +927,7 @@ def commented_code_list(code, comments):
         code = [code]
     assert isinstance(code, list)
     if code:
-        if not isinstance(comments, (list, tuple)):
+        if not isinstance(comments, list | tuple):
             comments = [comments]
         comments = [Comment(c) for c in comments]
         code = comments + code
@@ -988,7 +988,7 @@ class ArrayDecl(Declaration):
             assert sizes is not None
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_lexpr.
-        if isinstance(values, (list, tuple)):
+        if isinstance(values, list | tuple):
             self.values = np.asarray(values)
         else:
             self.values = values
