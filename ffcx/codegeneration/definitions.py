@@ -6,7 +6,6 @@
 """FFCx/UFC specific variable definitions."""
 
 import logging
-from typing import Union
 
 import ufl
 
@@ -92,7 +91,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for a terminal."""
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
@@ -117,7 +116,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -175,7 +174,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
@@ -230,7 +229,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -256,7 +255,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
@@ -266,6 +265,6 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for pass through terminals."""
         return []

@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import logging
-import typing
 
 import numpy as np
 
@@ -29,7 +28,7 @@ def generator(ir: FormIR, options):
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
 
-    d: dict[str, typing.Union[int, str]] = {}
+    d: dict[str, int | str] = {}
     d["factory_name"] = ir.name
     d["name_from_uflfile"] = ir.name_from_uflfile
     d["signature"] = f'"{ir.signature}"'

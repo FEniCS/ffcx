@@ -47,15 +47,15 @@ class UniqueTableReferenceT(typing.NamedTuple):
 
     name: str
     values: npt.NDArray[np.float64]
-    offset: typing.Optional[int]
-    block_size: typing.Optional[int]
-    ttype: typing.Optional[str]
+    offset: int | None
+    block_size: int | None
+    ttype: str | None
     is_piecewise: bool
     is_uniform: bool
     is_permuted: bool
     has_tensor_factorisation: bool
-    tensor_factors: typing.Optional[list[typing.Any]]
-    tensor_permutation: typing.Optional[np.typing.NDArray[np.int32]]
+    tensor_factors: list[typing.Any] | None
+    tensor_permutation: np.typing.NDArray[np.int32] | None
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -212,7 +212,7 @@ def generate_psi_table_name(
     return name
 
 
-def get_modified_terminal_element(mt) -> typing.Optional[ModifiedTerminalElement]:
+def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
     """Get modified terminal element."""
     gd = mt.global_derivatives
     ld = mt.local_derivatives
@@ -323,7 +323,7 @@ def build_optimized_tables(
     is_mixed_dim: bool,
     rtol: float = default_rtol,
     atol: float = default_atol,
-) -> dict[typing.Union[str, ModifiedTerminal], UniqueTableReferenceT]:
+) -> dict[str | ModifiedTerminal, UniqueTableReferenceT]:
     """Build the element tables needed for a list of modified terminals.
 
     Args:
@@ -358,7 +358,7 @@ def build_optimized_tables(
         set(ufl.algorithms.analysis.extract_sub_elements(all_elements))
     )
     element_numbers = {element: i for i, element in enumerate(unique_elements)}
-    mt_tables: dict[typing.Union[str, ModifiedTerminal], UniqueTableReferenceT] = {}
+    mt_tables: dict[str | ModifiedTerminal, UniqueTableReferenceT] = {}
 
     _existing_tables = existing_tables.copy()
 
@@ -556,7 +556,7 @@ def build_optimized_tables(
         if use_sum_factorization and (not quadrature_rule.has_tensor_factors):
             raise RuntimeError("Sum factorization not available for this quadrature rule.")
 
-        tensor_factors: typing.Optional[list[UniqueTableReferenceT]] = None
+        tensor_factors: list[UniqueTableReferenceT] | None = None
         tensor_perm = None
         if (
             use_sum_factorization

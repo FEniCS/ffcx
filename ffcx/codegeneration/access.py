@@ -7,7 +7,6 @@
 
 import logging
 import warnings
-from typing import Optional
 
 import basix.ufl
 import ufl
@@ -107,8 +106,8 @@ class FFCXBackendAccess:
     def constant(
         self,
         mt: ModifiedTerminal,
-        tabledata: Optional[UniqueTableReferenceT],
-        quadrature_rule: Optional[QuadratureRule],
+        tabledata: UniqueTableReferenceT | None,
+        quadrature_rule: QuadratureRule | None,
     ):
         """Access a constant."""
         # Access to a constant is handled trivially, directly through constants symbol

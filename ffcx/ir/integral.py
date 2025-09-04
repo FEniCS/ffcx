@@ -65,9 +65,7 @@ class BlockDataT(typing.NamedTuple):
     factor_indices_comp_indices: list[tuple[int, int]]  # list of (factor index, component index)
     all_factors_piecewise: bool  # True if all factors for this block are piecewise
     unames: tuple[str, ...]  # list of unique FE table names for each block rank
-    restrictions: tuple[
-        typing.Union[str, None], ...
-    ]  # restriction "+" | "-" | None for each block rank
+    restrictions: tuple[str | None, ...]  # restriction "+" | "-" | None for each block rank
     transposed: bool  # block is the transpose of another
     is_uniform: bool
     ma_data: tuple[ModifiedArgumentDataT, ...]  # used in "full", "safe" and "partial"
