@@ -469,6 +469,10 @@ class IntegralGenerator:
                 index = create_dof_index(table_ref, symbol)
                 B_indices.append(index)
 
+            diagonalise = len(A_shape) == 1 and block_rank == 2
+            if diagonalise:
+                B_indices = [B_indices[0], B_indices[0]]
+
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
                 raise RuntimeError(
@@ -521,17 +525,12 @@ class IntegralGenerator:
 
             # Fetch code to access modified arguments
             arg_factors, table = self.get_arg_factors(
-                blockdata, block_rank, quadrature_rule, domain, iq, B_indices
-            )
+                blockdata, block_rank, quadrature_rule, domain, iq, B_indices)
             tables += table
             # Define B_rhs = fw * arg_factors
             insert_rank = block_rank
-            if len(A_shape) == 1:
-                # Diagonalized integral
-                if len(arg_factors) == 2:
-                    arg_factors = [arg_factors[0], arg_factors[0]]
-                    B_indices = [B_indices[0]]
-                    insert_rank = 1
+            if diagonalise:
+                insert_rank = 1
             B_rhs = L.float_product([fw] + arg_factors)
 
             A_indices = []
