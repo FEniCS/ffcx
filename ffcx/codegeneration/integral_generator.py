@@ -524,19 +524,18 @@ class IntegralGenerator:
                 blockdata, block_rank, quadrature_rule, domain, iq, B_indices
             )
             tables += table
-
             # Define B_rhs = fw * arg_factors
+            insert_rank = block_rank
             if len(A_shape) == 1:
                 # Diagonalized integral
                 if len(arg_factors) == 2:
                     arg_factors = [arg_factors[0], arg_factors[0]]
                     B_indices = [B_indices[0]]
-                    block_rank = 1
+                    insert_rank = 1
             B_rhs = L.float_product([fw] + arg_factors)
 
-
             A_indices = []
-            for i in range(block_rank):
+            for i in range(insert_rank):
                 index = B_indices[i]
                 tabledata = blockdata.ma_data[i].tabledata
                 offset = tabledata.offset
