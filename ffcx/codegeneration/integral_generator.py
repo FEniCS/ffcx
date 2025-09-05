@@ -525,7 +525,8 @@ class IntegralGenerator:
 
             # Fetch code to access modified arguments
             arg_factors, table = self.get_arg_factors(
-                blockdata, block_rank, quadrature_rule, domain, iq, B_indices)
+                blockdata, block_rank, quadrature_rule, domain, iq, B_indices
+            )
             tables += table
             # Define B_rhs = fw * arg_factors
             insert_rank = block_rank

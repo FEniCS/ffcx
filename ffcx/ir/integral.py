@@ -115,12 +115,6 @@ def compute_integral_ir(
             # Remove QuadratureWeight terminals from expression and replace with 1.0
             expression = replace_quadratureweight(expression)
 
-            arguments = ufl.algorithms.analysis.extract_arguments(expression)
-            if p["diagonalize"] and len(arguments) == 2:
-                assert arguments[0].ufl_function_space() == arguments[1].ufl_function_space(), (
-                    "Can only diagonalize forms with identical arguments.")
-                expression = ufl.replace(expression, {arguments[1]: arguments[0]})
-
             # Build initial scalar list-based graph representation
             S = build_scalar_graph(expression)
 

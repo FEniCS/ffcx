@@ -1850,33 +1850,12 @@ def test_ridge_integral(compile_args, dtype, permutation):
     np.testing.assert_allclose(b_ref, b, atol=1e-10)
 
 
-
 @pytest.mark.parametrize(
-    "dtype,expected_result",
+    "dtype",
     [
-        (
-            "float64",
-            np.array(
-                [
-                    [0.5, -1 / 6, -1 / 6, -1 / 6],
-                    [-1 / 6, 1 / 6, 0.0, 0.0],
-                    [-1 / 6, 0.0, 1 / 6, 0.0],
-                    [-1 / 6, 0.0, 0.0, 1 / 6],
-                ],
-                dtype=np.float64,
-            ),
-        ),
+        "float64",
         pytest.param(
             "complex128",
-            np.array(
-                [
-                    [0.5 + 0j, -1 / 6 + 0j, -1 / 6 + 0j, -1 / 6 + 0j],
-                    [-1 / 6 + 0j, 1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j],
-                    [-1 / 6 + 0j, 0.0 + 0j, 1 / 6 + 0j, 0.0 + 0j],
-                    [-1 / 6 + 0j, 0.0 + 0j, 0.0 + 0j, 1 / 6 + 0j],
-                ],
-                dtype=np.complex128,
-            ),
             marks=pytest.mark.xfail(
                 sys.platform.startswith("win32"),
                 raises=NotImplementedError,
@@ -1885,15 +1864,22 @@ def test_ridge_integral(compile_args, dtype, permutation):
         ),
     ],
 )
-def test_diagonal_form(dtype, expected_result, compile_args):
+def test_diagonal_form(dtype, compile_args):
     element = basix.ufl.element("Lagrange", "tetrahedron", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
     space = ufl.FunctionSpace(domain, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
-    a = ufl.inner(u, v) * ufl.dx
+    a = (
+        ufl.inner(u.dx(0), v.dx(2)) * ufl.dx
+        - ufl.inner(u, v) * ufl.dx
+        + ufl.inner(u.dx(0), v) * ufl.dx
+    )
     forms = [a]
     compiled_diag_forms, diag_module, _ = ffcx.codegeneration.jit.compile_forms(
-        forms, options={"scalar_type": dtype, "diagonalize": True}, visualise=True, cffi_extra_compile_args=compile_args
+        forms,
+        options={"scalar_type": dtype, "diagonalize": True},
+        visualise=True,
+        cffi_extra_compile_args=compile_args,
     )
 
     for _, compiled_f in zip(forms, compiled_diag_forms):
@@ -1921,7 +1907,6 @@ def test_diagonal_form(dtype, expected_result, compile_args):
         ffi.NULL,
     )
 
-
     compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
         forms, options={"scalar_type": dtype}, visualise=True, cffi_extra_compile_args=compile_args
     )
@@ -1938,6 +1923,4 @@ def test_diagonal_form(dtype, expected_result, compile_args):
         ffi.NULL,
         ffi.NULL,
     )
-
-    breakpoint()
-    assert np.allclose(A, expected_result)
+    np.testing.assert_allclose(A_diag, np.diag(A))
