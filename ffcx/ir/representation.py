@@ -121,7 +121,7 @@ def compute_ir(
     analysis: UFLData,
     object_names: dict[int, str],
     prefix: str,
-    options: dict[str, npt.DTypeLike | int | float],
+    options: dict[str, npt.DTypeLike | int | float | bool],
     visualise: bool,
 ) -> DataIR:
     """Compute intermediate representation."""
@@ -162,7 +162,8 @@ def compute_ir(
     integral_domains = {
         i.expression.name: set(j[0] for j in i.expression.integrand.keys()) for a in irs for i in a
     }
-
+    diagonalise = options["diagonalise"]
+    assert isinstance(diagonalise, bool)
     ir_forms = [
         _compute_form_ir(
             fd,
@@ -172,7 +173,7 @@ def compute_ir(
             integral_names,
             integral_domains,
             object_names,
-            options["diagonalize"],
+            diagonalise,
         )
         for (i, fd) in enumerate(analysis.form_data)
     ]
@@ -238,12 +239,12 @@ def _compute_integral_ir(
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
         }
-        diagonalize = False
-        if form_data.rank == 2 and options["diagonalize"]:
-            diagonalize = True
+        diagonalise = False
+        if form_data.rank == 2 and options["diagonalise"]:
+            diagonalise = True
             ir["rank"] = 1
             assert form_data.argument_elements[0] == form_data.argument_elements[1], (
-                "Can only diagonalize forms with identical arguments."
+                "Can only diagonalise forms with identical arguments."
             )
 
         # Get element space dimensions
@@ -265,7 +266,7 @@ def _compute_integral_ir(
             expression_ir["tensor_shape"] = argument_dimensions
 
         # Modify output tensor shape if diagonalizing
-        if diagonalize:
+        if diagonalise:
             expression_ir["tensor_shape"] = expression_ir["tensor_shape"][:1]
 
         integral_type = itg_data.integral_type
@@ -425,7 +426,7 @@ def _compute_form_ir(
     integral_names,
     integral_domains,
     object_names,
-    diagonalize: bool,
+    diagonalise: bool,
 ) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
@@ -438,9 +439,9 @@ def _compute_form_ir(
 
     ir["signature"] = form_data.original_form.signature()
     args = form_data.original_form.arguments()
-    if diagonalize and len(args) == 2:
+    if diagonalise and len(args) == 2:
         assert args[0].ufl_function_space() == args[1].ufl_function_space(), (
-            "Can only diagonalize forms with identical arguments."
+            "Can only diagonalise forms with identical arguments."
         )
         ir["rank"] = 1
     else:

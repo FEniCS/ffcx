@@ -188,7 +188,7 @@ def compute_integral_ir(
                 visualise_graph(S, "S.pdf")
 
             # Compute factorization of arguments
-            if p["diagonalize"]:
+            if p["diagonalise"]:
                 rank = 1
             else:
                 rank = len(argument_shape)
@@ -241,7 +241,7 @@ def compute_integral_ir(
             block_contributions = collections.defaultdict(list)
             for ma_indices, fi_ci in sorted(argument_factorization.items()):
                 # Get a bunch of information about this term
-                if not p["diagonalize"]:
+                if not p["diagonalise"]:
                     assert rank == len(ma_indices)
 
                 trs = tuple(F.nodes[ai]["tr"] for ai in ma_indices)
