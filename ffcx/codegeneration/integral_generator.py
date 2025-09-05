@@ -531,6 +531,7 @@ class IntegralGenerator:
             insert_rank = block_rank
             if diagonalise:
                 insert_rank = 1
+                B_indices = [B_indices[0]]
             B_rhs = L.float_product([fw] + arg_factors)
 
             A_indices = []
