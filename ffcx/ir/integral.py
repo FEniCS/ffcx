@@ -115,6 +115,12 @@ def compute_integral_ir(
             # Remove QuadratureWeight terminals from expression and replace with 1.0
             expression = replace_quadratureweight(expression)
 
+            arguments = ufl.algorithms.analysis.extract_arguments(expression)
+            if p["diagonalize"] and len(arguments) == 2:
+                assert arguments[0].ufl_function_space() == arguments[1].ufl_function_space(), (
+                    "Can only diagonalize forms with identical arguments.")
+                expression = ufl.replace(expression, {arguments[1]: arguments[0]})
+
             # Build initial scalar list-based graph representation
             S = build_scalar_graph(expression)
 
@@ -188,7 +194,10 @@ def compute_integral_ir(
                 visualise_graph(S, "S.pdf")
 
             # Compute factorization of arguments
-            rank = len(argument_shape)
+            if p["diagonalize"]:
+                rank = 1
+            else:
+                rank = len(argument_shape)
             F = compute_argument_factorization(S, rank)
 
             # Get the 'target' nodes that are factors of arguments, and insert in dict
@@ -238,9 +247,10 @@ def compute_integral_ir(
             block_contributions = collections.defaultdict(list)
             for ma_indices, fi_ci in sorted(argument_factorization.items()):
                 # Get a bunch of information about this term
-                assert rank == len(ma_indices)
-                trs = tuple(F.nodes[ai]["tr"] for ai in ma_indices)
+                if not p["diagonalize"]:
+                    assert rank == len(ma_indices)
 
+                trs = tuple(F.nodes[ai]["tr"] for ai in ma_indices)
                 unames = tuple(tr.name for tr in trs)
                 ttypes = tuple(tr.ttype for tr in trs)
                 assert not any(tt == "zeros" for tt in ttypes)

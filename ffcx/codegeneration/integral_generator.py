@@ -459,6 +459,8 @@ class IntegralGenerator:
         iq_symbol = self.backend.symbols.quadrature_loop_index
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
 
+        A_shape = self.ir.expression.tensor_shape
+
         for blockdata in blocklist:
             B_indices = []
             for i in range(block_rank):
@@ -524,7 +526,14 @@ class IntegralGenerator:
             tables += table
 
             # Define B_rhs = fw * arg_factors
+            if len(A_shape) == 1:
+                # Diagonalized integral
+                if len(arg_factors) == 2:
+                    arg_factors = [arg_factors[0], arg_factors[0]]
+                    B_indices = [B_indices[0]]
+                    block_rank = 1
             B_rhs = L.float_product([fw] + arg_factors)
+
 
             A_indices = []
             for i in range(block_rank):
@@ -547,7 +556,6 @@ class IntegralGenerator:
         body: list[L.LNode] = []
 
         A = self.backend.symbols.element_tensor
-        A_shape = self.ir.expression.tensor_shape
         for indices in keep:
             multi_index = L.MultiIndex(list(indices), A_shape)
             for expression in keep[indices]:

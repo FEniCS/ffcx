@@ -46,6 +46,7 @@ FFCX_DEFAULT_OPTIONS = {
         "logger verbosity, follows standard library levels, i.e. INFO=20, DEBUG=10, etc.",
         None,
     ),
+    "diagonalize": (bool, False, "diagonalize forms with two identical arguments.", None),
 }
 
 

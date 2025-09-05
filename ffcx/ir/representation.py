@@ -172,6 +172,7 @@ def compute_ir(
             integral_names,
             integral_domains,
             object_names,
+            options["diagonalize"]
         )
         for (i, fd) in enumerate(analysis.form_data)
     ]
@@ -237,6 +238,11 @@ def _compute_integral_ir(
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
         }
+        diagonalize = False
+        if form_data.rank == 2 and options["diagonalize"]:
+            diagonalize = True
+            ir["rank"] = 1
+            assert form_data.argument_elements[0] == form_data.argument_elements[1], "Can only diagonalize forms with identical arguments."
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
@@ -255,6 +261,10 @@ def _compute_integral_ir(
             expression_ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
         else:
             expression_ir["tensor_shape"] = argument_dimensions
+
+        # Modify output tensor shape if diagonalizing
+        if diagonalize:
+            expression_ir["tensor_shape"] = expression_ir["tensor_shape"][:1]
 
         integral_type = itg_data.integral_type
 
@@ -413,6 +423,7 @@ def _compute_form_ir(
     integral_names,
     integral_domains,
     object_names,
+    diagonalize: bool
 ) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
@@ -424,8 +435,13 @@ def _compute_form_ir(
     ir["name"] = form_names[form_id]
 
     ir["signature"] = form_data.original_form.signature()
+    args = form_data.original_form.arguments()
+    if diagonalize and len(args) == 2:
+        assert args[0].ufl_function_space() == args[1].ufl_function_space(), "Can only diagonalize forms with identical arguments."
+        ir["rank"] = 1
+    else:
+        ir["rank"] = len(form_data.original_form.arguments())
 
-    ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
 
     ir["coefficient_names"] = [
