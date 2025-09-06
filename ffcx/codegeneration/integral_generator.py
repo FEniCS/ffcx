@@ -478,7 +478,16 @@ class IntegralGenerator:
 
             if self.ir.part == TensorPart.diagonal and block_rank == 2:
                 assert len(A_shape) == 1
-                B_indices = [B_indices[0], B_indices[0]]
+                # If off-diagonal in mixed element, skip contribution
+                if B_indices[0].size() != B_indices[1].size():
+                    B_indices = []
+                else:
+                    B_indices = [B_indices[0], B_indices[0]]
+
+                # If on an off-diagonal in mixed element matrix, skip contribution
+                if len(B_indices) == 0 and block_rank == 2:
+                    continue
+            
 
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
