@@ -32,7 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.ir.integral import CommonExpressionIR, compute_integral_ir
+from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
@@ -97,6 +97,7 @@ class IntegralIR(typing.NamedTuple):
     expression: CommonExpressionIR
     rank: int
     enabled_coefficients: list[bool]
+    part: TensorPart
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -162,8 +163,7 @@ def compute_ir(
     integral_domains = {
         i.expression.name: set(j[0] for j in i.expression.integrand.keys()) for a in irs for i in a
     }
-    diagonalise = options["diagonalise"]
-    assert isinstance(diagonalise, bool)
+    diagonalise = TensorPart.from_str(options["part"])
     ir_forms = [
         _compute_form_ir(
             fd,
@@ -238,9 +238,10 @@ def _compute_integral_ir(
         ir = {
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
+            "part": TensorPart.from_str(options["part"]),
         }
         diagonalise = False
-        if form_data.rank == 2 and options["diagonalise"]:
+        if form_data.rank == 2 and ir["part"] == TensorPart.diagonal:
             diagonalise = True
             ir["rank"] = 1
             assert form_data.argument_elements[0] == form_data.argument_elements[1], (
@@ -426,7 +427,7 @@ def _compute_form_ir(
     integral_names,
     integral_domains,
     object_names,
-    diagonalise: bool,
+    tensor_part: TensorPart,
 ) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
@@ -439,7 +440,7 @@ def _compute_form_ir(
 
     ir["signature"] = form_data.original_form.signature()
     args = form_data.original_form.arguments()
-    if diagonalise and len(args) == 2:
+    if tensor_part == TensorPart.diagonal and len(args) == 2:
         assert args[0].ufl_function_space() == args[1].ufl_function_space(), (
             "Can only diagonalise forms with identical arguments."
         )

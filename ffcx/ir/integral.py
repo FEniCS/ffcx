@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2020 Martin Sandve Alnæs and Michal Habera
+# Copyright (C) 2013-2025 Martin Sandve Alnæs, Michal Habera and Jørgen S. Dokken
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -9,6 +9,7 @@ import collections
 import itertools
 import logging
 import typing
+from enum import Enum
 
 import basix
 import numpy as np
@@ -31,6 +32,36 @@ from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
+
+
+class TensorPart(Enum):
+    """What part of the tensor to assemble."""
+
+    full = 1
+    diagonal = 4
+
+    @classmethod
+    def from_str(cls, value: str):
+        """Workaround for string enum prior to Python 3.11."""
+        if value == "full":
+            return cls.full
+        elif value == "diagonal":
+            return cls.diagonal
+        else:
+            raise ValueError(f"Unknown tensor part: {value}")
+
+    def __str__(self) -> str:
+        """Get string value."""
+        if self == TensorPart.full:
+            return "full"
+        elif self == TensorPart.diagonal:
+            return "diagonal"
+        else:
+            raise ValueError(f"Unknown cell type: {self}")
+
+    def __int__(self) -> int:
+        """Get integer value."""
+        return self.value
 
 
 class CommonExpressionIR(typing.NamedTuple):
@@ -188,7 +219,8 @@ def compute_integral_ir(
                 visualise_graph(S, "S.pdf")
 
             # Compute factorization of arguments
-            if p["diagonalise"]:
+            if p["part"] == TensorPart.diagonal:
+                assert len(argument_shape) == 2, "Can only diagonalize bi-linear forms."
                 rank = 1
             else:
                 rank = len(argument_shape)
@@ -241,7 +273,7 @@ def compute_integral_ir(
             block_contributions = collections.defaultdict(list)
             for ma_indices, fi_ci in sorted(argument_factorization.items()):
                 # Get a bunch of information about this term
-                if not p["diagonalise"]:
+                if TensorPart.from_str(p["part"]) != TensorPart.diagonal:
                     assert rank == len(ma_indices)
 
                 trs = tuple(F.nodes[ai]["tr"] for ai in ma_indices)

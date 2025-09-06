@@ -20,7 +20,7 @@ from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import optimize
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.integral import BlockDataT
+from ffcx.ir.integral import BlockDataT, TensorPart
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
@@ -362,7 +362,11 @@ class IntegralGenerator:
         definitions = optimize(definitions, quadrature_rule)
         return definitions, intermediates
 
-    def generate_dofblock_partition(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
+    def generate_dofblock_partition(
+        self,
+        quadrature_rule: QuadratureRule,
+        domain: basix.CellType,
+    ):
         """Generate a dofblock partition."""
         block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
             "block_contributions"
@@ -391,7 +395,10 @@ class IntegralGenerator:
         intermediates = []
         for blockmap in block_groups:
             block_quadparts, intermediate = self.generate_block_parts(
-                quadrature_rule, domain, blockmap, block_groups[blockmap]
+                quadrature_rule,
+                domain,
+                blockmap,
+                block_groups[blockmap],
             )
             intermediates += intermediate
 
@@ -469,8 +476,10 @@ class IntegralGenerator:
                 index = create_dof_index(table_ref, symbol)
                 B_indices.append(index)
 
-            diagonalise = len(A_shape) == 1 and block_rank == 2
-            if diagonalise:
+            if self.ir.part == TensorPart.diagonal:
+                assert len(A_shape) == 1 and block_rank == 2, (
+                    "Can only diagonalize bi-linear forms."
+                )
                 B_indices = [B_indices[0], B_indices[0]]
 
             ttypes = blockdata.ttypes
@@ -530,7 +539,7 @@ class IntegralGenerator:
             tables += table
             # Define B_rhs = fw * arg_factors
             insert_rank = block_rank
-            if diagonalise:
+            if self.ir.part == TensorPart.diagonal:
                 insert_rank = 1
                 B_indices = [B_indices[0]]
             B_rhs = L.float_product([fw] + arg_factors)
