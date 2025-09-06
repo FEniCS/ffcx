@@ -487,7 +487,6 @@ class IntegralGenerator:
                 # If on an off-diagonal in mixed element matrix, skip contribution
                 if len(B_indices) == 0 and block_rank == 2:
                     continue
-            
 
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:

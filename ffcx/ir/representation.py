@@ -163,7 +163,7 @@ def compute_ir(
     integral_domains = {
         i.expression.name: set(j[0] for j in i.expression.integrand.keys()) for a in irs for i in a
     }
-    diagonalise = TensorPart.from_str(options["part"])
+    diagonalise = TensorPart.from_str(str(options["part"]))
     ir_forms = [
         _compute_form_ir(
             fd,
