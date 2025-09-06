@@ -1942,8 +1942,8 @@ def test_diagonal_form(dtype, compile_args):
 def test_diagonal_mixed_form(dtype, compile_args):
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
 
-    element_u = basix.ufl.element("Lagrange", "tetrahedron", 2, shape=(3,))
-    element_p = basix.ufl.element("Lagrange", "tetrahedron", 1)
+    element_u = basix.ufl.element("Lagrange", "tetrahedron", 3, shape=(3,))
+    element_p = basix.ufl.element("Lagrange", "tetrahedron", 2)
     element = basix.ufl.mixed_element([element_u, element_p])
     space = ufl.FunctionSpace(domain, element)
     compile_args = [
@@ -1952,7 +1952,10 @@ def test_diagonal_mixed_form(dtype, compile_args):
     u, p = ufl.TrialFunctions(space)
     v, q = ufl.TestFunctions(space)
     a = (
-        ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(p, ufl.div(v)) + ufl.inner(ufl.div(u), q)
+        ufl.inner(ufl.grad(u), ufl.grad(v))
+        - ufl.inner(p, ufl.div(v))
+        + ufl.inner(ufl.div(u), q)
+        + ufl.inner(p.dx(0), q.dx(1))
     ) * ufl.dx
     forms = [a]
     compiled_diag_forms, diag_module, _ = ffcx.codegeneration.jit.compile_forms(
@@ -1965,8 +1968,8 @@ def test_diagonal_mixed_form(dtype, compile_args):
         assert compiled_f.rank == 1
     diag_form0 = compiled_diag_forms[0].form_integrals[0]
 
-    A_diag = np.zeros((34,), dtype=dtype)
-    A = np.zeros((34, 34), dtype=dtype)
+    A_diag = np.zeros((element.dim,), dtype=dtype)
+    A = np.zeros((element.dim, element.dim), dtype=dtype)
     w = np.array([], dtype=dtype)
     c = np.array([], dtype=dtype)
 
