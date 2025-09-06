@@ -476,10 +476,8 @@ class IntegralGenerator:
                 index = create_dof_index(table_ref, symbol)
                 B_indices.append(index)
 
-            if self.ir.part == TensorPart.diagonal:
-                assert len(A_shape) == 1 and block_rank == 2, (
-                    "Can only diagonalize bi-linear forms."
-                )
+            if self.ir.part == TensorPart.diagonal and block_rank == 2:
+                assert len(A_shape) == 1
                 B_indices = [B_indices[0], B_indices[0]]
 
             ttypes = blockdata.ttypes
