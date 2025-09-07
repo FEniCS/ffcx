@@ -150,7 +150,7 @@ def _compilation_signature(cffi_extra_compile_args, cffi_debug):
 
 
 def compile_forms(
-    forms: list[ufl.Form | ufl.ZeroBaseForm],
+    forms: list[ufl.Form],
     options: dict = {},
     cache_dir: Path | None = None,
     timeout: int = 10,
@@ -192,7 +192,7 @@ def compile_forms(
                         diagonal_form += blocked_form[j][j]
                 if diagonal_form == 0:
                     raise RuntimeError("Diagonal form seems to be zero.")
-                forms[i] = diagonal_form
+                forms[i] = diagonal_form  # type: ignore
 
     # Get a signature for these forms
     module_name = "libffcx_forms_" + ffcx.naming.compute_signature(
