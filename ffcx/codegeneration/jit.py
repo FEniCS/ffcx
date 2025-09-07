@@ -186,7 +186,7 @@ def compile_forms(
                 if isinstance(blocked_form, ufl.form.Form):
                     # If there are no sub-elements, continue
                     continue
-                diagonal_form = 0
+                diagonal_form = ufl.ZeroBaseForm(())
                 for j in range(len(blocked_form)):
                     if blocked_form[j][j] is not None:
                         diagonal_form += blocked_form[j][j]
