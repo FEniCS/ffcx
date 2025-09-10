@@ -391,7 +391,7 @@ def test_subdomains(compile_args):
     form3 = compiled_forms[3]
     offsets = form3.form_integral_offsets
     assert offsets[cell + 1] - offsets[cell] == 0
-    exf = module.lib.exterior_facet
+    exf = module.lib.facet
     ids = [form3.form_integral_ids[j] for j in range(offsets[exf], offsets[exf + 1])]
     assert ids[0] == 0 and ids[1] == 210
 
@@ -1028,7 +1028,7 @@ def test_facet_vertex_quadrature(compile_args):
     solutions = []
     for form in compiled_forms:
         offsets = form.form_integral_offsets
-        exf = module.lib.exterior_facet
+        exf = module.lib.facet
         assert offsets[exf + 1] - offsets[exf] == 1
 
         default_integral = form.form_integrals[offsets[exf]]
@@ -1311,7 +1311,7 @@ def test_ds_prism(compile_args, dtype):
 
     offsets = form0.form_integral_offsets
     cell = module.lib.cell
-    exterior_facet = module.lib.exterior_facet
+    exterior_facet = module.lib.facet
     interior_facet = module.lib.interior_facet
     assert offsets[cell + 1] - offsets[cell] == 0
     assert offsets[exterior_facet + 1] - offsets[exterior_facet] == 2

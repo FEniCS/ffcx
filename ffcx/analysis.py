@@ -93,8 +93,8 @@ def analyze_ufl_objects(
 
     form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
     for data in form_data:
-        elements += data.unique_sub_elements  # type: ignore
-        coordinate_elements += data.coordinate_elements  # type: ignore
+        elements += data.unique_sub_elements
+        coordinate_elements += data.coordinate_elements
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
@@ -190,7 +190,7 @@ def _analyze_form(
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
-    for id, integral_data in enumerate(form_data.integral_data):  # type: ignore
+    for id, integral_data in enumerate(form_data.integral_data):
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
         # (but possibly different metadata).

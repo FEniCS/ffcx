@@ -26,9 +26,5 @@ class FFCXBackend:
         self.symbols = FFCXBackendSymbols(
             coefficient_numbering, coefficient_offsets, original_constant_offsets
         )
-        self.access = FFCXBackendAccess(
-            ir.expression.entity_type, ir.expression.integral_type, self.symbols, options
-        )
-        self.definitions = FFCXBackendDefinitions(
-            ir.expression.entity_type, ir.expression.integral_type, self.access, options
-        )
+        self.access = FFCXBackendAccess(ir.expression.integral_type, self.symbols, options)
+        self.definitions = FFCXBackendDefinitions(ir.expression.integral_type, self.access, options)

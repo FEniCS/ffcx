@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2017 Martin Sandve Alnæs
+# Copyright (C) 2013-2025 Martin Sandve Alnæs and Jørgen S. Dokken
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -13,7 +13,7 @@ import numpy as np
 import numpy.typing as npt
 import ufl
 
-from ffcx.definitions import entity_types
+from ffcx.definitions import IntegralType
 from ffcx.element_interface import basix_index
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.representationutils import (
@@ -80,12 +80,11 @@ def clamp_table_small_numbers(
 
 
 def get_ffcx_table_values(
-    points,
-    cell,
-    integral_type,
-    element,
-    avg,
-    entity_type: entity_types,
+    points: npt.NDArray[np.floating],
+    cell: ufl.Cell,
+    integral_type: IntegralType,
+    element: basix.ufl._ElementBase,
+    avg: typing.Literal["cell", "facet", None],
     derivative_counts,
     flat_component,
     codim,
@@ -97,18 +96,14 @@ def get_ffcx_table_values(
     """
     deriv_order = sum(derivative_counts)
 
-    if integral_type in ufl.custom_integral_types:
-        # Use quadrature points on cell for analysis in custom integral types
-        integral_type = "cell"
-        assert not avg
-
-    if integral_type == "expression":
-        # FFCx tables for expression are generated as either interior cell points
-        # or points on a facet
-        if entity_type == "cell":
-            integral_type = "cell"
-        else:
-            integral_type = "exterior_facet"
+    match integral_type:
+        case IntegralType(is_custom=True):
+            assert integral_type.codim == 0
+            integral_type = IntegralType(codim=0)
+            assert not avg
+        case IntegralType(is_expression=True):
+            assert integral_type.codim in (0, 1)
+            assert integral_type.num_neighbours == 1
 
     if avg in ("cell", "facet"):
         # Redefine points to compute average tables
@@ -123,17 +118,16 @@ def get_ffcx_table_values(
         # Doesn't matter if it's exterior or interior facet integral,
         # just need a valid integral type to create quadrature rule
         if avg == "cell":
-            integral_type = "cell"
+            integral_type = IntegralType(codim=0)
         elif avg == "facet":
-            integral_type = "exterior_facet"
-
+            integral_type = IntegralType(codim=1)
         if isinstance(element, basix.ufl._QuadratureElement):
             points = element._points
             weights = element._weights
         else:
             # Make quadrature rule and get points and weights
             points, weights = create_quadrature_points_and_weights(
-                integral_type, cell, element.embedded_superdegree(), "default", [element]
+                integral_type, cell, element.embedded_superdegree, "default", [element]
             )
 
     # Tabulate table of basis functions and derivatives in points for each entity
@@ -179,8 +173,8 @@ def get_ffcx_table_values(
 def generate_psi_table_name(
     quadrature_rule: QuadratureRule,
     element_counter,
-    averaged: str,
-    entity_type: entity_types,
+    averaged: typing.Literal["cell", "facet", None],
+    integral_type: IntegralType,
     derivative_counts,
     flat_component,
 ):
@@ -206,8 +200,21 @@ def generate_psi_table_name(
         name += f"_C{flat_component:d}"
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
-    name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_R"}[entity_type]
+
+    match averaged:
+        case "cell":
+            name += "_AC"
+        case "facet":
+            name += "_AF"
+
+    match integral_type:
+        case IntegralType(codim=1):
+            name += "_F"
+        case IntegralType(codim=2):
+            name += "_R"
+        case IntegralType(codim=-1):
+            name += "_V"
+
     name += f"_Q{quadrature_rule.id()}"
     return name
 
@@ -223,7 +230,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise RuntimeError("Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()  # type: ignore
+        element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
@@ -315,8 +322,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell,
-    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell", "vertex"],
-    entity_type: entity_types,
+    integral_type: IntegralType,
     modified_terminals: typing.Iterable[ModifiedTerminal],
     existing_tables: dict[str, npt.NDArray[np.float64]],
     use_sum_factorization: bool,
@@ -329,7 +335,6 @@ def build_optimized_tables(
     Args:
         quadrature_rule: The quadrature rule used for the tables.
         cell: The cell type of the domain the tables will be used with.
-        entity_type: The entity type (vertex,edge,facet,cell) that the tables are evaluated for.
         integral_type: The type of integral the tables are used for.
         modified_terminals: Ordered sequence of unique modified terminals
         existing_tables: Register of tables that already exist and reused.
@@ -375,8 +380,9 @@ def build_optimized_tables(
 
         # Build name for this particular table
         element_number = element_numbers[element]
+
         name = generate_psi_table_name(
-            quadrature_rule, element_number, avg, entity_type, local_derivatives, flat_component
+            quadrature_rule, element_number, avg, integral_type, local_derivatives, flat_component  # type: ignore
         )
 
         # FIXME - currently just recalculate the tables every time,
@@ -395,11 +401,11 @@ def build_optimized_tables(
         # needed because a cell may see its sub-entities as being oriented
         # differently to their global orientation
         if (
-            integral_type == "interior_facet"
-            or integral_type == "ridge"
+            (integral_type.num_neighbours > 1 and integral_type.codim == 1)
+            or integral_type.codim == 2
             or (is_mixed_dim and codim == 0)
         ):
-            if entity_type == "facet":
+            if integral_type.codim == 1:
                 if tdim == 1 or codim == 1:
                     # Do not add permutations if codim-1 as facets have already gotten a global
                     # orientation in DOLFINx
@@ -408,8 +414,7 @@ def build_optimized_tables(
                         cell,
                         integral_type,
                         element,
-                        avg,
-                        entity_type,
+                        avg,  # type: ignore
                         local_derivatives,
                         flat_component,
                         codim,
@@ -423,8 +428,7 @@ def build_optimized_tables(
                                 cell,
                                 integral_type,
                                 element,
-                                avg,
-                                entity_type,
+                                avg,  # type: ignore
                                 local_derivatives,
                                 flat_component,
                                 codim,
@@ -447,8 +451,7 @@ def build_optimized_tables(
                                         cell,
                                         integral_type,
                                         element,
-                                        avg,
-                                        entity_type,
+                                        avg,  # type: ignore
                                         local_derivatives,
                                         flat_component,
                                         codim,
@@ -468,8 +471,7 @@ def build_optimized_tables(
                                         cell,
                                         integral_type,
                                         element,
-                                        avg,
-                                        entity_type,
+                                        avg,  # type: ignore
                                         local_derivatives,
                                         flat_component,
                                         codim,
@@ -477,7 +479,7 @@ def build_optimized_tables(
                                 )
                         t = new_table[0]
                         t["array"] = np.vstack([td["array"] for td in new_table])
-            elif entity_type == "ridge":
+            elif integral_type.codim == 2:
                 if tdim < 3 or codim == 2:
                     # If ridge integral over vertex no permutation is needed,
                     # or if it is a single domain ridge integral,
@@ -487,8 +489,7 @@ def build_optimized_tables(
                         cell,
                         integral_type,
                         element,
-                        avg,
-                        entity_type,
+                        avg,  # type: ignore
                         local_derivatives,
                         flat_component,
                         codim,
@@ -502,8 +503,7 @@ def build_optimized_tables(
                                 cell,
                                 integral_type,
                                 element,
-                                avg,
-                                entity_type,
+                                avg,  # type: ignore
                                 local_derivatives,
                                 flat_component,
                                 codim,
@@ -517,8 +517,7 @@ def build_optimized_tables(
                 cell,
                 integral_type,
                 element,
-                avg,
-                entity_type,
+                avg,  # type: ignore
                 local_derivatives,
                 flat_component,
                 codim,

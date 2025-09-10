@@ -56,7 +56,7 @@ def test_additive_facet_integral(dtype, compile_args):
     form0 = compiled_forms[0]
 
     integral_offsets = form0.form_integral_offsets
-    ex = module.lib.exterior_facet
+    ex = module.lib.facet
     assert integral_offsets[ex + 1] - integral_offsets[ex] == 1
     integral_id = form0.form_integral_ids[integral_offsets[ex]]
     assert integral_id == -1

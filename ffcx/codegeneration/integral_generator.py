@@ -417,13 +417,12 @@ class IntegralGenerator:
             #       now because it assumes too much about indices.
 
             assert td.ttype != "zeros"
-
             if td.ttype == "ones":
                 arg_factor = 1
             else:
                 # Assuming B sparsity follows element table sparsity
                 arg_factor, arg_tables = self.backend.access.table_access(
-                    td, self.ir.expression.entity_type, mt.restriction, iq, indices[i]
+                    td, self.ir.expression.integral_type, mt.restriction, iq, indices[i]
                 )
 
             tables += arg_tables

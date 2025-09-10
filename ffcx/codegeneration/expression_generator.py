@@ -77,7 +77,7 @@ class ExpressionGenerator:
                 mt = attr.get("mt")
                 if mt is not None:
                     t = type(mt.terminal)
-                    if self.ir.expression.entity_type == "cell" and issubclass(
+                    if self.ir.expression.integral_type.codim == 0 and issubclass(
                         t, ufl.geometry.GeometricFacetQuantity
                     ):
                         raise RuntimeError(f"Expressions for cells do not support {t}.")
@@ -302,7 +302,7 @@ class ExpressionGenerator:
             ]
 
             table = self.backend.symbols.element_table(
-                td, self.ir.expression.entity_type, mt.restriction
+                td, self.ir.expression.integral_type, mt.restriction
             )
 
             assert td.ttype != "zeros"

@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2023 Martin Sandve Alnæs, Igor A. Baratta
+# Copyright (C) 2011-2025 Martin Sandve Alnæs, Igor A. Baratta and Jørgen S. Dokken
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -6,11 +6,12 @@
 """FFCx/UFC specific symbol naming."""
 
 import logging
+import typing
 
 import ufl
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.definitions import entity_types
+from ffcx.definitions import IntegralType
 
 logger = logging.getLogger("ffcx")
 
@@ -96,23 +97,25 @@ class FFCXBackendSymbols:
         # Table for chunk of custom quadrature points (physical coordinates).
         self.custom_points_table = L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
-    def entity(self, entity_type: entity_types, restriction):
+    def entity(self, integral_type: IntegralType, restriction: typing.Literal["+", "-"]):
         """Entity index for lookup in element tables."""
-        if entity_type == "cell":
-            # Always 0 for cells (even with restriction)
-            return L.LiteralInt(0)
-
-        if entity_type == "facet":
-            if restriction == "-":
-                return self.entity_local_index[1]
-            else:
+        match integral_type:
+            case IntegralType(codim=0):
+                # Always 0 for cells (even with restriction)
+                return L.LiteralInt(0)
+            case IntegralType(codim=1):
+                if restriction == "-":
+                    return self.entity_local_index[1]
+                else:
+                    return self.entity_local_index[0]
+            case IntegralType(codim=-1):
                 return self.entity_local_index[0]
-        elif entity_type == "vertex":
-            return self.entity_local_index[0]
-        elif entity_type == "ridge":
-            return self.entity_local_index[0]
-        else:
-            logger.exception(f"Unknown entity_type {entity_type}")
+            case IntegralType(codim=2):
+                return self.entity_local_index[0]
+            case _:
+                raise RuntimeError(
+                    f"Unknown integral_type {integral_type} in entity restriction lookup/"
+                )
 
     def argument_loop_index(self, iarg):
         """Loop index for argument iarg."""
@@ -180,14 +183,13 @@ class FFCXBackendSymbols:
         return c[offset + index]
 
     # TODO: Remove this, use table_access instead
-    def element_table(self, tabledata, entity_type: entity_types, restriction):
+    def element_table(self, tabledata, integral_type: IntegralType, restriction):
         """Get an element table."""
-        entity = self.entity(entity_type, restriction)
-
+        entity = self.entity(integral_type, restriction)
         if tabledata.is_uniform:
             entity = 0
         else:
-            entity = self.entity(entity_type, restriction)
+            entity = self.entity(integral_type, restriction)
 
         if tabledata.is_piecewise:
             iq = 0

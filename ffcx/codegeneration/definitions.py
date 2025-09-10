@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2023 Martin Sandve Alnæs, Igor A. Baratta
+# Copyright (C) 2011-2025 Martin Sandve Alnæs, Igor A. Baratta and Jørgen S. Dokken
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -10,7 +10,7 @@ import logging
 import ufl
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.definitions import entity_types
+from ffcx.definitions import IntegralType
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -50,13 +50,12 @@ def create_dof_index(tabledata, dof_index_symbol):
 class FFCXBackendDefinitions:
     """FFCx specific code definitions."""
 
-    entity_type: entity_types
+    integral_type: IntegralType
 
-    def __init__(self, entity_type: entity_types, integral_type: str, access, options):
+    def __init__(self, integral_type: IntegralType, access, options):
         """Initialise."""
         # Store ir and options
         self.integral_type = integral_type
-        self.entity_type = entity_type
         self.access = access
         self.options = options
 
@@ -102,13 +101,13 @@ class FFCXBackendDefinitions:
             ttype = ttype.__bases__[0]
 
         # Get the handler from the lookup, or None if not found
-        handler = self.handler_lookup.get(ttype)  # type: ignore
+        handler = self.handler_lookup.get(ttype)
 
         if handler is None:
             raise NotImplementedError(f"No handler for terminal type: {ttype}")
 
         # Call the handler
-        return handler(mt, tabledata, quadrature_rule, access)  # type: ignore
+        return handler(mt, tabledata, quadrature_rule, access) 
 
     def coefficient(
         self,
@@ -148,7 +147,7 @@ class FFCXBackendDefinitions:
         assert begin < end
 
         # Get access to element table
-        FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
+        FE, tables = self.access.table_access(tabledata, self.integral_type, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
             mt.terminal, (ic.global_index) * bs + begin
         )
@@ -197,7 +196,7 @@ class FFCXBackendDefinitions:
         iq_symbol = self.symbols.quadrature_loop_index
         ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
+        FE, tables = self.access.table_access(tabledata, self.integral_type, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
