@@ -107,7 +107,7 @@ class FFCXBackendDefinitions:
             raise NotImplementedError(f"No handler for terminal type: {ttype}")
 
         # Call the handler
-        return handler(mt, tabledata, quadrature_rule, access)  # type: ignore 
+        return handler(mt, tabledata, quadrature_rule, access)  # type: ignore
 
     def coefficient(
         self,

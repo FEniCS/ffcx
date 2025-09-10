@@ -382,7 +382,12 @@ def build_optimized_tables(
         element_number = element_numbers[element]
 
         name = generate_psi_table_name(
-            quadrature_rule, element_number, avg, integral_type, local_derivatives, flat_component  # type: ignore
+            quadrature_rule,
+            element_number,
+            avg,
+            integral_type,
+            local_derivatives,
+            flat_component,  # type: ignore
         )
 
         # FIXME - currently just recalculate the tables every time,

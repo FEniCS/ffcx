@@ -8,10 +8,9 @@
 import hashlib
 import itertools
 import logging
-import typing
 
-import ufl
 import numpy as np
+import ufl
 from basix.ufl import _ElementBase
 
 from ffcx.definitions import IntegralType
@@ -96,12 +95,12 @@ def create_quadrature_points_and_weights(
                     ]
                 )
             else:
-                pts[cell_name], wts[cell_name] = create_quadrature( # type: ignore
+                pts[cell_name], wts[cell_name] = create_quadrature(  # type: ignore
                     cell_name, degree, rule, elements
                 )
         case IntegralType(codim=1):
             for ft in cell.facet_types():
-                pts[ft.cellname()], wts[ft.cellname()] = create_quadrature( # type: ignore
+                pts[ft.cellname()], wts[ft.cellname()] = create_quadrature(  # type: ignore
                     ft.cellname(),
                     degree,
                     rule,
@@ -109,14 +108,14 @@ def create_quadrature_points_and_weights(
                 )
         case IntegralType(codim=2):
             for rt in cell.ridge_types():
-                pts[rt.cellname()], wts[rt.cellname()] = create_quadrature( # type: ignore
+                pts[rt.cellname()], wts[rt.cellname()] = create_quadrature(  # type: ignore
                     rt.cellname(),
                     degree,
                     rule,
                     elements,
                 )
         case IntegralType(codim=-1):
-            pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements) # type: ignore
+            pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements)  # type: ignore
         case _:
             raise RuntimeError(
                 f"Unknown integral_type {integral_type} in quadrature rule creation."
