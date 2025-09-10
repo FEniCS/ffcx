@@ -303,7 +303,7 @@ class FFCXBackendAccess:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         table = L.Symbol(f"{cellname}_facet_orientation", dtype=L.DataType.INT)
-        facet = self.symbols.entity("facet", mt.restriction)
+        facet = self.symbols.entity(IntegralType(codim=1), mt.restriction)
         return table[facet]
 
     def cell_vertices(self, mt, tabledata, num_points):
@@ -398,7 +398,7 @@ class FFCXBackendAccess:
         num_scalar_dofs = scalar_element.dim
 
         # Get edge vertices
-        facet = self.symbols.entity("facet", mt.restriction)
+        facet = self.symbols.entity(IntegralType(codim=1), mt.restriction)
         facet_edge = mt.component[0]
         facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)
         vertex0 = facet_edge_vertices[facet][facet_edge][0]
