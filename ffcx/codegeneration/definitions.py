@@ -101,13 +101,13 @@ class FFCXBackendDefinitions:
             ttype = ttype.__bases__[0]
 
         # Get the handler from the lookup, or None if not found
-        handler = self.handler_lookup.get(ttype)
+        handler = self.handler_lookup.get(ttype)  # type: ignore
 
         if handler is None:
             raise NotImplementedError(f"No handler for terminal type: {ttype}")
 
         # Call the handler
-        return handler(mt, tabledata, quadrature_rule, access) 
+        return handler(mt, tabledata, quadrature_rule, access)  # type: ignore 
 
     def coefficient(
         self,
