@@ -98,10 +98,13 @@ def get_ffcx_table_values(
 
     match integral_type:
         case IntegralType(is_custom=True):
+            # Use quadrature points on cell for analysis in custom integral types
             assert integral_type.codim == 0
             integral_type = IntegralType(codim=0)
             assert not avg
         case IntegralType(is_expression=True):
+            # FFCx tables for expression are generated as either interior cell points
+            # or points on a facet
             assert integral_type.codim in (0, 1)
             assert integral_type.num_neighbours == 1
 
