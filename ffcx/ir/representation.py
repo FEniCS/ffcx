@@ -454,8 +454,8 @@ def _compute_form_ir(
         IntegralType(codim=0),
         IntegralType(codim=1, num_neighbours=1),
         IntegralType(codim=1, num_neighbours=2),
-        IntegralType(codim=2),
         IntegralType(codim=-1),
+        IntegralType(codim=2),
     )
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
