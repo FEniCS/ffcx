@@ -242,7 +242,7 @@ def _compute_integral_ir(
 
         # Compute shape of element tensor
         match expression_ir["integral_type"]:
-            case IntegralType(codim=1, num_neighbours=2):
+            case IntegralType(codim=1, num_cells=2):
                 # If interior facet integral, double the shape in the first index
                 expression_ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
             case _:
@@ -352,7 +352,7 @@ def _compute_integral_ir(
         index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
         offsets = {}
         match integral_type:
-            case IntegralType(codim=1, num_neighbours=2):
+            case IntegralType(codim=1, num_cells=2):
                 # Double width for interior facet integrals
                 width = 2
             case _:
@@ -452,8 +452,8 @@ def _compute_form_ir(
     # it has to know their names for codegen phase
     ufcx_integral_types = (
         IntegralType(codim=0),
-        IntegralType(codim=1, num_neighbours=1),
-        IntegralType(codim=1, num_neighbours=2),
+        IntegralType(codim=1, num_cells=1),
+        IntegralType(codim=1, num_cells=2),
         IntegralType(codim=-1),
         IntegralType(codim=2),
     )

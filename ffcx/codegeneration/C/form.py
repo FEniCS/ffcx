@@ -122,8 +122,8 @@ def generator(ir: FormIR, options):
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
     for itg_type in (
         IntegralType(codim=0),
-        IntegralType(codim=1, num_neighbours=1),
-        IntegralType(codim=1, num_neighbours=2),
+        IntegralType(codim=1, num_cells=1),
+        IntegralType(codim=1, num_cells=2),
         IntegralType(codim=-1),
         IntegralType(codim=2),
     ):

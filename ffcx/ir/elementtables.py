@@ -106,7 +106,7 @@ def get_ffcx_table_values(
             # FFCx tables for expression are generated as either interior cell points
             # or points on a facet
             assert integral_type.codim in (0, 1)
-            assert integral_type.num_neighbours == 1
+            assert integral_type.num_cells == 1
 
     if avg in ("cell", "facet"):
         # Redefine points to compute average tables
@@ -409,7 +409,7 @@ def build_optimized_tables(
         # needed because a cell may see its sub-entities as being oriented
         # differently to their global orientation
         if (
-            (integral_type.num_neighbours > 1 and integral_type.codim == 1)
+            (integral_type.num_cells > 1 and integral_type.codim == 1)
             or integral_type.codim == 2
             or (is_mixed_dim and codim == 0)
         ):

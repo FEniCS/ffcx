@@ -13,7 +13,7 @@ class IntegralType(NamedTuple):
     """Class for storing information about an integral type."""
 
     codim: int  # Codimension of integral with respect to the topological dimension of the domain
-    num_neighbours: int = 1  # Number of neighbouring cells
+    num_cells: int = 1  # Number of cells the integral is over
     is_expression: bool = (
         False  # True if the integral is an Expression (integrand) rather than an integral
     )
@@ -24,16 +24,16 @@ def convert_to_integral_type(integral_type: str) -> IntegralType:
     """Convert UFL integral type string to IntegralType."""
     match integral_type:
         case "cell":
-            return IntegralType(codim=0, num_neighbours=1)
+            return IntegralType(codim=0, num_cells=1)
         case "exterior_facet":
-            return IntegralType(codim=1, num_neighbours=1)
+            return IntegralType(codim=1, num_cells=1)
         case "interior_facet":
-            return IntegralType(codim=1, num_neighbours=2)
+            return IntegralType(codim=1, num_cells=2)
         case "ridge":
-            return IntegralType(codim=2, num_neighbours=1)
+            return IntegralType(codim=2, num_cells=1)
         case "vertex":
-            return IntegralType(codim=-1, num_neighbours=1)
+            return IntegralType(codim=-1, num_cells=1)
         case "custom":
-            return IntegralType(codim=0, num_neighbours=1, is_custom=True)
+            return IntegralType(codim=0, num_cells=1, is_custom=True)
         case _:
             raise ValueError(f"Unknown integral type:{integral_type}")
