@@ -101,7 +101,7 @@ def test_bilinear_form(dtype, P, cell_type):
 
     c_type = dtype_to_c_type(dtype)
     c_xtype = dtype_to_c_type(xdtype)
-    kernel, code, module = generate_kernel([a], dtype, options={"scalar_type": dtype})
+    kernel, _code, module = generate_kernel([a], dtype, options={"scalar_type": dtype})
     ffi = module.ffi
     kernel(
         ffi.cast(f"{c_type} *", A.ctypes.data),
@@ -115,7 +115,7 @@ def test_bilinear_form(dtype, P, cell_type):
 
     # Use sum factorization
     A1 = np.zeros((ndofs, ndofs), dtype=dtype)
-    kernel, code, module = generate_kernel(
+    kernel, _code, module = generate_kernel(
         [a], dtype, options={"scalar_type": dtype, "sum_factorization": True}
     )
     ffi = module.ffi
