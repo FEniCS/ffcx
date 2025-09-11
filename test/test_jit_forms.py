@@ -1906,7 +1906,7 @@ def test_diagonal_form(dtype, compile_args):
         ffi.NULL,
     )
 
-    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
         forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
     )
     ffi = module.ffi
