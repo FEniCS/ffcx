@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2025 Martin Sandve Alnæs, Jørgen S. Dokken
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -12,7 +12,7 @@ import basix.ufl
 import ufl
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.definitions import entity_types
+from ffcx.definitions import IntegralType
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -23,12 +23,11 @@ logger = logging.getLogger("ffcx")
 class FFCXBackendAccess:
     """FFCx specific formatter class."""
 
-    entity_type: entity_types
+    integral_type: IntegralType
 
-    def __init__(self, entity_type: entity_types, integral_type: str, symbols, options):
+    def __init__(self, integral_type: IntegralType, symbols, options):
         """Initialise."""
         # Store ir and options
-        self.entity_type = entity_type
         self.integral_type = integral_type
         self.symbols = symbols
         self.options = options
@@ -122,27 +121,28 @@ class FFCXBackendAccess:
         if mt.averaged is not None:
             raise RuntimeError("Not expecting average of SpatialCoordinates.")
 
-        if self.integral_type in ufl.custom_integral_types:
-            if mt.local_derivatives:
-                raise RuntimeError("FIXME: Jacobian in custom integrals is not implemented.")
+        match self.integral_type:
+            case IntegralType(is_custom=True):
+                if mt.local_derivatives:
+                    raise RuntimeError("FIXME: Jacobian in custom integrals is not implemented.")
 
-            # Access predefined quadrature points table
-            x = self.symbols.custom_points_table
-            iq = self.symbols.quadrature_loop_index
-            (gdim,) = mt.terminal.ufl_shape
-            if gdim == 1:
-                index = iq
-            else:
-                index = iq * gdim + mt.flat_component
-            return x[index]
-        elif self.integral_type == "expression":
-            # Physical coordinates are computed by code generated in
-            # definitions
-            return self.symbols.x_component(mt)
-        else:
-            # Physical coordinates are computed by code generated in
-            # definitions
-            return self.symbols.x_component(mt)
+                # Access predefined quadrature points table
+                x = self.symbols.custom_points_table
+                iq = self.symbols.quadrature_loop_index
+                (gdim,) = mt.terminal.ufl_shape
+                if gdim == 1:
+                    index = iq
+                else:
+                    index = iq * gdim + mt.flat_component
+                return x[index]
+            case IntegralType(is_expression=True):
+                # Physical coordinates are computed by code generated in
+                # definitions
+                return self.symbols.x_component(mt)
+            case _:
+                # Physical coordinates are computed by code generated in
+                # definitions
+                return self.symbols.x_component(mt)
 
     def cell_coordinate(self, mt, tabledata, num_points):
         """Access a cell coordinate."""
@@ -181,7 +181,7 @@ class FFCXBackendAccess:
         if mt.restriction:
             raise RuntimeError("Not expecting restriction of FacetCoordinate.")
 
-        if self.integral_type in ("interior_facet", "exterior_facet"):
+        if self.integral_type in ("interior_facet", "facet"):
             (tdim,) = mt.terminal.ufl_shape
             if tdim == 0:
                 raise RuntimeError("Vertices have no facet coordinates.")
@@ -233,7 +233,7 @@ class FFCXBackendAccess:
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             table = L.Symbol(f"{cellname}_reference_normals", dtype=L.DataType.REAL)
-            facet = self.symbols.entity("facet", mt.restriction)
+            facet = self.symbols.entity(IntegralType(codim=1), mt.restriction)
             return table[facet][mt.component[0]]
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
@@ -250,7 +250,7 @@ class FFCXBackendAccess:
             "pyramid",
         ):
             table = L.Symbol(f"{cellname}_cell_facet_jacobian", dtype=L.DataType.REAL)
-            facet = self.symbols.entity("facet", mt.restriction)
+            facet = self.symbols.entity(IntegralType(codim=1), mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":
             raise RuntimeError("The reference facet jacobian doesn't make sense for interval cell.")
@@ -262,7 +262,7 @@ class FFCXBackendAccess:
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
         if cellname in ("tetrahedron", "prism", "hexahedron"):
             table = L.Symbol(f"{cellname}_cell_ridge_jacobian", dtype=L.DataType.REAL)
-            ridge = self.symbols.entity("ridge", mt.restriction)
+            ridge = self.symbols.entity(IntegralType(codim=2), mt.restriction)
             return table[ridge][mt.component[0]][mt.component[1]]
         elif cellname in ["triangle", "quadrilateral"]:
             raise RuntimeError("The ridge jacobian doesn't make sense for 2D cells.")
@@ -303,7 +303,7 @@ class FFCXBackendAccess:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         table = L.Symbol(f"{cellname}_facet_orientation", dtype=L.DataType.INT)
-        facet = self.symbols.entity("facet", mt.restriction)
+        facet = self.symbols.entity(IntegralType(codim=1), mt.restriction)
         return table[facet]
 
     def cell_vertices(self, mt, tabledata, num_points):
@@ -398,7 +398,7 @@ class FFCXBackendAccess:
         num_scalar_dofs = scalar_element.dim
 
         # Get edge vertices
-        facet = self.symbols.entity("facet", mt.restriction)
+        facet = self.symbols.entity(IntegralType(codim=1), mt.restriction)
         facet_edge = mt.component[0]
         facet_edge_vertices = L.Symbol(f"{cellname}_facet_edge_vertices", dtype=L.DataType.INT)
         vertex0 = facet_edge_vertices[facet][facet_edge][0]
@@ -422,7 +422,7 @@ class FFCXBackendAccess:
     def table_access(
         self,
         tabledata: UniqueTableReferenceT,
-        entity_type: entity_types,
+        integral_type: IntegralType,
         restriction: str,
         quadrature_index: L.MultiIndex,
         dof_index: L.MultiIndex,
@@ -431,12 +431,12 @@ class FFCXBackendAccess:
 
         Args:
             tabledata: Table data object
-            entity_type: Entity type
+            integral_type: Integral type
             restriction: Restriction ("+", "-")
             quadrature_index: Quadrature index
             dof_index: Dof index
         """
-        entity = self.symbols.entity(entity_type, restriction)
+        entity = self.symbols.entity(integral_type, restriction)
         iq_global_index = quadrature_index.global_index
         ic_global_index = dof_index.global_index
         qp = 0  # quadrature permutation

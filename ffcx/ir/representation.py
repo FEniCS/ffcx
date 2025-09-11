@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2020 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
+# Copyright (C) 2009-2025 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
 # Kristian B. Oelgaard, Matthew W. Scroggs, Chris Richardson, and others
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
@@ -32,6 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
+from ffcx.definitions import IntegralType, convert_to_integral_type
 from ffcx.ir.integral import CommonExpressionIR, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
@@ -78,9 +79,9 @@ class FormIR(typing.NamedTuple):
     constant_shapes: list[list[int]]
     constant_names: list[str]
     finite_element_hashes: list[int]
-    integral_names: dict[str, list[str]]
-    integral_domains: dict[str, list[basix.CellType]]
-    subdomain_ids: dict[str, list[int]]
+    integral_names: dict[IntegralType, list[str]]
+    integral_domains: dict[IntegralType, list[basix.CellType]]
+    subdomain_ids: dict[IntegralType, list[int]]
 
 
 class QuadratureIR(typing.NamedTuple):
@@ -145,7 +146,6 @@ def compute_ir(
                 itg_data.subdomain_id,
                 prefix,
             )
-
     irs = [
         _compute_integral_ir(
             fd,
@@ -205,15 +205,6 @@ def _compute_integral_ir(
     visualise,
 ) -> list[IntegralIR]:
     """Compute intermediate representation for form integrals."""
-    _entity_types = {
-        "cell": "cell",
-        "exterior_facet": "facet",
-        "interior_facet": "facet",
-        "vertex": "vertex",
-        "custom": "cell",
-        "ridge": "ridge",
-    }
-
     # Iterate over groups of integrals
     irs = []
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
@@ -221,15 +212,14 @@ def _compute_integral_ir(
         expression_ir = {}
 
         # Compute representation
-        entity_type = _entity_types[itg_data.integral_type]
+        integral_type = convert_to_integral_type(itg_data.integral_type)
         ufl_cell = itg_data.domain.ufl_cell()
         cell_type = basix_cell_from_string(ufl_cell.cellname())
         tdim = ufl_cell.topological_dimension()
         assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
         expression_ir = {
-            "integral_type": itg_data.integral_type,
-            "entity_type": entity_type,
+            "integral_type": integral_type,
             "shape": (),
             "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
         }
@@ -251,12 +241,12 @@ def _compute_integral_ir(
         ]
 
         # Compute shape of element tensor
-        if expression_ir["integral_type"] == "interior_facet":
-            expression_ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
-        else:
-            expression_ir["tensor_shape"] = argument_dimensions
-
-        integral_type = itg_data.integral_type
+        match expression_ir["integral_type"]:
+            case IntegralType(codim=1, num_cells=2):
+                # If interior facet integral, double the shape in the first index
+                expression_ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
+            case _:
+                expression_ir["tensor_shape"] = argument_dimensions
 
         # Group integrands with the same quadrature rule
         grouped_integrands: dict[
@@ -282,14 +272,15 @@ def _compute_integral_ir(
                 # prescribed in certain cases.
 
                 degree = md["quadrature_degree"]
-                if "facet" in integral_type:
-                    facet_types = basix.cell.subentity_types(cell_type)[-2]
-                    assert len(set(facet_types)) == 1
-                    cell_type = facet_types[0]
-                elif integral_type == "ridge":
-                    ridge_types = basix.cell.subentity_types(cell_type)[-3]
-                    assert len(set(ridge_types)) == 1
-                    cell_type = ridge_types[0]
+                match integral_type:
+                    case IntegralType(codim=1):
+                        facet_types = basix.cell.subentity_types(cell_type)[-2]
+                        assert len(set(facet_types)) == 1
+                        cell_type = facet_types[0]
+                    case IntegralType(codim=2):
+                        ridge_types = basix.cell.subentity_types(cell_type)[-3]
+                        assert len(set(ridge_types)) == 1
+                        cell_type = ridge_types[0]
 
                 if degree > 1:
                     warnings.warn(
@@ -360,7 +351,13 @@ def _compute_integral_ir(
 
         index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
         offsets = {}
-        width = 2 if integral_type in ("interior_facet") else 1
+        match integral_type:
+            case IntegralType(codim=1, num_cells=2):
+                # Double width for interior facet integrals
+                width = 2
+            case _:
+                width = 1
+
         _offset = 0
         for k, el in zip(index_to_coeff, form_data.coefficient_elements):
             offsets[k[1]] = _offset
@@ -387,8 +384,7 @@ def _compute_integral_ir(
         # Build more specific intermediate representation
         integral_ir = compute_integral_ir(
             itg_data.domain.ufl_cell(),
-            itg_data.integral_type,
-            expression_ir["entity_type"],
+            integral_type,
             integrand_map,
             expression_ir["tensor_shape"],
             options,
@@ -454,14 +450,20 @@ def _compute_form_ir(
     # Store names of integrals and subdomain_ids for this form, grouped
     # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "ridge")
+    ufcx_integral_types = (
+        IntegralType(codim=0),
+        IntegralType(codim=1, num_cells=1),
+        IntegralType(codim=1, num_cells=2),
+        IntegralType(codim=-1),
+        IntegralType(codim=2),
+    )
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_domains"] = {itg_type: [] for itg_type in ufcx_integral_types}
     for itg_index, itg_data in enumerate(form_data.integral_data):
         # UFL is using "otherwise" for default integrals (over whole mesh)
         # but FFCx needs integers, so otherwise = -1
-        integral_type = itg_data.integral_type
+        integral_type = convert_to_integral_type(itg_data.integral_type)
         subdomain_ids = [sid if sid != "otherwise" else -1 for sid in itg_data.subdomain_id]
 
         if min(subdomain_ids) < -1:
@@ -563,12 +565,11 @@ def _compute_expression_ir(
     # Copy offsets also into IR
     base_ir["coefficient_offsets"] = offsets
 
-    base_ir["integral_type"] = "expression"
     if cell is not None:
         if (tdim := cell.topological_dimension()) == (pdim := points.shape[1]):
-            base_ir["entity_type"] = "cell"
+            base_ir["integral_type"] = IntegralType(codim=0, is_expression=True)
         elif tdim - 1 == pdim:
-            base_ir["entity_type"] = "facet"
+            base_ir["integral_type"] = IntegralType(codim=1, is_expression=True)
         else:
             raise ValueError(
                 f"Expression on domain with topological dimension {tdim}"
@@ -576,7 +577,7 @@ def _compute_expression_ir(
             )
     else:
         # For spatially invariant expressions, all expressions are evaluated in the cell
-        base_ir["entity_type"] = "cell"
+        base_ir["integral_type"] = IntegralType(codim=0, is_expression=True)
 
     # Build offsets for Constants
     original_constant_offsets = {}
@@ -605,7 +606,6 @@ def _compute_expression_ir(
     expression_ir = compute_integral_ir(
         cell,
         base_ir["integral_type"],
-        base_ir["entity_type"],
         integrands,
         tensor_shape,
         options,

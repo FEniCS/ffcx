@@ -18,7 +18,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 
-from ffcx.definitions import entity_types
+from ffcx.definitions import IntegralType
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import (
@@ -36,8 +36,7 @@ logger = logging.getLogger("ffcx")
 class CommonExpressionIR(typing.NamedTuple):
     """Common-ground for IntegralIR and ExpressionIR."""
 
-    integral_type: str
-    entity_type: entity_types
+    integral_type: IntegralType
     tensor_shape: list[int]
     coefficient_numbering: dict[ufl.Coefficient, int]
     coefficient_offsets: dict[ufl.Coefficient, int]
@@ -74,8 +73,7 @@ class BlockDataT(typing.NamedTuple):
 
 def compute_integral_ir(
     cell: ufl.Cell,
-    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
-    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    integral_type: IntegralType,
     integrands: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]],
     argument_shape: tuple[int],
     p: dict,
@@ -86,7 +84,6 @@ def compute_integral_ir(
     Args:
         cell: Cell of integration domain
         integral_type: Type of integral over cell
-        entity_type: Corresponding entity of the cell that the integral is over
         integrands: Dictionary mapping a quadrature rule to a sequence of integrands
         argument_shape: Shape of the output tensor of the integral (used for tensor factorization)
         p: Parameters used for clamping tables and for activating sum factorization
@@ -135,12 +132,10 @@ def compute_integral_ir(
             for domain in ufl.domain.extract_domains(integrand):
                 if domain.topological_dimension() != cell.topological_dimension():
                     is_mixed_dim = True
-
             mt_table_reference = build_optimized_tables(
                 quadrature_rule,
                 cell,
                 integral_type,
-                entity_type,
                 initial_terminals.values(),
                 ir["unique_tables"][integral_domain],
                 use_sum_factorization=p["sum_factorization"],

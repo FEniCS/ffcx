@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 #
-# Modified by Chris Richardson and Jørgen S. Dokken 2023
+# Modified by Chris Richardson and Jørgen S. Dokken 2023-2025
 #
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
@@ -17,6 +17,7 @@ import logging
 import numpy as np
 
 from ffcx.codegeneration.C import form_template
+from ffcx.definitions import IntegralType
 from ffcx.ir.representation import FormIR
 
 logger = logging.getLogger("ffcx")
@@ -119,7 +120,13 @@ def generator(ir: FormIR, options):
     integral_offsets = [0]
     integral_domains = []
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
-    for itg_type in ("cell", "exterior_facet", "interior_facet", "vertex", "ridge"):
+    for itg_type in (
+        IntegralType(codim=0),
+        IntegralType(codim=1, num_cells=1),
+        IntegralType(codim=1, num_cells=2),
+        IntegralType(codim=-1),
+        IntegralType(codim=2),
+    ):
         unsorted_integrals = []
         unsorted_ids = []
         unsorted_domains = []

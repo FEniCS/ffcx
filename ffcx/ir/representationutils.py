@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2017 Marie Rognes
+# Copyright (C) 2012-2025 Marie Rognes and Jørgen S. Dokken
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -11,7 +11,9 @@ import logging
 
 import numpy as np
 import ufl
+from basix.ufl import _ElementBase
 
+from ffcx.definitions import IntegralType
 from ffcx.element_interface import (
     create_quadrature,
     map_edge_points,
@@ -55,77 +57,80 @@ class QuadratureRule:
 
 
 def create_quadrature_points_and_weights(
-    integral_type, cell, degree, rule, elements, use_tensor_product=False
+    integral_type: IntegralType,
+    cell: ufl.Cell,
+    degree: int,
+    rule: str,
+    elements: list[_ElementBase],
+    use_tensor_product: bool = False,
 ):
     """Create quadrature rule and return points and weights."""
     pts = {}
     wts = {}
     tensor_factors = {}
-    if integral_type == "cell":
-        cell_name = cell.cellname()
-        if cell_name in ["quadrilateral", "hexahedron"] and use_tensor_product:
-            if cell_name == "quadrilateral":
-                tensor_factors[cell_name] = [
-                    create_quadrature("interval", degree, rule, elements) for _ in range(2)
-                ]
-            elif cell_name == "hexahedron":
-                tensor_factors[cell_name] = [
-                    create_quadrature("interval", degree, rule, elements) for _ in range(3)
-                ]
-            pts[cell_name] = np.array(
-                [
-                    tuple(i[0] for i in p)
-                    for p in itertools.product(*[f[0] for f in tensor_factors[cell_name]])
-                ]
+    match integral_type:
+        case IntegralType(is_expression=True):
+            pass
+        case IntegralType(codim=0):
+            cell_name = cell.cellname()
+            if cell_name in ["quadrilateral", "hexahedron"] and use_tensor_product:
+                if cell_name == "quadrilateral":
+                    tensor_factors[cell_name] = [
+                        create_quadrature("interval", degree, rule, elements) for _ in range(2)
+                    ]
+                elif cell_name == "hexahedron":
+                    tensor_factors[cell_name] = [
+                        create_quadrature("interval", degree, rule, elements) for _ in range(3)
+                    ]
+                pts[cell_name] = np.array(
+                    [
+                        tuple(i[0] for i in p)  # type: ignore
+                        for p in itertools.product(*[f[0] for f in tensor_factors[cell_name]])  # type: ignore
+                    ]
+                )
+                wts[cell_name] = np.array(
+                    [
+                        np.prod(p)  # type: ignore
+                        for p in itertools.product(*[f[1] for f in tensor_factors[cell_name]])  # type: ignore
+                    ]
+                )
+            else:
+                pts[cell_name], wts[cell_name] = create_quadrature(  # type: ignore
+                    cell_name, degree, rule, elements
+                )
+        case IntegralType(codim=1):
+            for ft in cell.facet_types():
+                pts[ft.cellname()], wts[ft.cellname()] = create_quadrature(  # type: ignore
+                    ft.cellname(),
+                    degree,
+                    rule,
+                    elements,
+                )
+        case IntegralType(codim=2):
+            for rt in cell.ridge_types():
+                pts[rt.cellname()], wts[rt.cellname()] = create_quadrature(  # type: ignore
+                    rt.cellname(),
+                    degree,
+                    rule,
+                    elements,
+                )
+        case IntegralType(codim=-1):
+            pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements)  # type: ignore
+        case _:
+            raise RuntimeError(
+                f"Unknown integral_type {integral_type} in quadrature rule creation."
             )
-            wts[cell_name] = np.array(
-                [np.prod(p) for p in itertools.product(*[f[1] for f in tensor_factors[cell_name]])]
-            )
-        else:
-            pts[cell_name], wts[cell_name] = create_quadrature(cell_name, degree, rule, elements)
-    elif integral_type in ufl.measure.facet_integral_types:
-        for ft in cell.facet_types():
-            pts[ft.cellname()], wts[ft.cellname()] = create_quadrature(
-                ft.cellname(),
-                degree,
-                rule,
-                elements,
-            )
-    elif integral_type in ufl.measure.ridge_integral_types:
-        for rt in cell.ridge_types():
-            pts[rt.cellname()], wts[rt.cellname()] = create_quadrature(
-                rt.cellname(),
-                degree,
-                rule,
-                elements,
-            )
-    elif integral_type in ufl.measure.point_integral_types:
-        pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements)
-    elif integral_type == "expression":
-        pass
-    else:
-        logger.exception(f"Unknown integral type: {integral_type}")
-
     return pts, wts, tensor_factors
 
 
-def integral_type_to_entity_dim(integral_type, tdim):
+def integral_type_to_entity_dim(integral_type: IntegralType, tdim: int):
     """Given integral_type and domain tdim, return the tdim of the integration entity."""
-    if integral_type == "cell":
-        entity_dim = tdim
-    elif integral_type in ufl.measure.facet_integral_types:
-        entity_dim = tdim - 1
-    elif integral_type in ufl.measure.ridge_integral_types:
-        entity_dim = tdim - 2
-    elif integral_type in ufl.measure.point_integral_types:
-        entity_dim = 0
-    elif integral_type in ufl.custom_integral_types:
-        entity_dim = tdim
-    elif integral_type == "expression":
-        entity_dim = tdim
+    if integral_type.codim == -1:
+        return 0
+    elif integral_type.codim >= 0:
+        return tdim - integral_type.codim
     else:
-        raise RuntimeError(f"Unknown integral_type: {integral_type}")
-    return entity_dim
+        raise NotImplementedError(f"Cannot handle codim {integral_type.codim} < -1")
 
 
 def map_integral_points(points, integral_type, cell, entity):

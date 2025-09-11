@@ -229,7 +229,7 @@ def compile_forms(
 
 
 def compile_expressions(
-    expressions: list[tuple[ufl.Expr, npt.NDArray[np.floating]]],  # type: ignore
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]],
     options: dict = {},
     cache_dir: Path | None = None,
     timeout: int = 10,
