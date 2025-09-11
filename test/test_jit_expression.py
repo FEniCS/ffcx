@@ -32,7 +32,7 @@ def test_matvec(compile_args):
     expr = ufl.Constant(mesh) * ufl.dot(a, f)
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args
     )
 
@@ -101,7 +101,7 @@ def test_rank1(compile_args):
     expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args
     )
 
@@ -179,7 +179,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
     # Compile expression at interpolation points of second order Lagrange space
     b_el = basix.create_element(basix.ElementFamily.P, basix.CellType[cell], 0, discontinuous=True)
     points = b_el.points
-    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args
     )
 
@@ -447,7 +447,7 @@ def test_coordinate_free_expression(compile_args):
     expr = ufl.as_vector([1.0, 0.0])
 
     points = np.array([[0.0, 0.0], [0.1, 0.1], [0.0, 1.0]])
-    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args
     )
 
