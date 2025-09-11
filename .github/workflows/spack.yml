@@ -10,12 +10,12 @@ on:
     - cron: "0 2 * * SUN"
   workflow_dispatch:
     inputs:
-      spack_repo:
-        description: "Spack repository to test"
-        default: "spack/spack"
+      spack_package_repo:
+        description: "Spack package repository to test"
+        default: "spack/spack-packages"
         type: string
-      spack_ref:
-        description: "Spack repository branch/tag to test"
+      spack_package_ref:
+        description: "Spack package repository branch/tag to test"
         default: "develop"
         type: string
       ffcx_version:
@@ -35,18 +35,19 @@ jobs:
           apt-get install -y g++ gfortran  # compilers
 
       - name: Get Spack
-        if: github.event_name != 'workflow_dispatch'
         uses: actions/checkout@v5
         with:
           path: ./spack
           repository: spack/spack
-      - name: Get Spack
+      - name: Get Spack packages
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v5
-        with:
-          path: ./spack
-          repository: ${{ github.event.inputs.spack_repo }}
-          ref: ${{ github.event.inputs.spack_ref }}
+        run: |
+          . ./spack/share/spack/setup-env.sh
+          spack repo update
+          spack repo add --name test_pkgs https://github.com/${{ github.event.inputs.spack_package_repo }}.git ~/test_pkgs
+          spack repo update --branch ${{ github.event.inputs.spack_package_ref }} test_pkgs
+          spack repo list
+          spack config get repos
 
       - name: Install FFCx and run tests
         if: github.event_name != 'workflow_dispatch'
@@ -55,8 +56,7 @@ jobs:
           spack env create ffcx-main
           spack env activate ffcx-main
           spack add py-fenics-ffcx@main
-          spack install
-          # spack install --test=root
+          spack -j 4 install
 
       - name: Install FFCx and run tests
         if: github.event_name == 'workflow_dispatch'
@@ -65,5 +65,4 @@ jobs:
           spack env create ffcx-testing
           spack env activate ffcx-testing
           spack add py-fenics-ffcx@${{ github.event.inputs.ffcx_version }}
-          spack install
-          # spack install --test=root
+          spack -j 4 install
