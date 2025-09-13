@@ -334,8 +334,8 @@ class FFCXBackendAccess:
         """Access a cell edge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        cellname = domain.ufl_cell().cellname()
-        gdim = domain.geometric_dimension()
+        cellname = domain.ufl_cell().cellname
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
@@ -374,8 +374,8 @@ class FFCXBackendAccess:
         """Access a facet edge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        cellname = domain.ufl_cell().cellname()
-        gdim = domain.geometric_dimension()
+        cellname = domain.ufl_cell().cellname
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("tetrahedron", "hexahedron"):
