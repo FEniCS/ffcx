@@ -218,7 +218,7 @@ class IntegralGenerator:
                     t = type(mt.terminal)
                     if t in ufl_geometry:
                         cells[t].add(
-                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
                         )
 
         parts = []

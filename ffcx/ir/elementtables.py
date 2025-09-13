@@ -137,7 +137,7 @@ def get_ffcx_table_values(
             )
 
     # Tabulate table of basis functions and derivatives in points for each entity
-    tdim = cell.topological_dimension()
+    tdim = cell.topological_dimension
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = cell.num_sub_entities(entity_dim)
 
@@ -253,7 +253,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
 
     assert (mt.averaged is None) or not (ld or gd)
     # Change derivatives format for table lookup
-    tdim = domain.topological_dimension()
+    tdim = domain.topological_dimension
     # The input `ld` is a tuple containing the index access of a recursive application of
     # reference gradient, e.g. [0, 1, 2] means that the modified terminal is
     # a reference_grad(reference_grad(reference_grad(expr)))[0][1][2],
@@ -384,8 +384,8 @@ def build_optimized_tables(
         # It should be possible to reuse the cached tables by name, but
         # the dofmap offset may differ due to restriction.
 
-        tdim = cell.topological_dimension()
-        codim = tdim - element.cell.topological_dimension()
+        tdim = cell.topological_dimension
+        codim = tdim - element.cell.topological_dimension
         assert codim >= 0
         if codim > 2:
             raise RuntimeError("Codimension > 2 isn't supported.")

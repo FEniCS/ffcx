@@ -548,7 +548,7 @@ def test_custom_quadrature(compile_args):
     ve = basix.ufl.element("P", "triangle", 1, shape=(2,))
     mesh = ufl.Mesh(ve)
 
-    e = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
+    e = basix.ufl.element("P", mesh.ufl_cell().cellname, 2)
     V = ufl.FunctionSpace(mesh, e)
     u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
 
