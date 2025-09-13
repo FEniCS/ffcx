@@ -434,7 +434,7 @@ def build_optimized_tables(
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
                 elif tdim == 3:
-                    cell_type = cell.cellname()
+                    cell_type = cell.cellname
                     if cell_type == "tetrahedron":
                         new_table = []
                         for rot in range(3):
