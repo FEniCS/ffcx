@@ -310,7 +310,7 @@ class FFCXBackendAccess:
         """Access a cell vertex."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        gdim = domain.geometric_dimension()
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         # Get dimension and dofmap of scalar element
