@@ -32,7 +32,7 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.ir.integral import CommonExpressionIR, compute_integral_ir
+from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
@@ -97,6 +97,7 @@ class IntegralIR(typing.NamedTuple):
     expression: CommonExpressionIR
     rank: int
     enabled_coefficients: list[bool]
+    part: TensorPart
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -121,7 +122,7 @@ def compute_ir(
     analysis: UFLData,
     object_names: dict[int, str],
     prefix: str,
-    options: dict[str, npt.DTypeLike | int | float],
+    options: dict[str, npt.DTypeLike | int | float | bool],
     visualise: bool,
 ) -> DataIR:
     """Compute intermediate representation."""
@@ -162,7 +163,7 @@ def compute_ir(
     integral_domains = {
         i.expression.name: set(j[0] for j in i.expression.integrand.keys()) for a in irs for i in a
     }
-
+    diagonalise = TensorPart.from_str(str(options["part"]))
     ir_forms = [
         _compute_form_ir(
             fd,
@@ -172,6 +173,7 @@ def compute_ir(
             integral_names,
             integral_domains,
             object_names,
+            diagonalise,
         )
         for (i, fd) in enumerate(analysis.form_data)
     ]
@@ -236,7 +238,15 @@ def _compute_integral_ir(
         ir = {
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
+            "part": TensorPart.from_str(options["part"]),
         }
+        diagonalise = False
+        if form_data.rank == 2 and ir["part"] == TensorPart.diagonal:
+            diagonalise = True
+            ir["rank"] = 1
+            assert form_data.argument_elements[0] == form_data.argument_elements[1], (
+                "Can only diagonalise forms with identical arguments."
+            )
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
@@ -255,6 +265,10 @@ def _compute_integral_ir(
             expression_ir["tensor_shape"] = [2 * dim for dim in argument_dimensions]
         else:
             expression_ir["tensor_shape"] = argument_dimensions
+
+        # Modify output tensor shape if diagonalizing
+        if diagonalise:
+            expression_ir["tensor_shape"] = expression_ir["tensor_shape"][:1]
 
         integral_type = itg_data.integral_type
 
@@ -413,6 +427,7 @@ def _compute_form_ir(
     integral_names,
     integral_domains,
     object_names,
+    tensor_part: TensorPart,
 ) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
@@ -424,8 +439,15 @@ def _compute_form_ir(
     ir["name"] = form_names[form_id]
 
     ir["signature"] = form_data.original_form.signature()
+    args = form_data.original_form.arguments()
+    if tensor_part == TensorPart.diagonal and len(args) == 2:
+        assert args[0].ufl_function_space() == args[1].ufl_function_space(), (
+            "Can only diagonalise forms with identical arguments."
+        )
+        ir["rank"] = 1
+    else:
+        ir["rank"] = len(form_data.original_form.arguments())
 
-    ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
 
     ir["coefficient_names"] = [

@@ -1848,3 +1848,235 @@ def test_ridge_integral(compile_args, dtype, permutation):
     b_3 = sympy.integrate(phi_3 * z * rl, (y, 0, y_ext))
     b_ref = np.array([0, 0, b_2, b_3], dtype=b.dtype)
     np.testing.assert_allclose(b_ref, b, atol=1e-10)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_diagonal_form(dtype, compile_args):
+    element = basix.ufl.element("Lagrange", "tetrahedron", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    a = (
+        ufl.inner(u.dx(0), v.dx(2)) * ufl.dx
+        - ufl.inner(u, v) * ufl.dx
+        + ufl.inner(u.dx(0), v) * ufl.dx
+    )
+    forms = [a]
+    compiled_diag_forms, diag_module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype, "part": "diagonal"},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    for _, compiled_f in zip(forms, compiled_diag_forms):
+        assert compiled_f.rank == 1
+    diag_form0 = compiled_diag_forms[0].form_integrals[0]
+
+    A_diag = np.zeros((4,), dtype=dtype)
+    A = np.zeros((4, 4), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+
+    ffi = diag_module.ffi
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    diag_kernel = getattr(diag_form0, f"tabulate_tensor_{dtype}")
+    diag_kernel(
+        ffi.cast(f"{c_type} *", A_diag.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    ffi = module.ffi
+
+    form0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(form0, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    np.testing.assert_allclose(A_diag, np.diag(A))
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_diagonal_mixed_form(dtype, compile_args):
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+
+    element_u = basix.ufl.element("Lagrange", "tetrahedron", 3, shape=(3,))
+    element_p = basix.ufl.element("Lagrange", "tetrahedron", 2)
+    element = basix.ufl.mixed_element([element_u, element_p])
+    space = ufl.FunctionSpace(domain, element)
+    u, p = ufl.TrialFunctions(space)
+    v, q = ufl.TestFunctions(space)
+    a = (
+        ufl.inner(ufl.grad(u), ufl.grad(v))
+        - ufl.inner(p, ufl.div(v))
+        + ufl.inner(ufl.div(u), q)
+        + ufl.inner(p.dx(0), q.dx(1))
+    ) * ufl.dx
+    forms = [a]
+    compiled_diag_forms, diag_module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype, "part": "diagonal"},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    for _, compiled_f in zip(forms, compiled_diag_forms):
+        assert compiled_f.rank == 1
+    diag_form0 = compiled_diag_forms[0].form_integrals[0]
+
+    A_diag = np.zeros((element.dim,), dtype=dtype)
+    A = np.zeros((element.dim, element.dim), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+
+    ffi = diag_module.ffi
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    diag_kernel = getattr(diag_form0, f"tabulate_tensor_{dtype}")
+    diag_kernel(
+        ffi.cast(f"{c_type} *", A_diag.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    ffi = module.ffi
+
+    form0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(form0, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    np.testing.assert_allclose(A_diag, np.diag(A))
+
+
+@pytest.mark.parametrize("shape", [(2,), (3,), (2, 2), (3, 3), (), (1,), (1, 1)])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_diagonal_mixed_block(dtype, compile_args, shape):
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+
+    element_u = basix.ufl.element("Lagrange", "tetrahedron", 2, shape=shape)
+    element_v = basix.ufl.element("Lagrange", "tetrahedron", 2, shape=shape)
+    element = basix.ufl.mixed_element([element_u, element_v])
+    space = ufl.FunctionSpace(domain, element)
+
+    u, p = ufl.TrialFunctions(space)
+    v, q = ufl.TestFunctions(space)
+    a = (ufl.inner(ufl.grad(u), ufl.grad(v)) - ufl.inner(p, v) + ufl.inner(u, q)) * ufl.dx
+    forms = [a]
+    compiled_diag_forms, diag_module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype, "part": "diagonal"},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    for _, compiled_f in zip(forms, compiled_diag_forms):
+        assert compiled_f.rank == 1
+    diag_form0 = compiled_diag_forms[0].form_integrals[0]
+
+    A_diag = np.zeros((element.dim,), dtype=dtype)
+    A = np.zeros((element.dim, element.dim), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+
+    ffi = diag_module.ffi
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    diag_kernel = getattr(diag_form0, f"tabulate_tensor_{dtype}")
+    diag_kernel(
+        ffi.cast(f"{c_type} *", A_diag.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        forms, options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    ffi = module.ffi
+
+    form0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(form0, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    np.testing.assert_allclose(A_diag, np.diag(A))

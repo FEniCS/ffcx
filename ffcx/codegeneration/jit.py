@@ -175,6 +175,25 @@ def compile_forms(
     """
     p = ffcx.options.get_options(options)
 
+    # If requested, replace bi-linear forms by their diagonal part
+    if p["part"] == "diagonal":
+        for i, form in enumerate(forms):
+            arguments = form.arguments()
+            numbers = tuple(sorted(set(a.number() for a in arguments)))
+            arity = len(numbers)
+            if arity == 2:
+                blocked_form = ufl.extract_blocks(form, replace_argument=False)
+                if isinstance(blocked_form, ufl.form.Form):
+                    # If there are no sub-elements, continue
+                    continue
+                diagonal_form = ufl.ZeroBaseForm(())
+                for j in range(len(blocked_form)):
+                    if blocked_form[j][j] is not None:
+                        diagonal_form += blocked_form[j][j]
+                if diagonal_form == 0:
+                    raise RuntimeError("Diagonal form seems to be zero.")
+                forms[i] = diagonal_form  # type: ignore
+
     # Get a signature for these forms
     module_name = "libffcx_forms_" + ffcx.naming.compute_signature(
         forms,
