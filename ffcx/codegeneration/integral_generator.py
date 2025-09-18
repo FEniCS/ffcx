@@ -20,7 +20,7 @@ from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import optimize
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.integral import BlockDataT
+from ffcx.ir.integral import BlockDataT, TensorPart
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
@@ -362,7 +362,11 @@ class IntegralGenerator:
         definitions = optimize(definitions, quadrature_rule)
         return definitions, intermediates
 
-    def generate_dofblock_partition(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
+    def generate_dofblock_partition(
+        self,
+        quadrature_rule: QuadratureRule,
+        domain: basix.CellType,
+    ):
         """Generate a dofblock partition."""
         block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
             "block_contributions"
@@ -391,7 +395,10 @@ class IntegralGenerator:
         intermediates = []
         for blockmap in block_groups:
             block_quadparts, intermediate = self.generate_block_parts(
-                quadrature_rule, domain, blockmap, block_groups[blockmap]
+                quadrature_rule,
+                domain,
+                blockmap,
+                block_groups[blockmap],
             )
             intermediates += intermediate
 
@@ -459,6 +466,8 @@ class IntegralGenerator:
         iq_symbol = self.backend.symbols.quadrature_loop_index
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
 
+        A_shape = self.ir.expression.tensor_shape
+
         for blockdata in blocklist:
             B_indices = []
             for i in range(block_rank):
@@ -466,6 +475,10 @@ class IntegralGenerator:
                 symbol = self.backend.symbols.argument_loop_index(i)
                 index = create_dof_index(table_ref, symbol)
                 B_indices.append(index)
+
+            if self.ir.part == TensorPart.diagonal and block_rank == 2:
+                assert len(A_shape) == 1
+                B_indices = [B_indices[0], B_indices[0]]
 
             ttypes = blockdata.ttypes
             if "zeros" in ttypes:
@@ -522,12 +535,15 @@ class IntegralGenerator:
                 blockdata, block_rank, quadrature_rule, domain, iq, B_indices
             )
             tables += table
-
             # Define B_rhs = fw * arg_factors
+            insert_rank = block_rank
+            if self.ir.part == TensorPart.diagonal:
+                insert_rank = 1
+                B_indices = [B_indices[0]]
             B_rhs = L.float_product([fw] + arg_factors)
 
             A_indices = []
-            for i in range(block_rank):
+            for i in range(insert_rank):
                 index = B_indices[i]
                 tabledata = blockdata.ma_data[i].tabledata
                 offset = tabledata.offset
@@ -547,7 +563,6 @@ class IntegralGenerator:
         body: list[L.LNode] = []
 
         A = self.backend.symbols.element_tensor
-        A_shape = self.ir.expression.tensor_shape
         for indices in keep:
             multi_index = L.MultiIndex(list(indices), A_shape)
             for expression in keep[indices]:
