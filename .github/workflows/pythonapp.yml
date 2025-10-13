@@ -30,6 +30,8 @@ jobs:
         exclude:
           - os: macos-latest
             python-version: 3.14
+          - os: windows-2022
+            python-version: 3.14
 
     steps:
       - name: Checkout FFCx
