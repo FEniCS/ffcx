@@ -117,9 +117,5 @@ ignore = ["RUF005", "RUF012", "RUF015"]
 [tool.ruff.lint.per-file-ignores]
 "test/*" = ["D"]
 
-[tool.ruff.lint.pyupgrade]
-# Remove once target version hits 3.10
-keep-runtime-typing = true
-
 [tool.ruff.lint.pydocstyle]
 convention = "google"
