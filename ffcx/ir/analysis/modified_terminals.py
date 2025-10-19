@@ -6,7 +6,6 @@
 """Modified terminals."""
 
 import logging
-import typing
 
 from ufl.classes import (
     Argument,
@@ -41,8 +40,8 @@ class ModifiedTerminal:
         flat_component: int,
         global_derivatives: tuple[int, ...],
         local_derivatives: tuple[int, ...],
-        averaged: typing.Union[None, str],
-        restriction: typing.Union[None, str],
+        averaged: None | str,
+        restriction: None | str,
     ):
         """Initialise.
 
@@ -260,7 +259,7 @@ def analyse_modified_terminal(expr):
     reference_value = reference_value or False
 
     # Consistency check
-    if isinstance(t, (SpatialCoordinate, Jacobian)):
+    if isinstance(t, SpatialCoordinate | Jacobian):
         pass
     else:
         if local_derivatives and not reference_value:

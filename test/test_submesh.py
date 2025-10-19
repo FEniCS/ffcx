@@ -49,6 +49,7 @@ def compute_tensor(forms: list[ufl.form.Form], dtype: str, compile_args: list[st
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.NULL,
         ffi.NULL,
+        ffi.NULL,
     )
     return A
 

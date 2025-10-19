@@ -11,9 +11,14 @@ on:
     tags:
       - "v*"
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
+
+  # Weekly build on Mondays at 8 am
+  schedule:
+    - cron: "0 8 * * 1"
 
 jobs:
   build:
@@ -21,35 +26,43 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         include:
+          - os: windows-2022
+            python-version: "3.11"
           - os: macos-latest
-            python-version: '3.12'
+            python-version: "3.12"
 
     steps:
       - name: Checkout FFCx
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Export GitHub Actions cache environment variables (Windows)
         if: runner.os == 'Windows'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+      - name: Set up CMake
+        if: runner.os == 'Windows'
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "~3.30.0"
+
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config
+          sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libblas-dev liblapack-dev
       - name: Install dependencies (non-Python, macOS)
         if: runner.os == 'macOS'
-        run: brew install ninja pkg-config
+        run: brew install ninja
 
       - name: Install FEniCS dependencies (Python, Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
@@ -73,17 +86,23 @@ jobs:
         run: pip install .[ci]
 
       - name: Static check with mypy
-        run: mypy ffcx/
+        run: mypy -p ffcx
+
       - name: ruff checks
         run: |
           ruff check .
           ruff format --check .
 
-      - name: Run units tests
-        run: python -m pytest -n auto --cov=ffcx/ --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml test/
+      - name: Run unit tests
+        run: >
+          python -m pytest test/
+          -n auto
+          -W error
+          --cov=ffcx/
+          --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
 
       - name: Upload to Coveralls
-        if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && github.head_ref == '' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' }}
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: coveralls
@@ -119,25 +138,25 @@ jobs:
           if-no-files-found: error
 
       - name: Checkout FEniCS/docs
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
-        uses: actions/checkout@v4
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.12 }}
+        uses: actions/checkout@v5
         with:
           repository: "FEniCS/docs"
           path: "docs"
           ssh-key: "${{ secrets.SSH_GITHUB_DOCS_PRIVATE_KEY }}"
       - name: Set version name
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.12 }}
         run: |
           echo "VERSION_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Copy documentation into repository
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.12 }}
         run: |
           cd docs
           git rm -r --ignore-unmatch ffcx/${{ env.VERSION_NAME }}
           mkdir -p ffcx/${{ env.VERSION_NAME }}
           cp -r ../doc/build/html/* ffcx/${{ env.VERSION_NAME }}
       - name: Commit and push documentation to FEniCS/docs
-        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.8 }}
+        if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.12 }}
         run: |
           cd docs
           git config --global user.email "fenics@github.com"

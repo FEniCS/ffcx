@@ -77,7 +77,7 @@ def test_numba_kernel_signature(dtype):
     a = ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
 
     # Generate and compile the kernel
-    kernel, code, module = generate_kernel([a], dtype, {})
+    kernel, _code, _module = generate_kernel([a], dtype, {})
 
     # Convert to numpy dtype
     np_dtype = np.dtype(dtype)

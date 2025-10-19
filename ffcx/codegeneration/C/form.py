@@ -23,7 +23,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir: FormIR, options):
-    """Generate UFC code for a form."""
+    """Generate UFCx code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
@@ -34,7 +34,6 @@ def generator(ir: FormIR, options):
     d["signature"] = f'"{ir.signature}"'
     d["rank"] = ir.rank
     d["num_coefficients"] = ir.num_coefficients
-    d["num_constants"] = ir.num_constants
 
     if len(ir.original_coefficient_positions) > 0:
         values = ", ".join(str(i) for i in ir.original_coefficient_positions)
@@ -58,6 +57,38 @@ def generator(ir: FormIR, options):
     else:
         d["coefficient_names_init"] = ""
         d["coefficient_names"] = "NULL"
+
+    d["num_constants"] = ir.num_constants
+    if ir.num_constants > 0:
+        d["constant_ranks_init"] = (
+            f"static const int constant_ranks_{ir.name}[{ir.num_constants}] = "
+            f"{{{str(ir.constant_ranks)[1:-1]}}};"
+        )
+        d["constant_ranks"] = f"constant_ranks_{ir.name}"
+
+        shapes = [
+            f"static const int constant_shapes_{ir.name}_{i}[{len(shape)}] = "
+            f"{{{str(shape)[1:-1]}}};"
+            for i, shape in enumerate(ir.constant_shapes)
+            if len(shape) > 0
+        ]
+        names = [f"constant_shapes_{ir.name}_{i}" for i in range(ir.num_constants)]
+        shapes1 = f"static const int* constant_shapes_{ir.name}[{ir.num_constants}] = " + "{"
+        for rank, name in zip(ir.constant_ranks, names):
+            if rank > 0:
+                shapes1 += f"{name},\n"
+            else:
+                shapes1 += "NULL,\n"
+        shapes1 += "};"
+        shapes.append(shapes1)
+
+        d["constant_shapes_init"] = "\n".join(shapes)
+        d["constant_shapes"] = f"constant_shapes_{ir.name}"
+    else:
+        d["constant_ranks_init"] = ""
+        d["constant_ranks"] = "NULL"
+        d["constant_shapes_init"] = ""
+        d["constant_shapes"] = "NULL"
 
     if len(ir.constant_names) > 0:
         values = ", ".join(f'"{name}"' for name in ir.constant_names)
@@ -86,29 +117,44 @@ def generator(ir: FormIR, options):
     integrals = []
     integral_ids = []
     integral_offsets = [0]
+    integral_domains = []
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
-    for itg_type in ("cell", "exterior_facet", "interior_facet"):
+    for itg_type in ("cell", "exterior_facet", "interior_facet", "vertex", "ridge"):
         unsorted_integrals = []
         unsorted_ids = []
-        for name, id in zip(ir.integral_names[itg_type], ir.subdomain_ids[itg_type]):
+        unsorted_domains = []
+        for name, domains, id in zip(
+            ir.integral_names[itg_type],
+            ir.integral_domains[itg_type],
+            ir.subdomain_ids[itg_type],
+        ):
             unsorted_integrals += [f"&{name}"]
             unsorted_ids += [id]
+            unsorted_domains += [domains]
 
         id_sort = np.argsort(unsorted_ids)
         integrals += [unsorted_integrals[i] for i in id_sort]
         integral_ids += [unsorted_ids[i] for i in id_sort]
+        integral_domains += [unsorted_domains[i] for i in id_sort]
 
-        integral_offsets.append(len(integrals))
+        integral_offsets.append(sum(len(d) for d in integral_domains))
 
     if len(integrals) > 0:
-        sizes = len(integrals)
-        values = ", ".join(integrals)
+        sizes = sum(len(domains) for domains in integral_domains)
+        values = ", ".join(
+            [
+                f"{i}_{domain.name}"
+                for i, domains in zip(integrals, integral_domains)
+                for domain in domains
+            ]
+        )
         d["form_integrals_init"] = (
             f"static ufcx_integral* form_integrals_{ir.name}[{sizes}] = {{{values}}};"
         )
         d["form_integrals"] = f"form_integrals_{ir.name}"
-        sizes = len(integral_ids)
-        values = ", ".join(str(i) for i in integral_ids)
+        values = ", ".join(
+            f"{i}" for i, domains in zip(integral_ids, integral_domains) for _ in domains
+        )
         d["form_integral_ids_init"] = f"int form_integral_ids_{ir.name}[{sizes}] = {{{values}}};"
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
     else:

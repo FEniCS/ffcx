@@ -36,13 +36,13 @@ class UFLData(typing.NamedTuple):
     # List of unique coordinate elements
     unique_coordinate_elements: list[basix.ufl._ElementBase]
     # List of ufl Expressions as tuples (expression, points, original_expression)
-    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.float64], ufl.core.expr.Expr]]
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
 
 
 def analyze_ufl_objects(
     ufl_objects: list[
         ufl.form.Form
-        | ufl.AbstractFiniteElement
+        | basix.ufl._ElementBase
         | ufl.Mesh
         | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
     ],
@@ -67,8 +67,8 @@ def analyze_ufl_objects(
     logger.info("Compiler stage 1: Analyzing UFL objects")
     logger.info(79 * "*")
 
-    elements: list[ufl.AbstractFiniteElement] = []
-    coordinate_elements: list[ufl.AbstractFiniteElement] = []
+    elements: list[basix.ufl._ElementBase] = []
+    coordinate_elements: list[basix.ufl._ElementBase] = []
 
     # Group objects by types
     forms: list[ufl.form.Form] = []
@@ -93,8 +93,8 @@ def analyze_ufl_objects(
 
     form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
     for data in form_data:
-        elements += data.unique_sub_elements
-        coordinate_elements += data.coordinate_elements
+        elements += data.unique_sub_elements  # type: ignore
+        coordinate_elements += data.coordinate_elements  # type: ignore
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
@@ -177,7 +177,7 @@ def _analyze_form(
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data = ufl.algorithms.compute_form_data(
+    form_data: ufl.algorithms.formdata.FormData = ufl.algorithms.compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
@@ -190,7 +190,7 @@ def _analyze_form(
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
-    for id, integral_data in enumerate(form_data.integral_data):
+    for id, integral_data in enumerate(form_data.integral_data):  # type: ignore
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
         # (but possibly different metadata).
@@ -201,6 +201,13 @@ def _analyze_form(
 
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
+
+            # Vertex integrals do not support discontinuous integrands.
+            if integral.integral_type() == "vertex":
+                elements = ufl.algorithms.extract_elements(integral)
+                if any(e.discontinuous for e in elements):
+                    raise TypeError("Vertex integrals not supported for discontinuous elements.")
+
             # If form contains a quadrature element, use the custom quadrature scheme
             custom_q = None
             for e in ufl.algorithms.extract_elements(integral):
@@ -253,7 +260,7 @@ def _has_custom_integrals(
         return o.integral_type() in ufl.custom_integral_types
     elif isinstance(o, ufl.classes.Form):
         return any(_has_custom_integrals(itg) for itg in o.integrals())
-    elif isinstance(o, (list, tuple)):
+    elif isinstance(o, list | tuple):
         return any(_has_custom_integrals(itg) for itg in o)
     else:
         raise NotImplementedError

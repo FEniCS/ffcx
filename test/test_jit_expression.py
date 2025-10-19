@@ -32,12 +32,14 @@ def test_matvec(compile_args):
     expr = ufl.Constant(mesh) * ufl.dot(a, f)
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args
     )
 
     ffi = cffi.FFI()
     expression = obj[0]
+
+    assert mesh.ufl_coordinate_element().basix_hash() == expression.coordinate_element_hash
 
     dtype = np.float64
     c_type = "double"
@@ -62,6 +64,7 @@ def test_matvec(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
 
     # Check the computation against correct NumPy value
@@ -98,7 +101,7 @@ def test_rank1(compile_args):
     expr = ufl.as_vector([u[1], u[0]]) + ufl.grad(u[0])
 
     points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
-    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args
     )
 
@@ -131,6 +134,7 @@ def test_rank1(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
 
     f = np.array([[1.0, 2.0, 3.0], [-4.0, -5.0, 6.0]])
@@ -175,7 +179,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
     # Compile expression at interpolation points of second order Lagrange space
     b_el = basix.create_element(basix.ElementFamily.P, basix.CellType[cell], 0, discontinuous=True)
     points = b_el.points
-    obj, module, code = ffcx.codegeneration.jit.compile_expressions(
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
         [(expr, points)], cffi_extra_compile_args=compile_args
     )
 
@@ -201,6 +205,7 @@ def test_elimiate_zero_tables_tensor(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
 
     def exact_expr(x):
@@ -259,6 +264,7 @@ def test_grad_constant(compile_args):
         ffi.cast(f"{c_xtype} *", coords.ctypes.data),
         ffi.cast("int *", entity_index.ctypes.data),
         ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
     )
 
     assert output[0] == pytest.approx(consts[1] * 2 * points[0, 0])
@@ -314,6 +320,7 @@ def test_facet_expression(compile_args):
             ffi.cast(f"{c_xtype} *", coords.ctypes.data),
             ffi.cast("int *", entity_index.ctypes.data),
             ffi.cast("uint8_t *", quad_perm.ctypes.data),
+            ffi.NULL,
         )
         # Assert that facet normal is perpendicular to tangent
         assert np.isclose(np.dot(output, tangent), 0)
@@ -323,3 +330,155 @@ def test_facet_expression(compile_args):
 
         # Check that facet normal is pointing out of the cell
         assert np.dot(midpoint - coords[i], output) > 0
+
+
+def test_facet_geometry_expressions(compile_args):
+    """Test various geometrical quantities for facet expressions."""
+    cell = basix.CellType.triangle
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    dtype = np.float64
+    points = np.array([[0.5]], dtype=dtype)
+    c_type = "double"
+    c_xtype = "double"
+    ffi = cffi.FFI()
+
+    # Prepare reference geometry and working arrays
+    coords = np.array([[1, 0, 0], [3, 0, 0], [0, 2, 0]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.empty(1, dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+    ffi_data = {
+        "const": ffi.cast(f"{c_type} *", consts.ctypes.data),
+        "coeff": ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        "coords": ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        "entity_index": ffi.cast("int *", entity_index.ctypes.data),
+        "quad_perm": ffi.cast("uint8_t *", quad_perm.ctypes.data),
+    }
+
+    def check_expression(expression_class, output_shape, entity_values, reference_values):
+        obj = ffcx.codegeneration.jit.compile_expressions(
+            [(expression_class(mesh), points)], cffi_extra_compile_args=compile_args
+        )[0][0]
+        output = np.zeros(output_shape, dtype=dtype)
+        for i, ref_val in enumerate(reference_values):
+            output[:] = 0
+            entity_index[0] = i
+            obj.tabulate_tensor_float64(
+                ffi.cast(f"{c_type} *", output.ctypes.data),
+                ffi_data["coeff"],
+                ffi_data["const"],
+                ffi_data["coords"],
+                ffi_data["entity_index"],
+                ffi_data["quad_perm"],
+                ffi.NULL,
+            )
+            np.testing.assert_allclose(output, ref_val)
+
+    check_expression(
+        ufl.geometry.CellFacetJacobian, (2, 1), entity_index, basix.cell.facet_jacobians(cell)
+    )
+    check_expression(
+        ufl.geometry.ReferenceFacetVolume,
+        (1,),
+        entity_index,
+        basix.cell.facet_reference_volumes(cell),
+    )
+    check_expression(
+        ufl.geometry.ReferenceCellEdgeVectors,
+        (3, 2),
+        entity_index,
+        np.array(
+            [
+                [
+                    basix.geometry(cell)[j] - basix.geometry(cell)[i]
+                    for i, j in basix.topology(cell)[1]
+                ]
+            ]
+        ),
+    )
+
+
+def test_facet_geometry_expressions_3D(compile_args):
+    cell = basix.CellType.tetrahedron
+    c_el = basix.ufl.element("Lagrange", cell, 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+    dtype = np.float64
+    points = np.array([[0.33, 0.33]], dtype=dtype)
+    c_type = "double"
+    c_xtype = "double"
+    ffi = cffi.FFI()
+
+    # Prepare reference geometry and working arrays
+    coords = np.array([[1, 0, 0], [3, 0, 0], [0, 2, 0], [0, 0, 1]], dtype=dtype)
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.empty(1, dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    # Check ReferenceFacetEdgeVectors
+    output = np.zeros((3, 3))
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    ref_fev = []
+    topology = basix.topology(cell)
+    geometry = basix.geometry(cell)
+    for facet in topology[-2]:
+        ref_fev += [geometry[facet[j]] - geometry[facet[i]] for i, j in triangle_edges]
+
+    ref_fev_code = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.geometry.ReferenceFacetEdgeVectors(mesh), points)],
+        cffi_extra_compile_args=compile_args,
+    )[0][0]
+    ref_fev_code.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+    np.testing.assert_allclose(output, np.asarray(ref_fev)[:3, :])
+
+
+def test_coordinate_free_expression(compile_args):
+    """Test evaluation of expressions that do not have a coordinate element (a domain)."""
+    # Test simple constant vector
+    expr = ufl.as_vector([1.0, 0.0])
+
+    points = np.array([[0.0, 0.0], [0.1, 0.1], [0.0, 1.0]])
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    dtype = np.float64
+    c_type = "double"
+
+    # 2 components for vector, 3 evaluation points
+    A = np.zeros((3, 2), dtype=dtype)
+
+    # No coefficients or constants needed for this domainless expression
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    # Coordinates are not used for domainless expressions but still required
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=dtype)
+
+    expression.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", A.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_type} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    # Check that the expression evaluates to [1, 0] at all points
+    expected = np.array([[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]])
+    assert np.allclose(A, expected)

@@ -40,11 +40,11 @@ def visualise_graph(Gx, filename):
             label = "*"
         elif isinstance(ex, Division):
             label = "/"
-        elif isinstance(ex, (IntValue, FloatValue)):
+        elif isinstance(ex, IntValue | FloatValue):
             label = ex.value()
-        elif isinstance(ex, (Indexed, ReferenceValue)):
+        elif isinstance(ex, Indexed | ReferenceValue):
             label = str(ex)
-        G.add_node(nd, label="[%d] %s" % (nd, label))
+        G.add_node(nd, label=f"[{nd:d}] {label}")
 
         arg = strip_modified_terminal(ex)
         if isinstance(arg, Argument):
