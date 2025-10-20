@@ -67,8 +67,8 @@ jobs:
       - name: Install FEniCS dependencies (Python, Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git
+          pip install git+https://github.com/FEniCS/ufl.git@2025.2.0
+          pip install git+https://github.com/FEniCS/basix.git@v0.10.0
 
       - name: Install FEniCS dependencies (Python, Windows)
         if: runner.os == 'Windows'
