@@ -7,7 +7,7 @@ name: FFCx CI
 on:
   push:
     branches:
-      - "**"
+      - "release"
     tags:
       - "v*"
   pull_request:
