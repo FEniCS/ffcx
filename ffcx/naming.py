@@ -45,7 +45,7 @@ def compute_signature(
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains: list[ufl.Mesh] = []
+            domains: list[ufl.AbstractDomain] = []
             for coeff in coeffs:
                 domains.append(*ufl.domain.extract_domains(coeff))
             for arg in args:
@@ -55,6 +55,7 @@ def compute_signature(
             for const in consts:
                 domains.append(*ufl.domain.extract_domains(const))
             domains = ufl.algorithms.analysis.unique_tuple(domains)
+            assert all([isinstance(domain, ufl.Mesh) for domain in domains])
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
             # Hash on UFL signature and points
