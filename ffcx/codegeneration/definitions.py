@@ -178,6 +178,7 @@ class FFCXBackendDefinitions:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
+        assert isinstance(domain, ufl.Mesh)
         coordinate_element = domain.ufl_coordinate_element()
         num_scalar_dofs = coordinate_element._sub_element.dim
 
