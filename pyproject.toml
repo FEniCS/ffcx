@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fenics-ffcx"
-version = "0.10.0.dev0"
+version = "0.11.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,9 +17,9 @@ authors = [
 dependencies = [
     "numpy>=1.21",
     "cffi",
-    "setuptools>=77.0.3",   # cffi with compilation support requires setuptools
-    "fenics-basix>=0.10.0.dev0",
-    "fenics-ufl>=2025.2.0.dev0",
+    "setuptools>=77.0.3",        # cffi with compilation support requires setuptools
+    "fenics-basix>=0.11.0.dev0",
+    "fenics-ufl>=2025.2.0",
 ]
 
 [project.urls]
@@ -84,12 +84,12 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["ffcx.*", "ffcx.ir.*", "ffcx.codegeneration.*"]
-disallow_any_unimported = false # most of these come from UFL
+disallow_any_unimported = false                           # most of these come from UFL
 
 [[tool.mypy.overrides]]
 module = ["ffcx.ir.*", "ffcx.codegeneration.*"]
 check_untyped_defs = false
-disallow_untyped_defs = false 
+disallow_untyped_defs = false
 
 [tool.ruff]
 line-length = 100
