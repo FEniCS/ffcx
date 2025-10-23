@@ -225,9 +225,9 @@ def _compute_integral_ir(
         # Compute representation
         entity_type = _entity_types[itg_data.integral_type]
         ufl_cell = itg_data.domain.ufl_cell()
-        cell_type = basix_cell_from_string(ufl_cell.cellname())
-        tdim = ufl_cell.topological_dimension()
-        assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
+        cell_type = basix_cell_from_string(ufl_cell.cellname)
+        tdim = ufl_cell.topological_dimension
+        assert all(tdim == itg.ufl_domain().topological_dimension for itg in itg_data.integrals)
 
         expression_ir = {
             "integral_type": itg_data.integral_type,
@@ -587,7 +587,7 @@ def _compute_expression_ir(
 
     base_ir["integral_type"] = "expression"
     if cell is not None:
-        if (tdim := cell.topological_dimension()) == (pdim := points.shape[1]):
+        if (tdim := cell.topological_dimension) == (pdim := points.shape[1]):
             base_ir["entity_type"] = "cell"
         elif tdim - 1 == pdim:
             base_ir["entity_type"] = "facet"
