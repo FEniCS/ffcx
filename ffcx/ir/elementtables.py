@@ -230,6 +230,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             raise RuntimeError("Not expecting reference value of x.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of x.")
+        assert isinstance(domain, ufl.Mesh)
         element = domain.ufl_coordinate_element()
         if not ld:
             fc = mt.flat_component
@@ -243,6 +244,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             raise RuntimeError("Not expecting reference value of J.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of J.")
+        assert isinstance(domain, ufl.Mesh)
         element = domain.ufl_coordinate_element()
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
@@ -252,6 +254,8 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
         return None
 
     assert (mt.averaged is None) or not (ld or gd)
+    assert isinstance(domain, ufl.Mesh)
+
     # Change derivatives format for table lookup
     tdim = domain.topological_dimension
     # The input `ld` is a tuple containing the index access of a recursive application of
