@@ -33,7 +33,11 @@ ffcx = "ffcx:__main__.main"
 [project.optional-dependencies]
 lint = ["ruff"]
 docs = ["sphinx", "sphinx_rtd_theme"]
-optional = ["numba", "pygraphviz==1.9"]
+optional = [
+    "numba; python_version != '3.14'",
+    "numba==0.63.0b1; python_version == '3.14'",
+    "pygraphviz==1.9"
+]
 test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
     "coveralls",
@@ -116,10 +120,6 @@ ignore = ["RUF005", "RUF012", "RUF015"]
 
 [tool.ruff.lint.per-file-ignores]
 "test/*" = ["D"]
-
-[tool.ruff.lint.pyupgrade]
-# Remove once target version hits 3.10
-keep-runtime-typing = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
