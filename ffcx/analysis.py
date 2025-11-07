@@ -228,8 +228,7 @@ def _analyze_form(
                 # Sending in a negative quadrature degree means that we want to be
                 # able to customize it at a later stage.
                 if qd < 0:
-                    qd = np.max(integral.metadata()["estimated_polynomial_degree"])
-
+                    qd = int(np.max(integral.metadata()["estimated_polynomial_degree"]))
                 # Extract quadrature rule
                 qr = integral.metadata().get("quadrature_rule", "default")
 
