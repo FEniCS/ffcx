@@ -2080,3 +2080,86 @@ def test_diagonal_mixed_block(dtype, compile_args, shape):
         ffi.NULL,
     )
     np.testing.assert_allclose(A_diag, np.diag(A))
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_multiple_integrands_same_quadrature(compile_args, dtype):
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "quadrilateral", 1, shape=(2,)))
+
+    element = basix.ufl.element("Lagrange", "quadrilateral", 1)
+    space = ufl.FunctionSpace(domain, element)
+
+    u = ufl.TrialFunction(space)
+    v = ufl.TestFunction(space)
+
+    q_4 = basix.quadrature.make_quadrature(basix.CellType.quadrilateral, 4)
+    q_5 = basix.quadrature.make_quadrature(basix.CellType.quadrilateral, 5)
+    np.testing.assert_allclose(q_4[0], q_5[0])
+    np.testing.assert_allclose(q_4[1], q_5[1])
+    dx_4 = ufl.Measure("dx", domain=domain, metadata={"quadrature_degree": 4})
+    a4 = ufl.inner(ufl.grad(u), ufl.grad(v)) * dx_4
+
+    dx_5 = ufl.Measure("dx", domain=domain, metadata={"quadrature_degree": 5})
+    a5 = ufl.inner(u, v) * dx_5
+
+    ref4 = (ufl.inner(ufl.grad(u), ufl.grad(v)) + ufl.inner(u, v)) * dx_4
+
+    forms = [a4 + a5, ref4]
+    compiled_forms, diag_module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    A_mixed = np.zeros((element.dim, element.dim), dtype=dtype)
+    w = np.array([], dtype=dtype)
+    c = np.array([], dtype=dtype)
+
+    ffi = diag_module.ffi
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+        ],
+        dtype=xdtype,
+    )
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+    kernel = getattr(compiled_forms[0].form_integrals[0], f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", A_mixed.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    A_ref = np.zeros_like(A_mixed)
+    ref_kernel = getattr(compiled_forms[1].form_integrals[0], f"tabulate_tensor_{dtype}")
+    ref_kernel(
+        ffi.cast(f"{c_type} *", A_ref.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    np.testing.assert_allclose(A_mixed, A_ref)
