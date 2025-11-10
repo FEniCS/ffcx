@@ -342,7 +342,7 @@ def _compute_integral_ir(
 
                 if cell_type not in grouped_integrands:
                     grouped_integrands[cell_type] = {}
-                if rule not in grouped_integrands:
+                if rule not in grouped_integrands[cell_type]:
                     grouped_integrands[cell_type][rule] = []
                 grouped_integrands[cell_type][rule].append(integral.integrand())
         sorted_integrals: dict[basix.CellType, dict[QuadratureRule, Integral]] = {
