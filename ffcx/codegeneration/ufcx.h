@@ -10,10 +10,12 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 #define UFCX_VERSION_MAJOR 0
 #define UFCX_VERSION_MINOR 11
 #define UFCX_VERSION_MAINTENANCE 0
-#define UFCX_VERSION_IS_RELEASE 0 // 0==false, 1==true
+#define UFCX_VERSION_IS_RELEASE false
 
 #if UFCX_VERSION_IS_RELEASE
 #define UFCX_VERSION                                                           \
@@ -23,7 +25,6 @@
   UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".0"
 #endif
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
