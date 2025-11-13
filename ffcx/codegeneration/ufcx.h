@@ -13,15 +13,14 @@
 #define UFCX_VERSION_MAJOR 0
 #define UFCX_VERSION_MINOR 11
 #define UFCX_VERSION_MAINTENANCE 0
-#define UFCX_VERSION_RELEASE 0
+#define UFCX_VERSION_IS_RELEASE 0 // 0==false, 1==true
 
-#if UFCX_VERSION_RELEASE
+#if UFCX_VERSION_IS_RELEASE
 #define UFCX_VERSION                                                           \
   UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE
 #else
 #define UFCX_VERSION                                                           \
-  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".de" \
-                     "v0"
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".0"
 #endif
 
 #include <stdbool.h>
