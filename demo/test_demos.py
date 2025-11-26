@@ -64,7 +64,7 @@ def test_C(file, scalar_type):
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
 def test_numba(file, scalar_type):
     """Test numba generation."""
-    opts = "-L numba"
+    opts = f"-L numba --scalar_type {scalar_type}"
 
     if "Complex" in file and scalar_type in ["float64", "float32"]:
         # Skip demos that are only implemented for complex scalars
