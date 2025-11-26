@@ -7,6 +7,8 @@
 
 import logging
 
+import basix
+
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
@@ -15,7 +17,7 @@ from ffcx.codegeneration.numba.numba_implementation import NumbaFormatter
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
+def generator(ir, domain: basix.CellType, options):
     """Integral generator."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
@@ -31,7 +33,7 @@ def generator(ir, options):
     ig = IntegralGenerator(ir, backend)
 
     # Generate code AST for the tabulate_tensor body
-    parts = ig.generate()
+    parts = ig.generate(domain)
 
     # Format code as string
     F = NumbaFormatter(options["scalar_type"])
@@ -69,7 +71,7 @@ def generator(ir, options):
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="True" if ir.expression.needs_facet_permutations else "False",
         scalar_type=options["scalar_type"],
-        coordinate_element=ir.coordinate_element_hash,
+        coordinate_element=ir.expression.coordinate_element_hash,
     )
 
     return "", implementation

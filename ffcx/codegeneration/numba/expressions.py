@@ -11,17 +11,19 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.numba.numba_implementation import NumbaFormatter
+from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
+def generator(ir: ExpressionIR, options):
     """Generate UFC code for an expression."""
     logger.info("Generating code for expression:")
-    logger.info(f"--- points: {ir.points}")
-    logger.info(f"--- name: {ir.name}")
-
-    factory_name = ir.name
+    assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
+    points = next(iter(ir.expression.integrand))[1].points
+    logger.info(f"--- points: {points}")
+    factory_name = ir.expression.name
+    logger.info(f"--- name: {factory_name}")
 
     # Format declaration
     declaration = expressions_template.declaration.format(
@@ -33,7 +35,7 @@ def generator(ir, options):
 
     d = {}
     d["name_from_uflfile"] = ir.name_from_uflfile
-    d["factory_name"] = ir.name
+    d["factory_name"] = factory_name
 
     parts = eg.generate()
 
