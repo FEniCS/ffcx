@@ -15,8 +15,7 @@ for file in os.listdir(demo_dir):
 
 @pytest.mark.parametrize("file", ufl_files)
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
-@pytest.mark.parametrize("language", ["C", "numba"])
-def test_demo(file, scalar_type, language):
+def test_C(file, scalar_type):
     """Test a demo."""
     if sys.platform.startswith("win32") and "complex" in scalar_type:
         # Skip complex demos on win32
@@ -33,7 +32,7 @@ def test_demo(file, scalar_type, language):
         # Skip demos that are only implemented for complex scalars
         pytest.skip(reason="Not implemented for real types")
 
-    opts = f"--scalar_type {scalar_type} -L {language}"
+    opts = f"--scalar_type {scalar_type}"
 
     if sys.platform.startswith("win32"):
         extra_flags = "/std:c17"
@@ -59,3 +58,13 @@ def test_demo(file, scalar_type, language):
             os.system(f"cd {demo_dir} && {cc} -I../ffcx/codegeneration {extra_flags} -c {file}.c")
             == 0
         )
+
+
+@pytest.mark.parametrize("file", ufl_files)
+# TODO: scalar_type
+def test_numba(file):
+    """Test numba generation."""
+    opts = "-L numba"
+
+    assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
+    assert os.system(f"python {file}.py") == 0
