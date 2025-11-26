@@ -17,6 +17,7 @@ authors = [
 dependencies = [
     "numpy>=1.21",
     "cffi",
+    "numba",
     "setuptools>=77.0.3",        # cffi with compilation support requires setuptools
     "fenics-basix>=0.11.0.dev0",
     "fenics-ufl>=2025.2.0",
@@ -33,7 +34,7 @@ ffcx = "ffcx:__main__.main"
 [project.optional-dependencies]
 lint = ["ruff"]
 docs = ["sphinx", "sphinx_rtd_theme"]
-optional = ["numba", "pygraphviz==1.9"]
+optional = ["pygraphviz==1.9"]
 test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
     "coveralls",
