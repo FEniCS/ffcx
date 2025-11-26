@@ -9,7 +9,7 @@ demo_dir = os.path.dirname(os.path.realpath(__file__))
 
 ufl_files = []
 for file in os.listdir(demo_dir):
-    if file.endswith(".py") and not file == "test_demos.py":
+    if file.endswith(".py") and not file.endswith("_numba.py") and not file == "test_demos.py":
         ufl_files.append(file[:-3])
 
 

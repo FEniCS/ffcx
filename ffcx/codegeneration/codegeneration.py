@@ -46,15 +46,15 @@ def generate_code(
     logger.info(79 * "*")
 
     lang = options.get("language", "C")
-    try:
+    # try:
         # Built-in
-        mod = import_module(f"ffcx.codegeneration.{lang}")
-    except ImportError:
-        # User defined language (experimental)
-        store_path = sys.path
-        sys.path = ["."]
-        mod = import_module(f"{lang}")
-        sys.path = store_path
+    mod = import_module(f"ffcx.codegeneration.{lang}")
+    # except ImportError:
+    #     # User defined language (experimental)
+    #     store_path = sys.path
+    #     sys.path = ["."]
+    #     mod = import_module(f"{lang}")
+    #     sys.path = store_path
 
     integral_generator = mod.integrals.generator
     form_generator = mod.form.generator
