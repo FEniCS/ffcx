@@ -29,7 +29,7 @@ def generator(ir, options):
     d["num_coefficients"] = ir.num_coefficients
     d["num_constants"] = ir.num_constants
 
-    orig_coeff = ', '.join(str(i) for i in ir.original_coefficient_positions)
+    orig_coeff = ", ".join(str(i) for i in ir.original_coefficient_positions)
     d["original_coefficient_position"] = f"[{orig_coeff}]"
 
     cnames = ir.coefficient_names
@@ -59,9 +59,7 @@ def generator(ir, options):
     # Check that no keys are redundant or have been missed
     from string import Formatter
 
-    fields = [
-        fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname
-    ]
+    fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
 
     for f in fields:
         if f not in d.keys():

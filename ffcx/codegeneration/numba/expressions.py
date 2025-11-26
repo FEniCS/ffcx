@@ -85,9 +85,7 @@ def generator(ir: ExpressionIR, options):
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated (also for ufcx_form)
     for name, (element, dofmap, cmap_family, cmap_degree) in ir.function_spaces.items():
-        code += [
-            f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="
-        ]
+        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
         code += ["{"]
         code += [f".finite_element = &{element},"]
         code += [f".dofmap = &{dofmap},"]
@@ -105,9 +103,9 @@ def generator(ir: ExpressionIR, options):
             for (name, _) in ir.function_spaces.items()
         )
         n = len(ir.function_spaces.items())
-        d[
-            "function_spaces_init"
-        ] = f"ufcx_function_space* function_spaces_{ir.name}[{n}] = {{{fs_list}}};"
+        d["function_spaces_init"] = (
+            f"ufcx_function_space* function_spaces_{ir.name}[{n}] = {{{fs_list}}};"
+        )
     else:
         d["function_spaces"] = "NULL"
         d["function_spaces_init"] = ""

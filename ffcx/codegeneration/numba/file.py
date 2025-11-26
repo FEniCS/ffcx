@@ -8,7 +8,6 @@
 # old implementation in FFC
 """Generate file output for numba."""
 
-
 import logging
 import pprint
 import textwrap

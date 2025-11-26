@@ -1,4 +1,5 @@
 """Numba implementation for output."""
+
 import ffcx.codegeneration.lnodes as L
 
 
@@ -15,6 +16,7 @@ def build_initializer_lists(values):
 
 class NumbaFormatter:
     """Implementation for numba output backend."""
+
     def __init__(self, scalar) -> None:
         """Initialise."""
         self.scalar_type = scalar
@@ -185,9 +187,16 @@ class NumbaFormatter:
 
     def format_mathfunction(self, f):
         """Format a math function."""
-        function_map = {"ln": "log", "acos": "arccos", "asin": "arcsin",
-                        "atan": "arctan", "atan2": "arctan2", "acosh": "arccosh",
-                        "asinh": "arcsinh", "atanh": "arctanh"}
+        function_map = {
+            "ln": "log",
+            "acos": "arccos",
+            "asin": "arcsin",
+            "atan": "arctan",
+            "atan2": "arctan2",
+            "acosh": "arccosh",
+            "asinh": "arcsinh",
+            "atanh": "arctanh",
+        }
         function = function_map.get(f.function, f.function)
         args = [self.c_format(arg) for arg in f.args]
         if "bessel" in function:
