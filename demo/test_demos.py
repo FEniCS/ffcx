@@ -61,10 +61,14 @@ def test_C(file, scalar_type):
 
 
 @pytest.mark.parametrize("file", ufl_files)
-# TODO: scalar_type
-def test_numba(file):
+@pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
+def test_numba(file, scalar_type):
     """Test numba generation."""
     opts = "-L numba"
 
+    if "Complex" in file and scalar_type in ["float64", "float32"]:
+        # Skip demos that are only implemented for complex scalars
+        pytest.skip(reason="Not implemented for real types")
+
     assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
-    assert os.system(f"python {file}.py") == 0
+    assert os.system(f"cd {demo_dir} && python {file}.py") == 0

@@ -7,10 +7,13 @@
 
 import logging
 
+import numpy as np
+
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.numba.numba_implementation import NumbaFormatter
+from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -40,7 +43,7 @@ def generator(ir: ExpressionIR, options):
     parts = eg.generate()
 
     tensor_size = 1
-    for dim in ir.tensor_shape:
+    for dim in ir.expression.tensor_shape:
         tensor_size *= dim
     n_coeff = 1000
     n_const = 1000
@@ -61,19 +64,21 @@ def generator(ir: ExpressionIR, options):
 
     originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
     d["original_coefficient_positions"] = f"[{originals}]"
-    points = ", ".join(str(p) for p in ir.points.flatten())
-    n = ir.points.size
-    d["points"] = f"[{points}]"
+    n = points.size
+    d["points"] = f"[{', '.join(str(p) for p in points.flatten())}]"
 
-    shape = ", ".join(str(i) for i in ir.expression_shape)
+    shape = ", ".join(str(i) for i in ir.expression.shape)
     d["value_shape"] = f"[{shape}]"
-    d["num_components"] = len(ir.expression_shape)
-    d["num_coefficients"] = len(ir.coefficient_numbering)
+    d["num_components"] = len(ir.expression.shape)
+    d["num_coefficients"] = len(ir.expression.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
-    d["num_points"] = ir.points.shape[0]
-    d["topological_dimension"] = ir.points.shape[1]
+    d["num_points"] = points.shape[0]
+    d["topological_dimension"] = points.shape[1]
     d["scalar_type"] = options["scalar_type"]
-    d["rank"] = len(ir.tensor_shape)
+    d["geom_type"] = dtype_to_scalar_dtype(options["scalar_type"])
+
+    d["rank"] = len(ir.expression.tensor_shape)
+    d["np_scalar_type"] = np.dtype(options["scalar_type"]).names
 
     names = ", ".join(f'"{name}"' for name in ir.coefficient_names)
     d["coefficient_names"] = f"[{names}]"
@@ -84,33 +89,33 @@ def generator(ir: ExpressionIR, options):
 
     # FIXME: Should be handled differently, revise how
     # ufcx_function_space is generated (also for ufcx_form)
-    for name, (element, dofmap, cmap_family, cmap_degree) in ir.function_spaces.items():
-        code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
-        code += ["{"]
-        code += [f".finite_element = &{element},"]
-        code += [f".dofmap = &{dofmap},"]
-        code += [f'.geometry_family = "{cmap_family}",']
-        code += [f".geometry_degree = {cmap_degree}"]
-        code += ["};"]
+    # for name, (element, dofmap, cmap_family, cmap_degree) in ir.function_spaces.items():
+    #     code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
+    #     code += ["{"]
+    #     code += [f".finite_element = &{element},"]
+    #     code += [f".dofmap = &{dofmap},"]
+    #     code += [f'.geometry_family = "{cmap_family}",']
+    #     code += [f".geometry_degree = {cmap_degree}"]
+    #     code += ["};"]
 
     d["function_spaces_alloc"] = "\n".join(code)
     d["function_spaces"] = ""
 
-    if len(ir.function_spaces) > 0:
-        d["function_spaces"] = f"function_spaces_{ir.name}"
-        fs_list = ", ".join(
-            f"&function_space_{name}_{ir.name_from_uflfile}"
-            for (name, _) in ir.function_spaces.items()
-        )
-        n = len(ir.function_spaces.items())
-        d["function_spaces_init"] = (
-            f"ufcx_function_space* function_spaces_{ir.name}[{n}] = {{{fs_list}}};"
-        )
-    else:
-        d["function_spaces"] = "NULL"
-        d["function_spaces_init"] = ""
+    # if len(ir.function_spaces) > 0:
+    #     d["function_spaces"] = f"function_spaces_{ir.name}"
+    #     fs_list = ", ".join(
+    #         f"&function_space_{name}_{ir.name_from_uflfile}"
+    #         for (name, _) in ir.function_spaces.items()
+    #     )
+    #     n = len(ir.function_spaces.items())
+    #     d["function_spaces_init"] = (
+    #         f"ufcx_function_space* function_spaces_{ir.name}[{n}] = {{{fs_list}}};"
+    #     )
+    # else:
+    #     d["function_spaces"] = "NULL"
+    #     d["function_spaces_init"] = ""
 
-    d["function_spaces"] = "0"
+    # d["function_spaces"] = "0"
 
     # Check that no keys are redundant or have been missed
     # from string import Formatter
