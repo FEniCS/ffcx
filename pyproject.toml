@@ -53,6 +53,7 @@ packages = [
     "ffcx",
     "ffcx.codegeneration",
     "ffcx.codegeneration.C",
+    "ffcx.codegeneration.numba",
     "ffcx.ir",
     "ffcx.ir.analysis",
 ]
