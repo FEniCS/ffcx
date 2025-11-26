@@ -62,7 +62,7 @@ def generate_code(
     file_generator = mod.file.generator
 
     code_integrals = [
-        integral_generator(integral_ir, options)
+        integral_generator(integral_ir, domain, options)
         for integral_ir in ir.integrals
         for domain in set(i[0] for i in integral_ir.expression.integrand.keys())
     ]
