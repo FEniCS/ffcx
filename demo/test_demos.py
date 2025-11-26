@@ -12,6 +12,8 @@ for file in os.listdir(demo_dir):
     if file.endswith(".py") and not file.endswith("_numba.py") and not file == "test_demos.py":
         ufl_files.append(file[:-3])
 
+skip_complex = ["BiharmonicHHJ", "BiharmonicRegge", "StabilisedStokes"]
+
 
 @pytest.mark.parametrize("file", ufl_files)
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
@@ -21,11 +23,7 @@ def test_C(file, scalar_type):
         # Skip complex demos on win32
         pytest.skip(reason="_Complex not supported on Windows")
 
-    if "complex" in scalar_type and file in [
-        "BiharmonicHHJ",
-        "BiharmonicRegge",
-        "StabilisedStokes",
-    ]:
+    if "complex" in scalar_type and file in skip_complex:
         # Skip demos that are not implemented for complex scalars
         pytest.skip(reason="Not implemented for complex types")
     elif "Complex" in file and scalar_type in ["float64", "float32"]:
@@ -66,7 +64,10 @@ def test_numba(file, scalar_type):
     """Test numba generation."""
     opts = f"-L numba --scalar_type {scalar_type}"
 
-    if "Complex" in file and scalar_type in ["float64", "float32"]:
+    if "complex" in scalar_type and file in skip_complex:
+        # Skip demos that are not implemented for complex scalars
+        pytest.skip(reason="Not implemented for complex types")
+    elif "Complex" in file and scalar_type in ["float64", "float32"]:
         # Skip demos that are only implemented for complex scalars
         pytest.skip(reason="Not implemented for real types")
 
