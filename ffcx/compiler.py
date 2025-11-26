@@ -79,7 +79,7 @@ from ffcx.ir.representation import compute_ir
 logger = logging.getLogger("ffcx")
 
 
-def _print_timing(stage: int, timing: float):
+def _print_timing(stage: int, timing: float) -> None:
     logger.info(f"Compiler stage {stage} finished in {timing:.4f} seconds.")
 
 

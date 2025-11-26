@@ -46,6 +46,7 @@ FFCX_DEFAULT_OPTIONS = {
         "logger verbosity, follows standard library levels, i.e. INFO=20, DEBUG=10, etc.",
         None,
     ),
+    "part": (str, "full", "Part of bilinear tensor to assemble", ("full", "diagonal")),
 }
 
 

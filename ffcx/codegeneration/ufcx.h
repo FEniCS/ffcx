@@ -11,16 +11,17 @@
 #pragma once
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 9
+#define UFCX_VERSION_MINOR 10
 #define UFCX_VERSION_MAINTENANCE 0
 #define UFCX_VERSION_RELEASE 0
 
 #if UFCX_VERSION_RELEASE
-#define UFCX_VERSION                                                            \
+#define UFCX_VERSION                                                           \
   UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE
 #else
-#define UFCX_VERSION                                                            \
-  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".dev0"
+#define UFCX_VERSION                                                           \
+  UFCX_VERSION_MAJOR "." UFCX_VERSION_MINOR "." UFCX_VERSION_MAINTENANCE ".de" \
+                     "v0"
 #endif
 
 #include <stdbool.h>
@@ -48,7 +49,9 @@ extern "C"
   {
     cell = 0,
     exterior_facet = 1,
-    interior_facet = 2
+    interior_facet = 2,
+    vertex = 3,
+    ridge = 4,
   } ufcx_integral_type;
 
   // </HEADER_DECL>
@@ -85,21 +88,24 @@ extern "C"
   /// For integrals not on interior facets, this argument has no effect and a
   /// null pointer can be passed. For interior facets the array will have size 2
   /// (one permutation for each cell adjacent to the facet).
+  /// @param[in] custom_data Custom user data passed to the tabulate function.
+  /// For example, a struct with additional data needed for the tabulate
+  /// function. See the implementation of runtime integrals for further details.
   typedef void(ufcx_tabulate_tensor_float32)(
-      float* restrict A, const float* restrict w,
-      const float* restrict c, const float* restrict coordinate_dofs,
+      float* restrict A, const float* restrict w, const float* restrict c,
+      const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 
   /// Tabulate integral into tensor A with compiled
   /// quadrature rule and double precision
   ///
   /// @see ufcx_tabulate_tensor_single
   typedef void(ufcx_tabulate_tensor_float64)(
-      double* restrict A, const double* restrict w,
-      const double* restrict c, const double* restrict coordinate_dofs,
+      double* restrict A, const double* restrict w, const double* restrict c,
+      const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 
 #ifndef __STDC_NO_COMPLEX__
   /// Tabulate integral into tensor A with compiled
@@ -110,7 +116,7 @@ extern "C"
       float _Complex* restrict A, const float _Complex* restrict w,
       const float _Complex* restrict c, const float* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 #endif // __STDC_NO_COMPLEX__
 
 #ifndef __STDC_NO_COMPLEX__
@@ -122,7 +128,7 @@ extern "C"
       double _Complex* restrict A, const double _Complex* restrict w,
       const double _Complex* restrict c, const double* restrict coordinate_dofs,
       const int* restrict entity_local_index,
-      const uint8_t* restrict quadrature_permutation);
+      const uint8_t* restrict quadrature_permutation, void* custom_data);
 #endif // __STDC_NO_COMPLEX__
 
   typedef struct ufcx_integral
@@ -136,19 +142,21 @@ extern "C"
 #endif // __STDC_NO_COMPLEX__
     bool needs_facet_permutations;
 
-    /// Get the hash of the coordinate element associated with the geometry of the mesh.
+    /// Hash of the coordinate element associated with the geometry of the mesh.
     uint64_t coordinate_element_hash;
+
+    uint8_t domain;
   } ufcx_integral;
 
   typedef struct ufcx_expression
   {
-    /// Evaluate expression into tensor A with compiled evaluation points
+    /// Evaluate expression into tensor A with compiled evaluation
+    /// points.
     ///
-    /// @param[out] A
-    ///         Dimensions: A[num_points][num_components][num_argument_dofs]
+    /// @param[out] A Dimensions:
+    /// `A[num_points][num_components][num_argument_dofs]`
     ///
     /// @see ufcx_tabulate_tensor
-    ///
     ufcx_tabulate_tensor_float32* tabulate_tensor_float32;
     ufcx_tabulate_tensor_float64* tabulate_tensor_float64;
 #ifndef __STDC_NO_COMPLEX__
@@ -178,7 +186,7 @@ extern "C"
     int entity_dimension;
 
     /// Coordinates of evaluations points. Dimensions:
-    /// points[num_points][entity_dimension]
+    /// `points[num_points][entity_dimension]`
     const double* points;
 
     /// Shape of expression. Dimension: value_shape[num_components]
@@ -190,6 +198,9 @@ extern "C"
     /// Rank, i.e. number of arguments
     int rank;
 
+    /// Hash of the coordinate element associated with the geometry of
+    /// the mesh.
+    uint64_t coordinate_element_hash;
   } ufcx_expression;
 
   /// This class defines the interface for the assembly of the global
@@ -203,9 +214,9 @@ extern "C"
   ///
   ///     A = a(V1, V2, ..., Vr, w1, w2, ..., wn),
   ///
-  /// where each argument Vj represents the application to the
-  /// sequence of basis functions of Vj and w1, w2, ..., wn are given
-  /// fixed functions (coefficients).
+  /// where each argument Vj represents the application to the sequence
+  /// of basis functions of Vj and w1, w2, ..., wn are given fixed
+  /// functions (coefficients).
   typedef struct ufcx_form
   {
     /// String identifying the form
@@ -217,20 +228,26 @@ extern "C"
     /// Number of coefficients (n)
     int num_coefficients;
 
-    /// Number of constants
-    int num_constants;
-
     /// Original coefficient position for each coefficient
     int* original_coefficient_positions;
 
     /// List of names of coefficients
     const char** coefficient_name_map;
 
+    /// Number of constants
+    int num_constants;
+
+    /// Ranks of constants
+    const int* constant_ranks;
+
+    /// Shapes of constants
+    const int** constant_shapes;
+
     /// List of names of constants
     const char** constant_name_map;
 
-    /// Get the hash of the finite element for the i-th argument function, where 0 <=
-    /// i < r + n.
+    /// Get the hash of the finite element for the i-th argument
+    /// function, where 0 <= i < r + n.
     ///
     /// @param i Argument number if 0 <= i < r Coefficient number j = i
     /// - r if r + j <= i < r + n
@@ -242,7 +259,8 @@ extern "C"
     /// IDs for each integral in form_integrals list
     int* form_integral_ids;
 
-    /// Offsets for cell, interior facet and exterior facet integrals in form_integrals list
+    /// Offsets for cell, interior facet and exterior facet integrals in
+    /// form_integrals list
     int* form_integral_offsets;
 
   } ufcx_form;

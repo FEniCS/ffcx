@@ -6,11 +6,11 @@
 """FFCx/UFC specific variable definitions."""
 
 import logging
-from typing import Union
 
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -50,7 +50,9 @@ def create_dof_index(tabledata, dof_index_symbol):
 class FFCXBackendDefinitions:
     """FFCx specific code definitions."""
 
-    def __init__(self, entity_type: str, integral_type: str, access, options):
+    entity_type: entity_types
+
+    def __init__(self, entity_type: entity_types, integral_type: str, access, options):
         """Initialise."""
         # Store ir and options
         self.integral_type = integral_type
@@ -68,6 +70,7 @@ class FFCXBackendDefinitions:
             ufl.geometry.FacetEdgeVectors: self.pass_through,
             ufl.geometry.CellEdgeVectors: self.pass_through,
             ufl.geometry.CellFacetJacobian: self.pass_through,
+            ufl.geometry.CellRidgeJacobian: self.pass_through,
             ufl.geometry.ReferenceCellVolume: self.pass_through,
             ufl.geometry.ReferenceFacetVolume: self.pass_through,
             ufl.geometry.ReferenceCellEdgeVectors: self.pass_through,
@@ -88,7 +91,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for a terminal."""
         # Call appropriate handler, depending on the type of terminal
         terminal = mt.terminal
@@ -99,13 +102,13 @@ class FFCXBackendDefinitions:
             ttype = ttype.__bases__[0]
 
         # Get the handler from the lookup, or None if not found
-        handler = self.handler_lookup.get(ttype)
+        handler = self.handler_lookup.get(ttype)  # type: ignore
 
         if handler is None:
             raise NotImplementedError(f"No handler for terminal type: {ttype}")
 
         # Call the handler
-        return handler(mt, tabledata, quadrature_rule, access)
+        return handler(mt, tabledata, quadrature_rule, access)  # type: ignore
 
     def coefficient(
         self,
@@ -113,7 +116,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for coefficients."""
         # For applying tensor product to coefficients, we need to know if the coefficient
         # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
@@ -130,10 +133,12 @@ class FFCXBackendDefinitions:
         num_dofs = tabledata.values.shape[3]
         bs = tabledata.block_size
         begin = tabledata.offset
+        assert bs is not None
+        assert begin is not None
         end = begin + bs * (num_dofs - 1) + 1
 
         if ttype == "zeros":
-            logging.debug("Not expecting zero coefficients to get this far.")
+            logger.debug("Not expecting zero coefficients to get this far.")
             return []
 
         # For a constant coefficient we reference the dofs directly, so no definition needed
@@ -169,10 +174,11 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Define x or J as a linear combination of coordinate dofs with given table data."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
+        assert isinstance(domain, ufl.Mesh)
         coordinate_element = domain.ufl_coordinate_element()
         num_scalar_dofs = coordinate_element._sub_element.dim
 
@@ -224,7 +230,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for the physical spatial coordinates.
 
         If physical coordinates are given:
@@ -239,7 +245,7 @@ class FFCXBackendDefinitions:
         if self.integral_type in ufl.custom_integral_types:
             # FIXME: Jacobian may need adjustment for custom_integral_types
             if mt.local_derivatives:
-                logging.exception("FIXME: Jacobian in custom integrals is not implemented.")
+                logger.exception("FIXME: Jacobian in custom integrals is not implemented.")
             return []
         else:
             return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
@@ -250,7 +256,7 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for the Jacobian of x(X)."""
         return self._define_coordinate_dofs_lincomb(mt, tabledata, quadrature_rule, access)
 
@@ -260,6 +266,6 @@ class FFCXBackendDefinitions:
         tabledata: UniqueTableReferenceT,
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
-    ) -> Union[L.Section, list]:
+    ) -> L.Section | list:
         """Return definition code for pass through terminals."""
         return []

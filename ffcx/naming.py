@@ -18,7 +18,7 @@ import ffcx.codegeneration
 
 
 def compute_signature(
-    ufl_objects: list[ufl.Form | tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]],
+    ufl_objects: list[ufl.Form] | list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]],
     tag: str,
 ) -> str:
     """Compute the signature hash.
@@ -45,16 +45,17 @@ def compute_signature(
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains: list[ufl.Mesh] = []
+            domains: list[ufl.AbstractDomain] = []
             for coeff in coeffs:
-                domains.append(*coeff.ufl_domains())
+                domains.append(*ufl.domain.extract_domains(coeff))
             for arg in args:
-                domains.append(*arg.ufl_function_space().ufl_domains())
+                domains.append(*ufl.domain.extract_domains(arg))
             for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
-                domains.append(*gc.ufl_domains())
+                domains.append(*ufl.domain.extract_domains(gc))
             for const in consts:
-                domains.append(const.ufl_domain())
+                domains.append(*ufl.domain.extract_domains(const))
             domains = ufl.algorithms.analysis.unique_tuple(domains)
+            assert all([isinstance(domain, ufl.Mesh) for domain in domains])
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
             # Hash on UFL signature and points

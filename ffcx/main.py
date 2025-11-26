@@ -14,6 +14,7 @@ import logging
 import pathlib
 import re
 import string
+from collections.abc import Sequence
 
 import ufl
 
@@ -46,8 +47,10 @@ for opt_name, (arg_type, opt_val, opt_desc, choices) in FFCX_DEFAULT_OPTIONS.ite
 parser.add_argument("ufl_file", nargs="+", help="UFL file(s) to be compiled")
 
 
-def main(args=None):
+def main(args: Sequence[str] | None = None) -> int:
     """Run ffcx on a UFL file."""
+    logging.captureWarnings(capture=True)
+
     xargs = parser.parse_args(args)
 
     # Parse all other options

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-project(ufcx VERSION 0.9.0 DESCRIPTION "UFCx interface header for finite element kernels"
+project(ufcx VERSION 0.11.0 DESCRIPTION "UFCx interface header for finite element kernels"
   LANGUAGES C
   HOMEPAGE_URL https://github.com/fenics/ffcx)
 include(GNUInstallDirs)
@@ -9,6 +9,7 @@ file(SHA1 ${PROJECT_SOURCE_DIR}/../ffcx/codegeneration/ufcx.h UFCX_HASH)
 message("Test hash: ${UFCX_HASH}")
 
 add_library(${PROJECT_NAME} INTERFACE)
+target_compile_features(${PROJECT_NAME} INTERFACE c_std_17)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}
   INTERFACE $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>

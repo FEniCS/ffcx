@@ -7,7 +7,7 @@
 
 import collections
 import logging
-from itertools import product
+from itertools import pairwise, product
 from typing import Any
 
 import ufl
@@ -61,10 +61,14 @@ class ExpressionGenerator:
 
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
-        # Currently we only support circumradius
         ufl_geometry = {
+            ufl.geometry.FacetEdgeVectors: "facet_edge_vectors",
+            ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-            ufl.geometry.ReferenceNormal: "reference_facet_normals",
+            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
+            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
+            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
+            ufl.geometry.ReferenceNormal: "reference_normals",
         }
 
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
@@ -79,7 +83,7 @@ class ExpressionGenerator:
                         raise RuntimeError(f"Expressions for cells do not support {t}.")
                     if t in ufl_geometry:
                         cells[t].add(
-                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
                         )
 
         parts = []
@@ -93,7 +97,7 @@ class ExpressionGenerator:
         """Generate tables of FE basis evaluated at specified points."""
         parts = []
 
-        tables = self.ir.expression.unique_tables
+        tables = self.ir.expression.unique_tables[self.quadrature_rule[0]]
         table_names = sorted(tables)
 
         for name in table_names:
@@ -121,7 +125,7 @@ class ExpressionGenerator:
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
-            body, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}"
+            body, f"Points loop body setup quadrature loop {self.quadrature_rule[1].id()}"
         )
 
         # Generate dofblock parts, some of this
@@ -135,7 +139,7 @@ class ExpressionGenerator:
             quadparts = []
         else:
             iq = self.backend.symbols.quadrature_loop_index
-            num_points = self.quadrature_rule.points.shape[0]
+            num_points = self.quadrature_rule[1].points.shape[0]
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
         return preparts, quadparts
 
@@ -144,11 +148,11 @@ class ExpressionGenerator:
         # Get annotated graph of factorisation
         F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
+        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule[1].id()}", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "varying")
         parts = L.commented_code_list(
             parts,
-            f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}",
+            f"Unstructured varying computations for quadrature rule {self.quadrature_rule[1].id()}",
         )
         return parts
 
@@ -212,7 +216,7 @@ class ExpressionGenerator:
         assert not blockdata.transposed, "Not handled yet"
         components = ufl.product(self.ir.expression.shape)
 
-        num_points = self.quadrature_rule.points.shape[0]
+        num_points = self.quadrature_rule[1].points.shape[0]
         A_shape = [num_points, components] + self.ir.expression.tensor_shape
         A = self.backend.symbols.element_tensor
         iq = self.backend.symbols.quadrature_loop_index
@@ -220,7 +224,7 @@ class ExpressionGenerator:
         # Check if DOFs in dofrange are equally spaced.
         expand_loop = False
         for bm in blockmap:
-            for a, b in zip(bm[1:-1], bm[2:]):
+            for a, b in pairwise(bm):
                 if b - a != bm[1] - bm[0]:
                     expand_loop = True
                     break
@@ -312,7 +316,7 @@ class ExpressionGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
+        name = f"{basename}{self.symbol_counters[basename]:d}"
         self.symbol_counters[basename] += 1
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
@@ -361,7 +365,13 @@ class ExpressionGenerator:
                 vexpr = L.ufl_to_lnodes(v, *vops)
 
                 is_cond = isinstance(v, ufl.classes.Condition)
-                dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
+                is_real = isinstance(v, ufl.classes.Real)
+                if is_cond:
+                    dtype = L.DataType.BOOL
+                elif is_real:
+                    dtype = L.DataType.REAL
+                else:
+                    dtype = L.DataType.SCALAR
 
                 j = len(intermediates)
                 vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)

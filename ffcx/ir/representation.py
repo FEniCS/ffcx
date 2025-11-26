@@ -7,7 +7,8 @@
 """Compiler stage 2: Code representation.
 
 Module computes intermediate representations of forms. For each UFC
-function, we extract the data needed for code generation at a later stage.
+function, we extract the data needed for code generation at a later
+stage.
 
 The representation should conform strictly to the naming and order of
 functions in UFC. Thus, for code generation of the function "foo", one
@@ -22,6 +23,7 @@ import logging
 import typing
 import warnings
 
+import basix
 import numpy as np
 import numpy.typing as npt
 import ufl
@@ -30,10 +32,34 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
-from ffcx.ir.integral import compute_integral_ir
+from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
 
 logger = logging.getLogger("ffcx")
+
+
+def basix_cell_from_string(string: str) -> basix.CellType:
+    """Convert a string to a Basix CellType."""
+    # Note: vertex -> point, rest identity
+    match string:
+        case "vertex":
+            return basix.CellType.point
+        case "interval":
+            return basix.CellType.interval
+        case "triangle":
+            return basix.CellType.triangle
+        case "tetrahedron":
+            return basix.CellType.tetrahedron
+        case "quadrilateral":
+            return basix.CellType.quadrilateral
+        case "hexahedron":
+            return basix.CellType.hexahedron
+        case "prism":
+            return basix.CellType.prism
+        case "pyramid":
+            return basix.CellType.pyramid
+        case _:
+            raise KeyError(f"Can not map '{string}' to a basix type.")
 
 
 class FormIR(typing.NamedTuple):
@@ -44,13 +70,16 @@ class FormIR(typing.NamedTuple):
     signature: str
     rank: int
     num_coefficients: int
-    num_constants: int
     name_from_uflfile: str
     original_coefficient_positions: list[int]
     coefficient_names: list[str]
+    num_constants: int
+    constant_ranks: list[int]
+    constant_shapes: list[list[int]]
     constant_names: list[str]
     finite_element_hashes: list[int]
     integral_names: dict[str, list[str]]
+    integral_domains: dict[str, list[basix.CellType]]
     subdomain_ids: dict[str, list[int]]
 
 
@@ -62,30 +91,13 @@ class QuadratureIR(typing.NamedTuple):
     weights: npt.NDArray[np.float64]
 
 
-class CommonExpressionIR(typing.NamedTuple):
-    """Common-ground for IntegralIR and ExpressionIR."""
-
-    integral_type: str
-    entity_type: str
-    tensor_shape: list[int]
-    coefficient_numbering: dict[ufl.Coefficient, int]
-    coefficient_offsets: dict[ufl.Coefficient, int]
-    original_constant_offsets: dict[ufl.Constant, int]
-    unique_tables: dict[str, npt.NDArray[np.float64]]
-    unique_table_types: dict[str, str]
-    integrand: dict[QuadratureRule, dict]
-    name: str
-    needs_facet_permutations: bool
-    shape: list[int]
-
-
 class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
     expression: CommonExpressionIR
     rank: int
     enabled_coefficients: list[bool]
-    coordinate_element_hash: str
+    part: TensorPart
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -110,7 +122,7 @@ def compute_ir(
     analysis: UFLData,
     object_names: dict[int, str],
     prefix: str,
-    options: dict[str, npt.DTypeLike | int | float],
+    options: dict[str, npt.DTypeLike | int | float | bool],
     visualise: bool,
 ) -> DataIR:
     """Compute intermediate representation."""
@@ -119,16 +131,20 @@ def compute_ir(
     logger.info(79 * "*")
 
     # Compute object names
-    # NOTE: This is done here for performance reasons, because repeated calls
-    # within each IR computation would be expensive due to UFL signature computations
-    finite_element_hashes = {e: e.basix_hash() for e in analysis.unique_elements}
+    # NOTE: This is done here for performance reasons, because repeated
+    # calls within each IR computation would be expensive due to UFL
+    # signature computations.
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
-        form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)
-        for itg_index, itg_data in enumerate(fd.integral_data):
+        form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)  # type: ignore
+        for itg_index, itg_data in enumerate(fd.integral_data):  # type: ignore
             integral_names[(fd_index, itg_index)] = naming.integral_name(
-                fd.original_form, itg_data.integral_type, fd_index, itg_data.subdomain_id, prefix
+                fd.original_form,  # type: ignore
+                itg_data.integral_type,
+                fd_index,
+                itg_data.subdomain_id,
+                prefix,
             )
 
     irs = [
@@ -137,7 +153,6 @@ def compute_ir(
             i,
             analysis.element_numbers,
             integral_names,
-            finite_element_hashes,
             options,
             visualise,
         )
@@ -145,6 +160,10 @@ def compute_ir(
     ]
     ir_integrals = list(itertools.chain(*irs))
 
+    integral_domains = {
+        i.expression.name: set(j[0] for j in i.expression.integrand.keys()) for a in irs for i in a
+    }
+    diagonalise = TensorPart.from_str(str(options["part"]))
     ir_forms = [
         _compute_form_ir(
             fd,
@@ -152,9 +171,9 @@ def compute_ir(
             prefix,
             form_names,
             integral_names,
-            analysis.element_numbers,
-            finite_element_hashes,
+            integral_domains,
             object_names,
+            diagonalise,
         )
         for (i, fd) in enumerate(analysis.form_data)
     ]
@@ -168,7 +187,6 @@ def compute_ir(
             options,
             visualise,
             object_names,
-            finite_element_hashes,
         )
         for i, expr in enumerate(analysis.expressions)
     ]
@@ -185,7 +203,6 @@ def _compute_integral_ir(
     form_index,
     element_numbers,
     integral_names,
-    finite_element_hashes,
     options,
     visualise,
 ) -> list[IntegralIR]:
@@ -196,6 +213,7 @@ def _compute_integral_ir(
         "interior_facet": "facet",
         "vertex": "vertex",
         "custom": "cell",
+        "ridge": "ridge",
     }
 
     # Iterate over groups of integrals
@@ -206,23 +224,29 @@ def _compute_integral_ir(
 
         # Compute representation
         entity_type = _entity_types[itg_data.integral_type]
-        cell = itg_data.domain.ufl_cell()
-        cellname = cell.cellname()
-        tdim = cell.topological_dimension()
-        assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
+        ufl_cell = itg_data.domain.ufl_cell()
+        cell_type = basix_cell_from_string(ufl_cell.cellname)
+        tdim = ufl_cell.topological_dimension
+        assert all(tdim == itg.ufl_domain().topological_dimension for itg in itg_data.integrals)
 
         expression_ir = {
             "integral_type": itg_data.integral_type,
             "entity_type": entity_type,
             "shape": (),
+            "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
         }
         ir = {
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
-            "coordinate_element_hash": finite_element_hashes[
-                itg_data.domain.ufl_coordinate_element()
-            ],
+            "part": TensorPart.from_str(options["part"]),
         }
+        diagonalise = False
+        if form_data.rank == 2 and ir["part"] == TensorPart.diagonal:
+            diagonalise = True
+            ir["rank"] = 1
+            assert form_data.argument_elements[0] == form_data.argument_elements[1], (
+                "Can only diagonalise forms with identical arguments."
+            )
 
         # Get element space dimensions
         unique_elements = element_numbers.keys()
@@ -242,22 +266,27 @@ def _compute_integral_ir(
         else:
             expression_ir["tensor_shape"] = argument_dimensions
 
+        # Modify output tensor shape if diagonalizing
+        if diagonalise:
+            expression_ir["tensor_shape"] = expression_ir["tensor_shape"][:1]
+
         integral_type = itg_data.integral_type
-        cell = itg_data.domain.ufl_cell()
 
         # Group integrands with the same quadrature rule
-        grouped_integrands: dict[QuadratureRule, list[ufl.core.expr.Expr]] = {}
+        grouped_integrands: dict[
+            basix.CellType, dict[QuadratureRule, list[ufl.core.expr.Expr]]
+        ] = {}
         use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
         for integral in itg_data.integrals:
             md = integral.metadata() or {}
             scheme = md["quadrature_rule"]
             tensor_factors = None
+            rules = {}
             if scheme == "custom":
                 points = md["quadrature_points"]
                 weights = md["quadrature_weights"]
+                rules[cell_type] = (points, weights, None)
             elif scheme == "vertex":
-                # FIXME: Could this come from basix?
-
                 # The vertex scheme, i.e., averaging the function value in the
                 # vertices and multiplying with the simplex volume, is only of
                 # order 1 and inferior to other generic schemes in terms of
@@ -267,95 +296,71 @@ def _compute_integral_ir(
                 # prescribed in certain cases.
 
                 degree = md["quadrature_degree"]
-                if integral_type != "cell":
-                    facet_types = cell.facet_types()
-                    assert len(facet_types) == 1
-                    cellname = facet_types[0].cellname()
+                if "facet" in integral_type:
+                    facet_types = basix.cell.subentity_types(cell_type)[-2]
+                    assert len(set(facet_types)) == 1
+                    cell_type = facet_types[0]
+                elif integral_type == "ridge":
+                    ridge_types = basix.cell.subentity_types(cell_type)[-3]
+                    assert len(set(ridge_types)) == 1
+                    cell_type = ridge_types[0]
+
                 if degree > 1:
                     warnings.warn(
                         "Explicitly selected vertex quadrature (degree 1), "
                         f"but requested degree is {degree}."
                     )
-                if cellname == "tetrahedron":
-                    points, weights = (
-                        np.array(
-                            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-                        ),
-                        np.array([1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0]),
-                    )
-                elif cellname == "triangle":
-                    points, weights = (
-                        np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]),
-                        np.array([1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0]),
-                    )
-                elif cellname == "interval":
-                    # Trapezoidal rule
-                    points, weights = (np.array([[0.0], [1.0]]), np.array([1.0 / 2.0, 1.0 / 2.0]))
-                elif cellname == "quadrilateral":
-                    points, weights = (
-                        np.array([[0.0, 0], [1.0, 0.0], [0.0, 1.0], [1.0, 1]]),
-                        np.array([1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0]),
-                    )
-                elif cellname == "hexahedron":
-                    points, weights = (
-                        np.array(
-                            [
-                                [0.0, 0.0, 0.0],
-                                [1.0, 0.0, 0.0],
-                                [0.0, 1.0, 0.0],
-                                [1.0, 1.0, 0.0],
-                                [0.0, 0.0, 1.0],
-                                [1.0, 0.0, 1.0],
-                                [0.0, 1.0, 1.0],
-                                [1.0, 1.0, 1.0],
-                            ]
-                        ),
-                        np.array(
-                            [
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                                1.0 / 8.0,
-                            ]
-                        ),
-                    )
-                else:
-                    raise RuntimeError(f"Vertex scheme is not supported for cell: {cellname}")
+                points = basix.cell.geometry(cell_type)
+                cell_volume = basix.cell.volume(cell_type)
+                weights = np.full(
+                    points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
+                )
+                rules[cell_type] = (points, weights, None)
             else:
                 degree = md["quadrature_degree"]
                 points, weights, tensor_factors = create_quadrature_points_and_weights(
                     integral_type,
-                    cell,
+                    ufl_cell,
                     degree,
                     scheme,
                     form_data.argument_elements,
                     use_sum_factorization,
                 )
+                rules = {
+                    basix_cell_from_string(i): (
+                        points[i],
+                        weights[i],
+                        tensor_factors[i] if i in tensor_factors else None,
+                    )
+                    for i in points
+                }
 
-            points = np.asarray(points)
-            weights = np.asarray(weights)
-            rule = QuadratureRule(points, weights, tensor_factors)
+            for cell_type, (points, weights, tensor_factors) in rules.items():
+                points = np.asarray(points)
+                weights = np.asarray(weights)
+                rule = QuadratureRule(points, weights, tensor_factors)
 
-            if rule not in grouped_integrands:
-                grouped_integrands[rule] = []
-            grouped_integrands[rule].append(integral.integrand())
-        sorted_integrals: dict[QuadratureRule, Integral] = {}
-        for rule, integrands in grouped_integrands.items():
-            integrands_summed = sorted_expr_sum(integrands)
+                if cell_type not in grouped_integrands:
+                    grouped_integrands[cell_type] = {}
+                if rule not in grouped_integrands[cell_type]:
+                    grouped_integrands[cell_type][rule] = []
+                grouped_integrands[cell_type][rule].append(integral.integrand())
+        sorted_integrals: dict[basix.CellType, dict[QuadratureRule, Integral]] = {
+            cell_type: {} for cell_type in grouped_integrands
+        }
+        for cell_type, integrands_by_cell in grouped_integrands.items():
+            for rule, integrands in integrands_by_cell.items():
+                integrands_summed = sorted_expr_sum(integrands)
 
-            integral_new = Integral(
-                integrands_summed,
-                itg_data.integral_type,
-                itg_data.domain,
-                itg_data.subdomain_id,
-                {},
-                None,
-            )
-            sorted_integrals[rule] = integral_new
+                integral_new = Integral(
+                    integrands_summed,
+                    itg_data.integral_type,
+                    itg_data.domain,
+                    itg_data.subdomain_id,
+                    {},
+                    None,
+                )
+                sorted_integrals[cell_type][rule] = integral_new
 
         # TODO: See if coefficient_numbering can be removed
         # Build coefficient numbering for UFC interface here, to avoid
@@ -388,8 +393,9 @@ def _compute_integral_ir(
         expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrand_map: dict[QuadratureRule, ufl.core.expr.Expr] = {
-            rule: integral.integrand() for rule, integral in sorted_integrals.items()
+        integrand_map: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]] = {
+            cell_type: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
+            for cell_type, cell_integrals in sorted_integrals.items()
         }
 
         # Build more specific intermediate representation
@@ -419,9 +425,9 @@ def _compute_form_ir(
     prefix,
     form_names,
     integral_names,
-    element_numbers,
-    finite_element_hashes,
+    integral_domains,
     object_names,
+    tensor_part: TensorPart,
 ) -> FormIR:
     """Compute intermediate representation of form."""
     logger.info(f"Computing IR for form {form_id}")
@@ -433,14 +439,24 @@ def _compute_form_ir(
     ir["name"] = form_names[form_id]
 
     ir["signature"] = form_data.original_form.signature()
+    args = form_data.original_form.arguments()
+    if tensor_part == TensorPart.diagonal and len(args) == 2:
+        assert args[0].ufl_function_space() == args[1].ufl_function_space(), (
+            "Can only diagonalise forms with identical arguments."
+        )
+        ir["rank"] = 1
+    else:
+        ir["rank"] = len(form_data.original_form.arguments())
 
-    ir["rank"] = len(form_data.original_form.arguments())
     ir["num_coefficients"] = len(form_data.reduced_coefficients)
-    ir["num_constants"] = len(form_data.original_form.constants())
 
     ir["coefficient_names"] = [
         object_names.get(id(obj), f"w{j}") for j, obj in enumerate(form_data.reduced_coefficients)
     ]
+
+    ir["num_constants"] = len(form_data.original_form.constants())
+    ir["constant_ranks"] = [len(obj.ufl_shape) for obj in form_data.original_form.constants()]
+    ir["constant_shapes"] = [obj.ufl_shape for obj in form_data.original_form.constants()]
 
     ir["constant_names"] = [
         object_names.get(id(obj), f"c{j}")
@@ -450,8 +466,7 @@ def _compute_form_ir(
     ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
     ir["finite_element_hashes"] = [
-        finite_element_hashes[e]
-        for e in form_data.argument_elements + form_data.coefficient_elements
+        e.basix_hash() for e in form_data.argument_elements + form_data.coefficient_elements
     ]
 
     form_name = object_names.get(id(form_data.original_form), form_id)
@@ -461,11 +476,10 @@ def _compute_form_ir(
     # Store names of integrals and subdomain_ids for this form, grouped
     # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
-    ir["integral_names"] = {}
-    ir["subdomain_ids"] = {}
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet")
+    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "ridge")
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
+    ir["integral_domains"] = {itg_type: [] for itg_type in ufcx_integral_types}
     for itg_index, itg_data in enumerate(form_data.integral_data):
         # UFL is using "otherwise" for default integrals (over whole mesh)
         # but FFCx needs integers, so otherwise = -1
@@ -476,37 +490,38 @@ def _compute_form_ir(
             raise ValueError("Integral subdomain IDs must be non-negative.")
         ir["subdomain_ids"][integral_type] += subdomain_ids
         for _ in range(len(subdomain_ids)):
-            ir["integral_names"][integral_type] += [integral_names[(form_id, itg_index)]]
+            iname = integral_names[(form_id, itg_index)]
+            ir["integral_names"][integral_type] += [iname]
+            ir["integral_domains"][integral_type] += [integral_domains[iname]]
 
     return FormIR(**ir)
 
 
 def _compute_expression_ir(
-    expression,
+    expr,
     index,
     prefix,
     analysis,
     options,
     visualise,
     object_names,
-    finite_element_hashes,
 ):
-    """Compute intermediate representation of expression."""
-    logger.info(f"Computing IR for expression {index}")
+    """Compute intermediate representation of an Expression."""
+    logger.info(f"Computing IR for Expression {index}")
 
     # Compute representation
     ir = {}
     base_ir = {}
-    original_expression = (expression[2], expression[1])
+    original_expr = (expr[2], expr[1])
 
-    base_ir["name"] = naming.expression_name(original_expression, prefix)
+    base_ir["name"] = naming.expression_name(original_expr, prefix)
 
-    original_expression = expression[2]
-    points = expression[1]
-    expression = expression[0]
+    original_expr = expr[2]
+    points = expr[1]
+    expr = expr[0]
 
     try:
-        cell = ufl.domain.extract_unique_domain(expression).ufl_cell()
+        cell = ufl.domain.extract_unique_domain(expr).ufl_cell()
     except AttributeError:
         # This case corresponds to a spatially constant expression
         # without any dependencies
@@ -520,16 +535,16 @@ def _compute_expression_ir(
     }
 
     # Extract dimensions for elements of arguments only
-    arguments = ufl.algorithms.extract_arguments(expression)
+    arguments = ufl.algorithms.extract_arguments(expr)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
     argument_dimensions = [element_dimensions[element] for element in argument_elements]
 
     tensor_shape = argument_dimensions
     base_ir["tensor_shape"] = tensor_shape
 
-    base_ir["shape"] = list(expression.ufl_shape)
+    base_ir["shape"] = list(expr.ufl_shape)
 
-    coefficients = ufl.algorithms.extract_coefficients(expression)
+    coefficients = ufl.algorithms.extract_coefficients(expr)
     coefficient_numbering = {}
     for i, coeff in enumerate(coefficients):
         coefficient_numbering[coeff] = i
@@ -538,7 +553,7 @@ def _compute_expression_ir(
     base_ir["coefficient_numbering"] = coefficient_numbering
 
     original_coefficient_positions = []
-    original_coefficients = ufl.algorithms.extract_coefficients(original_expression)
+    original_coefficients = ufl.algorithms.extract_coefficients(original_expr)
     for coeff in coefficients:
         original_coefficient_positions.append(original_coefficients.index(coeff))
 
@@ -548,12 +563,11 @@ def _compute_expression_ir(
 
     ir["constant_names"] = [
         object_names.get(id(obj), f"c{j}")
-        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expression))
+        for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expr))
     ]
 
-    expression_name = object_names.get(id(original_expression), index)
-
-    ir["name_from_uflfile"] = f"expression_{prefix}_{expression_name}"
+    expr_name = object_names.get(id(original_expr), index)
+    ir["name_from_uflfile"] = f"expression_{prefix}_{expr_name}"
 
     if len(argument_elements) > 1:
         raise RuntimeError("Expression with more than one Argument not implemented.")
@@ -573,7 +587,7 @@ def _compute_expression_ir(
 
     base_ir["integral_type"] = "expression"
     if cell is not None:
-        if (tdim := cell.topological_dimension()) == (pdim := points.shape[1]):
+        if (tdim := cell.topological_dimension) == (pdim := points.shape[1]):
             base_ir["entity_type"] = "cell"
         elif tdim - 1 == pdim:
             base_ir["entity_type"] = "facet"
@@ -589,15 +603,20 @@ def _compute_expression_ir(
     # Build offsets for Constants
     original_constant_offsets = {}
     _offset = 0
-    for constant in ufl.algorithms.analysis.extract_constants(original_expression):
+    for constant in ufl.algorithms.analysis.extract_constants(original_expr):
         original_constant_offsets[constant] = _offset
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
 
+    expr_domain = ufl.domain.extract_unique_domain(expr)
+    base_ir["coordinate_element_hash"] = (
+        expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
+    )
+
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
-    integrands = {rule: expression}
+    integrands = {"": {rule: expr}}
 
     if cell is None:
         assert (

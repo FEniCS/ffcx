@@ -10,6 +10,7 @@ import logging
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.definitions import entity_types
 
 logger = logging.getLogger("ffcx")
 
@@ -48,7 +49,7 @@ def format_mt_name(basename, mt):
     # Format local derivatives
     if mt.local_derivatives:
         # Convert "listing" derivative multindex into "counting" representation
-        gdim = ufl.domain.extract_unique_domain(mt.terminal).geometric_dimension()
+        gdim = ufl.domain.extract_unique_domain(mt.terminal).geometric_dimension
         ld_counting = tuple(mt.local_derivatives.count(i) for i in range(gdim))
         der = f"_d{''.join(map(str, ld_counting))}"
         access += der
@@ -95,7 +96,7 @@ class FFCXBackendSymbols:
         # Table for chunk of custom quadrature points (physical coordinates).
         self.custom_points_table = L.Symbol("points_chunk", dtype=L.DataType.REAL)
 
-    def entity(self, entity_type, restriction):
+    def entity(self, entity_type: entity_types, restriction):
         """Entity index for lookup in element tables."""
         if entity_type == "cell":
             # Always 0 for cells (even with restriction)
@@ -108,8 +109,10 @@ class FFCXBackendSymbols:
                 return self.entity_local_index[0]
         elif entity_type == "vertex":
             return self.entity_local_index[0]
+        elif entity_type == "ridge":
+            return self.entity_local_index[0]
         else:
-            logging.exception(f"Unknown entity_type {entity_type}")
+            logger.exception(f"Unknown entity_type {entity_type}")
 
     def argument_loop_index(self, iarg):
         """Loop index for argument iarg."""
@@ -135,8 +138,10 @@ class FFCXBackendSymbols:
 
     def J_component(self, mt):
         """Jacobian component."""
-        # FIXME: Add domain number!
-        return L.Symbol(format_mt_name("J", mt), dtype=L.DataType.REAL)
+        return L.Symbol(
+            format_mt_name(f"J{ufl.domain.extract_unique_domain(mt.expr).ufl_id()}", mt),
+            dtype=L.DataType.REAL,
+        )
 
     def domain_dof_access(self, dof, component, gdim, num_scalar_dofs, restriction):
         """Domain DOF access."""
@@ -166,7 +171,7 @@ class FFCXBackendSymbols:
     def coefficient_value(self, mt):
         """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
-        return L.Symbol(format_mt_name("w%d" % (c,), mt), dtype=L.DataType.SCALAR)
+        return L.Symbol(format_mt_name(f"w{c:d}", mt), dtype=L.DataType.SCALAR)
 
     def constant_index_access(self, constant, index):
         """Constant index access."""
@@ -175,7 +180,7 @@ class FFCXBackendSymbols:
         return c[offset + index]
 
     # TODO: Remove this, use table_access instead
-    def element_table(self, tabledata, entity_type, restriction):
+    def element_table(self, tabledata, entity_type: entity_types, restriction):
         """Get an element table."""
         entity = self.entity(entity_type, restriction)
 

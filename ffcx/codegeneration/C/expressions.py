@@ -25,7 +25,7 @@ def generator(ir: ExpressionIR, options):
     """Generate UFC code for an expression."""
     logger.info("Generating code for expression:")
     assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
-    points = next(iter(ir.expression.integrand)).points
+    points = next(iter(ir.expression.integrand))[1].points
     logger.info(f"--- points: {points}")
     factory_name = ir.expression.name
     logger.info(f"--- name: {factory_name}")
@@ -102,6 +102,8 @@ def generator(ir: ExpressionIR, options):
     else:
         d["constant_names_init"] = ""
         d["constant_names"] = "NULL"
+
+    d["coordinate_element_hash"] = f"UINT64_C({ir.expression.coordinate_element_hash})"
 
     # Check that no keys are redundant or have been missed
     from string import Formatter
