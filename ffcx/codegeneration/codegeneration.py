@@ -13,7 +13,6 @@ UFC function from an intermediate representation (IR).
 from __future__ import annotations
 
 import logging
-import sys
 import typing
 from importlib import import_module
 
@@ -47,7 +46,7 @@ def generate_code(
 
     lang = options.get("language", "C")
     # try:
-        # Built-in
+    # Built-in
     mod = import_module(f"ffcx.codegeneration.{lang}")
     # except ImportError:
     #     # User defined language (experimental)

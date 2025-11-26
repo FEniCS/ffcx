@@ -64,7 +64,7 @@ def generator(ir: ExpressionIR, options):
 
     originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
     d["original_coefficient_positions"] = f"[{originals}]"
-    n = points.size
+    # n = points.size
     d["points"] = f"[{', '.join(str(p) for p in points.flatten())}]"
 
     shape = ", ".join(str(i) for i in ir.expression.shape)
