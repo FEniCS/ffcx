@@ -5,7 +5,7 @@ import pytest
 from cffi import FFI
 
 from ffcx.codegeneration import lnodes as L
-from ffcx.codegeneration.C.implementation import CFormatter
+from ffcx.codegeneration.C.implementation import Formatter
 from ffcx.codegeneration.utils import dtype_to_c_type
 
 
@@ -32,7 +32,7 @@ def test_gemm(dtype):
     code += [L.ForRange(k, 0, r, body=body)]
 
     # Format into C and compile with CFFI
-    Q = CFormatter(dtype=dtype)
+    Q = Formatter(dtype=dtype)
     c_scalar = dtype_to_c_type(dtype)
     decl = f"void gemm({c_scalar} *A, {c_scalar} *B, {c_scalar} *C)"
     c_code = decl + "{\n" + Q.format(L.StatementList(code)) + "\n}\n"
@@ -75,7 +75,7 @@ def test_gemv(dtype):
     code += [L.ForRange(j, 0, q, body=body)]
 
     # Format into C and compile with CFFI
-    Q = CFormatter(dtype=dtype)
+    Q = Formatter(dtype=dtype)
     c_scalar = dtype_to_c_type(dtype)
     decl = f"void gemm({c_scalar} *y, {c_scalar} *A, {c_scalar} *x)"
     c_code = decl + "{\n" + Q.format(L.StatementList(code)) + "\n}\n"

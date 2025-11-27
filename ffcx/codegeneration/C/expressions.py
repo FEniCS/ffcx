@@ -8,12 +8,13 @@
 from __future__ import annotations
 
 import logging
+import string
 
 import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import expressions_template
-from ffcx.codegeneration.C.implementation import CFormatter
+from ffcx.codegeneration.C.implementation import Formatter
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR
@@ -43,7 +44,7 @@ def generator(ir: ExpressionIR, options):
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    CF = CFormatter(options["scalar_type"])
+    CF = Formatter(options["scalar_type"])
     d["tabulate_expression"] = CF.format(parts)
 
     if len(ir.original_coefficient_positions) > 0:
@@ -106,9 +107,10 @@ def generator(ir: ExpressionIR, options):
     d["coordinate_element_hash"] = f"UINT64_C({ir.expression.coordinate_element_hash})"
 
     # Check that no keys are redundant or have been missed
-    from string import Formatter
 
-    fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
+    fields = [
+        fname for _, fname, _, _ in string.Formatter().parse(expressions_template.factory) if fname
+    ]
     assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code

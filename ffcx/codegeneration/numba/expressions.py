@@ -12,7 +12,7 @@ import numpy as np
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
-from ffcx.codegeneration.numba.implementation import NumbaFormatter
+from ffcx.codegeneration.numba.implementation import Formatter
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR
 
@@ -65,7 +65,7 @@ def generator(ir: ExpressionIR, options):
     entity_local_index = numba.carray(_entity_local_index, ({n_entity_local_index}))
     quadrature_permutation = numba.carray(_quadrature_permutation, ({n_quad_perm}))
     """
-    F = NumbaFormatter(options["scalar_type"])
+    F = Formatter(options["scalar_type"])
     body = F.format(parts)
     body = ["    " + line for line in body.split("\n")]
     body = "\n".join(body)

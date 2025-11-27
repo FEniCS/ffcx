@@ -14,7 +14,7 @@ import numpy as np
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
-from ffcx.codegeneration.numba.implementation import NumbaFormatter
+from ffcx.codegeneration.numba.implementation import Formatter
 
 logger = logging.getLogger("ffcx")
 
@@ -38,7 +38,7 @@ def generator(ir, domain: basix.CellType, options):
     parts = ig.generate(domain)
 
     # Format code as string
-    F = NumbaFormatter(options["scalar_type"])
+    F = Formatter(options["scalar_type"])
     body = F.format(parts)
     body = ["    " + line for line in body.split("\n")]
     body = "\n".join(body)

@@ -19,7 +19,7 @@ def build_initializer_lists(values):
     return arr
 
 
-class NumbaFormatter:
+class Formatter:
     """Implementation for numba output backend."""
 
     def __init__(self, scalar) -> None:

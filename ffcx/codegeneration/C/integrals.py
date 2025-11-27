@@ -13,7 +13,7 @@ import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
-from ffcx.codegeneration.C.implementation import CFormatter
+from ffcx.codegeneration.C.implementation import Formatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import IntegralIR
@@ -42,7 +42,7 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
     parts = ig.generate(domain)
 
     # Format code as string
-    CF = CFormatter(options["scalar_type"])
+    CF = Formatter(options["scalar_type"])
     body = CF.format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
