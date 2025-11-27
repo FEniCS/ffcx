@@ -1,3 +1,8 @@
+# Copyright (C) 2025 Chris Richardson
+#
+# This file is part of FFCx. (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """Numba implementation for output."""
 
 import ffcx.codegeneration.lnodes as L

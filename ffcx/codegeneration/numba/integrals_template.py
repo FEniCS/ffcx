@@ -1,7 +1,8 @@
-# Code generation format strings for UFC (Unified Form-assembly Code)
-# This code is released into the public domain.
+# Copyright (C) 2025 Chris Richardson and Paul T. Kühner
 #
-# The FEniCS Project (http://www.fenicsproject.org/) 2018
+# This file is part of FFCx. (https://www.fenicsproject.org)
+#
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 """Template for integral output."""
 
 factory = """

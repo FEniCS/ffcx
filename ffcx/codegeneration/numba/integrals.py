@@ -1,4 +1,5 @@
-# Copyright (C) 2015-2021 Martin Sandve Alnæs, Michal Habera, Igor Baratta
+# Copyright (C) 2015-2021 Martin Sandve Alnæs, Michal Habera, Igor Baratta, Chris Richardson and
+# Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #

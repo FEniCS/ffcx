@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2017 Anders Logg and Martin Sandve Alnæs
+# Copyright (C) 2009-2025 Anders Logg, Martin Sandve Alnæs and Chris Richardson
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #

@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Michal Habera
+# Copyright (C) 2019-2025 Michal Habera, Chris Richardson and Paul T.Kühner
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #

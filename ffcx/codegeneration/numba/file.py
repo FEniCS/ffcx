@@ -1,4 +1,5 @@
-# Copyright (C) 2009-2018 Anders Logg, Martin Sandve Alnæs and Garth N. Wells
+# Copyright (C) 2009-2025 Anders Logg, Martin Sandve Alnæs, Garth N. Wells, Chris Richardson and
+# Paul T. Kühner
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
