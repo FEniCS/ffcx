@@ -29,7 +29,7 @@ jobs:
   build:
     name: Run DOLFINx tests
     runs-on: ubuntu-latest
-    container: ghcr.io/fenics/test-env:current-openmpi
+    container: ghcr.io/fenics/test-env:current-mpich
     env:
       PETSC_ARCH: linux-gnu-complex64-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
