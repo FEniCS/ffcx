@@ -20,13 +20,17 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir, domain: basix.CellType, options):
-    """Integral generator."""
+    """Generate numba code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
 
-    """Generate code for an integral."""
+    # Note: in contrast to the C implementation the actual code is type agnostic, thus not part of
+    #       naming.
     factory_name = ir.expression.name
+
+    # Format declaration
+    declaration = ""
 
     # Create FFCx backend
     backend = FFCXBackend(ir, options)
@@ -45,12 +49,12 @@ def generator(ir, domain: basix.CellType, options):
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
-    code["class_type"] = ir.expression.integral_type + "_integral"
-    code["name"] = ir.expression.name
 
+    # TODO: enabled_coefficients_init
     vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
     code["enabled_coefficients"] = f"[{vals}]"
 
+    # tabulate_tensor
     tensor_size = 1
     for dim in ir.expression.tensor_shape:
         tensor_size *= dim
@@ -75,13 +79,16 @@ def generator(ir, domain: basix.CellType, options):
     """
     code["tabulate_tensor"] = header + body
 
+    assert ir.expression.coordinate_element_hash is not None
     implementation = ufcx_integrals.factory.format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
+        # enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="True" if ir.expression.needs_facet_permutations else "False",
         scalar_type=options["scalar_type"],
-        coordinate_element=ir.expression.coordinate_element_hash,
+        coordinate_element_hash=ir.expression.coordinate_element_hash,
+        domain=int(domain),
     )
 
-    return "", implementation
+    return declaration, implementation

@@ -19,7 +19,6 @@ def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs,
 
 
 class {factory_name}:
-
     tabulate_tensor = tabulate_tensor_{factory_name}
     num_coefficients = {num_coefficients}
     num_constants = {num_constants}
@@ -32,9 +31,10 @@ class {factory_name}:
     value_shape = {value_shape}
     num_components = {num_components}
     rank = {rank}
+    # coordinate_element_hash = coordinate_element_hash
 
+# Alias name
 {name_from_uflfile} = {factory_name}
 
-# Name: {name_from_uflfile}
 # End of code for expression {factory_name}
 """

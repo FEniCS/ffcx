@@ -32,7 +32,7 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
     # Format declaration
     declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
 
-    # Create FFCx C backend
+    # Create FFCx backend
     backend = FFCXBackend(ir, options)
 
     # Configure kernel generator

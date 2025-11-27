@@ -16,7 +16,8 @@ class {factory_name}(object):
     enabled_coefficients = {enabled_coefficients}
     tabulate_tensor = tabulate_tensor_{factory_name}
     needs_facet_permutations = {needs_facet_permutations}
-    coordinate_element = {coordinate_element}
+    coordinate_element_hash = {coordinate_element_hash}
+    domain = {domain}
 
 # End of code for integral {factory_name}
 """
