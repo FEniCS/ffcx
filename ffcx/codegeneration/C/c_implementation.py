@@ -352,7 +352,7 @@ class CFormatter:
         args = ", ".join(self.format(arg) for arg in c.args)
         return f"{func}({args})"
 
-    c_impl = {
+    impl = {
         "Section": format_section,
         "StatementList": format_statement_list,
         "Comment": format_comment,
@@ -391,6 +391,6 @@ class CFormatter:
         """Format as C."""
         name = s.__class__.__name__
         try:
-            return self.c_impl[name](self, s)
+            return self.impl[name](self, s)
         except KeyError:
             raise RuntimeError("Unknown statement: ", name)

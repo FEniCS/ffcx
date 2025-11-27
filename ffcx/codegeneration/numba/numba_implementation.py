@@ -213,7 +213,7 @@ class NumbaFormatter:
         argstr = ", ".join(args)
         return f"np.{function}({argstr})"
 
-    c_impl = {
+    impl = {
         "StatementList": format_statement_list,
         "Comment": format_comment,
         "Section": format_section,
@@ -252,6 +252,6 @@ class NumbaFormatter:
         """Format output."""
         name = s.__class__.__name__
         try:
-            return self.c_impl[name](self, s)
+            return self.impl[name](self, s)
         except KeyError:
             raise RuntimeError("Unknown statement: ", name)
