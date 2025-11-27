@@ -25,8 +25,9 @@ def generator(ir, domain: basix.CellType, options):
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
 
-    # Note: in contrast to the C implementation the actual code is type agnostic, thus not part of
-    #       naming.
+    # Note: In contrast to the C implementation the actual code is type agnostic, thus not part of
+    #       naming. This is only true for the numba code prior to compilation - the JITed versions
+    #       are different.
     factory_name = ir.expression.name
 
     # Format declaration
@@ -50,32 +51,30 @@ def generator(ir, domain: basix.CellType, options):
     # Generate generic FFCx code snippets and add specific parts
     code = {}
 
-    # TODO: enabled_coefficients_init
+    # TODO: enabled_coefficients_init - required?
     vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
     code["enabled_coefficients"] = f"[{vals}]"
 
     # tabulate_tensor
-    tensor_size = 1
-    for dim in ir.expression.tensor_shape:
-        tensor_size *= dim
-
-    n_coeff = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
-    n_const = sum(
+    # Note: In contrast to the C implementation we actually need to provide/compute the sizes of the
+    #       array.
+    size_A = np.prod(ir.expression.tensor_shape)
+    size_w = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
+    size_c = sum(
         np.prod(constant.ufl_shape, dtype=int)
         for constant in ir.expression.original_constant_offsets.keys()
     )
-
-    n_coord_dofs = ir.expression.number_coordinate_dofs * 3
-    n_entity_local_index = 2  # TODO: this is just an upper bound, harmful?
-    n_quad_perm = 2 if ir.expression.needs_facet_permutations else 0
+    size_coords = ir.expression.number_coordinate_dofs * 3
+    size_local_index = 2  # TODO: this is just an upper bound
+    size_permutation = 2 if ir.expression.needs_facet_permutations else 0
 
     header = f"""
-    A = numba.carray(_A, ({tensor_size}))
-    w = numba.carray(_w, ({n_coeff}))
-    c = numba.carray(_c, ({n_const}))
-    coordinate_dofs = numba.carray(_coordinate_dofs, ({n_coord_dofs}))
-    entity_local_index = numba.carray(_entity_local_index, ({n_entity_local_index}))
-    quadrature_permutation = numba.carray(_quadrature_permutation, ({n_quad_perm}))
+    A = numba.carray(_A, ({size_A}))
+    w = numba.carray(_w, ({size_w}))
+    c = numba.carray(_c, ({size_c}))
+    coordinate_dofs = numba.carray(_coordinate_dofs, ({size_coords}))
+    entity_local_index = numba.carray(_entity_local_index, ({size_local_index}))
+    quadrature_permutation = numba.carray(_quadrature_permutation, ({size_permutation}))
     """
     code["tabulate_tensor"] = header + body
 
