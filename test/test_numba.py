@@ -30,7 +30,7 @@ def as_C_array(np_array: npt.NDArray):
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
 def test_integral(scalar_type: str) -> None:
     opts = f"--language numba --scalar_type {scalar_type}"
-    dir = Path(__file__).parent.resolve()
+    dir = Path(__file__).parent
     subprocess.run(["ffcx", dir / "poisson.py", *opts.split(" ")], check=True)
 
     poisson = importlib.import_module("poisson_numba")
@@ -87,7 +87,7 @@ def test_integral(scalar_type: str) -> None:
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
 def test_expression(scalar_type: str) -> None:
     opts = f"--language numba --scalar_type {scalar_type}"
-    dir = Path(__file__).parent.resolve()
+    dir = Path(__file__).parent
     subprocess.run(["ffcx", dir / "poisson.py", *opts.split(" ")], check=True)
 
     poisson = importlib.import_module("poisson_numba")
