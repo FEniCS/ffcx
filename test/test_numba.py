@@ -29,7 +29,7 @@ def test_poisson():
 
     dtype = np.float64
     realtype = np.dtype(dtype(0).real)
-    a_kernel = wrapper(dtype, realtype)(laplace.form_laplace_a.form_integrals[0].tabulate_tensor)
+    kernel_a = wrapper(dtype, realtype)(laplace.form_laplace_a.form_integrals[0].tabulate_tensor)
 
     A = np.zeros((3, 3), dtype=dtype)
     w = np.array([], dtype=dtype)
@@ -43,7 +43,7 @@ def test_poisson():
 
     # c_type = "double"
     # c_xtype = "double"
-    a_kernel(
+    kernel_a(
         A.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         w.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         c.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
@@ -56,3 +56,30 @@ def test_poisson():
     A_expected = np.array([[1.0, -0.5, -0.5], [-0.5, 0.5, 0.0], [-0.5, 0.0, 0.5]], dtype=np.float64)
 
     assert np.allclose(A, np.trace(kappa_value) * A_expected)
+
+    kernel_L = wrapper(dtype, realtype)(laplace.form_laplace_L.form_integrals[0].tabulate_tensor)
+
+    b = np.zeros((3,), dtype=dtype)
+    w = np.full((3,), 0.5, dtype=dtype)
+    c = np.empty((0,), dtype=dtype)
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
+
+    empty = np.empty((0,), dtype=realtype)
+
+    # c_type = "double"
+    # c_xtype = "double"
+    kernel_L(
+        b.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        w.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        c.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        coords.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        empty.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        empty.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        0,
+    )
+
+    b_expected = np.full((3,), 1 / 6, dtype=np.float64)
+
+    assert np.allclose(b, 0.5 * b_expected)
