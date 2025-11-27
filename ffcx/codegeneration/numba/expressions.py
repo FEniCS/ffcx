@@ -13,7 +13,8 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.numba.implementation import Formatter
-from ffcx.codegeneration.utils import dtype_to_scalar_dtype
+
+# from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -85,7 +86,7 @@ def generator(ir: ExpressionIR, options):
     d["num_points"] = points.shape[0]
     d["entity_dimension"] = points.shape[1]
     d["scalar_type"] = options["scalar_type"]
-    d["geom_type"] = dtype_to_scalar_dtype(options["scalar_type"])
+    # d["geom_type"] = dtype_to_scalar_dtype(options["scalar_type"])
     d["np_scalar_type"] = np.dtype(options["scalar_type"]).names
 
     d["rank"] = len(ir.expression.tensor_shape)
