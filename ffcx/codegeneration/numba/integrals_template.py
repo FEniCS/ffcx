@@ -9,7 +9,7 @@ factory = """
 import numba
 
 def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs,
-                                   _entity_local_index, _quadrature_permutation):
+                                   _entity_local_index, _quadrature_permutation, custom_data):
 {tabulate_tensor}
 
 class {factory_name}(object):
