@@ -81,10 +81,4 @@ def test_poisson(scalar_type):
     b_expected = np.full((3,), 1 / 6, dtype=np.float64)
     assert np.allclose(b, 0.5 * b_expected)
 
-    subprocess.run(
-        [
-            "rm",
-            Path(__file__).parent / "laplace_numba.py",
-        ],
-        check=True,
-    )
+    subprocess.run(["rm", "laplace_numba.py"], check=True)
