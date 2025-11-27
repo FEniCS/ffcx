@@ -13,7 +13,7 @@ import pytest
 
 def test_cmdline_simple():
     os.chdir(os.path.dirname(__file__))
-    subprocess.run(["ffcx", "Poisson.py"])
+    subprocess.run(["ffcx", "Poisson.py"], check=True)
 
 
 def test_visualise():
