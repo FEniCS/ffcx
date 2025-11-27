@@ -234,6 +234,7 @@ def _compute_integral_ir(
             "entity_type": entity_type,
             "shape": (),
             "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
+            "number_coordinate_dofs": itg_data.domain.ufl_coordinate_element().dim,
         }
         ir = {
             "rank": form_data.rank,
@@ -613,6 +614,7 @@ def _compute_expression_ir(
     base_ir["coordinate_element_hash"] = (
         expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )
+    base_ir["number_coordinate_dofs"] = expr_domain.ufl_coordinate_element().dim
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
