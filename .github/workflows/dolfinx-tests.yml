@@ -34,8 +34,10 @@ jobs:
       PETSC_ARCH: linux-gnu-complex64-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+      PRTE_MCA_rmaps_default_mapping_policy: :oversubscribe   # Newer OpenMPI
+      OMPI_MCA_rmaps_base_oversubscribe: true                 # Older OpenMPI
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install UFL and Basix (default branches/tags)
         if: github.event_name != 'workflow_dispatch'
         run: |
@@ -51,14 +53,14 @@ jobs:
           pip3 install --break-system-packages .
       - name: Get DOLFINx source (default branch/tag)
         if: github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
           ref: main
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
