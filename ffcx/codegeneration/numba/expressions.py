@@ -12,7 +12,7 @@ import numpy as np
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
-from ffcx.codegeneration.numba.numba_implementation import NumbaFormatter
+from ffcx.codegeneration.numba.implementation import NumbaFormatter
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR
 

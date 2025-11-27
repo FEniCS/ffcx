@@ -5,7 +5,7 @@ import pytest
 from cffi import FFI
 
 from ffcx.codegeneration import lnodes as L
-from ffcx.codegeneration.C.c_implementation import CFormatter
+from ffcx.codegeneration.C.implementation import CFormatter
 from ffcx.codegeneration.utils import dtype_to_c_type
 
 

@@ -13,7 +13,7 @@ import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import expressions_template
-from ffcx.codegeneration.C.c_implementation import CFormatter
+from ffcx.codegeneration.C.implementation import CFormatter
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR

@@ -14,7 +14,7 @@ import numpy as np
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
-from ffcx.codegeneration.numba.numba_implementation import NumbaFormatter
+from ffcx.codegeneration.numba.implementation import NumbaFormatter
 
 logger = logging.getLogger("ffcx")
 
