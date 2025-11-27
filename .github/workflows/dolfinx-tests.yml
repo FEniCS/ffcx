@@ -70,7 +70,7 @@ jobs:
           cmake --install build
       - name: Run DOLFINx C++ unit tests
         working-directory: build
-        run: ctest -V --parallel 4 --output-on-failure -R unittests
+        run: ctest -V --output-on-failure -R unittests
       - name: Install DOLFINx (Python)
         run: |
           python3 -m pip -v install --break-system-packages nanobind scikit-build-core[pyproject]
