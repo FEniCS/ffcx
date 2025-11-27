@@ -29,11 +29,13 @@ jobs:
   build:
     name: Run DOLFINx tests
     runs-on: ubuntu-latest
-    container: ghcr.io/fenics/test-env:current-mpich
+    container: ghcr.io/fenics/test-env:current-openmpi
     env:
       PETSC_ARCH: linux-gnu-complex64-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+      PRTE_MCA_rmaps_default_mapping_policy: :oversubscribe   # Newer OpenMPI
+      OMPI_MCA_rmaps_base_oversubscribe: true                 # Older OpenMPI
     steps:
       - uses: actions/checkout@v5
       - name: Install UFL and Basix (default branches/tags)
