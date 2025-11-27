@@ -30,14 +30,14 @@ def as_C_array(np_array: npt.NDArray):
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
 def test_integral(scalar_type: str) -> None:
     opts = f"--language numba --scalar_type {scalar_type}"
-    subprocess.run(["ffcx", Path(__file__).parent / "laplace.py", *opts.split(" ")], check=True)
+    subprocess.run(["ffcx", Path(__file__).parent / "poisson.py", *opts.split(" ")], check=True)
 
-    laplace = importlib.import_module("laplace_numba")
+    poisson = importlib.import_module("poisson_numba")
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)
 
-    kernel_a = wrap_kernel(dtype, dtype_r)(laplace.form_laplace_a.form_integrals[0].tabulate_tensor)
+    kernel_a = wrap_kernel(dtype, dtype_r)(poisson.form_poisson_a.form_integrals[0].tabulate_tensor)
 
     A = np.zeros((3, 3), dtype=dtype)
     w = np.array([], dtype=dtype)
@@ -61,7 +61,7 @@ def test_integral(scalar_type: str) -> None:
 
     assert np.allclose(A, np.trace(kappa_value) * A_expected)
 
-    kernel_L = wrap_kernel(dtype, dtype_r)(laplace.form_laplace_L.form_integrals[0].tabulate_tensor)
+    kernel_L = wrap_kernel(dtype, dtype_r)(poisson.form_poisson_L.form_integrals[0].tabulate_tensor)
 
     b = np.zeros((3,), dtype=dtype)
     w = np.full((3,), 0.5, dtype=dtype)
@@ -86,14 +86,14 @@ def test_integral(scalar_type: str) -> None:
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
 def test_expression(scalar_type: str) -> None:
     opts = f"--language numba --scalar_type {scalar_type}"
-    subprocess.run(["ffcx", Path(__file__).parent / "laplace.py", *opts.split(" ")], check=True)
+    subprocess.run(["ffcx", Path(__file__).parent / "poisson.py", *opts.split(" ")], check=True)
 
-    laplace = importlib.import_module("laplace_numba")
+    poisson = importlib.import_module("poisson_numba")
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)
 
-    kernel_expr = wrap_kernel(dtype, dtype_r)(laplace.expression_laplace_0.tabulate_tensor)
+    kernel_expr = wrap_kernel(dtype, dtype_r)(poisson.expression_poisson_0.tabulate_tensor)
 
     e = np.zeros((2 * 3,), dtype=dtype)
     w = np.array([1, 1, 2, 2, 3, 3], dtype=dtype)

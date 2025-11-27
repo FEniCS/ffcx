@@ -13,7 +13,7 @@ import pytest
 
 def test_cmdline_simple():
     dir = Path(__file__).parent
-    subprocess.run(["ffcx", dir / "Poisson.py", "-o", dir], check=True)
+    subprocess.run(["ffcx", dir / "poisson.py", "-o", dir], check=True)
 
 
 @pytest.mark.skipif(
@@ -21,6 +21,6 @@ def test_cmdline_simple():
 )
 def test_visualise():
     dir = Path(__file__).parent
-    subprocess.run(["ffcx", "--visualise", dir / "Poisson.py", "-o", dir])
+    subprocess.run(["ffcx", "--visualise", dir / "poisson.py", "-o", dir])
     assert (dir / "S.pdf").is_file()
     assert (dir / "F.pdf").is_file()
