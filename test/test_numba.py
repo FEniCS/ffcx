@@ -113,6 +113,5 @@ def test_expression(scalar_type: str) -> None:
         as_C_array(empty),
         0,
     )
-    # TODO: check
     e_expected = np.array([3, 7, 6, 14, 9, 21], dtype=dtype)
     assert np.allclose(e, e_expected)
