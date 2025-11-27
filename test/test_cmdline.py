@@ -1,28 +1,26 @@
-# Copyright (C) 2018 Chris N. Richardson
+# Copyright (C) 2018-2025 Chris N. Richardson and Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-import os
-import os.path
+import importlib
 import subprocess
+from pathlib import Path
 
 import pytest
 
 
 def test_cmdline_simple():
-    os.chdir(os.path.dirname(__file__))
-    subprocess.run(["ffcx", "Poisson.py"], check=True)
+    dir = Path(__file__).parent
+    subprocess.run(["ffcx", dir / "Poisson.py", "-o", dir], check=True)
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("pygraphviz") is None, reason="pygraphviz not installed."
+)
 def test_visualise():
-    try:
-        import pygraphviz  # noqa: F401
-    except ImportError:
-        pytest.skip("pygraphviz not installed")
-
-    os.chdir(os.path.dirname(__file__))
-    subprocess.run(["ffcx", "--visualise", "Poisson.py"])
-    assert os.path.isfile("S.pdf")
-    assert os.path.isfile("F.pdf")
+    dir = Path(__file__).parent
+    subprocess.run(["ffcx", "--visualise", dir / "Poisson.py", "-o", dir])
+    assert (dir / "S.pdf").is_file()
+    assert (dir / "F.pdf").is_file()
