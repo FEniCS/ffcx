@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fenics-ffcx"
-version = "0.10.1.post1"
+version = "0.10.1.post0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
 requires-python = ">=3.10"
