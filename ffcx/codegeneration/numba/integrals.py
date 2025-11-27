@@ -60,13 +60,17 @@ def generator(ir, domain: basix.CellType, options):
         for constant in ir.expression.original_constant_offsets.keys()
     )
 
+    n_coord_dofs = ir.expression.number_coordinate_dofs * 3
+    n_entity_local_index = 2  # TODO: this is just an upper bound, harmful?
+    n_quad_perm = 2 if ir.expression.needs_facet_permutations else 0
+
     header = f"""
     A = numba.carray(_A, ({tensor_size}))
     w = numba.carray(_w, ({n_coeff}))
     c = numba.carray(_c, ({n_const}))
-    coordinate_dofs = numba.carray(_coordinate_dofs, (1000))
-    entity_local_index = numba.carray(_entity_local_index, (1000))
-    quadrature_permutation = numba.carray(_quadrature_permutation, (1000))
+    coordinate_dofs = numba.carray(_coordinate_dofs, ({n_coord_dofs}))
+    entity_local_index = numba.carray(_entity_local_index, ({n_entity_local_index}))
+    quadrature_permutation = numba.carray(_quadrature_permutation, ({n_quad_perm}))
     """
     code["tabulate_tensor"] = header + body
 
