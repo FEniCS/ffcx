@@ -22,5 +22,5 @@ def test_cmdline_simple():
 def test_visualise():
     dir = Path(__file__).parent
     subprocess.run(["ffcx", "-o", dir, "--visualise", dir / "poisson.py"], check=True)
-    assert (dir / "S.pdf").is_file()
-    assert (dir / "F.pdf").is_file()
+    assert (Path.cwd() / "S.pdf").is_file()
+    assert (Path.cwd() / "F.pdf").is_file()
