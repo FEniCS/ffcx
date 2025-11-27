@@ -13,14 +13,14 @@ factory = """
 
 def tabulate_tensor_{factory_name}(_A, _w, _c, _coordinate_dofs,
                                    _entity_local_index,
-                                   _quadrature_permutation):
+                                   _quadrature_permutation, custom_data):
 {tabulate_expression}
 
 
 
 class {factory_name}:
 
-    tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name}
+    tabulate_tensor = tabulate_tensor_{factory_name}
     num_coefficients = {num_coefficients}
     num_constants = {num_constants}
     original_coefficient_positions = {original_coefficient_positions}
@@ -34,5 +34,8 @@ class {factory_name}:
     rank = {rank}
     # function_spaces = {function_spaces}
 
+{name_from_uflfile} = {factory_name}
+
+# Name: {name_from_uflfile}
 # End of code for expression {factory_name}
 """
