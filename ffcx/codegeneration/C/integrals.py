@@ -43,7 +43,7 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
 
     # Format code as string
     CF = CFormatter(options["scalar_type"])
-    body = CF.c_format(parts)
+    body = CF.format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}

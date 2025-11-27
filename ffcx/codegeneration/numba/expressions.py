@@ -66,7 +66,7 @@ def generator(ir: ExpressionIR, options):
     quadrature_permutation = numba.carray(_quadrature_permutation, ({n_quad_perm}))
     """
     F = NumbaFormatter(options["scalar_type"])
-    body = F.c_format(parts)
+    body = F.format(parts)
     body = ["    " + line for line in body.split("\n")]
     body = "\n".join(body)
 
