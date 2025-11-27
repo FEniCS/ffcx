@@ -36,16 +36,13 @@ def generator(ir: ExpressionIR, options):
     backend = FFCXBackend(ir, options)
     eg = ExpressionGenerator(ir, backend)
 
-    d = {}
+    d: dict[str, str | int] = {}
     d["name_from_uflfile"] = ir.name_from_uflfile
     d["factory_name"] = factory_name
-
     parts = eg.generate()
 
-    tensor_size = 1
-    for dim in ir.expression.shape:
-        tensor_size *= dim
-
+    # tabulate_expression
+    tensor_size = np.prod(ir.expression.shape)
     tensor_size *= 3  # TODO: number of evaluation points - where to get?
 
     n_coeff = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
@@ -72,72 +69,45 @@ def generator(ir: ExpressionIR, options):
 
     d["tabulate_expression"] = header + body
 
+    # TODO: original_coefficient_positions_init
     originals = ", ".join(str(i) for i in ir.original_coefficient_positions)
     d["original_coefficient_positions"] = f"[{originals}]"
     # n = points.size
+    # TODO: points_init
     d["points"] = f"[{', '.join(str(p) for p in points.flatten())}]"
 
+    # TODO: value_shape_init
     shape = ", ".join(str(i) for i in ir.expression.shape)
     d["value_shape"] = f"[{shape}]"
     d["num_components"] = len(ir.expression.shape)
     d["num_coefficients"] = len(ir.expression.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = points.shape[0]
-    d["topological_dimension"] = points.shape[1]
+    d["entity_dimension"] = points.shape[1]
     d["scalar_type"] = options["scalar_type"]
     d["geom_type"] = dtype_to_scalar_dtype(options["scalar_type"])
-
-    d["rank"] = len(ir.expression.tensor_shape)
     d["np_scalar_type"] = np.dtype(options["scalar_type"]).names
 
+    d["rank"] = len(ir.expression.tensor_shape)
+
+    # TODO: coefficient_names_init
     names = ", ".join(f'"{name}"' for name in ir.coefficient_names)
     d["coefficient_names"] = f"[{names}]"
+
+    # TODO: constant_names_init
     names = ", ".join(f'"{name}"' for name in ir.constant_names)
     d["constant_names"] = f"[{names}]"
 
-    code = []
-
-    # FIXME: Should be handled differently, revise how
-    # ufcx_function_space is generated (also for ufcx_form)
-    # for name, (element, dofmap, cmap_family, cmap_degree) in ir.function_spaces.items():
-    #     code += [f"static ufcx_function_space function_space_{name}_{ir.name_from_uflfile} ="]
-    #     code += ["{"]
-    #     code += [f".finite_element = &{element},"]
-    #     code += [f".dofmap = &{dofmap},"]
-    #     code += [f'.geometry_family = "{cmap_family}",']
-    #     code += [f".geometry_degree = {cmap_degree}"]
-    #     code += ["};"]
-
-    d["function_spaces_alloc"] = "\n".join(code)
-    d["function_spaces"] = ""
-
-    # if len(ir.function_spaces) > 0:
-    #     d["function_spaces"] = f"function_spaces_{ir.name}"
-    #     fs_list = ", ".join(
-    #         f"&function_space_{name}_{ir.name_from_uflfile}"
-    #         for (name, _) in ir.function_spaces.items()
-    #     )
-    #     n = len(ir.function_spaces.items())
-    #     d["function_spaces_init"] = (
-    #         f"ufcx_function_space* function_spaces_{ir.name}[{n}] = {{{fs_list}}};"
-    #     )
-    # else:
-    #     d["function_spaces"] = "NULL"
-    #     d["function_spaces_init"] = ""
-
-    # d["function_spaces"] = "0"
+    # TODO: coordinate_element_hash
 
     # Check that no keys are redundant or have been missed
-    # from string import Formatter
 
     # fields = [
-    #     fname
-    #     for _, fname, _, _ in Formatter().parse(expressions_template.factory)
-    #     if fname
+    #     fname for _, fname, _, _ in string.Formatter().parse(expressions_template.factory) if
+    # fname
     # ]
-    # assert set(fields) == set(
-    #     d.keys()
-    # ), "Mismatch between keys in template and in formatting dict"
+    # assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting
+    # dict"
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)

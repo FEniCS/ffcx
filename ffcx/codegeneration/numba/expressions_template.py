@@ -27,12 +27,11 @@ class {factory_name}:
     coefficient_names = {coefficient_names}
     constant_names = {constant_names}
     num_points = {num_points}
-    topological_dimension = {topological_dimension}
+    entity_dimension = {entity_dimension}
     points = {points}
     value_shape = {value_shape}
     num_components = {num_components}
     rank = {rank}
-    # function_spaces = {function_spaces}
 
 {name_from_uflfile} = {factory_name}
 
