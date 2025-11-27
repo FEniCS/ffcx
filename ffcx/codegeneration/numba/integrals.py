@@ -8,6 +8,7 @@
 import logging
 
 import basix
+import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integral_generator import IntegralGenerator
@@ -53,7 +54,10 @@ def generator(ir, domain: basix.CellType, options):
     for dim in ir.expression.tensor_shape:
         tensor_size *= dim
     n_coeff = len(ir.enabled_coefficients)
-    n_const = len(ir.expression.original_constant_offsets)
+    n_const = sum(
+        np.prod(constant.ufl_shape, dtype=int)
+        for constant in ir.expression.original_constant_offsets.keys()
+    )
 
     header = f"""
     A = numba.carray(_A, ({tensor_size}))
