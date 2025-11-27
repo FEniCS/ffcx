@@ -3,6 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
+
 import ctypes
 import importlib
 import subprocess
@@ -27,7 +28,7 @@ def as_C_array(np_array: npt.NDArray):
 
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
-def test_poisson(scalar_type):
+def test_integral(scalar_type: str) -> None:
     opts = f"--language numba --scalar_type {scalar_type}"
     subprocess.run(["ffcx", Path(__file__).parent / "laplace.py", *opts.split(" ")], check=True)
 
@@ -82,3 +83,36 @@ def test_poisson(scalar_type):
     assert np.allclose(b, 0.5 * b_expected)
 
     subprocess.run(["rm", "laplace_numba.py"], check=True)
+
+
+@pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
+def test_expression(scalar_type: str) -> None:
+    opts = f"--language numba --scalar_type {scalar_type}"
+    subprocess.run(["ffcx", Path(__file__).parent / "laplace.py", *opts.split(" ")], check=True)
+
+    laplace = importlib.import_module("laplace_numba")
+
+    dtype = np.dtype(scalar_type).type
+    dtype_r = dtype_to_scalar_dtype(dtype)
+
+    kernel_expr = wrap_kernel(dtype, dtype_r)(laplace.expression_laplace_0.tabulate_tensor)
+
+    e = np.zeros((2 * 3,), dtype=dtype)
+    w = np.array([1, 1, 2, 2, 3, 3], dtype=dtype)
+    kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
+    c = np.array(kappa_value.flatten(), dtype=dtype)
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=dtype_r)
+    empty = np.empty((0,), dtype=dtype_r)
+
+    kernel_expr(
+        as_C_array(e),
+        as_C_array(w),
+        as_C_array(c),
+        as_C_array(coords),
+        as_C_array(empty),
+        as_C_array(empty),
+        0,
+    )
+    # TODO: check
+    e_expected = np.array([3, 7, 6, 14, 9, 21], dtype=dtype)
+    assert np.allclose(e, e_expected)
