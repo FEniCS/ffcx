@@ -43,17 +43,27 @@ def generator(ir: ExpressionIR, options):
     parts = eg.generate()
 
     tensor_size = 1
-    for dim in ir.expression.tensor_shape:
+    for dim in ir.expression.shape:
         tensor_size *= dim
-    n_coeff = 1000
-    n_const = 1000
+
+    tensor_size *= 3  # TODO: number of evaluation points - where to get?
+
+    n_coeff = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
+    n_const = sum(
+        np.prod(constant.ufl_shape, dtype=int)
+        for constant in ir.expression.original_constant_offsets.keys()
+    )
+    n_coord_dofs = ir.expression.number_coordinate_dofs * 3
+    n_entity_local_index = 2  # TODO: this is just an upper bound, harmful?
+    n_quad_perm = 2 if ir.expression.needs_facet_permutations else 0
+
     header = f"""
     A = numba.carray(_A, ({tensor_size}))
     w = numba.carray(_w, ({n_coeff}))
     c = numba.carray(_c, ({n_const}))
-    coordinate_dofs = numba.carray(_coordinate_dofs, (1000))
-    entity_local_index = numba.carray(_entity_local_index, (1000))
-    quadrature_permutation = numba.carray(_quadrature_permutation, (1000))
+    coordinate_dofs = numba.carray(_coordinate_dofs, ({n_coord_dofs}))
+    entity_local_index = numba.carray(_entity_local_index, ({n_entity_local_index}))
+    quadrature_permutation = numba.carray(_quadrature_permutation, ({n_quad_perm}))
     """
     F = NumbaFormatter(options["scalar_type"])
     body = F.c_format(parts)
