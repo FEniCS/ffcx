@@ -82,8 +82,6 @@ def test_integral(scalar_type: str) -> None:
     b_expected = np.full((3,), 1 / 6, dtype=np.float64)
     assert np.allclose(b, 0.5 * b_expected)
 
-    subprocess.run(["rm", "laplace_numba.py"], check=True)
-
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
 def test_expression(scalar_type: str) -> None:
