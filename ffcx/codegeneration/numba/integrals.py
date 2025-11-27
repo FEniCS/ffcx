@@ -53,7 +53,8 @@ def generator(ir, domain: basix.CellType, options):
     tensor_size = 1
     for dim in ir.expression.tensor_shape:
         tensor_size *= dim
-    n_coeff = len(ir.enabled_coefficients)
+
+    n_coeff = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
     n_const = sum(
         np.prod(constant.ufl_shape, dtype=int)
         for constant in ir.expression.original_constant_offsets.keys()

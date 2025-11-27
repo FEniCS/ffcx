@@ -1,7 +1,5 @@
 """Numba implementation for output."""
 
-import numpy as np
-
 import ffcx.codegeneration.lnodes as L
 
 
