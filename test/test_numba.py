@@ -8,7 +8,6 @@ import importlib
 import subprocess
 from pathlib import Path
 
-import cffi
 import numba
 import numpy as np
 
@@ -38,16 +37,12 @@ def test_poisson():
     c = np.array(kappa_value.flatten(), dtype=dtype)
 
     xdtype = dtype_to_scalar_dtype(dtype)
-    ffi = cffi.FFI()
     coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
 
     empty = np.empty((0,), dtype=realtype)
 
-    c_type = "double"
+    # c_type = "double"
     # c_xtype = "double"
-    print(a_kernel)
-    print(type(ffi.cast(f"{c_type} *", A.ctypes.data)))
-    print(dir(ffi.cast(f"{c_type} *", A.ctypes.data)))
     a_kernel(
         A.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         w.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),

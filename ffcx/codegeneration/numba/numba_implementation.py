@@ -1,5 +1,7 @@
 """Numba implementation for output."""
 
+import numpy as np
+
 import ffcx.codegeneration.lnodes as L
 
 
@@ -59,6 +61,8 @@ class NumbaFormatter:
         symbol = self.c_format(arr.symbol)
         if arr.values is None:
             return f"{symbol} = np.empty({arr.sizes}, dtype={dtype})\n"
+        elif arr.values.size == 1:
+            return f"{symbol} = np.full({arr.sizes}, {arr.values[0]}, dtype={dtype})\n"
         av = build_initializer_lists(arr.values)
         av = "np.array(" + av + f", dtype={dtype})"
         return f"{symbol} = {av}\n"
