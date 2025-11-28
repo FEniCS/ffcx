@@ -16,7 +16,7 @@ ufcx_utils.
 from __future__ import annotations
 
 import logging
-import os
+from pathlib import Path
 
 from ffcx.codegeneration.codegeneration import CodeBlocks
 
@@ -50,6 +50,5 @@ def write_code(
 
 def _write_file(output: str, prefix: str, suffix: str, output_dir: str) -> None:
     """Write generated code to file."""
-    filename = os.path.join(output_dir, prefix + suffix)
-    with open(filename, "w") as hfile:
-        hfile.write(output)
+    with open(Path(output_dir) / (prefix + suffix), "w") as file:
+        file.write(output)
