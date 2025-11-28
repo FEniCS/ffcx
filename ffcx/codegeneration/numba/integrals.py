@@ -7,6 +7,7 @@
 """Generate UFC code for an integral."""
 
 import logging
+import string
 
 import basix
 import numpy as np
@@ -49,11 +50,13 @@ def generator(ir, domain: basix.CellType, options):
     body = "\n".join(body)
 
     # Generate generic FFCx code snippets and add specific parts
-    code = {}
+    d = {}
+
+    d["factory_name"] = factory_name
 
     # TODO: enabled_coefficients_init - required?
     vals = ", ".join("1" if i else "0" for i in ir.enabled_coefficients)
-    code["enabled_coefficients"] = f"[{vals}]"
+    d["enabled_coefficients"] = f"[{vals}]"
 
     # tabulate_tensor
     # Note: In contrast to the C implementation we actually need to provide/compute the sizes of the
@@ -76,18 +79,16 @@ def generator(ir, domain: basix.CellType, options):
     entity_local_index = numba.carray(_entity_local_index, ({size_local_index}))
     quadrature_permutation = numba.carray(_quadrature_permutation, ({size_permutation}))
     """
-    code["tabulate_tensor"] = header + body
+    d["tabulate_tensor"] = header + body
+    d["needs_facet_permutations"] = "True" if ir.expression.needs_facet_permutations else "False"
+    d["coordinate_element_hash"] = ir.expression.coordinate_element_hash
+    d["domain"] = int(domain)
 
     assert ir.expression.coordinate_element_hash is not None
-    implementation = ufcx_integrals.factory.format(
-        factory_name=factory_name,
-        enabled_coefficients=code["enabled_coefficients"],
-        # enabled_coefficients_init=code["enabled_coefficients_init"],
-        tabulate_tensor=code["tabulate_tensor"],
-        needs_facet_permutations="True" if ir.expression.needs_facet_permutations else "False",
-        scalar_type=options["scalar_type"],
-        coordinate_element_hash=ir.expression.coordinate_element_hash,
-        domain=int(domain),
-    )
+    implementation = ufcx_integrals.factory.format_map(d)
+
+    # Check that no keys are redundant or have been missed
+    fields = [fname for _, fname, _, _ in string.Formatter().parse(ufcx_integrals.factory) if fname]
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     return declaration, implementation

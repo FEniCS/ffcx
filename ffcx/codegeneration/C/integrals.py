@@ -91,4 +91,6 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
         domain=int(domain),
     )
 
+    # TODO: Check that no keys are redundant or have been missed (ref. numba/integrals.py)
+
     return declaration, implementation
