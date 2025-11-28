@@ -1,75 +1,87 @@
 """Test demos."""
 
 import os
+import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
-demo_dir = os.path.dirname(os.path.realpath(__file__))
+demo_dir = Path(__file__).parent
 
-ufl_files = []
-for file in os.listdir(demo_dir):
-    if file.endswith(".py") and not file.endswith("_numba.py") and not file == "test_demos.py":
-        ufl_files.append(file[:-3])
+ufl_files = [
+    f
+    for f in demo_dir.iterdir()
+    if f.suffix == ".py" and not f.stem.endswith("_numba") and f != Path(__file__)
+]
 
 skip_complex = ["BiharmonicHHJ", "BiharmonicRegge", "StabilisedStokes"]
 
 
+def skip_unsupported(test):
+    """Dcecorate test case to skip unsupported cases."""
+
+    def check_skip(file, scalar_type):
+        """Skip scalar_type file combinations not supported."""
+        if "complex" in scalar_type and file.stem in skip_complex:
+            pytest.skip(reason="Not implemented for complex types")
+        elif "Complex" in file.stem and scalar_type in ["float64", "float32"]:
+            pytest.skip(reason="Not implemented for real types")
+
+        return test(file, scalar_type)
+
+    return check_skip
+
+
 @pytest.mark.parametrize("file", ufl_files)
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
+@skip_unsupported
 def test_C(file, scalar_type):
     """Test a demo."""
     if sys.platform.startswith("win32") and "complex" in scalar_type:
         # Skip complex demos on win32
         pytest.skip(reason="_Complex not supported on Windows")
 
-    if "complex" in scalar_type and file in skip_complex:
-        # Skip demos that are not implemented for complex scalars
-        pytest.skip(reason="Not implemented for complex types")
-    elif "Complex" in file and scalar_type in ["float64", "float32"]:
-        # Skip demos that are only implemented for complex scalars
-        pytest.skip(reason="Not implemented for real types")
-
-    opts = f"--scalar_type {scalar_type}"
+    subprocess.run(["ffcx", "--scalar_type", scalar_type, file], cwd=demo_dir, check=True)
 
     if sys.platform.startswith("win32"):
         extra_flags = "/std:c17"
-        assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
-        assert (
-            os.system(
-                f'cd {demo_dir} && cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
+        for compiler in ["cl.exe", "clang-cl.exe"]:
+            subprocess.run(
+                [
+                    compiler,
+                    "/I",
+                    f"{demo_dir.parent / 'ffcx/codegeneration'}",
+                    *extra_flags.split(" "),
+                    "/c",
+                    file.with_suffix(".c"),
+                ],
+                cwd=demo_dir,
+                check=True,
             )
-        ) == 0
-        assert (
-            os.system(
-                f"cd {demo_dir} && "
-                f'clang-cl.exe /I "../ffcx/codegeneration" {extra_flags} /c {file}.c'
-            )
-        ) == 0
     else:
         cc = os.environ.get("CC", "cc")
         extra_flags = (
             "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
         )
-        assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
-        assert (
-            os.system(f"cd {demo_dir} && {cc} -I../ffcx/codegeneration {extra_flags} -c {file}.c")
-            == 0
+        subprocess.run(
+            [
+                cc,
+                f"-I{demo_dir.parent / 'ffcx/codegeneration'}",
+                *extra_flags.split(" "),
+                "-c",
+                file.with_suffix(".c"),
+            ],
+            cwd=demo_dir,
+            check=True,
         )
 
 
 @pytest.mark.parametrize("file", ufl_files)
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
+@skip_unsupported
 def test_numba(file, scalar_type):
     """Test numba generation."""
     opts = f"-L numba --scalar_type {scalar_type}"
-
-    if "complex" in scalar_type and file in skip_complex:
-        # Skip demos that are not implemented for complex scalars
-        pytest.skip(reason="Not implemented for complex types")
-    elif "Complex" in file and scalar_type in ["float64", "float32"]:
-        # Skip demos that are only implemented for complex scalars
-        pytest.skip(reason="Not implemented for real types")
-
-    assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
-    assert os.system(f"cd {demo_dir} && python {file}.py") == 0
+    subprocess.run(["ffcx", *opts.split(" "), file], cwd=demo_dir, check=True)
+    subprocess.run(["python", file], cwd=demo_dir, check=True)
