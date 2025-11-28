@@ -6,6 +6,7 @@
 """Generate UFC code for an expression."""
 
 import logging
+import string
 
 import numpy as np
 
@@ -82,9 +83,6 @@ def generator(ir: ExpressionIR, options):
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = points.shape[0]
     d["entity_dimension"] = points.shape[1]
-    d["scalar_type"] = options["scalar_type"]
-    # d["geom_type"] = dtype_to_scalar_dtype(options["scalar_type"])
-    d["np_scalar_type"] = np.dtype(options["scalar_type"]).names
 
     d["rank"] = len(ir.expression.tensor_shape)
 
@@ -99,13 +97,10 @@ def generator(ir: ExpressionIR, options):
     # TODO: coordinate_element_hash
 
     # Check that no keys are redundant or have been missed
-
-    # fields = [
-    #     fname for _, fname, _, _ in string.Formatter().parse(expressions_template.factory) if
-    # fname
-    # ]
-    # assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting
-    # dict"
+    fields = [
+        fname for _, fname, _, _ in string.Formatter().parse(expressions_template.factory) if fname
+    ]
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = expressions_template.factory.format_map(d)
