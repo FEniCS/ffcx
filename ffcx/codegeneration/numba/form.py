@@ -9,6 +9,7 @@
 """Template for form output."""
 
 import logging
+import string
 
 from ffcx.codegeneration.numba import form_template
 
@@ -57,20 +58,8 @@ def generator(ir, options):
     d["form_integral_offsets"] = f"[{offsets}]"
 
     # Check that no keys are redundant or have been missed
-    from string import Formatter
-
-    fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
-
-    for f in fields:
-        if f not in d.keys():
-            print(f, "not in d.keys()")
-
-    for f in d.keys():
-        if f not in fields:
-            print(f, "not in fields")
-
-    if set(fields) != set(d.keys()):
-        print("Mismatch between keys in template and in formatting dict")
+    fields = [fname for _, fname, _, _ in string.Formatter().parse(form_template.factory) if fname]
+    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
 
     # Format implementation code
     implementation = form_template.factory.format_map(d)

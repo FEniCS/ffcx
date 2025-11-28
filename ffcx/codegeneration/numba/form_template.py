@@ -25,6 +25,5 @@ class {factory_name}(object):
 
 {name_from_uflfile} = {factory_name}
 
-# Name: {name_from_uflfile}
 # End of code for form {factory_name}
 """
