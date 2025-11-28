@@ -69,17 +69,27 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
     else:
         code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
         code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
+    if options.get("cuda_nvrtc"):
+        code["tabulate_tensor_cuda_nvrtc"] = (
+            f".tabulate_tensor_cuda_nvrtc = tabulate_tensor_cuda_nvrtc_{factory_name},"
+        )
+        code["tabulate_tensor_quoted"] = body.replace("\n", '\\n"\n    "')
+    else:
+        code["tabulate_tensor_cuda_nvrtc"] = ""
+        code["tabulate_tensor_quoted"] = ""
+
     np_scalar_type = np.dtype(options["scalar_type"]).name
     code[f"tabulate_tensor_{np_scalar_type}"] = (
         f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
     )
 
     assert ir.expression.coordinate_element_hash is not None
-    implementation = ufcx_integrals.factory.format(
+    implementation = ufcx_integrals.get_factory(options).format(
         factory_name=factory_name,
         enabled_coefficients=code["enabled_coefficients"],
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
+        tabulate_tensor_quoted=code["tabulate_tensor_quoted"],
         needs_facet_permutations="true" if ir.expression.needs_facet_permutations else "false",
         scalar_type=dtype_to_c_type(options["scalar_type"]),
         geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
@@ -88,6 +98,7 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
+        tabulate_tensor_cuda_nvrtc=code["tabulate_tensor_cuda_nvrtc"],
         domain=int(domain),
     )
 

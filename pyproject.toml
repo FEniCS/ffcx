@@ -33,7 +33,7 @@ ffcx = "ffcx:__main__.main"
 [project.optional-dependencies]
 lint = ["ruff"]
 docs = ["sphinx", "sphinx_rtd_theme"]
-optional = ["numba", "pygraphviz==1.9"]
+optional = ["numba", "pygraphviz", "nvidia-cuda-nvrtc-cu12>=12.9.86"]
 test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
     "coveralls",
