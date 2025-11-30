@@ -36,8 +36,8 @@ void {factory_name}::tabulate_tensor(T* A,
                      const T* w,
                      const T* c,
                      const U* coordinate_dofs,
-                     const int* entity_local_index,
-                     const uint8_t* quadrature_permutation)
+                     const std::int32_t* entity_local_index,
+                     const std::uint8_t* quadrature_permutation)
 {{
 {tabulate_tensor}
 }}
