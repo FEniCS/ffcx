@@ -14,9 +14,9 @@ declaration_pre = """
 
 #pragma once
 #include <complex>
+#include <cstdint>
 #include <cmath>
 #include <vector>
-
 """
 
 declaration_post = """
