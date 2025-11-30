@@ -11,6 +11,7 @@ import string
 
 import basix
 import numpy as np
+from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integral_generator import IntegralGenerator
@@ -20,7 +21,9 @@ from ffcx.codegeneration.numba.implementation import Formatter
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, domain: basix.CellType, options):
+def generator(
+    ir, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
+) -> tuple[str, str]:
     """Generate numba code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
@@ -44,7 +47,7 @@ def generator(ir, domain: basix.CellType, options):
     parts = ig.generate(domain)
 
     # Format code as string
-    F = Formatter(options["scalar_type"])
+    F = Formatter(options["scalar_type"])  # type: ignore
     body = F.format(parts)
     body = ["    " + line for line in body.split("\n")]
     body = "\n".join(body)

@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Numba implementation for output."""
 
-from typing import Callable, Self
 import ffcx.codegeneration.lnodes as L
 
 
@@ -214,7 +213,7 @@ class Formatter:
         argstr = ", ".join(args)
         return f"np.{function}({argstr})"
 
-    impl: dict[str, Callable[["Formatter", type[L.LNode]], str]] = {
+    impl = {
         "StatementList": format_statement_list,
         "Comment": format_comment,
         "Section": format_section,
@@ -253,6 +252,6 @@ class Formatter:
         """Format output."""
         name = s.__class__.__name__
         try:
-            return self.impl[name](self, s)
+            return self.impl[name](self, s)  # type: ignore
         except KeyError:
             raise RuntimeError("Unknown statement: ", name)
