@@ -80,6 +80,7 @@ class CommonExpressionIR(typing.NamedTuple):
     needs_facet_permutations: bool
     shape: list[int]
     coordinate_element_hash: str
+    number_coordinate_dofs: int
 
 
 class ModifiedArgumentDataT(typing.NamedTuple):

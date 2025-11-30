@@ -5,7 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Mass action demo."""
 
-import basix
+import basix.ufl
 import ufl
 
 P = 3
