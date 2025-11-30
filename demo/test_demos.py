@@ -78,6 +78,7 @@ def test_C(file, scalar_type):
 
 
 @pytest.mark.parametrize("file", ufl_files)
+# TODO: drop scalar_type?
 @pytest.mark.parametrize("scalar_type", ["float64", "float32", "complex128", "complex64"])
 @skip_unsupported
 def test_Cpp(file, scalar_type):
@@ -90,37 +91,43 @@ def test_Cpp(file, scalar_type):
         ["ffcx", "--language", "cpp", "--scalar_type", scalar_type, file], cwd=demo_dir, check=True
     )
 
-    # if sys.platform.startswith("win32"):
-    #     extra_flags = "/std:c17"
-    #     for compiler in ["cl.exe", "clang-cl.exe"]:
-    #         subprocess.run(
-    #             [
-    #                 compiler,
-    #                 "/I",
-    #                 f"{demo_dir.parent / 'ffcx/codegeneration'}",
-    #                 *extra_flags.split(" "),
-    #                 "/c",
-    #                 file.with_suffix(".c"),
-    #             ],
-    #             cwd=demo_dir,
-    #             check=True,
-    #         )
-    # else:
-    #     cc = os.environ.get("CC", "cc")
-    #     extra_flags = (
-    #         "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
-    #     )
-    #     subprocess.run(
-    #         [
-    #             cc,
-    #             f"-I{demo_dir.parent / 'ffcx/codegeneration'}",
-    #             *extra_flags.split(" "),
-    #             "-c",
-    #             file.with_suffix(".c"),
-    #         ],
-    #         cwd=demo_dir,
-    #         check=True,
-    #     )
+    if "Expression" in file.stem:
+        pytest.skip("No Cpp support yet.")
+
+    if sys.platform.startswith("win32"):
+        pytest.skip(reason="⊞")
+        # extra_flags = "/std:c17"
+        # for compiler in ["cl.exe", "clang-cl.exe"]:
+        #     subprocess.run(
+        #         [
+        #             compiler,
+        #             "/I",
+        #             f"{demo_dir.parent / 'ffcx/codegeneration'}",
+        #             *extra_flags.split(" "),
+        #             "/c",
+        #             file.with_suffix(".c"),
+        #         ],
+        #         cwd=demo_dir,
+        #         check=True,
+        #     )
+    else:
+        cxx = os.environ.get("CC", "cc")
+        extra_flags = (
+            "-std=c++20 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
+        )
+        # TODO: this compiles to a PCH - probably not truely what we want.
+        # Rather replace template arguments with scalar_type and compile to .o
+        subprocess.run(
+            [
+                cxx,
+                f"-I{demo_dir.parent / 'ffcx/codegeneration'}",
+                *extra_flags.split(" "),
+                "-c",
+                file.with_suffix(".hpp"),
+            ],
+            cwd=demo_dir,
+            check=True,
+        )
 
 
 @pytest.mark.parametrize("file", ufl_files)
