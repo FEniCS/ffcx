@@ -128,6 +128,10 @@ class CppFormatter:
             typename = self.scalar_type
         elif v.symbol.dtype == L.DataType.REAL:
             typename = self.real_type
+        elif v.symbol.dtype == L.DataType.INT:
+            typename = "std::int32_t"
+        elif v.symbol.dtype == L.DataType.BOOL:
+            typename = "bool"
         return f"{typename} {symbol} = {val};\n"
 
     def format_nary_op(self, oper) -> str:

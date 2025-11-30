@@ -13,6 +13,7 @@ declaration_pre = """
 {options}
 
 #pragma once
+#include <complex>
 #include <cmath>
 #include <vector>
 

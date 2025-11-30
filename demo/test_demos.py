@@ -94,6 +94,9 @@ def test_Cpp(file, scalar_type):
     if "Expression" in file.stem:
         pytest.skip("No Cpp support yet.")
 
+    if file.stem == "MathFunctions":
+        pytest.skip("Bessel functions not available for all compilers.")
+
     if sys.platform.startswith("win32"):
         pytest.skip(reason="⊞")
         # extra_flags = "/std:c17"
