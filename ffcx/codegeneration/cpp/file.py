@@ -29,9 +29,7 @@ def generator(options):
     extra_includes = []
     if "_Complex" in options["scalar_type"]:
         extra_includes += ["complex"]
-    d["extra_includes"] = "\n".join(
-        f"#include <{header}>" for header in extra_includes
-    )
+    d["extra_includes"] = "\n".join(f"#include <{header}>" for header in extra_includes)
 
     # Format declaration code
     code_pre = (

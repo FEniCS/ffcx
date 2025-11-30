@@ -33,7 +33,8 @@ math_table = {
     "bessel_j": "std::cyl_bessel_j",
     "conj": "std::conj",
     "real": "std::real",
-    "imag": "std::imag"}
+    "imag": "std::imag",
+}
 
 
 def build_initializer_lists(values):
@@ -49,6 +50,7 @@ def build_initializer_lists(values):
 
 class CppFormatter:
     """C++ formatter."""
+
     def __init__(self, scalar) -> None:
         """Initialise."""
         self.scalar_type = "T"
@@ -120,6 +122,8 @@ class CppFormatter:
         val = self.c_format(v.value)
         symbol = self.c_format(v.symbol)
         assert v.symbol.dtype
+        # TODO: move to _dtype_to_name
+        typename = ""  # tmp fix!!
         if v.symbol.dtype == L.DataType.SCALAR:
             typename = self.scalar_type
         elif v.symbol.dtype == L.DataType.REAL:

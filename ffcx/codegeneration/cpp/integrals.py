@@ -7,20 +7,22 @@
 
 import logging
 
+import basix
+
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.cpp import integrals_template as ufcx_integrals
 from ffcx.codegeneration.cpp.cpp_implementation import CppFormatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
+from ffcx.ir.representation import IntegralIR
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
-    """Generate code for an integral."""
+def generator(ir: IntegralIR, domain: basix.CellType, options):
+    """Generate C++ code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
-
 
     factory_name = ir.expression.name
 
@@ -34,7 +36,7 @@ def generator(ir, options):
     ig = IntegralGenerator(ir, backend)
 
     # Generate code ast for the tabulate_tensor body
-    parts = ig.generate()
+    parts = ig.generate(domain)
 
     # Format code as string
     CF = CppFormatter(options["scalar_type"])
@@ -59,7 +61,7 @@ def generator(ir, options):
         scalar_type=options["scalar_type"],
         geom_type=options["scalar_type"],
         np_scalar_type=options["scalar_type"],
-        coordinate_element=ir.coordinate_element_hash,
+        coordinate_element=ir.expression.coordinate_element_hash,
     )
 
     return declaration + implementation, ""
