@@ -72,7 +72,7 @@ def generator(
     else:
         code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
         code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
-    np_scalar_type = np.dtype(options["scalar_type"]).name
+    np_scalar_type = np.dtype(options["scalar_type"]).name  # type: ignore
     code[f"tabulate_tensor_{np_scalar_type}"] = (
         f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
     )
@@ -84,8 +84,8 @@ def generator(
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.expression.needs_facet_permutations else "false",
-        scalar_type=dtype_to_c_type(options["scalar_type"]),
-        geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
+        scalar_type=dtype_to_c_type(options["scalar_type"]), # type: ignore
+        geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])), # type: ignore
         coordinate_element_hash=f"UINT64_C({ir.expression.coordinate_element_hash})",
         tabulate_tensor_float32=code["tabulate_tensor_float32"],
         tabulate_tensor_float64=code["tabulate_tensor_float64"],

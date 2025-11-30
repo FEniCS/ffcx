@@ -60,10 +60,9 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     entity_local_index = numba.carray(_entity_local_index, ({size_local_index}))
     quadrature_permutation = numba.carray(_quadrature_permutation, ({size_permutation}))
     """
-    F = Formatter(options["scalar_type"]) # type: ignore
+    F = Formatter(options["scalar_type"])
     body = F.format(parts)
-    body = ["    " + line for line in body.split("\n")]
-    body = "\n".join(body)
+    body = "\n".join(["    " + line for line in body.split("\n")])
 
     d["tabulate_expression"] = header + body
 
