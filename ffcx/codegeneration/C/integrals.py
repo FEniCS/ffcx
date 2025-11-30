@@ -10,6 +10,7 @@ import sys
 
 import basix
 import numpy as np
+from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
@@ -21,7 +22,9 @@ from ffcx.ir.representation import IntegralIR
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir: IntegralIR, domain: basix.CellType, options):
+def generator(
+    ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
+):
     """Generate C code for an integral."""
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")

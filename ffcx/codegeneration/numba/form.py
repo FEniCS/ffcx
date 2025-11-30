@@ -11,12 +11,14 @@
 import logging
 import string
 
+from numpy import typing as npt
+
 from ffcx.codegeneration.numba import form_template
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options):
+def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
     """Generate UFC code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")

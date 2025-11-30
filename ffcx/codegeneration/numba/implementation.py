@@ -26,7 +26,7 @@ class Formatter:
         """Initialise."""
         self.scalar_type = scalar
 
-    def format_section(self, section):
+    def format_section(self, section: L.Section) -> str:
         """Format a section."""
         # add new line before section
         comments = "# ------------------------ \n"
@@ -42,18 +42,18 @@ class Formatter:
         body += "# ------------------------ \n"
         return comments + declarations + body
 
-    def format_statement_list(self, slist):
+    def format_statement_list(self, slist: L.StatementList) -> str:
         """Format a list of statements."""
         output = ""
         for s in slist.statements:
             output += self.format(s)
         return output
 
-    def format_comment(self, c):
+    def format_comment(self, c: L.Comment) -> str:
         """Format a comment."""
         return "# " + c.comment + "\n"
 
-    def format_array_decl(self, arr):
+    def format_array_decl(self, arr: L.ArrayDecl) -> str:
         """Format an array declaration."""
         if arr.symbol.dtype == L.DataType.SCALAR:
             dtype = "A.dtype"
@@ -70,23 +70,23 @@ class Formatter:
         av = "np.array(" + av + f", dtype={dtype})"
         return f"{symbol} = {av}\n"
 
-    def format_array_access(self, arr):
+    def format_array_access(self, arr: L.ArrayAccess) -> str:
         """Format array access."""
         array = self.format(arr.array)
         idx = ", ".join(self.format(ix) for ix in arr.indices)
         return f"{array}[{idx}]"
 
-    def format_multi_index(self, index):
+    def format_multi_index(self, index: L.MultiIndex) -> str:
         """Format a multi-index."""
         return self.format(index.global_index)
 
-    def format_variable_decl(self, v):
+    def format_variable_decl(self, v: L.VariableDecl) -> str:
         """Format a variable declaration."""
         sym = self.format(v.symbol)
         val = self.format(v.value)
         return f"{sym} = {val}\n"
 
-    def format_nary_op(self, oper):
+    def format_nary_op(self, oper: L.NaryOp) -> str:
         """Format a n argument operation."""
         # Format children
         args = [self.format(arg) for arg in oper.args]
@@ -99,7 +99,7 @@ class Formatter:
         # Return combined string
         return f" {oper.op} ".join(args)
 
-    def format_binary_op(self, oper):
+    def format_binary_op(self, oper: L.BinOp) -> str:
         """Format a binary operation."""
         # Format children
         lhs = self.format(oper.lhs)
@@ -114,17 +114,17 @@ class Formatter:
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    def format_neg(self, val):
+    def format_neg(self, val: L.Neg) -> str:
         """Format unary negation."""
         arg = self.format(val.arg)
         return f"-{arg}"
 
-    def format_not(self, val):
+    def format_not(self, val: L.Not) -> str:
         """Format not operation."""
         arg = self.format(val.arg)
         return f"not({arg})"
 
-    def format_andor(self, oper):
+    def format_andor(self, oper: L.And | L.Or) -> str:
         """Format and or or operation."""
         # Format children
         lhs = self.format(oper.lhs)
@@ -141,15 +141,15 @@ class Formatter:
         # Return combined string
         return f"{lhs} {opstr} {rhs}"
 
-    def format_literal_float(self, val):
+    def format_literal_float(self, val: L.LiteralFloat) -> str:
         """Format a literal float."""
         return f"{val.value}"
 
-    def format_literal_int(self, val):
+    def format_literal_int(self, val: L.LiteralInt) -> str:
         """Format a literal int."""
         return f"{val.value}"
 
-    def format_for_range(self, r):
+    def format_for_range(self, r: L.ForRange) -> str:
         """Format a loop over a range."""
         begin = self.format(r.begin)
         end = self.format(r.end)
@@ -160,17 +160,17 @@ class Formatter:
             output += f"    {line}\n"
         return output
 
-    def format_statement(self, s):
+    def format_statement(self, s: L.Statement) -> str:
         """Format a statement."""
         return self.format(s.expr)
 
-    def format_assign(self, expr):
+    def format_assign(self, expr: L.Assign) -> str:
         """Format assignment."""
         rhs = self.format(expr.rhs)
         lhs = self.format(expr.lhs)
         return f"{lhs} {expr.op} {rhs}\n"
 
-    def format_conditional(self, s):
+    def format_conditional(self, s: L.Conditional) -> str:
         """Format a conditional."""
         # Format children
         c = self.format(s.condition)
@@ -188,11 +188,11 @@ class Formatter:
         # Return combined string
         return f"({t} if {c} else {f})"
 
-    def format_symbol(self, s):
+    def format_symbol(self, s: L.Symbol) -> str:
         """Format a symbol."""
         return f"{s.name}"
 
-    def format_mathfunction(self, f):
+    def format_mathfunction(self, f: L.MathFunction) -> str:
         """Format a math function."""
         function_map = {
             "ln": "log",
@@ -248,7 +248,7 @@ class Formatter:
         "LT": format_binary_op,
     }
 
-    def format(self, s):
+    def format(self, s: L.LNode) -> str:
         """Format output."""
         name = s.__class__.__name__
         try:

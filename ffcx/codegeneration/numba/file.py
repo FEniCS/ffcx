@@ -13,6 +13,8 @@ import logging
 import pprint
 import textwrap
 
+from numpy import typing as npt
+
 from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
 from ffcx.codegeneration.numba import file_template
@@ -20,7 +22,9 @@ from ffcx.codegeneration.numba import file_template
 logger = logging.getLogger("ffcx")
 
 
-def generator(options):
+def generator(
+    options: dict[str, int | float | npt.DTypeLike],
+) -> tuple[tuple[str, str], tuple[str, str]]:
     """Generate UFC code for file output."""
     logger.info("Generating code for file")
 

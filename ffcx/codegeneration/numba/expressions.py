@@ -9,6 +9,7 @@ import logging
 import string
 
 import numpy as np
+import numpy.typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
@@ -19,7 +20,7 @@ from ffcx.ir.representation import ExpressionIR
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir: ExpressionIR, options):
+def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
     """Generate UFC code for an expression."""
     logger.info("Generating code for expression:")
     assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
