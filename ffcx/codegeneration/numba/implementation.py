@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Numba implementation for output."""
 
+from typing import Callable, Self
 import ffcx.codegeneration.lnodes as L
 
 
@@ -213,7 +214,7 @@ class Formatter:
         argstr = ", ".join(args)
         return f"np.{function}({argstr})"
 
-    impl = {
+    impl: dict[str, Callable[[Self, L.LNode], str]] = {
         "StatementList": format_statement_list,
         "Comment": format_comment,
         "Section": format_section,
