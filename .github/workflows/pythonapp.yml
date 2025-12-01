@@ -124,8 +124,8 @@ jobs:
       - name: Run FFCx demos
         run: >
           pytest demo/test_demos.py
-          -n auto
           -W error
+          # -n auto
 
       - name: Build documentation
         run: |
