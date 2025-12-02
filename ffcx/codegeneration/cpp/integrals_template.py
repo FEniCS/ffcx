@@ -12,14 +12,20 @@ public:
 // Constructor
 {factory_name}();
 
+#if defined(_MSC_VER)
+#   define RESTRICT __restrict
+#else
+#   define RESTRICT __restrict__
+#endif
+
 // Kernel
 template <typename T, typename U>
 void tabulate_tensor(T* A,
-                     const T* w,
-                     const T* c,
-                     const U* coordinate_dofs,
-                     const std::int32_t* entity_local_index,
-                     const std::uint8_t* quadrature_permutation);
+                     const T* RESTRICT w,
+                     const T* RESTRICT c,
+                     const U* RESTRICT coordinate_dofs,
+                     const std::int32_t* RESTRICT entity_local_index,
+                     const std::uint8_t* RESTRICT quadrature_permutation);
 
 // Data
 std::vector<bool> enabled_coefficients;
@@ -32,12 +38,12 @@ factory = """
 // Code for integral {factory_name}
 
 template <typename T, typename U>
-void {factory_name}::tabulate_tensor(T* A,
-                     const T* w,
-                     const T* c,
-                     const U* coordinate_dofs,
-                     const std::int32_t* entity_local_index,
-                     const std::uint8_t* quadrature_permutation)
+void {factory_name}::tabulate_tensor(T* RESTRICT A,
+                     const T* RESTRICT w,
+                     const T* RESTRICT c,
+                     const U* RESTRICT coordinate_dofs,
+                     const std::int32_t* RESTRICT entity_local_index,
+                     const std::uint8_t* RESTRICT quadrature_permutation)
 {{
 {tabulate_tensor}
 }}
