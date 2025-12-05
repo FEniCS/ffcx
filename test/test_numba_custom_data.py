@@ -144,8 +144,8 @@ def test_numba_voidptr_struct_like_mixed_types():
     local_index = np.array([0], dtype=np.int32)
     orientation = np.array([0], dtype=np.uint8)
 
-    # structured dtype: float64 at offset 0, int32 at offset 8, pad int32
-    dtype = np.dtype([("scale", np.float64), ("id", np.int32), ("pad", np.int32)])
+    # structured dtype: float64 at offset 0, int32 at offset 8, with C-compatible alignment
+    dtype = np.dtype([("scale", np.float64), ("id", np.int32)], align=True)
     arr = np.zeros(1, dtype=dtype)
     arr["scale"][0] = 1.25
     arr["id"][0] = 5
