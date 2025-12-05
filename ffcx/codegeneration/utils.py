@@ -159,3 +159,53 @@ if numba is not None:
 
         sig = numba.types.voidptr(arr)
         return sig, codegen
+
+    def create_voidptr_to_dtype_ptr_caster(target_dtype):
+        """Factory that creates a Numba intrinsic casting void* to CPointer(target_dtype).
+
+        The produced intrinsic accepts either `CPointer(void)` or `voidptr` as input
+        (matching how UFCx kernels receive `custom_data`) and returns a
+        `CPointer(target_dtype)` for convenient indexed access in Numba cfuncs.
+
+        Args:
+            target_dtype: A Numba scalar type (e.g. `numba.types.float64`).
+
+        Returns:
+            A Numba intrinsic function that performs the cast.
+        """
+
+        @numba.extending.intrinsic
+        def voidptr_to_dtype_ptr(typingctx, src):
+            # Accept void pointers in various Numba representations:
+            # - CPointer(void): from UFCx cfunc signatures (shows as 'none*')
+            # - voidptr: from numba.cfunc("...(voidptr)") signatures
+            is_cpointer_void = (
+                isinstance(src, numba.types.CPointer) and src.dtype == numba.types.void
+            )
+            is_voidptr = src == numba.types.voidptr
+
+            if is_cpointer_void or is_voidptr:
+                result_type = numba.types.CPointer(target_dtype)
+                sig = result_type(src)
+
+                def codegen(context, builder, signature, args):
+                    [src_val] = args
+                    dst_type = context.get_value_type(result_type)
+                    return builder.bitcast(src_val, dst_type)
+
+                return sig, codegen
+
+            # Raise a clear error if the source type is not a void pointer
+            msg = (
+                "voidptr_to_dtype_ptr expects a void pointer (CPointer(void) or voidptr), "
+                f"got {src}. Ensure you are passing a void* (e.g., custom_data from UFCx kernel signature)."
+            )
+            raise numba.core.errors.TypingError(msg)
+
+        return voidptr_to_dtype_ptr
+
+    # Pre-built casters for common types (convenience wrappers)
+    voidptr_to_float64_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.float64)
+    voidptr_to_float32_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.float32)
+    voidptr_to_int32_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.int32)
+    voidptr_to_int64_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.int64)
