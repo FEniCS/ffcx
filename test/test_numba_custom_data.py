@@ -1,15 +1,17 @@
 # Test that the Numba voidptr -> typed pointer caster works in ffcx utils
 import ctypes
+
 import numpy as np
 import pytest
-
-numba = pytest.importorskip("numba")
 
 from ffcx.codegeneration.utils import (
     numba_ufcx_kernel_signature,
     voidptr_to_float64_ptr,
     voidptr_to_int32_ptr,
 )
+
+# Skip the tests if Numba is not available in the environment.
+numba = pytest.importorskip("numba")
 
 
 def test_numba_voidptr_caster_basic():

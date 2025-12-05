@@ -198,7 +198,8 @@ if numba is not None:
             # Raise a clear error if the source type is not a void pointer
             msg = (
                 "voidptr_to_dtype_ptr expects a void pointer (CPointer(void) or voidptr), "
-                f"got {src}. Ensure you are passing a void* (e.g., custom_data from UFCx kernel signature)."
+                f"got {src}. Ensure you are passing a void* "
+                "(e.g., custom_data from UFCx kernel signature)."
             )
             raise numba.core.errors.TypingError(msg)
 
