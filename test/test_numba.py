@@ -6,7 +6,6 @@
 
 import ctypes
 import importlib
-import subprocess
 from pathlib import Path
 
 import numba
