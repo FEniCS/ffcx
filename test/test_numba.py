@@ -14,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 
+import ffcx.main
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype, numba_ufcx_kernel_signature
 
 
@@ -31,7 +32,7 @@ def as_C_array(np_array: npt.NDArray):
 def test_integral(scalar_type: str) -> None:
     opts = f"--language numba --scalar_type {scalar_type}"
     dir = Path(__file__).parent
-    subprocess.run(["ffcx", dir / "poisson.py", *opts.split(" ")], check=True)
+    assert ffcx.main.main([str(dir / "poisson.py"), *opts.split(" ")]) == 0
 
     poisson = importlib.import_module("poisson_numba")
 
@@ -88,7 +89,7 @@ def test_integral(scalar_type: str) -> None:
 def test_expression(scalar_type: str) -> None:
     opts = f"--language numba --scalar_type {scalar_type}"
     dir = Path(__file__).parent
-    subprocess.run(["ffcx", dir / "poisson.py", *opts.split(" ")], check=True)
+    assert ffcx.main.main([str(dir / "poisson.py"), *opts.split(" ")]) == 0
 
     poisson = importlib.import_module("poisson_numba")
 
