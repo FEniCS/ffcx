@@ -122,8 +122,10 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Run FFCx demos
-        run: |
+        run: >
           pytest demo/test_demos.py
+          -W error
+          # -n auto
 
       - name: Build documentation
         run: |

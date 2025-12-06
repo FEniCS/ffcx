@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2007 Anders Logg
+# Copyright (C) 2004-20025 Anders Logg and Paul T. Kühner
 #
 # This file is part of FFCx.
 #
@@ -31,19 +31,27 @@ from ufl import (
     dx,
     grad,
     inner,
+    tr,
 )
 
-mesh = Mesh(basix.ufl.element("P", "triangle", 2, shape=(2,)))
+mesh = Mesh(basix.ufl.element("P", "triangle", 1, shape=(2,)))
 
-e = basix.ufl.element("Lagrange", "triangle", 2)
+# Forms
+e = basix.ufl.element("Lagrange", "triangle", 1)
 space = FunctionSpace(mesh, e)
 
 u = TrialFunction(space)
 v = TestFunction(space)
 f = Coefficient(space)
 
-kappa1 = Constant(mesh, shape=(2, 2))
-kappa2 = Constant(mesh, shape=(2, 2))
+kappa = Constant(mesh, shape=(2, 2))
 
-a = inner(kappa1, kappa2) * inner(grad(u), grad(v)) * dx
+a = tr(kappa) * inner(grad(u), grad(v)) * dx
 L = f * v * dx
+
+# Expressions
+e_vec = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+space_vec = FunctionSpace(mesh, e_vec)
+f_vec = Coefficient(space_vec)
+
+expressions = [(kappa * f_vec, e_vec.basix_element.points)]
