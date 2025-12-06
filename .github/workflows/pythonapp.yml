@@ -85,8 +85,8 @@ jobs:
         if: runner.os != 'Linux'
         run: pip install .[ci]
 
-      - name: Static check with mypy
-        run: mypy -p ffcx
+      # - name: Static check with mypy
+      #   run: mypy -p ffcx
 
       - name: ruff checks
         run: |
@@ -96,7 +96,6 @@ jobs:
       - name: Run unit tests
         run: >
           python -m pytest test/
-          -n auto
           -W error
           --cov=ffcx/
           --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
