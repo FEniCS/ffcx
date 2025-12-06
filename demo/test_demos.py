@@ -7,8 +7,6 @@ from pathlib import Path
 
 import pytest
 
-import ffcx.main
-
 demo_dir = Path(__file__).parent
 
 ufl_files = [
@@ -44,7 +42,7 @@ def test_C(file, scalar_type):
         # Skip complex demos on win32
         pytest.skip(reason="_Complex not supported on Windows")
 
-    assert ffcx.main.main(["--scalar_type", scalar_type, str(file)]) == 0
+    subprocess.run(["ffcx", "--scalar_type", scalar_type, file], cwd=demo_dir, check=True)
 
     if sys.platform.startswith("win32"):
         extra_flags = "/std:c17"
@@ -84,6 +82,6 @@ def test_C(file, scalar_type):
 @skip_unsupported
 def test_numba(file, scalar_type):
     """Test numba generation."""
-    opts = f"--language numba --scalar_type {scalar_type}"
-    assert ffcx.main.main([*opts.split(" "), str(file)]) == 0
+    opts = f"-L numba --scalar_type {scalar_type}"
+    subprocess.run(["ffcx", *opts.split(" "), file], cwd=demo_dir, check=True)
     subprocess.run(["python", file], cwd=demo_dir, check=True)
