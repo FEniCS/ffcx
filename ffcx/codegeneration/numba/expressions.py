@@ -80,7 +80,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     # TODO: value_shape_init
     shape = ", ".join(str(i) for i in ir.expression.shape)
     d["value_shape"] = f"[{shape}]"
-    d["num_components"] = num_components
+    d["num_components"] = int(num_components)
     d["num_coefficients"] = len(ir.expression.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = num_points
