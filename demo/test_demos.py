@@ -82,6 +82,6 @@ def test_C(file, scalar_type):
 @skip_unsupported
 def test_numba(file, scalar_type):
     """Test numba generation."""
-    opts = f"-L numba --scalar_type {scalar_type}"
+    opts = f"--language numba --scalar_type {scalar_type}"
     subprocess.run(["ffcx", *opts.split(" "), file], cwd=demo_dir, check=True)
     subprocess.run(["python", file], cwd=demo_dir, check=True)
