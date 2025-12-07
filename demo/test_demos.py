@@ -34,7 +34,7 @@ def test_demo(file, scalar_type):
 
     if sys.platform.startswith("win32"):
         opts = f"--scalar_type {scalar_type}"
-        extra_flags = "/std:c17"
+        extra_flags = "/std:c17 /Wall /WX"
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
         assert (
             os.system(
@@ -50,9 +50,7 @@ def test_demo(file, scalar_type):
     else:
         cc = os.environ.get("CC", "cc")
         opts = f"--scalar_type {scalar_type}"
-        extra_flags = (
-            "-std=c17 -Wunused-variable -Werror -fPIC -Wno-error=implicit-function-declaration"
-        )
+        extra_flags = "-std=c17 -Wunused-variable -Wall -Werror -fPIC -Wno-error=implicit-function-declaration"
         assert os.system(f"cd {demo_dir} && ffcx {opts} {file}.py") == 0
         assert (
             os.system(f"cd {demo_dir} && {cc} -I../ffcx/codegeneration {extra_flags} -c {file}.c")
