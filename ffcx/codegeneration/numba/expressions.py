@@ -43,6 +43,10 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     parts = eg.generate()
 
     # tabulate_expression
+    num_points = points.shape[0]
+    num_components = np.prod(ir.expression.shape)
+    num_coefficients = len(ir.expression.coefficient_numbering)
+    size_A = num_points * num_components * num_coefficients  # ref. ufcx.h
     size_w = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
     size_c = sum(
         np.prod(constant.ufl_shape, dtype=int)
@@ -53,7 +57,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     size_permutation = 2 if ir.expression.needs_facet_permutations else 0
 
     header = f"""
-    A = numba.carray(_A, ({points.size}))
+    A = numba.carray(_A, ({size_A}))
     w = numba.carray(_w, ({size_w}))
     c = numba.carray(_c, ({size_c}))
     coordinate_dofs = numba.carray(_coordinate_dofs, ({size_coords}))
@@ -76,10 +80,10 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     # TODO: value_shape_init
     shape = ", ".join(str(i) for i in ir.expression.shape)
     d["value_shape"] = f"[{shape}]"
-    d["num_components"] = len(ir.expression.shape)
-    d["num_coefficients"] = len(ir.expression.coefficient_numbering)
+    d["num_components"] = num_components
+    d["num_coefficients"] = num_coefficients
     d["num_constants"] = len(ir.constant_names)
-    d["num_points"] = points.shape[0]
+    d["num_points"] = num_points
     d["entity_dimension"] = points.shape[1]
 
     d["rank"] = len(ir.expression.tensor_shape)

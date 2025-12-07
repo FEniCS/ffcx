@@ -97,8 +97,10 @@ def test_expression(scalar_type: str) -> None:
 
     kernel_expr = wrap_kernel(dtype, dtype_r)(poisson.expression_poisson_0.tabulate_tensor)
 
-    e = np.zeros((2 * 3,), dtype=dtype)
-    w = np.array([1, 1, 2, 2, 3, 3], dtype=dtype)
+    e = np.zeros((6 * 3,), dtype=dtype)
+    w = np.array(
+        [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11], dtype=dtype
+    )
     kappa_value = np.array([[1.0, 2.0], [3.0, 4.0]])
     c = np.array(kappa_value.flatten(), dtype=dtype)
     coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=dtype_r)
@@ -113,5 +115,7 @@ def test_expression(scalar_type: str) -> None:
         as_C_array(empty),
         0,
     )
-    e_expected = np.array([3, 7, 6, 14, 9, 21], dtype=dtype)
+    e_expected = np.array(
+        [5, 7, 8, 11, 15, 18, 14, 16, 17, 32, 36, 39, 23, 25, 26, 53, 57, 60], dtype=dtype
+    )
     assert np.allclose(e, e_expected)

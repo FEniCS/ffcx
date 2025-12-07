@@ -50,7 +50,7 @@ a = tr(kappa) * inner(grad(u), grad(v)) * dx
 L = f * v * dx
 
 # Expressions
-e_vec = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+e_vec = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, 3))
 space_vec = FunctionSpace(mesh, e_vec)
 f_vec = Coefficient(space_vec)
 
