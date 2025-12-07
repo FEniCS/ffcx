@@ -45,8 +45,8 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     # tabulate_expression
     num_points = points.shape[0]
     num_components = np.prod(ir.expression.shape)
-    num_coefficients = len(ir.expression.coefficient_numbering)
-    size_A = num_points * num_components * num_coefficients  # ref. ufcx.h
+    num_argument_dofs = np.prod(ir.expression.tensor_shape, dtype=np.int32)
+    size_A = num_points * num_components * num_argument_dofs  # ref. ufcx.h
     size_w = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
     size_c = sum(
         np.prod(constant.ufl_shape, dtype=int)
@@ -81,7 +81,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     shape = ", ".join(str(i) for i in ir.expression.shape)
     d["value_shape"] = f"[{shape}]"
     d["num_components"] = num_components
-    d["num_coefficients"] = num_coefficients
+    d["num_coefficients"] = len(ir.expression.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
     d["num_points"] = num_points
     d["entity_dimension"] = points.shape[1]
