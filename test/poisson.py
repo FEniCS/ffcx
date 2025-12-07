@@ -1,4 +1,4 @@
-# Copyright (C) 2004-20025 Anders Logg and Paul T. Kühner
+# Copyright (C) 2004-2025 Anders Logg and Paul T. Kühner
 #
 # This file is part of FFCx.
 #
