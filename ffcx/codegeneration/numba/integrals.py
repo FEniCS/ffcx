@@ -66,7 +66,7 @@ def generator(
     body = "\n".join(["    " + line for line in body.split("\n")])
 
     # Generate generic FFCx code snippets and add specific parts
-    d = {}
+    d: dict[str, str] = {}
 
     d["factory_name"] = factory_name
 
@@ -98,7 +98,7 @@ def generator(
     d["tabulate_tensor"] = header + body
     d["needs_facet_permutations"] = "True" if ir.expression.needs_facet_permutations else "False"
     d["coordinate_element_hash"] = ir.expression.coordinate_element_hash
-    d["domain"] = int(domain)
+    d["domain"] = str(int(domain))
 
     assert ir.expression.coordinate_element_hash is not None
     implementation = ufcx_integrals.factory.format_map(d)
