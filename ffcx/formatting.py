@@ -39,7 +39,7 @@ def format_code(code: CodeBlocks) -> tuple[str, str]:
 
 
 def write_code(
-    code_h: str, code_c: str, prefix: str, suffixes: tuple[str, str], output_dir: str
+    code_h: str, code_c: str, prefix: str, suffixes: tuple[str | None, str | None], output_dir: str
 ) -> None:
     """Write code to files."""
     if suffixes[0] is not None:

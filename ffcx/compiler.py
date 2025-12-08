@@ -89,7 +89,7 @@ def compile_ufl_objects(
     object_names: dict[int, str] | None = None,
     prefix: str | None = None,
     visualise: bool = False,
-) -> tuple[str, str, tuple[str, str]]:
+) -> tuple[str, str]:
     """Generate UFC code for a given UFL objects.
 
     Args:
@@ -100,7 +100,7 @@ def compile_ufl_objects(
           options: Options
           visualise: Toggle visualisation
 
-     Returns: tuple of declaration, implementation and tuple of file suffixes.
+     Returns: tuple of declaration and implementation.
 
     """
     _object_names = object_names if object_names is not None else {}
@@ -126,4 +126,4 @@ def compile_ufl_objects(
     code_h, code_c = format_code(code)
     _print_timing(4, time() - cpu_time)
 
-    return code_h, code_c #, suffixes
+    return code_h, code_c

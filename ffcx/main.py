@@ -85,6 +85,7 @@ def main(args: Sequence[str] | None = None) -> int:
 
         # File suffixes
         # TODO: this needs to be moved into the language backends
+        suffixes: tuple[str | None, str | None]
         if options["language"] == "C":
             suffixes = (".h", ".c")
         else:  # numba:
