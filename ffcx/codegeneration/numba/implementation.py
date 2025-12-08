@@ -49,17 +49,17 @@ class Formatter:
     def format_section(self, section: L.Section) -> str:
         """Format a section."""
         # add new line before section
-        comments = self.format_comment("------------------------")
-        comments += self.format_comment(f"Section: {section.name}")
-        comments += self.format_comment(f"Inputs: {', '.join(w.name for w in section.input)}")
-        comments += self.format_comment(f"Outputs: {', '.join(w.name for w in section.output)}")
+        comments = self._format_comment_str("------------------------")
+        comments += self._format_comment_str(f"Section: {section.name}")
+        comments += self._format_comment_str(f"Inputs: {', '.join(w.name for w in section.input)}")
+        comments += self._format_comment_str(f"Outputs: {', '.join(w.name for w in section.output)}")
         declarations = "".join(self.format(s) for s in section.declarations)
 
         body = ""
         if len(section.statements) > 0:
             body = "".join(self.format(s) for s in section.statements)
 
-        body += self.format_comment("------------------------")
+        body += self._format_comment_str("------------------------")
         return comments + declarations + body
 
     def format_statement_list(self, slist: L.StatementList) -> str:
@@ -69,9 +69,13 @@ class Formatter:
             output += self.format(s)
         return output
 
+    def _format_comment_str(self, comment: str) -> str:
+        """Format str to comment string."""
+        return f"# {comment} \n"
+
     def format_comment(self, c: L.Comment) -> str:
         """Format a comment."""
-        return f"# {c.comment} \n"
+        return self._format_comment_str(c.comment)
 
     def format_array_decl(self, arr: L.ArrayDecl) -> str:
         """Format an array declaration."""
