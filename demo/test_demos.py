@@ -19,7 +19,7 @@ skip_complex = ["BiharmonicHHJ", "BiharmonicRegge", "StabilisedStokes"]
 
 
 def skip_unsupported(test):
-    """Dcecorate test case to skip unsupported cases."""
+    """Decorate test case to skip unsupported cases."""
 
     def check_skip(file, scalar_type):
         """Skip scalar_type file combinations not supported."""

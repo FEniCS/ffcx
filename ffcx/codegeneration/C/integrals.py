@@ -29,7 +29,7 @@ def generator(
 
     Args:
         ir: IR of the integral
-        domain: BASIx cell type
+        domain: basix cell type
         options: dict of kernel generation options
 
     Returns:
