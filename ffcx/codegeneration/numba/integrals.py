@@ -17,14 +17,28 @@ from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
 from ffcx.codegeneration.numba.implementation import Formatter
+from ffcx.ir.representation import IntegralIR
 
 logger = logging.getLogger("ffcx")
 
 
 def generator(
-    ir, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
+    ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
 ) -> tuple[str, str]:
-    """Generate numba code for an integral."""
+    """Generate numba code for an integral.
+
+    Args:
+        ir: IR of the integral
+        domain: BASIx cell type
+        options: dict of kernel generation options
+
+    Returns:
+        Tuple of declaration (header) and implementation (source) strings.
+
+    Note:
+        numba backend only provides a declaration. Implementation string will always be empty.
+
+    """
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")

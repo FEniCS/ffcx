@@ -24,8 +24,18 @@ logger = logging.getLogger("ffcx")
 
 def generator(
     ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
-):
-    """Generate C code for an integral."""
+) -> tuple[str, str]:
+    """Generate C code for an integral.
+
+    Args:
+        ir: IR of the integral
+        domain: BASIx cell type
+        options: dict of kernel generation options
+
+    Returns:
+        Tuple of declaration (header) and implementation (source) strings.
+
+    """
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
