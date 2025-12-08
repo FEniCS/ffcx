@@ -47,7 +47,7 @@ def generator(
     parts = ig.generate(domain)
 
     # Format code as string
-    F = Formatter(options["scalar_type"])
+    F = Formatter(options["scalar_type"])  # type: ignore
     body = F.format(parts)
     body = "\n".join(["    " + line for line in body.split("\n")])
 
