@@ -49,17 +49,17 @@ class Formatter:
     def format_section(self, section: L.Section) -> str:
         """Format a section."""
         # add new line before section
-        comments = "# ------------------------ \n"
-        comments += "# Section: " + section.name + "\n"
-        comments += "# Inputs: " + ", ".join(w.name for w in section.input) + "\n"
-        comments += "# Outputs: " + ", ".join(w.name for w in section.output) + "\n"
+        comments = self.format_comment("------------------------")
+        comments += self.format_comment(f"Section: {section.name}")
+        comments += self.format_comment(f"Inputs: {', '.join(w.name for w in section.input)}")
+        comments += self.format_comment(f"Outputs: {', '.join(w.name for w in section.output)}")
         declarations = "".join(self.format(s) for s in section.declarations)
 
         body = ""
         if len(section.statements) > 0:
             body = "".join(self.format(s) for s in section.statements)
 
-        body += "# ------------------------ \n"
+        body += self.format_comment("------------------------")
         return comments + declarations + body
 
     def format_statement_list(self, slist: L.StatementList) -> str:
@@ -84,7 +84,7 @@ class Formatter:
         elif arr.values.size == 1:
             return f"{symbol} = np.full({arr.sizes}, {arr.values[0]}, dtype={typename})\n"
         av = build_initializer_lists(arr.values)
-        av = "np.array(" + av + f", dtype={typename})"
+        av = f"np.array({av}, dtype={typename})"
         return f"{symbol} = {av}\n"
 
     def format_array_access(self, arr: L.ArrayAccess) -> str:
