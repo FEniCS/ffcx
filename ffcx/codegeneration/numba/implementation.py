@@ -229,9 +229,10 @@ class Formatter:
         }
         function = function_map.get(f.function, f.function)
         args = [self.format(arg) for arg in f.args]
-        if "bessel" in function:
-            # TODO: fix with https://github.com/numba/numba/issues/2312.
-            raise NotImplementedError("Bessel function not supported.")
+        if "bessel_y" in function:
+            return "scipy.special.yn"
+        if "bessel_j" in function:
+            return "scipy.special.jn"
         if function == "erf":
             return f"math.erf({args[0]})"
         argstr = ", ".join(args)
