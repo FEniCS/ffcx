@@ -25,7 +25,15 @@ logger = logging.getLogger("ffcx")
 def generator(
     options: dict[str, int | float | npt.DTypeLike],
 ) -> tuple[tuple[str, str], tuple[str, str]]:
-    """Generate UFC code for file output."""
+    """Generate UFC code for file output.
+
+    Args:
+        options: Dict of options specified the kenerl generation, these will be documented in the
+        generated file.
+
+    Returns: tuple of file start- and end sections, each for declaration and implementation.
+
+    """
     logger.info("Generating code for file")
 
     # Attributes
