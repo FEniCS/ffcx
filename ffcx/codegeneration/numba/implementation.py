@@ -34,7 +34,7 @@ class Formatter:
         self.scalar_type = np.dtype(dtype)
         self.real_type = dtype_to_scalar_dtype(dtype)
 
-    def _dtype_to_name(self, dtype) -> str:
+    def _dtype_to_name(self, dtype: L.DataType) -> str:
         """Convert dtype to Python name."""
         if dtype == L.DataType.SCALAR:
             return f"np.{self.scalar_type}"
@@ -71,7 +71,7 @@ class Formatter:
 
     def format_comment(self, c: L.Comment) -> str:
         """Format a comment."""
-        return "# " + c.comment + "\n"
+        return f"# {c.comment} \n"
 
     def format_array_decl(self, arr: L.ArrayDecl) -> str:
         """Format an array declaration."""
@@ -111,7 +111,7 @@ class Formatter:
         # Apply parentheses
         for i in range(len(args)):
             if oper.args[i].precedence >= oper.precedence:
-                args[i] = "(" + args[i] + ")"
+                args[i] = f"({args[i]})"
 
         # Return combined string
         return f" {oper.op} ".join(args)
@@ -196,11 +196,11 @@ class Formatter:
 
         # Apply parentheses
         if s.condition.precedence >= s.precedence:
-            c = "(" + c + ")"
+            c = f"({c})"
         if s.true.precedence >= s.precedence:
-            t = "(" + t + ")"
+            t = f"({t})"
         if s.false.precedence >= s.precedence:
-            f = "(" + f + ")"
+            f = f"({f})"
 
         # Return combined string
         return f"({t} if {c} else {f})"
