@@ -1,11 +1,15 @@
-# Copyright (C) 2025 Chris Richardson
+# Copyright (C) 2025 Chris Richardson and Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Numba implementation for output."""
 
+import numpy as np
+from numpy import typing as npt
+
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 
 def build_initializer_lists(values):
@@ -22,9 +26,25 @@ def build_initializer_lists(values):
 class Formatter:
     """Implementation for numba output backend."""
 
-    def __init__(self, scalar) -> None:
+    scalar_type: np.dtype
+    real_type: np.dtype
+
+    def __init__(self, dtype: npt.DTypeLike) -> None:
         """Initialise."""
-        self.scalar_type = scalar
+        self.scalar_type = dtype
+        self.real_type = dtype_to_scalar_dtype(dtype)
+
+    def _dtype_to_name(self, dtype) -> str:
+        """Convert dtype to Python name."""
+        if dtype == L.DataType.SCALAR:
+            return f"np.{self.scalar_type}"
+        if dtype == L.DataType.REAL:
+            return f"np.{self.real_type}"
+        if dtype == L.DataType.INT:
+            return f"np.{np.int32}"
+        if dtype == L.DataType.BOOL:
+            return f"np.{np.bool}"
+        raise ValueError(f"Invalid dtype: {dtype}")
 
     def format_section(self, section: L.Section) -> str:
         """Format a section."""
@@ -55,19 +75,16 @@ class Formatter:
 
     def format_array_decl(self, arr: L.ArrayDecl) -> str:
         """Format an array declaration."""
-        if arr.symbol.dtype == L.DataType.SCALAR:
-            dtype = "A.dtype"
-        elif arr.symbol.dtype == L.DataType.REAL:
-            dtype = "coordinate_dofs.dtype"
-        elif arr.symbol.dtype == L.DataType.INT:
-            dtype = "np.int32"
+        dtype = arr.symbol.dtype
+        typename = self._dtype_to_name(dtype)
+
         symbol = self.format(arr.symbol)
         if arr.values is None:
-            return f"{symbol} = np.empty({arr.sizes}, dtype={dtype})\n"
+            return f"{symbol} = np.empty({arr.sizes}, dtype={typename})\n"
         elif arr.values.size == 1:
-            return f"{symbol} = np.full({arr.sizes}, {arr.values[0]}, dtype={dtype})\n"
+            return f"{symbol} = np.full({arr.sizes}, {arr.values[0]}, dtype={typename})\n"
         av = build_initializer_lists(arr.values)
-        av = "np.array(" + av + f", dtype={dtype})"
+        av = "np.array(" + av + f", dtype={typename})"
         return f"{symbol} = {av}\n"
 
     def format_array_access(self, arr: L.ArrayAccess) -> str:
