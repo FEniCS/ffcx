@@ -52,7 +52,9 @@ class Formatter:
         comments = self._format_comment_str("------------------------")
         comments += self._format_comment_str(f"Section: {section.name}")
         comments += self._format_comment_str(f"Inputs: {', '.join(w.name for w in section.input)}")
-        comments += self._format_comment_str(f"Outputs: {', '.join(w.name for w in section.output)}")
+        comments += self._format_comment_str(
+            f"Outputs: {', '.join(w.name for w in section.output)}"
+        )
         declarations = "".join(self.format(s) for s in section.declarations)
 
         body = ""
