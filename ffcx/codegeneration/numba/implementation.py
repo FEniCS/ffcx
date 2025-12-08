@@ -31,7 +31,7 @@ class Formatter:
 
     def __init__(self, dtype: npt.DTypeLike) -> None:
         """Initialise."""
-        self.scalar_type = dtype
+        self.scalar_type = np.dtype(dtype)
         self.real_type = dtype_to_scalar_dtype(dtype)
 
     def _dtype_to_name(self, dtype) -> str:
