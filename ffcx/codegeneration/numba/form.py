@@ -92,7 +92,7 @@ def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str,
         values = ", ".join(f"{0 if el is None else el}" for el in ir.finite_element_hashes)
         d["finite_element_hashes_init"] = f"finite_element_hashes_{ir.name} = [{values}]"
     else:
-        d["finite_element_hashes"] = "NULL"
+        d["finite_element_hashes"] = "None"
         d["finite_element_hashes_init"] = ""
 
     integrals = []
@@ -137,9 +137,9 @@ def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str,
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
     else:
         d["form_integrals_init"] = ""
-        d["form_integrals"] = "NULL"
+        d["form_integrals"] = "None"
         d["form_integral_ids_init"] = ""
-        d["form_integral_ids"] = "NULL"
+        d["form_integral_ids"] = "None"
 
     values = ", ".join(str(i) for i in integral_offsets)
     d["form_integral_offsets_init"] = f"form_integral_offsets_{ir.name} = [{values}]"
