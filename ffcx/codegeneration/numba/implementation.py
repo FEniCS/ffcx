@@ -12,7 +12,7 @@ import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 
-def build_initializer_lists(values):
+def build_initializer_lists(values: npt.NDArray) -> str:
     """Build list of values."""
     arr = "["
     if len(values.shape) == 1:
@@ -224,7 +224,8 @@ class Formatter:
         function = function_map.get(f.function, f.function)
         args = [self.format(arg) for arg in f.args]
         if "bessel" in function:
-            return "0"
+            # TODO: fix with https://github.com/numba/numba/issues/2312.
+            raise NotImplementedError("Bessel function not supported.")
         if function == "erf":
             return f"math.erf({args[0]})"
         argstr = ", ".join(args)
