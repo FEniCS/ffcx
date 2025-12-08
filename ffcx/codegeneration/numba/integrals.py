@@ -43,10 +43,7 @@ def generator(
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
 
-    # Note: In contrast to the C implementation the actual code is type agnostic, thus not part of
-    #       naming. This is only true for the numba code prior to compilation - the JITed versions
-    #       are different.
-    factory_name = ir.expression.name
+    factory_name = f"{ir.expression.name}_{domain.name}"
 
     # Format declaration
     declaration = ""
