@@ -160,12 +160,20 @@ if numba is not None:
         sig = numba.types.voidptr(arr)
         return sig, codegen
 
-    def create_voidptr_to_dtype_ptr_caster(target_dtype):
+    def create_voidptr_to_dtype_ptr_caster(
+        target_dtype: numba.types.Type,
+    ) -> numba.extending.intrinsic:
         """Factory that creates a Numba intrinsic casting void* to CPointer(target_dtype).
 
         The produced intrinsic accepts either `CPointer(void)` or `voidptr` as input
         (matching how UFCx kernels receive `custom_data`) and returns a
         `CPointer(target_dtype)` for convenient indexed access in Numba cfuncs.
+
+        The voidptr cast is needed when:
+        - UFCx kernels pass custom_data as void* (the last parameter in tabulate_tensor)
+        - Users want to access structured runtime data (e.g., custom_data with element
+          tables) inside Numba-compiled kernels
+        - Type-safe indexed access is required (e.g., custom_data[0], custom_data[1])
 
         Args:
             target_dtype: A Numba scalar type (e.g. `numba.types.float64`).
@@ -184,24 +192,24 @@ if numba is not None:
             )
             is_voidptr = src == numba.types.voidptr
 
-            if is_cpointer_void or is_voidptr:
-                result_type = numba.types.CPointer(target_dtype)
-                sig = result_type(src)
-
-                def codegen(context, builder, signature, args):
-                    [src_val] = args
-                    dst_type = context.get_value_type(result_type)
-                    return builder.bitcast(src_val, dst_type)
-
-                return sig, codegen
-
             # Raise a clear error if the source type is not a void pointer
-            msg = (
-                "voidptr_to_dtype_ptr expects a void pointer (CPointer(void) or voidptr), "
-                f"got {src}. Ensure you are passing a void* "
-                "(e.g., custom_data from UFCx kernel signature)."
-            )
-            raise numba.core.errors.TypingError(msg)
+            if not is_cpointer_void and not is_voidptr:
+                msg = (
+                    "voidptr_to_dtype_ptr expects a void pointer (CPointer(void) or voidptr), "
+                    f"got {src}. Ensure you are passing a void* "
+                    "(e.g., custom_data from UFCx kernel signature)."
+                )
+                raise numba.core.errors.TypingError(msg)
+
+            result_type = numba.types.CPointer(target_dtype)
+            sig = result_type(src)
+
+            def codegen(context, builder, signature, args):
+                [src_val] = args
+                dst_type = context.get_value_type(result_type)
+                return builder.bitcast(src_val, dst_type)
+
+            return sig, codegen
 
         return voidptr_to_dtype_ptr
 
