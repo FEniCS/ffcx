@@ -44,8 +44,8 @@ def generator(ir: ExpressionIR, options):
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    CF = Formatter(options["scalar_type"])
-    d["tabulate_expression"] = CF.format(parts)
+    format = Formatter(options["scalar_type"])
+    d["tabulate_expression"] = format(parts)
 
     if len(ir.original_coefficient_positions) > 0:
         d["original_coefficient_positions"] = f"original_coefficient_positions_{factory_name}"

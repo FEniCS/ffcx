@@ -55,8 +55,8 @@ def generator(
     parts = ig.generate(domain)
 
     # Format code as string
-    CF = Formatter(options["scalar_type"])  # type: ignore
-    body = CF.format(parts)
+    format = Formatter(options["scalar_type"])  # type: ignore
+    body = format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
