@@ -9,11 +9,11 @@
 """Template for form output."""
 
 import logging
-import string
 
 import numpy as np
 from numpy import typing as npt
 
+from ffcx.codegeneration.common import template_keys
 from ffcx.codegeneration.numba import form_template
 
 logger = logging.getLogger("ffcx")
@@ -144,11 +144,8 @@ def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str,
     values = ", ".join(str(i) for i in integral_offsets)
     d["form_integral_offsets_init"] = f"form_integral_offsets_{ir.name} = [{values}]"
 
-    # Check that no keys are redundant or have been missed
-    fields = [fname for _, fname, _, _ in string.Formatter().parse(form_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
-
     # Format implementation code
+    assert set(d.keys()) == template_keys(form_template.factory)
     implementation = form_template.factory.format_map(d)
 
     return "", implementation

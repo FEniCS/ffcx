@@ -17,6 +17,7 @@ import logging
 import numpy as np
 
 from ffcx.codegeneration.C import form_template
+from ffcx.codegeneration.common import template_keys
 from ffcx.ir.representation import FormIR
 
 logger = logging.getLogger("ffcx")
@@ -169,13 +170,8 @@ def generator(ir: FormIR, options):
         f"int form_integral_offsets_{ir.name}[{sizes}] = {{{values}}};"
     )
 
-    # Check that no keys are redundant or have been missed
-    from string import Formatter
-
-    fields = [fname for _, fname, _, _ in Formatter().parse(form_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
-
     # Format implementation code
+    assert set(d.keys()) == template_keys(form_template.factory)
     implementation = form_template.factory.format_map(d)
 
     # Format declaration

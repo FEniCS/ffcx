@@ -105,5 +105,6 @@ def generator(
     )
 
     # TODO: Check that no keys are redundant or have been missed (ref. numba/integrals.py)
+    # assert set(d.keys()) == template_keys(ufcx_integrals.factory)
 
     return declaration, implementation

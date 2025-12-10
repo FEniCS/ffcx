@@ -6,12 +6,12 @@
 """Generate UFC code for an expression."""
 
 import logging
-import string
 
 import numpy as np
 import numpy.typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.common import template_keys
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.numba.formatter import Formatter
@@ -98,13 +98,8 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
 
     d["coordinate_element_hash"] = ir.expression.coordinate_element_hash
 
-    # Check that no keys are redundant or have been missed
-    fields = [
-        fname for _, fname, _, _ in string.Formatter().parse(expressions_template.factory) if fname
-    ]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
-
     # Format implementation code
+    assert set(d.keys()) == template_keys(expressions_template.factory)
     implementation = expressions_template.factory.format_map(d)
 
     return declaration, implementation

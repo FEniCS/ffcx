@@ -7,13 +7,13 @@
 """Generate UFC code for an integral."""
 
 import logging
-import string
 
 import basix
 import numpy as np
 from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.common import template_keys
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
 from ffcx.codegeneration.numba.formatter import Formatter
@@ -98,10 +98,8 @@ def generator(
     d["domain"] = str(int(domain))
 
     assert ir.expression.coordinate_element_hash is not None
-    implementation = ufcx_integrals.factory.format_map(d)
 
-    # Check that no keys are redundant or have been missed
-    fields = [fname for _, fname, _, _ in string.Formatter().parse(ufcx_integrals.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
+    assert set(d.keys()) == template_keys(ufcx_integrals.factory)
+    implementation = ufcx_integrals.factory.format_map(d)
 
     return declaration, implementation

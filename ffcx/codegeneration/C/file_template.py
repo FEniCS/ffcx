@@ -45,9 +45,6 @@ implementation_pre = """
 
 """
 
-if sys.platform.startswith("win32"):
-    libraries: list[str] = []
-else:
-    libraries: list[str] = ["m"]
 
+libraries: list[str] = [] if sys.platform.startswith("win32") else ["m"]
 implementation_post = ""
