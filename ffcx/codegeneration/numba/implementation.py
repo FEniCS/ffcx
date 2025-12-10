@@ -49,7 +49,7 @@ class Formatter:
         raise ValueError(f"Invalid dtype: {dtype}")
 
     @singledispatchmethod
-    def __call__(self, obj) -> str:
+    def __call__(self, obj: L.LNode) -> str:
         """Format an L Node."""
         raise NotImplementedError(f"Can not format object to type {type(obj)}")
 
@@ -153,17 +153,14 @@ class Formatter:
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    @__call__.register
-    def _(self, val: L.Neg) -> str:
-        """Format unary negation."""
-        arg = self(val.arg)
-        return f"-{arg}"
-
-    @__call__.register
-    def _(self, val: L.Not) -> str:
-        """Format not operation."""
-        arg = self(val.arg)
-        return f"not({arg})"
+    @__call__.register(L.Neg)
+    @__call__.register(L.Not)
+    def _(self, oper: L.Not | L.Neg) -> str:
+        """Format a unary operation."""
+        arg = self(oper.arg)
+        if oper.arg.precedence >= oper.precedence:
+            return f"{oper.op}({arg})"
+        return f"{oper.op}{arg}"
 
     def _format_and_or(self, oper: L.And | L.Or) -> str:
         """Format and or or operation."""
@@ -217,21 +214,13 @@ class Formatter:
         """Format a statement."""
         return self(s.expr)
 
-    def _format_assign(self, expr) -> str:
+    @__call__.register(L.Assign)
+    @__call__.register(L.AssignAdd)
+    def _(self, expr: L.Assign | L.AssignAdd) -> str:
         """Format an assignment."""
         rhs = self(expr.rhs)
         lhs = self(expr.lhs)
-        return f"{lhs} {expr.op} {rhs};\n"
-
-    @__call__.register
-    def _(self, expr: L.Assign) -> str:
-        """Format assignment."""
-        return self._format_assign(expr)
-
-    @__call__.register
-    def _(self, expr: L.AssignAdd) -> str:
-        """Format assignment add."""
-        return self._format_assign(expr)
+        return f"{lhs} {expr.op} {rhs}\n"
 
     @__call__.register
     def _(self, s: L.Conditional) -> str:

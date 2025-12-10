@@ -186,15 +186,9 @@ class Formatter:
         return arr
 
     @singledispatchmethod
-    def __call__(self, obj) -> str:
+    def __call__(self, obj: L.LNode) -> str:
         """Format an L Node."""
-        raise NotImplementedError(f"Can not format objce to type {type(obj)}")
-        # return self._format(obj)
-
-    @__call__.register
-    def _(self, slist: L.StatementList) -> str:
-        """Format a statement list."""
-        return "".join(self(s) for s in slist.statements)
+        raise NotImplementedError(f"Can not format object to type {type(obj)}")
 
     @__call__.register
     def _(self, slist: L.StatementList) -> str:
@@ -289,20 +283,14 @@ class Formatter:
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    def _format_unary_op(self, oper) -> str:
+    @__call__.register(L.Neg)
+    @__call__.register(L.Not)
+    def _(self, oper) -> str:
         """Format a unary operation."""
         arg = self(oper.arg)
         if oper.arg.precedence >= oper.precedence:
             return f"{oper.op}({arg})"
         return f"{oper.op}{arg}"
-
-    @__call__.register
-    def _(self, val: L.Neg) -> str:
-        return self._format_unary_op(val)
-
-    @__call__.register
-    def _(self, val: L.Not) -> str:
-        return self._format_unary_op(val)
 
     @__call__.register
     def _(self, val: L.LiteralFloat) -> str:
@@ -335,19 +323,13 @@ class Formatter:
         """Format a statement."""
         return self(s.expr)
 
-    def _format_assign(self, expr) -> str:
+    @__call__.register(L.Assign)
+    @__call__.register(L.AssignAdd)
+    def _(self, expr: L.Assign | L.AssignAdd) -> str:
         """Format an assignment."""
         rhs = self(expr.rhs)
         lhs = self(expr.lhs)
         return f"{lhs} {expr.op} {rhs};\n"
-
-    @__call__.register
-    def _(self, expr: L.Assign) -> str:
-        return self._format_assign(expr)
-
-    @__call__.register
-    def _(self, expr: L.AssignAdd) -> str:
-        return self._format_assign(expr)
 
     @__call__.register
     def _(self, s: L.Conditional) -> str:
