@@ -142,7 +142,7 @@ math_table = {
 }
 
 
-class CFormatter:
+class Formatter:
     """C formatter."""
 
     scalar_type: np.dtype
@@ -186,7 +186,7 @@ class CFormatter:
 
     def format_statement_list(self, slist) -> str:
         """Format a statement list."""
-        return "".join(self.c_format(s) for s in slist.statements)
+        return "".join(self.format(s) for s in slist.statements)
 
     def format_section(self, section) -> str:
         """Format a section."""
@@ -197,12 +197,12 @@ class CFormatter:
             f"// Inputs: {', '.join(w.name for w in section.input)}\n"
             f"// Outputs: {', '.join(w.name for w in section.output)}\n"
         )
-        declarations = "".join(self.c_format(s) for s in section.declarations)
+        declarations = "".join(self.format(s) for s in section.declarations)
 
         body = ""
         if len(section.statements) > 0:
             declarations += "{\n  "
-            body = "".join(self.c_format(s) for s in section.statements)
+            body = "".join(self.format(s) for s in section.statements)
             body = body.replace("\n", "\n  ")
             body = body[:-2] + "}\n"
 
@@ -218,7 +218,7 @@ class CFormatter:
         dtype = arr.symbol.dtype
         typename = self._dtype_to_name(dtype)
 
-        symbol = self.c_format(arr.symbol)
+        symbol = self.format(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
         if arr.values is None:
             assert arr.const is False
@@ -230,21 +230,21 @@ class CFormatter:
 
     def format_array_access(self, arr) -> str:
         """Format an array access."""
-        name = self.c_format(arr.array)
-        indices = f"[{']['.join(self.c_format(i) for i in arr.indices)}]"
+        name = self.format(arr.array)
+        indices = f"[{']['.join(self.format(i) for i in arr.indices)}]"
         return f"{name}{indices}"
 
     def format_variable_decl(self, v) -> str:
         """Format a variable declaration."""
-        val = self.c_format(v.value)
-        symbol = self.c_format(v.symbol)
+        val = self.format(v.value)
+        symbol = self.format(v.symbol)
         typename = self._dtype_to_name(v.symbol.dtype)
         return f"{typename} {symbol} = {val};\n"
 
     def format_nary_op(self, oper) -> str:
         """Format an n-ary operation."""
         # Format children
-        args = [self.c_format(arg) for arg in oper.args]
+        args = [self.format(arg) for arg in oper.args]
 
         # Apply parentheses
         for i in range(len(args)):
@@ -257,8 +257,8 @@ class CFormatter:
     def format_binary_op(self, oper) -> str:
         """Format a binary operation."""
         # Format children
-        lhs = self.c_format(oper.lhs)
-        rhs = self.c_format(oper.rhs)
+        lhs = self.format(oper.lhs)
+        rhs = self.format(oper.rhs)
 
         # Apply parentheses
         if oper.lhs.precedence >= oper.precedence:
@@ -271,7 +271,7 @@ class CFormatter:
 
     def format_unary_op(self, oper) -> str:
         """Format a unary operation."""
-        arg = self.c_format(oper.arg)
+        arg = self.format(oper.arg)
         if oper.arg.precedence >= oper.precedence:
             return f"{oper.op}({arg})"
         return f"{oper.op}{arg}"
@@ -287,12 +287,12 @@ class CFormatter:
 
     def format_for_range(self, r) -> str:
         """Format a for loop over a range."""
-        begin = self.c_format(r.begin)
-        end = self.c_format(r.end)
-        index = self.c_format(r.index)
+        begin = self.format(r.begin)
+        end = self.format(r.end)
+        index = self.format(r.index)
         output = f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
         output += "{\n"
-        body = self.c_format(r.body)
+        body = self.format(r.body)
         for line in body.split("\n"):
             if len(line) > 0:
                 output += f"  {line}\n"
@@ -301,20 +301,20 @@ class CFormatter:
 
     def format_statement(self, s) -> str:
         """Format a statement."""
-        return self.c_format(s.expr)
+        return self.format(s.expr)
 
     def format_assign(self, expr) -> str:
         """Format an assignment."""
-        rhs = self.c_format(expr.rhs)
-        lhs = self.c_format(expr.lhs)
+        rhs = self.format(expr.rhs)
+        lhs = self.format(expr.lhs)
         return f"{lhs} {expr.op} {rhs};\n"
 
     def format_conditional(self, s) -> str:
         """Format a conditional."""
         # Format children
-        c = self.c_format(s.condition)
-        t = self.c_format(s.true)
-        f = self.c_format(s.false)
+        c = self.format(s.condition)
+        t = self.format(s.true)
+        f = self.format(s.false)
 
         # Apply parentheses
         if s.condition.precedence >= s.precedence:
@@ -333,7 +333,7 @@ class CFormatter:
 
     def format_multi_index(self, mi) -> str:
         """Format a multi-index."""
-        return self.c_format(mi.global_index)
+        return self.format(mi.global_index)
 
     def format_math_function(self, c) -> str:
         """Format a mathematical function."""
@@ -349,10 +349,10 @@ class CFormatter:
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
-        args = ", ".join(self.c_format(arg) for arg in c.args)
+        args = ", ".join(self.format(arg) for arg in c.args)
         return f"{func}({args})"
 
-    c_impl = {
+    impl = {
         "Section": format_section,
         "StatementList": format_statement_list,
         "Comment": format_comment,
@@ -387,10 +387,10 @@ class CFormatter:
         "LT": format_binary_op,
     }
 
-    def c_format(self, s) -> str:
+    def format(self, s) -> str:
         """Format as C."""
         name = s.__class__.__name__
         try:
-            return self.c_impl[name](self, s)
+            return self.impl[name](self, s)
         except KeyError:
             raise RuntimeError("Unknown statement: ", name)
