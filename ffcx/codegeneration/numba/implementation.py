@@ -162,7 +162,9 @@ class Formatter:
             return f"{oper.op}({arg})"
         return f"{oper.op}{arg}"
 
-    def _format_and_or(self, oper: L.And | L.Or) -> str:
+    @__call__.register(L.And)
+    @__call__.register(L.Or)
+    def _(self, oper: L.And | L.Or) -> str:
         """Format and or or operation."""
         # Format children
         lhs = self(oper.lhs)
@@ -178,14 +180,6 @@ class Formatter:
 
         # Return combined string
         return f"{lhs} {opstr} {rhs}"
-
-    @__call__.register
-    def _(self, oper: L.And) -> str:
-        return self._format_and_or(oper)
-
-    @__call__.register
-    def _(self, oper: L.Or) -> str:
-        return self._format_and_or(oper)
 
     @__call__.register
     def _(self, val: L.LiteralFloat) -> str:
