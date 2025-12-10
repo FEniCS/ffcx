@@ -93,12 +93,15 @@ def compile_ufl_objects(
     """Generate UFC code for a given UFL objects.
 
     Args:
-        ufl_objects: Objects to be compiled. Accepts elements, forms,
-          integrals or coordinate mappings.
-        object_names: Map from object Python id to object name
-        prefix: Prefix
-        options: Options
-        visualise: Toggle visualisation
+          ufl_objects: Objects to be compiled. Accepts elements, forms,
+            integrals or coordinate mappings.
+          object_names: Map from object Python id to object name
+          prefix: Prefix
+          options: Options
+          visualise: Toggle visualisation
+
+     Returns: tuple of declaration and implementation.
+
     """
     _object_names = object_names if object_names is not None else {}
     _prefix = prefix if prefix is not None else ""

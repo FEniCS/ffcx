@@ -83,8 +83,16 @@ def main(args: Sequence[str] | None = None) -> int:
             visualise=xargs.visualise,
         )
 
+        # File suffixes
+        # TODO: this needs to be moved into the language backends
+        suffixes: tuple[str | None, str | None]
+        if options["language"] == "C":
+            suffixes = (".h", ".c")
+        else:  # numba:
+            suffixes = (None, "_numba.py")
+
         # Write to file
-        formatting.write_code(code_h, code_c, prefix, xargs.output_directory)
+        formatting.write_code(code_h, code_c, prefix, suffixes, xargs.output_directory)
 
         # Turn off profiling and write status to file
         if xargs.profile:
