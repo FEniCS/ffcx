@@ -48,16 +48,12 @@ class Formatter:
             return f"np.{np.bool}"
         raise ValueError(f"Invalid dtype: {dtype}")
 
+    @singledispatchmethod
     def __call__(self, obj) -> str:
         """Format an L Node."""
-        return self._format(obj)
+        raise NotImplementedError(f"Can not format object to type {type(obj)}")
 
-    @singledispatchmethod
-    def _format(self, obj) -> str:
-        """Formats any L Node."""
-        raise NotImplementedError(f"Can not format objce to type {type(obj)}")
-
-    @_format.register
+    @__call__.register
     def _(self, section: L.Section) -> str:
         """Format a section."""
         # add new line before section
@@ -76,7 +72,7 @@ class Formatter:
         body += self._format_comment_str("------------------------")
         return comments + declarations + body
 
-    @_format.register
+    @__call__.register
     def _(self, slist: L.StatementList) -> str:
         """Format a list of statements."""
         output = ""
@@ -88,12 +84,12 @@ class Formatter:
         """Format str to comment string."""
         return f"# {comment} \n"
 
-    @_format.register
+    @__call__.register
     def _(self, c: L.Comment) -> str:
         """Format a comment."""
         return self._format_comment_str(c.comment)
 
-    @_format.register
+    @__call__.register
     def _(self, arr: L.ArrayDecl) -> str:
         """Format an array declaration."""
         dtype = arr.symbol.dtype
@@ -108,26 +104,26 @@ class Formatter:
         av = f"np.array({av}, dtype={typename})"
         return f"{symbol} = {av}\n"
 
-    @_format.register
+    @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:
         """Format array access."""
         array = self(arr.array)
         idx = ", ".join(self(ix) for ix in arr.indices)
         return f"{array}[{idx}]"
 
-    @_format.register
+    @__call__.register
     def _(self, index: L.MultiIndex) -> str:
         """Format a multi-index."""
         return self(index.global_index)
 
-    @_format.register
+    @__call__.register
     def _(self, v: L.VariableDecl) -> str:
         """Format a variable declaration."""
         sym = self(v.symbol)
         val = self(v.value)
         return f"{sym} = {val}\n"
 
-    @_format.register
+    @__call__.register
     def _(self, oper: L.NaryOp) -> str:
         """Format a n argument operation."""
         # Format children
@@ -141,7 +137,7 @@ class Formatter:
         # Return combined string
         return f" {oper.op} ".join(args)
 
-    @_format.register
+    @__call__.register
     def _(self, oper: L.BinOp) -> str:
         """Format a binary operation."""
         # Format children
@@ -157,13 +153,13 @@ class Formatter:
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.Neg) -> str:
         """Format unary negation."""
         arg = self(val.arg)
         return f"-{arg}"
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.Not) -> str:
         """Format not operation."""
         arg = self(val.arg)
@@ -186,25 +182,25 @@ class Formatter:
         # Return combined string
         return f"{lhs} {opstr} {rhs}"
 
-    @_format.register
+    @__call__.register
     def _(self, oper: L.And) -> str:
         return self._format_and_or(oper)
 
-    @_format.register
+    @__call__.register
     def _(self, oper: L.Or) -> str:
         return self._format_and_or(oper)
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.LiteralFloat) -> str:
         """Format a literal float."""
         return f"{val.value}"
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.LiteralInt) -> str:
         """Format a literal int."""
         return f"{val.value}"
 
-    @_format.register
+    @__call__.register
     def _(self, r: L.ForRange) -> str:
         """Format a loop over a range."""
         begin = self(r.begin)
@@ -216,7 +212,7 @@ class Formatter:
             output += f"    {line}\n"
         return output
 
-    @_format.register
+    @__call__.register
     def _(self, s: L.Statement) -> str:
         """Format a statement."""
         return self(s.expr)
@@ -227,17 +223,17 @@ class Formatter:
         lhs = self(expr.lhs)
         return f"{lhs} {expr.op} {rhs};\n"
 
-    @_format.register
+    @__call__.register
     def _(self, expr: L.Assign) -> str:
         """Format assignment."""
         return self._format_assign(expr)
 
-    @_format.register
+    @__call__.register
     def _(self, expr: L.AssignAdd) -> str:
         """Format assignment add."""
         return self._format_assign(expr)
 
-    @_format.register
+    @__call__.register
     def _(self, s: L.Conditional) -> str:
         """Format a conditional."""
         # Format children
@@ -256,12 +252,12 @@ class Formatter:
         # Return combined string
         return f"({t} if {c} else {f})"
 
-    @_format.register
+    @__call__.register
     def _(self, s: L.Symbol) -> str:
         """Format a symbol."""
         return f"{s.name}"
 
-    @_format.register
+    @__call__.register
     def _(self, f: L.MathFunction) -> str:
         """Format a math function."""
         function_map = {

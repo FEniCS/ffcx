@@ -185,26 +185,23 @@ class Formatter:
         arr += "}"
         return arr
 
+    @singledispatchmethod
     def __call__(self, obj) -> str:
         """Format an L Node."""
-        return self._format(obj)
-
-    @singledispatchmethod
-    def _format(self, obj) -> str:
-        """Formats any L Node."""
         raise NotImplementedError(f"Can not format objce to type {type(obj)}")
+        # return self._format(obj)
 
-    @_format.register
+    @__call__.register
     def _(self, slist: L.StatementList) -> str:
         """Format a statement list."""
         return "".join(self(s) for s in slist.statements)
 
-    @_format.register
+    @__call__.register
     def _(self, slist: L.StatementList) -> str:
         """Format a statement list."""
         return "".join(self(s) for s in slist.statements)
 
-    @_format.register
+    @__call__.register
     def _(self, section: L.Section) -> str:
         """Format a section."""
         # add new line before section
@@ -226,12 +223,12 @@ class Formatter:
         body += "// ------------------------ \n"
         return str(comments + declarations + body)
 
-    @_format.register
+    @__call__.register
     def _(self, c: L.Comment) -> str:
         """Format a comment."""
         return "// " + c.comment + "\n"
 
-    @_format.register
+    @__call__.register
     def _(self, arr: L.ArrayDecl) -> str:
         """Format an array declaration."""
         dtype = arr.symbol.dtype
@@ -247,14 +244,14 @@ class Formatter:
         cstr = "static const " if arr.const else ""
         return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
-    @_format.register
+    @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:
         """Format an array access."""
         name = self(arr.array)
         indices = f"[{']['.join(self(i) for i in arr.indices)}]"
         return f"{name}{indices}"
 
-    @_format.register
+    @__call__.register
     def _(self, v: L.VariableDecl) -> str:
         """Format a variable declaration."""
         val = self(v.value)
@@ -262,7 +259,7 @@ class Formatter:
         typename = self._dtype_to_name(v.symbol.dtype)
         return f"{typename} {symbol} = {val};\n"
 
-    @_format.register
+    @__call__.register
     def _(self, oper: L.NaryOp) -> str:
         """Format an n-ary operation."""
         # Format children
@@ -276,7 +273,7 @@ class Formatter:
         # Return combined string
         return f" {oper.op} ".join(args)
 
-    @_format.register
+    @__call__.register
     def _(self, oper: L.BinOp) -> str:
         """Format a binary operation."""
         # Format children
@@ -299,26 +296,26 @@ class Formatter:
             return f"{oper.op}({arg})"
         return f"{oper.op}{arg}"
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.Neg) -> str:
         return self._format_unary_op(val)
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.Not) -> str:
         return self._format_unary_op(val)
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.LiteralFloat) -> str:
         """Format a literal float."""
         value = self._format_number(val.value)
         return f"{value}"
 
-    @_format.register
+    @__call__.register
     def _(self, val: L.LiteralInt) -> str:
         """Format a literal int."""
         return f"{val.value}"
 
-    @_format.register
+    @__call__.register
     def _(self, r: L.ForRange) -> str:
         """Format a for loop over a range."""
         begin = self(r.begin)
@@ -333,7 +330,7 @@ class Formatter:
         output += "}\n"
         return output
 
-    @_format.register
+    @__call__.register
     def _(self, s: L.Statement) -> str:
         """Format a statement."""
         return self(s.expr)
@@ -344,15 +341,15 @@ class Formatter:
         lhs = self(expr.lhs)
         return f"{lhs} {expr.op} {rhs};\n"
 
-    @_format.register
+    @__call__.register
     def _(self, expr: L.Assign) -> str:
         return self._format_assign(expr)
 
-    @_format.register
+    @__call__.register
     def _(self, expr: L.AssignAdd) -> str:
         return self._format_assign(expr)
 
-    @_format.register
+    @__call__.register
     def _(self, s: L.Conditional) -> str:
         """Format a conditional."""
         # Format children
@@ -371,17 +368,17 @@ class Formatter:
         # Return combined string
         return c + " ? " + t + " : " + f
 
-    @_format.register
+    @__call__.register
     def _(self, s: L.Symbol) -> str:
         """Format a symbol."""
         return f"{s.name}"
 
-    @_format.register
+    @__call__.register
     def _(self, mi: L.MultiIndex) -> str:
         """Format a multi-index."""
         return self(mi.global_index)
 
-    @_format.register
+    @__call__.register
     def _(self, c: L.MathFunction) -> str:
         """Format a mathematical function."""
         # Get a table of functions for this type, if available
