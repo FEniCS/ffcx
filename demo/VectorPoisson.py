@@ -20,10 +20,9 @@ The bilinear form a(u, v) and linear form L(v) for the vector-valued Poisson's e
 """
 
 import basix.ufl
-from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 dx, grad, inner)
+from ufl import Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction, dx, grad, inner
 
-element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2, ))
+element = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
 domain = Mesh(element)
 space = FunctionSpace(domain, element)
 

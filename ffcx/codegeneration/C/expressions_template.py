@@ -23,7 +23,8 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
                                     const {scalar_type}* restrict c,
                                     const {geom_type}* restrict coordinate_dofs,
                                     const int* restrict entity_local_index,
-                                    const uint8_t* restrict quadrature_permutation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    void* custom_data)
 {{
 {tabulate_expression}
 }}
@@ -31,8 +32,6 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 {points_init}
 {value_shape_init}
 {original_coefficient_positions_init}
-{function_spaces_alloc}
-{function_spaces_init}
 {coefficient_names_init}
 {constant_names_init}
 
@@ -46,12 +45,12 @@ ufcx_expression {factory_name} =
   .coefficient_names = {coefficient_names},
   .constant_names = {constant_names},
   .num_points = {num_points},
-  .topological_dimension = {topological_dimension},
+  .entity_dimension = {entity_dimension},
   .points = {points},
   .value_shape = {value_shape},
   .num_components = {num_components},
   .rank = {rank},
-  .function_spaces = {function_spaces}
+  .coordinate_element_hash = {coordinate_element_hash},
 }};
 
 // Alias name

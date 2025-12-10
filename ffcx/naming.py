@@ -5,21 +5,22 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Naming."""
 
+from __future__ import annotations
+
 import hashlib
-import typing
 
 import numpy as np
 import numpy.typing as npt
-
-import basix.ufl
-import ffcx
-import ffcx.codegeneration
 import ufl
 
+import ffcx
+import ffcx.codegeneration
 
-def compute_signature(ufl_objects: typing.List[
-    typing.Union[ufl.Form, basix.ufl._ElementBase,
-                 typing.Tuple[ufl.core.expr.Expr, npt.NDArray[np.float64]]]], tag: str) -> str:
+
+def compute_signature(
+    ufl_objects: list[ufl.Form] | list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]],
+    tag: str,
+) -> str:
     """Compute the signature hash.
 
     Based on the UFL type of the objects and an additional optional 'tag'.
@@ -30,9 +31,6 @@ def compute_signature(ufl_objects: typing.List[
         if isinstance(ufl_object, ufl.Form):
             kind = "form"
             object_signature += ufl_object.signature()
-        elif isinstance(ufl_object, ufl.AbstractFiniteElement):
-            object_signature += repr(ufl_object)
-            kind = "element"
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
             expr = ufl_object[0]
             points = ufl_object[1]
@@ -47,16 +45,17 @@ def compute_signature(ufl_objects: typing.List[
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains: typing.List[ufl.Mesh] = []
+            domains: list[ufl.AbstractDomain] = []
             for coeff in coeffs:
-                domains.append(*coeff.ufl_domains())
+                domains.append(*ufl.domain.extract_domains(coeff))
             for arg in args:
-                domains.append(*arg.ufl_function_space().ufl_domains())
+                domains.append(*ufl.domain.extract_domains(arg))
             for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
-                domains.append(*gc.ufl_domains())
+                domains.append(*ufl.domain.extract_domains(gc))
             for const in consts:
-                domains.append(const.ufl_domain())
+                domains.append(*ufl.domain.extract_domains(const))
             domains = ufl.algorithms.analysis.unique_tuple(domains)
+            assert all([isinstance(domain, ufl.Mesh) for domain in domains])
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
             # Hash on UFL signature and points
@@ -69,38 +68,38 @@ def compute_signature(ufl_objects: typing.List[
             raise RuntimeError(f"Unknown ufl object type {ufl_object.__class__.__name__}")
 
     # Build combined signature
-    signatures = [object_signature, str(ffcx.__version__), ffcx.codegeneration.get_signature(), kind, tag]
+    signatures = [
+        object_signature,
+        str(ffcx.__version__),
+        ffcx.codegeneration.get_signature(),
+        kind,
+        tag,
+    ]
     string = ";".join(signatures)
-    return hashlib.sha1(string.encode('utf-8')).hexdigest()
+    return hashlib.sha1(string.encode("utf-8")).hexdigest()
 
 
-def integral_name(original_form, integral_type, form_id, subdomain_id, prefix):
+def integral_name(
+    original_form: ufl.form.Form,
+    integral_type: str,
+    form_id: int,
+    subdomain_id: tuple[int, ...] | tuple[str],
+    prefix: str,
+) -> str:
     """Get integral name."""
     sig = compute_signature([original_form], str((prefix, integral_type, form_id, subdomain_id)))
     return f"integral_{sig}"
 
 
-def form_name(original_form, form_id, prefix):
+def form_name(original_form: ufl.form.Form, form_id: int, prefix: str) -> str:
     """Get form name."""
     sig = compute_signature([original_form], str((prefix, form_id)))
     return f"form_{sig}"
 
 
-def finite_element_name(ufl_element, prefix):
-    """Get finite element name."""
-    assert isinstance(ufl_element, basix.ufl._ElementBase)
-    sig = compute_signature([ufl_element], prefix)
-    return f"element_{sig}"
-
-
-def dofmap_name(ufl_element, prefix):
-    """Get DOF map name."""
-    assert isinstance(ufl_element, basix.ufl._ElementBase)
-    sig = compute_signature([ufl_element], prefix)
-    return f"dofmap_{sig}"
-
-
-def expression_name(expression, prefix):
+def expression_name(
+    expression: tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]], prefix: str
+) -> str:
     """Get expression name."""
     assert isinstance(expression[0], ufl.core.expr.Expr)
     sig = compute_signature([expression], prefix)

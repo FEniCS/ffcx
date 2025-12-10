@@ -21,11 +21,22 @@ spatial coordinates are used to define the source and boundary flux terms.
 """
 
 import basix.ufl
-from ufl import (FunctionSpace, Mesh, SpatialCoordinate, TestFunction,
-                 TrialFunction, ds, dx, exp, grad, inner, sin)
+from ufl import (
+    FunctionSpace,
+    Mesh,
+    SpatialCoordinate,
+    TestFunction,
+    TrialFunction,
+    ds,
+    dx,
+    exp,
+    grad,
+    inner,
+    sin,
+)
 
 element = basix.ufl.element("Lagrange", "triangle", 2)
-domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2, )))
+domain = Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
 space = FunctionSpace(domain, element)
 
 u = TrialFunction(space)

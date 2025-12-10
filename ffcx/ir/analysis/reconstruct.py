@@ -51,7 +51,7 @@ def handle_division(o, ops):
         raise RuntimeError("Expecting two operands.")
     if len(ops[1]) != 1:
         raise RuntimeError("Expecting scalar divisor.")
-    b, = ops[1]
+    (b,) = ops[1]
     return [o._ufl_expr_reconstruct_(a, b) for a in ops[0]]
 
 
@@ -71,10 +71,10 @@ def handle_product(o, ops):
 
     # Get the simple cases out of the way
     if len(ops[0]) == 1:  # True scalar * something
-        a, = ops[0]
+        (a,) = ops[0]
         return [ufl.classes.Product(a, b) for b in ops[1]]
     elif len(ops[1]) == 1:  # Something * true scalar
-        b, = ops[1]
+        (b,) = ops[1]
         return [ufl.classes.Product(a, b) for a in ops[0]]
 
     # Neither of operands are true scalars, this is the tricky part
@@ -99,9 +99,13 @@ def handle_product(o, ops):
     # Map o0 and o1 indices to o indices
     indmap0 = [fi.index(i) for i in fi0]
     indmap1 = [fi.index(i) for i in fi1]
-    indks = [(ufl.utils.indexflattening.flatten_multiindex([ind[i] for i in indmap0], ist0),
-              ufl.utils.indexflattening.flatten_multiindex([ind[i] for i in indmap1], ist1))
-             for ind in indices]
+    indks = [
+        (
+            ufl.utils.indexflattening.flatten_multiindex([ind[i] for i in indmap0], ist0),
+            ufl.utils.indexflattening.flatten_multiindex([ind[i] for i in indmap1], ist1),
+        )
+        for ind in indices
+    ]
 
     # Build products for scalar components
     results = [ufl.classes.Product(ops[0][k0], ops[1][k1]) for k0, k1 in indks]
@@ -119,7 +123,7 @@ def handle_index_sum(o, ops):
 
     # Compute "macro-dimensions" before and after i in the total shape of a
     predim = ufl.product(summand.ufl_shape) * ufl.product(fid[:ipos])
-    postdim = ufl.product(fid[ipos + 1:])
+    postdim = ufl.product(fid[ipos + 1 :])
 
     # Map each flattened total component of summand to
     # flattened total component of indexsum o by removing
@@ -140,27 +144,30 @@ def handle_index_sum(o, ops):
     results = [sum(sop) for sop in sops]
     return results
 
+
 # TODO: To implement compound tensor operators such as dot and inner,
 # we need to identify which index to do the contractions over,
 # and build expressions such as sum(a*b for a,b in zip(aops, bops))
 
 
-_reconstruct_call_lookup = {ufl.classes.MathFunction: handle_scalar_nary,
-                            ufl.classes.Abs: handle_scalar_nary,
-                            ufl.classes.MinValue: handle_scalar_nary,
-                            ufl.classes.MaxValue: handle_scalar_nary,
-                            ufl.classes.Real: handle_elementwise_unary,
-                            ufl.classes.Imag: handle_elementwise_unary,
-                            ufl.classes.Power: handle_scalar_nary,
-                            ufl.classes.BesselFunction: handle_scalar_nary,
-                            ufl.classes.Atan2: handle_scalar_nary,
-                            ufl.classes.Product: handle_product,
-                            ufl.classes.Division: handle_division,
-                            ufl.classes.Sum: handle_sum,
-                            ufl.classes.IndexSum: handle_index_sum,
-                            ufl.classes.Conj: handle_elementwise_unary,
-                            ufl.classes.Conditional: handle_conditional,
-                            ufl.classes.Condition: handle_condition}
+_reconstruct_call_lookup = {
+    ufl.classes.MathFunction: handle_scalar_nary,
+    ufl.classes.Abs: handle_scalar_nary,
+    ufl.classes.MinValue: handle_scalar_nary,
+    ufl.classes.MaxValue: handle_scalar_nary,
+    ufl.classes.Real: handle_elementwise_unary,
+    ufl.classes.Imag: handle_elementwise_unary,
+    ufl.classes.Power: handle_scalar_nary,
+    ufl.classes.BesselFunction: handle_scalar_nary,
+    ufl.classes.Atan2: handle_scalar_nary,
+    ufl.classes.Product: handle_product,
+    ufl.classes.Division: handle_division,
+    ufl.classes.Sum: handle_sum,
+    ufl.classes.IndexSum: handle_index_sum,
+    ufl.classes.Conj: handle_elementwise_unary,
+    ufl.classes.Conditional: handle_conditional,
+    ufl.classes.Condition: handle_condition,
+}
 
 
 def reconstruct(o, *args):
@@ -175,4 +182,4 @@ def reconstruct(o, *args):
             if isinstance(o, k):
                 return _reconstruct_call_lookup[k](o, *args)
         # Nothing found
-        raise RuntimeError("Not expecting expression of type %s in here." % type(o))
+        raise RuntimeError(f"Not expecting expression of type {type(o)} in here.")

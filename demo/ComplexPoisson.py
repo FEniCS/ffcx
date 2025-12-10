@@ -21,14 +21,13 @@ Poisson's equation using bilinear elements on bilinear mesh geometry.
 """
 
 import basix.ufl
-from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 dx, grad, inner)
+from ufl import Coefficient, FunctionSpace, Mesh, TestFunction, TrialFunction, dx, grad, inner
 
-coords = basix.ufl.element("P", "triangle", 2, shape=(2, ))
+coords = basix.ufl.element("P", "triangle", 2, shape=(2,))
 mesh = Mesh(coords)
 dx = dx(mesh)
 
-element = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
+element = basix.ufl.element("P", mesh.ufl_cell().cellname, 2)
 space = FunctionSpace(mesh, element)
 
 u = TrialFunction(space)

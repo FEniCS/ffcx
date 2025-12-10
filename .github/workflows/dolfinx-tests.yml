@@ -4,8 +4,9 @@ name: DOLFINx integration
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+    branches: [main]
   workflow_dispatch:
     inputs:
       dolfinx_ref:
@@ -20,6 +21,9 @@ on:
         description: "UFL branch or tag"
         default: "main"
         type: string
+  # Weekly build on Mondays at 8 am
+  schedule:
+    - cron: "0 8 * * 1"
 
 jobs:
   build:
@@ -30,50 +34,51 @@ jobs:
       PETSC_ARCH: linux-gnu-complex64-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+      PRTE_MCA_rmaps_default_mapping_policy: :oversubscribe   # Newer OpenMPI
+      OMPI_MCA_rmaps_base_oversubscribe: true                 # Older OpenMPI
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install UFL and Basix (default branches/tags)
         if: github.event_name != 'workflow_dispatch'
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install git+https://github.com/FEniCS/basix.git
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/ufl.git
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/basix.git
       - name: Install UFL and Basix (specified branches/tags)
         if: github.event_name == 'workflow_dispatch'
         run: |
-          python3 -m pip install git+https://github.com/FEniCS/ufl.git@${{ github.event.inputs.ufl_ref }}
-          python3 -m pip install git+https://github.com/FEniCS/basix.git@${{ github.event.inputs.basix_ref }}
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/ufl.git@${{ github.event.inputs.ufl_ref }}
+          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/basix.git@${{ github.event.inputs.basix_ref }}
       - name: Install FFCx
         run: |
-          pip3 install .
+          pip3 install --break-system-packages .
       - name: Get DOLFINx source (default branch/tag)
         if: github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
           ref: main
       - name: Get DOLFINx source (specified branch/tag)
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: ./dolfinx
           repository: FEniCS/dolfinx
           ref: ${{ github.event.inputs.dolfinx_ref }}
       - name: Install DOLFINx (C++)
         run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build -S dolfinx/cpp/
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -DBUILD_TESTING=true -B build -S dolfinx/cpp/
           cmake --build build
           cmake --install build
-      - name: Install DOLFINx (Python)
-        run: python3 -m pip -v install --check-build-dependencies --no-build-isolation dolfinx/python/
-      - name: Build DOLFINx C++ unit tests
-        run: |
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/test/ -S dolfinx/cpp/test/
-          cmake --build build/test
       - name: Run DOLFINx C++ unit tests
+        working-directory: build
+        run: ctest -V --output-on-failure -R unittests
+      - name: Install DOLFINx (Python)
         run: |
-          cd build/test
-          ctest -V --output-on-failure -R unittests
+          python3 -m pip -v install --break-system-packages nanobind scikit-build-core[pyproject]
+          python3 -m pip -v install --break-system-packages --check-build-dependencies --no-build-isolation dolfinx/python/
+      - name: Install Python demo/test dependencies
+        run: python3 -m pip install --break-system-packages matplotlib numba pyamg pytest pytest-xdist scipy pyvista networkx
       - name: Run DOLFINx Python unit tests
         run: python3 -m pytest -n auto dolfinx/python/test/unit
       - name: Run DOLFINx Python demos

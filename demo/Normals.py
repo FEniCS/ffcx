@@ -21,13 +21,12 @@ Merely project the normal onto a vector section.
 """
 
 import basix.ufl
-from ufl import (FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction,
-                 ds, inner, triangle)
+from ufl import FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction, ds, inner, triangle
 
 cell = triangle
 
-element = basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, ))
-domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2, )))
+element = basix.ufl.element("Lagrange", cell.cellname, 1, shape=(2,))
+domain = Mesh(basix.ufl.element("Lagrange", cell.cellname, 1, shape=(2,)))
 space = FunctionSpace(domain, element)
 
 n = FacetNormal(domain)

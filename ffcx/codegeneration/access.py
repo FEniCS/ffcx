@@ -7,11 +7,12 @@
 
 import logging
 import warnings
-from typing import Optional
 
 import basix.ufl
-import ffcx.codegeneration.lnodes as L
 import ufl
+
+import ffcx.codegeneration.lnodes as L
+from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -19,43 +20,52 @@ from ffcx.ir.representationutils import QuadratureRule
 logger = logging.getLogger("ffcx")
 
 
-class FFCXBackendAccess(object):
+class FFCXBackendAccess:
     """FFCx specific formatter class."""
 
-    def __init__(self, ir, symbols, options):
+    entity_type: entity_types
+
+    def __init__(self, entity_type: entity_types, integral_type: str, symbols, options):
         """Initialise."""
         # Store ir and options
-        self.entitytype = ir.entitytype
-        self.integral_type = ir.integral_type
+        self.entity_type = entity_type
+        self.integral_type = integral_type
         self.symbols = symbols
         self.options = options
 
         # Lookup table for handler to call when the "get" method (below) is
         # called, depending on the first argument type.
-        self.call_lookup = {ufl.coefficient.Coefficient: self.coefficient,
-                            ufl.constant.Constant: self.constant,
-                            ufl.geometry.Jacobian: self.jacobian,
-                            ufl.geometry.CellCoordinate: self.cell_coordinate,
-                            ufl.geometry.FacetCoordinate: self.facet_coordinate,
-                            ufl.geometry.CellVertices: self.cell_vertices,
-                            ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
-                            ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
-                            ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
-                            ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
-                            ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
-                            ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
-                            ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
-                            ufl.geometry.ReferenceNormal: self.reference_normal,
-                            ufl.geometry.CellOrientation: self._pass,
-                            ufl.geometry.FacetOrientation: self.facet_orientation,
-                            ufl.geometry.SpatialCoordinate: self.spatial_coordinate}
+        self.call_lookup = {
+            ufl.coefficient.Coefficient: self.coefficient,
+            ufl.constant.Constant: self.constant,
+            ufl.geometry.Jacobian: self.jacobian,
+            ufl.geometry.CellCoordinate: self.cell_coordinate,
+            ufl.geometry.FacetCoordinate: self.facet_coordinate,
+            ufl.geometry.CellVertices: self.cell_vertices,
+            ufl.geometry.FacetEdgeVectors: self.facet_edge_vectors,
+            ufl.geometry.CellEdgeVectors: self.cell_edge_vectors,
+            ufl.geometry.CellFacetJacobian: self.cell_facet_jacobian,
+            ufl.geometry.CellRidgeJacobian: self.cell_ridge_jacobian,
+            ufl.geometry.ReferenceCellVolume: self.reference_cell_volume,
+            ufl.geometry.ReferenceFacetVolume: self.reference_facet_volume,
+            ufl.geometry.ReferenceCellEdgeVectors: self.reference_cell_edge_vectors,
+            ufl.geometry.ReferenceFacetEdgeVectors: self.reference_facet_edge_vectors,
+            ufl.geometry.ReferenceNormal: self.reference_normal,
+            ufl.geometry.CellOrientation: self._pass,
+            ufl.geometry.FacetOrientation: self.facet_orientation,
+            ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
+        }
 
-    def get(self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT,
-            quadrature_rule: QuadratureRule):
+    def get(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+    ):
         """Format a terminal."""
         e = mt.terminal
         # Call appropriate handler, depending on the type of e
-        handler = self.call_lookup.get(type(e), False)
+        handler = self.call_lookup.get(type(e), False)  # type: ignore
 
         if not handler:
             # Look for parent class types instead
@@ -63,21 +73,25 @@ class FFCXBackendAccess(object):
                 if isinstance(e, k):
                     handler = self.call_lookup[k]
                     break
-
         if handler:
             return handler(mt, tabledata, quadrature_rule)
         else:
             raise RuntimeError(f"Not handled: {type(e)}")
 
-    def coefficient(self, mt: ModifiedTerminal,
-                    tabledata: UniqueTableReferenceT,
-                    quadrature_rule: QuadratureRule):
+    def coefficient(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+    ):
         """Access a coefficient."""
         ttype = tabledata.ttype
         assert ttype != "zeros"
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+        assert begin is not None
+        assert tabledata.block_size is not None
         end = begin + tabledata.block_size * (num_dofs - 1) + 1
 
         if ttype == "ones" and (end - begin) == 1:
@@ -89,16 +103,19 @@ class FFCXBackendAccess(object):
             # Return symbol, see definitions for computation
             return self.symbols.coefficient_value(mt)
 
-    def constant(self, mt: ModifiedTerminal,
-                 tabledata: Optional[UniqueTableReferenceT],
-                 quadrature_rule: Optional[QuadratureRule]):
+    def constant(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT | None,
+        quadrature_rule: QuadratureRule | None,
+    ):
         """Access a constant."""
         # Access to a constant is handled trivially, directly through constants symbol
         return self.symbols.constant_index_access(mt.terminal, mt.flat_component)
 
-    def spatial_coordinate(self, mt: ModifiedTerminal,
-                           tabledata: UniqueTableReferenceT,
-                           num_points: QuadratureRule):
+    def spatial_coordinate(
+        self, mt: ModifiedTerminal, tabledata: UniqueTableReferenceT, num_points: QuadratureRule
+    ):
         """Access a spatial coordinate."""
         if mt.global_derivatives:
             raise RuntimeError("Not expecting global derivatives of SpatialCoordinate.")
@@ -112,7 +129,7 @@ class FFCXBackendAccess(object):
             # Access predefined quadrature points table
             x = self.symbols.custom_points_table
             iq = self.symbols.quadrature_loop_index
-            gdim, = mt.terminal.ufl_shape
+            (gdim,) = mt.terminal.ufl_shape
             if gdim == 1:
                 index = iq
             else:
@@ -139,7 +156,7 @@ class FFCXBackendAccess(object):
         if self.integral_type == "cell" and not mt.restriction:
             # Access predefined quadrature points table
             X = self.symbols.points_table(num_points)
-            tdim, = mt.terminal.ufl_shape
+            (tdim,) = mt.terminal.ufl_shape
             iq = self.symbols.quadrature_loop_index()
             if num_points == 1:
                 index = mt.flat_component
@@ -165,12 +182,13 @@ class FFCXBackendAccess(object):
             raise RuntimeError("Not expecting restriction of FacetCoordinate.")
 
         if self.integral_type in ("interior_facet", "exterior_facet"):
-            tdim, = mt.terminal.ufl_shape
+            (tdim,) = mt.terminal.ufl_shape
             if tdim == 0:
                 raise RuntimeError("Vertices have no facet coordinates.")
             elif tdim == 1:
                 warnings.warn(
-                    "Vertex coordinate is always 0, should get rid of this in ufl geometry lowering."
+                    "Vertex coordinate is always 0, should get rid of this in UFL "
+                    "geometry lowering."
                 )
                 return L.LiteralFloat(0.0)
             Xf = self.points_table(num_points)
@@ -196,7 +214,7 @@ class FFCXBackendAccess(object):
 
     def reference_cell_volume(self, mt, tabledata, access):
         """Access a reference cell volume."""
-        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_cell_volume", dtype=L.DataType.REAL)
         else:
@@ -204,7 +222,7 @@ class FFCXBackendAccess(object):
 
     def reference_facet_volume(self, mt, tabledata, access):
         """Access a reference facet volume."""
-        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             return L.Symbol(f"{cellname}_reference_facet_volume", dtype=L.DataType.REAL)
         else:
@@ -212,9 +230,9 @@ class FFCXBackendAccess(object):
 
     def reference_normal(self, mt, tabledata, access):
         """Access a reference normal."""
-        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
         if cellname in ("interval", "triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_normals", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_normals", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]]
         else:
@@ -222,9 +240,16 @@ class FFCXBackendAccess(object):
 
     def cell_facet_jacobian(self, mt, tabledata, num_points):
         """Access a cell facet jacobian."""
-        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
-        if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_facet_jacobian", dtype=L.DataType.REAL)
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
+        if cellname in (
+            "triangle",
+            "tetrahedron",
+            "quadrilateral",
+            "hexahedron",
+            "prism",
+            "pyramid",
+        ):
+            table = L.Symbol(f"{cellname}_cell_facet_jacobian", dtype=L.DataType.REAL)
             facet = self.symbols.entity("facet", mt.restriction)
             return table[facet][mt.component[0]][mt.component[1]]
         elif cellname == "interval":
@@ -232,38 +257,52 @@ class FFCXBackendAccess(object):
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
+    def cell_ridge_jacobian(self, mt, tabledata, num_points):
+        """Access a cell ridge jacobian."""
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
+        if cellname in ("tetrahedron", "prism", "hexahedron"):
+            table = L.Symbol(f"{cellname}_cell_ridge_jacobian", dtype=L.DataType.REAL)
+            ridge = self.symbols.entity("ridge", mt.restriction)
+            return table[ridge][mt.component[0]][mt.component[1]]
+        elif cellname in ["triangle", "quadrilateral"]:
+            raise RuntimeError("The ridge jacobian doesn't make sense for 2D cells.")
+        else:
+            raise RuntimeError(f"Unhandled cell types {cellname}.")
+
     def reference_cell_edge_vectors(self, mt, tabledata, num_points):
         """Access a reference cell edge vector."""
-        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
+            table = L.Symbol(f"{cellname}_reference_cell_edge_vectors", dtype=L.DataType.REAL)
             return table[mt.component[0]][mt.component[1]]
         elif cellname == "interval":
-            raise RuntimeError("The reference cell edge vectors doesn't make sense for interval cell.")
+            raise RuntimeError(
+                "The reference cell edge vectors doesn't make sense for interval cell."
+            )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def reference_facet_edge_vectors(self, mt, tabledata, num_points):
         """Access a reference facet edge vector."""
-        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
         if cellname in ("tetrahedron", "hexahedron"):
-            table = L.Symbol(f"{cellname}_reference_edge_vectors", dtype=L.DataType.REAL)
-            facet = self.symbols.entity("facet", mt.restriction)
-            return table[facet][mt.component[0]][mt.component[1]]
+            table = L.Symbol(f"{cellname}_reference_facet_edge_vectors", dtype=L.DataType.REAL)
+            return table[mt.component[0]][mt.component[1]]
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
-                "The reference cell facet edge vectors doesn't make sense for interval or triangle cell."
+                "The reference cell facet edge vectors doesn't make sense for interval "
+                "or triangle cell."
             )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
     def facet_orientation(self, mt, tabledata, num_points):
         """Access a facet orientation."""
-        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+        cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
         if cellname not in ("interval", "triangle", "tetrahedron"):
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-        table = L.Symbol(f"{cellname}_facet_orientations", dtype=L.DataType.INT)
+        table = L.Symbol(f"{cellname}_facet_orientation", dtype=L.DataType.INT)
         facet = self.symbols.entity("facet", mt.restriction)
         return table[facet]
 
@@ -271,21 +310,21 @@ class FFCXBackendAccess(object):
         """Access a cell vertex."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        gdim = domain.geometric_dimension()
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape == (gdim, )
-        ufl_scalar_element, = set(coordinate_element.sub_elements)
+        assert coordinate_element.reference_value_shape == (gdim,)
+        (ufl_scalar_element,) = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
-        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
+        assert scalar_element.reference_value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
         num_scalar_dofs = scalar_element.dim
 
         # Get dof and component
-        dof, = vertex_scalar_dofs[mt.component[0]]
+        (dof,) = vertex_scalar_dofs[mt.component[0]]
         component = mt.component[1]
 
         expr = self.symbols.domain_dof_access(dof, component, gdim, num_scalar_dofs, mt.restriction)
@@ -295,23 +334,25 @@ class FFCXBackendAccess(object):
         """Access a cell edge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        cellname = domain.ufl_cell().cellname()
-        gdim = domain.geometric_dimension()
+        cellname = domain.ufl_cell().cellname
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("triangle", "tetrahedron", "quadrilateral", "hexahedron"):
             pass
         elif cellname == "interval":
-            raise RuntimeError("The physical cell edge vectors doesn't make sense for interval cell.")
+            raise RuntimeError(
+                "The physical cell edge vectors doesn't make sense for interval cell."
+            )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape == (gdim, )
-        ufl_scalar_element, = set(coordinate_element.sub_elements)
+        assert coordinate_element.reference_value_shape == (gdim,)
+        (ufl_scalar_element,) = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
-        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
+        assert scalar_element.reference_value_size == 1 and scalar_element.block_size == 1
 
         vertex_scalar_dofs = scalar_element.entity_dofs[0]
         num_scalar_dofs = scalar_element.dim
@@ -321,38 +362,37 @@ class FFCXBackendAccess(object):
         vertex0, vertex1 = scalar_element.reference_topology[1][edge]
 
         # Get dofs and component
-        dof0, = vertex_scalar_dofs[vertex0]
-        dof1, = vertex_scalar_dofs[vertex1]
+        (dof0,) = vertex_scalar_dofs[vertex0]
+        (dof1,) = vertex_scalar_dofs[vertex1]
         component = mt.component[1]
 
         return self.symbols.domain_dof_access(
             dof0, component, gdim, num_scalar_dofs, mt.restriction
-        ) - self.symbols.domain_dof_access(
-            dof1, component, gdim, num_scalar_dofs, mt.restriction
-        )
+        ) - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction)
 
     def facet_edge_vectors(self, mt, tabledata, num_points):
         """Access a facet edge vector."""
         # Get properties of domain
         domain = ufl.domain.extract_unique_domain(mt.terminal)
-        cellname = domain.ufl_cell().cellname()
-        gdim = domain.geometric_dimension()
+        cellname = domain.ufl_cell().cellname
+        gdim = domain.geometric_dimension
         coordinate_element = domain.ufl_coordinate_element()
 
         if cellname in ("tetrahedron", "hexahedron"):
             pass
         elif cellname in ("interval", "triangle", "quadrilateral"):
             raise RuntimeError(
-                f"The physical facet edge vectors doesn't make sense for {cellname} cell.")
+                f"The physical facet edge vectors doesn't make sense for {cellname} cell."
+            )
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
         # Get dimension and dofmap of scalar element
         assert isinstance(coordinate_element, basix.ufl._BlockedElement)
-        assert coordinate_element.value_shape == (gdim, )
-        ufl_scalar_element, = set(coordinate_element.sub_elements)
+        assert coordinate_element.reference_value_shape == (gdim,)
+        (ufl_scalar_element,) = set(coordinate_element.sub_elements)
         scalar_element = ufl_scalar_element
-        assert scalar_element.value_size == 1 and scalar_element.block_size == 1
+        assert scalar_element.reference_value_size == 1 and scalar_element.block_size == 1
 
         scalar_element = ufl_scalar_element
         num_scalar_dofs = scalar_element.dim
@@ -369,9 +409,9 @@ class FFCXBackendAccess(object):
         assert coordinate_element.embedded_superdegree == 1, "Assuming degree 1 element"
         dof0 = vertex0
         dof1 = vertex1
-        expr = (
-            self.symbols.domain_dof_access(dof0, component, gdim, num_scalar_dofs, mt.restriction)
-            - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction))
+        expr = self.symbols.domain_dof_access(
+            dof0, component, gdim, num_scalar_dofs, mt.restriction
+        ) - self.symbols.domain_dof_access(dof1, component, gdim, num_scalar_dofs, mt.restriction)
 
         return expr
 
@@ -379,18 +419,24 @@ class FFCXBackendAccess(object):
         """Return one."""
         return 1
 
-    def table_access(self, tabledata: UniqueTableReferenceT, entitytype: str, restriction: str,
-                     quadrature_index: L.MultiIndex, dof_index: L.MultiIndex):
+    def table_access(
+        self,
+        tabledata: UniqueTableReferenceT,
+        entity_type: entity_types,
+        restriction: str,
+        quadrature_index: L.MultiIndex,
+        dof_index: L.MultiIndex,
+    ):
         """Access element table for given entity, quadrature point, and dof index.
 
         Args:
             tabledata: Table data object
-            entitytype: Entity type ("cell", "facet", "vertex")
+            entity_type: Entity type
             restriction: Restriction ("+", "-")
             quadrature_index: Quadrature index
             dof_index: Dof index
         """
-        entity = self.symbols.entity(entitytype, restriction)
+        entity = self.symbols.entity(entity_type, restriction)
         iq_global_index = quadrature_index.global_index
         ic_global_index = dof_index.global_index
         qp = 0  # quadrature permutation
@@ -411,9 +457,12 @@ class FFCXBackendAccess(object):
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
             symbols += [L.Symbol(tabledata.name, dtype=L.DataType.REAL)]
-            return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][ic_global_index], symbols
+            return self.symbols.element_tables[tabledata.name][qp][entity][iq_global_index][
+                ic_global_index
+            ], symbols
         else:
             FE = []
+            assert tabledata.tensor_factors is not None
             for i in range(dof_index.dim):
                 factor = tabledata.tensor_factors[i]
                 iq_i = quadrature_index.local_index(i)

@@ -8,8 +8,8 @@
 import logging
 
 import numpy as np
-
 import ufl
+
 from ffcx.ir.analysis.modified_terminals import is_modified_terminal
 from ffcx.ir.analysis.reconstruct import reconstruct
 from ffcx.ir.analysis.valuenumbering import ValueNumberer
@@ -17,7 +17,7 @@ from ffcx.ir.analysis.valuenumbering import ValueNumberer
 logger = logging.getLogger("ffcx")
 
 
-class ExpressionGraph(object):
+class ExpressionGraph:
     """A directed multi-edge graph.
 
     ExpressionGraph allows multiple edges between the same nodes,
@@ -30,6 +30,7 @@ class ExpressionGraph(object):
         self.nodes = {}
         self.out_edges = {}
         self.in_edges = {}
+        self.e2i = {}
 
     def number_of_nodes(self):
         """Get number of nodes."""
@@ -50,7 +51,7 @@ class ExpressionGraph(object):
         self.in_edges[node2] += [node1]
 
 
-def build_graph_vertices(expressions, skip_terminal_modifiers=False):
+def build_graph_vertices(expressions, skip_terminal_modifiers=False) -> ExpressionGraph:
     """Build graph vertices."""
     # Count unique expression nodes
     G = ExpressionGraph()
@@ -66,14 +67,14 @@ def build_graph_vertices(expressions, skip_terminal_modifiers=False):
     for comp, expr in enumerate(expressions):
         # Get vertex index representing input expression root
         V_target = G.e2i[expr]
-        G.nodes[V_target]['target'] = True
-        G.nodes[V_target]['component'] = G.nodes[V_target].get("component", [])
-        G.nodes[V_target]['component'].append(comp)
+        G.nodes[V_target]["target"] = True
+        G.nodes[V_target]["component"] = G.nodes[V_target].get("component", [])
+        G.nodes[V_target]["component"].append(comp)
 
     return G
 
 
-def build_scalar_graph(expression):
+def build_scalar_graph(expression) -> ExpressionGraph:
     """Build list representation of expression graph covering the given expressions."""
     # Populate with vertices
     G = build_graph_vertices([expression], skip_terminal_modifiers=False)
@@ -86,9 +87,9 @@ def build_scalar_graph(expression):
     G = build_graph_vertices(scalar_expressions, skip_terminal_modifiers=True)
 
     # Compute graph edges
-    V_deps = []
+    V_deps: list[tuple[()] | list[int]] = []
     for i, v in G.nodes.items():
-        expr = v['expression']
+        expr = v["expression"]
         if expr._ufl_is_terminal_ or expr._ufl_is_terminal_modifier_:
             V_deps.append(())
         else:
@@ -132,7 +133,7 @@ def rebuild_with_scalar_subexpressions(G):
 
     # Iterate over each graph node in order
     for i, v in G.nodes.items():
-        expr = v['expression']
+        expr = v["expression"]
         # Find symbols of v components
         vs = V_symbols[i]
 
@@ -154,7 +155,9 @@ def rebuild_with_scalar_subexpressions(G):
             else:
                 # Store single modified terminal expression component
                 if len(vs) != 1:
-                    raise RuntimeError("Expecting single symbol for scalar valued modified terminal.")
+                    raise RuntimeError(
+                        "Expecting single symbol for scalar valued modified terminal."
+                    )
                 ws = [expr]
             # FIXME: Replace ws[:] with 0's if its table is empty
             # Possible redesign: loop over modified terminals only first,
@@ -167,7 +170,7 @@ def rebuild_with_scalar_subexpressions(G):
                 if isinstance(vop, ufl.classes.MultiIndex):
                     # TODO: Store MultiIndex in G.V and allocate a symbol to it for this to work
                     if not isinstance(expr, ufl.classes.IndexSum):
-                        raise RuntimeError("Not expecting a %s." % type(expr))
+                        raise RuntimeError(f"Not expecting a {type(expr)}.")
                     sops.append(())
                 else:
                     # TODO: Build edge datastructure and use instead?
@@ -192,7 +195,9 @@ def rebuild_with_scalar_subexpressions(G):
                 W[s] = w
                 handled.add(s)
             else:
-                assert s in handled  # Result of symmetry! - but I think this never gets reached anyway (CNR)
+                assert (
+                    s in handled
+                )  # Result of symmetry! - but I think this never gets reached anyway (CNR)
 
     # Find symbols of final v from input graph
     vs = V_symbols[-1]
@@ -207,7 +212,10 @@ def _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers
     """
 
     def getops(e):
-        """Get a modifiable list of operands of e, optionally treating modified terminals as a unit."""
+        """Get a modifiable list of operands of e.
+
+        Optionally treating modified terminals as a unit.
+        """
         # TODO: Maybe use e._ufl_is_terminal_modifier_
         if e._ufl_is_terminal_ or (skip_terminal_modifiers and is_modified_terminal(e)):
             return []
@@ -229,7 +237,7 @@ def _count_nodes_with_unique_post_traversal(expressions, skip_terminal_modifiers
                 ops[i] = None
                 break
         else:
-            if not isinstance(expr, (ufl.classes.MultiIndex, ufl.classes.Label)):
+            if not isinstance(expr, ufl.classes.MultiIndex | ufl.classes.Label):
                 count = len(e2i)
                 e2i[expr] = count
             stack.pop()

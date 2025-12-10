@@ -1,16 +1,17 @@
 """Optimizer."""
+
 from collections import defaultdict
-from typing import List, Union
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
 
 
-def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNode]:
+def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNode]:
     """Optimize code.
 
     Args:
         code: List of LNodes to optimize.
+        quadrature_rule: TODO.
 
     Returns:
         Optimized list of LNodes.
@@ -29,21 +30,22 @@ def optimize(code: List[L.LNode], quadrature_rule: QuadratureRule) -> List[L.LNo
     return code
 
 
-def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
+def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
     """Fuse sections with the same name.
 
     Args:
         code: List of LNodes to fuse.
+        name: Common name used by the sections that should be fused
 
     Returns:
         Fused list of LNodes.
     """
-    statements: List[L.LNode] = []
-    indices: List[int] = []
-    input: List[L.Symbol] = []
-    output: List[L.Symbol] = []
-    declarations: List[L.Declaration] = []
-    annotations: List[L.Annotation] = []
+    statements: list[L.LNode] = []
+    indices: list[int] = []
+    input: list[L.Symbol] = []
+    output: list[L.Symbol] = []
+    declarations: list[L.Declaration] = []
+    annotations: list[L.Annotation] = []
 
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
@@ -58,7 +60,7 @@ def fuse_sections(code: List[L.LNode], name) -> List[L.LNode]:
     # Remove duplicated inputs
     input = list(set(input))
     # Remove duplicated outputs
-    output = list(set(output))  # Shouldn't be necessary
+    output = list(set(output))
 
     section = L.Section(name, statements, declarations, input, output, annotations)
 
@@ -96,7 +98,7 @@ def fuse_loops(code: L.Section) -> L.Section:
     return L.Section(code.name, output_code, code.declarations, code.input, code.output)
 
 
-def get_statements(statement: Union[L.Statement, L.StatementList]) -> List[L.LNode]:
+def get_statements(statement: L.Statement | L.StatementList) -> list[L.LNode]:
     """Get statements from a statement list.
 
     Args:
@@ -143,7 +145,8 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     """Perform loop invariant code motion.
 
     Args:
-        code: List of LNodes to optimize.
+        section: List of LNodes to optimize.
+        quadrature_rule: TODO.
 
     Returns:
         Optimized list of LNodes.
@@ -174,7 +177,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             assert isinstance(lhs, L.ArrayAccess)  # Expecting ArrayAccess
             expressions[lhs].append(rhs)
 
-    pre_loop: List[L.LNode] = []
+    pre_loop: list[L.LNode] = []
     for lhs, rhs in expressions.items():
         for r in rhs:
             hoist_candidates = []
@@ -182,7 +185,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 dependency = check_dependency(arg, inner_loop.index)
                 if not dependency:
                     hoist_candidates.append(arg)
-            if (len(hoist_candidates) > 1):
+            if len(hoist_candidates) > 1:
                 # create new temp
                 name = f"temp_{counter}"
                 counter += 1
@@ -194,8 +197,12 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 # create code for hoisted term
                 size = outer_loop.end.value - outer_loop.begin.value
                 pre_loop.append(L.ArrayDecl(temp, size, [0]))
-                body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates))
-                pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
+                body = L.Assign(
+                    L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates)
+                )
+                pre_loop.append(
+                    L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body])
+                )
 
     section.statements = pre_loop + section.statements
 

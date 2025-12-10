@@ -8,15 +8,18 @@
 import logging
 
 import ufl
-from ffcx.ir.analysis.indexing import (map_component_tensor_arg_components,
-                                       map_indexed_arg_components)
-from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal
 from ufl.pullback import SymmetricPullback
+
+from ffcx.ir.analysis.indexing import (
+    map_component_tensor_arg_components,
+    map_indexed_arg_components,
+)
+from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal
 
 logger = logging.getLogger("ffcx")
 
 
-class ValueNumberer(object):
+class ValueNumberer:
     """Maps scalar components to unique values.
 
     An algorithm to map the scalar components of an expression node to unique value numbers,
@@ -29,19 +32,21 @@ class ValueNumberer(object):
         self.symbol_count = 0
         self.G = G
         self.V_symbols = []
-        self.call_lookup = {ufl.classes.Expr: self.expr,
-                            ufl.classes.Argument: self.form_argument,
-                            ufl.classes.Coefficient: self.form_argument,
-                            ufl.classes.Grad: self._modified_terminal,
-                            ufl.classes.ReferenceGrad: self._modified_terminal,
-                            ufl.classes.FacetAvg: self._modified_terminal,
-                            ufl.classes.CellAvg: self._modified_terminal,
-                            ufl.classes.Restricted: self._modified_terminal,
-                            ufl.classes.ReferenceValue: self._modified_terminal,
-                            ufl.classes.Indexed: self.indexed,
-                            ufl.classes.ComponentTensor: self.component_tensor,
-                            ufl.classes.ListTensor: self.list_tensor,
-                            ufl.classes.Variable: self.variable}
+        self.call_lookup = {
+            ufl.classes.Expr: self.expr,
+            ufl.classes.Argument: self.form_argument,
+            ufl.classes.Coefficient: self.form_argument,
+            ufl.classes.Grad: self._modified_terminal,
+            ufl.classes.ReferenceGrad: self._modified_terminal,
+            ufl.classes.FacetAvg: self._modified_terminal,
+            ufl.classes.CellAvg: self._modified_terminal,
+            ufl.classes.Restricted: self._modified_terminal,
+            ufl.classes.ReferenceValue: self._modified_terminal,
+            ufl.classes.Indexed: self.indexed,
+            ufl.classes.ComponentTensor: self.component_tensor,
+            ufl.classes.ListTensor: self.list_tensor,
+            ufl.classes.Variable: self.variable,
+        }
 
     def new_symbols(self, n):
         """Generate new symbols with a running counter."""
@@ -58,13 +63,13 @@ class ValueNumberer(object):
 
     def get_node_symbols(self, expr):
         """Get node symbols."""
-        idx = [i for i, v in self.G.nodes.items() if v['expression'] == expr][0]
+        idx = [i for i, v in self.G.nodes.items() if v["expression"] == expr][0]
         return self.V_symbols[idx]
 
     def compute_symbols(self):
         """Compute symbols."""
         for i, v in self.G.nodes.items():
-            expr = v['expression']
+            expr = v["expression"]
             symbol = None
             # First look for exact type match
             f = self.call_lookup.get(type(expr), False)
@@ -79,7 +84,7 @@ class ValueNumberer(object):
 
             if symbol is None:
                 # Nothing found
-                raise RuntimeError("Not expecting type %s here." % type(expr))
+                raise RuntimeError(f"Not expecting type {type(expr)} here.")
 
             self.V_symbols.append(symbol)
 
@@ -122,13 +127,17 @@ class ValueNumberer(object):
 
         Modifiers:
             terminal: the underlying Terminal object
-            global_derivatives: tuple of ints, each meaning derivative in that global direction
-            local_derivatives: tuple of ints, each meaning derivative in that local direction
-            reference_value: bool, whether this is represented in reference frame
+            global_derivatives: tuple of ints, each meaning derivative
+                in that global direction
+            local_derivatives: tuple of ints, each meaning derivative in
+                that local direction
+            reference_value: bool, whether this is represented in
+                reference frame
             averaged: None, 'facet' or 'cell'
             restriction: None, '+' or '-'
             component: tuple of ints, the global component of the Terminal
-            flat_component: single int, flattened local component of the Terminal, considering symmetry
+                flat_component: single int, flattened local component of the
+            Terminal, considering symmetry
         """
         # (1) mt.terminal.ufl_shape defines a core indexing space UNLESS mt.reference_value,
         #     in which case the reference value shape of the element must be used.
@@ -139,7 +148,7 @@ class ValueNumberer(object):
         # v is not necessary scalar here, indexing in (0,...,0) picks the first scalar component
         # to analyse, which should be sufficient to get the base shape and derivatives
         if v.ufl_shape:
-            mt = analyse_modified_terminal(v[(0, ) * len(v.ufl_shape)])
+            mt = analyse_modified_terminal(v[(0,) * len(v.ufl_shape)])
         else:
             mt = analyse_modified_terminal(v)
 
@@ -149,12 +158,12 @@ class ValueNumberer(object):
         assert not (num_ld and num_gd)
         if num_ld:
             domain = ufl.domain.extract_unique_domain(mt.terminal)
-            tdim = domain.topological_dimension()
-            d_components = ufl.permutation.compute_indices((tdim, ) * num_ld)
+            tdim = domain.topological_dimension
+            d_components = ufl.permutation.compute_indices((tdim,) * num_ld)
         elif num_gd:
             domain = ufl.domain.extract_unique_domiain(mt.terminal)
-            gdim = domain.geometric_dimension()
-            d_components = ufl.permutation.compute_indices((gdim, ) * num_gd)
+            gdim = domain.geometric_dimension
+            d_components = ufl.permutation.compute_indices((gdim,) * num_gd)
         else:
             d_components = [()]
 

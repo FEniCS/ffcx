@@ -16,7 +16,8 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
                                     const {scalar_type}* restrict c,
                                     const {geom_type}* restrict coordinate_dofs,
                                     const int* restrict entity_local_index,
-                                    const uint8_t* restrict quadrature_permutation)
+                                    const uint8_t* restrict quadrature_permutation,
+                                    void* custom_data)
 {{
 {tabulate_tensor}
 }}
@@ -26,12 +27,13 @@ void tabulate_tensor_{factory_name}({scalar_type}* restrict A,
 ufcx_integral {factory_name} =
 {{
   .enabled_coefficients = {enabled_coefficients},
-  .tabulate_tensor_float32 = {tabulate_tensor_float32},
-  .tabulate_tensor_float64 = {tabulate_tensor_float64},
-  .tabulate_tensor_complex64 = {tabulate_tensor_complex64},
-  .tabulate_tensor_complex128 = {tabulate_tensor_complex128},
+  {tabulate_tensor_float32}
+  {tabulate_tensor_float64}
+  {tabulate_tensor_complex64}
+  {tabulate_tensor_complex128}
   .needs_facet_permutations = {needs_facet_permutations},
-  .coordinate_element = {coordinate_element},
+  .coordinate_element_hash = {coordinate_element_hash},
+  .domain = {domain},
 }};
 
 // End of code for integral {factory_name}

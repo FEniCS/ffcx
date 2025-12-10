@@ -7,11 +7,12 @@
 
 import collections
 import logging
-from itertools import product
-from typing import Any, DefaultDict, Dict, Set
+from itertools import pairwise, product
+from typing import Any
+
+import ufl
 
 import ffcx.codegeneration.lnodes as L
-import ufl
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.lnodes import LNode
@@ -25,16 +26,16 @@ class ExpressionGenerator:
 
     def __init__(self, ir: ExpressionIR, backend: FFCXBackend):
         """Initialise."""
-        if len(list(ir.integrand.keys())) != 1:
+        if len(list(ir.expression.integrand.keys())) != 1:
             raise RuntimeError("Only one set of points allowed for expression evaluation")
 
         self.ir = ir
         self.backend = backend
-        self.scope: Dict[Any, LNode] = {}
-        self._ufl_names: Set[Any] = set()
-        self.symbol_counters: DefaultDict[Any, int] = collections.defaultdict(int)
-        self.shared_symbols: Dict[Any, Any] = {}
-        self.quadrature_rule = list(self.ir.integrand.keys())[0]
+        self.scope: dict[Any, LNode] = {}
+        self._ufl_names: set[Any] = set()
+        self.symbol_counters: collections.defaultdict[Any, int] = collections.defaultdict(int)
+        self.shared_symbols: dict[Any, Any] = {}
+        self.quadrature_rule = next(iter(self.ir.expression.integrand.keys()))
 
     def generate(self):
         """Generate."""
@@ -60,17 +61,30 @@ class ExpressionGenerator:
 
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
-        # Currently we only support circumradius
-        ufl_geometry = {ufl.geometry.ReferenceCellVolume: "reference_cell_volume", }
-        cells: Dict[Any, Set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
+        ufl_geometry = {
+            ufl.geometry.FacetEdgeVectors: "facet_edge_vectors",
+            ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
+            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
+            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
+            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
+            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
+            ufl.geometry.ReferenceNormal: "reference_normals",
+        }
 
-        for integrand in self.ir.integrand.values():
+        cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
+        for integrand in self.ir.expression.integrand.values():
             for attr in integrand["factorization"].nodes.values():
                 mt = attr.get("mt")
                 if mt is not None:
                     t = type(mt.terminal)
+                    if self.ir.expression.entity_type == "cell" and issubclass(
+                        t, ufl.geometry.GeometricFacetQuantity
+                    ):
+                        raise RuntimeError(f"Expressions for cells do not support {t}.")
                     if t in ufl_geometry:
-                        cells[t].add(ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname())
+                        cells[t].add(
+                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
+                        )
 
         parts = []
         for i, cell_list in cells.items():
@@ -83,7 +97,7 @@ class ExpressionGenerator:
         """Generate tables of FE basis evaluated at specified points."""
         parts = []
 
-        tables = self.ir.unique_tables
+        tables = self.ir.expression.unique_tables[self.quadrature_rule[0]]
         table_names = sorted(tables)
 
         for name in table_names:
@@ -94,10 +108,13 @@ class ExpressionGenerator:
             parts += [decl]
 
         # Add leading comment if there are any tables
-        parts = L.commented_code_list(parts, [
-            "Precomputed values of basis functions",
-            "FE* dimensions: [entities][points][dofs]",
-        ])
+        parts = L.commented_code_list(
+            parts,
+            [
+                "Precomputed values of basis functions",
+                "FE* dimensions: [entities][points][dofs]",
+            ],
+        )
         return parts
 
     def generate_quadrature_loop(self):
@@ -108,12 +125,12 @@ class ExpressionGenerator:
         # Generate varying partition
         body = self.generate_varying_partition()
         body = L.commented_code_list(
-            body, f"Points loop body setup quadrature loop {self.quadrature_rule.id()}")
+            body, f"Points loop body setup quadrature loop {self.quadrature_rule[1].id()}"
+        )
 
         # Generate dofblock parts, some of this
         # will be placed before or after quadloop
-        preparts, quadparts = \
-            self.generate_dofblock_partition()
+        preparts, quadparts = self.generate_dofblock_partition()
         body += quadparts
 
         # Wrap body in loop or scope
@@ -122,25 +139,30 @@ class ExpressionGenerator:
             quadparts = []
         else:
             iq = self.backend.symbols.quadrature_loop_index
-            num_points = self.quadrature_rule.points.shape[0]
+            num_points = self.quadrature_rule[1].points.shape[0]
             quadparts = [L.ForRange(iq, 0, num_points, body=body)]
         return preparts, quadparts
 
     def generate_varying_partition(self):
         """Generate factors of blocks which are not cellwise constant."""
         # Get annotated graph of factorisation
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
-        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule.id()}", dtype=L.DataType.SCALAR)
+        arraysymbol = L.Symbol(f"sv_{self.quadrature_rule[1].id()}", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "varying")
         parts = L.commented_code_list(
-            parts, f"Unstructured varying computations for quadrature rule {self.quadrature_rule.id()}")
+            parts,
+            f"Unstructured varying computations for quadrature rule {self.quadrature_rule[1].id()}",
+        )
         return parts
 
     def generate_piecewise_partition(self):
-        """Generate factors of blocks which are constant (i.e. do not depend on quadrature points)."""
+        """Generate factors of blocks which are constant.
+
+        I.e. do not depend on quadrature points).
+        """
         # Get annotated graph of factorisation
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
         arraysymbol = L.Symbol("sp", dtype=L.DataType.SCALAR)
         parts = self.generate_partition(arraysymbol, F, "piecewise")
@@ -149,20 +171,22 @@ class ExpressionGenerator:
 
     def generate_dofblock_partition(self):
         """Generate assignments of blocks multiplied with their factors into final tensor A."""
-        block_contributions = self.ir.integrand[self.quadrature_rule]["block_contributions"]
+        block_contributions = self.ir.expression.integrand[self.quadrature_rule][
+            "block_contributions"
+        ]
 
         preparts = []
         quadparts = []
 
-        blocks = [(blockmap, blockdata)
-                  for blockmap, contributions in sorted(block_contributions.items())
-                  for blockdata in contributions]
+        blocks = [
+            (blockmap, blockdata)
+            for blockmap, contributions in sorted(block_contributions.items())
+            for blockdata in contributions
+        ]
 
         for blockmap, blockdata in blocks:
-
             # Define code for block depending on mode
-            block_preparts, block_quadparts = \
-                self.generate_block_parts(blockmap, blockdata)
+            block_preparts, block_quadparts = self.generate_block_parts(blockmap, blockdata)
 
             # Add definitions
             preparts.extend(block_preparts)
@@ -187,20 +211,20 @@ class ExpressionGenerator:
 
         arg_indices = tuple(self.backend.symbols.argument_loop_index(i) for i in range(block_rank))
 
-        F = self.ir.integrand[self.quadrature_rule]["factorization"]
+        F = self.ir.expression.integrand[self.quadrature_rule]["factorization"]
 
         assert not blockdata.transposed, "Not handled yet"
-        components = ufl.product(self.ir.expression_shape)
+        components = ufl.product(self.ir.expression.shape)
 
-        num_points = self.quadrature_rule.points.shape[0]
-        A_shape = [num_points, components] + self.ir.tensor_shape
+        num_points = self.quadrature_rule[1].points.shape[0]
+        A_shape = [num_points, components] + self.ir.expression.tensor_shape
         A = self.backend.symbols.element_tensor
         iq = self.backend.symbols.quadrature_loop_index
 
         # Check if DOFs in dofrange are equally spaced.
         expand_loop = False
-        for i, bm in enumerate(blockmap):
-            for a, b in zip(bm[1:-1], bm[2:]):
+        for bm in blockmap:
+            for a, b in pairwise(bm):
                 if b - a != bm[1] - bm[0]:
                     expand_loop = True
                     break
@@ -210,8 +234,9 @@ class ExpressionGenerator:
 
         if expand_loop:
             # If DOFs in dofrange are not equally spaced, then expand out the for loop
-            for A_indices, B_indices in zip(product(*blockmap),
-                                            product(*[range(len(b)) for b in blockmap])):
+            for A_indices, B_indices in zip(
+                product(*blockmap), product(*[range(len(b)) for b in blockmap])
+            ):
                 B_indices = tuple([iq] + list(B_indices))
                 A_indices = tuple([iq] + A_indices)
                 for fi_ci in blockdata.factor_indices_comp_indices:
@@ -221,7 +246,6 @@ class ExpressionGenerator:
                     multi_index = L.MultiIndex([A_indices[0], fi_ci[1]] + A_indices[1:], A_shape)
                     quadparts.append(L.AssignAdd(A[multi_index], Brhs))
         else:
-
             # Prepend dimensions of dofmap block with free index
             # for quadrature points and expression components
             B_indices = tuple([iq] + list(arg_indices))
@@ -256,8 +280,7 @@ class ExpressionGenerator:
                 body.append(L.AssignAdd(A[multi_index], Brhs))
 
             for i in reversed(range(block_rank)):
-                body = L.ForRange(
-                    B_indices[i + 1], 0, blockdims[i], body=body)
+                body = L.ForRange(B_indices[i + 1], 0, blockdims[i], body=body)
             quadparts += [body]
 
         return preparts, quadparts
@@ -274,9 +297,13 @@ class ExpressionGenerator:
         for i in range(block_rank):
             mad = blockdata.ma_data[i]
             td = mad.tabledata
-            mt = self.ir.integrand[self.quadrature_rule]["modified_arguments"][mad.ma_index]
+            mt = self.ir.expression.integrand[self.quadrature_rule]["modified_arguments"][
+                mad.ma_index
+            ]
 
-            table = self.backend.symbols.element_table(td, self.ir.entitytype, mt.restriction)
+            table = self.backend.symbols.element_table(
+                td, self.ir.expression.entity_type, mt.restriction
+            )
 
             assert td.ttype != "zeros"
 
@@ -289,7 +316,7 @@ class ExpressionGenerator:
 
     def new_temp_symbol(self, basename):
         """Create a new code symbol named basename + running counter."""
-        name = "%s%d" % (basename, self.symbol_counters[basename])
+        name = f"{basename}{self.symbol_counters[basename]:d}"
         self.symbol_counters[basename] += 1
         return L.Symbol(name, dtype=L.DataType.SCALAR)
 
@@ -305,18 +332,18 @@ class ExpressionGenerator:
         definitions = []
         intermediates = []
 
-        for i, attr in F.nodes.items():
-            if attr['status'] != mode:
+        for _, attr in F.nodes.items():
+            if attr["status"] != mode:
                 continue
-            v = attr['expression']
-            mt = attr.get('mt')
+            v = attr["expression"]
+            mt = attr.get("mt")
 
             if v._ufl_is_literal_:
                 vaccess = L.ufl_to_lnodes(v)
             elif mt is not None:
                 # All finite element based terminals have table data, as well
                 # as some, but not all, of the symbolic geometric terminals
-                tabledata = attr.get('tr')
+                tabledata = attr.get("tr")
 
                 # Backend specific modified terminal translation
                 vaccess = self.backend.access.get(mt, tabledata, 0)
@@ -338,7 +365,13 @@ class ExpressionGenerator:
                 vexpr = L.ufl_to_lnodes(v, *vops)
 
                 is_cond = isinstance(v, ufl.classes.Condition)
-                dtype = L.DataType.BOOL if is_cond else L.DataType.SCALAR
+                is_real = isinstance(v, ufl.classes.Real)
+                if is_cond:
+                    dtype = L.DataType.BOOL
+                elif is_real:
+                    dtype = L.DataType.REAL
+                else:
+                    dtype = L.DataType.SCALAR
 
                 j = len(intermediates)
                 vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
