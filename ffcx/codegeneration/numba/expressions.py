@@ -14,7 +14,7 @@ import numpy.typing as npt
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
-from ffcx.codegeneration.numba.implementation import Formatter
+from ffcx.codegeneration.numba.formatter import Formatter
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
