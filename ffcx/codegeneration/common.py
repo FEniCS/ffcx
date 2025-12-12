@@ -12,7 +12,7 @@ from typing import NamedTuple
 import basix
 import numpy as np
 
-from ffcx.ir.representation import FormIR
+from ffcx.ir.representation import FormIR, IntegralIR
 
 
 def template_keys(template: str) -> set[str]:
@@ -45,3 +45,27 @@ def integral_data(ir: FormIR) -> IntegralData:
         offsets.append(offsets[-1] + sum(len(d) for d in domains[offsets[-1] :]))
 
     return IntegralData(names, ids, offsets, domains)
+
+
+class KernelTensorSizes(NamedTuple):
+    """Size information of kernel input data."""
+    A: int
+    w: int
+    c: int
+    coords: int
+    local_index: int
+    permutation: int
+
+def integral_tensor_sizes(ir: IntegralIR) -> KernelTensorSizes:
+    """Compute tensor sizes of integral IR input data."""
+    A = np.prod(ir.expression.tensor_shape)
+    w = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
+    c = sum(
+        np.prod(constant.ufl_shape, dtype=int)
+        for constant in ir.expression.original_constant_offsets.keys()
+    )
+    coords = ir.expression.number_coordinate_dofs * 3
+    local_index = 2  # TODO: this is just an upper bound
+    permutation = 2 if ir.expression.needs_facet_permutations else 0
+
+    return KernelTensorSizes(A, w, c, coords, local_index, permutation)
