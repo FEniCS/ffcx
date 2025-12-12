@@ -6,9 +6,9 @@
 
 """Common code for backend implemenations."""
 
-from functools import singledispatch
 import string
-from typing import Any, NamedTuple
+from functools import singledispatch
+from typing import NamedTuple
 
 import basix
 import numpy as np
