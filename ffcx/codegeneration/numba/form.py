@@ -101,7 +101,7 @@ def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tu
         values = ", ".join(
             [
                 f"{name}_{domain.name}"
-                for name, domains in zip(integrals, integrals.domains)
+                for name, domains in zip(integrals.names, integrals.domains)
                 for domain in domains
             ]
         )
