@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.common import expression_tensor_sizes, template_keys
+from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
 from ffcx.codegeneration.numba.formatter import Formatter
@@ -43,7 +43,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     parts = eg.generate()
 
     # tabulate_expression
-    sizes = expression_tensor_sizes(ir)
+    sizes = tensor_sizes(ir)
     header = f"""
     A = numba.carray(_A, ({sizes.A}))
     w = numba.carray(_w, ({sizes.w}))

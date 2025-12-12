@@ -12,7 +12,7 @@ import basix
 from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.common import integral_tensor_sizes, template_keys
+from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
 from ffcx.codegeneration.numba.formatter import Formatter
@@ -73,7 +73,7 @@ def generator(
     # tabulate_tensor
     # Note: In contrast to the C implementation we actually need to provide/compute the sizes of the
     #       array.
-    sizes = integral_tensor_sizes(ir)
+    sizes = tensor_sizes(ir)
     header = f"""
     A = numba.carray(_A, ({sizes.A}))
     w = numba.carray(_w, ({sizes.w}))

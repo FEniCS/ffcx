@@ -6,8 +6,9 @@
 
 """Common code for backend implemenations."""
 
+from functools import singledispatch
 import string
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import basix
 import numpy as np
@@ -58,7 +59,14 @@ class KernelTensorSizes(NamedTuple):
     permutation: int
 
 
-def integral_tensor_sizes(ir: IntegralIR) -> KernelTensorSizes:
+@singledispatch
+def tensor_sizes(ir: IntegralIR | ExpressionIR) -> KernelTensorSizes:
+    """Compute tensor sizes given IR type."""
+    raise NotImplementedError
+
+
+@tensor_sizes.register
+def _(ir: IntegralIR) -> KernelTensorSizes:
     """Compute tensor sizes of integral IR input data."""
     A = np.prod(ir.expression.tensor_shape, dtype=int)
     w = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
@@ -73,7 +81,8 @@ def integral_tensor_sizes(ir: IntegralIR) -> KernelTensorSizes:
     return KernelTensorSizes(A, w, c, coords, local_index, permutation)
 
 
-def expression_tensor_sizes(ir: ExpressionIR) -> KernelTensorSizes:
+@tensor_sizes.register
+def _(ir: ExpressionIR) -> KernelTensorSizes:
     """Compute tensor sizes of expression IR input data."""
     num_points = next(iter(ir.expression.integrand))[1].points.shape[0]
     num_components = np.prod(ir.expression.shape, dtype=np.int32)
