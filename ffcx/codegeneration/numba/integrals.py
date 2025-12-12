@@ -9,7 +9,6 @@
 import logging
 
 import basix
-import numpy as np
 from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
