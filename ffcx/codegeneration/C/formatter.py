@@ -12,6 +12,7 @@ import numpy as np
 import numpy.typing as npt
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.interface import Formatter as FormatterInterface
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 math_table = {
@@ -143,7 +144,7 @@ math_table = {
 }
 
 
-class Formatter:
+class Formatter(FormatterInterface):
     """C formatter."""
 
     scalar_type: np.dtype

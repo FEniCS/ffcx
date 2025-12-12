@@ -11,6 +11,7 @@ import numpy as np
 from numpy import typing as npt
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.interface import Formatter as FormatterInterface
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 
@@ -25,7 +26,7 @@ def build_initializer_lists(values: npt.NDArray) -> str:
     return arr
 
 
-class Formatter:
+class Formatter(FormatterInterface):
     """Implementation for numba output backend."""
 
     scalar_type: np.dtype
