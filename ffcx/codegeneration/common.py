@@ -26,7 +26,7 @@ class IntegralData(NamedTuple):
     names: list[str]
     ids: list[int]
     offsets: list[int]
-    domains: list[basix.CellType]
+    domains: list[list[basix.CellType]]
 
 
 def integral_data(ir: FormIR) -> IntegralData:
