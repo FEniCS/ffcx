@@ -17,6 +17,7 @@ from ffcx.codegeneration.utils import dtype_to_scalar_dtype, numba_ufcx_kernel_s
 
 numba = pytest.importorskip("numba")
 
+
 def wrap_kernel(scalar_type, real_type):
     c_signature = numba_ufcx_kernel_signature(scalar_type, real_type)
     return numba.cfunc(c_signature, nopython=True)
