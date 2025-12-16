@@ -221,7 +221,7 @@ class Formatter(FormatterInterface):
     @__call__.register
     def _(self, c: L.Comment) -> str:
         """Format a comment."""
-        return f"// {c.comment}"\n"
+        return f"// {c.comment}\n"
 
     @__call__.register
     def _(self, arr: L.ArrayDecl) -> str:
