@@ -14,7 +14,7 @@ from numpy import typing as npt
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.integral_generator import IntegralGenerator
-from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
+from ffcx.codegeneration.numba import integral_template as ufcx_integrals
 from ffcx.codegeneration.numba.formatter import Formatter
 from ffcx.ir.representation import IntegralIR
 

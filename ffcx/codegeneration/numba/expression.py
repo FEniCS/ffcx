@@ -13,7 +13,7 @@ import numpy.typing as npt
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
-from ffcx.codegeneration.numba import expressions_template
+from ffcx.codegeneration.numba import expression_template
 from ffcx.codegeneration.numba.formatter import Formatter
 from ffcx.ir.representation import ExpressionIR
 
@@ -30,7 +30,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     logger.info(f"--- name: {factory_name}")
 
     # Format declaration
-    declaration = expressions_template.declaration.format(
+    declaration = expression_template.declaration.format(
         factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile
     )
 
@@ -87,7 +87,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     d["coordinate_element_hash"] = ir.expression.coordinate_element_hash
 
     # Format implementation code
-    assert set(d.keys()) == template_keys(expressions_template.factory)
-    implementation = expressions_template.factory.format_map(d)
+    assert set(d.keys()) == template_keys(expression_template.factory)
+    implementation = expression_template.factory.format_map(d)
 
     return declaration, implementation

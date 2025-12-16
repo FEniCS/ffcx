@@ -12,7 +12,7 @@ import logging
 import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C import expressions_template
+from ffcx.codegeneration.C import expression_template
 from ffcx.codegeneration.C.formatter import Formatter
 from ffcx.codegeneration.common import template_keys
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
@@ -32,7 +32,7 @@ def generator(ir: ExpressionIR, options):
     logger.info(f"--- name: {factory_name}")
 
     # Format declaration
-    declaration = expressions_template.declaration.format(
+    declaration = expression_template.declaration.format(
         factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile
     )
 
@@ -107,7 +107,7 @@ def generator(ir: ExpressionIR, options):
     d["coordinate_element_hash"] = f"UINT64_C({ir.expression.coordinate_element_hash})"
 
     # Format implementation code
-    assert set(d.keys()) == template_keys(expressions_template.factory)
-    implementation = expressions_template.factory.format_map(d)
+    assert set(d.keys()) == template_keys(expression_template.factory)
+    implementation = expression_template.factory.format_map(d)
 
     return declaration, implementation
