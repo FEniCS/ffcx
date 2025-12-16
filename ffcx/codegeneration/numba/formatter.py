@@ -76,10 +76,7 @@ class Formatter(FormatterInterface):
     @__call__.register
     def _(self, slist: L.StatementList) -> str:
         """Format a list of statements."""
-        output = ""
-        for s in slist.statements:
-            output += self(s)
-        return output
+        return "".join(self(s) for s in slist.statements)
 
     def _format_comment_str(self, comment: str) -> str:
         """Format str to comment string."""
