@@ -221,7 +221,7 @@ class Formatter(FormatterInterface):
     @__call__.register
     def _(self, c: L.Comment) -> str:
         """Format a comment."""
-        return "// " + c.comment + "\n"
+        return f"// {c.comment}\n"
 
     @__call__.register
     def _(self, arr: L.ArrayDecl) -> str:
@@ -286,7 +286,7 @@ class Formatter(FormatterInterface):
 
     @__call__.register(L.Neg)
     @__call__.register(L.Not)
-    def _(self, oper) -> str:
+    def _(self, oper: L.Neg | L.Not) -> str:
         """Format a unary operation."""
         arg = self(oper.arg)
         if oper.arg.precedence >= oper.precedence:
