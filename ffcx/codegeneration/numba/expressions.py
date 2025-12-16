@@ -14,7 +14,7 @@ import numpy.typing as npt
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.numba import expressions_template
-from ffcx.codegeneration.numba.implementation import Formatter
+from ffcx.codegeneration.numba.formatter import Formatter
 from ffcx.ir.representation import ExpressionIR
 
 logger = logging.getLogger("ffcx")
@@ -64,8 +64,8 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     entity_local_index = numba.carray(_entity_local_index, ({size_local_index}))
     quadrature_permutation = numba.carray(_quadrature_permutation, ({size_permutation}))
     """
-    F = Formatter(options["scalar_type"])  # type: ignore
-    body = F.format(parts)
+    format = Formatter(options["scalar_type"])  # type: ignore
+    body = format(parts)
     body = "\n".join(["    " + line for line in body.split("\n")])
 
     d["tabulate_expression"] = header + body

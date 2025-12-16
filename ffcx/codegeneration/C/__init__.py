@@ -2,4 +2,6 @@
 
 from ffcx.codegeneration.C import expressions, file, form, integrals
 
-__all__ = ["expressions", "file", "form", "integrals", "suffixes"]
+from .formatter import Formatter
+
+__all__ = ["Formatter", "expressions", "file", "form", "integrals", "suffixes"]

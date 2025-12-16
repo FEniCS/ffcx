@@ -16,7 +16,7 @@ from numpy import typing as npt
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.numba import integrals_template as ufcx_integrals
-from ffcx.codegeneration.numba.implementation import Formatter
+from ffcx.codegeneration.numba.formatter import Formatter
 from ffcx.ir.representation import IntegralIR
 
 logger = logging.getLogger("ffcx")
@@ -58,8 +58,8 @@ def generator(
     parts = ig.generate(domain)
 
     # Format code as string
-    F = Formatter(options["scalar_type"])  # type: ignore
-    body = F.format(parts)
+    format = Formatter(options["scalar_type"])  # type: ignore
+    body = format(parts)
     body = "\n".join(["    " + line for line in body.split("\n")])
 
     # Generate generic FFCx code snippets and add specific parts

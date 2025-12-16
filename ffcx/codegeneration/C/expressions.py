@@ -14,7 +14,7 @@ import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import expressions_template
-from ffcx.codegeneration.C.implementation import Formatter
+from ffcx.codegeneration.C.formatter import Formatter
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR
@@ -44,8 +44,8 @@ def generator(ir: ExpressionIR, options):
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    CF = Formatter(options["scalar_type"])
-    d["tabulate_expression"] = CF.format(parts)
+    format = Formatter(options["scalar_type"])
+    d["tabulate_expression"] = format(parts)
 
     if len(ir.original_coefficient_positions) > 0:
         d["original_coefficient_positions"] = f"original_coefficient_positions_{factory_name}"
