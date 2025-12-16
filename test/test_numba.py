@@ -8,7 +8,6 @@ import ctypes
 import importlib
 from pathlib import Path
 
-import numba
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -16,6 +15,7 @@ import pytest
 import ffcx.main
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype, numba_ufcx_kernel_signature
 
+numba = pytest.importorskip("numba")
 
 def wrap_kernel(scalar_type, real_type):
     c_signature = numba_ufcx_kernel_signature(scalar_type, real_type)
