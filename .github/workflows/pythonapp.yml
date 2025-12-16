@@ -104,7 +104,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload pytest results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
@@ -127,7 +127,7 @@ jobs:
           cd doc
           make html
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: doc-${{ matrix.os }}-${{ matrix.python-version }}
           path: doc/build/html/
