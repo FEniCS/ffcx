@@ -10,6 +10,7 @@ Parse command-line arguments and generate code from input UFL form files.
 
 import argparse
 import cProfile
+from importlib import import_module
 import logging
 import pathlib
 import re
@@ -75,7 +76,7 @@ def main(args: Sequence[str] | None = None) -> int:
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        code_h, code_c = compiler.compile_ufl_objects(
+        code_h, code_c, suffixes = compiler.compile_ufl_objects(
             ufd.forms + ufd.expressions + ufd.elements,
             options=options,
             object_names=ufd.object_names,
@@ -83,14 +84,10 @@ def main(args: Sequence[str] | None = None) -> int:
             visualise=xargs.visualise,
         )
 
-        # File suffixes
         # TODO: this needs to be moved into the language backends
-        suffixes: tuple[str | None, str | None]
         if options["language"] == "C":
-            suffixes = (".h", ".c")
             code = (code_h, code_c)
         else:  # numba:
-            suffixes = "_numba.py"
             code = code_c
 
         # Write to file

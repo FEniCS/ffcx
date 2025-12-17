@@ -66,4 +66,4 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
         forms=code_forms,
         expressions=code_expressions,
         file_post=[code_file_post],
-    )
+    ), mod.file_suffixes

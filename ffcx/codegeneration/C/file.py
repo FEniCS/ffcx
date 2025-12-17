@@ -18,6 +18,8 @@ from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
 from ffcx.codegeneration.C import file_template
 
+suffixes = (".h", ".c")
+
 logger = logging.getLogger("ffcx")
 
 
