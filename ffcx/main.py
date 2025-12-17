@@ -88,11 +88,13 @@ def main(args: Sequence[str] | None = None) -> int:
         suffixes: tuple[str | None, str | None]
         if options["language"] == "C":
             suffixes = (".h", ".c")
+            code = (code_h, code_c)
         else:  # numba:
-            suffixes = (None, "_numba.py")
+            suffixes = "_numba.py"
+            code = code_c
 
         # Write to file
-        formatting.write_code(code_h, code_c, prefix, suffixes, xargs.output_directory)
+        formatting.write_code(code, prefix, suffixes, xargs.output_directory)
 
         # Turn off profiling and write status to file
         if xargs.profile:
