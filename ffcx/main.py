@@ -76,19 +76,13 @@ def main(args: Sequence[str] | None = None) -> int:
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        code_h, code_c, suffixes = compiler.compile_ufl_objects(
+        code, suffixes = compiler.compile_ufl_objects(
             ufd.forms + ufd.expressions + ufd.elements,
             options=options,
             object_names=ufd.object_names,
             prefix=prefix,
             visualise=xargs.visualise,
         )
-
-        # TODO: this needs to be moved into the language backends
-        if options["language"] == "C":
-            code = (code_h, code_c)
-        else:  # numba:
-            code = code_c
 
         # Write to file
         formatting.write_code(code, prefix, suffixes, xargs.output_directory)

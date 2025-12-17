@@ -23,19 +23,19 @@ from ffcx.codegeneration.codegeneration import CodeBlocks
 logger = logging.getLogger("ffcx")
 
 
-def format_code(code: CodeBlocks) -> tuple[str, str]:
+def format_code(code_blocks: CodeBlocks) -> list[str]:
     """Format given code in UFC format. Returns two strings with header and source file contents."""
     logger.info(79 * "*")
     logger.info("Compiler stage 5: Formatting code")
     logger.info(79 * "*")
 
-    code_c = ""
-    code_h = ""
-    for parts_code in code:
-        code_h += "".join([c[0] for c in parts_code])
-        code_c += "".join([c[1] for c in parts_code])
+    code = [""] * len(code_blocks[0][0])
 
-    return code_h, code_c
+    for block in code_blocks:
+        for i in range(len(code)):
+            code[i] += "".join([c[i] for c in block])
+
+    return code
 
 
 def write_code(
