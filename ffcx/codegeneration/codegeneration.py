@@ -44,7 +44,7 @@ def generate_code(
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
-    lang = options.get("language", "C")
+    lang: str = options.get("language", "C")
     if lang in ("C", "numba"):
         lang = f"ffcx.codegeneration.{lang}"
     mod = import_module(lang)
