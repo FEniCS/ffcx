@@ -10,7 +10,6 @@ Parse command-line arguments and generate code from input UFL form files.
 
 import argparse
 import cProfile
-from importlib import import_module
 import logging
 import pathlib
 import re
