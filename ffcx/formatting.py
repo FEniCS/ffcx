@@ -42,6 +42,8 @@ def write_code(
     code: tuple[str, ...], prefix: str, suffixes: tuple[str, ...], output_dir: str
 ) -> None:
     """Write code to files."""
+    if suffixes == ("_numba.py",):
+        code = (code[1],)  # TODO: remove workaround
     for source, suffix in zip(code, suffixes):
         with open(Path(output_dir) / (prefix + suffix), "w") as file:
             file.write(source)

@@ -19,7 +19,7 @@ from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
 from ffcx.codegeneration.numba import file_template
 
-suffixes = "_numba.py"
+suffixes = ("_numba.py", )
 
 logger = logging.getLogger("ffcx")
 
