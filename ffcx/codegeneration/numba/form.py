@@ -19,7 +19,7 @@ from ffcx.ir.representation import FormIR
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
+def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str]:
     """Generate UFC code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
@@ -123,6 +123,4 @@ def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tu
 
     # Format implementation code
     assert set(d.keys()) == template_keys(form_template.factory)
-    implementation = form_template.factory.format_map(d)
-
-    return "", implementation
+    return (form_template.factory.format_map(d),)

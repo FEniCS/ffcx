@@ -17,16 +17,17 @@ from numpy import typing as npt
 
 from ffcx import __version__ as FFCX_VERSION
 from ffcx.codegeneration import __version__ as UFC_VERSION
+from ffcx.codegeneration.common import template_keys
 from ffcx.codegeneration.numba import file_template
 
-suffixes = ("_numba.py", )
+suffixes = ("_numba.py",)
 
 logger = logging.getLogger("ffcx")
 
 
 def generator(
     options: dict[str, int | float | npt.DTypeLike],
-) -> tuple[tuple[str, str], tuple[str, str]]:
+) -> tuple[tuple[str], tuple[str]]:
     """Generate UFC code for file output.
 
     Args:
@@ -42,16 +43,5 @@ def generator(
     d = {"ffcx_version": FFCX_VERSION, "ufcx_version": UFC_VERSION}
     d["options"] = textwrap.indent(pprint.pformat(options), "#  ")
 
-    # Format declaration code
-    code_pre = (
-        file_template.declaration_pre.format_map(d),
-        file_template.implementation_pre.format_map(d),
-    )
-
-    # Format implementation code
-    code_post = (
-        file_template.declaration_post.format_map(d),
-        file_template.implementation_post.format_map(d),
-    )
-
-    return code_pre, code_post
+    assert set(d.keys()) == template_keys(file_template.factory)
+    return (file_template.factory.format_map(d),), ("",)
