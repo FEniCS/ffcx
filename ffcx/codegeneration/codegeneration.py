@@ -45,7 +45,9 @@ def generate_code(
     logger.info(79 * "*")
 
     lang = options.get("language", "C")
-    mod = import_module(f"ffcx.codegeneration.{lang}")
+    if lang in ("C", "numba"):
+        lang = f"ffcx.codegeneration.{lang}"
+    mod = import_module(lang)
 
     integral_generator = mod.generator_integral
     form_generator = mod.generator_form
