@@ -89,7 +89,7 @@ def compile_ufl_objects(
     object_names: dict[int, str] | None = None,
     prefix: str | None = None,
     visualise: bool = False,
-) -> tuple[tuple[str, ...], tuple[str, ...]]:
+) -> tuple[list[str], tuple[str, ...]]:
     """Generate UFC code for a given UFL objects.
 
     Args:
