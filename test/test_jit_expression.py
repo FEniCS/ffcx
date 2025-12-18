@@ -12,6 +12,7 @@ import pytest
 import ufl
 
 import ffcx.codegeneration.jit
+from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 
 def test_matvec(compile_args):
@@ -482,3 +483,48 @@ def test_coordinate_free_expression(compile_args):
     # Check that the expression evaluates to [1, 0] at all points
     expected = np.array([[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]])
     assert np.allclose(A, expected)
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64]) # , np.complex64, np.complex128
+def test_multi_argument(compile_args, dtype):
+    """Test mutli element expression."""
+    mesh = ufl.Mesh(basix.ufl.element("P", "triangle", 1, shape=(2,)))
+
+    A = ufl.FunctionSpace(mesh, basix.ufl.element("DG", "triangle", 0, shape=(2,)))
+    B = ufl.FunctionSpace(mesh, basix.ufl.element("P", "triangle", 1))
+
+    a = ufl.Coefficient(A)
+    b = ufl.Coefficient(B)
+
+    expr = a * b
+
+    points = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]])
+    obj, _module, _code = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+
+    expression = obj[0]
+
+    assert mesh.ufl_coordinate_element().basix_hash() == expression.coordinate_element_hash
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    A = np.zeros((6,), dtype=dtype)
+    w_a = np.array([0.5, 0.25], dtype=dtype)
+    w_b = np.array([1, 2, 3], dtype=dtype)
+    w = np.append(w_a, w_b)
+    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
+
+    ffi = cffi.FFI()
+    print(dtype_to_c_type(dtype))
+    getattr(expression, f"tabulate_tensor_{np.dtype(dtype).name}")(
+        ffi.cast(f"{dtype_to_c_type(dtype)} *", A.ctypes.data),
+        ffi.cast(f"{dtype_to_c_type(dtype)} *", w.ctypes.data),
+        ffi.NULL,  # c
+        ffi.cast(f"{dtype_to_c_type(xdtype)} *", coords.ctypes.data),
+        ffi.NULL,  # entity_index
+        ffi.NULL,  # quad perm
+        ffi.NULL,
+    )
+
+    assert np.allclose(A[::2], w_a[0] * w_b)
+    assert np.allclose(A[1::2], w_a[1] * w_b)
