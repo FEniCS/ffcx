@@ -20,31 +20,31 @@ import numpy.typing as npt
 logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
-    "language": (str, "C", "language to output kernel in", ("C", "numba")),
-    "epsilon": (float, 1e-14, "machine precision, used for dropping zero terms in tables.", None),
+    "language": (str, "C", "Language to output kernel in", ("C", "numba")),
+    "epsilon": (float, 1e-14, "Machine precision, used for dropping zero terms in tables.", None),
     "scalar_type": (
         str,
         "float64",
-        "scalar type to use in generated code.",
+        "Scalar type to use in generated code.",
         ("float32", "float64", "complex64", "complex128"),
     ),
-    "sum_factorization": (bool, False, "use sum factorization.", None),
+    "sum_factorization": (bool, False, "Use sum factorization.", None),
     "table_rtol": (
         float,
         1e-6,
-        "relative precision to use when comparing finite element table values for reuse.",
+        "Relative precision to use when comparing finite element table values for reuse.",
         None,
     ),
     "table_atol": (
         float,
         1e-9,
-        "absolute precision to use when comparing finite element table values reuse.",
+        "Absolute precision to use when comparing finite element table values reuse.",
         None,
     ),
     "verbosity": (
         int,
         30,
-        "logger verbosity, follows standard library levels, i.e. INFO=20, DEBUG=10, etc.",
+        "Logger verbosity, follows standard library levels, i.e. INFO=20, DEBUG=10, etc.",
         None,
     ),
     "part": (str, "full", "Part of bilinear tensor to assemble", ("full", "diagonal")),

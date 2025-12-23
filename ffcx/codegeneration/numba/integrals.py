@@ -4,7 +4,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Generate UFC code for an integral."""
+"""Generate UFCx code for an integral."""
 
 import logging
 import string
