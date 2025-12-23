@@ -55,10 +55,6 @@ def write_code(
         suffixes: Declaration/implementation file suffixes.
         output_dir: Directory where the files should be written.
     """
-    # def _write_file(output: str, prefix: str, suffix: str, output_dir: str) -> None:
-    #     """Write generated code to file."""
-    #     with open(Path(output_dir) / (prefix + suffix), "w") as file:
-    #         file.write(output)
 
     def _write_file(output: str, prefix: str, postfix: str, output_dir: str) -> None:
         """Write generated code to file."""
