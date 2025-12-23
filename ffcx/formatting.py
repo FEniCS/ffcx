@@ -59,11 +59,16 @@ def write_code(
         output_dir: Directory where the files should be written.
     """
 
-    def _write_file(output: str, prefix: str, postfix: str, output_dir: str) -> None:
+    def _write_file(output: str, prefix: str, suffix: str, output_dir: str) -> None:
         """Write generated code to file."""
-        filename = Path(output_dir, prefix).with_suffix(postfix)
-        assert filename.parent.exists(), f"Output directory '{filename.parent}' does not exist."
-        filename.write_text(output)
+        with open(Path(output_dir) / (prefix + suffix), "w") as file:
+            file.write(output)
+
+    # def _write_file(output: str, prefix: str, postfix: str, output_dir: str) -> None:
+    #     """Write generated code to file."""
+    #     filename = Path(output_dir, prefix).with_suffix(postfix)
+    #     assert filename.parent.exists(), f"Output directory '{filename.parent}' does not exist."
+    #     filename.write_text(output)
 
     if suffixes[0] is not None:
         _write_file(code_h, filename_stem, suffixes[0], output_dir)
