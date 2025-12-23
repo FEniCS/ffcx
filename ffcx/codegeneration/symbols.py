@@ -3,7 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFCx/UFC specific symbol naming."""
+"""FFCx/UFCx specific symbol naming."""
 
 import logging
 

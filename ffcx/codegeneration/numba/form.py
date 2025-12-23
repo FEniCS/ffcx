@@ -20,7 +20,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
-    """Generate UFC code for a form."""
+    """Generate UFCx code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")
@@ -99,7 +99,8 @@ def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str,
     integral_ids = []
     integral_offsets = [0]
     integral_domains = []
-    # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
+    # Note: the order of this list is defined by the enum
+    # ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet", "vertex", "ridge"):
         unsorted_integrals = []
         unsorted_ids = []

@@ -8,7 +8,7 @@
 #
 # Note: Most of the code in this file is a direct translation from the
 # old implementation in FFC
-"""Generate UFC code for a form."""
+"""Generate UFCx code for a form."""
 
 from __future__ import annotations
 
@@ -118,7 +118,8 @@ def generator(ir: FormIR, options):
     integral_ids = []
     integral_offsets = [0]
     integral_domains = []
-    # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h
+    # Note: the order of this list is defined by the enum
+    # ufcx_integral_type in ufcx.h
     for itg_type in ("cell", "exterior_facet", "interior_facet", "vertex", "ridge"):
         unsorted_integrals = []
         unsorted_ids = []
