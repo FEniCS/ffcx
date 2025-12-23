@@ -142,7 +142,7 @@ def main(args: Sequence[str] | None = None) -> int:
             suffixes = (".h", ".c")
         else:  # numba
             if xargs.outfile is None:
-                outfile = outfile+"_numba"
+                outfile = outfile + "_numba"
             suffixes = (None, ".py")
 
         # Write to file
