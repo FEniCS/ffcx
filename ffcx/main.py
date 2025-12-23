@@ -140,8 +140,10 @@ def main(args: Sequence[str] | None = None) -> int:
         suffixes: tuple[str | None, str | None]
         if options["language"] == "C":
             suffixes = (".h", ".c")
-        else:  # numba:
-            suffixes = (None, "_numba.py")
+        else:  # numba
+            if xargs.outfile is None:
+                outfile = outfile+"_numba"
+            suffixes = (None, ".py")
 
         # Write to file
         formatting.write_code(code_h, code_c, outfile, suffixes, output_dir=xargs.dir)
