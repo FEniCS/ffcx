@@ -136,7 +136,7 @@ def main(args: Sequence[str] | None = None) -> int:
         )
 
         # Write to file
-        formatting.write_code(code, prefix, suffixes, xargs.output_directory)
+        formatting.write_code(code, outfile, suffixes, xargs.dir)
 
         # Turn off profiling and write status to file
         if xargs.profile:
