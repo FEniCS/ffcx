@@ -23,7 +23,7 @@ logger = logging.getLogger("ffcx")
 
 def generator(
     ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
-) -> tuple[str, str]:
+) -> tuple[str]:
     """Generate numba code for an integral.
 
     Args:
@@ -43,9 +43,6 @@ def generator(
     logger.info(f"--- name: {ir.expression.name}")
 
     factory_name = f"{ir.expression.name}_{domain.name}"
-
-    # Format declaration
-    declaration = ""
 
     # Create FFCx backend
     backend = FFCXBackend(ir, options)
@@ -90,6 +87,4 @@ def generator(
     assert ir.expression.coordinate_element_hash is not None
 
     assert set(d.keys()) == template_keys(ufcx_integrals.factory)
-    implementation = ufcx_integrals.factory.format_map(d)
-
-    return declaration, implementation
+    return (ufcx_integrals.factory.format_map(d),)
