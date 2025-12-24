@@ -160,7 +160,7 @@ def compile_forms(
     cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
-    """Compile a list of UFL forms into UFC Python objects.
+    """Compile a list of UFL forms into UFCx Python objects.
 
     Args:
         forms: List of ufl.form to compile.
@@ -258,7 +258,7 @@ def compile_expressions(
     cffi_libraries: list[str] = [],
     visualise: bool = False,
 ):
-    """Compile a list of UFL expressions into UFC Python objects.
+    """Compile a list of UFL expressions into UFCx Python objects.
 
     Args:
         expressions: List of (UFL expression, evaluation points).
@@ -347,7 +347,7 @@ def _compile_objects(
     # JIT uses module_name as prefix, which is needed to make names of all struct/function
     # unique across modules
     code, _ = ffcx.compiler.compile_ufl_objects(
-        ufl_objects, prefix=module_name, options=options, visualise=visualise
+        ufl_objects, namespace=module_name, options=options, visualise=visualise
     )
     code_body = code[1]
 

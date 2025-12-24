@@ -28,7 +28,7 @@ logger = logging.getLogger("ffcx")
 def generator(
     options: dict[str, int | float | npt.DTypeLike],
 ) -> tuple[tuple[str], tuple[str]]:
-    """Generate UFC code for file output.
+    """Generate UFCx code for file output.
 
     Args:
         options: Dict of options specified the kenerl generation, these will be documented in the

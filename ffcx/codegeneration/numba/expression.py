@@ -3,7 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Generate UFC code for an expression."""
+"""Generate UFCx code for an expression."""
 
 import logging
 
@@ -21,7 +21,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str]:
-    """Generate UFC code for an expression."""
+    """Generate UFCx code for an expression."""
     logger.info("Generating code for expression:")
     assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
     points = next(iter(ir.expression.integrand))[1].points
