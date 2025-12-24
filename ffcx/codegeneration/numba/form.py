@@ -20,7 +20,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
-    """Generate UFC code for a form."""
+    """Generate UFCx code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
     logger.info(f"--- name: {ir.name}")

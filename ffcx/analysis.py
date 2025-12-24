@@ -153,7 +153,8 @@ def _analyze_form(
 
     Args:
         form: forms
-        scalar_type: Scalar type used for form. This is used to simplify real valued forms
+        scalar_type: Scalar type used for form. This is used to simplify
+            real valued forms.
 
     Returns:
         Form data computed by UFL with metadata attached
@@ -162,7 +163,6 @@ def _analyze_form(
         The main workload of this function is extraction of
         unique/default metadata from options, integral metadata or
         inherited from UFL (in case of quadrature degree).
-
     """
     if form.empty():
         raise RuntimeError(f"Form ({form}) seems to be zero: cannot compile it.")
@@ -208,7 +208,8 @@ def _analyze_form(
                 if any(e.discontinuous for e in elements):
                     raise TypeError("Vertex integrals not supported for discontinuous elements.")
 
-            # If form contains a quadrature element, use the custom quadrature scheme
+            # If form contains a quadrature element, use the custom
+            # quadrature scheme
             custom_q = None
             for e in ufl.algorithms.extract_elements(integral):
                 if e.has_custom_quadrature:
