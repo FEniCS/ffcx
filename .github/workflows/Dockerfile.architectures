@@ -1,4 +1,3 @@
-# Use an s390x Ubuntu base image
 FROM ubuntu
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,22 +19,16 @@ RUN apt-get update && apt-get install -y \
     build-essential \
  && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip tooling
-RUN python3 -m pip install --upgrade pip setuptools wheel
+# RUN python3 -m pip install --upgrade pip setuptools wheel
 
-# Set work directory
 WORKDIR /ffcx
-
-# Copy FFCx source tree
 COPY . .
 
-# Install FEniCS dependencies from git
 RUN pip install \
     git+https://github.com/FEniCS/ufl.git \
     git+https://github.com/FEniCS/basix.git
 
-# Install FFCx with CI + optional dependencies
 RUN pip install .[ci,optional]
 
-# Default command: run unit tests
-CMD python -m pytest test/ -W error
+RUN python -m pytest test/ -n auto -W error 
+RUN python -m pytest test/ -n auto -W error 

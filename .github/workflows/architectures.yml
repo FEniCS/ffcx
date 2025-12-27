@@ -17,17 +17,18 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: ["s390x"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Enable QEMU for s390x emulation
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: s390x
+          platforms: ${{ matrix.arch }}
 
-      # Enable Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
