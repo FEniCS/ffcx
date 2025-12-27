@@ -34,7 +34,7 @@ jobs:
       - name: Build s390x Docker image
         run: >
           docker buildx build
-          --file Dockerfile.architectures
+          --file .github/workflows/Dockerfile.architectures
           --platform linux/s390x 
           -t ffcx-s390x 
           --load
