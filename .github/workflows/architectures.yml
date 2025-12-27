@@ -15,25 +15,51 @@ on:
     - cron: "0 8 * * 1"
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  run:
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      # 1️⃣ Enable QEMU emulation
+
+      # Enable QEMU for s390x emulation
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           platforms: s390x
 
-      # 2️⃣ Enable Docker Buildx
+      # Enable Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3️⃣ Test running an s390x container
-      - name: Run s390x Ubuntu
+      - name: Build s390x Docker image
         run: |
-          docker run --rm --platform linux/s390x s390x/ubuntu:latest uname -m
+          docker buildx build \
+            --platform linux/s390x \
+            -t ffcx-s390x \
+            --load \
+            .
+
+      - name: Run FFCx unit tests (s390x)
+        run: |
+          docker run --rm ffcx-s390x
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     # 1️⃣ Enable QEMU emulation
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #       with:
+  #         platforms: s390x
+
+  #     # 2️⃣ Enable Docker Buildx
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     # 3️⃣ Test running an s390x container
+  #     - name: Run s390x Ubuntu
+  #       run: |
+  #         docker run --rm --platform linux/s390x s390x/ubuntu:latest uname -m
   # test:
   #   runs-on: ubuntu-latest
   #   container: ${{ matrix.arch }}/ubuntu
