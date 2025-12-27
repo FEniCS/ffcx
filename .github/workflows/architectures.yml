@@ -32,12 +32,13 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build s390x Docker image
-        run: |
-          docker buildx build \
-            --platform linux/s390x \
-            -t ffcx-s390x \
-            --load \
-            .
+        run: >
+          docker buildx build
+          --file Dockerfile.architectures
+          --platform linux/s390x 
+          -t ffcx-s390x 
+          --load
+          .
 
       - name: Run FFCx unit tests (s390x)
         run: |
