@@ -1,0 +1,54 @@
+name: Architecture
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  pull_request:
+    branches: [main]
+  merge_group:
+    branches: [main]
+  # Weekly build on Mondays at 8 am
+  schedule:
+    - cron: "0 8 * * 1"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: ${{ matrix.arch }}/ubuntu
+    strategy:
+      matrix:
+        arch: ["s390x"]
+    steps:
+      - name: Checkout FFCx
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+
+      - name: Install dependencies (non-Python, Linux)
+        run: sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libblas-dev liblapack-dev
+      
+      - name: Install FEniCS dependencies
+        run: |
+          pip install git+https://github.com/FEniCS/ufl.git
+          pip install git+https://github.com/FEniCS/basix.git
+
+      - name: Install FFCx
+        run: pip install .[ci,optional]
+
+      - name: Run unit tests
+        run: >
+          python -m pytest test/
+          -n auto
+          -W error
+
+      - name: Run FFCx demos
+        run: >
+          pytest demo/test_demos.py
+          -W error
+          # -n auto
+
+  
