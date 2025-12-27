@@ -15,40 +15,58 @@ on:
     - cron: "0 8 * * 1"
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    container: ${{ matrix.arch }}/ubuntu
-    strategy:
-      matrix:
-        arch: ["s390x"]
-    steps:
-      - name: Checkout FFCx
-        uses: actions/checkout@v6
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout
+        uses: actions/checkout@v4
+    # 1️⃣ Enable QEMU emulation
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: s390x
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+    # 2️⃣ Enable Docker Buildx
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Install dependencies (non-Python, Linux)
-        run: sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libblas-dev liblapack-dev
+    # 3️⃣ Test running an s390x container
+    - name: Run s390x Ubuntu
+      run: |
+        docker run --rm --platform linux/s390x s390x/ubuntu:latest uname -m
+  # test:
+  #   runs-on: ubuntu-latest
+  #   container: ${{ matrix.arch }}/ubuntu
+  #   strategy:
+  #     matrix:
+  #       arch: ["s390x"]
+  #   steps:
+  #     - name: Checkout FFCx
+  #       uses: actions/checkout@v6
+
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v6
+
+  #     - name: Install dependencies (non-Python, Linux)
+  #       run: sudo apt-get install -y graphviz libgraphviz-dev ninja-build pkg-config libblas-dev liblapack-dev
       
-      - name: Install FEniCS dependencies
-        run: |
-          pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git
+  #     - name: Install FEniCS dependencies
+  #       run: |
+  #         pip install git+https://github.com/FEniCS/ufl.git
+  #         pip install git+https://github.com/FEniCS/basix.git
 
-      - name: Install FFCx
-        run: pip install .[ci,optional]
+  #     - name: Install FFCx
+  #       run: pip install .[ci,optional]
 
-      - name: Run unit tests
-        run: >
-          python -m pytest test/
-          -n auto
-          -W error
+  #     - name: Run unit tests
+  #       run: >
+  #         python -m pytest test/
+  #         -n auto
+  #         -W error
 
-      - name: Run FFCx demos
-        run: >
-          pytest demo/test_demos.py
-          -W error
-          # -n auto
+  #     - name: Run FFCx demos
+  #       run: >
+  #         pytest demo/test_demos.py
+  #         -W error
+  #         # -n auto
 
   

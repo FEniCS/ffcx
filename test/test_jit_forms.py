@@ -1290,7 +1290,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     assert np.allclose(A, A_ref)
 
 
-@pytest.mark.parametrize("dtype", ["float64"])
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
 def test_ds_prism(compile_args, dtype):
     element = basix.ufl.element("Lagrange", "prism", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "prism", 1, shape=(3,)))
