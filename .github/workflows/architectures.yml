@@ -15,24 +15,25 @@ on:
     - cron: "0 8 * * 1"
 
 jobs:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    # 1️⃣ Enable QEMU emulation
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-      with:
-        platforms: s390x
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      # 1️⃣ Enable QEMU emulation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: s390x
 
-    # 2️⃣ Enable Docker Buildx
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      # 2️⃣ Enable Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    # 3️⃣ Test running an s390x container
-    - name: Run s390x Ubuntu
-      run: |
-        docker run --rm --platform linux/s390x s390x/ubuntu:latest uname -m
+      # 3️⃣ Test running an s390x container
+      - name: Run s390x Ubuntu
+        run: |
+          docker run --rm --platform linux/s390x s390x/ubuntu:latest uname -m
   # test:
   #   runs-on: ubuntu-latest
   #   container: ${{ matrix.arch }}/ubuntu
