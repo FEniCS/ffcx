@@ -71,4 +71,4 @@ def generate_code(
         forms=code_forms,
         expressions=code_expressions,
         file_post=[code_file_post],
-    ), mod.file_suffixes
+    ), mod.file.suffixes
