@@ -50,10 +50,10 @@ def generate_code(
         lang = f"ffcx.codegeneration.{lang}"
     mod = import_module(str(lang))
 
-    integral_generator = mod.generator_integral
-    form_generator = mod.generator_form
-    expression_generator = mod.generator_expression
-    file_generator = mod.generator_file
+    integral_generator = mod.integral.generator
+    form_generator = mod.form.generator
+    expression_generator = mod.expression.generator
+    file_generator = mod.file.generator
 
     code_integrals = [
         integral_generator(integral_ir, domain, options)

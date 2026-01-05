@@ -31,7 +31,7 @@ class IntegralData(NamedTuple):
 
 
 def integral_data(ir: FormIR) -> IntegralData:
-    """Extracts sorted intergral data from form."""
+    """Extracts sorted integral data from form."""
     names, ids, domains = [], [], []
     offsets = [0]
     # Note: the order of this list is defined by the enum ufcx_integral_type in ufcx.h

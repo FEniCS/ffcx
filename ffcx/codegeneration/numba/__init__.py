@@ -1,17 +1,13 @@
 """Generation of numba code."""
 
-from .expression import generator as generator_expression
-from .file import generator as generator_file
-from .file import suffixes as file_suffixes
-from .form import generator as generator_form
+from ffcx.codegeneration.C import expression, file, form, integral
+
 from .formatter import Formatter
-from .integral import generator as generator_integral
 
 __all__ = [
     "Formatter",
-    "file_suffixes",
-    "generator_expression",
-    "generator_file",
-    "generator_form",
-    "generator_integral",
+    "expression",
+    "file",
+    "form",
+    "integral",
 ]
