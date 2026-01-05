@@ -1,6 +1,6 @@
 """Generation of numba code."""
 
-from ffcx.codegeneration.C import expression, file, form, integral
+from ffcx.codegeneration.numba import expression, file, form, integral
 
 from .formatter import Formatter
 
