@@ -32,15 +32,14 @@ def format_code(code_blocks: CodeBlocks) -> list[str]:
     code = [""] * len(code_blocks[0][0])
 
     for block in code_blocks:
-        for i, c in enumerate(code):
-            c += "".join([b[i] for b in block])
+        for i in range(len(code)):
+            code[i] += "".join([c[i] for c in block])
 
     return code
 
 
 def write_code(code: list[str], prefix: str, suffixes: tuple[str, ...], output_dir: str) -> None:
     """Write code to files."""
-outfile = Path(output_dir) / prefix
-for source, suffix in zip(code, suffixes, strict=True):
-       with open(outfile.with_suffix(suffix), "w") as file:
+    for source, suffix in zip(code, suffixes, strict=True):
+        with open(Path(output_dir) / (prefix + suffix), "w") as file:
             file.write(source)
