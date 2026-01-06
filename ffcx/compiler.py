@@ -100,7 +100,7 @@ def compile_ufl_objects(
           options: Options
           visualise: Toggle visualisation
 
-     Returns: tuple of declaration and implementation.
+     Returns: tuple containing list of code file strings and tuple of associated file suffixes.
 
     """
     _object_names = object_names if object_names is not None else {}
