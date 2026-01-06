@@ -32,8 +32,8 @@ def format_code(code_blocks: CodeBlocks) -> list[str]:
     code = [""] * len(code_blocks[0][0])
 
     for block in code_blocks:
-        for i in range(len(code)):
-            code[i] += "".join([c[i] for c in block])
+        for i, c in enumerate(code):
+            c += "".join([b[i] for b in block])
 
     return code
 
