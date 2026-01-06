@@ -40,6 +40,7 @@ def format_code(code_blocks: CodeBlocks) -> list[str]:
 
 def write_code(code: list[str], prefix: str, suffixes: tuple[str, ...], output_dir: str) -> None:
     """Write code to files."""
-    for source, suffix in zip(code, suffixes):
-        with open(Path(output_dir) / (prefix + suffix), "w") as file:
+outfile = Path(output_dir) / prefix
+for source, suffix in zip(code, suffixes, strict=True):
+       with open(outfile.with_suffix(suffix), "w") as file:
             file.write(source)
