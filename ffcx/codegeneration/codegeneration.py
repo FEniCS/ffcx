@@ -19,6 +19,7 @@ from importlib import import_module
 import numpy.typing as npt
 
 from ffcx.ir.representation import DataIR
+from ffcx.options import get_language
 
 logger = logging.getLogger("ffcx")
 
@@ -45,10 +46,7 @@ def generate_code(
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
-    lang = options.get("language", "C")
-    if lang in ("C", "numba"):
-        lang = f"ffcx.codegeneration.{lang}"
-    mod = import_module(str(lang))
+    mod = import_module(get_language(options))
 
     integral_generator = mod.integral.generator
     form_generator = mod.form.generator
