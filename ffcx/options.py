@@ -131,4 +131,4 @@ def get_language(options: dict[str, int | float | npt.DTypeLike]) -> str:
     Applies for internal languages the alias conversion.
     """
     lang = str(options.get("language", FFCX_DEFAULT_OPTIONS["language"][1]))
-    return str({"C": "ffcx.codegeneration.C", "numba": "ffcx.codegeneration.numba"}.get(lang, lang))
+    return {"C": "ffcx.codegeneration.C", "numba": "ffcx.codegeneration.numba"}.get(lang, lang)
