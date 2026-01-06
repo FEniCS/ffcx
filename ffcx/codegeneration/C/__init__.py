@@ -1,7 +1,13 @@
 """Generation of C code."""
 
-from ffcx.codegeneration.C import expressions, file, form, integrals
+from ffcx.codegeneration.C import expression, file, form, integral
 
 from .formatter import Formatter
 
-__all__ = ["Formatter", "expressions", "file", "form", "integrals", "suffixes"]
+__all__ = [
+    "Formatter",
+    "expression",
+    "file",
+    "form",
+    "integral",
+]

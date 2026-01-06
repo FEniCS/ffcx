@@ -46,9 +46,9 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
     lang = options.get("language", "C")
     mod = import_module(f"ffcx.codegeneration.{lang}")
 
-    integral_generator = mod.integrals.generator
+    integral_generator = mod.integral.generator
     form_generator = mod.form.generator
-    expression_generator = mod.expressions.generator
+    expression_generator = mod.expression.generator
     file_generator = mod.file.generator
 
     code_integrals = [

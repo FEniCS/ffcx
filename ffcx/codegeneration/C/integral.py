@@ -13,7 +13,7 @@ import numpy as np
 from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C import integrals_template as ufcx_integrals
+from ffcx.codegeneration.C import integral_template as ufcx_integrals
 from ffcx.codegeneration.C.formatter import Formatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
@@ -105,5 +105,6 @@ def generator(
     )
 
     # TODO: Check that no keys are redundant or have been missed (ref. numba/integrals.py)
+    # assert set(d.keys()) == template_keys(ufcx_integrals.factory)
 
     return declaration, implementation

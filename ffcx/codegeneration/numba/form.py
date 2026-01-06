@@ -9,17 +9,17 @@
 """Template for form output."""
 
 import logging
-import string
 
-import numpy as np
 from numpy import typing as npt
 
+from ffcx.codegeneration.common import integral_data, template_keys
 from ffcx.codegeneration.numba import form_template
+from ffcx.ir.representation import FormIR
 
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
+def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
     """Generate UFCx code for a form."""
     logger.info("Generating code for form:")
     logger.info(f"--- rank: {ir.rank}")
@@ -95,44 +95,20 @@ def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str,
         d["finite_element_hashes"] = "None"
         d["finite_element_hashes_init"] = ""
 
-    integrals = []
-    integral_ids = []
-    integral_offsets = [0]
-    integral_domains = []
-    # Note: the order of this list is defined by the enum
-    # ufcx_integral_type in ufcx.h
-    for itg_type in ("cell", "exterior_facet", "interior_facet", "vertex", "ridge"):
-        unsorted_integrals = []
-        unsorted_ids = []
-        unsorted_domains = []
-        for name, domains, id in zip(
-            ir.integral_names[itg_type],
-            ir.integral_domains[itg_type],
-            ir.subdomain_ids[itg_type],
-        ):
-            unsorted_integrals += [name]
-            unsorted_ids += [id]
-            unsorted_domains += [domains]
+    integrals = integral_data(ir)
 
-        id_sort = np.argsort(unsorted_ids)
-        integrals += [unsorted_integrals[i] for i in id_sort]
-        integral_ids += [unsorted_ids[i] for i in id_sort]
-        integral_domains += [unsorted_domains[i] for i in id_sort]
-
-        integral_offsets.append(sum(len(d) for d in integral_domains))
-
-    if len(integrals) > 0:
+    if len(integrals.names) > 0:
         values = ", ".join(
             [
-                f"{i}_{domain.name}"
-                for i, domains in zip(integrals, integral_domains)
+                f"{name}_{domain.name}"
+                for name, domains in zip(integrals.names, integrals.domains)
                 for domain in domains
             ]
         )
         d["form_integrals_init"] = f"form_integrals_{ir.name} = [{values}]"
         d["form_integrals"] = f"form_integrals_{ir.name}"
         values = ", ".join(
-            f"{i}" for i, domains in zip(integral_ids, integral_domains) for _ in domains
+            f"{i}" for i, domains in zip(integrals.ids, integrals.domains) for _ in domains
         )
         d["form_integral_ids_init"] = f"form_integral_ids_{ir.name} = [{values}]"
         d["form_integral_ids"] = f"form_integral_ids_{ir.name}"
@@ -142,14 +118,11 @@ def generator(ir, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str,
         d["form_integral_ids_init"] = ""
         d["form_integral_ids"] = "None"
 
-    values = ", ".join(str(i) for i in integral_offsets)
+    values = ", ".join(str(i) for i in integrals.offsets)
     d["form_integral_offsets_init"] = f"form_integral_offsets_{ir.name} = [{values}]"
 
-    # Check that no keys are redundant or have been missed
-    fields = [fname for _, fname, _, _ in string.Formatter().parse(form_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
-
     # Format implementation code
+    assert set(d.keys()) == template_keys(form_template.factory)
     implementation = form_template.factory.format_map(d)
 
     return "", implementation

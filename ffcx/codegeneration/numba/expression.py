@@ -6,14 +6,14 @@
 """Generate UFCx code for an expression."""
 
 import logging
-import string
 
 import numpy as np
 import numpy.typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
+from ffcx.codegeneration.common import template_keys, tensor_sizes
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
-from ffcx.codegeneration.numba import expressions_template
+from ffcx.codegeneration.numba import expression_template
 from ffcx.codegeneration.numba.formatter import Formatter
 from ffcx.ir.representation import ExpressionIR
 
@@ -30,7 +30,7 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     logger.info(f"--- name: {factory_name}")
 
     # Format declaration
-    declaration = expressions_template.declaration.format(
+    declaration = expression_template.declaration.format(
         factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile
     )
 
@@ -43,26 +43,14 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     parts = eg.generate()
 
     # tabulate_expression
-    num_points = points.shape[0]
-    num_components = np.prod(ir.expression.shape, dtype=np.int32)
-    num_argument_dofs = np.prod(ir.expression.tensor_shape, dtype=np.int32)
-    size_A = num_points * num_components * num_argument_dofs  # ref. ufcx.h
-    size_w = sum(coeff.ufl_element().dim for coeff in ir.expression.coefficient_offsets.keys())
-    size_c = sum(
-        np.prod(constant.ufl_shape, dtype=int)
-        for constant in ir.expression.original_constant_offsets.keys()
-    )
-    size_coords = ir.expression.number_coordinate_dofs * 3
-    size_local_index = 2  # TODO: this is just an upper bound, harmful?
-    size_permutation = 2 if ir.expression.needs_facet_permutations else 0
-
+    sizes = tensor_sizes(ir)
     header = f"""
-    A = numba.carray(_A, ({size_A}))
-    w = numba.carray(_w, ({size_w}))
-    c = numba.carray(_c, ({size_c}))
-    coordinate_dofs = numba.carray(_coordinate_dofs, ({size_coords}))
-    entity_local_index = numba.carray(_entity_local_index, ({size_local_index}))
-    quadrature_permutation = numba.carray(_quadrature_permutation, ({size_permutation}))
+    A = numba.carray(_A, ({sizes.A}))
+    w = numba.carray(_w, ({sizes.w}))
+    c = numba.carray(_c, ({sizes.c}))
+    coordinate_dofs = numba.carray(_coordinate_dofs, ({sizes.coords}))
+    entity_local_index = numba.carray(_entity_local_index, ({sizes.local_index}))
+    quadrature_permutation = numba.carray(_quadrature_permutation, ({sizes.permutation}))
     """
     format = Formatter(options["scalar_type"])  # type: ignore
     body = format(parts)
@@ -80,10 +68,10 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     # TODO: value_shape_init
     shape = ", ".join(str(i) for i in ir.expression.shape)
     d["value_shape"] = f"[{shape}]"
-    d["num_components"] = int(num_components)
+    d["num_components"] = int(np.prod(ir.expression.shape, dtype=np.int32))
     d["num_coefficients"] = len(ir.expression.coefficient_numbering)
     d["num_constants"] = len(ir.constant_names)
-    d["num_points"] = num_points
+    d["num_points"] = points.shape[0]
     d["entity_dimension"] = points.shape[1]
 
     d["rank"] = len(ir.expression.tensor_shape)
@@ -98,13 +86,8 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
 
     d["coordinate_element_hash"] = ir.expression.coordinate_element_hash
 
-    # Check that no keys are redundant or have been missed
-    fields = [
-        fname for _, fname, _, _ in string.Formatter().parse(expressions_template.factory) if fname
-    ]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
-
     # Format implementation code
-    implementation = expressions_template.factory.format_map(d)
+    assert set(d.keys()) == template_keys(expression_template.factory)
+    implementation = expression_template.factory.format_map(d)
 
     return declaration, implementation
