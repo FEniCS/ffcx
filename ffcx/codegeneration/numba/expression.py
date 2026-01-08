@@ -20,7 +20,7 @@ from ffcx.ir.representation import ExpressionIR
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, str]:
+def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str]:
     """Generate UFCx code for an expression."""
     logger.info("Generating code for expression:")
     assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
@@ -28,11 +28,6 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
     logger.info(f"--- points: {points}")
     factory_name = ir.expression.name
     logger.info(f"--- name: {factory_name}")
-
-    # Format declaration
-    declaration = expression_template.declaration.format(
-        factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile
-    )
 
     backend = FFCXBackend(ir, options)
     eg = ExpressionGenerator(ir, backend)
@@ -86,8 +81,5 @@ def generator(ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike])
 
     d["coordinate_element_hash"] = ir.expression.coordinate_element_hash
 
-    # Format implementation code
     assert set(d.keys()) == template_keys(expression_template.factory)
-    implementation = expression_template.factory.format_map(d)
-
-    return declaration, implementation
+    return (expression_template.factory.format_map(d),)

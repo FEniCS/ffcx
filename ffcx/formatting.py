@@ -20,7 +20,7 @@ from ffcx.codegeneration.codegeneration import CodeBlocks
 logger = logging.getLogger("ffcx")
 
 
-def format_code(code: CodeBlocks) -> tuple[str, str]:
+def format_code(code_blocks: CodeBlocks) -> list[str]:
     """Format given code in UFCx format.
 
     Returns two strings with header and source file contents.
@@ -29,40 +29,17 @@ def format_code(code: CodeBlocks) -> tuple[str, str]:
     logger.info("Compiler stage 5: Formatting code")
     logger.info(79 * "*")
 
-    code_c = ""
-    code_h = ""
-    for parts_code in code:
-        code_h += "".join([c[0] for c in parts_code])
-        code_c += "".join([c[1] for c in parts_code])
+    code = [""] * len(code_blocks[0][0])
 
-    return code_h, code_c
+    for block in code_blocks:
+        for i in range(len(code)):
+            code[i] += "".join([c[i] for c in block])
+
+    return code
 
 
-def write_code(
-    code_h: str,
-    code_c: str,
-    filename_stem: str,
-    suffixes: tuple[str | None, str | None],
-    output_dir: str,
-) -> None:
-    """Write code to files.
-
-    Args:
-        code_h: Header file content.
-        code_c: Source file content.
-        filename_stem: The stem of the filename to use for both header
-            and source files.
-        suffixes: Declaration/implementation file suffixes.
-        output_dir: Directory where the files should be written.
-    """
-
-    def _write_file(output: str, prefix: str, postfix: str, output_dir: str) -> None:
-        """Write generated code to file."""
-        filename = Path(output_dir, prefix).with_suffix(postfix)
-        assert filename.parent.exists(), f"Output directory '{filename.parent}' does not exist."
-        filename.write_text(output)
-
-    if suffixes[0] is not None:
-        _write_file(code_h, filename_stem, suffixes[0], output_dir)
-    if suffixes[1] is not None:
-        _write_file(code_c, filename_stem, suffixes[1], output_dir)
+def write_code(code: list[str], prefix: str, suffixes: tuple[str, ...], output_dir: str) -> None:
+    """Write code to files."""
+    for source, suffix in zip(code, suffixes, strict=True):
+        with open(Path(output_dir) / (prefix + suffix), "w") as file:
+            file.write(source)

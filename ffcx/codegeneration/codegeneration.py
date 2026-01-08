@@ -19,6 +19,7 @@ from importlib import import_module
 import numpy.typing as npt
 
 from ffcx.ir.representation import DataIR
+from ffcx.options import get_language
 
 logger = logging.getLogger("ffcx")
 
@@ -37,14 +38,15 @@ class CodeBlocks(typing.NamedTuple):
     file_post: list[tuple[str, str]]
 
 
-def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -> CodeBlocks:
+def generate_code(
+    ir: DataIR, options: dict[str, int | float | npt.DTypeLike]
+) -> tuple[CodeBlocks, tuple[str, ...]]:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
-    lang = options.get("language", "C")
-    mod = import_module(f"ffcx.codegeneration.{lang}")
+    mod = import_module(get_language(options))
 
     integral_generator = mod.integral.generator
     form_generator = mod.form.generator
@@ -67,4 +69,4 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
         forms=code_forms,
         expressions=code_expressions,
         file_post=[code_file_post],
-    )
+    ), mod.file.suffixes
