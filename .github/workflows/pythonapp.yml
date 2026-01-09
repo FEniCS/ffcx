@@ -79,13 +79,13 @@ jobs:
         if: runner.os != 'Linux'
         run: pip install .[ci]
 
-      - name: Static check with mypy
-        run: mypy -p ffcx
-
       - name: ruff checks
         run: |
           ruff check .
           ruff format --check .
+
+      - name: Static check with mypy
+        run: mypy -p ffcx
 
       - name: Run unit tests
         run: >

@@ -20,7 +20,7 @@ import numpy.typing as npt
 logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
-    "language": (str, "C", "Language to output kernel in", ("C", "numba")),
+    "language": (str, "C", "Language to output kernel in", None),
     "epsilon": (float, 1e-14, "Machine precision, used for dropping zero terms in tables.", None),
     "scalar_type": (
         str,
@@ -123,3 +123,12 @@ def get_options(
     logger.info(pprint.pformat(options))
 
     return options
+
+
+def get_language(options: dict[str, int | float | npt.DTypeLike]) -> str:
+    """Retrieve the language option from the options database.
+
+    Applies for internal languages the alias conversion.
+    """
+    lang = str(options.get("language", FFCX_DEFAULT_OPTIONS["language"][1]))
+    return {"C": "ffcx.codegeneration.C", "numba": "ffcx.codegeneration.numba"}.get(lang, lang)
