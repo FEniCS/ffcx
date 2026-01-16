@@ -31,7 +31,8 @@ RUN python3 -m pip install \
     git+https://github.com/FEniCS/ufl.git \
     git+https://github.com/FEniCS/basix.git
 
-RUN python3 -m pip install .[ci] # optional
+RUN python3 -m pip install . 
+RUN python3 -m pip install pytest sympy # avoids [test], which contains numba
 
 RUN python3 -m pytest test/ -n auto -W error 
 RUN python3 -m pytest demo/ -W error 
