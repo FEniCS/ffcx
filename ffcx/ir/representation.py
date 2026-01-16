@@ -364,7 +364,7 @@ def _compute_integral_ir(
                 sorted_integrals[cell_type][rule] = integral_new
 
         # TODO: See if coefficient_numbering can be removed
-        # Build coefficient numbering for UFC interface here, to avoid
+        # Build coefficient numbering for UFCx interface here, to avoid
         # renumbering in UFL and application of replace mapping
         coefficient_numbering = {}
         for i, f in enumerate(form_data.reduced_coefficients):

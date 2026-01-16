@@ -38,7 +38,7 @@ Compiler stages
    possible precomputation of integrals. Most of the complexity of
    compilation is handled in this stage.
 
-   The IR is stored as a dictionary, mapping names of UFC functions to
+   The IR is stored as a dictionary, mapping names of UFCx functions to
    data needed for generation of the corresponding code.
 
 3. Code generation
@@ -47,9 +47,9 @@ Compiler stages
    - Output: C code
 
    This stage examines the IR and generates the actual C code for the
-   body of each UFC function.
+   body of each UFCx function.
 
-   The code is stored as a dictionary, mapping names of UFC functions to
+   The code is stored as a dictionary, mapping names of UFCx functions to
    strings containing the C code of the body of each function.
 
 4. Code formatting
@@ -58,8 +58,8 @@ Compiler stages
    - Output: C code files
 
    This stage examines the generated C++ code and formats it according
-   to the UFC format, generating as output one or more .h/.c files
-   conforming to the UFC format.
+   to the UFCx format, generating as output one or more .h/.c files
+   conforming to the UFCx format.
 
 """
 
@@ -87,24 +87,24 @@ def compile_ufl_objects(
     ufl_objects: list[typing.Any],
     options: dict[str, int | float | npt.DTypeLike],
     object_names: dict[int, str] | None = None,
-    prefix: str | None = None,
+    namespace: str | None = None,
     visualise: bool = False,
-) -> tuple[str, str]:
-    """Generate UFC code for a given UFL objects.
+) -> tuple[list[str], tuple[str, ...]]:
+    """Generate UFCx code for a given UFL objects.
 
     Args:
           ufl_objects: Objects to be compiled. Accepts elements, forms,
             integrals or coordinate mappings.
           object_names: Map from object Python id to object name
-          prefix: Prefix
+          namespace: Convenience namespace/prefix for generated code.
           options: Options
           visualise: Toggle visualisation
 
-     Returns: tuple of declaration and implementation.
+     Returns: tuple containing list of code file strings and tuple of associated file suffixes.
 
     """
     _object_names = object_names if object_names is not None else {}
-    _prefix = prefix if prefix is not None else ""
+    _namespace = namespace if namespace is not None else ""
 
     # Stage 1: analysis
     cpu_time = time()
@@ -113,17 +113,17 @@ def compile_ufl_objects(
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, _object_names, _prefix, options, visualise)
+    ir = compute_ir(analysis, _object_names, _namespace, options, visualise)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
     cpu_time = time()
-    code = generate_code(ir, options)
+    code, suffixes = generate_code(ir, options)
     _print_timing(3, time() - cpu_time)
 
     # Stage 4: format code
     cpu_time = time()
-    code_h, code_c = format_code(code)
+    source = format_code(code)
     _print_timing(4, time() - cpu_time)
 
-    return code_h, code_c
+    return source, suffixes

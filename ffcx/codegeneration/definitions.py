@@ -3,7 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFCx/UFC specific variable definitions."""
+"""FFCx/UFCx specific variable definitions."""
 
 import logging
 
@@ -118,9 +118,10 @@ class FFCXBackendDefinitions:
         access: L.Symbol,
     ) -> L.Section | list:
         """Return definition code for coefficients."""
-        # For applying tensor product to coefficients, we need to know if the coefficient
-        # has a tensor factorisation and if the quadrature rule has a tensor factorisation.
-        # If both are true, we can apply the tensor product to the coefficient.
+        # For applying tensor product to coefficients, we need to know
+        # if the coefficient has a tensor factorisation and if the
+        # quadrature rule has a tensor factorisation. If both are true,
+        # we can apply the tensor product to the coefficient.
 
         iq_symbol = self.symbols.quadrature_loop_index
         ic_symbol = self.symbols.coefficient_dof_sum_index
@@ -141,7 +142,8 @@ class FFCXBackendDefinitions:
             logger.debug("Not expecting zero coefficients to get this far.")
             return []
 
-        # For a constant coefficient we reference the dofs directly, so no definition needed
+        # For a constant coefficient we reference the dofs directly, so
+        # no definition needed
         if ttype == "ones" and end - begin == 1:
             return []
 
