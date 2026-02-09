@@ -9,7 +9,8 @@
 Every language backend needs to implement/overload this functionality.
 """
 
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 
 import basix
 from numpy import typing as npt
@@ -57,7 +58,7 @@ integral_generator = Callable[
 """Expression to source string.
 
 Note:
-    Needs to be callable as integral.generator.
+    Needs to be callable as expression.generator.
 """
 expression_generator = Callable[
     [ExpressionIR, dict[str, int | float | npt.DTypeLike]], tuple[str, ...]
