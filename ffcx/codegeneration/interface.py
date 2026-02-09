@@ -9,7 +9,7 @@
 Every language backend needs to implement/overload this functionality.
 """
 
-from typing import Protocol
+from typing import Callable, Protocol
 
 import basix
 from numpy import typing as npt
@@ -30,41 +30,35 @@ class Formatter(Protocol):
         ...
 
 
-class file(Protocol):
-    """File formatter."""
+"""File to source string.
 
-    @staticmethod
-    def generator(options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, ...]:
-        """File to source string."""
-        ...
+Note:
+    Needs to be callable as file.generator.
+"""
+file_generator = Callable[[dict[str, int | float | npt.DTypeLike]], tuple[tuple[str], ...]]
 
+"""Form to source string.
 
-class form(Protocol):
-    """Form formatter."""
+Note:
+    Needs to be callable as form.generator.
+"""
+form_generator = Callable[[FormIR, dict[str, int | float | npt.DTypeLike]], tuple[str]]
 
-    @staticmethod
-    def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str]:
-        """Form to source string."""
-        ...
+"""Integral to source string.
 
-
-class integral(Protocol):
-    """Integral formatter."""
-
-    @staticmethod
-    def generator(
-        ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
-    ) -> tuple[str]:
-        """Integral to source string."""
-        ...
+Note:
+    Needs to be callable as integral.generator.
+"""
+integral_generator = Callable[
+    [IntegralIR, basix.CellType, dict[str, int | float | npt.DTypeLike]], tuple[str, ...]
+]
 
 
-class expression(Protocol):
-    """Integral formatter."""
+"""Expression to source string.
 
-    @staticmethod
-    def generator(
-        ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike]
-    ) -> tuple[str, str]:
-        """Expression to source string."""
-        ...
+Note:
+    Needs to be callable as integral.generator.
+"""
+expression_generator = Callable[
+    [ExpressionIR, dict[str, int | float | npt.DTypeLike]], tuple[str, ...]
+]

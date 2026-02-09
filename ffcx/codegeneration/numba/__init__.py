@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     import numpy as np
 
     _formatter: interface.Formatter = Formatter(np.float64)
-    # TODO: can not type compare module and class
-    # _expression: interface.expression = expression
-    # _file: interface.file = file
-    # _integral: interface.integral = integral
+    _expression: interface.expression_generator = expression.generator
+    _file: interface.file_generator = file.generator
+    _form: interface.form_generator = form.generator
+    _integral: interface.integral_generator = integral.generator
