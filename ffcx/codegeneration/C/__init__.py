@@ -16,7 +16,9 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
+    # ensure protocol compliance
     import numpy as np
+
     _formatter: interface.Formatter = Formatter(np.float64)
     _expression: interface.expression = expression
     _file: interface.file = file
