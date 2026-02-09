@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    Formatter: interface.Formatter
-    expression: interface.expression
-    file: interface.file
-    integral: interface.integral
+    _formatter: interface.Formatter = Formatter()
+    _expression: interface.expression = expression()
+    _file: interface.file = file()
+    _integral: interface.integral = integral()
