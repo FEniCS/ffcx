@@ -33,6 +33,7 @@ class Formatter(Protocol):
 class file(Protocol):
     """File formatter."""
 
+    @staticmethod
     def generator(options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, ...]:
         """File to source string."""
         ...
@@ -41,6 +42,7 @@ class file(Protocol):
 class form(Protocol):
     """Form formatter."""
 
+    @staticmethod
     def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str]:
         """Form to source string."""
         ...
@@ -49,6 +51,7 @@ class form(Protocol):
 class integral(Protocol):
     """Integral formatter."""
 
+    @staticmethod
     def generator(
         ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
     ) -> tuple[str]:
