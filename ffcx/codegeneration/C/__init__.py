@@ -1,5 +1,7 @@
 """Generation of C code."""
 
+from typing import TYPE_CHECKING
+
 from ffcx.codegeneration import interface
 from ffcx.codegeneration.C import expression, file, form, integral
 
@@ -13,7 +15,8 @@ __all__ = [
     "integral",
 ]
 
-Formatter: interface.Formatter
-expression: interface.expression
-file: interface.file
-integral: interface.integral
+if TYPE_CHECKING:
+    Formatter: interface.Formatter
+    expression: interface.expression
+    file: interface.file
+    integral: interface.integral
