@@ -27,7 +27,7 @@ class Formatter(Protocol):
         ...
 
 
-class file:
+class file(Protocol):
     """File formatter."""
 
     def generator(options: dict[str, int | float | npt.DTypeLike]) -> tuple[str, ...]:
@@ -35,7 +35,7 @@ class file:
         ...
 
 
-class form:
+class form(Protocol):
     """Form formatter."""
 
     def generator(ir: FormIR, options: dict[str, int | float | npt.DTypeLike]) -> tuple[str]:
@@ -43,7 +43,7 @@ class form:
         ...
 
 
-class integral:
+class integral(Protocol):
     """Integral formatter."""
 
     def generator(
