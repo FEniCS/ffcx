@@ -4,7 +4,10 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
-"""Backend interface declarations."""
+"""Backend interface declarations.
+
+Every language backend needs to implement/overload this functionality.
+"""
 
 from typing import Protocol
 
