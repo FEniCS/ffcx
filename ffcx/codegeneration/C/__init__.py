@@ -16,7 +16,8 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    _formatter: interface.Formatter = Formatter()
-    _expression: interface.expression = expression()
-    _file: interface.file = file()
-    _integral: interface.integral = integral()
+    import numpy as np
+    _formatter: interface.Formatter = Formatter(np.float64)
+    _expression: interface.expression = expression
+    _file: interface.file = file
+    _integral: interface.integral = integral
