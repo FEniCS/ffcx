@@ -15,7 +15,7 @@ import basix
 from numpy import typing as npt
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.ir.representation import FormIR, IntegralIR
+from ffcx.ir.representation import ExpressionIR, FormIR, IntegralIR
 
 
 class Formatter(Protocol):
@@ -56,4 +56,15 @@ class integral(Protocol):
         ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
     ) -> tuple[str]:
         """Integral to source string."""
+        ...
+
+
+class expression(Protocol):
+    """Integral formatter."""
+
+    @staticmethod
+    def generator(
+        ir: ExpressionIR, options: dict[str, int | float | npt.DTypeLike]
+    ) -> tuple[str, str]:
+        """Expression to source string."""
         ...
