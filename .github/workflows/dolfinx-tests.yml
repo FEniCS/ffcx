@@ -3,6 +3,7 @@
 name: DOLFINx integration
 
 on:
+  push:
   pull_request:
     branches: [main]
   merge_group:
