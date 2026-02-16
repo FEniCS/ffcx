@@ -31,12 +31,17 @@ class Formatter(Protocol):
         ...
 
 
-"""File to source string.
+def file_generator(options: dict[str, int | float | npt.DTypeLike]) -> tuple[tuple[str], ...]:
+    """File to source string.
 
-Note:
-    Needs to be callable as file.generator.
-"""
-file_generator = Callable[[dict[str, int | float | npt.DTypeLike]], tuple[tuple[str], ...]]
+    Arguments:
+        options: Options to pass to the generator backend through `ffcx_options`.
+
+    Note:
+        Needs to be callable as file.generator.
+    """
+    ...
+
 
 """Form to source string.
 
