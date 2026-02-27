@@ -177,6 +177,9 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             assert isinstance(lhs, L.ArrayAccess)  # Expecting ArrayAccess
             expressions[lhs].append(rhs)
 
+    # Build replacement mapping: old Product id → new Product
+    # and collect pre-loop declarations/loops
+    replacements: dict[int, L.Product] = {}  # id(old_product) → new_product
     pre_loop: list[L.LNode] = []
     for lhs, rhs in expressions.items():
         for r in rhs:
@@ -190,20 +193,50 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 name = f"temp_{counter}"
                 counter += 1
                 temp = L.Symbol(name, L.DataType.SCALAR)
-                for h in hoist_candidates:
-                    r.args.remove(h)
-                # update expression with new temp
-                r.args.append(L.ArrayAccess(temp, [outer_loop.index]))
+                # Build new Product: keep non-hoisted args + new temp access
+                remaining_args = [a for a in r.args if a not in hoist_candidates]
+                remaining_args.append(L.ArrayAccess(temp, [outer_loop.index]))
+                replacements[id(r)] = L.Product(remaining_args)
                 # create code for hoisted term
                 size = outer_loop.end.value - outer_loop.begin.value
                 pre_loop.append(L.ArrayDecl(temp, size, [0]))
-                body = L.Assign(
+                hoist_body = L.Assign(
                     L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates)
                 )
                 pre_loop.append(
-                    L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body])
+                    L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [hoist_body])
                 )
 
-    section.statements = pre_loop + section.statements
+    if not replacements:
+        return section
 
-    return section
+    # Rebuild inner loop body with replaced Products
+    new_inner_stmts = []
+    for body in inner_loop.body.statements:
+        statements = get_statements(body)
+        new_stmts = []
+        for statement in statements:
+            new_rhs = replacements.get(id(statement.rhs), statement.rhs)
+            new_stmt = L.AssignAdd(statement.lhs, new_rhs)
+            new_stmts.append(new_stmt)
+        if len(new_stmts) == 1:
+            new_inner_stmts.append(new_stmts[0])
+        else:
+            new_inner_stmts.append(L.StatementList(new_stmts))
+
+    # Rebuild loops from inside out
+    new_inner_loop = L.ForRange(inner_loop.index, inner_loop.begin, inner_loop.end, new_inner_stmts)
+    new_outer_loop = L.ForRange(
+        outer_loop.index, outer_loop.begin, outer_loop.end, [new_inner_loop]
+    )
+
+    # Build new section with pre-loop code prepended
+    new_statements = pre_loop + [new_outer_loop] + list(section.statements[1:])
+    return L.Section(
+        section.name,
+        new_statements,
+        section.declarations,
+        section.input,
+        section.output,
+        section.annotations,
+    )

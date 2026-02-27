@@ -281,7 +281,7 @@ class IntegralGenerator:
         inputs = []
         for definition in definitions:
             assert isinstance(definition, L.Section)
-            inputs += definition.output
+            inputs += list(definition.output)
 
         # Create intermediates section
         output = []

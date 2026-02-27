@@ -354,7 +354,7 @@ class ExpressionGenerator:
                     vdef = vdef.declarations + vdef.statements
 
                 # Store definitions of terminals in list
-                assert isinstance(vdef, list)
+                assert isinstance(vdef, list | tuple)
                 definitions.extend(vdef)
             else:
                 # Get previously visited operands

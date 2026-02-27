@@ -25,7 +25,9 @@ Not supported:
 
 import numbers
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import ClassVar
 
 import numpy as np
 import ufl
@@ -136,6 +138,24 @@ class LNode:
     def __ne__(self, other):
         """Check for inequality."""
         return NotImplemented
+
+    def children(self) -> list["LNode"]:
+        """Return a list of all child LNode instances."""
+        result: list[LNode] = []
+        for _name, child in self.named_children():
+            if isinstance(child, list | tuple):
+                result.extend(c for c in child if isinstance(c, LNode))
+            elif isinstance(child, LNode):
+                result.append(child)
+        return result
+
+    def named_children(self) -> list[tuple[str, "LNode | list[LNode] | tuple[LNode, ...]"]]:
+        """Return a list of (field_name, child) pairs for LNode children."""
+        return []
+
+    def replace(self, **kwargs) -> "LNode":
+        """Return a copy of this node with specified fields replaced."""
+        raise NotImplementedError(f"replace() not implemented for {type(self).__name__}")
 
 
 class LExpr(LNode):
@@ -281,21 +301,21 @@ class LExprTerminal(LExpr):
     sideeffect = False
 
 
+@dataclass(frozen=True, eq=False)
 class LiteralFloat(LExprTerminal):
     """A floating point literal value."""
 
-    precedence: int
-
+    value: float | complex
+    dtype: DataType = field(init=False)
     precedence = PRECEDENCE.LITERAL
 
-    def __init__(self, value):
-        """Initialise."""
-        assert isinstance(value, float | complex)
-        self.value = value
-        if isinstance(value, complex):
-            self.dtype = DataType.SCALAR
+    def __post_init__(self):
+        """Initialise computed fields."""
+        assert isinstance(self.value, float | complex)
+        if isinstance(self.value, complex):
+            object.__setattr__(self, "dtype", DataType.SCALAR)
         else:
-            self.dtype = DataType.REAL
+            object.__setattr__(self, "dtype", DataType.REAL)
 
     def __eq__(self, other):
         """Check equality."""
@@ -309,17 +329,22 @@ class LiteralFloat(LExprTerminal):
         """Representation."""
         return str(self.value)
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return LiteralFloat(kwargs.get("value", self.value))
 
+
+@dataclass(frozen=True, eq=False)
 class LiteralInt(LExprTerminal):
     """An integer literal value."""
 
+    value: int | np.number
+    dtype: DataType = field(init=False, default=DataType.INT)
     precedence = PRECEDENCE.LITERAL
 
-    def __init__(self, value):
-        """Initialise."""
-        assert isinstance(value, int | np.number)
-        self.value = value
-        self.dtype = DataType.INT
+    def __post_init__(self):
+        """Initialise computed fields."""
+        assert isinstance(self.value, int | np.number)
 
     def __eq__(self, other):
         """Check equality."""
@@ -333,18 +358,23 @@ class LiteralInt(LExprTerminal):
         """Representation."""
         return str(self.value)
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return LiteralInt(kwargs.get("value", self.value))
 
+
+@dataclass(frozen=True, eq=False)
 class Symbol(LExprTerminal):
     """A named symbol."""
 
+    name: str
+    dtype: DataType
     precedence = PRECEDENCE.SYMBOL
 
-    def __init__(self, name: str, dtype):
-        """Initialise."""
-        assert isinstance(name, str)
-        assert name.replace("_", "").isalnum()
-        self.name = name
-        self.dtype = dtype
+    def __post_init__(self):
+        """Initialise computed fields."""
+        assert isinstance(self.name, str)
+        assert self.name.replace("_", "").isalnum()
 
     def __eq__(self, other):
         """Check equality."""
@@ -358,26 +388,40 @@ class Symbol(LExprTerminal):
         """Representation."""
         return self.name
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return Symbol(kwargs.get("name", self.name), kwargs.get("dtype", self.dtype))
 
+
+@dataclass(frozen=True, eq=False, init=False)
 class MultiIndex(LExpr):
     """A multi-index for accessing tensors flattened in memory."""
 
+    symbols: list
+    sizes: list
+    dtype: DataType
+    global_index: LExpr
     precedence = PRECEDENCE.SYMBOL
 
     def __init__(self, symbols: list, sizes: list):
         """Initialise."""
-        self.dtype = DataType.INT
-        self.sizes = sizes
-        self.symbols = [as_lexpr(sym) for sym in symbols]
-        for sym in self.symbols:
+        object.__setattr__(self, "dtype", DataType.INT)
+        object.__setattr__(self, "sizes", sizes)
+        symbols_list = [as_lexpr(sym) for sym in symbols]
+        for sym in symbols_list:
             assert sym.dtype == DataType.INT
+        object.__setattr__(self, "symbols", symbols_list)
 
         dim = len(sizes)
         if dim == 0:
-            self.global_index: LExpr = LiteralInt(0)
+            object.__setattr__(self, "global_index", LiteralInt(0))
         else:
             stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
-            self.global_index = Sum(n * sym for n, sym in zip(stride[1:], symbols))
+            object.__setattr__(
+                self,
+                "global_index",
+                Sum(n * sym for n, sym in zip(stride[1:], symbols)),
+            )
 
     @property
     def dim(self):
@@ -436,6 +480,14 @@ class MultiIndex(LExpr):
         """Hash."""
         return hash(self.global_index.__repr__)
 
+    def named_children(self):
+        """Return child fields."""
+        return [("symbols", self.symbols)]
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return MultiIndex(kwargs.get("symbols", self.symbols), kwargs.get("sizes", self.sizes))
+
 
 class PrefixUnaryOp(LExprOperator):
     """Base class for unary operators."""
@@ -448,16 +500,27 @@ class PrefixUnaryOp(LExprOperator):
         """Check equality."""
         return isinstance(other, type(self)) and self.arg == other.arg
 
+    def named_children(self):
+        """Return child fields."""
+        return [("arg", self.arg)]
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return type(self)(kwargs.get("arg", self.arg))
+
+
+@dataclass(frozen=True, eq=False)
 class BinOp(LExprOperator):
     """A binary operator."""
 
-    op: str
+    lhs: LExpr
+    rhs: LExpr
+    op: ClassVar[str]
 
-    def __init__(self, lhs, rhs):
-        """Initialise."""
-        self.lhs = as_lexpr(lhs)
-        self.rhs = as_lexpr(rhs)
+    def __post_init__(self):
+        """Initialise computed fields."""
+        object.__setattr__(self, "lhs", as_lexpr(self.lhs))
+        object.__setattr__(self, "rhs", as_lexpr(self.rhs))
 
     def __eq__(self, other):
         """Check equality."""
@@ -471,28 +534,42 @@ class BinOp(LExprOperator):
         """Representation."""
         return f"({self.lhs} {self.op} {self.rhs})"
 
+    def named_children(self):
+        """Return child fields."""
+        return [("lhs", self.lhs), ("rhs", self.rhs)]
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return type(self)(kwargs.get("lhs", self.lhs), kwargs.get("rhs", self.rhs))
+
+
+@dataclass(frozen=True, eq=False, repr=False)
 class ArithmeticBinOp(BinOp):
     """An artithmetic binary operator."""
 
-    def __init__(self, lhs, rhs):
-        """Initialise."""
-        self.lhs = as_lexpr(lhs)
-        self.rhs = as_lexpr(rhs)
-        self.dtype = merge_dtypes([self.lhs.dtype, self.rhs.dtype])
+    dtype: DataType = field(init=False)
+
+    def __post_init__(self):
+        """Initialise computed fields."""
+        super().__post_init__()
+        object.__setattr__(self, "dtype", merge_dtypes([self.lhs.dtype, self.rhs.dtype]))
 
 
+@dataclass(frozen=True, eq=False)
 class NaryOp(LExprOperator):
     """Base class for special n-ary operators."""
 
+    args: tuple
+    dtype: DataType = field(init=False)
     op = ""
 
-    def __init__(self, args):
-        """Initialise."""
-        self.args = [as_lexpr(arg) for arg in args]
-        self.dtype = self.args[0].dtype
+    def __post_init__(self):
+        """Initialise computed fields."""
+        object.__setattr__(self, "args", tuple(as_lexpr(arg) for arg in self.args))
+        dtype = self.args[0].dtype
         for arg in self.args:
-            self.dtype = merge_dtypes([self.dtype, arg.dtype])
+            dtype = merge_dtypes([dtype, arg.dtype])
+        object.__setattr__(self, "dtype", dtype)
 
     def __eq__(self, other):
         """Check equality."""
@@ -508,28 +585,50 @@ class NaryOp(LExprOperator):
 
     def __hash__(self):
         """Hash."""
-        return hash(tuple(self.args))
+        return hash(self.args)
+
+    def named_children(self):
+        """Return child fields."""
+        return [("args", self.args)]
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return type(self)(kwargs.get("args", self.args))
 
 
+@dataclass(frozen=True, eq=False)
 class Neg(PrefixUnaryOp):
     """Negation operator."""
 
+    arg: LExpr
+    dtype: DataType = field(init=False)
     precedence = PRECEDENCE.NEG
     op = "-"
 
-    def __init__(self, arg):
-        """Initialise."""
-        self.arg = as_lexpr(arg)
-        self.dtype = self.arg.dtype
+    def __post_init__(self):
+        """Initialise computed fields."""
+        object.__setattr__(self, "arg", as_lexpr(self.arg))
+        object.__setattr__(self, "dtype", self.arg.dtype)
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return Neg(kwargs.get("arg", self.arg))
 
 
+@dataclass(frozen=True, eq=False)
 class Not(PrefixUnaryOp):
     """Not operator."""
 
+    arg: LExpr
     precedence = PRECEDENCE.NOT
     op = "!"
 
+    def __post_init__(self):
+        """Initialise computed fields."""
+        object.__setattr__(self, "arg", as_lexpr(self.arg))
 
+
+@dataclass(frozen=True, eq=False, repr=False)
 class Add(ArithmeticBinOp):
     """Add operator."""
 
@@ -537,6 +636,7 @@ class Add(ArithmeticBinOp):
     op = "+"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class Sub(ArithmeticBinOp):
     """Subtract operator."""
 
@@ -544,6 +644,7 @@ class Sub(ArithmeticBinOp):
     op = "-"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class Mul(ArithmeticBinOp):
     """Multiply operator."""
 
@@ -551,6 +652,7 @@ class Mul(ArithmeticBinOp):
     op = "*"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class Div(ArithmeticBinOp):
     """Division operator."""
 
@@ -558,6 +660,7 @@ class Div(ArithmeticBinOp):
     op = "/"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class EQ(BinOp):
     """Equality operator."""
 
@@ -565,6 +668,7 @@ class EQ(BinOp):
     op = "=="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class NE(BinOp):
     """Inequality operator."""
 
@@ -572,6 +676,7 @@ class NE(BinOp):
     op = "!="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class LT(BinOp):
     """Less than operator."""
 
@@ -579,6 +684,7 @@ class LT(BinOp):
     op = "<"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class GT(BinOp):
     """Greater than operator."""
 
@@ -586,6 +692,7 @@ class GT(BinOp):
     op = ">"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class LE(BinOp):
     """Less than or equal to operator."""
 
@@ -593,6 +700,7 @@ class LE(BinOp):
     op = "<="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class GE(BinOp):
     """Greater than or equal to operator."""
 
@@ -600,6 +708,7 @@ class GE(BinOp):
     op = ">="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class And(BinOp):
     """And operator."""
 
@@ -607,6 +716,7 @@ class And(BinOp):
     op = "&&"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class Or(BinOp):
     """Or operator."""
 
@@ -614,6 +724,7 @@ class Or(BinOp):
     op = "||"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class Sum(NaryOp):
     """Sum of any number of operands."""
 
@@ -621,6 +732,7 @@ class Sum(NaryOp):
     op = "+"
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class Product(NaryOp):
     """Product of any number of operands."""
 
@@ -628,16 +740,21 @@ class Product(NaryOp):
     op = "*"
 
 
+@dataclass(frozen=True, eq=False, init=False)
 class MathFunction(LExprOperator):
     """A Math Function, with any arguments."""
 
+    function: str
+    args: tuple
+    dtype: DataType
     precedence = PRECEDENCE.HIGHEST
 
     def __init__(self, func, args):
         """Initialise."""
-        self.function = func
-        self.args = [as_lexpr(arg) for arg in args]
-        self.dtype = self.args[0].dtype
+        object.__setattr__(self, "function", func)
+        args_tuple = tuple(as_lexpr(arg) for arg in args)
+        object.__setattr__(self, "args", args_tuple)
+        object.__setattr__(self, "dtype", args_tuple[0].dtype)
 
     def __eq__(self, other):
         """Check equality."""
@@ -648,70 +765,92 @@ class MathFunction(LExprOperator):
             and all(a == b for a, b in zip(self.args, other.args))
         )
 
+    def named_children(self):
+        """Return child fields."""
+        return [("args", self.args)]
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return MathFunction(kwargs.get("function", self.function), kwargs.get("args", self.args))
+
+
+@dataclass(frozen=True, eq=False, repr=False)
 class AssignOp(BinOp):
     """Base class for assignment operators."""
 
     precedence = PRECEDENCE.ASSIGN
     sideeffect = True
 
-    def __init__(self, lhs, rhs):
-        """Initialise."""
-        assert isinstance(lhs, LNode)
-        BinOp.__init__(self, lhs, rhs)
+    def __post_init__(self):
+        """Initialise computed fields."""
+        assert isinstance(self.lhs, LNode)
+        super().__post_init__()
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return type(self)(kwargs.get("lhs", self.lhs), kwargs.get("rhs", self.rhs))
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class Assign(AssignOp):
     """Assign operator."""
 
     op = "="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class AssignAdd(AssignOp):
     """Assign add operator."""
 
     op = "+="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class AssignSub(AssignOp):
     """Assign subtract operator."""
 
     op = "-="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class AssignMul(AssignOp):
     """Assign multiply operator."""
 
     op = "*="
 
 
+@dataclass(frozen=True, eq=False, repr=False)
 class AssignDiv(AssignOp):
     """Assign division operator."""
 
     op = "/="
 
 
+@dataclass(frozen=True, eq=False, init=False)
 class ArrayAccess(LExprOperator):
     """Array access."""
 
+    array: Symbol
+    indices: tuple
+    dtype: DataType
     precedence = PRECEDENCE.SUBSCRIPT
 
     def __init__(self, array, indices):
         """Initialise."""
         # Typecheck array argument
         if isinstance(array, Symbol):
-            self.array = array
-            self.dtype = array.dtype
+            object.__setattr__(self, "array", array)
+            object.__setattr__(self, "dtype", array.dtype)
         elif isinstance(array, ArrayDecl):
-            self.array = array.symbol
-            self.dtype = array.symbol.dtype
+            object.__setattr__(self, "array", array.symbol)
+            object.__setattr__(self, "dtype", array.symbol.dtype)
         else:
             raise ValueError(f"Unexpected array type {type(array).__name__}")
 
         # Allow expressions or literals as indices
         if not isinstance(indices, list | tuple):
             indices = (indices,)
-        self.indices = tuple(as_lexpr(i) for i in indices)
+        object.__setattr__(self, "indices", tuple(as_lexpr(i) for i in indices))
 
         # Early error checking for negative array dimensions
         if any(isinstance(i, int) and i < 0 for i in self.indices):
@@ -752,18 +891,31 @@ class ArrayAccess(LExprOperator):
         """Representation."""
         return str(self.array) + "[" + ", ".join(str(i) for i in self.indices) + "]"
 
+    def named_children(self):
+        """Return child fields."""
+        return [("array", self.array), ("indices", self.indices)]
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return ArrayAccess(kwargs.get("array", self.array), kwargs.get("indices", self.indices))
+
+
+@dataclass(frozen=True, eq=False)
 class Conditional(LExprOperator):
     """Conditional."""
 
+    condition: LExpr
+    true: LExpr
+    false: LExpr
+    dtype: DataType = field(init=False)
     precedence = PRECEDENCE.CONDITIONAL
 
-    def __init__(self, condition, true, false):
-        """Initialise."""
-        self.condition = as_lexpr(condition)
-        self.true = as_lexpr(true)
-        self.false = as_lexpr(false)
-        self.dtype = merge_dtypes([self.true.dtype, self.false.dtype])
+    def __post_init__(self):
+        """Initialise computed fields."""
+        object.__setattr__(self, "condition", as_lexpr(self.condition))
+        object.__setattr__(self, "true", as_lexpr(self.true))
+        object.__setattr__(self, "false", as_lexpr(self.false))
+        object.__setattr__(self, "dtype", merge_dtypes([self.true.dtype, self.false.dtype]))
 
     def __eq__(self, other):
         """Check equality."""
@@ -772,6 +924,18 @@ class Conditional(LExprOperator):
             and self.condition == other.condition
             and self.true == other.true
             and self.false == other.false
+        )
+
+    def named_children(self):
+        """Return child fields."""
+        return [("condition", self.condition), ("true", self.true), ("false", self.false)]
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return Conditional(
+            kwargs.get("condition", self.condition),
+            kwargs.get("true", self.true),
+            kwargs.get("false", self.false),
         )
 
 
@@ -791,12 +955,15 @@ def as_lexpr(node):
         raise RuntimeError(f"Unexpected LExpr type {type(node)}:\n{node}")
 
 
+@dataclass(frozen=True, eq=False)
 class Statement(LNode):
     """Make an expression into a statement."""
 
-    def __init__(self, expr):
-        """Initialise."""
-        self.expr = as_lexpr(expr)
+    expr: LExpr
+
+    def __post_init__(self):
+        """Initialise computed fields."""
+        object.__setattr__(self, "expr", as_lexpr(self.expr))
 
     def __eq__(self, other):
         """Check equality."""
@@ -806,14 +973,27 @@ class Statement(LNode):
         """Hash."""
         return hash(self.expr)
 
+    def named_children(self):
+        """Return child fields."""
+        return [("expr", self.expr)]
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return Statement(kwargs.get("expr", self.expr))
+
 
 def as_statement(node):
     """Perform type checking on node and wrap in a suitable statement type if necessary."""
-    if isinstance(node, StatementList) and len(node.statements) == 1:
-        # Cleans up the expression tree a bit
-        return node.statements[0]
+    if isinstance(node, StatementList):
+        if len(node.statements) == 1:
+            # Cleans up the expression tree a bit
+            return node.statements[0]
+        return node
     elif isinstance(node, Statement):
         # No-op
+        return node
+    elif isinstance(node, Declaration):
+        # Declarations can appear where statements appear
         return node
     elif isinstance(node, LExprOperator):
         if node.sideeffect:
@@ -846,7 +1026,7 @@ class Annotation(Enum):
     factorize = 4  # apply sum factorization
 
 
-class Declaration(Statement):
+class Declaration(LNode):
     """Base class for all declarations."""
 
     def __init__(self, symbol):
@@ -863,30 +1043,39 @@ def is_declaration(node) -> bool:
     return isinstance(node, VariableDecl) or isinstance(node, ArrayDecl)
 
 
+@dataclass(frozen=True, eq=False, init=False)
 class Section(LNode):
     """A section of code with a name and a list of statements."""
+
+    name: str
+    statements: tuple
+    declarations: tuple
+    annotations: tuple
+    input: tuple
+    output: tuple
 
     def __init__(
         self,
         name: str,
-        statements: list[LNode],
+        statements: list[LNode] | tuple,
         declarations: Sequence[Declaration],
         input: list[Symbol] | None = None,
         output: list[Symbol] | None = None,
         annotations: list[Annotation] | None = None,
     ):
         """Initialise."""
-        self.name = name
-        self.statements = [as_statement(st) for st in statements]
-        self.annotations = annotations or []
-        self.input = input or []
-        self.declarations = declarations or []
-        self.output = output or []
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "statements", tuple(as_statement(st) for st in statements))
+        object.__setattr__(self, "annotations", tuple(annotations or []))
+        object.__setattr__(self, "input", tuple(input or []))
+        object.__setattr__(self, "declarations", tuple(declarations or []))
 
+        output_list = list(output or [])
         for decl in self.declarations:
             assert is_declaration(decl)
-            if decl.symbol not in self.output:
-                self.output.append(decl.symbol)
+            if decl.symbol not in output_list:
+                output_list.append(decl.symbol)
+        object.__setattr__(self, "output", tuple(output_list))
 
     def __eq__(self, other):
         """Check equality."""
@@ -895,13 +1084,31 @@ class Section(LNode):
             getattr(self, name) == getattr(other, name) for name in attributes
         )
 
+    def named_children(self):
+        """Return child fields."""
+        return [("statements", self.statements), ("declarations", self.declarations)]
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return Section(
+            kwargs.get("name", self.name),
+            kwargs.get("statements", self.statements),
+            kwargs.get("declarations", self.declarations),
+            kwargs.get("input", self.input),
+            kwargs.get("output", self.output),
+            kwargs.get("annotations", self.annotations),
+        )
+
+
+@dataclass(frozen=True, eq=False, init=False)
 class StatementList(LNode):
     """A simple sequence of statements."""
 
+    statements: tuple
+
     def __init__(self, statements):
         """Initialise."""
-        self.statements = [as_statement(st) for st in statements]
+        object.__setattr__(self, "statements", tuple(as_statement(st) for st in statements))
 
     def __eq__(self, other):
         """Check equality."""
@@ -909,30 +1116,51 @@ class StatementList(LNode):
 
     def __hash__(self) -> int:
         """Hash."""
-        return hash(tuple(self.statements))
+        return hash(self.statements)
 
     def __repr__(self):
         """Representation."""
         return f"StatementList({self.statements})"
 
+    def named_children(self):
+        """Return child fields."""
+        return [("statements", self.statements)]
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return StatementList(kwargs.get("statements", self.statements))
+
+
+@dataclass(frozen=True, eq=False, init=False)
 class Comment(Statement):
     """Line comment(s) used for annotating the generated code with human readable remarks."""
+
+    comment: str
 
     def __init__(self, comment: str):
         """Initialise."""
         assert isinstance(comment, str)
-        self.comment = comment
+        object.__setattr__(self, "comment", comment)
 
     def __eq__(self, other):
         """Check equality."""
         return isinstance(other, type(self)) and self.comment == other.comment
+
+    def named_children(self):
+        """Return child fields."""
+        return []
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return Comment(kwargs.get("comment", self.comment))
 
 
 def commented_code_list(code, comments):
     """Add comment to code list if the list is not empty."""
     if isinstance(code, LNode):
         code = [code]
+    if isinstance(code, tuple):
+        code = list(code)
     assert isinstance(code, list)
     if code:
         if not isinstance(comments, list | tuple):
@@ -945,29 +1173,41 @@ def commented_code_list(code, comments):
 # Type and variable declarations
 
 
+@dataclass(frozen=True, eq=False)
 class VariableDecl(Declaration):
     """Declare a variable, optionally define initial value."""
 
-    def __init__(self, symbol, value=None):
-        """Initialise."""
-        assert isinstance(symbol, Symbol)
-        assert symbol.dtype is not None
-        self.symbol = symbol
+    symbol: Symbol
+    value: LExpr | None = None
 
-        if value is not None:
-            value = as_lexpr(value)
-        self.value = value
+    def __post_init__(self):
+        """Initialise computed fields."""
+        assert isinstance(self.symbol, Symbol)
+        assert self.symbol.dtype is not None
+        if self.value is not None:
+            object.__setattr__(self, "value", as_lexpr(self.value))
 
     def __eq__(self, other):
         """Check equality."""
         return (
             isinstance(other, type(self))
-            and self.typename == other.typename
             and self.symbol == other.symbol
             and self.value == other.value
         )
 
+    def named_children(self):
+        """Return child fields."""
+        children = [("symbol", self.symbol)]
+        if self.value is not None:
+            children.append(("value", self.value))
+        return children
 
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return VariableDecl(kwargs.get("symbol", self.symbol), kwargs.get("value", self.value))
+
+
+@dataclass(frozen=True, eq=False, init=False)
 class ArrayDecl(Declaration):
     """A declaration or definition of an array.
 
@@ -979,10 +1219,16 @@ class ArrayDecl(Declaration):
 
     """
 
+    symbol: Symbol
+    sizes: tuple
+    values: object
+    const: bool
+    dtype: DataType
+
     def __init__(self, symbol, sizes=None, values=None, const=False):
         """Initialise."""
         assert isinstance(symbol, Symbol)
-        self.symbol = symbol
+        object.__setattr__(self, "symbol", symbol)
         assert symbol.dtype
 
         if sizes is None:
@@ -990,30 +1236,43 @@ class ArrayDecl(Declaration):
             sizes = values.shape
         if isinstance(sizes, int):
             sizes = (sizes,)
-        self.sizes = tuple(sizes)
+        object.__setattr__(self, "sizes", tuple(sizes))
 
         if values is None:
             assert sizes is not None
 
         # NB! No type checking, assuming nested lists of literal values. Not applying as_lexpr.
         if isinstance(values, list | tuple):
-            self.values = np.asarray(values)
+            object.__setattr__(self, "values", np.asarray(values))
         else:
-            self.values = values
+            object.__setattr__(self, "values", values)
 
-        self.const = const
-        self.dtype = symbol.dtype
+        object.__setattr__(self, "const", const)
+        object.__setattr__(self, "dtype", symbol.dtype)
 
     def __eq__(self, other):
         """Check equality."""
         attributes = ("dtype", "symbol", "sizes", "values")
         return isinstance(other, type(self)) and all(
-            getattr(self, name) == getattr(self, name) for name in attributes
+            getattr(self, name) == getattr(other, name) for name in attributes
         )
 
     def __hash__(self) -> int:
         """Hash."""
         return hash(self.symbol)
+
+    def named_children(self):
+        """Return child fields."""
+        return [("symbol", self.symbol)]
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        return ArrayDecl(
+            kwargs.get("symbol", self.symbol),
+            kwargs.get("sizes", self.sizes),
+            kwargs.get("values", self.values),
+            kwargs.get("const", self.const),
+        )
 
 
 def is_simple_inner_loop(code):
@@ -1034,17 +1293,23 @@ def depth(code) -> int:
     return 0
 
 
+@dataclass(frozen=True, eq=False, init=False)
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
+    index: LExpr
+    begin: LExpr
+    end: LExpr
+    body: StatementList
+
     def __init__(self, index, begin, end, body):
         """Initialise."""
-        assert isinstance(index, Symbol) or isinstance(index, MultiIndex)
-        self.index = index
-        self.begin = as_lexpr(begin)
-        self.end = as_lexpr(end)
-        assert isinstance(body, list)
-        self.body = StatementList(body)
+        assert isinstance(index, Symbol | MultiIndex)
+        object.__setattr__(self, "index", index)
+        object.__setattr__(self, "begin", as_lexpr(begin))
+        object.__setattr__(self, "end", as_lexpr(end))
+        assert isinstance(body, list | tuple)
+        object.__setattr__(self, "body", StatementList(body))
 
     def as_tuple(self):
         """Convert to a tuple."""
@@ -1054,12 +1319,34 @@ class ForRange(Statement):
         """Check equality."""
         attributes = ("index", "begin", "end", "body")
         return isinstance(other, type(self)) and all(
-            getattr(self, name) == getattr(self, name) for name in attributes
+            getattr(self, name) == getattr(other, name) for name in attributes
         )
 
     def __hash__(self) -> int:
         """Hash."""
         return hash(self.as_tuple())
+
+    def named_children(self):
+        """Return child fields."""
+        return [
+            ("index", self.index),
+            ("begin", self.begin),
+            ("end", self.end),
+            ("body", self.body),
+        ]
+
+    def replace(self, **kwargs):
+        """Return a copy with specified fields replaced."""
+        body = kwargs.get("body", self.body)
+        # ForRange expects body as a list, but stores it as StatementList
+        if isinstance(body, StatementList):
+            body = body.statements
+        return ForRange(
+            kwargs.get("index", self.index),
+            kwargs.get("begin", self.begin),
+            kwargs.get("end", self.end),
+            body,
+        )
 
 
 def _math_function(op, *args):
