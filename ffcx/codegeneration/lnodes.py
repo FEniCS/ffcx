@@ -165,6 +165,7 @@ class LExpr(LNode):
     """
 
     dtype = DataType.NONE
+    precedence: int
 
     def __getitem__(self, indices):
         """Get an item."""
@@ -420,7 +421,7 @@ class MultiIndex(LExpr):
             object.__setattr__(
                 self,
                 "global_index",
-                Sum(n * sym for n, sym in zip(stride[1:], symbols)),
+                Sum(tuple(n * sym for n, sym in zip(stride[1:], symbols))),
             )
 
     @property
@@ -1059,9 +1060,9 @@ class Section(LNode):
         name: str,
         statements: list[LNode] | tuple,
         declarations: Sequence[Declaration],
-        input: list[Symbol] | None = None,
-        output: list[Symbol] | None = None,
-        annotations: list[Annotation] | None = None,
+        input: Sequence[Symbol] | None = None,
+        output: Sequence[Symbol] | None = None,
+        annotations: Sequence[Annotation] | None = None,
     ):
         """Initialise."""
         object.__setattr__(self, "name", name)
@@ -1221,7 +1222,7 @@ class ArrayDecl(Declaration):
 
     symbol: Symbol
     sizes: tuple
-    values: object
+    values: np.ndarray | None
     const: bool
     dtype: DataType
 
@@ -1297,7 +1298,7 @@ def depth(code) -> int:
 class ForRange(Statement):
     """Slightly higher-level for loop assuming incrementing an index over a range."""
 
-    index: LExpr
+    index: Symbol | MultiIndex
     begin: LExpr
     end: LExpr
     body: StatementList

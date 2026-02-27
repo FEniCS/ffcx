@@ -55,7 +55,7 @@ def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
                 indices.append(i)
                 input.extend(section.input)
                 output.extend(section.output)
-                annotations = section.annotations
+                annotations = list(section.annotations)
 
     # Remove duplicated inputs
     input = list(set(input))
@@ -95,25 +95,25 @@ def fuse_loops(code: L.Section) -> L.Section:
     for range, body in loops.items():
         output_code.append(L.ForRange(*range, body))
 
-    return L.Section(code.name, output_code, code.declarations, code.input, code.output)
+    return L.Section(code.name, output_code, code.declarations, list(code.input), list(code.output))
 
 
-def get_statements(statement: L.Statement | L.StatementList) -> list[L.LNode]:
+def get_statements(statement: L.Statement | L.StatementList) -> list[L.LExpr]:
     """Get statements from a statement list.
 
     Args:
         statement: Statement list.
 
     Returns:
-        List of statements.
+        List of expression nodes.
     """
     if isinstance(statement, L.StatementList):
-        return [statement.expr for statement in statement.statements]
+        return [st.expr for st in statement.statements if isinstance(st, L.Statement)]
     else:
         return [statement.expr]
 
 
-def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
+def check_dependency(statement: L.LExpr, index: L.Symbol | L.MultiIndex) -> bool:
     """Check if a statement depends on a given index.
 
     Args:
@@ -162,18 +162,20 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
 
     # Get statements in the inner loop
     outer_loop = section.statements[0]
+    assert isinstance(outer_loop, L.ForRange)
     inner_loop = outer_loop.body.statements[0]
+    assert isinstance(inner_loop, L.ForRange)
 
     # Collect all expressions in the inner loop by corresponding RHS
-    expressions = defaultdict(list)
+    expressions: defaultdict[L.ArrayAccess, list[L.Product]] = defaultdict(list)
     for body in inner_loop.body.statements:
-        statements = get_statements(body)
-        assert isinstance(statements, list)
-        for statement in statements:
-            assert isinstance(statement, L.AssignAdd)  # Expecting AssignAdd
-            rhs = statement.rhs
-            assert isinstance(rhs, L.Product)  # Expecting Sum
-            lhs = statement.lhs
+        stmts = get_statements(body)
+        assert isinstance(stmts, list)
+        for stmt in stmts:
+            assert isinstance(stmt, L.AssignAdd)  # Expecting AssignAdd
+            rhs = stmt.rhs
+            assert isinstance(rhs, L.Product)  # Expecting Product
+            lhs = stmt.lhs
             assert isinstance(lhs, L.ArrayAccess)  # Expecting ArrayAccess
             expressions[lhs].append(rhs)
 
@@ -181,9 +183,9 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     # and collect pre-loop declarations/loops
     replacements: dict[int, L.Product] = {}  # id(old_product) → new_product
     pre_loop: list[L.LNode] = []
-    for lhs, rhs in expressions.items():
-        for r in rhs:
-            hoist_candidates = []
+    for expr_lhs, expr_rhs_list in expressions.items():
+        for r in expr_rhs_list:
+            hoist_candidates: list[L.LExpr] = []
             for arg in r.args:
                 dependency = check_dependency(arg, inner_loop.index)
                 if not dependency:
@@ -194,14 +196,17 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 counter += 1
                 temp = L.Symbol(name, L.DataType.SCALAR)
                 # Build new Product: keep non-hoisted args + new temp access
-                remaining_args = [a for a in r.args if a not in hoist_candidates]
+                remaining_args: list[L.LExpr] = [a for a in r.args if a not in hoist_candidates]
                 remaining_args.append(L.ArrayAccess(temp, [outer_loop.index]))
-                replacements[id(r)] = L.Product(remaining_args)
+                replacements[id(r)] = L.Product(tuple(remaining_args))
                 # create code for hoisted term
+                assert isinstance(outer_loop.end, L.LiteralInt)
+                assert isinstance(outer_loop.begin, L.LiteralInt)
                 size = outer_loop.end.value - outer_loop.begin.value
                 pre_loop.append(L.ArrayDecl(temp, size, [0]))
                 hoist_body = L.Assign(
-                    L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates)
+                    L.ArrayAccess(temp, [outer_loop.index]),
+                    L.Product(tuple(hoist_candidates)),
                 )
                 pre_loop.append(
                     L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [hoist_body])
@@ -211,13 +216,14 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
         return section
 
     # Rebuild inner loop body with replaced Products
-    new_inner_stmts = []
+    new_inner_stmts: list[L.LNode] = []
     for body in inner_loop.body.statements:
-        statements = get_statements(body)
-        new_stmts = []
-        for statement in statements:
-            new_rhs = replacements.get(id(statement.rhs), statement.rhs)
-            new_stmt = L.AssignAdd(statement.lhs, new_rhs)
+        stmts = get_statements(body)
+        new_stmts: list[L.AssignAdd] = []
+        for stmt in stmts:
+            assert isinstance(stmt, L.AssignAdd)
+            new_rhs = replacements.get(id(stmt.rhs), stmt.rhs)
+            new_stmt = L.AssignAdd(stmt.lhs, new_rhs)
             new_stmts.append(new_stmt)
         if len(new_stmts) == 1:
             new_inner_stmts.append(new_stmts[0])

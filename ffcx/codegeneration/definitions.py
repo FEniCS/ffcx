@@ -155,7 +155,7 @@ class FFCXBackendDefinitions:
             mt.terminal, (ic.global_index) * bs + begin
         )
 
-        declaration: list[L.Declaration] = [L.VariableDecl(access, 0.0)]
+        declaration: list[L.Declaration] = [L.VariableDecl(access, L.LiteralFloat(0.0))]
         body = [L.AssignAdd(access, dof_access * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 
@@ -211,7 +211,7 @@ class FFCXBackendDefinitions:
             offset = num_scalar_dofs * dim
 
         code = []
-        declaration = [L.VariableDecl(access, 0.0)]
+        declaration = [L.VariableDecl(access, L.LiteralFloat(0.0))]
         body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
         code = [L.create_nested_for_loops([ic], body)]
 

@@ -471,4 +471,4 @@ class FFCXBackendAccess:
                 table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
                 symbols += [L.Symbol(factor.name, dtype=L.DataType.REAL)]
                 FE.append(table)
-            return L.Product(FE), symbols
+            return L.Product(tuple(FE)), symbols

@@ -289,7 +289,8 @@ class IntegralGenerator:
         for fw in intermediates_fw:
             assert isinstance(fw, L.VariableDecl)
             output += [fw.symbol]
-            declarations += [L.VariableDecl(fw.symbol, 0)]
+            declarations += [L.VariableDecl(fw.symbol, L.LiteralInt(0))]
+            assert fw.value is not None
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
 
