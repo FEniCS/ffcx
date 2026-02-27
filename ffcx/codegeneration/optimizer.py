@@ -113,6 +113,13 @@ def get_statements(statement: L.Statement | L.StatementList) -> list[L.LExpr]:
         return [statement.expr]
 
 
+def _expr_contains_symbol(expr: L.LNode, target: L.Symbol | L.MultiIndex) -> bool:
+    """Check if an expression tree contains a specific symbol."""
+    if expr == target:
+        return True
+    return any(_expr_contains_symbol(c, target) for c in expr.children())
+
+
 def check_dependency(statement: L.LExpr, index: L.Symbol | L.MultiIndex) -> bool:
     """Check if a statement depends on a given index.
 
@@ -124,13 +131,9 @@ def check_dependency(statement: L.LExpr, index: L.Symbol | L.MultiIndex) -> bool
         True if statement depends on index, False otherwise.
     """
     if isinstance(statement, L.ArrayAccess):
-        if index in statement.indices:
-            return True
-        else:
-            for i in statement.indices:
-                if isinstance(i, L.Sum) or isinstance(i, L.Product):
-                    if index in i.args:
-                        return True
+        for i in statement.indices:
+            if _expr_contains_symbol(i, index):
+                return True
     elif isinstance(statement, L.Symbol):
         return False
     elif isinstance(statement, L.LiteralFloat) or isinstance(statement, L.LiteralInt):

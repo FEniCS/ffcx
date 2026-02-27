@@ -23,18 +23,20 @@ Not supported:
  Strings
 """
 
+import dataclasses as dc
 import numbers
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, IntEnum
+from functools import reduce
 from typing import ClassVar
 
 import numpy as np
 import ufl
 
 
-class PRECEDENCE:
-    """An enum-like class for operator precedence levels."""
+class PRECEDENCE(IntEnum):
+    """Operator precedence levels."""
 
     HIGHEST = 0
     LITERAL = 0
@@ -150,11 +152,31 @@ class LNode:
         return result
 
     def named_children(self) -> list[tuple[str, "LNode | list[LNode] | tuple[LNode, ...]"]]:
-        """Return a list of (field_name, child) pairs for LNode children."""
-        return []
+        """Return a list of (field_name, child) pairs for LNode children.
+
+        Default implementation introspects dataclass fields. Override in subclasses
+        where auto-detection is incorrect (e.g. inherited but unset fields).
+        """
+        if not dc.is_dataclass(self):
+            return []
+        result = []
+        for f in dc.fields(self):
+            val = getattr(self, f.name)
+            if isinstance(val, LNode):
+                result.append((f.name, val))
+            elif isinstance(val, tuple) and val and isinstance(val[0], LNode):
+                result.append((f.name, val))
+        return result
 
     def replace(self, **kwargs) -> "LNode":
-        """Return a copy of this node with specified fields replaced."""
+        """Return a copy of this node with specified fields replaced.
+
+        Default implementation uses dataclasses.replace() for standard dataclasses.
+        Classes with init=False must override this method.
+        """
+        params = getattr(self, "__dataclass_params__", None)
+        if params is not None and params.init:
+            return dc.replace(self, **kwargs)  # type: ignore[type-var]
         raise NotImplementedError(f"replace() not implemented for {type(self).__name__}")
 
 
@@ -330,10 +352,6 @@ class LiteralFloat(LExprTerminal):
         """Representation."""
         return str(self.value)
 
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return LiteralFloat(kwargs.get("value", self.value))
-
 
 @dataclass(frozen=True, eq=False)
 class LiteralInt(LExprTerminal):
@@ -358,10 +376,6 @@ class LiteralInt(LExprTerminal):
     def __repr__(self):
         """Representation."""
         return str(self.value)
-
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return LiteralInt(kwargs.get("value", self.value))
 
 
 @dataclass(frozen=True, eq=False)
@@ -389,10 +403,6 @@ class Symbol(LExprTerminal):
         """Representation."""
         return self.name
 
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return Symbol(kwargs.get("name", self.name), kwargs.get("dtype", self.dtype))
-
 
 @dataclass(frozen=True, eq=False, init=False)
 class MultiIndex(LExpr):
@@ -418,10 +428,11 @@ class MultiIndex(LExpr):
             object.__setattr__(self, "global_index", LiteralInt(0))
         else:
             stride = [np.prod(sizes[i:]) for i in range(dim)] + [LiteralInt(1)]
+            terms = [n * sym for n, sym in zip(stride[1:], symbols)]
             object.__setattr__(
                 self,
                 "global_index",
-                Sum(tuple(n * sym for n, sym in zip(stride[1:], symbols))),
+                reduce(lambda a, b: a + b, terms),
             )
 
     @property
@@ -490,24 +501,19 @@ class MultiIndex(LExpr):
         return MultiIndex(kwargs.get("symbols", self.symbols), kwargs.get("sizes", self.sizes))
 
 
+@dataclass(frozen=True, eq=False)
 class PrefixUnaryOp(LExprOperator):
     """Base class for unary operators."""
 
-    def __init__(self, arg):
-        """Initialise."""
-        self.arg = as_lexpr(arg)
+    arg: LExpr
+
+    def __post_init__(self):
+        """Initialise computed fields."""
+        object.__setattr__(self, "arg", as_lexpr(self.arg))
 
     def __eq__(self, other):
         """Check equality."""
         return isinstance(other, type(self)) and self.arg == other.arg
-
-    def named_children(self):
-        """Return child fields."""
-        return [("arg", self.arg)]
-
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return type(self)(kwargs.get("arg", self.arg))
 
 
 @dataclass(frozen=True, eq=False)
@@ -534,14 +540,6 @@ class BinOp(LExprOperator):
     def __repr__(self):
         """Representation."""
         return f"({self.lhs} {self.op} {self.rhs})"
-
-    def named_children(self):
-        """Return child fields."""
-        return [("lhs", self.lhs), ("rhs", self.rhs)]
-
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return type(self)(kwargs.get("lhs", self.lhs), kwargs.get("rhs", self.rhs))
 
 
 @dataclass(frozen=True, eq=False, repr=False)
@@ -588,14 +586,6 @@ class NaryOp(LExprOperator):
         """Hash."""
         return hash(self.args)
 
-    def named_children(self):
-        """Return child fields."""
-        return [("args", self.args)]
-
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return type(self)(kwargs.get("args", self.args))
-
 
 @dataclass(frozen=True, eq=False)
 class Neg(PrefixUnaryOp):
@@ -611,10 +601,6 @@ class Neg(PrefixUnaryOp):
         object.__setattr__(self, "arg", as_lexpr(self.arg))
         object.__setattr__(self, "dtype", self.arg.dtype)
 
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return Neg(kwargs.get("arg", self.arg))
-
 
 @dataclass(frozen=True, eq=False)
 class Not(PrefixUnaryOp):
@@ -623,10 +609,6 @@ class Not(PrefixUnaryOp):
     arg: LExpr
     precedence = PRECEDENCE.NOT
     op = "!"
-
-    def __post_init__(self):
-        """Initialise computed fields."""
-        object.__setattr__(self, "arg", as_lexpr(self.arg))
 
 
 @dataclass(frozen=True, eq=False, repr=False)
@@ -726,14 +708,6 @@ class Or(BinOp):
 
 
 @dataclass(frozen=True, eq=False, repr=False)
-class Sum(NaryOp):
-    """Sum of any number of operands."""
-
-    precedence = PRECEDENCE.ADD
-    op = "+"
-
-
-@dataclass(frozen=True, eq=False, repr=False)
 class Product(NaryOp):
     """Product of any number of operands."""
 
@@ -766,10 +740,6 @@ class MathFunction(LExprOperator):
             and all(a == b for a, b in zip(self.args, other.args))
         )
 
-    def named_children(self):
-        """Return child fields."""
-        return [("args", self.args)]
-
     def replace(self, **kwargs):
         """Return a copy with specified fields replaced."""
         return MathFunction(kwargs.get("function", self.function), kwargs.get("args", self.args))
@@ -787,10 +757,6 @@ class AssignOp(BinOp):
         assert isinstance(self.lhs, LNode)
         super().__post_init__()
 
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return type(self)(kwargs.get("lhs", self.lhs), kwargs.get("rhs", self.rhs))
-
 
 @dataclass(frozen=True, eq=False, repr=False)
 class Assign(AssignOp):
@@ -804,27 +770,6 @@ class AssignAdd(AssignOp):
     """Assign add operator."""
 
     op = "+="
-
-
-@dataclass(frozen=True, eq=False, repr=False)
-class AssignSub(AssignOp):
-    """Assign subtract operator."""
-
-    op = "-="
-
-
-@dataclass(frozen=True, eq=False, repr=False)
-class AssignMul(AssignOp):
-    """Assign multiply operator."""
-
-    op = "*="
-
-
-@dataclass(frozen=True, eq=False, repr=False)
-class AssignDiv(AssignOp):
-    """Assign division operator."""
-
-    op = "/="
 
 
 @dataclass(frozen=True, eq=False, init=False)
@@ -892,10 +837,6 @@ class ArrayAccess(LExprOperator):
         """Representation."""
         return str(self.array) + "[" + ", ".join(str(i) for i in self.indices) + "]"
 
-    def named_children(self):
-        """Return child fields."""
-        return [("array", self.array), ("indices", self.indices)]
-
     def replace(self, **kwargs):
         """Return a copy with specified fields replaced."""
         return ArrayAccess(kwargs.get("array", self.array), kwargs.get("indices", self.indices))
@@ -925,18 +866,6 @@ class Conditional(LExprOperator):
             and self.condition == other.condition
             and self.true == other.true
             and self.false == other.false
-        )
-
-    def named_children(self):
-        """Return child fields."""
-        return [("condition", self.condition), ("true", self.true), ("false", self.false)]
-
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return Conditional(
-            kwargs.get("condition", self.condition),
-            kwargs.get("true", self.true),
-            kwargs.get("false", self.false),
         )
 
 
@@ -973,14 +902,6 @@ class Statement(LNode):
     def __hash__(self) -> int:
         """Hash."""
         return hash(self.expr)
-
-    def named_children(self):
-        """Return child fields."""
-        return [("expr", self.expr)]
-
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return Statement(kwargs.get("expr", self.expr))
 
 
 def as_statement(node):
@@ -1022,17 +943,14 @@ class Annotation(Enum):
     """Annotation."""
 
     fuse = 1  # fuse loops in section
-    unroll = 2  # unroll loop in section
     licm = 3  # loop invariant code motion
-    factorize = 4  # apply sum factorization
 
 
+@dataclass(frozen=True, eq=False)
 class Declaration(LNode):
     """Base class for all declarations."""
 
-    def __init__(self, symbol):
-        """Initialise."""
-        self.symbol = symbol
+    symbol: Symbol
 
     def __eq__(self, other):
         """Check equality."""
@@ -1123,10 +1041,6 @@ class StatementList(LNode):
         """Representation."""
         return f"StatementList({self.statements})"
 
-    def named_children(self):
-        """Return child fields."""
-        return [("statements", self.statements)]
-
     def replace(self, **kwargs):
         """Return a copy with specified fields replaced."""
         return StatementList(kwargs.get("statements", self.statements))
@@ -1196,17 +1110,6 @@ class VariableDecl(Declaration):
             and self.value == other.value
         )
 
-    def named_children(self):
-        """Return child fields."""
-        children = [("symbol", self.symbol)]
-        if self.value is not None:
-            children.append(("value", self.value))
-        return children
-
-    def replace(self, **kwargs):
-        """Return a copy with specified fields replaced."""
-        return VariableDecl(kwargs.get("symbol", self.symbol), kwargs.get("value", self.value))
-
 
 @dataclass(frozen=True, eq=False, init=False)
 class ArrayDecl(Declaration):
@@ -1262,10 +1165,6 @@ class ArrayDecl(Declaration):
         """Hash."""
         return hash(self.symbol)
 
-    def named_children(self):
-        """Return child fields."""
-        return [("symbol", self.symbol)]
-
     def replace(self, **kwargs):
         """Return a copy with specified fields replaced."""
         return ArrayDecl(
@@ -1274,15 +1173,6 @@ class ArrayDecl(Declaration):
             kwargs.get("values", self.values),
             kwargs.get("const", self.const),
         )
-
-
-def is_simple_inner_loop(code):
-    """Check if code is a simple inner loop."""
-    if isinstance(code, ForRange) and is_simple_inner_loop(code.body):
-        return True
-    if isinstance(code, Statement) and isinstance(code.expr, AssignOp):
-        return True
-    return False
 
 
 def depth(code) -> int:
