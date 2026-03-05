@@ -6,11 +6,9 @@
 """Modified terminals."""
 
 import logging
-
+import typing
 from ufl.classes import (
     Argument,
-    CellAvg,
-    FacetAvg,
     FixedIndex,
     FormArgument,
     Grad,
@@ -24,6 +22,102 @@ from ufl.classes import (
 from ufl.permutation import build_component_numbering
 
 logger = logging.getLogger("ffcx")
+import ufl
+from ufl.corealg.dag_traverser import DAGTraverser
+from functools import singledispatchmethod
+class AverageReplacer(DAGTraverser):
+    """DAGTraverser to replaced averaged arguments with an argument in an
+    intermediate space."""
+
+    def __init__(
+        self,
+        compress: bool | None = True,
+        visited_cache: dict[tuple, ufl.core.expr.Expr] | None = None,
+        result_cache: dict[ufl.core.expr.Expr, ufl.core.expr.Expr] | None = None,
+    ) -> None:
+        """Initialise.
+
+        Args:
+            compress: If True, ``result_cache`` will be used.
+            visited_cache: cache of intermediate results;
+                expr -> r = self.process(expr, ...).
+            result_cache: cache of result objects for memory reuse, r -> r.
+
+        """
+        super().__init__(
+            compress=compress, visited_cache=visited_cache, result_cache=result_cache
+        )
+
+    @singledispatchmethod
+    def process(
+        self,
+        o: ufl.core.expr.Expr,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Replace averaged arguments with intermediate space.
+
+        Args:
+            o: `ufl.core.expr.Expr` to be processed.
+            reference_value: Whether `ReferenceValue` has been applied or not.
+            reference_grad: Number of `ReferenceGrad`s that have been applied.
+            restricted: '+', '-', or None.
+        """
+        return super().process(o)
+
+    @process.register(ufl.averaging.CellAvg)
+    def _(
+        self,
+        o: ufl.averaging.CellAvg,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None
+        ) -> ufl.core.expr.Expr:
+        """Handle AverageOperator."""
+        ops = o.ufl_operands
+        assert len(ops) == 1, "Expected single operator in averaging"
+        arguments = ufl.algorithms.extract_arguments(ops[0])
+        replace_table = {}
+        for argument in arguments:
+            replace_table[argument] = AveragedArgument(argument, "cell")
+        cell_vol = ufl.CellVolume(ufl.domain.extract_unique_domain(ops[0]))
+        cell_vol_lowered = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(cell_vol, (ufl.classes.Jacobian,))
+        return ufl.replace(ops[0], replace_table) / cell_vol_lowered
+
+    @process.register(ufl.averaging.FacetAvg)
+    def _(
+        self,
+        o: ufl.averaging.FacetAvg,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None
+        ) -> ufl.core.expr.Expr:
+        """Handle AverageOperator."""
+        ops = o.ufl_operands
+        assert len(ops) == 1, "Expected single operator in averaging"
+        arguments = ufl.algorithms.extract_arguments(ops[0])
+        replace_table = {}
+        for argument in arguments:
+            replace_table[argument] = AveragedArgument(argument, "facet")
+        return ufl.replace(ops[0], replace_table)
+
+    @process.register(ufl.core.expr.Expr)
+    def _(
+        self,
+        o: ufl.Argument,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Handle anything else in UFL."""
+        return self.reuse_if_untouched(
+            o,
+            reference_value=reference_value,
+            reference_grad=reference_grad,
+            restricted=restricted,
+        )
+
 
 
 class ModifiedTerminal:
@@ -205,6 +299,8 @@ def analyse_modified_terminal(expr):
                 raise RuntimeError("Got twice pulled back terminal!")
 
             (t,) = t.ufl_operands
+            if isinstance(t, AveragedArgument):
+                averaged = t.average
             reference_value = True
 
         elif isinstance(t, ReferenceGrad):
@@ -229,20 +325,6 @@ def analyse_modified_terminal(expr):
 
             restriction = t._side
             (t,) = t.ufl_operands
-
-        elif isinstance(t, CellAvg):
-            if averaged is not None:
-                raise RuntimeError("Got twice averaged terminal!")
-
-            (t,) = t.ufl_operands
-            averaged = "cell"
-
-        elif isinstance(t, FacetAvg):
-            if averaged is not None:
-                raise RuntimeError("Got twice averaged terminal!")
-
-            (t,) = t.ufl_operands
-            averaged = "facet"
 
         elif t._ufl_terminal_modifiers_:
             raise RuntimeError(
@@ -313,3 +395,18 @@ def analyse_modified_terminal(expr):
         averaged,
         restriction,
     )
+
+
+
+class AveragedArgument(ufl.Argument):
+    def __init__(self, u: ufl.Argument, average: typing.Literal["cell", "facet"]):
+        super().__init__(u.ufl_function_space(), u.number(), u.part() )
+        self._repr = "Averaged" + self._repr
+        self._average = average
+    def is_cellwise_constant(self):
+        return True 
+
+    @property
+    def average(self):
+        return self._average    
+

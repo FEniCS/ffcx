@@ -132,9 +132,11 @@ def get_ffcx_table_values(
             weights = element._weights
         else:
             # Make quadrature rule and get points and weights
-            points, weights = create_quadrature_points_and_weights(
-                integral_type, cell, element.embedded_superdegree(), "default", [element]
+            points, weights, _tensor_factors = create_quadrature_points_and_weights(
+                integral_type, cell, element.embedded_superdegree, "default", [element]
             )
+            points = points[cell.cellname]
+            weights = weights[cell.cellname]
 
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension
@@ -160,10 +162,9 @@ def get_ffcx_table_values(
         wsum = sum(weights)
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[1]
-            tbl = np.dot(tbl, weights) / wsum
+            tbl = np.dot(weights, tbl) / wsum
             tbl = np.reshape(tbl, (1, num_dofs))
             component_tables[entity] = tbl
-
     # Loop over entities and fill table blockwise (each block = points x dofs)
     # Reorder axes as (points, dofs) instead of (dofs, points)
     assert len(component_tables) == num_entities

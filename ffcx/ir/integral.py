@@ -26,6 +26,7 @@ from ffcx.ir.analysis.modified_terminals import (
     ModifiedTerminal,
     analyse_modified_terminal,
     is_modified_terminal,
+    AverageReplacer
 )
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
@@ -90,6 +91,8 @@ class ModifiedArgumentDataT(typing.NamedTuple):
     tabledata: UniqueTableReferenceT
 
 
+
+
 class BlockDataT(typing.NamedTuple):
     """Block data."""
 
@@ -144,6 +147,9 @@ def compute_integral_ir(
             # Rebalance order of nested terminal modifiers
             expression = balance_modifiers(expression)
 
+            # Replace cell_avg with a coefficient or argument of the correct shape
+            expression = AverageReplacer()(expression)
+            
             # Remove QuadratureWeight terminals from expression and replace with 1.0
             expression = replace_quadratureweight(expression)
 
@@ -161,7 +167,7 @@ def compute_integral_ir(
                 for i, v in S.nodes.items()
                 if is_modified_terminal(v["expression"])
             }
-
+            breakpoint()
             # Check if we have a mixed-dimensional integral
             is_mixed_dim = False
             for domain in ufl.domain.extract_domains(integrand):
