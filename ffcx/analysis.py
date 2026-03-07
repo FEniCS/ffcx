@@ -16,10 +16,13 @@ from __future__ import annotations
 import logging
 import typing
 
+if typing.TYPE_CHECKING:
+    from ufl.algorithms.formdata import FormData
+
 import basix.ufl
 import numpy as np
 import numpy.typing as npt
-import ufl
+import ufl.algorithms
 
 logger = logging.getLogger("ffcx")
 
@@ -28,7 +31,7 @@ class UFLData(typing.NamedTuple):
     """UFL data."""
 
     # Tuple of ufl form data
-    form_data: tuple[ufl.algorithms.formdata.FormData, ...]
+    form_data: tuple[FormData, ...]
     # List of unique elements
     unique_elements: list[basix.ufl._ElementBase]
     # Lookup table from each unique element to its index in `unique_elements`
@@ -93,8 +96,8 @@ def analyze_ufl_objects(
 
     form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
     for data in form_data:
-        elements += data.unique_sub_elements  # type: ignore
-        coordinate_elements += data.coordinate_elements  # type: ignore
+        elements += data.unique_sub_elements
+        coordinate_elements += data.coordinate_elements
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
@@ -147,8 +150,8 @@ def _analyze_expression(
 
 
 def _analyze_form(
-    form: ufl.form.Form, scalar_type: npt.DTypeLike
-) -> ufl.algorithms.formdata.FormData:
+    form: ufl.Form, scalar_type: npt.DTypeLike
+) -> "FormData":
     """Analyzes UFL form and attaches metadata.
 
     Args:
@@ -170,14 +173,14 @@ def _analyze_form(
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
     # Check that coordinate element is based on basix.ufl._ElementBase
-    for i in form._integrals:
-        assert isinstance(i._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
+    for itg in form._integrals:
+        assert isinstance(itg._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
 
     # Check for complex mode
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data: ufl.algorithms.formdata.FormData = ufl.algorithms.compute_form_data(
+    form_data: "FormData" = ufl.algorithms.compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
@@ -190,7 +193,7 @@ def _analyze_form(
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
-    for id, integral_data in enumerate(form_data.integral_data):  # type: ignore
+    for id, integral_data in enumerate(form_data.integral_data):
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
         # (but possibly different metadata).

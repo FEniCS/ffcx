@@ -21,12 +21,16 @@ from __future__ import annotations
 import itertools
 import logging
 import typing
+
+if typing.TYPE_CHECKING:
+    from ufl.algorithms.formdata import FormData
+    from ufl.core.expr import Expr
 import warnings
 
 import basix
 import numpy as np
 import numpy.typing as npt
-import ufl
+import ufl.algorithms
 from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum
 
@@ -34,7 +38,7 @@ from ffcx import naming
 from ffcx.analysis import UFLData
 from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
-
+from ffcx.definitions import supported_integral_types
 logger = logging.getLogger("ffcx")
 
 
@@ -137,10 +141,10 @@ def compute_ir(
     integral_names = {}
     form_names = {}
     for fd_index, fd in enumerate(analysis.form_data):
-        form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)  # type: ignore
-        for itg_index, itg_data in enumerate(fd.integral_data):  # type: ignore
+        form_names[fd_index] = naming.form_name(fd.original_form, fd_index, prefix)
+        for itg_index, itg_data in enumerate(fd.integral_data):
             integral_names[(fd_index, itg_index)] = naming.integral_name(
-                fd.original_form,  # type: ignore
+                fd.original_form,
                 itg_data.integral_type,
                 fd_index,
                 itg_data.subdomain_id,
@@ -151,7 +155,7 @@ def compute_ir(
         _compute_integral_ir(
             fd,
             i,
-            analysis.element_numbers,
+            analysis.element_numbers.keys(),
             integral_names,
             options,
             visualise,
@@ -199,14 +203,20 @@ def compute_ir(
 
 
 def _compute_integral_ir(
-    form_data,
-    form_index,
-    element_numbers,
-    integral_names,
+    form_data: FormData,
+    form_index: int,
+    unique_elements: typing.Iterable[basix.ufl._ElementBase],
+    integral_names: dict[tuple[int, int], str],
     options,
     visualise,
 ) -> list[IntegralIR]:
-    """Compute intermediate representation for form integrals."""
+    """Compute intermediate representation for form integrals.
+
+    Args:
+        form_data: Data from UFL analysis of the form
+        form_index: Index of form in the sequence of forms. Used to access the correct integral name
+        unique_elements: Set of unique elements in the form.
+    """
     _entity_types = {
         "cell": "cell",
         "exterior_facet": "facet",
@@ -250,7 +260,6 @@ def _compute_integral_ir(
             )
 
         # Get element space dimensions
-        unique_elements = element_numbers.keys()
         element_dimensions = {
             element: element.dim + element.num_global_support_dofs for element in unique_elements
         }
@@ -275,7 +284,7 @@ def _compute_integral_ir(
 
         # Group integrands with the same quadrature rule
         grouped_integrands: dict[
-            basix.CellType, dict[QuadratureRule, list[ufl.core.expr.Expr]]
+            basix.CellType, dict[QuadratureRule, list["Expr"]]
         ] = {}
         use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
         for integral in itg_data.integrals:
@@ -394,15 +403,16 @@ def _compute_integral_ir(
         expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrand_map: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]] = {
+        integrand_map: dict[basix.CellType, dict[QuadratureRule, "Expr"]] = {
             cell_type: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
             for cell_type, cell_integrals in sorted_integrals.items()
         }
 
         # Build more specific intermediate representation
+        itg_type = typing.cast(supported_integral_types, itg_data.integral_type)
         integral_ir = compute_integral_ir(
             itg_data.domain.ufl_cell(),
-            itg_data.integral_type,
+            itg_type,
             expression_ir["entity_type"],
             integrand_map,
             expression_ir["tensor_shape"],

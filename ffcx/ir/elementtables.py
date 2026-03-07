@@ -18,7 +18,6 @@ from ffcx.element_interface import basix_index
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.representationutils import (
     QuadratureRule,
-    create_quadrature_points_and_weights,
     integral_type_to_entity_dim,
     map_integral_points,
 )
@@ -110,34 +109,6 @@ def get_ffcx_table_values(
         else:
             integral_type = "exterior_facet"
 
-    if avg in ("cell", "facet"):
-        # Redefine points to compute average tables
-
-        # Make sure this is not called with points, that doesn't make sense
-        # assert points is None
-
-        # Not expecting derivatives of averages
-        assert not any(derivative_counts)
-        assert deriv_order == 0
-
-        # Doesn't matter if it's exterior or interior facet integral,
-        # just need a valid integral type to create quadrature rule
-        if avg == "cell":
-            integral_type = "cell"
-        elif avg == "facet":
-            integral_type = "exterior_facet"
-
-        if isinstance(element, basix.ufl._QuadratureElement):
-            points = element._points
-            weights = element._weights
-        else:
-            # Make quadrature rule and get points and weights
-            points, weights, _tensor_factors = create_quadrature_points_and_weights(
-                integral_type, cell, element.embedded_superdegree, "default", [element]
-            )
-            points = points[cell.cellname]
-            weights = weights[cell.cellname]
-
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
@@ -158,13 +129,15 @@ def get_ffcx_table_values(
         component_tables.append(tbl)
 
     if avg in ("cell", "facet"):
-        # Compute numeric integral of the each component table
-        wsum = sum(weights)
+        # For averaging, we do not compute tables,
+        # but instead create tables with ones
+        # NOTE: I think we can remove this assumption now
+        # Not expecting derivatives of averages
+        assert not any(derivative_counts)
+        assert deriv_order == 0
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[1]
-            tbl = np.dot(weights, tbl) / wsum
-            tbl = np.reshape(tbl, (1, num_dofs))
-            component_tables[entity] = tbl
+            component_tables[entity] = np.ones((1, num_dofs))
     # Loop over entities and fill table blockwise (each block = points x dofs)
     # Reorder axes as (points, dofs) instead of (dofs, points)
     assert len(component_tables) == num_entities
@@ -173,7 +146,6 @@ def get_ffcx_table_values(
     res = np.zeros(shape)
     for entity in range(num_entities):
         res[:, entity, :, :] = component_tables[entity]
-
     return {"array": res, "offset": offset, "stride": stride}
 
 
@@ -627,7 +599,6 @@ def build_optimized_tables(
             tensor_factors,
             tensor_perm,
         )
-
     return mt_tables
 
 
