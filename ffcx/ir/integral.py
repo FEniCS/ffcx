@@ -19,7 +19,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 
-from ffcx.definitions import AverageReplacer, entity_types
+from ffcx.definitions import AverageReplacer, entity_types, supported_integral_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import ExpressionGraph, build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import (
@@ -102,10 +102,15 @@ class IntermediateIntegralIR(typing.TypedDict):
 class CommonExpressionIR(typing.NamedTuple):
     """Common-ground for IntegralIR and ExpressionIR."""
 
-    integral_type: str
-    entity_type: entity_types
-    tensor_shape: list[int]
+    integral_type: supported_integral_types | typing.Literal["expression"]
+    entity_type: entity_types  # The entity IR is over
+    tensor_shape: list[int]  # The shape of the locally assembled tensor
+
+    # When an expression is processed in UFL, coefficients might drop out of the
+    # variational form due to for instance differentiation.
+    # This maps from the original coefficient to its new index in the form.
     coefficient_numbering: dict[ufl.Coefficient, int]
+    # Each coefficient is accessed from a given offset in the input array
     coefficient_offsets: dict[ufl.Coefficient, int]
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
@@ -124,8 +129,8 @@ def _compute_integral_ir(
     existing_tables: dict[str, npt.NDArray[np.float64]],
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell,
-    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
-    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    integral_type: supported_integral_types,
+    entity_type: entity_types,
     argument_shape: tuple[int,...],
     visualise: bool,
     p: dict,
@@ -361,8 +366,8 @@ def _compute_integral_ir(
 
 def compute_integral_ir(
     cell: ufl.Cell,
-    integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell"],
-    entity_type: typing.Literal["cell", "facet", "ridge", "vertex"],
+    integral_type: supported_integral_types,
+    entity_type: entity_types,
     integrands: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]],
     argument_shape: tuple[int, ...],
     p: dict,

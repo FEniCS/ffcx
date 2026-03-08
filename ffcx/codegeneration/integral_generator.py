@@ -144,9 +144,6 @@ class IntegralGenerator:
 
         parts = []
 
-        # Generate tables for sub-expressions
-        breakpoint()
-
         # Generate the tables of quadrature points and weights
         parts += self.generate_quadrature_tables(domain, self.ir.expression)
 

@@ -8,7 +8,7 @@ from ufl.corealg.dag_traverser import DAGTraverser
 
 entity_types = Literal["cell", "facet", "vertex", "ridge"]
 
-supported_integral_types = Literal["interior_facet", "exterior_facet", "ridge", "cell"]
+supported_integral_types = Literal["cell", "interior_facet", "exterior_facet", "vertex", "ridge"]
 
 class AveragedArgument(ufl.Argument):
     def __init__(self, u: ufl.Argument, average: Literal["cell", "facet"]):

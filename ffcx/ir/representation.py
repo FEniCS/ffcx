@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2020 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
+# Copyright (C) 2009-2026 Anders Logg, Martin Sandve Alnæs, Marie E. Rognes,
 # Kristian B. Oelgaard, Matthew W. Scroggs, Chris Richardson, and others
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
@@ -38,7 +38,7 @@ from ffcx import naming
 from ffcx.analysis import UFLData
 from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
-from ffcx.definitions import supported_integral_types
+from ffcx.definitions import supported_integral_types, entity_types
 logger = logging.getLogger("ffcx")
 
 
@@ -121,6 +121,110 @@ class DataIR(typing.NamedTuple):
     forms: list[FormIR]
     expressions: list[ExpressionIR]
 
+
+def _group_integrands_by_quadrature_rule(integrals: list[ufl.Integral],
+                                         argument_elements: list[basix.ufl._ElementBase],
+                                         integral_type: supported_integral_types, ufl_cell: ufl.Cell,
+                                         sum_factorization: bool,
+                                         )->  dict[
+        basix.CellType, dict[QuadratureRule, list["Expr"]]]:
+    """Group integrands with the same quadrature rule.
+
+    Given a sequence of integrals, group them by the quadrature
+    (after explicit computation of it).
+    The grouping is nested, meaning that it is first grouped
+    by the cell used for the integration (in most cases the integration domain).
+    However, for integrals with vertex-quadrature, the celltype is changed
+    to be of the correct sub-entity, so that one fetches the correct quadrature points.
+
+    Args:
+        integrals: List of itegrals to group
+        argument_elements: The finite elements for the arguments in the form.
+            Used to get the correct polyset type in the case of tensor-factorization
+            of the element ad thus the quadrature rule.
+        integral_type: Type of (FFCx) integral that is performed (not UFL integral type)
+        ufl_cell: UFL cell for the integration domain.
+        sum_factorization: If True use sum factorization.
+
+    Returns:
+        A nested dictionary over integrands[cell type of quadrature][quadrature_rule].
+    """
+    # 
+    grouped_integrands: dict[
+        basix.CellType, dict[QuadratureRule, list["Expr"]]
+    ] = {}
+     # NOTE: this variable changes throughout the loop
+    cell_type = basix_cell_from_string(ufl_cell.cellname)
+    use_sum_factorization = sum_factorization and integral_type == "cell"
+    for integral in integrals:
+        md = integral.metadata() or {}
+        scheme = md["quadrature_rule"]
+        tensor_factors = None
+        rules = {}
+        if scheme == "custom":
+            points = md["quadrature_points"]
+            weights = md["quadrature_weights"]
+            rules[cell_type] = (points, weights, None)
+        elif scheme == "vertex":
+            # The vertex scheme, i.e., averaging the function value in the
+            # vertices and multiplying with the simplex volume, is only of
+            # order 1 and inferior to other generic schemes in terms of
+            # error reduction. Equation systems generated with the vertex
+            # scheme have some properties that other schemes lack, e.g., the
+            # mass matrix is a simple diagonal matrix. This may be
+            # prescribed in certain cases.
+
+            degree = md["quadrature_degree"]
+            if "facet" in integral_type:
+                facet_types = basix.cell.subentity_types(cell_type)[-2]
+                assert len(set(facet_types)) == 1
+                cell_type = facet_types[0]
+            elif integral_type == "ridge":
+                ridge_types = basix.cell.subentity_types(cell_type)[-3]
+                assert len(set(ridge_types)) == 1
+                cell_type = ridge_types[0]
+
+            if degree > 1:
+                warnings.warn(
+                    "Explicitly selected vertex quadrature (degree 1), "
+                    f"but requested degree is {degree}."
+                )
+            points = basix.cell.geometry(cell_type)
+            cell_volume = basix.cell.volume(cell_type)
+            weights = np.full(
+                points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
+            )
+            rules[cell_type] = (points, weights, None)
+        else:
+            degree = md["quadrature_degree"]
+            points, weights, tensor_factors = create_quadrature_points_and_weights(
+                integral_type,
+                ufl_cell,
+                degree,
+                scheme,
+                argument_elements,
+                use_sum_factorization,
+            )
+            rules = {
+                basix_cell_from_string(i): (
+                    points[i],
+                    weights[i],
+                    tensor_factors[i] if i in tensor_factors else None,
+                )
+                for i in points
+            }
+
+        for cell_type, (points, weights, tensor_factors) in rules.items():
+            points = np.asarray(points)
+            weights = np.asarray(weights)
+            rule = QuadratureRule(points, weights, tensor_factors)
+
+            if cell_type not in grouped_integrands:
+                grouped_integrands[cell_type] = {}
+            if rule not in grouped_integrands[cell_type]:
+                grouped_integrands[cell_type][rule] = []
+            grouped_integrands[cell_type][rule].append(integral.integrand())
+    return grouped_integrands
 
 def compute_ir(
     analysis: UFLData,
@@ -216,13 +320,23 @@ def _compute_integral_ir(
         form_data: Data from UFL analysis of the form
         form_index: Index of form in the sequence of forms. Used to access the correct integral name
         unique_elements: Set of unique elements in the form.
+        integral_names: Map from `(form_index, integral_index)` to the signature of the integral.
+        options: Options for the intermediate representation. 'part': If the full tensor or
+            the diagonal of the tensor should be generated. Only valid for bi-linear forms.
+            'sum_factorization': If sum factorization should be used. Only has an effect on cell
+            integrals. 'table_atol',`table_rtol': Absolute and relative tolerance for clamping table
+            values at -1, 0 or 1. 
+        visualise: If True, store the graph representation of the integrand in a pdf file
+            `S.pdf` and `F.pdf`
+
+    Returns:
+         A list of intermediate representations for each integral of the Form.
     """
-    _entity_types = {
+    _entity_types: dict[supported_integral_types, entity_types] = {
         "cell": "cell",
         "exterior_facet": "facet",
         "interior_facet": "facet",
         "vertex": "vertex",
-        "custom": "cell",
         "ridge": "ridge",
     }
 
@@ -230,27 +344,35 @@ def _compute_integral_ir(
     irs = []
     for itg_data_index, itg_data in enumerate(form_data.integral_data):
         logger.info(f"Computing IR for integral in integral group {itg_data_index}")
-        expression_ir = {}
 
-        # Compute representation
-        entity_type = _entity_types[itg_data.integral_type]
+        # Cast integral type as long as we are using strings and not StringEnums
+        integral_type = typing.cast(supported_integral_types, itg_data.integral_type)
+
+        # Determine what kind of integral we are considering, as well checking that each integrand
+        # in the integral is associated with a domain of the same topological dimensio.
+        entity_type = _entity_types[integral_type]
         ufl_cell = itg_data.domain.ufl_cell()
         cell_type = basix_cell_from_string(ufl_cell.cellname)
         tdim = ufl_cell.topological_dimension
         assert all(tdim == itg.ufl_domain().topological_dimension for itg in itg_data.integrals)
 
+        # Initial population of what will become a CommonExpressionIR  
         expression_ir = {
-            "integral_type": itg_data.integral_type,
+            "integral_type": integral_type,
             "entity_type": entity_type,
             "shape": (),
             "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
             "number_coordinate_dofs": itg_data.domain.ufl_coordinate_element().dim,
         }
+        # Initial population of what will become the IntegralIR
         ir = {
             "rank": form_data.rank,
             "enabled_coefficients": itg_data.enabled_coefficients,
             "part": TensorPart.from_str(options["part"]),
         }
+
+        # Determine if the form compiler has been asked to diagonalize a
+        # bilinear form (by only assembling the diagonal entries, modify rank if True)
         diagonalise = False
         if form_data.rank == 2 and ir["part"] == TensorPart.diagonal:
             diagonalise = True
@@ -259,7 +381,9 @@ def _compute_integral_ir(
                 "Can only diagonalise forms with identical arguments."
             )
 
-        # Get element space dimensions
+        # Pre-compute the dimension number of dofs in each local element.
+        # Used to compute the shape of the locally assembled tensor, as well the
+        # coefficient offset
         element_dimensions = {
             element: element.dim + element.num_global_support_dofs for element in unique_elements
         }
@@ -276,85 +400,15 @@ def _compute_integral_ir(
         else:
             expression_ir["tensor_shape"] = argument_dimensions
 
-        # Modify output tensor shape if diagonalizing
-        if diagonalise:
+        if diagonalise:  # Modify output tensor shape if diagonalizing
             expression_ir["tensor_shape"] = expression_ir["tensor_shape"][:1]
 
-        integral_type = itg_data.integral_type
+        # Group integrals by quadrature rule by splitting them into separate integrands
+        grouped_integrands = _group_integrands_by_quadrature_rule(itg_data.integrals, form_data.argument_elements, integral_type,
+                                                                  ufl_cell, options["sum_factorization"])
 
-        # Group integrands with the same quadrature rule
-        grouped_integrands: dict[
-            basix.CellType, dict[QuadratureRule, list["Expr"]]
-        ] = {}
-        use_sum_factorization = options["sum_factorization"] and itg_data.integral_type == "cell"
-        for integral in itg_data.integrals:
-            md = integral.metadata() or {}
-            scheme = md["quadrature_rule"]
-            tensor_factors = None
-            rules = {}
-            if scheme == "custom":
-                points = md["quadrature_points"]
-                weights = md["quadrature_weights"]
-                rules[cell_type] = (points, weights, None)
-            elif scheme == "vertex":
-                # The vertex scheme, i.e., averaging the function value in the
-                # vertices and multiplying with the simplex volume, is only of
-                # order 1 and inferior to other generic schemes in terms of
-                # error reduction. Equation systems generated with the vertex
-                # scheme have some properties that other schemes lack, e.g., the
-                # mass matrix is a simple diagonal matrix. This may be
-                # prescribed in certain cases.
 
-                degree = md["quadrature_degree"]
-                if "facet" in integral_type:
-                    facet_types = basix.cell.subentity_types(cell_type)[-2]
-                    assert len(set(facet_types)) == 1
-                    cell_type = facet_types[0]
-                elif integral_type == "ridge":
-                    ridge_types = basix.cell.subentity_types(cell_type)[-3]
-                    assert len(set(ridge_types)) == 1
-                    cell_type = ridge_types[0]
-
-                if degree > 1:
-                    warnings.warn(
-                        "Explicitly selected vertex quadrature (degree 1), "
-                        f"but requested degree is {degree}."
-                    )
-                points = basix.cell.geometry(cell_type)
-                cell_volume = basix.cell.volume(cell_type)
-                weights = np.full(
-                    points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
-                )
-                rules[cell_type] = (points, weights, None)
-            else:
-                degree = md["quadrature_degree"]
-                points, weights, tensor_factors = create_quadrature_points_and_weights(
-                    integral_type,
-                    ufl_cell,
-                    degree,
-                    scheme,
-                    form_data.argument_elements,
-                    use_sum_factorization,
-                )
-                rules = {
-                    basix_cell_from_string(i): (
-                        points[i],
-                        weights[i],
-                        tensor_factors[i] if i in tensor_factors else None,
-                    )
-                    for i in points
-                }
-
-            for cell_type, (points, weights, tensor_factors) in rules.items():
-                points = np.asarray(points)
-                weights = np.asarray(weights)
-                rule = QuadratureRule(points, weights, tensor_factors)
-
-                if cell_type not in grouped_integrands:
-                    grouped_integrands[cell_type] = {}
-                if rule not in grouped_integrands[cell_type]:
-                    grouped_integrands[cell_type][rule] = []
-                grouped_integrands[cell_type][rule].append(integral.integrand())
+        # Sum up all integrands for a given quadrature rule
         sorted_integrals: dict[basix.CellType, dict[QuadratureRule, Integral]] = {
             cell_type: {} for cell_type in grouped_integrands
         }
@@ -372,28 +426,26 @@ def _compute_integral_ir(
                 )
                 sorted_integrals[cell_type][rule] = integral_new
 
-        # TODO: See if coefficient_numbering can be removed
         # Build coefficient numbering for UFCx interface here, to avoid
-        # renumbering in UFL and application of replace mapping
-        coefficient_numbering = {}
-        for i, f in enumerate(form_data.reduced_coefficients):
-            coefficient_numbering[f] = i
-
-        # Add coefficient numbering to IR
-        expression_ir["coefficient_numbering"] = coefficient_numbering
-
-        index_to_coeff = sorted([(v, k) for k, v in coefficient_numbering.items()])
-        offsets = {}
-        width = 2 if integral_type in ("interior_facet") else 1
+        # renumbering in UFL and application of replace mapping.
+        # We extract a map from the original coefficients to their
+        # new index in the form, as well as where in the flattened
+        # input coefficient data a coefficient should start.
+        coefficient_numbering: dict[ufl.Coefficient, int] = {}
+        coefficient_offsets: dict[ufl.Coefficient, int] = {}
         _offset = 0
-        for k, el in zip(index_to_coeff, form_data.coefficient_elements):
-            offsets[k[1]] = _offset
+        width = 2 if integral_type in ("interior_facet") else 1
+        for i, (coeff, el) in enumerate(zip(form_data.reduced_coefficients, form_data.coefficient_elements)):
+            coefficient_numbering[coeff] = i
+            coefficient_offsets[coeff] = _offset
             _offset += width * element_dimensions[el]
 
-        # Copy offsets also into IR
-        expression_ir["coefficient_offsets"] = offsets
+        # Add Coefficient numbering and offsets to IR
+        expression_ir["coefficient_numbering"] = coefficient_numbering
+        expression_ir["coefficient_offsets"] = coefficient_offsets
 
-        # Build offsets for Constants
+        # Similar procedure with constants, but they are not removed
+        # as they usually contain very little data.
         original_constant_offsets = {}
         _offset = 0
         for constant in form_data.original_form.constants():
@@ -409,11 +461,10 @@ def _compute_integral_ir(
         }
 
         # Build more specific intermediate representation
-        itg_type = typing.cast(supported_integral_types, itg_data.integral_type)
         integral_ir = compute_integral_ir(
             itg_data.domain.ufl_cell(),
-            itg_type,
-            expression_ir["entity_type"],
+            integral_type,
+            entity_type,
             integrand_map,
             expression_ir["tensor_shape"],
             options,
