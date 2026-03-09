@@ -155,15 +155,14 @@ def get_ffcx_table_values(
         component_tables.append(tbl)
 
     if avg in ("cell", "facet"):
-        # For averaging, we do not compute tables,
-        # but instead create tables with ones
-        # NOTE: I think we can remove this assumption now
-        # Not expecting derivatives of averages
-        assert not any(derivative_counts)
-        assert deriv_order == 0
+        # Compute numeric integral of the each component table
+        wsum = sum(weights)
         for entity, tbl in enumerate(component_tables):
             num_dofs = tbl.shape[1]
-            component_tables[entity] = np.ones((1, num_dofs))
+            tbl = np.dot(tbl, weights) / wsum
+            tbl = np.reshape(tbl, (1, num_dofs))
+            component_tables[entity] = tbl
+
     # Loop over entities and fill table blockwise (each block = points x dofs)
     # Reorder axes as (points, dofs) instead of (dofs, points)
     assert len(component_tables) == num_entities
@@ -172,6 +171,7 @@ def get_ffcx_table_values(
     res = np.zeros(shape)
     for entity in range(num_entities):
         res[:, entity, :, :] = component_tables[entity]
+
     return {"array": res, "offset": offset, "stride": stride}
 
 

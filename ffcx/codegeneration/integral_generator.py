@@ -160,10 +160,6 @@ class IntegralGenerator:
         all_preparts = []
         all_quadparts = []
 
-        # For sub-expressions of the original expression, compute accumualtion of data
-        # breakpoint()
-        # self.ir.expression.sub_expressions[0].keys()
-
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
         for cell, rule in self.ir.expression.integrand.keys():

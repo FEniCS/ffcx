@@ -9,6 +9,8 @@ import logging
 
 from ufl.classes import (
     Argument,
+    CellAvg,
+    FacetAvg,
     FixedIndex,
     FormArgument,
     Grad,
@@ -20,9 +22,6 @@ from ufl.classes import (
     SpatialCoordinate,
 )
 from ufl.permutation import build_component_numbering
-
-from ffcx.definitions import AveragedArgument
-
 logger = logging.getLogger("ffcx")
 
 
@@ -205,8 +204,6 @@ def analyse_modified_terminal(expr):
                 raise RuntimeError("Got twice pulled back terminal!")
 
             (t,) = t.ufl_operands
-            if isinstance(t, AveragedArgument):
-                averaged = t.average
             reference_value = True
 
         elif isinstance(t, ReferenceGrad):
@@ -231,6 +228,7 @@ def analyse_modified_terminal(expr):
 
             restriction = t._side
             (t,) = t.ufl_operands
+
         elif isinstance(t, CellAvg):
             if averaged is not None:
                 raise RuntimeError("Got twice averaged terminal!")
@@ -244,6 +242,7 @@ def analyse_modified_terminal(expr):
 
             (t,) = t.ufl_operands
             averaged = "facet"
+
         elif t._ufl_terminal_modifiers_:
             raise RuntimeError(
                 f"Missing handler for terminal modifier type {type(t)}, object is {t!r}."

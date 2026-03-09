@@ -96,7 +96,6 @@ class IntermediateIntegralIR(typing.TypedDict):
     unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]]
     unique_table_types: dict[basix.CellType, dict[str, str]]
     integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
-    sub_expressions: list[tuple[basix.CellType, QuadratureRule, IntermediateIntegrandIR]]
 
 
 class CommonExpressionIR(typing.NamedTuple):
@@ -121,7 +120,6 @@ class CommonExpressionIR(typing.NamedTuple):
     shape: list[int]
     coordinate_element_hash: str
     number_coordinate_dofs: int
-    sub_expressions: list[tuple[basix.CellType, QuadratureRule, IntermediateIntegrandIR]]
 
 
 def _compute_integral_ir(
@@ -394,7 +392,6 @@ def compute_integral_ir(
     ir["unique_table_types"] = {}
 
     ir["integrand"] = {}
-    ir["sub_expressions"] = []
     for integral_domain, integrands_on_domain in integrands.items():
         ir["unique_tables"][integral_domain] = {}
         ir["unique_table_types"][integral_domain] = {}
@@ -403,11 +400,6 @@ def compute_integral_ir(
 
             # Rebalance order of nested terminal modifiers
             expression = balance_modifiers(expression)
-
-            # Replace cell_avg with a coefficient or argument of the correct shape
-            replacer = AverageReplacer()
-
-            expression = replacer(expression)
 
             (
                 active_tables,
@@ -445,48 +437,6 @@ def compute_integral_ir(
                 ir["needs_facet_permutations"] = (
                     "+" in restrictions and "-" in restrictions
                 ) or is_mixed_dim
-
-            sub_integrands = replacer.sub_graphs
-            for sub_integrand in sub_integrands:
-                # Compute argument shape of sub expression
-                sub_args = ufl.algorithms.extract_arguments(sub_integrand)
-                sub_arg_shape = tuple([
-                    sa.ufl_element().dim + sa.ufl_element().num_global_support_dofs
-                    for sa in sub_args
-                ])
-                assert isinstance(sub_arg_shape, tuple)
-
-                (
-                    active_tables,
-                    active_table_types,
-                    F,
-                    argkeys,
-                    block_contributions,
-                    initial_terminals,
-                    is_mixed_dim,
-                ) = _compute_integral_ir(
-                    sub_integrand,
-                    ir["unique_tables"][integral_domain],
-                    quadrature_rule,
-                    cell,
-                    integral_type,
-                    entity_type,
-                    sub_arg_shape,
-                    visualise,
-                    p,
-                )
-                ir["unique_tables"][integral_domain].update(active_tables)
-                ir["unique_table_types"][integral_domain].update(active_table_types)
-                if not ir["needs_facet_permutations"]:
-                    ir["needs_facet_permutations"] = (
-                        "+" in restrictions and "-" in restrictions
-                    ) or is_mixed_dim
-                integrand_ir = IntermediateIntegrandIR(
-                    factorization=F,
-                    modified_arguments=[F.nodes[i]["mt"] for i in argkeys],
-                    block_contributions=block_contributions,
-                )
-                ir["sub_expressions"].append((integral_domain, quadrature_rule, integrand_ir))
 
     return ir
 
