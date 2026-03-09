@@ -1,6 +1,6 @@
 # Copyright (C) 2015-2024 Martin Sandve Alnæs, Michal Habera, Igor Baratta, Chris Richardson
 #
-# Modified by Jørgen S. Dokken, 2026
+# Modified by Jørgen S. Dokken, 2024, 2026
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
