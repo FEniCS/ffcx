@@ -109,6 +109,32 @@ def get_ffcx_table_values(
         else:
             integral_type = "exterior_facet"
 
+    if avg in ("cell", "facet"):
+        # Redefine points to compute average tables
+
+        # Make sure this is not called with points, that doesn't make sense
+        # assert points is None
+
+        # Not expecting derivatives of averages
+        assert not any(derivative_counts)
+        assert deriv_order == 0
+
+        # Doesn't matter if it's exterior or interior facet integral,
+        # just need a valid integral type to create quadrature rule
+        if avg == "cell":
+            integral_type = "cell"
+        elif avg == "facet":
+            integral_type = "exterior_facet"
+
+        if isinstance(element, basix.ufl._QuadratureElement):
+            points = element._points
+            weights = element._weights
+        else:
+            # Make quadrature rule and get points and weights
+            points, weights = create_quadrature_points_and_weights(
+                integral_type, cell, element.embedded_superdegree(), "default", [element]
+            )
+
     # Tabulate table of basis functions and derivatives in points for each entity
     tdim = cell.topological_dimension
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
