@@ -6,9 +6,11 @@
 """Naming."""
 
 from __future__ import annotations
-import numbers
+
 import hashlib
+import numbers
 from typing import Literal
+
 import numpy as np
 import numpy.typing as npt
 import ufl

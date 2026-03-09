@@ -149,9 +149,7 @@ def _analyze_expression(
     return expression
 
 
-def _analyze_form(
-    form: ufl.Form, scalar_type: npt.DTypeLike
-) -> "FormData":
+def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:
@@ -180,7 +178,7 @@ def _analyze_form(
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data: "FormData" = ufl.algorithms.compute_form_data(
+    form_data: FormData = ufl.algorithms.compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,

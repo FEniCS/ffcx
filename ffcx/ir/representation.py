@@ -36,9 +36,13 @@ from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
 from ffcx.analysis import UFLData
+from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
-from ffcx.ir.representationutils import QuadratureRule, create_quadrature_points_and_weights
-from ffcx.definitions import supported_integral_types, entity_types
+from ffcx.ir.representationutils import (
+    QuadratureRule,
+    create_quadrature_points_and_weights,
+)
+
 logger = logging.getLogger("ffcx")
 
 
@@ -122,12 +126,13 @@ class DataIR(typing.NamedTuple):
     expressions: list[ExpressionIR]
 
 
-def _group_integrands_by_quadrature_rule(integrals: list[ufl.Integral],
-                                         argument_elements: list[basix.ufl._ElementBase],
-                                         integral_type: supported_integral_types, ufl_cell: ufl.Cell,
-                                         sum_factorization: bool,
-                                         )->  dict[
-        basix.CellType, dict[QuadratureRule, list["Expr"]]]:
+def _group_integrands_by_quadrature_rule(
+    integrals: list[ufl.Integral],
+    argument_elements: tuple[basix.ufl._ElementBase, ...],
+    integral_type: supported_integral_types,
+    ufl_cell: ufl.Cell,
+    sum_factorization: bool,
+) -> dict[basix.CellType, dict[QuadratureRule, list[Expr]]]:
     """Group integrands with the same quadrature rule.
 
     Given a sequence of integrals, group them by the quadrature
@@ -149,11 +154,9 @@ def _group_integrands_by_quadrature_rule(integrals: list[ufl.Integral],
     Returns:
         A nested dictionary over integrands[cell type of quadrature][quadrature_rule].
     """
-    # 
-    grouped_integrands: dict[
-        basix.CellType, dict[QuadratureRule, list["Expr"]]
-    ] = {}
-     # NOTE: this variable changes throughout the loop
+    #
+    grouped_integrands: dict[basix.CellType, dict[QuadratureRule, list[Expr]]] = {}
+    # NOTE: this variable changes throughout the loop
     cell_type = basix_cell_from_string(ufl_cell.cellname)
     use_sum_factorization = sum_factorization and integral_type == "cell"
     for integral in integrals:
@@ -191,9 +194,7 @@ def _group_integrands_by_quadrature_rule(integrals: list[ufl.Integral],
                 )
             points = basix.cell.geometry(cell_type)
             cell_volume = basix.cell.volume(cell_type)
-            weights = np.full(
-                points.shape[0], cell_volume / points.shape[0], dtype=points.dtype
-            )
+            weights = np.full(points.shape[0], cell_volume / points.shape[0], dtype=points.dtype)
             rules[cell_type] = (points, weights, None)
         else:
             degree = md["quadrature_degree"]
@@ -225,6 +226,7 @@ def _group_integrands_by_quadrature_rule(integrals: list[ufl.Integral],
                 grouped_integrands[cell_type][rule] = []
             grouped_integrands[cell_type][rule].append(integral.integrand())
     return grouped_integrands
+
 
 def compute_ir(
     analysis: UFLData,
@@ -325,7 +327,7 @@ def _compute_integral_ir(
             the diagonal of the tensor should be generated. Only valid for bi-linear forms.
             'sum_factorization': If sum factorization should be used. Only has an effect on cell
             integrals. 'table_atol',`table_rtol': Absolute and relative tolerance for clamping table
-            values at -1, 0 or 1. 
+            values at -1, 0 or 1.
         visualise: If True, store the graph representation of the integrand in a pdf file
             `S.pdf` and `F.pdf`
 
@@ -356,7 +358,7 @@ def _compute_integral_ir(
         tdim = ufl_cell.topological_dimension
         assert all(tdim == itg.ufl_domain().topological_dimension for itg in itg_data.integrals)
 
-        # Initial population of what will become a CommonExpressionIR  
+        # Initial population of what will become a CommonExpressionIR
         expression_ir = {
             "integral_type": integral_type,
             "entity_type": entity_type,
@@ -404,9 +406,13 @@ def _compute_integral_ir(
             expression_ir["tensor_shape"] = expression_ir["tensor_shape"][:1]
 
         # Group integrals by quadrature rule by splitting them into separate integrands
-        grouped_integrands = _group_integrands_by_quadrature_rule(itg_data.integrals, form_data.argument_elements, integral_type,
-                                                                  ufl_cell, options["sum_factorization"])
-
+        grouped_integrands = _group_integrands_by_quadrature_rule(
+            itg_data.integrals,
+            form_data.argument_elements,
+            integral_type,
+            ufl_cell,
+            options["sum_factorization"],
+        )
 
         # Sum up all integrands for a given quadrature rule
         sorted_integrals: dict[basix.CellType, dict[QuadratureRule, Integral]] = {
@@ -435,7 +441,9 @@ def _compute_integral_ir(
         coefficient_offsets: dict[ufl.Coefficient, int] = {}
         _offset = 0
         width = 2 if integral_type in ("interior_facet") else 1
-        for i, (coeff, el) in enumerate(zip(form_data.reduced_coefficients, form_data.coefficient_elements)):
+        for i, (coeff, el) in enumerate(
+            zip(form_data.reduced_coefficients, form_data.coefficient_elements)
+        ):
             coefficient_numbering[coeff] = i
             coefficient_offsets[coeff] = _offset
             _offset += width * element_dimensions[el]
@@ -455,7 +463,7 @@ def _compute_integral_ir(
         expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrand_map: dict[basix.CellType, dict[QuadratureRule, "Expr"]] = {
+        integrand_map: dict[basix.CellType, dict[QuadratureRule, Expr]] = {
             cell_type: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
             for cell_type, cell_integrals in sorted_integrals.items()
         }
@@ -538,7 +546,13 @@ def _compute_form_ir(
     # Store names of integrals and subdomain_ids for this form, grouped
     # by integral types since form points to all integrals it contains,
     # it has to know their names for codegen phase
-    ufcx_integral_types = ("cell", "exterior_facet", "interior_facet", "vertex", "ridge")
+    ufcx_integral_types = (
+        "cell",
+        "exterior_facet",
+        "interior_facet",
+        "vertex",
+        "ridge",
+    )
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_domains"] = {itg_type: [] for itg_type in ufcx_integral_types}

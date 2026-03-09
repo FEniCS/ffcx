@@ -22,6 +22,7 @@ from ufl.classes import (
     SpatialCoordinate,
 )
 from ufl.permutation import build_component_numbering
+
 logger = logging.getLogger("ffcx")
 
 

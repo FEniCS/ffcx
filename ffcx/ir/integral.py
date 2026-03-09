@@ -28,7 +28,13 @@ from ffcx.ir.analysis.modified_terminals import (
     is_modified_terminal,
 )
 from ffcx.ir.analysis.visualise import visualise_graph
-from ffcx.ir.elementtables import UniqueTableReferenceT, build_optimized_tables
+from ffcx.ir.elementtables import (
+    UniqueTableReferenceT,
+    build_optimized_tables,
+)
+from ffcx.ir.elementtables import (
+    table_types as _table_types,
+)
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
@@ -86,15 +92,19 @@ class BlockDataT(typing.NamedTuple):
 
 
 class IntermediateIntegrandIR(typing.TypedDict):
+    """Intermediate IR for integrands."""
+
     factorization: ExpressionGraph
     modified_arguments: list[ModifiedTerminal]
-    block_contributions: dict[list[tuple[int, ...]], BlockDataT]
+    block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]]
 
 
 class IntermediateIntegralIR(typing.TypedDict):
+    """Intermediate IR for integrals."""
+
     needs_facet_permutations: bool
     unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]]
-    unique_table_types: dict[basix.CellType, dict[str, str]]
+    unique_table_types: dict[basix.CellType, dict[str, _table_types]]
     integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
 
 
@@ -129,10 +139,18 @@ def _compute_integral_ir(
     cell: ufl.Cell,
     integral_type: supported_integral_types,
     entity_type: entity_types,
-    argument_shape: tuple[int,...],
+    argument_shape: tuple[int, ...],
     visualise: bool,
     p: dict,
-):
+) -> tuple[
+    dict[str, npt.NDArray[np.float64]],
+    dict[str, _table_types],
+    ExpressionGraph,
+    list[int],
+    dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
+    dict[int, ModifiedTerminal],
+    bool,
+]:
     # Remove QuadratureWeight terminals from expression and replace with 1.0
     expression = replace_quadratureweight(expression)
 
@@ -170,8 +188,10 @@ def _compute_integral_ir(
         atol=p["table_atol"],
     )
     # Fetch unique tables for this quadrature rule
-    table_types = {v.name: v.ttype for v in mt_table_reference.values()}
-    tables = {v.name: v.values for v in mt_table_reference.values()}
+    table_types: dict[str, _table_types] = {v.name: v.ttype for v in mt_table_reference.values()}
+    tables: dict[str, npt.NDArray[np.float64]] = {
+        v.name: v.values for v in mt_table_reference.values()
+    }
 
     S_targets = [i for i, v in S.nodes.items() if v.get("target", False)]
     num_components = np.int32(np.prod(expression.ufl_shape))
@@ -259,7 +279,9 @@ def _compute_integral_ir(
         visualise_graph(F, "F.pdf")
 
     # Loop over factorization terms
-    block_contributions = collections.defaultdict(list)
+    block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]] = (
+        collections.defaultdict(list)
+    )
     for ma_indices, fi_ci in sorted(argument_factorization.items()):
         # Get a bunch of information about this term
         if TensorPart.from_str(p["part"]) != TensorPart.diagonal:
@@ -343,8 +365,8 @@ def _compute_integral_ir(
                 else:
                     active_table_names.add(mad.tabledata.name)
 
-    active_tables = {}
-    active_table_types = {}
+    active_tables: dict[str, npt.NDArray[np.float64]] = {}
+    active_table_types: dict[str, _table_types] = {}
 
     for name in active_table_names:
         # Drop tables not referenced from modified terminals
@@ -370,7 +392,7 @@ def compute_integral_ir(
     argument_shape: tuple[int, ...],
     p: dict,
     visualise: bool,
-) -> dict[str, typing.Any]:
+) -> IntermediateIntegralIR:
     """Compute intermediate representation for an integral.
 
     Args:
@@ -383,18 +405,14 @@ def compute_integral_ir(
         visualise: If True, store the graph representation of the integrand in a pdf file
             `S.pdf` and `F.pdf`
     """
-    # The intermediate representation dict we're building and returning
-    # here
-    ir: dict[str, typing.Any] = {"needs_facet_permutations": False}
-
-    # Shared unique tables for all quadrature loops
-    ir["unique_tables"] = {}
-    ir["unique_table_types"] = {}
-
-    ir["integrand"] = {}
+    # Data that will populate the intermediate representation.
+    needs_facet_permutations: bool = False
+    unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]] = {}
+    unique_table_types: dict[basix.CellType, dict[str, _table_types]] = {}
+    integrand_map: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR] = {}
     for integral_domain, integrands_on_domain in integrands.items():
-        ir["unique_tables"][integral_domain] = {}
-        ir["unique_table_types"][integral_domain] = {}
+        unique_tables[integral_domain] = {}
+        unique_table_types[integral_domain] = {}
         for quadrature_rule, integrand in integrands_on_domain.items():
             expression = integrand
 
@@ -411,7 +429,7 @@ def compute_integral_ir(
                 is_mixed_dim,
             ) = _compute_integral_ir(
                 expression,
-                ir["unique_tables"][integral_domain],
+                unique_tables[integral_domain],
                 quadrature_rule,
                 cell,
                 integral_type,
@@ -422,23 +440,28 @@ def compute_integral_ir(
             )
 
             # Add tables and types for this quadrature rule to global tables dict
-            ir["unique_tables"][integral_domain].update(active_tables)
-            ir["unique_table_types"][integral_domain].update(active_table_types)
+            unique_tables[integral_domain].update(active_tables)
+            unique_table_types[integral_domain].update(active_table_types)
             # Build IR dict for the given expressions
             # Store final ir for this num_points
-            ir["integrand"][(integral_domain, quadrature_rule)] = {
-                "factorization": F,
-                "modified_arguments": [F.nodes[i]["mt"] for i in argkeys],
-                "block_contributions": block_contributions,
-            }
+            integrand_map[(integral_domain, quadrature_rule)] = IntermediateIntegrandIR(
+                factorization=F,
+                modified_arguments=[F.nodes[i]["mt"] for i in argkeys],
+                block_contributions=block_contributions,
+            )
 
             restrictions = [i.restriction for i in initial_terminals.values()]
-            if not ir["needs_facet_permutations"]:
-                ir["needs_facet_permutations"] = (
+            if not needs_facet_permutations:
+                needs_facet_permutations = (
                     "+" in restrictions and "-" in restrictions
                 ) or is_mixed_dim
 
-    return ir
+    return IntermediateIntegralIR(
+        needs_facet_permutations=needs_facet_permutations,
+        unique_tables=unique_tables,
+        unique_table_types=unique_table_types,
+        integrand=integrand_map,
+    )
 
 
 def analyse_dependencies(F, mt_unique_table_reference):
