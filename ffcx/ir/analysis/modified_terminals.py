@@ -231,7 +231,19 @@ def analyse_modified_terminal(expr):
 
             restriction = t._side
             (t,) = t.ufl_operands
+        elif isinstance(t, CellAvg):
+            if averaged is not None:
+                raise RuntimeError("Got twice averaged terminal!")
 
+            (t,) = t.ufl_operands
+            averaged = "cell"
+
+        elif isinstance(t, FacetAvg):
+            if averaged is not None:
+                raise RuntimeError("Got twice averaged terminal!")
+
+            (t,) = t.ufl_operands
+            averaged = "facet"
         elif t._ufl_terminal_modifiers_:
             raise RuntimeError(
                 f"Missing handler for terminal modifier type {type(t)}, object is {t!r}."
