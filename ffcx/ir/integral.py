@@ -19,7 +19,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 
-from ffcx.definitions import AverageReplacer, entity_types, supported_integral_types
+from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import ExpressionGraph, build_scalar_graph
 from ffcx.ir.analysis.modified_terminals import (
