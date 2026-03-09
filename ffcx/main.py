@@ -127,7 +127,7 @@ def main(args: Sequence[str] | None = None) -> int:
         ufd = ufl.algorithms.load_ufl_file(filename)
 
         # Generate code
-        code_h, code_c = compiler.compile_ufl_objects(
+        code, suffixes = compiler.compile_ufl_objects(
             ufd.forms + ufd.expressions + ufd.elements,
             options=options,
             object_names=ufd.object_names,
@@ -135,18 +135,8 @@ def main(args: Sequence[str] | None = None) -> int:
             visualise=xargs.visualise,
         )
 
-        # File suffixes
-        # TODO: this needs to be moved into the language backends
-        suffixes: tuple[str | None, str | None]
-        if options["language"] == "C":
-            suffixes = (".h", ".c")
-        else:  # numba
-            if xargs.outfile is None:
-                outfile = outfile + "_numba"
-            suffixes = (None, ".py")
-
         # Write to file
-        formatting.write_code(code_h, code_c, outfile, suffixes, output_dir=xargs.dir)
+        formatting.write_code(code, outfile, suffixes, xargs.dir)
 
         # Turn off profiling and write status to file
         if xargs.profile:

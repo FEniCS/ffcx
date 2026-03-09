@@ -5,9 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Template for expression output."""
 
-declaration = """
-"""
-
 factory = """
 # Code for expression {factory_name}
 

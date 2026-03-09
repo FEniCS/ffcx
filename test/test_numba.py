@@ -28,12 +28,21 @@ def as_C_array(np_array: npt.NDArray):
     return np_array.ctypes.data_as(ctypes.POINTER(dtype_C))
 
 
-@pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
-def test_integral(scalar_type: str) -> None:
-    opts = f"--language numba --scalar_type {scalar_type}"
+def test_external_module():
+    """Inject ffcx.codegeneration.numba as external module, to test support for custom backends."""
+    opts = "--language ffcx.codegeneration.numba --scalar_type float64"
     dir = Path(__file__).parent
     assert ffcx.main.main([str(dir / "poisson.py"), *opts.split(" ")]) == 0
 
+
+@pytest.fixture
+def generate_poisson() -> None:
+    dir = Path(__file__).parent
+    assert ffcx.main.main([str(dir / "poisson.py"), "--language", "numba"]) == 0
+
+
+@pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
+def test_integral(scalar_type: str, generate_poisson) -> None:
     poisson = importlib.import_module("poisson_numba")
 
     dtype = np.dtype(scalar_type).type
@@ -86,11 +95,7 @@ def test_integral(scalar_type: str) -> None:
 
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
-def test_expression(scalar_type: str) -> None:
-    opts = f"--language numba --scalar_type {scalar_type}"
-    dir = Path(__file__).parent
-    assert ffcx.main.main([str(dir / "poisson.py"), *opts.split(" ")]) == 0
-
+def test_expression(scalar_type: str, generate_poisson) -> None:
     poisson = importlib.import_module("poisson_numba")
 
     dtype = np.dtype(scalar_type).type
