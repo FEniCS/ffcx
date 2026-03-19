@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2025 Garth N. Wells, Matthew Scroggs, Paul T. Kühner and Jørgen S. Dokken
+# Copyright (C) 2018-2026 Garth N. Wells, Matthew Scroggs, Paul T. Kühner and Jørgen S. Dokken
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -9,6 +9,7 @@ import sys
 
 import basix.ufl
 import numpy as np
+import numpy.typing as npt
 import pytest
 import sympy
 import ufl
@@ -2163,3 +2164,68 @@ def test_multiple_integrands_same_quadrature(compile_args, dtype):
         ffi.NULL,
     )
     np.testing.assert_allclose(A_mixed, A_ref)
+
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        "float32",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+        pytest.param(
+            "complex64",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+
+    ],
+)
+def test_ufl_real(compile_args: list[str], dtype: npt.DTypeLike) -> None:
+    xdtype = dtype_to_scalar_dtype(dtype)
+    c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(1,), dtype=xdtype)
+    mesh = ufl.Mesh(c_el)
+    el = basix.ufl.element("DG", "interval", 0, shape=())
+    V = ufl.FunctionSpace(mesh, el)
+    u = ufl.Coefficient(V)
+
+    dx = ufl.Measure("dx")
+    b = ufl.conditional(ufl.gt(ufl.real(u), 0), u, -u) * dx
+    val = 5 - 5j if "complex" in dtype else 5
+    w = np.array([val], dtype=dtype)
+    forms = [b]
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args, options={"scalar_type":dtype}
+    )
+
+    ffi = module.ffi
+    form0 = compiled_forms[0]
+    assert form0.form_integral_offsets[module.lib.cell + 1] == 1
+
+    default_integral = form0.form_integrals[0]
+    J = np.zeros(1, dtype=dtype)
+    coords = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", J.ctypes.data),
+        ffi.cast(f"{c_type} *", w.ctypes.data),
+        ffi.NULL,
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    assert np.isclose(J[0], val)
