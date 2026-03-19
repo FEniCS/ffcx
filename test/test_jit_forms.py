@@ -2166,7 +2166,6 @@ def test_multiple_integrands_same_quadrature(compile_args, dtype):
     np.testing.assert_allclose(A_mixed, A_ref)
 
 
-
 @pytest.mark.parametrize(
     "dtype",
     [
@@ -2188,7 +2187,6 @@ def test_multiple_integrands_same_quadrature(compile_args, dtype):
                 reason="missing _Complex",
             ),
         ),
-
     ],
 )
 def test_ufl_real(compile_args: list[str], dtype: npt.DTypeLike) -> None:
@@ -2205,7 +2203,7 @@ def test_ufl_real(compile_args: list[str], dtype: npt.DTypeLike) -> None:
     w = np.array([val], dtype=dtype)
     forms = [b]
     compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
-        forms, cffi_extra_compile_args=compile_args, options={"scalar_type":dtype}
+        forms, cffi_extra_compile_args=compile_args, options={"scalar_type": dtype}
     )
 
     ffi = module.ffi
