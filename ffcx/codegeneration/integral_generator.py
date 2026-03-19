@@ -41,7 +41,7 @@ def extract_dtype(v, vops: list[Any]):
     is_cond = isinstance(v, ufl.classes.Condition)
     if is_cond:
         return L.DataType.BOOL
-    is_real = isinstance(v, ufl.algebra.Real)
+    is_real = isinstance(v, (ufl.classes.Real, ufl.classes.Imag))
     if is_real:
         return L.DataType.REAL
     return L.merge_dtypes(dtypes)
