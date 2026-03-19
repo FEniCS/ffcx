@@ -6,6 +6,7 @@
 
 import os
 import sys
+import typing
 
 import basix.ufl
 import numpy as np
@@ -2166,6 +2167,7 @@ def test_multiple_integrands_same_quadrature(compile_args, dtype):
     np.testing.assert_allclose(A_mixed, A_ref)
 
 
+@pytest.mark.parametrize("operator", (ufl.real, ufl.imag))
 @pytest.mark.parametrize(
     "dtype",
     [
@@ -2189,7 +2191,14 @@ def test_multiple_integrands_same_quadrature(compile_args, dtype):
         ),
     ],
 )
-def test_ufl_real(compile_args: list[str], dtype: npt.DTypeLike) -> None:
+def test_ufl_complex_extraction(
+    compile_args: list[str],
+    dtype: npt.DTypeLike,
+    operator: typing.Callable[[typing.Any], typing.Any],
+) -> None:
+    if "float" in dtype and operator == ufl.imag:
+        pytest.xfail("Cannot have imag in real form")
+
     xdtype = dtype_to_scalar_dtype(dtype)
     c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(1,), dtype=xdtype)
     mesh = ufl.Mesh(c_el)
@@ -2198,8 +2207,8 @@ def test_ufl_real(compile_args: list[str], dtype: npt.DTypeLike) -> None:
     u = ufl.Coefficient(V)
 
     dx = ufl.Measure("dx")
-    b = ufl.conditional(ufl.gt(ufl.real(u), 0), u, -u) * dx
-    val = 5 - 5j if "complex" in dtype else 5
+    b = ufl.conditional(ufl.gt(operator(u), 0), u, -u) * dx
+    val = 5 + 6j if "complex" in dtype else 5
     w = np.array([val], dtype=dtype)
     forms = [b]
     compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
