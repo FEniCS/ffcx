@@ -320,9 +320,9 @@ def _compute_integral_ir(
 
     Args:
         form_data: Data from UFL analysis of the form
-        form_index: Index of form in the sequence of forms. Used to access the correct integral name
+        form_index: Index of form in the sequence of forms.
         unique_elements: Set of unique elements in the form.
-        integral_names: Map from `(form_index, integral_index)` to the signature of the integral.
+        integral_names: Map from `(form_index, integral_index)` to the name of the integral.
         options: Options for the intermediate representation. 'part': If the full tensor or
             the diagonal of the tensor should be generated. Only valid for bi-linear forms.
             'sum_factorization': If sum factorization should be used. Only has an effect on cell
