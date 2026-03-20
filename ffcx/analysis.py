@@ -93,8 +93,8 @@ def analyze_ufl_objects(
 
     form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
     for data in form_data:
-        elements += data.unique_sub_elements  # type: ignore
-        coordinate_elements += data.coordinate_elements  # type: ignore
+        elements += data.unique_sub_elements
+        coordinate_elements += data.coordinate_elements
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
@@ -170,8 +170,8 @@ def _analyze_form(
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
     # Check that coordinate element is based on basix.ufl._ElementBase
-    for i in form._integrals:
-        assert isinstance(i._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
+    for _integral in form._integrals:
+        assert isinstance(_integral._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
 
     # Check for complex mode
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
@@ -190,7 +190,7 @@ def _analyze_form(
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
-    for id, integral_data in enumerate(form_data.integral_data):  # type: ignore
+    for id, integral_data in enumerate(form_data.integral_data):
         # Iterate through groups of integral data. There is one integral
         # data for all integrals with same domain, itype, subdomain_id
         # (but possibly different metadata).
