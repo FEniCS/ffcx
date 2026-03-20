@@ -2167,14 +2167,23 @@ def test_multiple_integrands_same_quadrature(compile_args, dtype):
     np.testing.assert_allclose(A_mixed, A_ref)
 
 
-@pytest.mark.parametrize("operator", (ufl.real, ufl.imag))
 @pytest.mark.parametrize(
-    "dtype",
+    "dtype, operator",
     [
-        "float64",
-        "float32",
+        ("float64", ufl.real),
+        ("float32", ufl.real),
         pytest.param(
             "complex128",
+            ufl.real,
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+        pytest.param(
+            "complex128",
+            ufl.imag,
             marks=pytest.mark.xfail(
                 sys.platform.startswith("win32"),
                 raises=NotImplementedError,
@@ -2183,6 +2192,16 @@ def test_multiple_integrands_same_quadrature(compile_args, dtype):
         ),
         pytest.param(
             "complex64",
+            ufl.real,
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+        pytest.param(
+            "complex64",
+            ufl.imag,
             marks=pytest.mark.xfail(
                 sys.platform.startswith("win32"),
                 raises=NotImplementedError,
@@ -2196,9 +2215,6 @@ def test_ufl_complex_extraction(
     dtype: npt.DTypeLike,
     operator: typing.Callable[[typing.Any], typing.Any],
 ) -> None:
-    if "float" in dtype and operator == ufl.imag:
-        pytest.xfail("Cannot have imag in real form")
-
     xdtype = dtype_to_scalar_dtype(dtype)
     c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(1,), dtype=xdtype)
     mesh = ufl.Mesh(c_el)
@@ -2217,6 +2233,7 @@ def test_ufl_complex_extraction(
 
     ffi = module.ffi
     form0 = compiled_forms[0]
+
     assert form0.form_integral_offsets[module.lib.cell + 1] == 1
 
     default_integral = form0.form_integrals[0]
