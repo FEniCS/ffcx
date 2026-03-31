@@ -40,7 +40,12 @@ def extract_dtype(v, vops: list[Any]):
         else:
             raise RuntimeError(f"Not expecting this type of operand {type(op)}")
     is_cond = isinstance(v, ufl.classes.Condition)
-    return L.DataType.BOOL if is_cond else L.merge_dtypes(dtypes)
+    if is_cond:
+        return L.DataType.BOOL
+    is_real = isinstance(v, (ufl.classes.Real, ufl.classes.Imag))
+    if is_real:
+        return L.DataType.REAL
+    return L.merge_dtypes(dtypes)
 
 
 class IntegralGenerator:

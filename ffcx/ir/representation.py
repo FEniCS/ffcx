@@ -253,7 +253,7 @@ def compute_ir(
                 fd.original_form,
                 itg_data.integral_type,
                 fd_index,
-                itg_data.subdomain_id,
+                itg_data.subdomain_id,  # type: ignore
                 prefix,
             )
 

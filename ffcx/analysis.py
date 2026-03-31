@@ -171,8 +171,8 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
         raise RuntimeError(f"Form ({form}) contains unsupported custom integrals.")
 
     # Check that coordinate element is based on basix.ufl._ElementBase
-    for itg in form._integrals:
-        assert isinstance(itg._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
+    for _integral in form._integrals:
+        assert isinstance(_integral._ufl_domain._ufl_coordinate_element, basix.ufl._ElementBase)
 
     # Check for complex mode
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
