@@ -16,10 +16,13 @@ from __future__ import annotations
 import logging
 import typing
 
+if typing.TYPE_CHECKING:
+    from ufl.algorithms.formdata import FormData
+
 import basix.ufl
 import numpy as np
 import numpy.typing as npt
-import ufl
+import ufl.algorithms
 
 logger = logging.getLogger("ffcx")
 
@@ -28,7 +31,7 @@ class UFLData(typing.NamedTuple):
     """UFL data."""
 
     # Tuple of ufl form data
-    form_data: tuple[ufl.algorithms.formdata.FormData, ...]
+    form_data: tuple[FormData, ...]
     # List of unique elements
     unique_elements: list[basix.ufl._ElementBase]
     # Lookup table from each unique element to its index in `unique_elements`
@@ -146,9 +149,7 @@ def _analyze_expression(
     return expression
 
 
-def _analyze_form(
-    form: ufl.form.Form, scalar_type: npt.DTypeLike
-) -> ufl.algorithms.formdata.FormData:
+def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:
@@ -177,7 +178,7 @@ def _analyze_form(
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data: ufl.algorithms.formdata.FormData = ufl.algorithms.compute_form_data(
+    form_data: FormData = ufl.algorithms.compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,

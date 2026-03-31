@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2026 Martin Sandve Alnæs, Jørgen S. Dokken
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #

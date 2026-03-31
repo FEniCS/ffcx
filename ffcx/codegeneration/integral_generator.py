@@ -1,6 +1,6 @@
 # Copyright (C) 2015-2024 Martin Sandve Alnæs, Michal Habera, Igor Baratta, Chris Richardson
 #
-# Modified by Jørgen S. Dokken, 2024
+# Modified by Jørgen S. Dokken, 2024, 2026
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -20,7 +20,8 @@ from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import optimize
 from ffcx.ir.elementtables import piecewise_ttypes
-from ffcx.ir.integral import BlockDataT, TensorPart
+from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
+from ffcx.ir.representation import IntegralIR
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
@@ -50,7 +51,7 @@ def extract_dtype(v, vops: list[Any]):
 class IntegralGenerator:
     """Integral generator."""
 
-    def __init__(self, ir, backend):
+    def __init__(self, ir: IntegralIR, backend):
         """Initialise."""
         # Store ir
         self.ir = ir
@@ -63,17 +64,17 @@ class IntegralGenerator:
 
         # Set of operator names code has been generated for, used in the
         # end for selecting necessary includes
-        self._ufl_names = set()
+        self._ufl_names: set[str] = set()
 
         # Initialize lookup tables for variable scopes
         self.init_scopes()
 
         # Cache
-        self.temp_symbols = {}
+        self.temp_symbols: dict[Any, L.Symbol] = {}
 
         # Set of counters used for assigning names to intermediate
         # variables
-        self.symbol_counters = collections.defaultdict(int)
+        self.symbol_counters: dict[str, int] = collections.defaultdict(int)
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -149,7 +150,7 @@ class IntegralGenerator:
         parts = []
 
         # Generate the tables of quadrature points and weights
-        parts += self.generate_quadrature_tables(domain)
+        parts += self.generate_quadrature_tables(domain, self.ir.expression)
 
         # Generate the tables of basis function values and
         # pre-integrated blocks
@@ -181,17 +182,16 @@ class IntegralGenerator:
 
         return L.StatementList(parts)
 
-    def generate_quadrature_tables(self, domain: basix.CellType):
+    def generate_quadrature_tables(self, domain: basix.CellType, expression: CommonExpressionIR):
         """Generate static tables of quadrature points and weights."""
         parts: list[L.LNode] = []
-
         # No quadrature tables for custom (given argument)
         skip = ufl.custom_integral_types
-        if self.ir.expression.integral_type in skip:
+        if expression.integral_type in skip:
             return parts
 
         # Loop over quadrature rules
-        for (cell, quadrature_rule), _ in self.ir.expression.integrand.items():
+        for (cell, quadrature_rule), _ in expression.integrand.items():
             if domain == cell:
                 # Generate quadrature weights array
                 wsym = self.backend.symbols.weights_table(quadrature_rule)
