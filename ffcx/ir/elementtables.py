@@ -676,8 +676,6 @@ def is_quadrature_table(table, rtol=default_rtol, atol=default_atol):
 
 def is_permuted_table(table, rtol=default_rtol, atol=default_atol):
     """Check if table is permuted."""
-    # NOTE: Could be done faster with numpy broadcasting, i.e.
-    # return not all(np.allclose(table[0], table))
     return not all(
         np.allclose(table[0, :, :, :], table[i, :, :, :], rtol=rtol, atol=atol)
         for i in range(1, table.shape[0])
