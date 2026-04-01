@@ -606,6 +606,7 @@ def _compute_expression_ir(
         cell = None
     elif len(domains) == 1:
         expr_domain = domains[0]
+        cell = expr_domain.ufl_cell()
     else:
         expr_domain = max(domains, key=lambda domain: domain.topological_dimension)
         cell = expr_domain.ufl_cell()
