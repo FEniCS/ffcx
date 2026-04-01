@@ -596,8 +596,6 @@ def _compute_expression_ir(
     points = expr[1]
     expr = expr[0]
 
- 
-
     domains = ufl.domain.extract_domains(expr)
     if len(domains) == 0:
         # This case corresponds to a spatially constant expression
