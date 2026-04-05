@@ -6,6 +6,7 @@
 """Linearized data structure for the computational graph."""
 
 import logging
+
 import numpy as np
 import ufl
 
@@ -15,12 +16,14 @@ from ffcx.ir.analysis.valuenumbering import ValueNumberer
 
 logger = logging.getLogger("ffcx")
 
+
 class ExpressionGraph:
     """A directed multi-edge graph.
 
     ExpressionGraph allows multiple edges between the same nodes,
     and respects the insertion order of nodes and edges.
     """
+
     def __init__(self):
         """Initialise."""
         # Data structures for directed multi-edge graph
@@ -28,6 +31,7 @@ class ExpressionGraph:
         self._out_edges = {}
         self._in_edges = {}
         self.e2i = {}
+
     def number_of_nodes(self):
         """Get number of nodes."""
         return len(self.nodes)
@@ -55,13 +59,12 @@ class ExpressionGraph:
     def out_edges(self):
         """Get out edges."""
         return self._out_edges
-    
+
     @property
     def in_edges(self):
         """Get in edges."""
         return self._in_edges
 
- 
 
 def build_graph_vertices(expressions, skip_terminal_modifiers=False) -> ExpressionGraph:
     """Build graph vertices."""

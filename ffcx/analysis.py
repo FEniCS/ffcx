@@ -12,10 +12,10 @@ representation type.
 """
 
 from __future__ import annotations
-from functools import singledispatchmethod
 
 import logging
 import typing
+from functools import singledispatchmethod
 
 if typing.TYPE_CHECKING:
     from ufl.algorithms.formdata import FormData
@@ -24,27 +24,22 @@ import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import ufl.algorithms
-
 from ufl.algorithms.apply_derivatives import apply_coordinate_derivatives, apply_derivatives
 from ufl.algorithms.apply_function_pullbacks import apply_function_pullbacks
 from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
 from ufl.algorithms.apply_integral_scaling import apply_integral_scaling
-from ufl.algorithms.comparison_checker import do_comparison_check
-from ufl.algorithms.compute_form_data import preprocess_form, attach_estimated_degrees
+from ufl.algorithms.compute_form_data import attach_estimated_degrees, preprocess_form
+
 # See TODOs at the call sites of these below:
 from ufl.algorithms.domain_analysis import (
     build_integral_data,
     group_form_integrals,
 )
-from ufl.algorithms.estimate_degrees import estimate_total_polynomial_degree
 from ufl.algorithms.formdata import FormData
 from ufl.algorithms.remove_complex_nodes import remove_complex_nodes
 from ufl.algorithms.remove_component_tensors import remove_component_tensors
-from ufl.classes import Form
-
 
 logger = logging.getLogger("ffcx")
-
 
 
 class UFLData(typing.NamedTuple):
@@ -134,7 +129,13 @@ def analyze_ufl_objects(
 
                 # Append coefficents in the processed expression
                 # to the form data reduced coefficients.
-                new_coefficients.extend([coeff for coeff in ufl.algorithms.extract_coefficients(processed_expression) if coeff not in data.reduced_coefficients])
+                new_coefficients.extend(
+                    [
+                        coeff
+                        for coeff in ufl.algorithms.extract_coefficients(processed_expression)
+                        if coeff not in data.reduced_coefficients
+                    ]
+                )
         data._reduced_coefficients.extend(new_coefficients)
 
         # Update form data for new set of reduced coefficients
@@ -149,15 +150,16 @@ def analyze_ufl_objects(
         for itg_data in data.integral_data:
             assert itg_data.integral_coefficients is not None
             itg_data.enabled_coefficients = [
-                bool(coeff in itg_data.integral_coefficients) or  bool(coeff in new_coefficients) for coeff in data.reduced_coefficients
+                bool(coeff in itg_data.integral_coefficients) or bool(coeff in new_coefficients)
+                for coeff in data.reduced_coefficients
             ]
 
         # Update original coefficient position in form
         data._original_coefficient_positions = [
-                        i
-                        for i, c in enumerate(data.original_form.coefficients())
-                        if c in data.reduced_coefficients
-                        ]
+            i
+            for i, c in enumerate(data.original_form.coefficients())
+            if c in data.reduced_coefficients
+        ]
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
@@ -333,7 +335,9 @@ def _has_custom_integrals(
 
 class ProxyCoefficient(ufl.Coefficient):
     """Proxy coefficient to replace operands that require custom treatement."""
+
     _operand: ufl.core.expr.Expr
+
     def __init__(self, V: ufl.FunctionSpace, operand: ufl.core.expr.Expr):
         self._operand = operand
         super().__init__(V)
@@ -348,9 +352,11 @@ class ProxyCoefficient(ufl.Coefficient):
         """The kind of the operand that this proxy coefficient is replacing."""
         return type(self._operand)
 
+
 class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
     """DAGTraverser to replace operands requiring intermediate
-    coefficients with intermediate objects."""
+    coefficients with intermediate objects.
+    """
 
     def __init__(
         self,
@@ -367,9 +373,7 @@ class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
             result_cache: cache of result objects for memory reuse, r -> r.
 
         """
-        super().__init__(
-            compress=compress, visited_cache=visited_cache, result_cache=result_cache
-        )
+        super().__init__(compress=compress, visited_cache=visited_cache, result_cache=result_cache)
 
     @singledispatchmethod
     def process(
@@ -421,12 +425,12 @@ class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
         )
 
 
-def replace_ufl_operands(form: ufl.Form)-> ufl.Form:
+def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
     """Parse UFL form and replace all operands that require custom treatement with
     a placeholder coefficient.
 
     Args:
-        form: UFL form 
+        form: UFL form
 
     Return:
         The modified form with operands replaced.
@@ -476,7 +480,6 @@ def compute_form_data(
         do_remove_component_tensors: Remove component-tensor if true.
         complex_mode: If false remove complex nodes from the form.
     """
-    
     # --- Store untouched form for reference.
     # The user of FormData may get original arguments,
     # original coefficients, and form signature from this object.
@@ -484,7 +487,6 @@ def compute_form_data(
     # the same as the ones used in the final UFC form.
     # See 'reduced_coefficients' below.
     original_form = form
-
 
     # --- Pass form integrands through some symbolic manipulation
     form = replace_ufl_operands(form)
@@ -559,4 +561,3 @@ def compute_form_data(
         coefficients_to_split=coefficients_to_split,
         complex_mode=complex_mode,
     )
-

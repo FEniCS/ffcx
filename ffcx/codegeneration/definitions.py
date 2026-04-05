@@ -10,8 +10,8 @@ import logging
 import ufl
 
 import ffcx.codegeneration.lnodes as L
-from ffcx.definitions import entity_types
 from ffcx.analysis import ProxyCoefficient
+from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -229,7 +229,6 @@ class FFCXBackendDefinitions:
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
         return L.Section(name, code, declaration, input, output, annotations)
-
 
     def _define_coordinate_dofs_lincomb(
         self,

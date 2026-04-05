@@ -65,16 +65,23 @@ def format_mt_name(basename, mt):
 class FFCXBackendSymbols:
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, coefficient_numbering, coefficient_offsets, original_constant_offsets, proxy_coefficient_numbering, proxy_coefficient_offsets):
+    def __init__(
+        self,
+        coefficient_numbering,
+        coefficient_offsets,
+        original_constant_offsets,
+        proxy_coefficient_numbering,
+        proxy_coefficient_offsets,
+    ):
         """Initialise."""
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
 
         self.original_constant_offsets = original_constant_offsets
- 
+
         self.proxy_coefficient_numbering = proxy_coefficient_numbering
         self.proxy_coefficient_offsets = proxy_coefficient_offsets
-      
+
         # Keep tabs on tables, so the symbols can be reused
         self.quadrature_weight_tables = {}
         self.element_tables = {}
@@ -198,8 +205,6 @@ class FFCXBackendSymbols:
         unit_stride_access = _z[index]
         original_access = z[coeff_offset + index * block_size + dof_offset]
         return unit_stride_access, original_access
-
-
 
     def constant_index_access(self, constant, index):
         """Constant index access."""

@@ -11,8 +11,8 @@ import warnings
 import basix.ufl
 import ufl
 
-from ffcx.analysis import ProxyCoefficient
 import ffcx.codegeneration.lnodes as L
+from ffcx.analysis import ProxyCoefficient
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
@@ -103,8 +103,6 @@ class FFCXBackendAccess:
         else:
             # Return symbol, see definitions for computation
             return self.symbols.proxy_coefficient_value(mt)
-
-
 
     def coefficient(
         self,

@@ -482,7 +482,6 @@ class ArithmeticBinOp(BinOp):
         self.dtype = merge_dtypes([self.lhs.dtype, self.rhs.dtype])
 
 
-
 class CallOp(LExprOperator):
     op = ""
 
