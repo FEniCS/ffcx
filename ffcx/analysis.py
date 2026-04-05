@@ -100,6 +100,35 @@ def analyze_ufl_objects(
         elements += data.unique_sub_elements
         coordinate_elements += data.coordinate_elements
 
+    # Loop through forms to extract interpolate operands
+    current_coeffs = data.reduced_coefficients.copy()
+    for data in form_data:
+        for coeff in current_coeffs:
+            if isinstance(coeff, ProxyCoefficient):
+                original_expression = coeff.operand
+                elements += ufl.algorithms.extract_elements(original_expression)
+                processed_expression = _analyze_expression(original_expression, scalar_type)
+                points = coeff.ufl_function_space().ufl_element().basix_element.points
+                processed_expressions += [(processed_expression, points, original_expression)]
+
+                # Append coefficents ad coefficient elements present in the processed expression
+                # to the form data reduced coefficients.
+                for coeff in ufl.algorithms.extract_coefficients(processed_expression):
+                    if coeff not in data.reduced_coefficients:
+                        data._reduced_coefficients.append(coeff)                
+                # Sort the reduced coefficients of the form.
+                data._reduced_coefficients = sorted(data._reduced_coefficients, key=lambda x: x.count())
+                # NOTE: Could have been simpler if we had extracted the elements from reduced_coefficients rather
+                # than going through coefficient_elements.
+                new_coeff_elements = tuple(coeff.ufl_element() for coeff in data.reduced_coefficients)
+                data._coefficient_elements = new_coeff_elements
+                # Update original coefficient position in form
+                data._original_coefficient_positions = [
+                            i
+                            for i, c in enumerate(data.original_form.coefficients())
+                            if c in data.reduced_coefficients
+                        ]
+            
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
         processed_expression = _analyze_expression(original_expression, scalar_type)
@@ -178,9 +207,12 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
     # Check for complex mode
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
+    # Replace interpolate operand with a proxy coefficient
+    intermediate_form = replace_ufl_operands(form)
+
     # Compute form metadata
     form_data: FormData = ufl.algorithms.compute_form_data(
-        form,
+        intermediate_form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
         do_apply_geometry_lowering=True,
@@ -189,6 +221,9 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode,
     )
+    # Store original form, prior to replacement of interpolate, to ensure we get the correct signature
+    # and coefficient numbering
+    form_data._original_form = form
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
@@ -275,6 +310,10 @@ class ProxyCoefficient(ufl.Coefficient):
         self._operand = operand
         super().__init__(V)
 
+    @property
+    def operand(self) -> ufl.core.expr.Expr:
+        """The operand that this proxy coefficient is replacing."""
+        return self._operand
 
 class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
     """DAGTraverser to replace operands requiring intermediate

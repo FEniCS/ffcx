@@ -195,10 +195,6 @@ def compile_forms(
                 if diagonal_form == 0:
                     raise RuntimeError("Diagonal form seems to be zero.")
                 forms[i] = diagonal_form  # type: ignore
-
-    # Replace interpolate operand with a proxy coefficient
-    for i, form in enumerate(forms):
-        forms[i] = replace_ufl_operands(form)
         
     # Get a signature for these forms
     module_name = "libffcx_forms_" + ffcx.naming.compute_signature(

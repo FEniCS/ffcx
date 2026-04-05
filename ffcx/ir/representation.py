@@ -35,7 +35,7 @@ from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
-from ffcx.analysis import UFLData
+from ffcx.analysis import UFLData, ProxyCoefficient
 from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import (
@@ -80,6 +80,7 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     name_from_uflfile: str
     original_coefficient_positions: list[int]
+    num_proxy_coefficients: list[bool]
     coefficient_names: list[str]
     num_constants: int
     constant_ranks: list[int]
@@ -103,6 +104,7 @@ class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
     expression: CommonExpressionIR
+    sub_expression_names: list[str]
     rank: int
     enabled_coefficients: list[bool]
     part: TensorPart
@@ -256,13 +258,15 @@ def compute_ir(
                 itg_data.subdomain_id,
                 prefix,
             )
-
+            
+    expression_names = {org_expr: naming.expression_name((org_expr, points), prefix) for (expr, points, org_expr) in analysis.expressions}
     irs = [
         _compute_integral_ir(
             fd,
             i,
             analysis.element_numbers.keys(),
             integral_names,
+            expression_names,
             options,
             visualise,
         )
@@ -287,7 +291,6 @@ def compute_ir(
         )
         for (i, fd) in enumerate(analysis.form_data)
     ]
-
     ir_expressions = [
         _compute_expression_ir(
             expr,
@@ -313,6 +316,7 @@ def _compute_integral_ir(
     form_index: int,
     unique_elements: typing.Iterable[basix.ufl._ElementBase],
     integral_names: dict[tuple[int, int], str],
+    expression_names: dict[ufl.core.expr.Expr, str],
     options,
     visualise,
 ) -> list[IntegralIR]:
@@ -478,7 +482,12 @@ def _compute_integral_ir(
             options,
             visualise,
         )
-
+        # Check if the coefficients of the integral is a proxy coefficient, and if it is enabled.
+        enabled_itg_coeffcients = [c for (i,c) in enumerate(itg_data.integral_coefficients) if itg_data.enabled_coefficients[i]]
+        proxy_coefficients = [coeff for (i, coeff) in enumerate(form_data.reduced_coefficients) if (isinstance(coeff, ProxyCoefficient) and coeff in enabled_itg_coeffcients)]
+        proxy_expressions = [coeff.operand for coeff in proxy_coefficients]
+        ir["sub_expression_names"] = [expression_names[expr] for expr in proxy_expressions]
+        
         expression_ir.update(integral_ir)
 
         # Fetch name
@@ -518,7 +527,7 @@ def _compute_form_ir(
     else:
         ir["rank"] = len(form_data.original_form.arguments())
 
-    ir["num_coefficients"] = len(form_data.reduced_coefficients)
+    ir["num_coefficients"] = len(form_data.original_coefficient_positions)
 
     ir["coefficient_names"] = [
         object_names.get(id(obj), f"w{j}") for j, obj in enumerate(form_data.reduced_coefficients)
@@ -532,6 +541,16 @@ def _compute_form_ir(
         object_names.get(id(obj), f"c{j}")
         for j, obj in enumerate(form_data.original_form.constants())
     ]
+
+    # We now need to check if the coefficients are proxy coefficients,
+    # i.e., if they have been introduced as a replacement for an
+    # Interpolate expression. 
+    # Proxy coefficients always have a higher count that exisiting coefficients and will be at the end,
+    # thus no renumbering is going to happen.
+
+    ir["num_proxy_coefficients"] = len(form_data.reduced_coefficients) - len(form_data.original_coefficient_positions)
+
+
 
     ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
