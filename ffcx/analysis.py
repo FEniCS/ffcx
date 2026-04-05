@@ -141,8 +141,8 @@ def analyze_ufl_objects(
         # Update form data for new set of reduced coefficients
         # Sort the reduced coefficients of the form.
         data._reduced_coefficients = sorted(data._reduced_coefficients, key=lambda x: x.count())
-        # NOTE: Could have been simpler if we had extracted the elements from reduced_coefficients rather
-        # than going through coefficient_elements.
+        # NOTE: Could have been simpler if we had extracted the elements from
+        # reduced_coefficients rather than going through coefficient_elements.
         new_coeff_elements = tuple(coeff.ufl_element() for coeff in data.reduced_coefficients)
         data._coefficient_elements = new_coeff_elements
         # Enable all coefficients that are either in the original integral coefficients or
@@ -251,8 +251,8 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
         complex_mode=complex_mode,
     )
 
-    # Store original form, prior to replacement of interpolate, to ensure we get the correct signature
-    # and coefficient numbering
+    # Store original form, prior to replacement of interpolate,
+    # to ensure we get the correct signature and coefficient numbering
     form_data._original_form = form
 
     # Determine unique quadrature degree and quadrature scheme
@@ -339,6 +339,7 @@ class ProxyCoefficient(ufl.Coefficient):
     _operand: ufl.core.expr.Expr
 
     def __init__(self, V: ufl.FunctionSpace, operand: ufl.core.expr.Expr):
+        """Initialise."""
         self._operand = operand
         super().__init__(V)
 
@@ -354,9 +355,7 @@ class ProxyCoefficient(ufl.Coefficient):
 
 
 class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
-    """DAGTraverser to replace operands requiring intermediate
-    coefficients with intermediate objects.
-    """
+    """Replace operands requiring intermediate coefficients with intermediate objects."""
 
     def __init__(
         self,
@@ -426,8 +425,7 @@ class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
 
 
 def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
-    """Parse UFL form and replace all operands that require custom treatement with
-    a placeholder coefficient.
+    """Parse UFL form and and add placeholder coefficients.
 
     Args:
         form: UFL form

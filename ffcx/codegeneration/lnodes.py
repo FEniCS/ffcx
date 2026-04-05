@@ -483,9 +483,11 @@ class ArithmeticBinOp(BinOp):
 
 
 class CallOp(LExprOperator):
+    """A function call operator."""
     op = ""
 
     def __init__(self, function, args):
+        """Initialise."""
         self.func = function
         self.args = [as_lexpr(arg) for arg in args]
 

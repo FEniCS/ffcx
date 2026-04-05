@@ -166,7 +166,8 @@ class IntegralGenerator:
         all_preparts = []
         all_quadparts = []
 
-        # Generate packing of proxy coefficients into contiguous arrays, will will be part of pre-computations.
+        # Generate packing of proxy coefficients into contiguous arrays,
+        # will will be part of pre-computations.
         all_preparts += self.generate_proxy_coefficient_packing()
 
         # Pre-definitions are collected across all quadrature loops to
@@ -318,6 +319,7 @@ class IntegralGenerator:
         return self.generate_partition(arraysymbol, F, "piecewise", None, None)
 
     def generate_proxy_coefficient_packing(self):
+        """Generate packing of proxy coefficients into contiguous arrays."""
         definitions = []
         intermediates = []
 
@@ -380,10 +382,9 @@ class IntegralGenerator:
                 ),
             )
             decl = L.Statement(func_call)
-            # Now we need to map the data from interpolation points to the function, by multiplying by the interpolation matrix
+            # Compute matvec between tabulated expression and interpolation matrix
             im = proxy_coeff.ufl_element().basix_element.interpolation_matrix
             im_table = self.declare_table(f"proxy_im_{i}", im)[0]
-            # Compute matvec
             im_rows = im.shape[0]
             im_cols = im.shape[1]
             pj = L.Symbol("pj", dtype=L.DataType.INT)
