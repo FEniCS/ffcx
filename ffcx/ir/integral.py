@@ -27,6 +27,7 @@ from ffcx.ir.analysis.modified_terminals import (
     analyse_modified_terminal,
     is_modified_terminal,
 )
+from ffcx.analysis import ProxyCoefficient
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import (
     UniqueTableReferenceT,
@@ -121,6 +122,10 @@ class CommonExpressionIR(typing.NamedTuple):
     coefficient_numbering: dict[ufl.Coefficient, int]
     # Each coefficient is accessed from a given offset in the input array
     coefficient_offsets: dict[ufl.Coefficient, int]
+    
+    proxy_coefficient_numbering: dict[ProxyCoefficient, int]  # For coefficients that are accessed via a proxy
+    proxy_coefficient_offsets: dict[ProxyCoefficient, int]  # For coefficients that are accessed via a proxy
+
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]

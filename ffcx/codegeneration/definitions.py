@@ -11,6 +11,7 @@ import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.definitions import entity_types
+from ffcx.analysis import ProxyCoefficient
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
@@ -63,6 +64,7 @@ class FFCXBackendDefinitions:
         # called, depending on the first argument type.
         self.handler_lookup = {
             ufl.coefficient.Coefficient: self.coefficient,
+            ProxyCoefficient: self.proxy_coefficient,
             ufl.geometry.Jacobian: self._define_coordinate_dofs_lincomb,
             ufl.geometry.SpatialCoordinate: self.spatial_coordinate,
             ufl.constant.Constant: self.pass_through,
@@ -167,8 +169,67 @@ class FFCXBackendDefinitions:
         # assert input and output are Symbol objects
         assert all(isinstance(i, L.Symbol) for i in input)
         assert all(isinstance(o, L.Symbol) for o in output)
-
         return L.Section(name, code, declaration, input, output, annotations)
+
+    def proxy_coefficient(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+        access: L.Symbol,
+    ) -> L.Section | list:
+        """Return definition code for coefficients."""
+        # For applying tensor product to coefficients, we need to know
+        # if the coefficient has a tensor factorisation and if the
+        # quadrature rule has a tensor factorisation. If both are true,
+        # we can apply the tensor product to the coefficient.
+
+        iq_symbol = self.symbols.quadrature_loop_index
+        ic_symbol = self.symbols.coefficient_dof_sum_index
+
+        iq = create_quadrature_index(quadrature_rule, iq_symbol)
+        ic = create_dof_index(tabledata, ic_symbol)
+
+        # Get properties of tables
+        ttype = tabledata.ttype
+        num_dofs = tabledata.values.shape[3]
+        bs = tabledata.block_size
+        begin = tabledata.offset
+        assert bs is not None
+        assert begin is not None
+        end = begin + bs * (num_dofs - 1) + 1
+
+        if ttype == "zeros":
+            logger.debug("Not expecting zero coefficients to get this far.")
+            return []
+
+        # For a constant coefficient we reference the dofs directly, so
+        # no definition needed
+        if ttype == "ones" and end - begin == 1:
+            return []
+
+        assert begin < end
+
+        # Get access to element table
+        FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
+        dof_access: L.ArrayAccess = self.symbols.proxy_coefficient_dof_access(
+            mt.terminal, (ic.global_index) * bs + begin
+        )
+
+        declaration: list[L.Declaration] = [L.VariableDecl(access, 0.0)]
+        body = [L.AssignAdd(access, dof_access * FE)]
+        code = [L.create_nested_for_loops([ic], body)]
+
+        name = type(mt.terminal).__name__
+        input = [dof_access.array, *tables]
+        output = [access]
+        annotations = [L.Annotation.fuse]
+
+        # assert input and output are Symbol objects
+        assert all(isinstance(i, L.Symbol) for i in input)
+        assert all(isinstance(o, L.Symbol) for o in output)
+        return L.Section(name, code, declaration, input, output, annotations)
+
 
     def _define_coordinate_dofs_lincomb(
         self,

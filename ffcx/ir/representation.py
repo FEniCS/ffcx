@@ -80,7 +80,6 @@ class FormIR(typing.NamedTuple):
     num_coefficients: int
     name_from_uflfile: str
     original_coefficient_positions: list[int]
-    num_proxy_coefficients: list[bool]
     coefficient_names: list[str]
     num_constants: int
     constant_ranks: list[int]
@@ -108,9 +107,9 @@ class IntegralIR(typing.NamedTuple):
     enabled_coefficients: list[bool]
     part: TensorPart
     sub_expression_names: list[str]
+    proxy_coefficient_shape: list[tuple[int,...]]
     proxy_coefficient_indices: list[int]
     proxy_coefficient_offsets: list[int]
-    num_sub_expressions: int
 
 class ExpressionIR(typing.NamedTuple):
     """Intermediate representation of a DOLFINx Expression."""
@@ -305,7 +304,6 @@ def compute_ir(
         )
         for i, expr in enumerate(analysis.expressions)
     ]
-    breakpoint()
     return DataIR(
         integrals=ir_integrals,
         forms=ir_forms,
@@ -445,18 +443,28 @@ def _compute_integral_ir(
         # input coefficient data a coefficient should start.
         coefficient_numbering: dict[ufl.Coefficient, int] = {}
         coefficient_offsets: dict[ufl.Coefficient, int] = {}
-        _offset = 0
+        proxy_coefficient_numbering: dict[ProxyCoefficient, int] = {}
+        proxy_coefficient_offsets: dict[ProxyCoefficient, int] = {}
+        _offset_c = 0
+        _offset_p = 0
         width = 2 if integral_type in ("interior_facet") else 1
         for i, (coeff, el) in enumerate(
             zip(form_data.reduced_coefficients, form_data.coefficient_elements)
         ):
-            coefficient_numbering[coeff] = i
-            coefficient_offsets[coeff] = _offset
-            _offset += width * element_dimensions[el]
+            if isinstance(coeff, ProxyCoefficient):
+                proxy_coefficient_numbering[coeff] = i
+                proxy_coefficient_offsets[coeff] = _offset_p
+                _offset_p += width * element_dimensions[el]
+            else:
+                coefficient_numbering[coeff] = i
+                coefficient_offsets[coeff] = _offset_c
+                _offset_c += width * element_dimensions[el]
 
         # Add Coefficient numbering and offsets to IR
         expression_ir["coefficient_numbering"] = coefficient_numbering
         expression_ir["coefficient_offsets"] = coefficient_offsets
+        expression_ir["proxy_coefficient_numbering"] = proxy_coefficient_numbering
+        expression_ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
 
         # Similar procedure with constants, but they are not removed
         # as they usually contain very little data.
@@ -484,12 +492,14 @@ def _compute_integral_ir(
             options,
             visualise,
         )
+
         # Check if the coefficients of the integral is a proxy coefficient, and if it is enabled.
         enabled_itg_coeffcients = [c for (i,c) in enumerate(itg_data.integral_coefficients) if itg_data.enabled_coefficients[i]]
         proxy_coefficients = [coeff for (i, coeff) in enumerate(form_data.reduced_coefficients) if (isinstance(coeff, ProxyCoefficient) and coeff in enabled_itg_coeffcients)]
-        proxy_coefficient_indices = [
-        ]
+
+        # Num coefficients required for the form, including generating proxy coefficients
         proxy_coefficient_offsets = [0]
+        proxy_coefficient_indices = []
         proxy_expressions = []
         for p_coeff in proxy_coefficients:
             for coeff in ufl.algorithms.extract_coefficients(p_coeff.operand):
@@ -497,8 +507,13 @@ def _compute_integral_ir(
             proxy_coefficient_offsets.append(len(proxy_coefficient_indices))
             proxy_expressions.append(p_coeff.operand)
 
-        ir["num_sub_expressions"] = len(proxy_expressions)
         ir["sub_expression_names"] = [expression_names[expr] for expr in proxy_expressions]
+        ir["proxy_coefficient_shape"] = []
+        for p_coeff in proxy_coefficients:
+            value_size = int(np.prod(p_coeff.ufl_shape))
+            ir["proxy_coefficient_shape"].append((value_size, p_coeff.ufl_function_space().ufl_element().basix_element.points.shape[0]))
+        c_shape = coeff.ufl_shape
+
         ir["proxy_coefficient_indices"] = proxy_coefficient_indices
         ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
 
@@ -555,15 +570,6 @@ def _compute_form_ir(
         object_names.get(id(obj), f"c{j}")
         for j, obj in enumerate(form_data.original_form.constants())
     ]
-
-    # We now need to check if the coefficients are proxy coefficients,
-    # i.e., if they have been introduced as a replacement for an
-    # Interpolate expression. 
-    # Proxy coefficients always have a higher count that exisiting coefficients and will be at the end,
-    # thus no renumbering is going to happen.
-    ir["num_proxy_coefficients"] = len(form_data.reduced_coefficients) - len(form_data.original_coefficient_positions)
-
-
 
     ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
@@ -652,23 +658,6 @@ def _compute_expression_ir(
 
     base_ir["shape"] = list(expr.ufl_shape)
 
-    coefficients = ufl.algorithms.extract_coefficients(expr)
-    coefficient_numbering = {}
-    for i, coeff in enumerate(coefficients):
-        coefficient_numbering[coeff] = i
-
-    # Add coefficient numbering to IR
-    base_ir["coefficient_numbering"] = coefficient_numbering
-
-    original_coefficient_positions = []
-    original_coefficients = ufl.algorithms.extract_coefficients(original_expr)
-    for coeff in coefficients:
-        original_coefficient_positions.append(original_coefficients.index(coeff))
-
-    ir["coefficient_names"] = [
-        object_names.get(id(obj), f"w{j}") for j, obj in enumerate(coefficients)
-    ]
-
     ir["constant_names"] = [
         object_names.get(id(obj), f"c{j}")
         for j, obj in enumerate(ufl.algorithms.analysis.extract_constants(expr))
@@ -680,20 +669,40 @@ def _compute_expression_ir(
     if len(argument_elements) > 1:
         raise RuntimeError("Expression with more than one Argument not implemented.")
 
+
+    coefficients = ufl.algorithms.extract_coefficients(expr)
+    original_coefficients = ufl.algorithms.extract_coefficients(original_expr)
+
+    coefficient_numbering: dict[ufl.Coefficient, int] = {}
+    coefficient_offsets: dict[ufl.Coefficient, int] = {}
+    proxy_coefficient_numbering: dict[ProxyCoefficient, int] = {}
+    proxy_coefficient_offsets: dict[ProxyCoefficient, int] = {}
+    _offset_c = 0
+    _offset_p = 0
+    original_coefficient_positions = []
+    for i, coeff in enumerate(coefficients):
+        el = coeff.ufl_element()
+        if isinstance(coeff, ProxyCoefficient):
+            proxy_coefficient_numbering[coeff] = i
+            proxy_coefficient_offsets[coeff] = _offset_p
+            _offset_p += element_dimensions[el]
+        else:
+            original_coefficient_positions.append(original_coefficients.index(coeff))
+            coefficient_numbering[coeff] = i
+            coefficient_offsets[coeff] = _offset_c
+            _offset_c += element_dimensions[el]
+   
     ir["original_coefficient_positions"] = original_coefficient_positions
-
-    coefficient_elements = tuple(f.ufl_element() for f in coefficients)
-
-    offsets = {}
-    _offset = 0
-    for i, el in enumerate(coefficient_elements):
-        offsets[coefficients[i]] = _offset
-        _offset += element_dimensions[el]
-
-    # Copy offsets also into IR
-    base_ir["coefficient_offsets"] = offsets
-
+    base_ir["coefficient_numbering"] = coefficient_numbering
+    base_ir["coefficient_offsets"] = coefficient_offsets
+    base_ir["proxy_coefficient_numbering"] = proxy_coefficient_numbering
+    base_ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
+   
     base_ir["integral_type"] = "expression"
+    ir["coefficient_names"] = [
+        object_names.get(id(obj), f"w{j}") for j, obj in enumerate(coefficients)
+    ]
+
     if cell is not None:
         if (tdim := cell.topological_dimension) == (pdim := points.shape[1]):
             base_ir["entity_type"] = "cell"
