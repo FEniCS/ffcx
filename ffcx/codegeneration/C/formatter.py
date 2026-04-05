@@ -240,6 +240,12 @@ class Formatter(FormatterInterface):
         return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
     @__call__.register
+    def _(self, arr: L.CallOp) -> str:
+        """Format a function call."""
+        args = ", ".join(self(arg) for arg in arr.args)
+        return f"{arr.func}_{self.scalar_type}({args});\n"
+
+    @__call__.register
     def _(self, arr: L.ArrayAccess) -> str:
         """Format an array access."""
         name = self(arr.array)
@@ -377,4 +383,5 @@ class Formatter(FormatterInterface):
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
         args = ", ".join(self(arg) for arg in c.args)
+        print(f"Formatting math function {c.function} as {func}({args})")
         return f"{func}({args})"

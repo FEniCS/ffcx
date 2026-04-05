@@ -12,6 +12,7 @@ import logging
 from numbers import Integral
 from typing import Any
 
+import numpy as np
 import basix
 import ufl
 
@@ -165,6 +166,10 @@ class IntegralGenerator:
         all_preparts = []
         all_quadparts = []
 
+        # Generate packing of proxy coefficients into contiguous arrays, will will be part of pre-computations.
+        all_preparts += self.generate_proxy_coefficient_packing()
+
+
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
         for cell, rule in self.ir.expression.integrand.keys():
@@ -312,6 +317,44 @@ class IntegralGenerator:
         F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "piecewise", None, None)
+
+    def generate_proxy_coefficient_packing(self):
+        definitions = []
+        intermediates = []
+        
+        num_proxy_coefficient_data = int(np.sum(self.ir.proxy_coefficient_sizes))
+        pw = L.Symbol("pw", dtype=L.DataType.SCALAR)
+        pw_array = L.ArrayDecl(pw, sizes=num_proxy_coefficient_data)
+
+        for i, expression in enumerate(self.ir.sub_expression_names):
+            # Get active coefficients
+            active_coefficient_offsets = self.ir.proxy_coefficient_offsets[i:i+2]
+            active_coefficients = self.ir.coefficients_in_proxy[active_coefficient_offsets[0]:active_coefficient_offsets[1]]
+            sub_coefficient_sizes = [active_coefficient.ufl_element().dim for active_coefficient in active_coefficients]
+            sub_coefficient_offsets = [self.ir.expression.coefficient_offsets[coeff] for coeff in active_coefficients]
+            # Declare array that holds subset of coefficients
+            sub_coeff = L.Symbol(f"sub_coeff_{i}", dtype=L.DataType.SCALAR)
+            sub_coeff_array = L.ArrayDecl(sub_coeff, sizes=int(np.sum(sub_coefficient_sizes)))
+            pi = L.Symbol("pi", dtype=L.DataType.INT)
+            # Pack coefficiets into contiguous array for expression evaluation
+            coeff_loops = []
+            for j in range(len(active_coefficients)):
+               coeff_loops.append(L.ForRange(pi, 0, sub_coefficient_sizes[j], [L.Assign(sub_coeff[pi], pw[sub_coefficient_offsets[j] + pi])]))
+
+            pz_at_itg_points = L.Symbol(f"proxy_coefficient_at_itg_points_{i}", dtype=L.DataType.SCALAR)
+            proxy_coefficient = L.ArrayDecl(pz_at_itg_points,sizes=int(np.prod(self.ir.proxy_pack_shape[i])))
+            # NOTE: Need to do something similar for constants, currently we just pass them in
+            custom_data = L.Symbol(f"custom_data", dtype=L.DataType.SCALAR)
+            func_call = L.CallOp(expression+".tabulate_tensor", (pz_at_itg_points,sub_coeff,self.backend.symbols.constants,
+            self.backend.symbols.coordinate_dofs,self.backend.symbols.entity_local_index,self.backend.symbols.quadrature_permutation,
+            custom_data))
+            decl = L.Statement(func_call)
+            intermediates += [L.Section(f"Packing {i}th proxy coefficient",
+            statements=[decl, coeff_loops], declarations=[proxy_coefficient, sub_coeff_array], input=[], output=[])]
+
+        intermediates = [L.Section(name="Compute Proxy Coefficient",
+            statements=intermediates, declarations=[pw_array], input=[], output=[])]
+        return definitions, intermediates
 
     def generate_varying_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a varying partition."""
