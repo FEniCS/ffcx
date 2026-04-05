@@ -106,7 +106,7 @@ class IntegralIR(typing.NamedTuple):
     rank: int
     enabled_coefficients: list[bool]
     part: TensorPart
-    sub_expression_names: list[str]
+    sub_expressions: list[tuple[ProxyCoefficient, str]]
     proxy_coefficient_sizes: list[int]
     proxy_pack_shape: list[tuple[int,...]]
     coefficients_in_proxy: list[ufl.Coefficient]
@@ -505,16 +505,14 @@ def _compute_integral_ir(
         # Num coefficients required for the form, including generating proxy coefficients
         proxy_coefficient_offsets = [0]
         ir["coefficients_in_proxy"] = []
-        proxy_expressions = []
+        ir["sub_expressions"] = []
         for p_coeff in proxy_coefficients:
             for coeff in ufl.algorithms.extract_coefficients(p_coeff.operand):
                 ir["coefficients_in_proxy"].append(coeff)
             proxy_coefficient_offsets.append(len(ir["coefficients_in_proxy"]))
-            proxy_expressions.append(p_coeff.operand)
+            ir["sub_expressions"].append((p_coeff, expression_names[p_coeff.operand]))
         ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
 
-
-        ir["sub_expression_names"] = [expression_names[expr] for expr in proxy_expressions]
         ir["proxy_pack_shape"] = []
         ir["proxy_coefficient_sizes"] = []
         for p_coeff in proxy_coefficients:

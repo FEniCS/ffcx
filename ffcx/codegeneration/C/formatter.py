@@ -383,5 +383,4 @@ class Formatter(FormatterInterface):
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
         args = ", ".join(self(arg) for arg in c.args)
-        print(f"Formatting math function {c.function} as {func}({args})")
         return f"{func}({args})"

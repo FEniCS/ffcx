@@ -818,7 +818,6 @@ class Statement(LNode):
 
 def as_statement(node):
     """Perform type checking on node and wrap in a suitable statement type if necessary."""
-    print(node)
     if isinstance(node, StatementList) and len(node.statements) == 1:
         # Cleans up the expression tree a bit
         return node.statements[0]

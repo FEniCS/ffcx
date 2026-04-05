@@ -322,11 +322,12 @@ class IntegralGenerator:
         definitions = []
         intermediates = []
         
-        num_proxy_coefficient_data = int(np.sum(self.ir.proxy_coefficient_sizes))
+        proxy_coeff_offset = np.zeros(len(self.ir.proxy_coefficient_sizes)+1, dtype=int)
+        proxy_coeff_offset[1:] = np.cumsum(self.ir.proxy_coefficient_sizes)
         pw = L.Symbol("pw", dtype=L.DataType.SCALAR)
-        pw_array = L.ArrayDecl(pw, sizes=num_proxy_coefficient_data)
+        pw_array = L.ArrayDecl(pw, sizes=int(proxy_coeff_offset[-1]))
 
-        for i, expression in enumerate(self.ir.sub_expression_names):
+        for i, (proxy_coeff, expr_name) in enumerate(self.ir.sub_expressions):
             # Get active coefficients
             active_coefficient_offsets = self.ir.proxy_coefficient_offsets[i:i+2]
             active_coefficients = self.ir.coefficients_in_proxy[active_coefficient_offsets[0]:active_coefficient_offsets[1]]
@@ -345,15 +346,25 @@ class IntegralGenerator:
             proxy_coefficient = L.ArrayDecl(pz_at_itg_points,sizes=int(np.prod(self.ir.proxy_pack_shape[i])))
             # NOTE: Need to do something similar for constants, currently we just pass them in
             custom_data = L.Symbol(f"custom_data", dtype=L.DataType.SCALAR)
-            func_call = L.CallOp(expression+".tabulate_tensor", (pz_at_itg_points,sub_coeff,self.backend.symbols.constants,
+            func_call = L.CallOp(expr_name+".tabulate_tensor", (pz_at_itg_points,sub_coeff,self.backend.symbols.constants,
             self.backend.symbols.coordinate_dofs,self.backend.symbols.entity_local_index,self.backend.symbols.quadrature_permutation,
             custom_data))
             decl = L.Statement(func_call)
+            # Now we need to map the data from interpolation points to the function, by multiplying by the interpolation matrix
+            im = proxy_coeff.ufl_element().basix_element.interpolation_matrix
+            im_table = self.declare_table(f"proxy_im_{i}", im)[0]
+            # Compute matvec
+            im_rows = im.shape[0]
+            im_cols = im.shape[1]
+            pj = L.Symbol("pj", dtype=L.DataType.INT)
+            assign_start = proxy_coeff_offset[i]
+            inner_assign_loop = L.ForRange(pj, 0, im_cols, [L.Assign(pw[assign_start + pj], pz_at_itg_points[pj]*im_table.symbol[pi][pj])])
+            assign_loop = L.ForRange(pi, 0, im_rows, [inner_assign_loop])
             intermediates += [L.Section(f"Packing {i}th proxy coefficient",
-            statements=[decl, coeff_loops], declarations=[proxy_coefficient, sub_coeff_array], input=[], output=[])]
-
-        intermediates = [L.Section(name="Compute Proxy Coefficient",
-            statements=intermediates, declarations=[pw_array], input=[], output=[])]
+            statements=[coeff_loops, decl], declarations=[proxy_coefficient, sub_coeff_array, im_table], input=[], output=[])]
+            intermediates +=[assign_loop]
+            intermediates = [L.Section(name="Compute Proxy Coefficient",
+                statements=intermediates, declarations=[pw_array], input=[], output=[])]
         return definitions, intermediates
 
     def generate_varying_partition(self, quadrature_rule, domain: basix.CellType):
