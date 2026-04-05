@@ -27,6 +27,8 @@ import ufl
 import ffcx
 import ffcx.naming
 from ffcx.codegeneration.C.file_template import libraries as _libraries
+from ffcx.analysis import replace_ufl_operands
+
 
 logger = logging.getLogger("ffcx")
 root_logger = logging.getLogger()
@@ -194,6 +196,10 @@ def compile_forms(
                     raise RuntimeError("Diagonal form seems to be zero.")
                 forms[i] = diagonal_form  # type: ignore
 
+    # Replace interpolate operand with a proxy coefficient
+    for i, form in enumerate(forms):
+        forms[i] = replace_ufl_operands(form)
+        
     # Get a signature for these forms
     module_name = "libffcx_forms_" + ffcx.naming.compute_signature(
         forms,

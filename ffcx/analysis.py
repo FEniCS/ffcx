@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2020 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
+# Copyright (C) 2007-2026 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 #                         Michal Habera and others
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
@@ -12,6 +12,7 @@ representation type.
 """
 
 from __future__ import annotations
+from functools import singledispatchmethod
 
 import logging
 import typing
@@ -265,3 +266,98 @@ def _has_custom_integrals(
         return any(_has_custom_integrals(itg) for itg in o)
     else:
         raise NotImplementedError
+
+
+class ProxyCoefficient(ufl.Coefficient):
+    """Proxy coefficient to replace operands that require custom treatement."""
+    _operand: ufl.core.expr.Expr
+    def __init__(self, V: ufl.FunctionSpace, operand: ufl.core.expr.Expr):
+        self._operand = operand
+        super().__init__(V)
+
+
+class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
+    """DAGTraverser to replace operands requiring intermediate
+    coefficients with intermediate objects."""
+
+    def __init__(
+        self,
+        compress: bool | None = True,
+        visited_cache: dict[tuple, ufl.core.expr.Expr] | None = None,
+        result_cache: dict[ufl.core.expr.Expr, ufl.core.expr.Expr] | None = None,
+    ) -> None:
+        """Initialise.
+
+        Args:
+            compress: If True, ``result_cache`` will be used.
+            visited_cache: cache of intermediate results;
+                expr -> r = self.process(expr, ...).
+            result_cache: cache of result objects for memory reuse, r -> r.
+
+        """
+        super().__init__(
+            compress=compress, visited_cache=visited_cache, result_cache=result_cache
+        )
+
+    @singledispatchmethod
+    def process(
+        self,
+        o: ufl.core.expr.Expr,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Replace averaged arguments with intermediate space.
+
+        Args:
+            o: `ufl.core.expr.Expr` to be processed.
+            reference_value: Whether `ReferenceValue` has been applied or not.
+            reference_grad: Number of `ReferenceGrad`s that have been applied.
+            restricted: '+', '-', or None.
+        """
+        return super().process(o)
+
+    @process.register(ufl.Interpolate)
+    def _(
+        self,
+        o: ufl.Interpolate,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Handle Interpolate."""
+        ops = o.ufl_operands
+        assert len(ops) == 1, "Expected single operator in interpolation"
+        expr = ops[0]
+        coeff = ProxyCoefficient(o.ufl_function_space(), expr)
+        return coeff
+
+    @process.register(ufl.core.expr.Expr)
+    def _(
+        self,
+        o: ufl.Argument,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Handle anything else in UFL."""
+        return self.reuse_if_untouched(
+            o,
+            reference_value=reference_value,
+            reference_grad=reference_grad,
+            restricted=restricted,
+        )
+
+
+def replace_ufl_operands(form: ufl.Form)-> ufl.Form:
+    """Parse UFL form and replace all operands that require custom treatement with
+    a placeholder coefficient.
+
+    Args:
+        form: UFL form 
+
+    Return:
+        The modified form with operands replaced.
+    """
+    rule = IntermediateCoefficientReplacer()
+    return ufl.algorithms.map_integrands.map_integrands(rule, form)
