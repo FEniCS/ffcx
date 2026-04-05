@@ -340,7 +340,7 @@ class IntegralGenerator:
             # Pack coefficiets into contiguous array for expression evaluation
             coeff_loops = []
             for j in range(len(active_coefficients)):
-               coeff_loops.append(L.ForRange(pi, 0, sub_coefficient_sizes[j], [L.Assign(sub_coeff[pi], pw[sub_coefficient_offsets[j] + pi])]))
+               coeff_loops.append(L.ForRange(pi, 0, sub_coefficient_sizes[j], [L.Assign(sub_coeff[pi], self.backend.symbols.coefficients[sub_coefficient_offsets[j] + pi])]))
 
             pz_at_itg_points = L.Symbol(f"proxy_coefficient_at_itg_points_{i}", dtype=L.DataType.SCALAR)
             proxy_coefficient = L.ArrayDecl(pz_at_itg_points,sizes=int(np.prod(self.ir.proxy_pack_shape[i])))
