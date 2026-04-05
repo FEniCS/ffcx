@@ -104,11 +104,13 @@ class IntegralIR(typing.NamedTuple):
     """Intermediate representation of an integral."""
 
     expression: CommonExpressionIR
-    sub_expression_names: list[str]
     rank: int
     enabled_coefficients: list[bool]
     part: TensorPart
-
+    sub_expression_names: list[str]
+    proxy_coefficient_indices: list[int]
+    proxy_coefficient_offsets: list[int]
+    num_sub_expressions: int
 
 class ExpressionIR(typing.NamedTuple):
     """Intermediate representation of a DOLFINx Expression."""
@@ -303,7 +305,7 @@ def compute_ir(
         )
         for i, expr in enumerate(analysis.expressions)
     ]
-
+    breakpoint()
     return DataIR(
         integrals=ir_integrals,
         forms=ir_forms,
@@ -485,9 +487,21 @@ def _compute_integral_ir(
         # Check if the coefficients of the integral is a proxy coefficient, and if it is enabled.
         enabled_itg_coeffcients = [c for (i,c) in enumerate(itg_data.integral_coefficients) if itg_data.enabled_coefficients[i]]
         proxy_coefficients = [coeff for (i, coeff) in enumerate(form_data.reduced_coefficients) if (isinstance(coeff, ProxyCoefficient) and coeff in enabled_itg_coeffcients)]
-        proxy_expressions = [coeff.operand for coeff in proxy_coefficients]
+        proxy_coefficient_indices = [
+        ]
+        proxy_coefficient_offsets = [0]
+        proxy_expressions = []
+        for p_coeff in proxy_coefficients:
+            for coeff in ufl.algorithms.extract_coefficients(p_coeff.operand):
+                proxy_coefficient_indices.append(coefficient_numbering[coeff])
+            proxy_coefficient_offsets.append(len(proxy_coefficient_indices))
+            proxy_expressions.append(p_coeff.operand)
+
+        ir["num_sub_expressions"] = len(proxy_expressions)
         ir["sub_expression_names"] = [expression_names[expr] for expr in proxy_expressions]
-        
+        ir["proxy_coefficient_indices"] = proxy_coefficient_indices
+        ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
+
         expression_ir.update(integral_ir)
 
         # Fetch name
@@ -547,7 +561,6 @@ def _compute_form_ir(
     # Interpolate expression. 
     # Proxy coefficients always have a higher count that exisiting coefficients and will be at the end,
     # thus no renumbering is going to happen.
-
     ir["num_proxy_coefficients"] = len(form_data.reduced_coefficients) - len(form_data.original_coefficient_positions)
 
 

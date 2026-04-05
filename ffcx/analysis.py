@@ -313,7 +313,12 @@ class ProxyCoefficient(ufl.Coefficient):
     @property
     def operand(self) -> ufl.core.expr.Expr:
         """The operand that this proxy coefficient is replacing."""
-        return self._operand
+        return self._operand.ufl_operands[0]
+
+    @property
+    def kind(self):
+        """The kind of the operand that this proxy coefficient is replacing."""
+        return type(self._operand)
 
 class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
     """DAGTraverser to replace operands requiring intermediate
