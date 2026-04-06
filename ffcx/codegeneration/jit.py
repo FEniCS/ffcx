@@ -174,7 +174,7 @@ def compile_forms(
         visualise: Toggle visualisation
     """
     p = ffcx.options.get_options(options)
-    ciffi_extra_compile_args = cffi_extra_compile_args or []
+    cffi_extra_compile_args = cffi_extra_compile_args or []
     cffi_libraries = cffi_libraries or []
 
     # If requested, replace bi-linear forms by their diagonal part
