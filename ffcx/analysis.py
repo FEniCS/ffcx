@@ -38,7 +38,7 @@ from ufl.algorithms.domain_analysis import (
 from ufl.algorithms.formdata import FormData
 from ufl.algorithms.remove_complex_nodes import remove_complex_nodes
 from ufl.algorithms.remove_component_tensors import remove_component_tensors
-from ufl.corealg.dag_traverser.dag_traverser import DAGTraverser
+from ufl.corealg.dag_traverser import DAGTraverser
 
 logger = logging.getLogger("ffcx")
 
