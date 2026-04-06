@@ -249,7 +249,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
     gd = mt.global_derivatives
     ld = mt.local_derivatives
     domain = ufl.domain.extract_unique_domain(mt.terminal)
-    # Extract element from Arguments and relevant GeometricQuantities
+    # Extract element from FormArguments and relevant GeometricQuantities
     if isinstance(mt.terminal, ufl.classes.FormArgument):
         if gd and mt.reference_value:
             raise RuntimeError("Global derivatives of reference values not defined.")
