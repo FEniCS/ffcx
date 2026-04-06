@@ -753,10 +753,6 @@ def _compute_expression_ir(
     base_ir["original_constant_offsets"] = original_constant_offsets
 
     expr_domain = ufl.domain.extract_unique_domain(expr)
-    assert expr_domain is not None and hasattr(expr_domain, "ufl_coordinate_element"), (
-        "Expression domain does not have a coordinate element."
-    )
-
     base_ir["coordinate_element_hash"] = (
         expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )
