@@ -38,6 +38,7 @@ from ufl.algorithms.domain_analysis import (
 from ufl.algorithms.formdata import FormData
 from ufl.algorithms.remove_complex_nodes import remove_complex_nodes
 from ufl.algorithms.remove_component_tensors import remove_component_tensors
+from ufl.corealg.dag_traverser.dag_traverser import DAGTraverser
 
 logger = logging.getLogger("ffcx")
 
@@ -245,7 +246,7 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
         do_apply_geometry_lowering=True,
-        preserve_geometry_types=(ufl.classes.Jacobian,),
+        preserve_geometry_types=(ufl.geometry.Jacobian,),  # type: ignore
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode,
@@ -354,7 +355,7 @@ class ProxyCoefficient(ufl.Coefficient):
         return self._operator
 
 
-class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
+class IntermediateCoefficientReplacer(DAGTraverser):
     """Replace operands requiring intermediate coefficients with intermediate objects."""
 
     def __init__(
@@ -390,7 +391,7 @@ class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
             reference_grad: Number of `ReferenceGrad`s that have been applied.
             restricted: '+', '-', or None.
         """
-        return super().process(o)
+        return super().process(o)  # type: ignore
 
     @process.register(ufl.Interpolate)
     def _(
@@ -403,8 +404,7 @@ class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
         """Handle Interpolate."""
         ops = o.ufl_operands
         assert len(ops) == 1, "Expected single operator in interpolation"
-        coeff = ProxyCoefficient(o.ufl_function_space(), o)
-        return coeff
+        return ProxyCoefficient(o.ufl_function_space(), o)
 
     @process.register(ufl.core.expr.Expr)
     def _(
@@ -415,7 +415,7 @@ class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
         restricted: str | None = None,
     ) -> ufl.core.expr.Expr:
         """Handle anything else in UFL."""
-        return self.reuse_if_untouched(
+        return self.reuse_if_untouched(  # type: ignore
             o,
             reference_value=reference_value,
             reference_grad=reference_grad,
@@ -433,7 +433,7 @@ def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
         The modified form with operands replaced.
     """
     rule = IntermediateCoefficientReplacer()
-    return ufl.algorithms.map_integrands.map_integrands(rule, form)
+    return ufl.algorithms.map_integrands.map_integrands(rule, form)  # type: ignore
 
 
 def compute_form_data(
@@ -450,7 +450,7 @@ def compute_form_data(
     coefficients_to_split: tuple[ufl.Coefficient, ...] | None = None,
     complex_mode: bool = False,
     do_remove_component_tensors: bool = False,
-) -> ufl.FormData:
+) -> FormData:
     """Compute form data.
 
     Args:

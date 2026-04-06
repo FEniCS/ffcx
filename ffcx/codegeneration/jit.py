@@ -194,7 +194,7 @@ def compile_forms(
                         diagonal_form += blocked_form[j][j]
                 if diagonal_form == 0:
                     raise RuntimeError("Diagonal form seems to be zero.")
-                forms[i] = diagonal_form
+                forms[i] = diagonal_form  # type: ignore
 
     # Get a signature for these forms
     module_name = "libffcx_forms_" + ffcx.naming.compute_signature(
@@ -250,7 +250,7 @@ def compile_forms(
 
 
 def compile_expressions(
-    expressions: list[tuple[ufl.Expr, npt.NDArray[np.floating]]],
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]],
     options: dict | None = None,
     cache_dir: Path | None = None,
     timeout: int = 10,

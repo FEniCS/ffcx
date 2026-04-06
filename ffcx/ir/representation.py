@@ -505,22 +505,25 @@ def _compute_integral_ir(
         )
 
         # Check if the coefficients of the integral is a proxy coefficient, and if it is enabled.
-        enabled_itg_coeffcients = [
-            c
-            for (i, c) in enumerate(itg_data.integral_coefficients)
-            if itg_data.enabled_coefficients[i]
-        ]
-        proxy_coefficients = [
-            coeff
-            for coeff in form_data.reduced_coefficients[start_proxy:]
-            if coeff in enabled_itg_coeffcients
-        ]
+        proxy_coefficients: list[ufl.Coefficient] = []
+        if itg_data.integral_coefficients is not None and itg_data.enabled_coefficients is not None:
+            enabled_itg_coeffcients = [
+                c
+                for (i, c) in enumerate(itg_data.integral_coefficients)
+                if itg_data.enabled_coefficients[i]
+            ]
+            proxy_coefficients = [
+                coeff
+                for coeff in form_data.reduced_coefficients[start_proxy:]
+                if coeff in enabled_itg_coeffcients
+            ]
 
         # Num coefficients required for the form, including generating proxy coefficients
         proxy_coefficient_offsets = [0]
         ir["coefficients_in_proxy"] = []
         ir["sub_expressions"] = []
         for p_coeff in proxy_coefficients:
+            assert isinstance(p_coeff, ProxyCoefficient)
             for coeff in ufl.algorithms.extract_coefficients(p_coeff.operand):
                 ir["coefficients_in_proxy"].append(coeff)
             proxy_coefficient_offsets.append(len(ir["coefficients_in_proxy"]))
@@ -634,7 +637,7 @@ def _compute_form_ir(
 
 
 def _compute_expression_ir(
-    expr: ufl.core.expr.Expr,
+    analysis_expr: tuple[ufl.core.expr.Expr, np.ndarray, ufl.core.expr.Expr],
     index: int,
     prefix: str,
     analysis: UFLData,
@@ -648,20 +651,22 @@ def _compute_expression_ir(
     # Compute representation
     ir: dict[str, typing.Any] = {}
     base_ir: dict[str, typing.Any] = {}
-    original_expr = (expr[2], expr[1])
+    original_input_expr = (analysis_expr[2], analysis_expr[1])
 
-    base_ir["name"] = naming.expression_name(original_expr, prefix)
+    base_ir["name"] = naming.expression_name(original_input_expr, prefix)
 
-    original_expr = expr[2]
-    points = expr[1]
-    expr = expr[0]
+    original_expr = analysis_expr[2]
+    points = analysis_expr[1]
+    expr = analysis_expr[0]
 
-    try:
-        cell = ufl.domain.extract_unique_domain(expr).ufl_cell()
-    except AttributeError:
-        # This case corresponds to a spatially constant expression
-        # without any dependencies
+    domain = ufl.domain.extract_unique_domain(expr)
+    # This case corresponds to a spatially constant expression
+    # without any dependencies
+    if domain is None:
         cell = None
+    else:
+        assert hasattr(domain, "ufl_cell"), "Expression domain does not have a cell."
+        cell = domain.ufl_cell()
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
@@ -748,6 +753,10 @@ def _compute_expression_ir(
     base_ir["original_constant_offsets"] = original_constant_offsets
 
     expr_domain = ufl.domain.extract_unique_domain(expr)
+    assert expr_domain is not None and hasattr(expr_domain, "ufl_coordinate_element"), (
+        "Expression domain does not have a coordinate element."
+    )
+
     base_ir["coordinate_element_hash"] = (
         expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )

@@ -249,8 +249,8 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
     gd = mt.global_derivatives
     ld = mt.local_derivatives
     domain = ufl.domain.extract_unique_domain(mt.terminal)
-    # Extract element from FormArguments and relevant GeometricQuantities
-    if isinstance(mt.terminal, ufl.classes.FormArgument):
+    # Extract element from Arguments and relevant GeometricQuantities
+    if isinstance(mt.terminal, ufl.classes.Argument):
         if gd and mt.reference_value:
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
@@ -350,7 +350,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell", "vertex"],
     entity_type: entity_types,
     modified_terminals: typing.Iterable[ModifiedTerminal],
@@ -425,6 +425,7 @@ def build_optimized_tables(
         # It should be possible to reuse the cached tables by name, but
         # the dofmap offset may differ due to restriction.
 
+        assert isinstance(cell, ufl.Cell), "Cell must be a ufl.Cell object."
         tdim = cell.topological_dimension
         codim = tdim - element.cell.topological_dimension
         assert codim >= 0
@@ -633,7 +634,7 @@ def build_optimized_tables(
 
             tensor_perm = factors[0][1]
 
-        if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
+        if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.Argument):
             # offset = 0 or number of element dofs, if restricted to "-"
             cell_offset = element.dim
 

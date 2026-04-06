@@ -6,6 +6,7 @@
 """FFCx/UFCx specific variable definitions."""
 
 import logging
+import typing
 
 import ufl
 
@@ -52,6 +53,7 @@ class FFCXBackendDefinitions:
     """FFCx specific code definitions."""
 
     entity_type: entity_types
+    handler_lookup: dict[ufl.core.ufl_type.UFLType, typing.Callable]
 
     def __init__(self, entity_type: entity_types, integral_type: str, access, options):
         """Initialise."""
@@ -104,13 +106,13 @@ class FFCXBackendDefinitions:
             ttype = ttype.__bases__[0]
 
         # Get the handler from the lookup, or None if not found
-        handler = self.handler_lookup.get(ttype)
+        handler = self.handler_lookup.get(ttype)  # type: ignore
 
         if handler is None:
             raise NotImplementedError(f"No handler for terminal type: {ttype}")
 
         # Call the handler
-        return handler(mt, tabledata, quadrature_rule, access)
+        return handler(mt, tabledata, quadrature_rule, access)  # type: ignore
 
     def coefficient(
         self,

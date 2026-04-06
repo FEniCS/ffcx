@@ -145,7 +145,7 @@ def _compute_integral_ir(
     expression: ufl.core.expr.Expr,
     existing_tables: dict[str, npt.NDArray[np.float64]],
     quadrature_rule: QuadratureRule,
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: supported_integral_types,
     entity_type: entity_types,
     argument_shape: tuple[int, ...],
@@ -181,6 +181,7 @@ def _compute_integral_ir(
     # Check if we have a mixed-dimensional integral
     is_mixed_dim = False
     for domain in ufl.domain.extract_domains(expression):
+        assert isinstance(cell, ufl.Cell), "Cell must be a ufl.Cell object."
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
 
@@ -394,7 +395,7 @@ def _compute_integral_ir(
 
 
 def compute_integral_ir(
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: supported_integral_types,
     entity_type: entity_types,
     integrands: dict[basix.CellType | str, dict[QuadratureRule, ufl.core.expr.Expr]],
