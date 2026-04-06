@@ -484,6 +484,7 @@ class ArithmeticBinOp(BinOp):
 
 class CallOp(LExprOperator):
     """A function call operator."""
+
     op = ""
 
     def __init__(self, function, args):
