@@ -104,9 +104,9 @@ class IntermediateIntegralIR(typing.TypedDict):
     """Intermediate IR for integrals."""
 
     needs_facet_permutations: bool
-    unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]]
-    unique_table_types: dict[basix.CellType, dict[str, _table_types]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
+    unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]]
+    unique_table_types: dict[basix.CellType | str, dict[str, _table_types]]
+    integrand: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR]
 
 
 class CommonExpressionIR(typing.NamedTuple):
@@ -397,7 +397,7 @@ def compute_integral_ir(
     cell: ufl.Cell,
     integral_type: supported_integral_types,
     entity_type: entity_types,
-    integrands: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]],
+    integrands: dict[basix.CellType | str, dict[QuadratureRule, ufl.core.expr.Expr]],
     argument_shape: tuple[int, ...],
     p: dict,
     visualise: bool,
@@ -416,9 +416,9 @@ def compute_integral_ir(
     """
     # Data that will populate the intermediate representation.
     needs_facet_permutations: bool = False
-    unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]] = {}
-    unique_table_types: dict[basix.CellType, dict[str, _table_types]] = {}
-    integrand_map: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR] = {}
+    unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]] = {}
+    unique_table_types: dict[basix.CellType | str, dict[str, _table_types]] = {}
+    integrand_map: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR] = {}
     for integral_domain, integrands_on_domain in integrands.items():
         unique_tables[integral_domain] = {}
         unique_table_types[integral_domain] = {}

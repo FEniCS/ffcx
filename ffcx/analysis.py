@@ -349,7 +349,7 @@ class ProxyCoefficient(ufl.Coefficient):
         return self._operator.ufl_operands[0]
 
     @property
-    def operator(self):
+    def operator(self) -> ufl.core.expr.Expr:
         """The kind of the operand that this proxy coefficient is replacing."""
         return self._operator
 
@@ -437,19 +437,19 @@ def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
 
 
 def compute_form_data(
-    form,
-    do_apply_function_pullbacks=False,
-    do_apply_integral_scaling=False,
-    do_apply_geometry_lowering=False,
-    preserve_geometry_types=(),
-    do_apply_default_restrictions=True,
-    do_apply_restrictions=True,
-    do_estimate_degrees=True,
-    do_append_everywhere_integrals=True,
-    do_replace_functions=False,
-    coefficients_to_split=None,
-    complex_mode=False,
-    do_remove_component_tensors=False,
+    form: ufl.Form,
+    do_apply_function_pullbacks: bool = False,
+    do_apply_integral_scaling: bool = False,
+    do_apply_geometry_lowering: bool = False,
+    preserve_geometry_types: tuple[ufl.geometry.GeometricQuantity, ...] = (),
+    do_apply_default_restrictions: bool = True,
+    do_apply_restrictions: bool = True,
+    do_estimate_degrees: bool = True,
+    do_append_everywhere_integrals: bool = True,
+    do_replace_functions: bool = False,
+    coefficients_to_split: tuple[ufl.Coefficient, ...] | None = None,
+    complex_mode: bool = False,
+    do_remove_component_tensors: bool = False,
 ) -> ufl.FormData:
     """Compute form data.
 

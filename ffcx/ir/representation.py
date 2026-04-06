@@ -451,7 +451,7 @@ def _compute_integral_ir(
         coefficient_numbering: dict[ufl.Coefficient, int] = {}
         coefficient_offsets: dict[ufl.Coefficient, int] = {}
         proxy_coefficient_numbering: dict[ProxyCoefficient, int] = {}
-        proxy_coefficient_offsets: dict[ProxyCoefficient, int] = {}
+        _proxy_coefficient_offsets: dict[ProxyCoefficient, int] = {}
         _offset_c = 0
         _offset_p = 0
         width = 2 if integral_type in ("interior_facet") else 1
@@ -462,7 +462,7 @@ def _compute_integral_ir(
         ):
             if isinstance(coeff, ProxyCoefficient):
                 proxy_coefficient_numbering[coeff] = i
-                proxy_coefficient_offsets[coeff] = _offset_p
+                _proxy_coefficient_offsets[coeff] = _offset_p
                 _offset_p += width * element_dimensions[el]
                 start_proxy = i if first_proxy else start_proxy
                 first_proxy = False
@@ -475,7 +475,7 @@ def _compute_integral_ir(
         expression_ir["coefficient_numbering"] = coefficient_numbering
         expression_ir["coefficient_offsets"] = coefficient_offsets
         expression_ir["proxy_coefficient_numbering"] = proxy_coefficient_numbering
-        expression_ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
+        expression_ir["proxy_coefficient_offsets"] = _proxy_coefficient_offsets
 
         # Similar procedure with constants, but they are not removed
         # as they usually contain very little data.
@@ -488,7 +488,7 @@ def _compute_integral_ir(
         expression_ir["original_constant_offsets"] = original_constant_offsets
 
         # Create map from number of quadrature points -> integrand
-        integrand_map: dict[basix.CellType, dict[QuadratureRule, Expr]] = {
+        integrand_map: dict[basix.CellType | str, dict[QuadratureRule, Expr]] = {
             cell_type: {rule: integral.integrand() for rule, integral in cell_integrals.items()}
             for cell_type, cell_integrals in sorted_integrals.items()
         }
@@ -634,20 +634,20 @@ def _compute_form_ir(
 
 
 def _compute_expression_ir(
-    expr,
-    index,
-    prefix,
-    analysis,
-    options,
-    visualise,
+    expr: ufl.core.expr.Expr,
+    index: int,
+    prefix: str,
+    analysis: UFLData,
+    options: dict,
+    visualise: bool,
     object_names,
 ):
     """Compute intermediate representation of an Expression."""
     logger.info(f"Computing IR for Expression {index}")
 
     # Compute representation
-    ir = {}
-    base_ir = {}
+    ir: dict[str, typing.Any] = {}
+    base_ir: dict[str, typing.Any] = {}
     original_expr = (expr[2], expr[1])
 
     base_ir["name"] = naming.expression_name(original_expr, prefix)
@@ -673,7 +673,7 @@ def _compute_expression_ir(
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expr)
     argument_elements = tuple(f.ufl_function_space().ufl_element() for f in arguments)
-    argument_dimensions = [element_dimensions[element] for element in argument_elements]
+    argument_dimensions = tuple(element_dimensions[element] for element in argument_elements)
 
     tensor_shape = argument_dimensions
     base_ir["tensor_shape"] = tensor_shape
@@ -757,14 +757,15 @@ def _compute_expression_ir(
 
     weights = np.array([1.0] * points.shape[0])
     rule = QuadratureRule(points, weights)
-    integrands = {"": {rule: expr}}
+    integrands: dict[basix.CellType | str, dict[QuadratureRule, ufl.core.expr.Expr]] = {
+        "": {rule: expr}
+    }
 
     if cell is None:
         assert (
             len(ir["original_coefficient_positions"]) == 0
             and len(base_ir["original_constant_offsets"]) == 0
         )
-
     expression_ir = compute_integral_ir(
         cell,
         base_ir["integral_type"],
