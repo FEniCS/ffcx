@@ -391,7 +391,7 @@ class IntermediateCoefficientReplacer(DAGTraverser):
             reference_grad: Number of `ReferenceGrad`s that have been applied.
             restricted: '+', '-', or None.
         """
-        return super().process(o)  # type: ignore
+        return super().process(o)
 
     @process.register(ufl.Interpolate)
     def _(
@@ -415,7 +415,7 @@ class IntermediateCoefficientReplacer(DAGTraverser):
         restricted: str | None = None,
     ) -> ufl.core.expr.Expr:
         """Handle anything else in UFL."""
-        return self.reuse_if_untouched(  # type: ignore
+        return self.reuse_if_untouched(
             o,
             reference_value=reference_value,
             reference_grad=reference_grad,

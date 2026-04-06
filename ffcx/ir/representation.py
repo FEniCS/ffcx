@@ -456,7 +456,7 @@ def _compute_integral_ir(
         _offset_p = 0
         width = 2 if integral_type in ("interior_facet") else 1
         first_proxy = True
-        start_proxy = 0
+        start_proxy = len(form_data.reduced_coefficients)
         for i, (coeff, el) in enumerate(
             zip(form_data.reduced_coefficients, form_data.coefficient_elements)
         ):

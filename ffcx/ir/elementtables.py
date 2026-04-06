@@ -250,11 +250,12 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
     ld = mt.local_derivatives
     domain = ufl.domain.extract_unique_domain(mt.terminal)
     # Extract element from Arguments and relevant GeometricQuantities
-    if isinstance(mt.terminal, ufl.classes.Argument):
+    if isinstance(mt.terminal, ufl.classes.FormArgument):
         if gd and mt.reference_value:
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise RuntimeError("Local derivatives of global values not defined.")
+        assert hasattr(mt.terminal, "ufl_function_space")
         element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
@@ -634,7 +635,7 @@ def build_optimized_tables(
 
             tensor_perm = factors[0][1]
 
-        if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.Argument):
+        if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
             cell_offset = element.dim
 
