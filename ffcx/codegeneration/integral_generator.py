@@ -329,6 +329,8 @@ class IntegralGenerator:
         pw_array = L.ArrayDecl(pw, sizes=int(proxy_coeff_offset[-1]))
 
         for i, (proxy_coeff, expr_name) in enumerate(self.ir.sub_expressions):
+            declarations = []
+
             # Get active coefficients
             active_coefficient_offsets = self.ir.proxy_coefficient_offsets[i : i + 2]
             active_coefficients = self.ir.coefficients_in_proxy[
@@ -337,12 +339,17 @@ class IntegralGenerator:
             sub_coefficient_sizes = [
                 active_coefficient.ufl_element().dim for active_coefficient in active_coefficients
             ]
+
             sub_coefficient_offsets = [
                 self.ir.expression.coefficient_offsets[coeff] for coeff in active_coefficients
             ]
+            sub_coeff_pos = np.zeros(len(active_coefficients) + 1, dtype=np.int32)
+            sub_coeff_pos[1:] = np.cumsum(sub_coefficient_sizes)
             # Declare array that holds subset of coefficients
             sub_coeff = L.Symbol(f"sub_coeff_{i}", dtype=L.DataType.SCALAR)
             sub_coeff_array = L.ArrayDecl(sub_coeff, sizes=int(np.sum(sub_coefficient_sizes)))
+            declarations.append(sub_coeff_array)
+
             pi = L.Symbol("pi", dtype=L.DataType.INT)
             # Pack coefficiets into contiguous array for expression evaluation
             coeff_loops = []
@@ -354,7 +361,7 @@ class IntegralGenerator:
                         sub_coefficient_sizes[j],
                         [
                             L.Assign(
-                                sub_coeff[pi],
+                                sub_coeff[sub_coeff_pos[j] + pi],
                                 self.backend.symbols.coefficients[sub_coefficient_offsets[j] + pi],
                             )
                         ],
@@ -367,6 +374,7 @@ class IntegralGenerator:
             proxy_coefficient = L.ArrayDecl(
                 pz_at_itg_points, sizes=int(np.prod(self.ir.proxy_pack_shape[i]))
             )
+            declarations.append(proxy_coefficient)
             # NOTE: Need to do something similar for constants, currently we just pass them in
             custom_data = L.Symbol("custom_data", dtype=L.DataType.SCALAR)
             func_call = L.CallOp(
@@ -383,24 +391,44 @@ class IntegralGenerator:
             )
             decl = L.Statement(func_call)
             # Compute matvec between tabulated expression and interpolation matrix
-            im = proxy_coeff.ufl_element().basix_element.interpolation_matrix
-            im_table = self.declare_table(f"proxy_im_{i}", im)[0]
-            im_rows = im.shape[0]
-            im_cols = im.shape[1]
-            pj = L.Symbol("pj", dtype=L.DataType.INT)
+            identity_assign = False
+            if isinstance(proxy_coeff.operator, ufl.Interpolate):
+                be = proxy_coeff.ufl_element().basix_element
+                identity_assign = be.interpolation_is_identity
+                if not identity_assign:
+                    im = be.interpolation_matrix
+            else:
+                raise NotImplementedError(
+                    "Only proxy coefficients for Interpolate supported at the moment"
+                )
+
+            num_dofs = self.ir.proxy_coefficient_sizes[i]
             assign_start = proxy_coeff_offset[i]
-            inner_assign_loop = L.ForRange(
-                pj,
-                0,
-                im_cols,
-                [L.Assign(pw[assign_start + pj], pz_at_itg_points[pj] * im_table.symbol[pi][pj])],
-            )
-            assign_loop = L.ForRange(pi, 0, im_rows, [inner_assign_loop])
+            if identity_assign:
+                inner_assign_loop = L.Assign(pw[assign_start + pi], pz_at_itg_points[pi])
+            else:
+                assert im.shape[0] == num_dofs
+                im_table = self.declare_table(f"proxy_im_{i}", im)[0]
+                declarations.append(im_table)
+                num_quadrature_points = im.shape[1]
+                pj = L.Symbol("pj", dtype=L.DataType.INT)
+                inner_assign_loop = L.ForRange(
+                    pj,
+                    0,
+                    num_quadrature_points,
+                    [
+                        L.AssignAdd(
+                            pw[assign_start + pi], pz_at_itg_points[pj] * im_table.symbol[pi][pj]
+                        )
+                    ],
+                )
+            init_pw = L.Assign(pw[assign_start + pi], 0)
+            assign_loop = L.ForRange(pi, 0, num_dofs, [init_pw, inner_assign_loop])
             intermediates += [
                 L.Section(
                     f"Packing {i}th proxy coefficient",
                     statements=[coeff_loops, decl],
-                    declarations=[proxy_coefficient, sub_coeff_array, im_table],
+                    declarations=declarations,
                     input=[],
                     output=[],
                 )

@@ -336,22 +336,22 @@ def _has_custom_integrals(
 class ProxyCoefficient(ufl.Coefficient):
     """Proxy coefficient to replace operands that require custom treatement."""
 
-    _operand: ufl.core.expr.Expr
+    _operator: ufl.core.expr.Expr
 
-    def __init__(self, V: ufl.FunctionSpace, operand: ufl.core.expr.Expr):
+    def __init__(self, V: ufl.FunctionSpace, operator: ufl.core.expr.Expr):
         """Initialise."""
-        self._operand = operand
+        self._operator = operator
         super().__init__(V)
 
     @property
     def operand(self) -> ufl.core.expr.Expr:
         """The operand that this proxy coefficient is replacing."""
-        return self._operand.ufl_operands[0]
+        return self._operator.ufl_operands[0]
 
     @property
-    def kind(self):
+    def operator(self):
         """The kind of the operand that this proxy coefficient is replacing."""
-        return type(self._operand)
+        return self._operator
 
 
 class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
@@ -403,8 +403,7 @@ class IntermediateCoefficientReplacer(ufl.corealg.dag_traverser.DAGTraverser):
         """Handle Interpolate."""
         ops = o.ufl_operands
         assert len(ops) == 1, "Expected single operator in interpolation"
-        expr = ops[0]
-        coeff = ProxyCoefficient(o.ufl_function_space(), expr)
+        coeff = ProxyCoefficient(o.ufl_function_space(), o)
         return coeff
 
     @process.register(ufl.core.expr.Expr)
