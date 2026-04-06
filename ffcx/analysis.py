@@ -115,9 +115,9 @@ def analyze_ufl_objects(
         coordinate_elements += data.coordinate_elements
 
     # Loop through forms to extract interpolate operands
-    current_coeffs = data.reduced_coefficients.copy()
     new_coefficients = []
     for data in form_data:
+        current_coeffs = data.reduced_coefficients.copy()
         for coeff in current_coeffs:
             if isinstance(coeff, ProxyCoefficient):
                 # Expose expression used for interpolation to generated code
