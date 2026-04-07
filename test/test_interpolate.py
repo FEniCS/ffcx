@@ -44,7 +44,8 @@ def test_interpolate(compile_args, dtype, element):
     )
 
     xdtype = dtype_to_scalar_dtype(dtype)
-    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype).flatten()
+    scale = 4.2
+    coords = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, scale, 0.0]], dtype=xdtype).flatten()
     c = np.array([2.3], dtype=dtype)
     # Coefficients are ordered according to when they were created, thus
     # w, z, q
@@ -53,7 +54,7 @@ def test_interpolate(compile_args, dtype, element):
     assert q_size == 6
     d = np.empty(3 * q_size, dtype=dtype)
     d[0:q_size] = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]  # w
-    d[q_size : 2 * q_size] = [0.0, 0.0, 1.0, 0.5, 0.5, 0.0]  # z
+    d[q_size : 2 * q_size] = [0.0, 0.0, scale*1.0, 0.5*scale, 0.5*scale, 0.0]  # z
     d[2 * q_size : 3 * q_size] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]  # q
 
     # Get kernel
@@ -64,8 +65,6 @@ def test_interpolate(compile_args, dtype, element):
     assert offsets[cell + 1] - offsets[cell] == 1
 
     default_integral = form.form_integrals[offsets[cell]]
-
-    coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=xdtype)
 
     A = np.zeros(1, dtype=dtype)
     c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
