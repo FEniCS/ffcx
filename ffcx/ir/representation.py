@@ -753,7 +753,9 @@ def _compute_expression_ir(
     base_ir["original_constant_offsets"] = original_constant_offsets
 
     expr_domain = ufl.domain.extract_unique_domain(expr)
-    assert isinstance(expr_domain, ufl.Mesh) or expr_domain is None, "Expression domain must be a Mesh or None."
+    assert isinstance(expr_domain, ufl.Mesh) or expr_domain is None, (
+        "Expression domain must be a Mesh or None."
+    )
     base_ir["coordinate_element_hash"] = (
         expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )

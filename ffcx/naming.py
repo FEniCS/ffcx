@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import numbers
-from typing import Literal
+from typing import Literal, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -17,6 +17,32 @@ import ufl
 
 import ffcx
 import ffcx.codegeneration
+
+
+def extract_expression_renumbering(expr: ufl.core.expr.Expr) -> dict[Any, int]:
+    # FIXME Move this to UFL, cache the computation
+    coeffs = ufl.algorithms.extract_coefficients(expr)
+    consts = ufl.algorithms.analysis.extract_constants(expr)
+    args = ufl.algorithms.analysis.extract_arguments(expr)
+
+    rn = dict()
+    rn.update(dict((c, i) for i, c in enumerate(coeffs)))
+    rn.update(dict((c, i) for i, c in enumerate(consts)))
+    rn.update(dict((c, i) for i, c in enumerate(args)))
+
+    domains: list[ufl.AbstractDomain] = []
+    for coeff in coeffs:
+        domains.append(*ufl.domain.extract_domains(coeff))
+    for arg in args:
+        domains.append(*ufl.domain.extract_domains(arg))
+    for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
+        domains.append(*ufl.domain.extract_domains(gc))
+    for const in consts:
+        domains.append(*ufl.domain.extract_domains(const))
+    domains = ufl.algorithms.analysis.unique_tuple(domains)
+    assert all([isinstance(domain, ufl.Mesh) for domain in domains])
+    rn.update(dict((d, i) for i, d in enumerate(domains)))
+    return rn
 
 
 def compute_signature(
@@ -33,38 +59,29 @@ def compute_signature(
         if isinstance(ufl_object, ufl.Form):
             kind = "form"
             object_signature += ufl_object.signature()
+            # As UFL doesn't give the correct signature of the form for interpolate
+            # https://github.com/FEniCS/ufl/issues/473
+            # We check for proxycoefficients and append the spaces to the hash
+
+            baseform_ops = ufl.algorithms.extract_base_form_operators(ufl_object)
+            for op in baseform_ops:
+                if isinstance(op, ufl.Interpolate):
+                    expr = op.ufl_operands[0]
+                    space = op.ufl_function_space()
+                    expr = op.ufl_operands[0]
+                    rn = extract_expression_renumbering(expr)
+                    space_signature = str(space._ufl_signature_data_(rn))
+                    object_signature += hashlib.sha1(space_signature.encode("utf-8")).hexdigest()
+
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
             expr = ufl_object[0]
             points = ufl_object[1]
 
-            # FIXME Move this to UFL, cache the computation
-            coeffs = ufl.algorithms.extract_coefficients(expr)
-            consts = ufl.algorithms.analysis.extract_constants(expr)
-            args = ufl.algorithms.analysis.extract_arguments(expr)
-
-            rn = dict()
-            rn.update(dict((c, i) for i, c in enumerate(coeffs)))
-            rn.update(dict((c, i) for i, c in enumerate(consts)))
-            rn.update(dict((c, i) for i, c in enumerate(args)))
-
-            domains: list[ufl.AbstractDomain] = []
-            for coeff in coeffs:
-                domains.append(*ufl.domain.extract_domains(coeff))
-            for arg in args:
-                domains.append(*ufl.domain.extract_domains(arg))
-            for gc in ufl.algorithms.analysis.extract_type(expr, ufl.classes.GeometricQuantity):
-                domains.append(*ufl.domain.extract_domains(gc))
-            for const in consts:
-                domains.append(*ufl.domain.extract_domains(const))
-            domains = ufl.algorithms.analysis.unique_tuple(domains)
-            assert all([isinstance(domain, ufl.Mesh) for domain in domains])
-            rn.update(dict((d, i) for i, d in enumerate(domains)))
-
             # Hash on UFL signature and points
+            rn = extract_expression_renumbering(expr)
             signature = ufl.algorithms.signature.compute_expression_signature(expr, rn)
             object_signature += signature
             object_signature += repr(points)
-
             kind = "expression"
         else:
             raise RuntimeError(f"Unknown ufl object type {ufl_object.__class__.__name__}")

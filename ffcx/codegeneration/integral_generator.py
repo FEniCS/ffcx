@@ -371,10 +371,13 @@ class IntegralGenerator:
             pz_at_itg_points = L.Symbol(
                 f"proxy_coefficient_at_itg_points_{i}", dtype=L.DataType.SCALAR
             )
-            proxy_coefficient = L.ArrayDecl(
-                pz_at_itg_points, sizes=int(np.prod(self.ir.proxy_pack_shape[i]))
-            )
+
+            # Initialize proxy coefficient array to zero
+            proxy_size = int(np.prod(self.ir.proxy_pack_shape[i]))
+            proxy_coefficient = L.ArrayDecl(pz_at_itg_points, sizes=proxy_size)
+            proxy_initialize = L.ForRange(pi, 0, proxy_size, [L.Assign(pz_at_itg_points[pi], 0.0)])
             declarations.append(proxy_coefficient)
+
             # NOTE: Need to do something similar for constants, currently we just pass them in
             custom_data = L.Symbol("custom_data", dtype=L.DataType.SCALAR)
             func_call = L.CallOp(
@@ -427,7 +430,7 @@ class IntegralGenerator:
             intermediates += [
                 L.Section(
                     f"Packing {i}th proxy coefficient",
-                    statements=[coeff_loops, decl],
+                    statements=[coeff_loops, proxy_initialize, decl],
                     declarations=declarations,
                     input=[],
                     output=[],
