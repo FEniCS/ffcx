@@ -400,6 +400,7 @@ class IntegralGenerator:
                 identity_assign = be.interpolation_is_identity
                 if not identity_assign:
                     im = be.interpolation_matrix
+                    vs = int(np.prod(be.value_shape))
             else:
                 raise NotImplementedError(
                     "Only proxy coefficients for Interpolate supported at the moment"
@@ -411,10 +412,17 @@ class IntegralGenerator:
                 inner_assign_loop = L.Assign(pw[assign_start + pi], pz_at_itg_points[pi])
             else:
                 assert im.shape[0] == num_dofs
+                # Expression data is ordered xyxyxy, but interpolation matrix is ordered xxx...yyy...
+                if vs > 1:
+                    num_points = im.shape[1] // vs
+                    im_reshaped = im.reshape((im.shape[0], vs, num_points))
+                    im_transposed = im_reshaped.transpose((0, 2, 1))
+                    im = im_transposed.reshape((im.shape[0], -1))
                 im_table = self.declare_table(f"proxy_im_{i}", im)[0]
                 declarations.append(im_table)
                 num_quadrature_points = im.shape[1]
                 pj = L.Symbol("pj", dtype=L.DataType.INT)
+
                 inner_assign_loop = L.ForRange(
                     pj,
                     0,

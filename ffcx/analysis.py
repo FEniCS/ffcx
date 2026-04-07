@@ -43,6 +43,33 @@ from ufl.corealg.dag_traverser import DAGTraverser
 logger = logging.getLogger("ffcx")
 
 
+def apply_pullback_inverse(expression, domain, pullback):
+    J = ufl.Jacobian(domain)
+    J_T = J.T
+    detJ = abs(ufl.det(J))
+    invJ = ufl.inv(J)
+    invJ_T = invJ.T
+
+    match pullback:
+        case ufl.pullback.L2Piola():
+            pulled_back_expression = detJ * expression
+        case ufl.pullback.CovariantPiola():
+            pulled_back_expression = ufl.dot(J_T, expression)
+        case ufl.pullback.ContravariantPiola():
+            pulled_back_expression = detJ * ufl.dot(invJ, expression)
+        case ufl.pullback.DoubleCovariantPiola():
+            pulled_back_expression = ufl.dot(J_T, ufl.dot(expression, J))
+        case ufl.pullback.DoubleContravariantPiola():
+            pulled_back_expression = detJ * ufl.dot(invJ, ufl.dot(expression, invJ_T))
+        case ufl.pullback.CovariantContravariantPiola():
+            pulled_back_expression = detJ * ufl.dot(J_T, ufl.dot(expression, invJ_T))
+        case ufl.pullback.IdentityPullback():
+            pulled_back_expression = expression
+        case _:
+            raise NotImplementedError(f"Pullback {pullback} not supported.")
+    return pulled_back_expression
+
+
 class UFLData(typing.NamedTuple):
     """UFL data."""
 
@@ -123,9 +150,30 @@ def analyze_ufl_objects(
             if isinstance(coeff, ProxyCoefficient):
                 # Expose expression used for interpolation to generated code
                 original_expression = coeff.operand
-                elements += ufl.algorithms.extract_elements(original_expression)
-                processed_expression = _analyze_expression(original_expression, scalar_type)
-                points = coeff.ufl_function_space().ufl_element().basix_element.points
+                element = coeff.ufl_function_space().ufl_element()
+                # Custom pullback here
+                domain = coeff.ufl_function_space().ufl_domain()
+                pulled_back_expression = apply_pullback_inverse(
+                    original_expression, domain, element.pullback
+                )
+                # match element.pullback:
+                # case ufl.pullback.L2Piola():
+                #     pulled_back_expression = original_expression / detJ
+                # case ufl.pullback.CovariantPiola():
+                #     pulled_back_expression = ufl.dot(invJ_T, original_expression)
+                # case ufl.pullback.ContravariantPiola():
+                #     pulled_back_expression = (1.0 / detJ) * ufl.dot(J, original_expression)
+                # case ufl.pullback.DoubleCovariantPiola():
+                #     pulled_back_expression = ufl.dot(invJ_T, ufl.dot(original_expression, invJ))
+                # case ufl.pullback.DoubleContravariantPiola():
+                #     pulled_back_expression = (1.0 / detJ) * ufl.dot(J, ufl.dot(original_expression, J.T))
+                # case ufl.pullback.CovariantContravariantPiola():
+                #     pulled_back_expression = (1.0 / detJ) * ufl.dot(invJ_T, ufl.dot(original_expression, J.T))
+                # case _:
+                #     raise NotImplementedError(f"Pullback {element.pullback} not supported.")
+                elements += ufl.algorithms.extract_elements(pulled_back_expression)
+                processed_expression = _analyze_expression(pulled_back_expression, scalar_type)
+                points = element.basix_element.points
                 processed_expressions += [(processed_expression, points, original_expression)]
 
                 # Append coefficents in the processed expression

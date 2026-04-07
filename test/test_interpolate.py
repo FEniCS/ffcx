@@ -10,15 +10,12 @@ from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 @pytest.mark.parametrize("dtype", ["float64", "float32"])
 @pytest.mark.parametrize("element", [("N1curl", {}), ("Lagrange", {"shape": (2,)})])
 def test_interpolate(compile_args, dtype, element):
-    # dtype = "float64"
-    # element = ("N1curl", {})
-    # element = ("Lagrange", {"shape": (2,)})
 
     cell = "triangle"
     family, el_kwargs = element
 
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
-    element = basix.ufl.element(family, cell, 1, **el_kwargs)
+    element = basix.ufl.element(family, cell, 2, **el_kwargs)
     V_int = ufl.FunctionSpace(domain, element)
 
     # Space containing other coefficients
@@ -54,7 +51,7 @@ def test_interpolate(compile_args, dtype, element):
     assert q_size == 6
     d = np.empty(3 * q_size, dtype=dtype)
     d[0:q_size] = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]  # w
-    d[q_size : 2 * q_size] = [0.0, 0.0, scale*1.0, 0.5*scale, 0.5*scale, 0.0]  # z
+    d[q_size : 2 * q_size] = [0.0, 0.0, scale * 1.0, 0.5 * scale, 0.5 * scale, 0.0]  # z
     d[2 * q_size : 3 * q_size] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]  # q
 
     # Get kernel
@@ -99,5 +96,4 @@ def test_interpolate(compile_args, dtype, element):
         ffi.NULL,
     )
     tol = np.finfo(dtype).eps * 100
-    print(A, A_ref)
     np.testing.assert_allclose(A, A_ref, atol=tol)
