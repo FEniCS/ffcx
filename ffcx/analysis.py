@@ -43,31 +43,33 @@ from ufl.corealg.dag_traverser import DAGTraverser
 logger = logging.getLogger("ffcx")
 
 
-def apply_pullback_inverse(expression, domain, pullback):
+def apply_push_forward(
+    expr: ufl.core.expr.Expr, domain: ufl.Mesh, pullback: ufl.pullback.Pullback
+) -> ufl.core.expr.Expr:
+    """Apply push forward to an expression."""
     J = ufl.Jacobian(domain)
     J_T = J.T
-    detJ = abs(ufl.det(J))
-    invJ = ufl.inv(J)
+    detJ = ufl.JacobianDeterminant(domain)
+    invJ = ufl.JacobianInverse(domain)
     invJ_T = invJ.T
-
     match pullback:
         case ufl.pullback.L2Piola():
-            pulled_back_expression = detJ * expression
+            pushed_forward_expr = detJ * expr
         case ufl.pullback.CovariantPiola():
-            pulled_back_expression = ufl.dot(J_T, expression)
+            pushed_forward_expr = ufl.dot(J_T, expr)
         case ufl.pullback.ContravariantPiola():
-            pulled_back_expression = detJ * ufl.dot(invJ, expression)
+            pushed_forward_expr = detJ * ufl.dot(invJ, expr)
         case ufl.pullback.DoubleCovariantPiola():
-            pulled_back_expression = ufl.dot(J_T, ufl.dot(expression, J))
+            pushed_forward_expr = ufl.dot(J_T, ufl.dot(expr, J))
         case ufl.pullback.DoubleContravariantPiola():
-            pulled_back_expression = detJ * ufl.dot(invJ, ufl.dot(expression, invJ_T))
+            pushed_forward_expr = detJ * ufl.dot(invJ, ufl.dot(expr, invJ_T))
         case ufl.pullback.CovariantContravariantPiola():
-            pulled_back_expression = detJ * ufl.dot(J_T, ufl.dot(expression, invJ_T))
+            pushed_forward_expr = detJ * ufl.dot(J_T, ufl.dot(expr, invJ_T))
         case ufl.pullback.IdentityPullback():
-            pulled_back_expression = expression
+            pushed_forward_expr = expr
         case _:
             raise NotImplementedError(f"Pullback {pullback} not supported.")
-    return pulled_back_expression
+    return pushed_forward_expr
 
 
 class UFLData(typing.NamedTuple):
@@ -151,28 +153,13 @@ def analyze_ufl_objects(
                 # Expose expression used for interpolation to generated code
                 original_expression = coeff.operand
                 element = coeff.ufl_function_space().ufl_element()
-                # Custom pullback here
+                # Push expression forward to physical cell
                 domain = coeff.ufl_function_space().ufl_domain()
-                pulled_back_expression = apply_pullback_inverse(
+                pushed_forward_expression = apply_push_forward(
                     original_expression, domain, element.pullback
                 )
-                # match element.pullback:
-                # case ufl.pullback.L2Piola():
-                #     pulled_back_expression = original_expression / detJ
-                # case ufl.pullback.CovariantPiola():
-                #     pulled_back_expression = ufl.dot(invJ_T, original_expression)
-                # case ufl.pullback.ContravariantPiola():
-                #     pulled_back_expression = (1.0 / detJ) * ufl.dot(J, original_expression)
-                # case ufl.pullback.DoubleCovariantPiola():
-                #     pulled_back_expression = ufl.dot(invJ_T, ufl.dot(original_expression, invJ))
-                # case ufl.pullback.DoubleContravariantPiola():
-                #     pulled_back_expression = (1.0 / detJ) * ufl.dot(J, ufl.dot(original_expression, J.T))
-                # case ufl.pullback.CovariantContravariantPiola():
-                #     pulled_back_expression = (1.0 / detJ) * ufl.dot(invJ_T, ufl.dot(original_expression, J.T))
-                # case _:
-                #     raise NotImplementedError(f"Pullback {element.pullback} not supported.")
-                elements += ufl.algorithms.extract_elements(pulled_back_expression)
-                processed_expression = _analyze_expression(pulled_back_expression, scalar_type)
+                elements += ufl.algorithms.extract_elements(pushed_forward_expression)
+                processed_expression = _analyze_expression(pushed_forward_expression, scalar_type)
                 points = element.basix_element.points
                 processed_expressions += [(processed_expression, points, original_expression)]
 

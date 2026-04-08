@@ -20,6 +20,10 @@ import ffcx.codegeneration
 
 
 def extract_expression_renumbering(expr: ufl.core.expr.Expr) -> dict[Any, int]:
+    """Given a UFL expression, extract the renumbering of all quantities.
+
+    This includes coefficients, constants, arguments and domains.
+    """
     # FIXME Move this to UFL, cache the computation
     coeffs = ufl.algorithms.extract_coefficients(expr)
     consts = ufl.algorithms.analysis.extract_constants(expr)

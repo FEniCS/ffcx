@@ -412,7 +412,8 @@ class IntegralGenerator:
                 inner_assign_loop = L.Assign(pw[assign_start + pi], pz_at_itg_points[pi])
             else:
                 assert im.shape[0] == num_dofs
-                # Expression data is ordered xyxyxy, but interpolation matrix is ordered xxx...yyy...
+                # Expression data is ordered xyzxyzxyz,
+                # Interpolation matrix is ordered xxxyyyzzz
                 if vs > 1:
                     num_points = im.shape[1] // vs
                     im_reshaped = im.reshape((im.shape[0], vs, num_points))
