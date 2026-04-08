@@ -44,7 +44,7 @@ logger = logging.getLogger("ffcx")
 
 
 def apply_push_forward(
-    expr: ufl.core.expr.Expr, domain: ufl.Mesh, pullback: ufl.pullback.Pullback
+    expr: ufl.core.expr.Expr, domain: ufl.Mesh, pullback: ufl.pullback.AbstractPullback
 ) -> ufl.core.expr.Expr:
     """Apply push forward to an expression."""
     J = ufl.Jacobian(domain)
@@ -52,6 +52,7 @@ def apply_push_forward(
     detJ = ufl.JacobianDeterminant(domain)
     invJ = ufl.JacobianInverse(domain)
     invJ_T = invJ.T
+    pushed_forward_expr: ufl.core.expr.Expr
     match pullback:
         case ufl.pullback.L2Piola():
             pushed_forward_expr = detJ * expr

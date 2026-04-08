@@ -70,11 +70,8 @@ def compute_signature(
             baseform_ops = ufl.algorithms.extract_base_form_operators(ufl_object)
             for op in baseform_ops:
                 if isinstance(op, ufl.Interpolate):
-                    expr = op.ufl_operands[0]
-                    space = op.ufl_function_space()
-                    expr = op.ufl_operands[0]
-                    rn = extract_expression_renumbering(expr)
-                    space_signature = str(space._ufl_signature_data_(rn))
+                    rn = extract_expression_renumbering(op.ufl_operands[0])
+                    space_signature = str(op.ufl_function_space()._ufl_signature_data_(rn))
                     object_signature += hashlib.sha1(space_signature.encode("utf-8")).hexdigest()
 
         elif isinstance(ufl_object, tuple) and isinstance(ufl_object[0], ufl.core.expr.Expr):
