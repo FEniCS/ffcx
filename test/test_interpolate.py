@@ -35,9 +35,9 @@ def test_interpolate(compile_args, dtype, element):
     compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
         [J, J_ref],
         options={"scalar_type": dtype},
-        cache_dir=".ffcx_cache",
+        # cache_dir=".ffcx_cache",
         cffi_extra_compile_args=[],  # compile_args,
-        visualise=True,
+        visualise=False,
     )
 
     xdtype = dtype_to_scalar_dtype(dtype)
