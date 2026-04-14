@@ -596,7 +596,9 @@ def _compute_expression_ir(
     points = expr[1]
     expr = expr[0]
 
-    expr_domain = max(ufl.domain.extract_domains(expr), default=None, key=lambda d: d.topological_dimension)
+    expr_domain = max(
+        ufl.domain.extract_domains(expr), default=None, key=lambda d: d.topological_dimension
+    )
     cell = expr_domain.ufl_cell() if expr_domain else None
 
     # Prepare dimensions of all unique element in expression, including
