@@ -217,7 +217,7 @@ class ExpressionGenerator:
         components = ufl.product(self.ir.expression.shape)
 
         num_points = self.quadrature_rule[1].points.shape[0]
-        A_shape = [num_points, components] + self.ir.expression.tensor_shape
+        A_shape = [num_points, components] + list(self.ir.expression.tensor_shape)
         A = self.backend.symbols.element_tensor
         iq = self.backend.symbols.quadrature_loop_index
 

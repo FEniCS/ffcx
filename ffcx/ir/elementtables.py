@@ -255,7 +255,8 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             raise RuntimeError("Global derivatives of reference values not defined.")
         elif ld and not mt.reference_value:
             raise RuntimeError("Local derivatives of global values not defined.")
-        element = mt.terminal.ufl_function_space().ufl_element()  # type: ignore
+        assert hasattr(mt.terminal, "ufl_function_space")
+        element = mt.terminal.ufl_function_space().ufl_element()
         fc = mt.flat_component
     elif isinstance(mt.terminal, ufl.classes.SpatialCoordinate):
         if mt.reference_value:
@@ -350,7 +351,7 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
 
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: typing.Literal["interior_facet", "exterior_facet", "ridge", "cell", "vertex"],
     entity_type: entity_types,
     modified_terminals: typing.Iterable[ModifiedTerminal],
@@ -425,6 +426,7 @@ def build_optimized_tables(
         # It should be possible to reuse the cached tables by name, but
         # the dofmap offset may differ due to restriction.
 
+        assert isinstance(cell, ufl.Cell), "Cell must be a ufl.Cell object."
         tdim = cell.topological_dimension
         codim = tdim - element.cell.topological_dimension
         assert codim >= 0

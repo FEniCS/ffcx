@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2020 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
+# Copyright (C) 2007-2026 Anders Logg, Martin Alnaes, Kristian B. Oelgaard,
 #                         Michal Habera and others
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import typing
+from functools import singledispatchmethod
 
 if typing.TYPE_CHECKING:
     from ufl.algorithms.formdata import FormData
@@ -23,8 +24,53 @@ import basix.ufl
 import numpy as np
 import numpy.typing as npt
 import ufl.algorithms
+from ufl.algorithms.apply_derivatives import apply_coordinate_derivatives, apply_derivatives
+from ufl.algorithms.apply_function_pullbacks import apply_function_pullbacks
+from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
+from ufl.algorithms.apply_integral_scaling import apply_integral_scaling
+from ufl.algorithms.compute_form_data import attach_estimated_degrees, preprocess_form
+
+# See TODOs at the call sites of these below:
+from ufl.algorithms.domain_analysis import (
+    build_integral_data,
+    group_form_integrals,
+)
+from ufl.algorithms.formdata import FormData
+from ufl.algorithms.remove_complex_nodes import remove_complex_nodes
+from ufl.algorithms.remove_component_tensors import remove_component_tensors
+from ufl.corealg.dag_traverser import DAGTraverser
 
 logger = logging.getLogger("ffcx")
+
+
+def apply_push_forward(
+    expr: ufl.core.expr.Expr, domain: ufl.Mesh, pullback: ufl.pullback.AbstractPullback
+) -> ufl.core.expr.Expr:
+    """Apply push forward to an expression."""
+    J = ufl.Jacobian(domain)
+    J_T = J.T
+    detJ = ufl.JacobianDeterminant(domain)
+    invJ = ufl.JacobianInverse(domain)
+    invJ_T = invJ.T
+    pushed_forward_expr: ufl.core.expr.Expr
+    match pullback:
+        case ufl.pullback.L2Piola():
+            pushed_forward_expr = detJ * expr
+        case ufl.pullback.CovariantPiola():
+            pushed_forward_expr = ufl.dot(J_T, expr)
+        case ufl.pullback.ContravariantPiola():
+            pushed_forward_expr = detJ * ufl.dot(invJ, expr)
+        case ufl.pullback.DoubleCovariantPiola():
+            pushed_forward_expr = ufl.dot(J_T, ufl.dot(expr, J))
+        case ufl.pullback.DoubleContravariantPiola():
+            pushed_forward_expr = detJ * ufl.dot(invJ, ufl.dot(expr, invJ_T))
+        case ufl.pullback.CovariantContravariantPiola():
+            pushed_forward_expr = detJ * ufl.dot(J_T, ufl.dot(expr, invJ_T))
+        case ufl.pullback.IdentityPullback():
+            pushed_forward_expr = expr
+        case _:
+            raise NotImplementedError(f"Pullback {pullback} not supported.")
+    return pushed_forward_expr
 
 
 class UFLData(typing.NamedTuple):
@@ -98,6 +144,59 @@ def analyze_ufl_objects(
     for data in form_data:
         elements += data.unique_sub_elements
         coordinate_elements += data.coordinate_elements
+
+    # Loop through forms to extract interpolate operands
+    new_coefficients = []
+    for data in form_data:
+        current_coeffs = data.reduced_coefficients.copy()
+        for coeff in current_coeffs:
+            if isinstance(coeff, ProxyCoefficient):
+                # Expose expression used for interpolation to generated code
+                original_expression = coeff.operand
+                element = coeff.ufl_function_space().ufl_element()
+                # Push expression forward to physical cell
+                domain = coeff.ufl_function_space().ufl_domain()
+                pushed_forward_expression = apply_push_forward(
+                    original_expression, domain, element.pullback
+                )
+                elements += ufl.algorithms.extract_elements(pushed_forward_expression)
+                processed_expression = _analyze_expression(pushed_forward_expression, scalar_type)
+                points = element.basix_element.points
+                processed_expressions += [(processed_expression, points, original_expression)]
+
+                # Append coefficents in the processed expression
+                # to the form data reduced coefficients.
+                new_coefficients.extend(
+                    [
+                        coeff
+                        for coeff in ufl.algorithms.extract_coefficients(processed_expression)
+                        if coeff not in data.reduced_coefficients
+                    ]
+                )
+        data._reduced_coefficients.extend(new_coefficients)
+
+        # Update form data for new set of reduced coefficients
+        # Sort the reduced coefficients of the form.
+        data._reduced_coefficients = sorted(data._reduced_coefficients, key=lambda x: x.count())
+        # NOTE: Could have been simpler if we had extracted the elements from
+        # reduced_coefficients rather than going through coefficient_elements.
+        new_coeff_elements = tuple(coeff.ufl_element() for coeff in data.reduced_coefficients)
+        data._coefficient_elements = new_coeff_elements
+        # Enable all coefficients that are either in the original integral coefficients or
+        # in the new coefficients generated from the interpolate expressions.
+        for itg_data in data.integral_data:
+            assert itg_data.integral_coefficients is not None
+            itg_data.enabled_coefficients = [
+                bool(coeff in itg_data.integral_coefficients) or bool(coeff in new_coefficients)
+                for coeff in data.reduced_coefficients
+            ]
+
+        # Update original coefficient position in form
+        data._original_coefficient_positions = [
+            i
+            for i, c in enumerate(data.original_form.coefficients())
+            if c in data.reduced_coefficients
+        ]
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
@@ -178,16 +277,20 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
     complex_mode = np.issubdtype(scalar_type, np.complexfloating)
 
     # Compute form metadata
-    form_data: FormData = ufl.algorithms.compute_form_data(
+    form_data: FormData = compute_form_data(
         form,
         do_apply_function_pullbacks=True,
         do_apply_integral_scaling=True,
         do_apply_geometry_lowering=True,
-        preserve_geometry_types=(ufl.classes.Jacobian,),
+        preserve_geometry_types=(ufl.geometry.Jacobian,),  # type: ignore
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
         complex_mode=complex_mode,
     )
+
+    # Store original form, prior to replacement of interpolate,
+    # to ensure we get the correct signature and coefficient numbering
+    form_data._original_form = form
 
     # Determine unique quadrature degree and quadrature scheme
     # per each integral data
@@ -265,3 +368,229 @@ def _has_custom_integrals(
         return any(_has_custom_integrals(itg) for itg in o)
     else:
         raise NotImplementedError
+
+
+class ProxyCoefficient(ufl.Coefficient):
+    """Proxy coefficient to replace operands that require custom treatement."""
+
+    _operator: ufl.core.expr.Expr
+
+    def __init__(self, V: ufl.FunctionSpace, operator: ufl.core.expr.Expr):
+        """Initialise."""
+        self._operator = operator
+        super().__init__(V)
+
+    @property
+    def operand(self) -> ufl.core.expr.Expr:
+        """The operand that this proxy coefficient is replacing."""
+        return self._operator.ufl_operands[0]
+
+    @property
+    def operator(self) -> ufl.core.expr.Expr:
+        """The kind of the operand that this proxy coefficient is replacing."""
+        return self._operator
+
+
+class IntermediateCoefficientReplacer(DAGTraverser):
+    """Replace operands requiring intermediate coefficients with intermediate objects."""
+
+    def __init__(
+        self,
+        compress: bool | None = True,
+        visited_cache: dict[tuple, ufl.core.expr.Expr] | None = None,
+        result_cache: dict[ufl.core.expr.Expr, ufl.core.expr.Expr] | None = None,
+    ) -> None:
+        """Initialise.
+
+        Args:
+            compress: If True, ``result_cache`` will be used.
+            visited_cache: cache of intermediate results;
+                expr -> r = self.process(expr, ...).
+            result_cache: cache of result objects for memory reuse, r -> r.
+
+        """
+        super().__init__(compress=compress, visited_cache=visited_cache, result_cache=result_cache)
+
+    @singledispatchmethod
+    def process(
+        self,
+        o: ufl.core.expr.Expr,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Replace averaged arguments with intermediate space.
+
+        Args:
+            o: `ufl.core.expr.Expr` to be processed.
+            reference_value: Whether `ReferenceValue` has been applied or not.
+            reference_grad: Number of `ReferenceGrad`s that have been applied.
+            restricted: '+', '-', or None.
+        """
+        return super().process(o)
+
+    @process.register(ufl.Interpolate)
+    def _(
+        self,
+        o: ufl.Interpolate,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Handle Interpolate."""
+        ops = o.ufl_operands
+        assert len(ops) == 1, "Expected single operator in interpolation"
+        return ProxyCoefficient(o.ufl_function_space(), o)
+
+    @process.register(ufl.core.expr.Expr)
+    def _(
+        self,
+        o: ufl.Argument,
+        reference_value: bool | None = False,
+        reference_grad: int | None = 0,
+        restricted: str | None = None,
+    ) -> ufl.core.expr.Expr:
+        """Handle anything else in UFL."""
+        return self.reuse_if_untouched(
+            o,
+            reference_value=reference_value,
+            reference_grad=reference_grad,
+            restricted=restricted,
+        )
+
+
+def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
+    """Parse UFL form and and add placeholder coefficients.
+
+    Args:
+        form: UFL form
+
+    Return:
+        The modified form with operands replaced.
+    """
+    rule = IntermediateCoefficientReplacer()
+    return ufl.algorithms.map_integrands.map_integrands(rule, form)  # type: ignore
+
+
+def compute_form_data(
+    form: ufl.Form,
+    do_apply_function_pullbacks: bool = False,
+    do_apply_integral_scaling: bool = False,
+    do_apply_geometry_lowering: bool = False,
+    preserve_geometry_types: tuple[ufl.geometry.GeometricQuantity, ...] = (),
+    do_apply_default_restrictions: bool = True,
+    do_apply_restrictions: bool = True,
+    do_estimate_degrees: bool = True,
+    do_append_everywhere_integrals: bool = True,
+    do_replace_functions: bool = False,
+    coefficients_to_split: tuple[ufl.Coefficient, ...] | None = None,
+    complex_mode: bool = False,
+    do_remove_component_tensors: bool = False,
+) -> FormData:
+    """Compute form data.
+
+    Args:
+        form: The form to compute form data for.
+        do_apply_function_pullbacks: Apply pull-back to reference cell
+            for coefficients, including Piola and symmetry transforms
+            if required.
+        do_apply_integral_scaling: Apply scaling of moving the integral
+            from physical to reference frame.
+        do_apply_geometry_lowering: Lower the representation of geometrical
+            quantities to a smaller subset of quantities
+        preserve_geometry_types: Set of quantities not to lower, and keep
+            at its present stage for the form-compiler.
+        do_apply_default_restrictions: Apply default restrictions, defined in
+            {py:mod}`ufl.algorithms.apply_restrictions` to integrals if no
+            restriction has been set.
+        do_apply_restrictions: Apply restrictions towards terminal nodes.
+        do_replace_functions: Replace functions with with its cannonically numbered
+            function or thos provided in coefficients_to_split.
+        coefficients_to_split: Sequence of coefficients to split over a MeshSequence.
+        do_estimate_degrees: Estimate polynomial degree of integrands.
+        do_append_everywhere_integrals: If True append every `dx` integral to each `dx(i)`
+            integral defined in the form.
+        do_remove_component_tensors: Remove component-tensor if true.
+        complex_mode: If false remove complex nodes from the form.
+    """
+    # --- Store untouched form for reference.
+    # The user of FormData may get original arguments,
+    # original coefficients, and form signature from this object.
+    # But be aware that the set of original coefficients are not
+    # the same as the ones used in the final UFC form.
+    # See 'reduced_coefficients' below.
+    original_form = form
+
+    # --- Pass form integrands through some symbolic manipulation
+    form = replace_ufl_operands(form)
+
+    form = preprocess_form(form, complex_mode)
+
+    # --- Group form integrals
+    # TODO: Refactor this, it's rather opaque what this does
+    # TODO: Is self.original_form.ufl_domains() right here?
+    #       It will matter when we start including 'num_domains' in ufc form.
+    form = group_form_integrals(
+        form,
+        original_form.ufl_domains(),
+        do_append_everywhere_integrals=do_append_everywhere_integrals,
+    )
+
+    # Estimate polynomial degree of integrands now, before applying
+    # any pullbacks and geometric lowering.  Otherwise quad degrees
+    # blow up horrifically.
+    if do_estimate_degrees:
+        form = attach_estimated_degrees(form)
+
+    if do_apply_function_pullbacks:
+        # Rewrite coefficients and arguments in terms of their
+        # reference cell values with Piola transforms and symmetry
+        # transforms injected where needed.
+        # Decision: Not supporting grad(dolfin.Expression) without a
+        #           Domain.  Current dolfin works if Expression has a
+        #           cell but this should be changed to a mesh.
+        form = apply_function_pullbacks(form)
+
+    # Scale integrals to reference cell frames
+    if do_apply_integral_scaling:
+        form = apply_integral_scaling(form)
+
+    # Lower abstractions for geometric quantities into a smaller set
+    # of quantities, allowing the form compiler to deal with a smaller
+    # set of types and treating geometric quantities like any other
+    # expressions w.r.t. loop-invariant code motion etc.
+    if do_apply_geometry_lowering:
+        form = apply_geometry_lowering(form, preserve_geometry_types)
+
+    # Apply differentiation again, because the algorithms above can
+    # generate new derivatives or rewrite expressions inside
+    # derivatives
+    if do_apply_function_pullbacks or do_apply_geometry_lowering:
+        form = apply_derivatives(form)
+
+        # Neverending story: apply_derivatives introduces new Jinvs,
+        # which needs more geometry lowering
+        if do_apply_geometry_lowering:
+            form = apply_geometry_lowering(form, preserve_geometry_types)
+            # Lower derivatives that may have appeared
+            form = apply_derivatives(form)
+
+    form = apply_coordinate_derivatives(form)
+
+    # If in real mode, remove any complex nodes introduced during form processing.
+    if not complex_mode:
+        form = remove_complex_nodes(form)
+
+    # Remove component tensors
+    if do_remove_component_tensors:
+        form = remove_component_tensors(form)
+    integral_data = build_integral_data(form.integrals())
+    return FormData(
+        original_form,
+        integral_data,
+        do_apply_default_restrictions=do_apply_default_restrictions,
+        do_apply_restrictions=do_apply_restrictions,
+        do_replace_functions=do_replace_functions,
+        coefficients_to_split=coefficients_to_split,
+        complex_mode=complex_mode,
+    )

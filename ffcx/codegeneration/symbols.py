@@ -65,12 +65,22 @@ def format_mt_name(basename, mt):
 class FFCXBackendSymbols:
     """FFCx specific symbol definitions. Provides non-ufl symbols."""
 
-    def __init__(self, coefficient_numbering, coefficient_offsets, original_constant_offsets):
+    def __init__(
+        self,
+        coefficient_numbering,
+        coefficient_offsets,
+        original_constant_offsets,
+        proxy_coefficient_numbering,
+        proxy_coefficient_offsets,
+    ):
         """Initialise."""
         self.coefficient_numbering = coefficient_numbering
         self.coefficient_offsets = coefficient_offsets
 
         self.original_constant_offsets = original_constant_offsets
+
+        self.proxy_coefficient_numbering = proxy_coefficient_numbering
+        self.proxy_coefficient_offsets = proxy_coefficient_offsets
 
         # Keep tabs on tables, so the symbols can be reused
         self.quadrature_weight_tables = {}
@@ -82,6 +92,7 @@ class FFCXBackendSymbols:
         # Symbols for the tabulate_tensor function arguments
         self.element_tensor = L.Symbol("A", dtype=L.DataType.SCALAR)
         self.coefficients = L.Symbol("w", dtype=L.DataType.SCALAR)
+        self.proxy_coefficients = L.Symbol("pw", dtype=L.DataType.SCALAR)
         self.constants = L.Symbol("c", dtype=L.DataType.SCALAR)
         self.coordinate_dofs = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
         self.entity_local_index = L.Symbol("entity_local_index", dtype=L.DataType.INT)
@@ -172,6 +183,28 @@ class FFCXBackendSymbols:
         """Symbol for variable holding value or derivative component of coefficient."""
         c = self.coefficient_numbering[mt.terminal]
         return L.Symbol(format_mt_name(f"w{c:d}", mt), dtype=L.DataType.SCALAR)
+
+    def proxy_coefficient_dof_access(self, coefficient, dof_index):
+        """Coefficient DOF access."""
+        offset = self.proxy_coefficient_offsets[coefficient]
+        z = self.proxy_coefficients
+        return z[offset + dof_index]
+
+    def proxy_coefficient_value(self, mt):
+        """Symbol for variable holding value or derivative component of proxy coefficient."""
+        c = self.proxy_coefficient_numbering[mt.terminal]
+        return L.Symbol(format_mt_name(f"pw{c:d}", mt), dtype=L.DataType.SCALAR)
+
+    def proxy_coefficient_dof_access_blocked(
+        self, coefficient: ufl.Coefficient, index, block_size, dof_offset
+    ):
+        """Blocked proxy coefficient DOF access."""
+        coeff_offset = self.coefficient_offsets[coefficient]
+        z = self.proxy_coefficients
+        _z = L.Symbol(f"_pw_{coeff_offset}_{dof_offset}", dtype=L.DataType.SCALAR)
+        unit_stride_access = _z[index]
+        original_access = z[coeff_offset + index * block_size + dof_offset]
+        return unit_stride_access, original_access
 
     def constant_index_access(self, constant, index):
         """Constant index access."""
