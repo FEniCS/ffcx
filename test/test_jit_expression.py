@@ -482,3 +482,76 @@ def test_coordinate_free_expression(compile_args):
     # Check that the expression evaluates to [1, 0] at all points
     expected = np.array([[1.0, 0.0], [1.0, 0.0], [1.0, 0.0]])
     assert np.allclose(A, expected)
+
+
+def test_mixed_mesh_expression(compile_args):
+    """Test facet expression containing quantities from parent and facet mesh."""
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+
+    f_c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(2,))
+    facet_mesh = ufl.Mesh(f_c_el)
+    f_el = basix.ufl.element("P", "interval", 1)
+    V = ufl.FunctionSpace(facet_mesh, f_el)
+    c = ufl.Coefficient(V)
+
+    n = ufl.FacetNormal(mesh)
+    expr = c * n
+
+    dtype = np.float64
+    points = np.array([[0.3], [0.5], [0.8]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros(points.shape[0] * 2, dtype=dtype)
+
+    # Define mesh
+    coords = np.array([[0.1, 0.3, 0], [2, 0, 0.0], [0, 1, 0.0]], dtype=dtype)
+
+    # Define exact normals
+    v1 = coords[1] - coords[0]
+    v2 = coords[2] - coords[0]
+    face_normal = np.cross(v1, v2)
+    face_normal /= np.linalg.norm(face_normal)
+
+    e0 = coords[2] - coords[1]
+    e1 = coords[0] - coords[2]
+    e2 = coords[1] - coords[0]
+    edges = np.array([e0, e1, e2])
+
+    edge_normals = np.cross(edges, face_normal)[:, :2]
+
+    # 4. Normalize the edge normals
+    norms = np.linalg.norm(edge_normals, axis=1, keepdims=True)
+    edge_normals_normalized = edge_normals / norms
+
+    u_coeffs = np.array([0.1, 0.5], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+
+    ref_coeff = u_coeffs[0] + points[:, 0] * (u_coeffs[1] - u_coeffs[0])
+    for i, normal in enumerate(edge_normals_normalized):
+        # Tabulate facet normal
+        output[:] = 0
+        entity_index[0] = i
+        expression.tabulate_tensor_float64(
+            ffi.cast(f"{c_type} *", output.ctypes.data),
+            ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+            ffi.cast(f"{c_type} *", consts.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", entity_index.ctypes.data),
+            ffi.cast("uint8_t *", quad_perm.ctypes.data),
+            ffi.NULL,
+        )
+        ref_sol = ref_coeff.reshape(-1, 1) * normal
+
+        np.testing.assert_allclose(output, ref_sol.flatten())
