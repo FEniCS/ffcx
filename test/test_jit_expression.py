@@ -517,26 +517,20 @@ def test_mixed_mesh_expression(compile_args):
     coords = np.array([[0.1, 0.3, 0], [2, 0, 0.0], [0, 1, 0.0]], dtype=dtype)
 
     # Define exact normals
-    v1 = coords[1] - coords[0]
-    v2 = coords[2] - coords[0]
-    face_normal = np.cross(v1, v2)
-    face_normal /= np.linalg.norm(face_normal)
-
+    face_normal = np.array([0.0, 0.0, 1.0])
     e0 = coords[2] - coords[1]
     e1 = coords[0] - coords[2]
     e2 = coords[1] - coords[0]
     edges = np.array([e0, e1, e2])
-
     edge_normals = np.cross(edges, face_normal)[:, :2]
-
-    # 4. Normalize the edge normals
     norms = np.linalg.norm(edge_normals, axis=1, keepdims=True)
     edge_normals_normalized = edge_normals / norms
 
+    # Pack coefficients, constants, and other data for expression evaluation
     u_coeffs = np.array([0.1, 0.5], dtype=dtype)
     consts = np.array([], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
-    quad_perm = np.array([0], dtype=np.dtype("uint8"))
+    quad_perm = np.array([0], dtype=np.uint8)
 
     ref_coeff = u_coeffs[0] + points[:, 0] * (u_coeffs[1] - u_coeffs[0])
     for i, normal in enumerate(edge_normals_normalized):
