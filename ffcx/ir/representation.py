@@ -596,12 +596,10 @@ def _compute_expression_ir(
     points = expr[1]
     expr = expr[0]
 
-    try:
-        cell = ufl.domain.extract_unique_domain(expr).ufl_cell()
-    except AttributeError:
-        # This case corresponds to a spatially constant expression
-        # without any dependencies
-        cell = None
+    expr_domain = max(
+        ufl.domain.extract_domains(expr), default=None, key=lambda d: d.topological_dimension
+    )
+    cell = expr_domain.ufl_cell() if expr_domain else None
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
@@ -684,8 +682,6 @@ def _compute_expression_ir(
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
-
-    expr_domain = ufl.domain.extract_unique_domain(expr)
     base_ir["coordinate_element_hash"] = (
         expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )
