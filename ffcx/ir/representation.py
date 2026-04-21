@@ -387,7 +387,7 @@ def _compute_integral_ir(
         # Used to compute the shape of the locally assembled tensor, as well the
         # coefficient offset
         element_dimensions = {
-            element: element.dim + element.num_global_support_dofs for element in unique_elements
+            element: element.dim for element in unique_elements
         }
 
         # Create dimensions of primary indices, needed to reset the argument
@@ -604,8 +604,7 @@ def _compute_expression_ir(
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
     element_dimensions = {
-        element: element.dim + element.num_global_support_dofs
-        for element in analysis.unique_elements
+        element: element.dim for element in analysis.unique_elements
     }
 
     # Extract dimensions for elements of arguments only
