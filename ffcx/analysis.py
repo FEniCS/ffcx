@@ -200,8 +200,11 @@ def analyze_ufl_objects(
 
     for original_expression, points in expressions:
         elements += ufl.algorithms.extract_elements(original_expression)
-        processed_expression = _analyze_expression(original_expression, scalar_type)
-        processed_expressions += [(processed_expression, points, original_expression)]
+        # Apply the same operand replacement as forms to handle ufl.Interpolate
+        processed_operands_expression = replace_expression_operands(original_expression)
+        processed_expression = _analyze_expression(processed_operands_expression, scalar_type)
+        # Use the operand-replaced expression for naming/signature.
+        processed_expressions += [(processed_expression, points, processed_operands_expression)]
 
     elements += ufl.algorithms.analysis.extract_sub_elements(elements)
 
@@ -470,6 +473,22 @@ def replace_ufl_operands(form: ufl.Form) -> ufl.Form:
     """
     rule = IntermediateCoefficientReplacer()
     return ufl.algorithms.map_integrands.map_integrands(rule, form)  # type: ignore
+
+
+def replace_expression_operands(expression: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
+    """Apply operand replacement to an expression.
+
+    Replaces operands requiring intermediate coefficients with intermediate objects,
+    particularly converting ufl.Interpolate to ProxyCoefficient.
+
+    Args:
+        expression: UFL expression
+
+    Return:
+        The modified expression with operands replaced.
+    """
+    rule = IntermediateCoefficientReplacer()
+    return rule(expression)  # type: ignore
 
 
 def compute_form_data(

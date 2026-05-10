@@ -26,6 +26,8 @@ import ufl
 
 import ffcx
 import ffcx.naming
+from ffcx.analysis import ProxyCoefficient
+from ffcx.analysis import replace_expression_operands
 from ffcx.codegeneration.C.file_template import libraries as _libraries
 
 logger = logging.getLogger("ffcx")
@@ -275,6 +277,8 @@ def compile_expressions(
     """
     p = ffcx.options.get_options(options)
 
+    expressions = [(replace_expression_operands(expr), points) for expr, points in expressions]
+
     module_name = "libffcx_expressions_" + ffcx.naming.compute_signature(
         expressions,
         _compute_option_signature(p) + _compilation_signature(cffi_extra_compile_args, cffi_debug),
@@ -282,6 +286,13 @@ def compile_expressions(
     expr_names = [
         ffcx.naming.expression_name(expression, module_name) for expression in expressions
     ]
+    for expr, _points in expressions:
+        for coeff in ufl.algorithms.extract_coefficients(expr):
+            if isinstance(coeff, ProxyCoefficient):
+                proxy_points = coeff.ufl_function_space().ufl_element().basix_element.points
+                proxy_name = ffcx.naming.expression_name((coeff.operand, proxy_points), module_name)
+                if proxy_name not in expr_names:
+                    expr_names.append(proxy_name)
 
     if cache_dir is not None:
         cache_dir = Path(cache_dir)

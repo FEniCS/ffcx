@@ -7,6 +7,7 @@
 
 declaration = """
 extern ufcx_expression {factory_name};
+{subexpression_declarations}
 
 // Helper used to create expression using name which was given to the
 // expression in the UFL file.

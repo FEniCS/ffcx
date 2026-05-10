@@ -120,6 +120,11 @@ class ExpressionIR(typing.NamedTuple):
     original_coefficient_positions: list[int]
     coefficient_names: list[str]
     constant_names: list[str]
+    sub_expressions: list[tuple[ProxyCoefficient, str]]
+    proxy_coefficient_sizes: list[int]
+    proxy_pack_shape: list[tuple[int, ...]]
+    coefficients_in_proxy: list[ufl.Coefficient]
+    proxy_coefficient_offsets: list[int]
     name_from_uflfile: str
 
 
@@ -306,6 +311,7 @@ def compute_ir(
             options,
             visualise,
             object_names,
+            expression_names,
         )
         for i, expr in enumerate(analysis.expressions)
     ]
@@ -642,6 +648,7 @@ def _compute_expression_ir(
     options: dict,
     visualise: bool,
     object_names,
+    expression_names: dict[ufl.core.expr.Expr, str],
 ):
     """Compute intermediate representation of an Expression."""
     logger.info(f"Computing IR for Expression {index}")
@@ -714,6 +721,30 @@ def _compute_expression_ir(
     base_ir["coefficient_offsets"] = coefficient_offsets
     base_ir["proxy_coefficient_numbering"] = proxy_coefficient_numbering
     base_ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
+
+    proxy_coefficients = [coeff for coeff in coefficients if isinstance(coeff, ProxyCoefficient)]
+    proxy_coefficient_offsets = [0]
+    ir["coefficients_in_proxy"] = []
+    ir["sub_expressions"] = []
+    for p_coeff in proxy_coefficients:
+        assert isinstance(p_coeff, ProxyCoefficient)
+        for coeff in ufl.algorithms.extract_coefficients(p_coeff.operand):
+            ir["coefficients_in_proxy"].append(coeff)
+        proxy_coefficient_offsets.append(len(ir["coefficients_in_proxy"]))
+        ir["sub_expressions"].append((p_coeff, naming.expression_name((p_coeff.operand, points), prefix)))
+    ir["proxy_coefficient_offsets"] = proxy_coefficient_offsets
+
+    ir["proxy_pack_shape"] = []
+    ir["proxy_coefficient_sizes"] = []
+    for p_coeff in proxy_coefficients:
+        value_size = int(np.prod(p_coeff.ufl_shape))
+        ir["proxy_coefficient_sizes"].append(p_coeff.ufl_element().dim)
+        ir["proxy_pack_shape"].append(
+            (
+                value_size,
+                p_coeff.ufl_function_space().ufl_element().basix_element.points.shape[0],
+            )
+        )
 
     base_ir["integral_type"] = "expression"
     ir["coefficient_names"] = [

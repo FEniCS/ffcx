@@ -33,7 +33,11 @@ def generator(ir: ExpressionIR, options):
 
     # Format declaration
     declaration = expression_template.declaration.format(
-        factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile
+        factory_name=factory_name,
+        name_from_uflfile=ir.name_from_uflfile,
+        subexpression_declarations="".join(
+            f"extern ufcx_expression {name};\n" for _, name in ir.sub_expressions
+        ),
     )
 
     backend = FFCXBackend(ir, options)
