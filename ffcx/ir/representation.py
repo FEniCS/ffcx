@@ -397,9 +397,7 @@ def _compute_integral_ir(
         # Pre-compute the dimension number of dofs in each local element.
         # Used to compute the shape of the locally assembled tensor, as well the
         # coefficient offset
-        element_dimensions = {
-            element: element.dim + element.num_global_support_dofs for element in unique_elements
-        }
+        element_dimensions = {element: element.dim for element in unique_elements}
 
         # Create dimensions of primary indices, needed to reset the argument
         # 'A' given to tabulate_tensor() by the assembler.
@@ -659,21 +657,14 @@ def _compute_expression_ir(
     points = analysis_expr[1]
     expr = analysis_expr[0]
 
-    domain = ufl.domain.extract_unique_domain(expr)
-    # This case corresponds to a spatially constant expression
-    # without any dependencies
-    if domain is None:
-        cell = None
-    else:
-        assert hasattr(domain, "ufl_cell"), "Expression domain does not have a cell."
-        cell = domain.ufl_cell()
+    expr_domain = max(
+        ufl.domain.extract_domains(expr), default=None, key=lambda d: d.topological_dimension
+    )
+    cell = expr_domain.ufl_cell() if expr_domain else None
 
     # Prepare dimensions of all unique element in expression, including
     # elements for arguments, coefficients and coordinate mappings
-    element_dimensions = {
-        element: element.dim + element.num_global_support_dofs
-        for element in analysis.unique_elements
-    }
+    element_dimensions = {element: element.dim for element in analysis.unique_elements}
 
     # Extract dimensions for elements of arguments only
     arguments = ufl.algorithms.extract_arguments(expr)
@@ -751,11 +742,6 @@ def _compute_expression_ir(
         _offset += np.prod(constant.ufl_shape, dtype=int)
 
     base_ir["original_constant_offsets"] = original_constant_offsets
-
-    expr_domain = ufl.domain.extract_unique_domain(expr)
-    assert isinstance(expr_domain, ufl.Mesh) or expr_domain is None, (
-        "Expression domain must be a Mesh or None."
-    )
     base_ir["coordinate_element_hash"] = (
         expr_domain.ufl_coordinate_element().basix_hash() if expr_domain is not None else 0
     )
