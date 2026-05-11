@@ -10,10 +10,11 @@ import sys
 
 import basix
 import numpy as np
+from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
 from ffcx.codegeneration.C import integrals_template as ufcx_integrals
-from ffcx.codegeneration.C.c_implementation import CFormatter
+from ffcx.codegeneration.C.implementation import Formatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import IntegralIR
@@ -21,8 +22,20 @@ from ffcx.ir.representation import IntegralIR
 logger = logging.getLogger("ffcx")
 
 
-def generator(ir: IntegralIR, domain: basix.CellType, options):
-    """Generate C code for an integral."""
+def generator(
+    ir: IntegralIR, domain: basix.CellType, options: dict[str, int | float | npt.DTypeLike]
+) -> tuple[str, str]:
+    """Generate C code for an integral.
+
+    Args:
+        ir: IR of the integral
+        domain: basix cell type
+        options: dict of kernel generation options
+
+    Returns:
+        Tuple of declaration (header) and implementation (source) strings.
+
+    """
     logger.info("Generating code for integral:")
     logger.info(f"--- type: {ir.expression.integral_type}")
     logger.info(f"--- name: {ir.expression.name}")
@@ -32,7 +45,7 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
     # Format declaration
     declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
 
-    # Create FFCx C backend
+    # Create FFCx backend
     backend = FFCXBackend(ir, options)
 
     # Configure kernel generator
@@ -42,8 +55,8 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
     parts = ig.generate(domain)
 
     # Format code as string
-    CF = CFormatter(options["scalar_type"])
-    body = CF.c_format(parts)
+    CF = Formatter(options["scalar_type"])  # type: ignore
+    body = CF.format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
@@ -69,7 +82,7 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
     else:
         code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
         code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
-    np_scalar_type = np.dtype(options["scalar_type"]).name
+    np_scalar_type = np.dtype(options["scalar_type"]).name  # type: ignore
     code[f"tabulate_tensor_{np_scalar_type}"] = (
         f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
     )
@@ -81,8 +94,8 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
         enabled_coefficients_init=code["enabled_coefficients_init"],
         tabulate_tensor=code["tabulate_tensor"],
         needs_facet_permutations="true" if ir.expression.needs_facet_permutations else "false",
-        scalar_type=dtype_to_c_type(options["scalar_type"]),
-        geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),
+        scalar_type=dtype_to_c_type(options["scalar_type"]),  # type: ignore
+        geom_type=dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"])),  # type: ignore
         coordinate_element_hash=f"UINT64_C({ir.expression.coordinate_element_hash})",
         tabulate_tensor_float32=code["tabulate_tensor_float32"],
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
@@ -90,5 +103,7 @@ def generator(ir: IntegralIR, domain: basix.CellType, options):
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
         domain=int(domain),
     )
+
+    # TODO: Check that no keys are redundant or have been missed (ref. numba/integrals.py)
 
     return declaration, implementation

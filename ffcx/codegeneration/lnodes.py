@@ -268,17 +268,23 @@ class LExpr(LNode):
 class LExprOperator(LExpr):
     """Base class for all expression operators."""
 
+    precedence: int
+
     sideeffect = False
 
 
 class LExprTerminal(LExpr):
     """Base class for all  expression terminals."""
 
+    precedence: int
+
     sideeffect = False
 
 
 class LiteralFloat(LExprTerminal):
     """A floating point literal value."""
+
+    precedence: int
 
     precedence = PRECEDENCE.LITERAL
 
@@ -445,6 +451,8 @@ class PrefixUnaryOp(LExprOperator):
 
 class BinOp(LExprOperator):
     """A binary operator."""
+
+    op: str
 
     def __init__(self, lhs, rhs):
         """Initialise."""

@@ -20,6 +20,7 @@ import numpy.typing as npt
 logger = logging.getLogger("ffcx")
 
 FFCX_DEFAULT_OPTIONS = {
+    "language": (str, "C", "language to output kernel in", ("C", "numba")),
     "epsilon": (float, 1e-14, "machine precision, used for dropping zero terms in tables.", None),
     "scalar_type": (
         str,
