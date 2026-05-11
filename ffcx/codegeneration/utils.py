@@ -160,7 +160,7 @@ if numba is not None:
         sig = numba.types.voidptr(arr)
         return sig, codegen
 
-    def create_voidptr_to_dtype_ptr_caster(
+    def _create_voidptr_to_dtype_ptr_caster(
         target_dtype: numba.types.Type,
     ) -> numba.extending.intrinsic:
         """Factory that creates a Numba intrinsic casting void* to CPointer(target_dtype).
@@ -212,9 +212,3 @@ if numba is not None:
             return sig, codegen
 
         return voidptr_to_dtype_ptr
-
-    # Pre-built casters for common types (convenience wrappers)
-    voidptr_to_float64_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.float64)
-    voidptr_to_float32_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.float32)
-    voidptr_to_int32_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.int32)
-    voidptr_to_int64_ptr = create_voidptr_to_dtype_ptr_caster(numba.types.int64)
