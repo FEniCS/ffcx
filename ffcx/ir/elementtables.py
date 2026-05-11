@@ -29,6 +29,16 @@ logger = logging.getLogger("ffcx")
 default_rtol = 1e-6
 default_atol = 1e-9
 
+table_types = typing.Literal[
+    "piecewise",
+    "fixed",
+    "ones",
+    "zeros",
+    "uniform",
+    "quadrature",
+    "varying",
+    "tensor_factor",
+]
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
@@ -47,15 +57,31 @@ class UniqueTableReferenceT(typing.NamedTuple):
 
     name: str
     values: npt.NDArray[np.float64]
-    offset: int | None
-    block_size: int | None
-    ttype: str | None
-    is_piecewise: bool
-    is_uniform: bool
-    is_permuted: bool
-    has_tensor_factorisation: bool
-    tensor_factors: list[typing.Any] | None
-    tensor_permutation: np.typing.NDArray[np.int32] | None
+    is_permuted: (
+        bool  # If table is permuted (integral over interior facets) or mixed dimensional integrals.
+    )
+    ttype: table_types
+    # Optional table references, should not be none if table doesn't
+    # have tensor factors
+    offset: int | None = None
+    block_size: int | None = None
+    tensor_factors: list["UniqueTableReferenceT"] | None = None
+    tensor_permutation: np.typing.NDArray[np.int32] | None = None
+
+    @property
+    def has_tensor_factorisation(self):
+        """If table is a tensor factorization."""
+        return self.tensor_factors is not None
+
+    @property
+    def is_piecewise(self) -> bool:
+        """If constant for each point, but can differ for each entity."""
+        return self.ttype in piecewise_ttypes
+
+    @property
+    def is_uniform(self) -> bool:
+        """If constant for all points and all entities."""
+        return self.ttype in uniform_ttypes
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -92,8 +118,10 @@ def get_ffcx_table_values(
 ):
     """Extract values from FFCx element table.
 
-    Returns a 3D numpy array with axes
-    (entity number, quadrature point number, dof number)
+    Returns a 4D numpy array with axes
+    (1, entity number, quadrature point number, dof number)
+    where the first dimension represents the number of permuted tables.
+    It is here to simplify construction later.
     """
     deriv_order = sum(derivative_counts)
 
@@ -133,7 +161,11 @@ def get_ffcx_table_values(
         else:
             # Make quadrature rule and get points and weights
             points, weights = create_quadrature_points_and_weights(
-                integral_type, cell, element.embedded_superdegree(), "default", [element]
+                integral_type,
+                cell,
+                element.embedded_superdegree(),
+                "default",
+                [element],
             )
 
     # Tabulate table of basis functions and derivatives in points for each entity
@@ -380,7 +412,12 @@ def build_optimized_tables(
         # Build name for this particular table
         element_number = element_numbers[element]
         name = generate_psi_table_name(
-            quadrature_rule, element_number, avg, entity_type, local_derivatives, flat_component
+            quadrature_rule,
+            element_number,
+            avg,
+            entity_type,
+            local_derivatives,
+            flat_component,
         )
 
         # FIXME - currently just recalculate the tables every time,
@@ -583,20 +620,11 @@ def build_optimized_tables(
                         tensor_factors.append(tensor_factor)
                         break
                 else:
-                    # FIXME: The inputs here does not match the type-hints of
-                    # unique_table_reference
                     ut = UniqueTableReferenceT(
-                        f"FE_TF{tensor_n}",
-                        sub_tbl,
-                        None,
-                        None,
-                        None,
-                        False,
-                        False,
-                        False,
-                        False,
-                        None,
-                        None,
+                        name=f"FE_TF{tensor_n}",
+                        values=sub_tbl,
+                        ttype="tensor_factor",
+                        is_permuted=False,
                     )
                     all_tensor_factors.append(ut)
                     tensor_factors.append(ut)
@@ -612,21 +640,16 @@ def build_optimized_tables(
         offset = cell_offset + t["offset"]
         block_size = t["stride"]
         # tables is just np.arrays, mt_tables hold metadata too
-        # FIXME: type-hinting of tensor factors is not correct
         mt_tables[mt] = UniqueTableReferenceT(
-            name,
-            tbl,
-            offset,
-            block_size,
-            tabletype,
-            tabletype in piecewise_ttypes,
-            tabletype in uniform_ttypes,
-            is_permuted,
-            tensor_factors is not None,
-            tensor_factors,
-            tensor_perm,
+            name=name,
+            values=tbl,
+            offset=offset,
+            block_size=block_size,
+            ttype=tabletype,
+            is_permuted=is_permuted,
+            tensor_factors=tensor_factors,
+            tensor_permutation=tensor_perm,
         )
-
     return mt_tables
 
 

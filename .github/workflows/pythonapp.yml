@@ -39,7 +39,7 @@ jobs:
 
       - name: Export GitHub Actions cache environment variables (Windows)
         if: runner.os == 'Windows'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
@@ -80,13 +80,13 @@ jobs:
         if: runner.os != 'Linux'
         run: pip install .[ci]
 
-      - name: Static check with mypy
-        run: mypy -p ffcx
-
       - name: ruff checks
         run: |
           ruff check .
           ruff format --check .
+
+      - name: Static check with mypy
+        run: mypy -p ffcx
 
       - name: Run unit tests
         run: >
@@ -104,7 +104,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload pytest results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: pytest-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
@@ -127,7 +127,7 @@ jobs:
           cd doc
           make html
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: doc-${{ matrix.os }}-${{ matrix.python-version }}
           path: doc/build/html/

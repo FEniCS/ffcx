@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Chris Richardson
+# Copyright (C) 2023-2025 Chris Richardson and Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -6,11 +6,13 @@
 """C implementation."""
 
 import warnings
+from functools import singledispatchmethod
 
 import numpy as np
 import numpy.typing as npt
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration.interface import Formatter as FormatterInterface
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
 math_table = {
@@ -142,7 +144,7 @@ math_table = {
 }
 
 
-class Formatter:
+class Formatter(FormatterInterface):
     """C formatter."""
 
     scalar_type: np.dtype
@@ -184,11 +186,18 @@ class Formatter:
         arr += "}"
         return arr
 
-    def format_statement_list(self, slist) -> str:
-        """Format a statement list."""
-        return "".join(self.format(s) for s in slist.statements)
+    @singledispatchmethod
+    def __call__(self, obj: L.LNode) -> str:
+        """Format an L Node."""
+        raise NotImplementedError(f"Can not format object to type {type(obj)}")
 
-    def format_section(self, section) -> str:
+    @__call__.register
+    def _(self, slist: L.StatementList) -> str:
+        """Format a statement list."""
+        return "".join(self(s) for s in slist.statements)
+
+    @__call__.register
+    def _(self, section: L.Section) -> str:
         """Format a section."""
         # add new line before section
         comments = (
@@ -197,28 +206,30 @@ class Formatter:
             f"// Inputs: {', '.join(w.name for w in section.input)}\n"
             f"// Outputs: {', '.join(w.name for w in section.output)}\n"
         )
-        declarations = "".join(self.format(s) for s in section.declarations)
+        declarations = "".join(self(s) for s in section.declarations)
 
         body = ""
         if len(section.statements) > 0:
             declarations += "{\n  "
-            body = "".join(self.format(s) for s in section.statements)
+            body = "".join(self(s) for s in section.statements)
             body = body.replace("\n", "\n  ")
             body = body[:-2] + "}\n"
 
         body += "// ------------------------ \n"
         return str(comments + declarations + body)
 
-    def format_comment(self, c: L.Comment) -> str:
+    @__call__.register
+    def _(self, c: L.Comment) -> str:
         """Format a comment."""
-        return "// " + c.comment + "\n"
+        return f"// {c.comment}\n"
 
-    def format_array_decl(self, arr) -> str:
+    @__call__.register
+    def _(self, arr: L.ArrayDecl) -> str:
         """Format an array declaration."""
         dtype = arr.symbol.dtype
         typename = self._dtype_to_name(dtype)
 
-        symbol = self.format(arr.symbol)
+        symbol = self(arr.symbol)
         dims = "".join([f"[{i}]" for i in arr.sizes])
         if arr.values is None:
             assert arr.const is False
@@ -228,23 +239,26 @@ class Formatter:
         cstr = "static const " if arr.const else ""
         return f"{cstr}{typename} {symbol}{dims} = {vals};\n"
 
-    def format_array_access(self, arr) -> str:
+    @__call__.register
+    def _(self, arr: L.ArrayAccess) -> str:
         """Format an array access."""
-        name = self.format(arr.array)
-        indices = f"[{']['.join(self.format(i) for i in arr.indices)}]"
+        name = self(arr.array)
+        indices = f"[{']['.join(self(i) for i in arr.indices)}]"
         return f"{name}{indices}"
 
-    def format_variable_decl(self, v) -> str:
+    @__call__.register
+    def _(self, v: L.VariableDecl) -> str:
         """Format a variable declaration."""
-        val = self.format(v.value)
-        symbol = self.format(v.symbol)
+        val = self(v.value)
+        symbol = self(v.symbol)
         typename = self._dtype_to_name(v.symbol.dtype)
         return f"{typename} {symbol} = {val};\n"
 
-    def format_nary_op(self, oper) -> str:
+    @__call__.register
+    def _(self, oper: L.NaryOp) -> str:
         """Format an n-ary operation."""
         # Format children
-        args = [self.format(arg) for arg in oper.args]
+        args = [self(arg) for arg in oper.args]
 
         # Apply parentheses
         for i in range(len(args)):
@@ -254,11 +268,12 @@ class Formatter:
         # Return combined string
         return f" {oper.op} ".join(args)
 
-    def format_binary_op(self, oper) -> str:
+    @__call__.register
+    def _(self, oper: L.BinOp) -> str:
         """Format a binary operation."""
         # Format children
-        lhs = self.format(oper.lhs)
-        rhs = self.format(oper.rhs)
+        lhs = self(oper.lhs)
+        rhs = self(oper.rhs)
 
         # Apply parentheses
         if oper.lhs.precedence >= oper.precedence:
@@ -269,52 +284,61 @@ class Formatter:
         # Return combined string
         return f"{lhs} {oper.op} {rhs}"
 
-    def format_unary_op(self, oper) -> str:
+    @__call__.register(L.Neg)
+    @__call__.register(L.Not)
+    def _(self, oper: L.Neg | L.Not) -> str:
         """Format a unary operation."""
-        arg = self.format(oper.arg)
+        arg = self(oper.arg)
         if oper.arg.precedence >= oper.precedence:
             return f"{oper.op}({arg})"
         return f"{oper.op}{arg}"
 
-    def format_literal_float(self, val) -> str:
+    @__call__.register
+    def _(self, val: L.LiteralFloat) -> str:
         """Format a literal float."""
         value = self._format_number(val.value)
         return f"{value}"
 
-    def format_literal_int(self, val) -> str:
+    @__call__.register
+    def _(self, val: L.LiteralInt) -> str:
         """Format a literal int."""
         return f"{val.value}"
 
-    def format_for_range(self, r) -> str:
+    @__call__.register
+    def _(self, r: L.ForRange) -> str:
         """Format a for loop over a range."""
-        begin = self.format(r.begin)
-        end = self.format(r.end)
-        index = self.format(r.index)
+        begin = self(r.begin)
+        end = self(r.end)
+        index = self(r.index)
         output = f"for (int {index} = {begin}; {index} < {end}; ++{index})\n"
         output += "{\n"
-        body = self.format(r.body)
+        body = self(r.body)
         for line in body.split("\n"):
             if len(line) > 0:
                 output += f"  {line}\n"
         output += "}\n"
         return output
 
-    def format_statement(self, s) -> str:
+    @__call__.register
+    def _(self, s: L.Statement) -> str:
         """Format a statement."""
-        return self.format(s.expr)
+        return self(s.expr)
 
-    def format_assign(self, expr) -> str:
+    @__call__.register(L.Assign)
+    @__call__.register(L.AssignAdd)
+    def _(self, expr: L.Assign | L.AssignAdd) -> str:
         """Format an assignment."""
-        rhs = self.format(expr.rhs)
-        lhs = self.format(expr.lhs)
+        rhs = self(expr.rhs)
+        lhs = self(expr.lhs)
         return f"{lhs} {expr.op} {rhs};\n"
 
-    def format_conditional(self, s) -> str:
+    @__call__.register
+    def _(self, s: L.Conditional) -> str:
         """Format a conditional."""
         # Format children
-        c = self.format(s.condition)
-        t = self.format(s.true)
-        f = self.format(s.false)
+        c = self(s.condition)
+        t = self(s.true)
+        f = self(s.false)
 
         # Apply parentheses
         if s.condition.precedence >= s.precedence:
@@ -327,15 +351,18 @@ class Formatter:
         # Return combined string
         return c + " ? " + t + " : " + f
 
-    def format_symbol(self, s) -> str:
+    @__call__.register
+    def _(self, s: L.Symbol) -> str:
         """Format a symbol."""
         return f"{s.name}"
 
-    def format_multi_index(self, mi) -> str:
+    @__call__.register
+    def _(self, mi: L.MultiIndex) -> str:
         """Format a multi-index."""
-        return self.format(mi.global_index)
+        return self(mi.global_index)
 
-    def format_math_function(self, c) -> str:
+    @__call__.register
+    def _(self, c: L.MathFunction) -> str:
         """Format a mathematical function."""
         # Get a table of functions for this type, if available
         arg_type = self.scalar_type
@@ -349,48 +376,5 @@ class Formatter:
 
         # Get a function from the table, if available, else just use bare name
         func = dtype_math_table.get(c.function, c.function)
-        args = ", ".join(self.format(arg) for arg in c.args)
+        args = ", ".join(self(arg) for arg in c.args)
         return f"{func}({args})"
-
-    impl = {
-        "Section": format_section,
-        "StatementList": format_statement_list,
-        "Comment": format_comment,
-        "ArrayDecl": format_array_decl,
-        "ArrayAccess": format_array_access,
-        "MultiIndex": format_multi_index,
-        "VariableDecl": format_variable_decl,
-        "ForRange": format_for_range,
-        "Statement": format_statement,
-        "Assign": format_assign,
-        "AssignAdd": format_assign,
-        "Product": format_nary_op,
-        "Neg": format_unary_op,
-        "Sum": format_nary_op,
-        "Add": format_binary_op,
-        "Sub": format_binary_op,
-        "Mul": format_binary_op,
-        "Div": format_binary_op,
-        "Not": format_unary_op,
-        "LiteralFloat": format_literal_float,
-        "LiteralInt": format_literal_int,
-        "Symbol": format_symbol,
-        "Conditional": format_conditional,
-        "MathFunction": format_math_function,
-        "And": format_binary_op,
-        "Or": format_binary_op,
-        "NE": format_binary_op,
-        "EQ": format_binary_op,
-        "GE": format_binary_op,
-        "LE": format_binary_op,
-        "GT": format_binary_op,
-        "LT": format_binary_op,
-    }
-
-    def format(self, s) -> str:
-        """Format as C."""
-        name = s.__class__.__name__
-        try:
-            return self.impl[name](self, s)
-        except KeyError:
-            raise RuntimeError("Unknown statement: ", name)

@@ -7,7 +7,7 @@
 """Compiler stage 4: Code generation.
 
 This module implements the generation of C code for the body of each
-UFC function from an intermediate representation (IR).
+UFCx function from an intermediate representation (IR).
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from importlib import import_module
 import numpy.typing as npt
 
 from ffcx.ir.representation import DataIR
+from ffcx.options import get_language
 
 logger = logging.getLogger("ffcx")
 
@@ -26,7 +27,8 @@ logger = logging.getLogger("ffcx")
 class CodeBlocks(typing.NamedTuple):
     """Storage of code blocks of the form (declaration, implementation).
 
-    Blocks for integrals, forms and expressions, and start and end of file output
+    Blocks for integrals, forms and expressions, and start and end of
+    file output.
     """
 
     file_pre: list[tuple[str, str]]
@@ -36,18 +38,19 @@ class CodeBlocks(typing.NamedTuple):
     file_post: list[tuple[str, str]]
 
 
-def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -> CodeBlocks:
+def generate_code(
+    ir: DataIR, options: dict[str, int | float | npt.DTypeLike]
+) -> tuple[CodeBlocks, tuple[str, ...]]:
     """Generate code blocks from intermediate representation."""
     logger.info(79 * "*")
     logger.info("Compiler stage 3: Generating code")
     logger.info(79 * "*")
 
-    lang = options.get("language", "C")
-    mod = import_module(f"ffcx.codegeneration.{lang}")
+    mod = import_module(get_language(options))
 
-    integral_generator = mod.integrals.generator
+    integral_generator = mod.integral.generator
     form_generator = mod.form.generator
-    expression_generator = mod.expressions.generator
+    expression_generator = mod.expression.generator
     file_generator = mod.file.generator
 
     code_integrals = [
@@ -66,4 +69,4 @@ def generate_code(ir: DataIR, options: dict[str, int | float | npt.DTypeLike]) -
         forms=code_forms,
         expressions=code_expressions,
         file_post=[code_file_post],
-    )
+    ), mod.file.suffixes

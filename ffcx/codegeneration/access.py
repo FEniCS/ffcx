@@ -3,7 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""FFCx/UFC specific variable access."""
+"""FFCx/UFCx specific variable access."""
 
 import logging
 import warnings
@@ -33,8 +33,8 @@ class FFCXBackendAccess:
         self.symbols = symbols
         self.options = options
 
-        # Lookup table for handler to call when the "get" method (below) is
-        # called, depending on the first argument type.
+        # Lookup table for handler to call when the "get" method (below)
+        # is called, depending on the first argument type.
         self.call_lookup = {
             ufl.coefficient.Coefficient: self.coefficient,
             ufl.constant.Constant: self.constant,
@@ -110,7 +110,8 @@ class FFCXBackendAccess:
         quadrature_rule: QuadratureRule | None,
     ):
         """Access a constant."""
-        # Access to a constant is handled trivially, directly through constants symbol
+        # Access to a constant is handled trivially, directly through
+        # constants symbol
         return self.symbols.constant_index_access(mt.terminal, mt.flat_component)
 
     def spatial_coordinate(

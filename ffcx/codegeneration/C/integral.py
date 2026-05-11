@@ -3,7 +3,7 @@
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Generate UFC code for an integral."""
+"""Generate UFCx code for an integral."""
 
 import logging
 import sys
@@ -13,8 +13,8 @@ import numpy as np
 from numpy import typing as npt
 
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C import integrals_template as ufcx_integrals
-from ffcx.codegeneration.C.implementation import Formatter
+from ffcx.codegeneration.C import integral_template as ufcx_integrals
+from ffcx.codegeneration.C.formatter import Formatter
 from ffcx.codegeneration.integral_generator import IntegralGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import IntegralIR
@@ -55,8 +55,8 @@ def generator(
     parts = ig.generate(domain)
 
     # Format code as string
-    CF = Formatter(options["scalar_type"])  # type: ignore
-    body = CF.format(parts)
+    format = Formatter(options["scalar_type"])  # type: ignore
+    body = format(parts)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
@@ -105,5 +105,6 @@ def generator(
     )
 
     # TODO: Check that no keys are redundant or have been missed (ref. numba/integrals.py)
+    # assert set(d.keys()) == template_keys(ufcx_integrals.factory)
 
     return declaration, implementation

@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import hashlib
+import numbers
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -83,7 +85,7 @@ def integral_name(
     original_form: ufl.form.Form,
     integral_type: str,
     form_id: int,
-    subdomain_id: tuple[int, ...] | tuple[str],
+    subdomain_id: Literal["everywhere"] | numbers.Integral | tuple[numbers.Integral, ...],
     prefix: str,
 ) -> str:
     """Get integral name."""
