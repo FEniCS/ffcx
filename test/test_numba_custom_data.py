@@ -9,9 +9,7 @@ import ffcx.codegeneration.utils as codegen_utils
 # Skip the tests if Numba is not available in the environment.
 numba = pytest.importorskip("numba")
 
-float64_ptr_caster = codegen_utils._create_voidptr_to_dtype_ptr_caster(
-    numba.types.float64
-)
+float64_ptr_caster = codegen_utils._create_voidptr_to_dtype_ptr_caster(numba.types.float64)
 int32_ptr_caster = codegen_utils._create_voidptr_to_dtype_ptr_caster(numba.types.int32)
 
 
