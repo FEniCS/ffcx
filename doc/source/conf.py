@@ -19,7 +19,7 @@ import ffcx
 
 # -- Project information -----------------------------------------------------
 
-project = "FEniCS Form Compiler X"
+project = "FFCx"
 this_year = datetime.date.today().year
 copyright = f"{this_year}, FEniCS Project"
 author = "FEniCS Project"
@@ -135,7 +135,7 @@ latex_documents = [
     (
         master_doc,
         "FEniCSFormCompilerX.tex",
-        "FEniCS Form Compiler X Documentation",
+        "FEniCS Form Compiler X (FFCx) Documentation",
         "FEniCS Project",
         "manual",
     ),
@@ -147,7 +147,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, "fenicsformcompilerx", "FEniCS Form Compiler X Documentation", [author], 1)
+    (master_doc, "fenicsformcompilerx", "FFCx Documentation", [author], 1)
 ]
 
 
