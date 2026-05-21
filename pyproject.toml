@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=62", "wheel"]
+requires = [
+    "setuptools>=77.0.3", # Ensuring license field is correctly parsed
+    "wheel"
+]
 build-backend = "setuptools.build_meta"
 
 [project]
