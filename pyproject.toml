@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=62", "wheel"]
+requires = [
+    "setuptools>=77.0.3", # Ensuring license field is correctly parsed
+    "wheel"
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +10,7 @@ name = "fenics-ffcx"
 version = "0.11.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "LGPL-3.0-or-later"
 license-files = ["COPYING*"]
 authors = [
