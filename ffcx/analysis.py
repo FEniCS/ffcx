@@ -30,15 +30,16 @@ logger = logging.getLogger("ffcx")
 class UFLData(typing.NamedTuple):
     """UFL data."""
 
-    # Tuple of ufl form data
+    #: FormData objects
     form_data: tuple[FormData, ...]
-    # List of unique elements
+    #: Unique elements across all forms and expressions
     unique_elements: list[basix.ufl._ElementBase]
-    # Lookup table from each unique element to its index in `unique_elements`
+    #: Mapping to unique numbers for all elements
     element_numbers: dict[basix.ufl._ElementBase, int]
-    # List of unique coordinate elements
+    #: Unique coordinate elements across all forms and expressions
     unique_coordinate_elements: list[basix.ufl._ElementBase]
-    # List of ufl Expressions as tuples (expression, points, original_expression)
+    #: List of all expressions after post-processing, with its evaluation points and the original
+    # expression
     expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
 
 
@@ -58,13 +59,7 @@ def analyze_ufl_objects(
         scalar_type: Scalar type that should be used for the analysis
 
     Returns:
-        A data structure holding:
-            form_datas: Form_data objects
-            unique_elements: Unique elements across all forms and expressions
-            element_numbers: Mapping to unique numbers for all elements
-            unique_coordinate_elements: Unique coordinate elements across all forms and expressions
-            expressions: List of all expressions after post-processing, with its evaluation points
-                         and the original expression
+        A named tuple :class:`UFLData`.
     """
     logger.info(79 * "*")
     logger.info("Compiler stage 1: Analyzing UFL objects")

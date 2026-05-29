@@ -174,7 +174,6 @@ todo_include_todos = True
 autodoc_default_options = {
     "members": True,
     "show-inheritance": True,
-    "imported-members": True,
     "undoc-members": True,
 }
 autosummary_generate = True
