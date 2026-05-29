@@ -1,5 +1,5 @@
 FEniCS Form Compiler X (FFCx) documentation
-======================================
+===========================================
 
 The is a new version of the FEniCS Form Compiler.
 It is developed at https://github.com/FEniCS/ffcx.
