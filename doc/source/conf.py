@@ -15,8 +15,6 @@
 import datetime
 import importlib.metadata
 
-import ffcx
-
 # -- Project information -----------------------------------------------------
 
 project = "FFCx"
@@ -146,9 +144,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, "fenicsformcompilerx", "FFCx Documentation", [author], 1)
-]
+man_pages = [(master_doc, "fenicsformcompilerx", "FFCx Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
