@@ -12,7 +12,7 @@ description = "The FEniCSx Form Compiler"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "LGPL-3.0-or-later"
-license-files = ["COPYING*"]
+license-files = ["LICENSE", "COPYING*", "UNLICENSE"]
 authors = [
     { email = "fenics-steering-council@googlegroups.com" },
     { name = "FEniCS Steering Council" },
