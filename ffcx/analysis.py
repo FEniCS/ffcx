@@ -38,8 +38,7 @@ class UFLData(typing.NamedTuple):
     element_numbers: dict[basix.ufl._ElementBase, int]
     #: Unique coordinate elements across all forms and expressions
     unique_coordinate_elements: list[basix.ufl._ElementBase]
-    #: List of all expressions after post-processing, with its evaluation points and the original
-    # expression
+    #: List of all expressions after post-processing, with evaluation points and original expression
     expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating], ufl.core.expr.Expr]]
 
 
