@@ -549,3 +549,65 @@ def test_mixed_mesh_expression(compile_args):
         ref_sol = ref_coeff.reshape(-1, 1) * normal
 
         np.testing.assert_allclose(output, ref_sol.flatten())
+
+
+@pytest.mark.parametrize("facet_perm", [0, 1], ids=["no_perm", "perm"])
+def test_expression_facet_perm(compile_args, facet_perm):
+
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+    expr = ufl.SpatialCoordinate(mesh)
+
+    dtype = np.float64
+    points = np.array([[0.2], [0.93], [0.99]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros((points.shape[0], 2), dtype=dtype)
+
+    # Define single cell (local order)
+    # 1----2
+    # |  /
+    # | /
+    # 0
+    coords = np.array([[0.3, 0.0, 0], [0.3, 2.0, 0.0], [1.1, 2.0, 0.0]], dtype=dtype)
+
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+
+    # Perm 0, means that global facet is ordered as
+    # 1----2
+    # and quadrature point is not reflected
+    # Perm 1, means that global facet is ordered as
+    # 2----1
+    # and quadrature point should be reflected
+    quad_perm = np.array([facet_perm], dtype=np.uint8)
+
+    # Tabulate facet normal
+    facet_index = 0
+    output[:] = 0
+    entity_index[0] = facet_index
+    expression.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    ordered_points = points * (facet_perm == 0) + (1 - points) * (facet_perm == 1)
+    facet = np.delete(coords, facet_index, axis=0)[:, :2]
+    edge = facet[1] - facet[0]
+    exact_value = facet[0] + ordered_points * edge
+    np.testing.assert_allclose(output, exact_value)
