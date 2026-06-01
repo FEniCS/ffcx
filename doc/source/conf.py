@@ -13,22 +13,17 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 import datetime
-
-import ffcx
+import importlib.metadata
 
 # -- Project information -----------------------------------------------------
 
-project = "FEniCS Form Compiler X"
-now = datetime.datetime.now()
-date = now.date()
-copyright = f"{date.year}, FEniCS Project"
+project = "FFCx"
+this_year = datetime.date.today().year
+copyright = f"{this_year}, FEniCS Project"
 author = "FEniCS Project"
 
-# The short X.Y version
-version = ffcx.__version__
-# The full version, including alpha/beta/rc tags
-release = ffcx.__version__
-
+version = importlib.metadata.version("fenics-ffcx")
+release = version
 
 # -- General configuration ---------------------------------------------------
 
@@ -67,7 +62,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -84,7 +79,7 @@ pygments_style = "sphinx"
 # a list of builtin themes.
 #
 # html_theme = 'alabaster'
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -95,7 +90,7 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+# html_static_path = ["_static"]
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -138,7 +133,7 @@ latex_documents = [
     (
         master_doc,
         "FEniCSFormCompilerX.tex",
-        "FEniCS Form Compiler X Documentation",
+        "FEniCS Form Compiler X (FFCx) Documentation",
         "FEniCS Project",
         "manual",
     ),
@@ -149,9 +144,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, "fenicsformcompilerx", "FEniCS Form Compiler X Documentation", [author], 1)
-]
+man_pages = [(master_doc, "fenicsformcompilerx", "FFCx Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -181,7 +174,6 @@ todo_include_todos = True
 autodoc_default_options = {
     "members": True,
     "show-inheritance": True,
-    "imported-members": True,
     "undoc-members": True,
 }
 autosummary_generate = True

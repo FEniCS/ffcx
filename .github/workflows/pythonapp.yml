@@ -26,7 +26,7 @@ jobs:
     strategy:
       matrix:
         os: ["windows-2022", "ubuntu-latest", "macos-latest"]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: Checkout FFCx
@@ -39,7 +39,7 @@ jobs:
 
       - name: Export GitHub Actions cache environment variables (Windows)
         if: runner.os == 'Windows'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
@@ -125,7 +125,7 @@ jobs:
       - name: Build documentation
         run: |
           cd doc
-          make html
+          python -m sphinx -W -b html source/ build/html/
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v7
         with:

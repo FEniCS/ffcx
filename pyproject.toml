@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=62", "wheel"]
+requires = [
+    "setuptools>=77.0.3", # Ensuring license field is correctly parsed
+    "wheel"
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,9 +10,9 @@ name = "fenics-ffcx"
 version = "0.11.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "LGPL-3.0-or-later"
-license-files = ["COPYING*"]
+license-files = ["LICENSE", "COPYING*", "UNLICENSE"]
 authors = [
     { email = "fenics-steering-council@googlegroups.com" },
     { name = "FEniCS Steering Council" },
@@ -32,7 +35,7 @@ ffcx = "ffcx:__main__.main"
 
 [project.optional-dependencies]
 lint = ["ruff"]
-docs = ["sphinx", "sphinx_rtd_theme"]
+docs = ["sphinx", "pydata-sphinx-theme"]
 optional = ["numba", "pygraphviz==1.9"]
 test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
