@@ -552,7 +552,8 @@ def test_mixed_mesh_expression(compile_args):
 
 
 @pytest.mark.parametrize("facet_perm", [0, 1], ids=["no_perm", "perm"])
-def test_expression_facet_perm(compile_args, facet_perm):
+@pytest.mark.parametrize("local_index", [0, 1, 2], ids=["facet0", "facet1", "facet2"])
+def test_expression_facet_perm(compile_args, facet_perm, local_index):
 
     c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
     mesh = ufl.Mesh(c_el)
@@ -582,7 +583,7 @@ def test_expression_facet_perm(compile_args, facet_perm):
 
     u_coeffs = np.array([], dtype=dtype)
     consts = np.array([], dtype=dtype)
-    entity_index = np.array([0], dtype=np.intc)
+    entity_index = np.array([local_index], dtype=np.intc)
 
     # Perm 0, means that global facet is ordered as
     # 1----2
@@ -593,9 +594,8 @@ def test_expression_facet_perm(compile_args, facet_perm):
     quad_perm = np.array([facet_perm], dtype=np.uint8)
 
     # Tabulate facet normal
-    facet_index = 0
     output[:] = 0
-    entity_index[0] = facet_index
+    entity_index[0] = local_index
     expression.tabulate_tensor_float64(
         ffi.cast(f"{c_type} *", output.ctypes.data),
         ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
@@ -607,7 +607,7 @@ def test_expression_facet_perm(compile_args, facet_perm):
     )
 
     ordered_points = points * (facet_perm == 0) + (1 - points) * (facet_perm == 1)
-    facet = np.delete(coords, facet_index, axis=0)[:, :2]
+    facet = np.delete(coords, local_index, axis=0)[:, :2]
     edge = facet[1] - facet[0]
     exact_value = facet[0] + ordered_points * edge
     np.testing.assert_allclose(output, exact_value)
