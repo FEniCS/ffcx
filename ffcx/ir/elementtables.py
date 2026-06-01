@@ -439,6 +439,7 @@ def build_optimized_tables(
             integral_type == "interior_facet"
             or integral_type == "ridge"
             or (is_mixed_dim and codim == 0)
+            or (integral_type == "expression" and entity_type == "facet")
         ):
             if entity_type == "facet":
                 if tdim == 1 or codim == 1:
