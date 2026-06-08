@@ -3,7 +3,7 @@
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
-"""Generate UFC code for an expression."""
+"""Generate UFCx code for an expression."""
 
 from __future__ import annotations
 
@@ -12,8 +12,9 @@ import logging
 import numpy as np
 
 from ffcx.codegeneration.backend import FFCXBackend
-from ffcx.codegeneration.C import expressions_template
-from ffcx.codegeneration.C.c_implementation import CFormatter
+from ffcx.codegeneration.C import expression_template
+from ffcx.codegeneration.C.formatter import Formatter
+from ffcx.codegeneration.common import template_keys
 from ffcx.codegeneration.expression_generator import ExpressionGenerator
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import ExpressionIR
@@ -22,7 +23,7 @@ logger = logging.getLogger("ffcx")
 
 
 def generator(ir: ExpressionIR, options):
-    """Generate UFC code for an expression."""
+    """Generate UFCx code for an expression."""
     logger.info("Generating code for expression:")
     assert len(ir.expression.integrand) == 1, "Expressions only support single quadrature rule"
     points = next(iter(ir.expression.integrand))[1].points
@@ -31,7 +32,7 @@ def generator(ir: ExpressionIR, options):
     logger.info(f"--- name: {factory_name}")
 
     # Format declaration
-    declaration = expressions_template.declaration.format(
+    declaration = expression_template.declaration.format(
         factory_name=factory_name, name_from_uflfile=ir.name_from_uflfile
     )
 
@@ -43,8 +44,8 @@ def generator(ir: ExpressionIR, options):
     d["factory_name"] = factory_name
     parts = eg.generate()
 
-    CF = CFormatter(options["scalar_type"])
-    d["tabulate_expression"] = CF.c_format(parts)
+    format = Formatter(options["scalar_type"])
+    d["tabulate_expression"] = format(parts)
 
     if len(ir.original_coefficient_positions) > 0:
         d["original_coefficient_positions"] = f"original_coefficient_positions_{factory_name}"
@@ -105,13 +106,8 @@ def generator(ir: ExpressionIR, options):
 
     d["coordinate_element_hash"] = f"UINT64_C({ir.expression.coordinate_element_hash})"
 
-    # Check that no keys are redundant or have been missed
-    from string import Formatter
-
-    fields = [fname for _, fname, _, _ in Formatter().parse(expressions_template.factory) if fname]
-    assert set(fields) == set(d.keys()), "Mismatch between keys in template and in formatting dict"
-
     # Format implementation code
-    implementation = expressions_template.factory.format_map(d)
+    assert set(d.keys()) == template_keys(expression_template.factory)
+    implementation = expression_template.factory.format_map(d)
 
     return declaration, implementation

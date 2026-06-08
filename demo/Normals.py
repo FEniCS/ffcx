@@ -25,8 +25,8 @@ from ufl import FacetNormal, FunctionSpace, Mesh, TestFunction, TrialFunction, d
 
 cell = triangle
 
-element = basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2,))
-domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(2,)))
+element = basix.ufl.element("Lagrange", cell.cellname, 1, shape=(2,))
+domain = Mesh(basix.ufl.element("Lagrange", cell.cellname, 1, shape=(2,)))
 space = FunctionSpace(domain, element)
 
 n = FacetNormal(domain)

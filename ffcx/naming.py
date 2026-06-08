@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import hashlib
+import numbers
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -45,7 +47,7 @@ def compute_signature(
             rn.update(dict((c, i) for i, c in enumerate(consts)))
             rn.update(dict((c, i) for i, c in enumerate(args)))
 
-            domains: list[ufl.Mesh] = []
+            domains: list[ufl.AbstractDomain] = []
             for coeff in coeffs:
                 domains.append(*ufl.domain.extract_domains(coeff))
             for arg in args:
@@ -55,6 +57,7 @@ def compute_signature(
             for const in consts:
                 domains.append(*ufl.domain.extract_domains(const))
             domains = ufl.algorithms.analysis.unique_tuple(domains)
+            assert all([isinstance(domain, ufl.Mesh) for domain in domains])
             rn.update(dict((d, i) for i, d in enumerate(domains)))
 
             # Hash on UFL signature and points
@@ -82,7 +85,7 @@ def integral_name(
     original_form: ufl.form.Form,
     integral_type: str,
     form_id: int,
-    subdomain_id: tuple[int, ...] | tuple[str],
+    subdomain_id: Literal["everywhere"] | numbers.Integral | tuple[numbers.Integral, ...],
     prefix: str,
 ) -> str:
     """Get integral name."""

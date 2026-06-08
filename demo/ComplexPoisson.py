@@ -27,7 +27,7 @@ coords = basix.ufl.element("P", "triangle", 2, shape=(2,))
 mesh = Mesh(coords)
 dx = dx(mesh)
 
-element = basix.ufl.element("P", mesh.ufl_cell().cellname(), 2)
+element = basix.ufl.element("P", mesh.ufl_cell().cellname, 2)
 space = FunctionSpace(mesh, element)
 
 u = TrialFunction(space)

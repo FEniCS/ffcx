@@ -1,15 +1,18 @@
 [build-system]
-requires = ["setuptools>=62", "wheel"]
+requires = [
+    "setuptools>=77.0.3", # Ensuring license field is correctly parsed
+    "wheel"
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fenics-ffcx"
-version = "0.10.1.post0"
+version = "0.11.0.dev0"
 description = "The FEniCSx Form Compiler"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "LGPL-3.0-or-later"
-license-files = ["COPYING*"]
+license-files = ["LICENSE", "COPYING*", "UNLICENSE"]
 authors = [
     { email = "fenics-steering-council@googlegroups.com" },
     { name = "FEniCS Steering Council" },
@@ -17,9 +20,9 @@ authors = [
 dependencies = [
     "numpy>=1.21",
     "cffi",
-    "setuptools>=77.0.3",             # cffi with compilation support requires setuptools
-    "fenics-basix>=0.10.0,<0.11.0",
-    "fenics-ufl>=2025.2.0,<2025.3.0",
+    "setuptools>=77.0.3",        # cffi with compilation support requires setuptools
+    "fenics-basix>=0.11.0.dev0",
+    "fenics-ufl>=2025.2.0",
 ]
 
 [project.urls]
@@ -32,7 +35,7 @@ ffcx = "ffcx:__main__.main"
 
 [project.optional-dependencies]
 lint = ["ruff"]
-docs = ["sphinx", "sphinx_rtd_theme"]
+docs = ["sphinx", "pydata-sphinx-theme"]
 optional = ["numba", "pygraphviz==1.9"]
 test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
@@ -52,6 +55,7 @@ packages = [
     "ffcx",
     "ffcx.codegeneration",
     "ffcx.codegeneration.C",
+    "ffcx.codegeneration.numba",
     "ffcx.ir",
     "ffcx.ir.analysis",
 ]
@@ -116,10 +120,6 @@ ignore = ["RUF005", "RUF012", "RUF015"]
 
 [tool.ruff.lint.per-file-ignores]
 "test/*" = ["D"]
-
-[tool.ruff.lint.pyupgrade]
-# Remove once target version hits 3.10
-keep-runtime-typing = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

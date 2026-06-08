@@ -33,12 +33,12 @@ cell = tetrahedron
 d = 3
 
 # Elements
-u_element = basix.ufl.element("P", cell.cellname(), 2, shape=(3,))
-p_element = basix.ufl.element("P", cell.cellname(), 1)
-A_element = basix.ufl.element("P", cell.cellname(), 1, shape=(3, 3))
+u_element = basix.ufl.element("P", cell.cellname, 2, shape=(3,))
+p_element = basix.ufl.element("P", cell.cellname, 1)
+A_element = basix.ufl.element("P", cell.cellname, 1, shape=(3, 3))
 
 # Spaces
-domain = Mesh(basix.ufl.element("Lagrange", cell.cellname(), 1, shape=(3,)))
+domain = Mesh(basix.ufl.element("Lagrange", cell.cellname, 1, shape=(3,)))
 u_space = FunctionSpace(domain, u_element)
 p_space = FunctionSpace(domain, p_element)
 A_space = FunctionSpace(domain, A_element)

@@ -83,7 +83,7 @@ class ExpressionGenerator:
                         raise RuntimeError(f"Expressions for cells do not support {t}.")
                     if t in ufl_geometry:
                         cells[t].add(
-                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname()
+                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
                         )
 
         parts = []
@@ -365,7 +365,7 @@ class ExpressionGenerator:
                 vexpr = L.ufl_to_lnodes(v, *vops)
 
                 is_cond = isinstance(v, ufl.classes.Condition)
-                is_real = isinstance(v, ufl.classes.Real)
+                is_real = isinstance(v, (ufl.classes.Real, ufl.classes.Imag))
                 if is_cond:
                     dtype = L.DataType.BOOL
                 elif is_real:

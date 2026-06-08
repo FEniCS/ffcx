@@ -62,7 +62,7 @@ def create_quadrature_points_and_weights(
     wts = {}
     tensor_factors = {}
     if integral_type == "cell":
-        cell_name = cell.cellname()
+        cell_name = cell.cellname
         if cell_name in ["quadrilateral", "hexahedron"] and use_tensor_product:
             if cell_name == "quadrilateral":
                 tensor_factors[cell_name] = [
@@ -84,17 +84,17 @@ def create_quadrature_points_and_weights(
         else:
             pts[cell_name], wts[cell_name] = create_quadrature(cell_name, degree, rule, elements)
     elif integral_type in ufl.measure.facet_integral_types:
-        for ft in cell.facet_types():
-            pts[ft.cellname()], wts[ft.cellname()] = create_quadrature(
-                ft.cellname(),
+        for ft in cell.facet_types:
+            pts[ft.cellname], wts[ft.cellname] = create_quadrature(
+                ft.cellname,
                 degree,
                 rule,
                 elements,
             )
     elif integral_type in ufl.measure.ridge_integral_types:
-        for rt in cell.ridge_types():
-            pts[rt.cellname()], wts[rt.cellname()] = create_quadrature(
-                rt.cellname(),
+        for rt in cell.ridge_types:
+            pts[rt.cellname], wts[rt.cellname] = create_quadrature(
+                rt.cellname,
                 degree,
                 rule,
                 elements,
@@ -130,7 +130,7 @@ def integral_type_to_entity_dim(integral_type, tdim):
 
 def map_integral_points(points, integral_type, cell, entity):
     """Map points from reference entity to its parent reference cell."""
-    tdim = cell.topological_dimension()
+    tdim = cell.topological_dimension
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     if entity_dim == tdim:
         assert points.shape[1] == tdim
@@ -138,15 +138,15 @@ def map_integral_points(points, integral_type, cell, entity):
         return np.asarray(points)
     elif entity_dim == tdim - 1:
         assert points.shape[1] == tdim - 1
-        return np.asarray(map_facet_points(points, entity, cell.cellname()))
+        return np.asarray(map_facet_points(points, entity, cell.cellname))
     elif entity_dim == tdim - 2:
         assert points.shape[1] == tdim - 2
         # Special handling of pushing forward 0D points to cell
         if entity_dim == 0:
             assert points.shape[1] == 0
             points = np.zeros((1, 1))
-        return np.asarray(map_edge_points(points, entity, cell.cellname()))
+        return np.asarray(map_edge_points(points, entity, cell.cellname))
     elif entity_dim == 0:
-        return np.asarray([reference_cell_vertices(cell.cellname())[entity]])
+        return np.asarray([reference_cell_vertices(cell.cellname)[entity]])
     else:
         raise RuntimeError(f"Can't map points from entity_dim={entity_dim}")

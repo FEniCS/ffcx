@@ -29,6 +29,16 @@ logger = logging.getLogger("ffcx")
 default_rtol = 1e-6
 default_atol = 1e-9
 
+table_types = typing.Literal[
+    "piecewise",
+    "fixed",
+    "ones",
+    "zeros",
+    "uniform",
+    "quadrature",
+    "varying",
+    "tensor_factor",
+]
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
 
@@ -47,15 +57,31 @@ class UniqueTableReferenceT(typing.NamedTuple):
 
     name: str
     values: npt.NDArray[np.float64]
-    offset: int | None
-    block_size: int | None
-    ttype: str | None
-    is_piecewise: bool
-    is_uniform: bool
-    is_permuted: bool
-    has_tensor_factorisation: bool
-    tensor_factors: list[typing.Any] | None
-    tensor_permutation: np.typing.NDArray[np.int32] | None
+    is_permuted: (
+        bool  # If table is permuted (integral over interior facets) or mixed dimensional integrals.
+    )
+    ttype: table_types
+    # Optional table references, should not be none if table doesn't
+    # have tensor factors
+    offset: int | None = None
+    block_size: int | None = None
+    tensor_factors: list["UniqueTableReferenceT"] | None = None
+    tensor_permutation: np.typing.NDArray[np.int32] | None = None
+
+    @property
+    def has_tensor_factorisation(self):
+        """If table is a tensor factorization."""
+        return self.tensor_factors is not None
+
+    @property
+    def is_piecewise(self) -> bool:
+        """If constant for each point, but can differ for each entity."""
+        return self.ttype in piecewise_ttypes
+
+    @property
+    def is_uniform(self) -> bool:
+        """If constant for all points and all entities."""
+        return self.ttype in uniform_ttypes
 
 
 def equal_tables(a, b, rtol=default_rtol, atol=default_atol):
@@ -92,8 +118,10 @@ def get_ffcx_table_values(
 ):
     """Extract values from FFCx element table.
 
-    Returns a 3D numpy array with axes
-    (entity number, quadrature point number, dof number)
+    Returns a 4D numpy array with axes
+    (1, entity number, quadrature point number, dof number)
+    where the first dimension represents the number of permuted tables.
+    It is here to simplify construction later.
     """
     deriv_order = sum(derivative_counts)
 
@@ -133,11 +161,15 @@ def get_ffcx_table_values(
         else:
             # Make quadrature rule and get points and weights
             points, weights = create_quadrature_points_and_weights(
-                integral_type, cell, element.embedded_superdegree(), "default", [element]
+                integral_type,
+                cell,
+                element.embedded_superdegree(),
+                "default",
+                [element],
             )
 
     # Tabulate table of basis functions and derivatives in points for each entity
-    tdim = cell.topological_dimension()
+    tdim = cell.topological_dimension
     entity_dim = integral_type_to_entity_dim(integral_type, tdim)
     num_entities = cell.num_sub_entities(entity_dim)
 
@@ -230,6 +262,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             raise RuntimeError("Not expecting reference value of x.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of x.")
+        assert isinstance(domain, ufl.Mesh)
         element = domain.ufl_coordinate_element()
         if not ld:
             fc = mt.flat_component
@@ -243,6 +276,7 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
             raise RuntimeError("Not expecting reference value of J.")
         if gd:
             raise RuntimeError("Not expecting global derivatives of J.")
+        assert isinstance(domain, ufl.Mesh)
         element = domain.ufl_coordinate_element()
         assert len(mt.component) == 2
         # Translate component J[i,d] to x element context rgrad(x[i])[d]
@@ -252,8 +286,10 @@ def get_modified_terminal_element(mt) -> ModifiedTerminalElement | None:
         return None
 
     assert (mt.averaged is None) or not (ld or gd)
+    assert isinstance(domain, ufl.Mesh)
+
     # Change derivatives format for table lookup
-    tdim = domain.topological_dimension()
+    tdim = domain.topological_dimension
     # The input `ld` is a tuple containing the index access of a recursive application of
     # reference gradient, e.g. [0, 1, 2] means that the modified terminal is
     # a reference_grad(reference_grad(reference_grad(expr)))[0][1][2],
@@ -376,7 +412,12 @@ def build_optimized_tables(
         # Build name for this particular table
         element_number = element_numbers[element]
         name = generate_psi_table_name(
-            quadrature_rule, element_number, avg, entity_type, local_derivatives, flat_component
+            quadrature_rule,
+            element_number,
+            avg,
+            entity_type,
+            local_derivatives,
+            flat_component,
         )
 
         # FIXME - currently just recalculate the tables every time,
@@ -384,8 +425,8 @@ def build_optimized_tables(
         # It should be possible to reuse the cached tables by name, but
         # the dofmap offset may differ due to restriction.
 
-        tdim = cell.topological_dimension()
-        codim = tdim - element.cell.topological_dimension()
+        tdim = cell.topological_dimension
+        codim = tdim - element.cell.topological_dimension
         assert codim >= 0
         if codim > 2:
             raise RuntimeError("Codimension > 2 isn't supported.")
@@ -398,6 +439,7 @@ def build_optimized_tables(
             integral_type == "interior_facet"
             or integral_type == "ridge"
             or (is_mixed_dim and codim == 0)
+            or (integral_type == "expression" and entity_type == "facet")
         ):
             if entity_type == "facet":
                 if tdim == 1 or codim == 1:
@@ -434,7 +476,7 @@ def build_optimized_tables(
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
                 elif tdim == 3:
-                    cell_type = cell.cellname()
+                    cell_type = cell.cellname
                     if cell_type == "tetrahedron":
                         new_table = []
                         for rot in range(3):
@@ -579,20 +621,11 @@ def build_optimized_tables(
                         tensor_factors.append(tensor_factor)
                         break
                 else:
-                    # FIXME: The inputs here does not match the type-hints of
-                    # unique_table_reference
                     ut = UniqueTableReferenceT(
-                        f"FE_TF{tensor_n}",
-                        sub_tbl,
-                        None,
-                        None,
-                        None,
-                        False,
-                        False,
-                        False,
-                        False,
-                        None,
-                        None,
+                        name=f"FE_TF{tensor_n}",
+                        values=sub_tbl,
+                        ttype="tensor_factor",
+                        is_permuted=False,
                     )
                     all_tensor_factors.append(ut)
                     tensor_factors.append(ut)
@@ -608,21 +641,16 @@ def build_optimized_tables(
         offset = cell_offset + t["offset"]
         block_size = t["stride"]
         # tables is just np.arrays, mt_tables hold metadata too
-        # FIXME: type-hinting of tensor factors is not correct
         mt_tables[mt] = UniqueTableReferenceT(
-            name,
-            tbl,
-            offset,
-            block_size,
-            tabletype,
-            tabletype in piecewise_ttypes,
-            tabletype in uniform_ttypes,
-            is_permuted,
-            tensor_factors is not None,
-            tensor_factors,
-            tensor_perm,
+            name=name,
+            values=tbl,
+            offset=offset,
+            block_size=block_size,
+            ttype=tabletype,
+            is_permuted=is_permuted,
+            tensor_factors=tensor_factors,
+            tensor_permutation=tensor_perm,
         )
-
     return mt_tables
 
 
