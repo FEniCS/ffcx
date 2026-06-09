@@ -144,7 +144,7 @@ jobs:
       - name: Set version name
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.12 }}
         run: |
-          echo "VERSION_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+          echo "VERSION_NAME=v0.11.0" >> $GITHUB_ENV
       - name: Copy documentation into repository
         if: ${{ github.repository == 'FEniCS/ffcx' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') ) && runner.os == 'Linux' && matrix.python-version == 3.12 }}
         run: |
