@@ -62,16 +62,16 @@ jobs:
       - name: Install FEniCS dependencies (Python, Unix)
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          pip install git+https://github.com/FEniCS/ufl.git
-          pip install git+https://github.com/FEniCS/basix.git
+          pip install git+https://github.com/FEniCS/ufl.git@2026.1.0
+          pip install git+https://github.com/FEniCS/basix.git@v0.11.0
 
       - name: Install FEniCS dependencies (Python, Windows)
         if: runner.os == 'Windows'
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: |
-          pip install git+https://github.com/FEniCS/ufl.git
-          pip install -v git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+          pip install git+https://github.com/FEniCS/ufl.git@2026.1.0
+          pip install -v git+https://github.com/FEniCS/basix.git@v0.11.0 --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - name: Install FFCx (Linux, with optional dependencies)
         if: runner.os == 'Linux'
