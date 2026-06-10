@@ -65,12 +65,6 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - name: Set up CMake
-        if: runner.os == 'Windows'
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: "~3.30.0"
-
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
         run: |
@@ -87,8 +81,6 @@ jobs:
 
       - name: Install FEniCS dependencies (Python, Windows)
         if: runner.os == 'Windows'
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: |
           pip install git+https://github.com/FEniCS/ufl.git
           pip install -v git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
@@ -110,7 +102,7 @@ jobs:
 
       - name: Run unit tests
         run: >
-          python -m pytest -v test/
+          python -m pytest -vs test/
           -n auto
           -W error
           --cov=ffcx/
@@ -138,7 +130,7 @@ jobs:
 
       - name: Run FFCx demos
         run: |
-          pytest -v demo/test_demos.py -W error
+          pytest -vs demo/test_demos.py -W error
 
       - name: Build documentation
         run: |
