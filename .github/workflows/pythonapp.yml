@@ -90,7 +90,7 @@ jobs:
 
       - name: Run unit tests
         run: >
-          python -m pytest test/
+          python -m pytest -v test/
           -n auto
           -W error
           --cov=ffcx/
@@ -117,10 +117,8 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Run FFCx demos
-        run: >
-          pytest demo/test_demos.py
-          -W error
-          # -n auto
+        run: |
+          pytest -v demo/test_demos.py -W error
 
       - name: Build documentation
         run: |
