@@ -36,6 +36,7 @@ jobs:
 
     steps:
       - name: Add NuGet sources
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           .$(${{ env.VCPKG_EXE }} fetch nuget) `
@@ -56,14 +57,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Export GitHub Actions cache environment variables (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/github-script@v9
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
