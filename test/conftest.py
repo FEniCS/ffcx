@@ -22,7 +22,7 @@ def add_cwd_to_syspath():
     """
     cwd = os.getcwd()
     if cwd not in sys.path:
-        sys.path.insert(0, cwd)
+        sys.path.append(cwd)
 
 
 @pytest.fixture(scope="module")
