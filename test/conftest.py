@@ -16,9 +16,9 @@ def add_cwd_to_syspath():
     """Ensure the current working directory is in sys.path.
 
     CFFI and ffcx.main compile/generate files into CWD by default. Without
-    this, importlib.import_module cannot find those files when pytest is invoked
-    from a directory that is not already on sys.path (e.g. the project root
-    rather than the test/ subdirectory).
+    this, importlib.import_module cannot find those files when ``pytest``
+    is invoked from a directory that is not already on sys.path
+    (e.g. the project root rather than the test/ subdirectory).
     """
     cwd = os.getcwd()
     if cwd not in sys.path:
