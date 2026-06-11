@@ -27,8 +27,29 @@ jobs:
       matrix:
         os: ["windows-2022", "ubuntu-latest", "macos-latest"]
         python-version: ["3.11", "3.12", "3.13", "3.14"]
+    permissions:
+      packages: write
+    env:
+      VCPKG_EXE: C:/vcpkg/vcpkg
+      FEED_URL: https://nuget.pkg.github.com/FEniCS/index.json
+      VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/FEniCS/index.json,readwrite"
 
     steps:
+      - name: Add NuGet sources
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          .$(${{ env.VCPKG_EXE }} fetch nuget) `
+            sources add `
+            -Source "${{ env.FEED_URL }}" `
+            -StorePasswordInClearText `
+            -Name GitHubPackages `
+            -UserName "${{ env.USERNAME }}" `
+            -Password "${{ secrets.GITHUB_TOKEN }}"
+          .$(${{ env.VCPKG_EXE }} fetch nuget) `
+            setapikey "${{ secrets.GITHUB_TOKEN }}" `
+            -Source "${{ env.FEED_URL }}"
+
       - name: Checkout FFCx
         uses: actions/checkout@v6
 
@@ -36,20 +57,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Export GitHub Actions cache environment variables (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/github-script@v9
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
-      - name: Set up CMake
-        if: runner.os == 'Windows'
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: "~3.30.0"
 
       - name: Install dependencies (non-Python, Linux)
         if: runner.os == 'Linux'
@@ -67,8 +74,6 @@ jobs:
 
       - name: Install FEniCS dependencies (Python, Windows)
         if: runner.os == 'Windows'
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: |
           pip install git+https://github.com/FEniCS/ufl.git
           pip install -v git+https://github.com/FEniCS/basix.git --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
@@ -90,7 +95,7 @@ jobs:
 
       - name: Run unit tests
         run: >
-          python -m pytest test/
+          python -m pytest -vs test/
           -n auto
           -W error
           --cov=ffcx/
@@ -117,10 +122,8 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Run FFCx demos
-        run: >
-          pytest demo/test_demos.py
-          -W error
-          # -n auto
+        run: |
+          pytest -vs demo/test_demos.py -W error
 
       - name: Build documentation
         run: |
