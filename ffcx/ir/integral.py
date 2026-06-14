@@ -19,6 +19,7 @@ from ufl.algorithms.balancing import balance_modifiers
 from ufl.checks import is_cellwise_constant
 from ufl.classes import QuadratureWeight
 
+from ffcx.analysis import ProxyCoefficient
 from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.analysis.factorization import compute_argument_factorization
 from ffcx.ir.analysis.graph import ExpressionGraph, build_scalar_graph
@@ -103,9 +104,9 @@ class IntermediateIntegralIR(typing.TypedDict):
     """Intermediate IR for integrals."""
 
     needs_facet_permutations: bool
-    unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]]
-    unique_table_types: dict[basix.CellType, dict[str, _table_types]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
+    unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]]
+    unique_table_types: dict[basix.CellType | str, dict[str, _table_types]]
+    integrand: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR]
 
 
 class CommonExpressionIR(typing.NamedTuple):
@@ -121,6 +122,14 @@ class CommonExpressionIR(typing.NamedTuple):
     coefficient_numbering: dict[ufl.Coefficient, int]
     # Each coefficient is accessed from a given offset in the input array
     coefficient_offsets: dict[ufl.Coefficient, int]
+
+    proxy_coefficient_numbering: dict[
+        ProxyCoefficient, int
+    ]  # For coefficients that are accessed via a proxy
+    proxy_coefficient_offsets: dict[
+        ProxyCoefficient, int
+    ]  # For coefficients that are accessed via a proxy
+
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]
@@ -136,7 +145,7 @@ def _compute_integral_ir(
     expression: ufl.core.expr.Expr,
     existing_tables: dict[str, npt.NDArray[np.float64]],
     quadrature_rule: QuadratureRule,
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: supported_integral_types,
     entity_type: entity_types,
     argument_shape: tuple[int, ...],
@@ -172,6 +181,7 @@ def _compute_integral_ir(
     # Check if we have a mixed-dimensional integral
     is_mixed_dim = False
     for domain in ufl.domain.extract_domains(expression):
+        assert isinstance(cell, ufl.Cell), "Cell must be a ufl.Cell object."
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
 
@@ -385,10 +395,10 @@ def _compute_integral_ir(
 
 
 def compute_integral_ir(
-    cell: ufl.Cell,
+    cell: ufl.Cell | None,
     integral_type: supported_integral_types,
     entity_type: entity_types,
-    integrands: dict[basix.CellType, dict[QuadratureRule, ufl.core.expr.Expr]],
+    integrands: dict[basix.CellType | str, dict[QuadratureRule, ufl.core.expr.Expr]],
     argument_shape: tuple[int, ...],
     p: dict,
     visualise: bool,
@@ -407,9 +417,9 @@ def compute_integral_ir(
     """
     # Data that will populate the intermediate representation.
     needs_facet_permutations: bool = False
-    unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]] = {}
-    unique_table_types: dict[basix.CellType, dict[str, _table_types]] = {}
-    integrand_map: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR] = {}
+    unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]] = {}
+    unique_table_types: dict[basix.CellType | str, dict[str, _table_types]] = {}
+    integrand_map: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR] = {}
     for integral_domain, integrands_on_domain in integrands.items():
         unique_tables[integral_domain] = {}
         unique_table_types[integral_domain] = {}
@@ -502,6 +512,7 @@ def analyse_dependencies(F, mt_unique_table_reference):
                     raise RuntimeError(f"Invalid ttype {ttype}.")
 
         elif not is_cellwise_constant(v["expression"]):
+            breakpoint()
             raise RuntimeError("Error " + str(tr))
             # Keeping this check to be on the safe side,
             # not sure which cases this will cover (if any)

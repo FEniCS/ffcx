@@ -154,10 +154,10 @@ def compile_forms(
     options: dict = {},
     cache_dir: Path | None = None,
     timeout: int = 10,
-    cffi_extra_compile_args: list[str] = [],
+    cffi_extra_compile_args: list[str] | None = None,
     cffi_verbose: bool = False,
     cffi_debug: bool = False,
-    cffi_libraries: list[str] = [],
+    cffi_libraries: list[str] | None = None,
     visualise: bool = False,
 ):
     """Compile a list of UFL forms into UFCx Python objects.
@@ -174,6 +174,8 @@ def compile_forms(
         visualise: Toggle visualisation
     """
     p = ffcx.options.get_options(options)
+    cffi_extra_compile_args = cffi_extra_compile_args or []
+    cffi_libraries = cffi_libraries or []
 
     # If requested, replace bi-linear forms by their diagonal part
     if p["part"] == "diagonal":
@@ -248,11 +250,11 @@ def compile_forms(
 
 
 def compile_expressions(
-    expressions: list[tuple[ufl.Expr, npt.NDArray[np.floating]]],  # type: ignore
-    options: dict = {},
+    expressions: list[tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]],
+    options: dict | None = None,
     cache_dir: Path | None = None,
     timeout: int = 10,
-    cffi_extra_compile_args: list[str] = [],
+    cffi_extra_compile_args: list[str] | None = None,
     cffi_verbose: bool = False,
     cffi_debug: bool = False,
     cffi_libraries: list[str] = [],
