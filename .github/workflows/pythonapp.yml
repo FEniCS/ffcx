@@ -32,8 +32,12 @@ jobs:
       - name: Checkout FFCx
         uses: actions/checkout@v6
 
-      - name: Load environment variables
+      - name: Load environment variables (Unix)
+        if: runner.os != 'Windows'
         run: cat .github/workflows/fenicsx-refs.env >> $GITHUB_ENV
+      - name: Load environment variables (Windows)
+        if: runner.os == 'Windows'
+        run: cat .github/workflows/fenicsx-refs.env >> $env:GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v6
