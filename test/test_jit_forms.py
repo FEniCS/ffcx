@@ -618,7 +618,7 @@ def lagrange_triangle_symbolic(order, corners=((1, 0), (2, 0), (0, 1)), fun=lamb
     # vertices
     eval_points = [S(c) for c in corners]
     # edges
-    for e in [(1, 2), (0, 2), (0, 1)]:
+    for e in basix.topology(basix.CellType.triangle)[1]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
         if order > 3:
@@ -722,7 +722,7 @@ def lagrange_tetrahedron_symbolic(
     # vertices
     eval_points = [S(c) for c in corners]
     # edges
-    for e in [(2, 3), (1, 3), (1, 2), (0, 3), (0, 2), (0, 1)]:
+    for e in basix.topology(basix.CellType.tetrahedron)[1]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
         if order > 3:
@@ -738,7 +738,7 @@ def lagrange_tetrahedron_symbolic(
                 for i in range(1, order)
             ]
     # face
-    for f in [(1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2)]:
+    for f in basix.topology(basix.CellType.tetrahedron)[2]:
         p0 = corners[f[0]]
         p1 = corners[f[1]]
         p2 = corners[f[2]]
@@ -1173,8 +1173,7 @@ def test_derivative_domains(compile_args):
 
 
 @pytest.mark.parametrize("dtype", ["float64"])
-@pytest.mark.parametrize("permutation", [[0], [1]])
-def test_mixed_dim_form(compile_args, dtype, permutation):
+def test_mixed_dim_form(compile_args, dtype, permutation, local_index):
     """Test that the local element tensor corresponding to a mixed-dimensional form is correct.
     The form involves an integral over a facet of the cell. The trial function and a coefficient f
     are of codim 0. The test function and a coefficient g are of codim 1. We compare against another
