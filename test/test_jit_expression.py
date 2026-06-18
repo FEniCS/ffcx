@@ -608,8 +608,5 @@ def test_expression_facet_perm(compile_args, facet_perm, local_index):
     ordered_points = points * (facet_perm == 0) + (1 - points) * (facet_perm == 1)
     facet = [coords[i][:2] for i in edges[local_index]]
     edge = facet[1] - facet[0]
-    print(local_index, facet)
     exact_value = facet[0] + ordered_points * edge
-    print(output)
-    print(exact_value)
     np.testing.assert_allclose(output, exact_value, 1e-10)
