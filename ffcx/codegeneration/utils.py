@@ -95,10 +95,10 @@ if find_spec("numba") is not None:
         """
 
         def codegen(context, builder, signature, args):
-            null_ptr = context.get_constant(numba.types.voidptr, 0)
+            null_ptr = context.get_constant(types.voidptr, 0)
             return null_ptr
 
-        sig = numba.types.voidptr()
+        sig = types.voidptr()
         return sig, codegen
 
     @numba.extending.intrinsic
@@ -122,7 +122,7 @@ if find_spec("numba") is not None:
             the raw data pointer to the first element of the of the contiguous block of memory
             of the NumPy array to void*.
         """
-        if not isinstance(arr, numba.types.Array):
+        if not isinstance(arr, types.Array):
             raise TypeError("Expected a NumPy array")
 
         def codegen(context, builder, signature, args):
@@ -143,8 +143,8 @@ if find_spec("numba") is not None:
             """
             [arr] = args
             raw_ptr = numba.core.cgutils.alloca_once_value(builder, arr)
-            void_ptr = builder.bitcast(raw_ptr, context.get_value_type(numba.types.voidptr))
+            void_ptr = builder.bitcast(raw_ptr, context.get_value_type(types.voidptr))
             return void_ptr
 
-        sig = numba.types.voidptr(arr)
+        sig = types.voidptr(arr)
         return sig, codegen
