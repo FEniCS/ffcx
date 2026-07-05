@@ -1,17 +1,15 @@
-# Copyright (C) 2020-2024 Michal Habera, Chris Richardson and Garth N. Wells
+# Copyright (C) 2020-2026 Michal Habera, Chris Richardson, Garth N. Wells and Paul T. Kühner
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utilities."""
 
+from importlib import import_module
+from importlib.util import find_spec
+
 import numpy as np
 import numpy.typing as npt
-
-try:
-    import numba
-except ImportError:
-    numba = None
 
 
 def dtype_to_c_type(dtype: npt.DTypeLike | str) -> str:
@@ -73,7 +71,10 @@ def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
         ImportError: If ``numba`` cannot be imported.
     """
     try:
-        import numba.types as types
+        types = import_module(
+            "numba" + (".core" if numba.__version__ >= (0, 66, 0) else "") + ".types"
+        )
+
         from numba import from_dtype
 
         return types.void(
@@ -89,7 +90,8 @@ def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
         raise e
 
 
-if numba is not None:
+if find_spec("numba") is not None:
+    import numba
 
     @numba.extending.intrinsic
     def empty_void_pointer(typingctx):
