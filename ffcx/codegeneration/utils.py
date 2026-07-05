@@ -56,38 +56,29 @@ def dtype_to_scalar_dtype(dtype: npt.DTypeLike | str) -> np.dtype:
         raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
 
 
-def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
-    """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
+if find_spec("numba") is not None:
+    import numba
+    from numba.core import types
 
-    Args:
-        dtype: The scalar type for the finite element data.
-        xdtype: The geometry float type.
+    def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
+        """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
 
-    Returns:
-        A Numba signature (``numba.core.typing.templates.Signature``).
+        Args:
+            dtype: The scalar type for the finite element data.
+            xdtype: The geometry float type.
 
-    Raises:
-        ImportError: If ``numba`` cannot be imported.
-    """
-    try:
-        from numba import from_dtype
-        from numba.core import types
-
+        Returns:
+            A Numba signature (``numba.core.typing.templates.Signature``).
+        """
         return types.void(
-            types.CPointer(from_dtype(dtype)),
-            types.CPointer(from_dtype(dtype)),
-            types.CPointer(from_dtype(dtype)),
-            types.CPointer(from_dtype(xdtype)),
+            types.CPointer(numba.from_dtype(dtype)),
+            types.CPointer(numba.from_dtype(dtype)),
+            types.CPointer(numba.from_dtype(dtype)),
+            types.CPointer(numba.from_dtype(xdtype)),
             types.CPointer(types.intc),
             types.CPointer(types.uint8),
             types.CPointer(types.void),
         )
-    except ImportError as e:
-        raise e
-
-
-if find_spec("numba") is not None:
-    import numba
 
     @numba.extending.intrinsic
     def empty_void_pointer(typingctx):
