@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utilities."""
 
-from importlib import import_module
 from importlib.util import find_spec
 
 import numpy as np
@@ -71,11 +70,8 @@ def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
         ImportError: If ``numba`` cannot be imported.
     """
     try:
-        types = import_module(
-            "numba" + (".core" if numba.__version__ >= (0, 66, 0) else "") + ".types"
-        )
-
         from numba import from_dtype
+        from numba.core import types
 
         return types.void(
             types.CPointer(from_dtype(dtype)),
