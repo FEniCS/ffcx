@@ -11,7 +11,7 @@ import numpy.typing as npt
 try:
     import numba
 except ImportError:
-    numba = None
+    numba = None  # type: ignore
 
 
 def dtype_to_c_type(dtype: npt.DTypeLike | str) -> str:
