@@ -5,7 +5,6 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Utilities."""
 
-
 import numpy as np
 import numpy.typing as npt
 
@@ -13,6 +12,8 @@ try:
     import numba
 except ImportError:
     numba = None
+
+
 def dtype_to_c_type(dtype: npt.DTypeLike | str) -> str:
     """For a NumPy dtype, return the corresponding C type.
 
