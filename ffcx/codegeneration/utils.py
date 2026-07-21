@@ -59,8 +59,7 @@ def dtype_to_scalar_dtype(dtype: npt.DTypeLike | str) -> np.dtype:
         raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
 
 
-if find_spec("numba") is not None:
-    import numba
+if numba is not None:
     from numba.core import types
 
     def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
