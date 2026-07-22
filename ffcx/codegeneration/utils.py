@@ -11,7 +11,7 @@ import numpy.typing as npt
 try:
     import numba
 except ImportError:
-    numba = None
+    numba = None  # type: ignore
 
 
 def dtype_to_c_type(dtype: npt.DTypeLike | str) -> str:
@@ -59,37 +59,27 @@ def dtype_to_scalar_dtype(dtype: npt.DTypeLike | str) -> np.dtype:
         raise RuntimeError(f"Cannot get value dtype for '{dtype}'. ")
 
 
-def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
-    """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
-
-    Args:
-        dtype: The scalar type for the finite element data.
-        xdtype: The geometry float type.
-
-    Returns:
-        A Numba signature (``numba.core.typing.templates.Signature``).
-
-    Raises:
-        ImportError: If ``numba`` cannot be imported.
-    """
-    try:
-        import numba.types as types
-        from numba import from_dtype
-
-        return types.void(
-            types.CPointer(from_dtype(dtype)),
-            types.CPointer(from_dtype(dtype)),
-            types.CPointer(from_dtype(dtype)),
-            types.CPointer(from_dtype(xdtype)),
-            types.CPointer(types.intc),
-            types.CPointer(types.uint8),
-            types.CPointer(types.void),
-        )
-    except ImportError as e:
-        raise e
-
-
 if numba is not None:
+
+    def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
+        """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
+
+        Args:
+            dtype: The scalar type for the finite element data.
+            xdtype: The geometry float type.
+
+        Returns:
+            A Numba signature (``numba.core.typing.templates.Signature``).
+        """
+        return numba.types.void(
+            numba.types.CPointer(numba.from_dtype(dtype)),
+            numba.types.CPointer(numba.from_dtype(dtype)),
+            numba.types.CPointer(numba.from_dtype(dtype)),
+            numba.types.CPointer(numba.from_dtype(xdtype)),
+            numba.types.CPointer(numba.types.intc),
+            numba.types.CPointer(numba.types.uint8),
+            numba.types.CPointer(numba.types.void),
+        )
 
     @numba.extending.intrinsic
     def empty_void_pointer(typingctx):
