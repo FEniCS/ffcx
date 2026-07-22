@@ -60,7 +60,6 @@ def dtype_to_scalar_dtype(dtype: npt.DTypeLike | str) -> np.dtype:
 
 
 if numba is not None:
-    from numba.core import types
 
     def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
         """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
@@ -72,14 +71,14 @@ if numba is not None:
         Returns:
             A Numba signature (``numba.core.typing.templates.Signature``).
         """
-        return types.void(
-            types.CPointer(numba.from_dtype(dtype)),
-            types.CPointer(numba.from_dtype(dtype)),
-            types.CPointer(numba.from_dtype(dtype)),
-            types.CPointer(numba.from_dtype(xdtype)),
-            types.CPointer(types.intc),
-            types.CPointer(types.uint8),
-            types.CPointer(types.void),
+        return numba.types.void(
+            numba.types.CPointer(numba.from_dtype(dtype)),
+            numba.types.CPointer(numba.from_dtype(dtype)),
+            numba.types.CPointer(numba.from_dtype(dtype)),
+            numba.types.CPointer(numba.from_dtype(xdtype)),
+            numba.types.CPointer(numba.types.intc),
+            numba.types.CPointer(numba.types.uint8),
+            numba.types.CPointer(numba.types.void),
         )
 
     @numba.extending.intrinsic
@@ -97,10 +96,10 @@ if numba is not None:
         """
 
         def codegen(context, builder, signature, args):
-            null_ptr = context.get_constant(types.voidptr, 0)
+            null_ptr = context.get_constant(numba.types.voidptr, 0)
             return null_ptr
 
-        sig = types.voidptr()
+        sig = numba.types.voidptr()
         return sig, codegen
 
     @numba.extending.intrinsic
@@ -124,7 +123,7 @@ if numba is not None:
             the raw data pointer to the first element of the of the contiguous block of memory
             of the NumPy array to void*.
         """
-        if not isinstance(arr, types.Array):
+        if not isinstance(arr, numba.types.Array):
             raise TypeError("Expected a NumPy array")
 
         def codegen(context, builder, signature, args):
@@ -145,8 +144,8 @@ if numba is not None:
             """
             [arr] = args
             raw_ptr = numba.core.cgutils.alloca_once_value(builder, arr)
-            void_ptr = builder.bitcast(raw_ptr, context.get_value_type(types.voidptr))
+            void_ptr = builder.bitcast(raw_ptr, context.get_value_type(numba.types.voidptr))
             return void_ptr
 
-        sig = types.voidptr(arr)
+        sig = numba.types.voidptr(arr)
         return sig, codegen
