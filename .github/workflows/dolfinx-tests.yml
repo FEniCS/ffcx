@@ -24,7 +24,7 @@ jobs:
       PRTE_MCA_rmaps_default_mapping_policy: :oversubscribe   # Newer OpenMPI
       OMPI_MCA_rmaps_base_oversubscribe: true                 # Older OpenMPI
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Load environment variables
         run: cat .github/workflows/fenicsx-refs.env >> $GITHUB_ENV
       - name: Install UFL and Basix
@@ -35,7 +35,7 @@ jobs:
         run: |
           pip3 install --break-system-packages .
       - name: Get DOLFINx source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: ./dolfinx
           repository: ${{ env.dolfinx_repository }}
