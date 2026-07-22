@@ -14,6 +14,7 @@ import ufl
 
 import ffcx.codegeneration.jit
 import ffcx.codegeneration.utils as utils
+from ffcx.numba import numba_ufcx_kernel_signature
 
 
 def generate_kernel(forms, scalar_type, options):
@@ -84,7 +85,7 @@ def test_numba_kernel_signature(dtype):
 
     # Generate the Numba signature
     xtype = utils.dtype_to_scalar_dtype(dtype)
-    signature = utils.numba_ufcx_kernel_signature(np_dtype, xtype)
+    signature = numba_ufcx_kernel_signature(np_dtype, xtype)
     assert isinstance(signature, numba.core.typing.templates.Signature)
 
     # Get the signature from the compiled kernel
