@@ -36,7 +36,7 @@ ffcx = "ffcx:__main__.main"
 [project.optional-dependencies]
 lint = ["ruff"]
 docs = ["sphinx", "pydata-sphinx-theme"]
-optional = ["numba", "pygraphviz==1.9"]
+optional = ["numba", "pygraphviz==2.0.1"]
 test = ["pytest >= 6.0", "sympy", "numba"]
 ci = [
     "coveralls",
