@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2026 Michal Habera, Chris Richardson, Garth N. Wells and Paul T. Kühner
+# Copyright (C) 2020-2024 Michal Habera, Chris Richardson and Garth N. Wells
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
