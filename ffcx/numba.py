@@ -5,11 +5,16 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Numba specific functionality."""
 
+from collections.abc import Callable
+from typing import Any
+
 import numba
 import numpy.typing as npt
 
 
-def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
+def numba_ufcx_kernel_signature(
+    dtype: npt.DTypeLike, xdtype: npt.DTypeLike
+) -> numba.core.typing.templates.Signature:
     """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
 
     Args:
@@ -31,7 +36,9 @@ def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike):
 
 
 @numba.extending.intrinsic
-def empty_void_pointer(typingctx):
+def empty_void_pointer(
+    typingctx: Any,
+) -> tuple[Any, Callable[[Any, Any, Any, Any], Any]]:
     """Custom intrinsic to return an empty void* pointer.
 
     This function creates a void pointer initialized to null (0).
@@ -44,7 +51,7 @@ def empty_void_pointer(typingctx):
         A Numba signature and a code generation function that returns a void pointer.
     """
 
-    def codegen(context, builder, signature, args):
+    def codegen(context: Any, builder: Any, signature: Any, args: Any) -> Any:
         null_ptr = context.get_constant(numba.types.voidptr, 0)
         return null_ptr
 
@@ -53,7 +60,7 @@ def empty_void_pointer(typingctx):
 
 
 @numba.extending.intrinsic
-def get_void_pointer(typingctx, arr):
+def get_void_pointer(typingctx: Any, arr: npt.NDArray) -> tuple[numba.types.RawPointer, Callable]:
     """Custom intrinsic to get a void* pointer from a NumPy array.
 
     This function takes a NumPy array and returns a void pointer to the array's data.
