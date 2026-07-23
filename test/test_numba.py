@@ -13,14 +13,14 @@ import numpy.typing as npt
 import pytest
 
 import ffcx.main
-from ffcx.codegeneration.numba import numba_ufcx_kernel_signature
+from ffcx.codegeneration.numba import ufcx_kernel_signature
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 numba = pytest.importorskip("numba")
 
 
 def wrap_kernel(scalar_type, real_type):
-    c_signature = numba_ufcx_kernel_signature(scalar_type, real_type)
+    c_signature = ufcx_kernel_signature(scalar_type, real_type)
     return numba.cfunc(c_signature, nopython=True)
 
 

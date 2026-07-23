@@ -12,7 +12,7 @@ import numba
 import numpy.typing as npt
 
 
-def numba_ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike) -> Any:
+def ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike) -> Any:
     """Return a Numba C signature for the UFCx ``tabulate_tensor`` interface.
 
     Args:
