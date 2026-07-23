@@ -13,7 +13,7 @@ import numpy.typing as npt
 import pytest
 
 import ffcx.main
-from ffcx.codegeneration.numba import ufcx_kernel_signature
+from ffcx.codegeneration.numba.utils import ufcx_kernel_signature
 from ffcx.codegeneration.utils import dtype_to_scalar_dtype
 
 numba = pytest.importorskip("numba")

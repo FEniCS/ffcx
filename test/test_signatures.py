@@ -14,7 +14,7 @@ import ufl
 
 import ffcx.codegeneration.jit
 import ffcx.codegeneration.utils as utils
-from ffcx.codegeneration.numba import ufcx_kernel_signature
+from ffcx.codegeneration.numba.utils import ufcx_kernel_signature
 
 
 def generate_kernel(forms, scalar_type, options):
