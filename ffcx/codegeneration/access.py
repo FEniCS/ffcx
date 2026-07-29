@@ -12,6 +12,7 @@ import basix.ufl
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.analysis import ProxyCoefficient
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
@@ -36,6 +37,7 @@ class FFCXBackendAccess:
         # Lookup table for handler to call when the "get" method (below)
         # is called, depending on the first argument type.
         self.call_lookup = {
+            ProxyCoefficient: self.proxy_coefficient,
             ufl.coefficient.Coefficient: self.coefficient,
             ufl.constant.Constant: self.constant,
             ufl.geometry.Jacobian: self.jacobian,
@@ -77,6 +79,30 @@ class FFCXBackendAccess:
             return handler(mt, tabledata, quadrature_rule)
         else:
             raise RuntimeError(f"Not handled: {type(e)}")
+
+    def proxy_coefficient(
+        self,
+        mt: ModifiedTerminal,
+        tabledata: UniqueTableReferenceT,
+        quadrature_rule: QuadratureRule,
+    ):
+        """Access a coefficient."""
+        ttype = tabledata.ttype
+        assert ttype != "zeros"
+
+        num_dofs = tabledata.values.shape[3]
+        begin = tabledata.offset
+        assert begin is not None
+        assert tabledata.block_size is not None
+        end = begin + tabledata.block_size * (num_dofs - 1) + 1
+        if ttype == "ones" and (end - begin) == 1:
+            # f = 1.0 * f_{begin}, just return direct reference to dof
+            # array at dof begin (if mt is restricted, begin contains
+            # cell offset)
+            return self.symbols.proxy_coefficient_dof_access(mt.terminal, begin)
+        else:
+            # Return symbol, see definitions for computation
+            return self.symbols.proxy_coefficient_value(mt)
 
     def coefficient(
         self,

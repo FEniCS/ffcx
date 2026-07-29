@@ -20,11 +20,16 @@ class FFCXBackend:
         """Initialise."""
         coefficient_numbering = ir.expression.coefficient_numbering
         coefficient_offsets = ir.expression.coefficient_offsets
-
+        proxy_coefficient_numbering = ir.expression.proxy_coefficient_numbering
+        proxy_coefficient_offsets = ir.expression.proxy_coefficient_offsets
         original_constant_offsets = ir.expression.original_constant_offsets
 
         self.symbols = FFCXBackendSymbols(
-            coefficient_numbering, coefficient_offsets, original_constant_offsets
+            coefficient_numbering,
+            coefficient_offsets,
+            original_constant_offsets,
+            proxy_coefficient_numbering,
+            proxy_coefficient_offsets,
         )
         self.access = FFCXBackendAccess(
             ir.expression.entity_type, ir.expression.integral_type, self.symbols, options

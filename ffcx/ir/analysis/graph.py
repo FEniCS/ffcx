@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2017 Martin Sandve Alnæs
+# Copyright (C) 2011-2026 Martin Sandve Alnæs
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -27,9 +27,9 @@ class ExpressionGraph:
     def __init__(self):
         """Initialise."""
         # Data structures for directed multi-edge graph
-        self.nodes = {}
-        self.out_edges = {}
-        self.in_edges = {}
+        self._nodes = {}
+        self._out_edges = {}
+        self._in_edges = {}
         self.e2i = {}
 
     def number_of_nodes(self):
@@ -38,17 +38,32 @@ class ExpressionGraph:
 
     def add_node(self, key, **kwargs):
         """Add a node with optional properties."""
-        self.nodes[key] = kwargs
-        self.out_edges[key] = []
-        self.in_edges[key] = []
+        self._nodes[key] = kwargs
+        self._out_edges[key] = []
+        self._in_edges[key] = []
 
     def add_edge(self, node1, node2):
         """Add a directed edge from node1 to node2."""
         if node1 not in self.nodes or node2 not in self.nodes:
             raise KeyError("Adding edge to unknown node")
 
-        self.out_edges[node1] += [node2]
-        self.in_edges[node2] += [node1]
+        self._out_edges[node1] += [node2]
+        self._in_edges[node2] += [node1]
+
+    @property
+    def nodes(self):
+        """Get nodes."""
+        return self._nodes
+
+    @property
+    def out_edges(self):
+        """Get out edges."""
+        return self._out_edges
+
+    @property
+    def in_edges(self):
+        """Get in edges."""
+        return self._in_edges
 
 
 def build_graph_vertices(expressions, skip_terminal_modifiers=False) -> ExpressionGraph:
