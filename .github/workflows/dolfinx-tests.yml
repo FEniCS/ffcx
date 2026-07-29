@@ -8,19 +8,6 @@ on:
   merge_group:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      dolfinx_ref:
-        description: "DOLFINx branch or tag"
-        default: "main"
-        type: string
-      basix_ref:
-        description: "Basix branch or tag"
-        default: "main"
-        type: string
-      ufl_ref:
-        description: "UFL branch or tag"
-        default: "main"
-        type: string
   # Weekly build on Mondays at 8 am
   schedule:
     - cron: "0 8 * * 1"
@@ -37,34 +24,22 @@ jobs:
       PRTE_MCA_rmaps_default_mapping_policy: :oversubscribe   # Newer OpenMPI
       OMPI_MCA_rmaps_base_oversubscribe: true                 # Older OpenMPI
     steps:
-      - uses: actions/checkout@v6
-      - name: Install UFL and Basix (default branches/tags)
-        if: github.event_name != 'workflow_dispatch'
+      - uses: actions/checkout@v7
+      - name: Load environment variables
+        run: cat .github/workflows/fenicsx-refs.env >> $GITHUB_ENV
+      - name: Install UFL and Basix
         run: |
-          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/ufl.git
-          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/basix.git
-      - name: Install UFL and Basix (specified branches/tags)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/ufl.git@${{ github.event.inputs.ufl_ref }}
-          python3 -m pip install --break-system-packages git+https://github.com/FEniCS/basix.git@${{ github.event.inputs.basix_ref }}
+          python3 -m pip install --break-system-packages git+https://github.com/${{ env.ufl_repository }}.git@${{ env.ufl_ref }}
+          python3 -m pip install --break-system-packages git+https://github.com/${{ env.basix_repository }}.git@${{ env.basix_ref }}
       - name: Install FFCx
         run: |
           pip3 install --break-system-packages .
-      - name: Get DOLFINx source (default branch/tag)
-        if: github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v6
+      - name: Get DOLFINx source
+        uses: actions/checkout@v7
         with:
           path: ./dolfinx
-          repository: FEniCS/dolfinx
-          ref: main
-      - name: Get DOLFINx source (specified branch/tag)
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v6
-        with:
-          path: ./dolfinx
-          repository: FEniCS/dolfinx
-          ref: ${{ github.event.inputs.dolfinx_ref }}
+          repository: ${{ env.dolfinx_repository }}
+          ref: ${{ env.dolfinx_ref }}
       - name: Install DOLFINx (C++)
         run: |
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -DBUILD_TESTING=true -B build -S dolfinx/cpp/

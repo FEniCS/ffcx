@@ -13,7 +13,7 @@
 #include <stdbool.h>
 
 #define UFCX_VERSION_MAJOR 0
-#define UFCX_VERSION_MINOR 11
+#define UFCX_VERSION_MINOR 12
 #define UFCX_VERSION_MAINTENANCE 0
 #define UFCX_VERSION_IS_RELEASE false
 
