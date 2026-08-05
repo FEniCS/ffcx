@@ -169,9 +169,14 @@ def _compute_integral_ir(
         if is_modified_terminal(v["expression"])
     }
 
-    # Check if we have a mixed-dimensional integral
+    # Check if we have a mixed-dimensional integral.
+    # We allow for constants to be defined on other meshes, as they require no mapping.
     is_mixed_dim = False
-    for domain in ufl.domain.extract_domains(expression):
+    coeffs_and_arguments = ufl.algorithms.analysis.extract_arguments(
+        expression
+    ) + ufl.algorithms.analysis.extract_coefficients(expression)
+    domains = [arg.ufl_domain() for arg in coeffs_and_arguments]
+    for domain in domains:
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
 
