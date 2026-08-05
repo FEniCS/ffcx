@@ -177,6 +177,7 @@ def _compute_integral_ir(
     ) + ufl.algorithms.analysis.extract_coefficients(expression)
     domains = [ufl.domain.extract_unique_domain(arg) for arg in coeffs_and_arguments]
     for domain in domains:
+        assert domain is not None
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
 
