@@ -175,7 +175,7 @@ def _compute_integral_ir(
     coeffs_and_arguments = ufl.algorithms.analysis.extract_arguments(
         expression
     ) + ufl.algorithms.analysis.extract_coefficients(expression)
-    domains = [ufl.domain.extract_unique_domain(arg) for arg in coeffs_and_arguments]
+    domains = map(ufl.domain.extract_unique_domain, coeffs_and_arguments)
     for domain in domains:
         assert domain is not None
         if domain.topological_dimension != cell.topological_dimension:
