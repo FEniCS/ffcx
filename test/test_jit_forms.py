@@ -2253,3 +2253,60 @@ def test_ufl_complex_extraction(
         ffi.NULL,
     )
     assert np.isclose(J[0], val)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_mixed_constants(compile_args, dtype):
+    """Check that you can use constants from different meshes in a single form."""
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "quadrilateral", 1, shape=(3,)))
+    domain2 = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(3,)))
+    domain3 = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+
+    c = ufl.Constant(domain)
+    c2 = ufl.Constant(domain2)
+    c3 = ufl.Constant(domain3)
+    J = c * c2 * c3 * ufl.dx(domain=domain)
+    forms = [J]
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    ffi = module.ffi
+    form = compiled_forms[0]
+    default_integral = form.form_integrals[0]
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    J = np.zeros(1, dtype=dtype)
+    coords = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 1.0, 2.0, 0.0], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    c = np.array([4.0, 3.0, 2.1], dtype=dtype)
+
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", J.ctypes.data),
+        ffi.NULL,
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    assert np.isclose(J[0], 2 * np.prod(c))
