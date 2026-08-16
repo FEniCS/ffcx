@@ -304,7 +304,60 @@ class IntegralGenerator:
         code = definitions + intermediates + tensor_comp
         code = optimize(code, quadrature_rule)
 
+        split = self._split_quadrature_loop(code, iq, intermediates_fw, quadrature_rule)
+        if split is not None:
+            return split
+
         return [L.create_nested_for_loops([iq], code)]
+
+    def _split_quadrature_loop(
+        self,
+        code: list[L.LNode],
+        iq: L.MultiIndex,
+        intermediates_fw: list[L.VariableDecl],
+        quadrature_rule: QuadratureRule,
+    ):
+        """Split the quadrature loop into evaluation and contraction loops.
+
+        The fused loop interleaves evaluation of the varying quantities
+        (which carries any math functions of the spatial coordinate) with
+        the tensor contraction, whose strided reads of the basis tables
+        stop the compiler vectorising the loop -- leaving calls to `sin`
+        and friends scalar. Storing the `fw` values in a small array and
+        contracting in a second loop leaves the evaluation loop free of
+        those accesses, so it vectorises onto the SIMD math library.
+
+        Returns `None` if the split does not apply, in which case the
+        caller emits a single fused loop.
+        """
+        if quadrature_rule is None or not intermediates_fw:
+            return None
+
+        # Only single-index (non tensor-product) rules for now
+        if quadrature_rule.has_tensor_factors or iq.dim != 1:
+            return None
+
+        evaluation = [c for c in code if getattr(c, "name", None) != "Tensor Computation"]
+        contraction = [c for c in code if getattr(c, "name", None) == "Tensor Computation"]
+        if not contraction or not evaluation:
+            return None
+
+        num_points = quadrature_rule.weights.size
+        index = iq.local_index(0)
+
+        declarations: list[L.LNode] = []
+        store: list[L.LNode] = []
+        load: list[L.LNode] = []
+        for fw in intermediates_fw:
+            cache = L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
+            declarations += [L.ArrayDecl(cache, sizes=num_points)]
+            store += [L.Assign(L.ArrayAccess(cache, [index]), fw.symbol)]
+            load += [L.VariableDecl(fw.symbol, L.ArrayAccess(cache, [index]))]
+
+        return declarations + [
+            L.create_nested_for_loops([iq], evaluation + store),
+            L.create_nested_for_loops([iq], load + contraction),
+        ]
 
     def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
