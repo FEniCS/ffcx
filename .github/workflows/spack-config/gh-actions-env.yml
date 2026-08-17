@@ -1,4 +1,17 @@
 spack:
+  view: /opt/view
+  config:
+    # Pin the install root to a fixed absolute path, not one under
+    # $GITHUB_WORKSPACE (whose length varies with the repo name: e.g.
+    # /__w/ffcx/ffcx vs /__w/basix/basix vs /__w/dolfinx/dolfinx). All
+    # three repos push to and pull from the same OCI buildcache, so a
+    # binary relocated to fit one repo's workspace path may not have
+    # room to fit another's -- padded_length reserves enough slack for
+    # that relocation regardless of which repo built it.
+    install_tree:
+      root: /opt/spack
+      padded_length: 128
+
   concretizer:
     unify: true
     reuse: false
