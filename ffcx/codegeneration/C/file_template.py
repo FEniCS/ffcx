@@ -36,6 +36,13 @@ implementation_pre = """
 //
 {options}
 
+// The integer-order Bessel functions jn/yn are XSI extensions rather than ISO
+// C, and glibc's <math.h> hides them in strict ISO mode (e.g. -std=c17). Ask
+// for the XSI declarations before any system header is included.
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
+#endif
+
 #include <math.h>
 #include <stdalign.h>
 #include <stdlib.h>
