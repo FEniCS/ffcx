@@ -209,6 +209,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
         # loop. Terms sharing them differ only in what is hoisted, so one
         # temporary can hold their sum and the entry needs a single update.
         groups: dict[tuple, tuple[list, list]] = {}
+        terms: list[L.LExpr] = []
         for r in rhs:
             hoist_candidates = []
             keep = []
@@ -221,8 +222,8 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 key = tuple(_key(k) for k in keep)
                 groups.setdefault(key, (keep, []))[1].append(L.Product(hoist_candidates))
             else:
-                # Nothing worth hoisting, emit the term unchanged
-                inner_body.append(L.AssignAdd(lhs, r))
+                # Nothing worth hoisting, keep the term unchanged
+                terms.append(r)
 
         for keep, hoisted in groups.values():
             # Create new temp holding the sum of the hoisted terms
@@ -234,7 +235,11 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), rhs_hoisted)
             pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
             access = L.ArrayAccess(temp, [outer_loop.index])
-            inner_body.append(L.AssignAdd(lhs, L.Product([*keep, access])))
+            terms.append(L.Product([*keep, access]))
+
+        # One read-modify-write of the entry instead of one per term
+        if terms:
+            inner_body.append(L.AssignAdd(lhs, terms[0] if len(terms) == 1 else L.Sum(terms)))
 
     # Rebuild the loop nest around the regrouped body
     new_inner = L.ForRange(inner_loop.index, inner_loop.begin, inner_loop.end, inner_body)
