@@ -1,0 +1,144 @@
+name: DOLFINx integration
+
+# Build and test DOLFINx via Spack against FFCx, exercising the
+# fenics-dolfinx and py-fenics-dolfinx Spack packages (without PETSc).
+# Structure mirrors FEniCS/basix's own .github/workflows/dolfinx.yml.
+
+on:
+  pull_request:
+    branches:
+      - main
+  merge_group:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dolfinx:
+    name: Run DOLFINx tests
+    runs-on: ubuntu-26.04
+    container: ubuntu:26.04
+    permissions:
+      packages: write
+    env:
+      GITHUB_USER: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Needed to run the C++ unittests_np_N ctest targets, which invoke
+      # mpirun/mpiexec directly: OpenMPI refuses to run as root (this
+      # container runs everything as root) without these, and CI runners
+      # have fewer cores than the tests may request.
+      OMPI_ALLOW_RUN_AS_ROOT: 1
+      OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+      PRTE_MCA_rmaps_default_mapping_policy: :oversubscribe
+      # Forked PRs get a read-only GITHUB_TOKEN, so buildcache pushes
+      # would 401; skip them there. Reads are anonymous, so forked
+      # builds still pull from the cache.
+      IS_TRUSTED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+    steps:
+      - run: apt-get -y update && apt-get install -y bzip2 ca-certificates file g++ gcc gfortran git gzip libgl-dev libosmesa6-dev lsb-release patch pkg-config python3 tar unzip xz-utils zstd
+
+      - uses: spack/setup-spack@16b756799ede8b28951287f89bcd3fdb32ec1ca3 # v3.0.0
+        with:
+          spack_ref: v1.2.2
+          packages_ref: f5642ce3dafc940e61f20a277e829f5edf5bd2d4 # develop, 2026-08-15
+
+      - uses: actions/checkout@v7
+        with:
+          repository: fenics/spack-fenics
+          path: spack-fenics
+          ref: 55b14e0301eb64d4adc86c213046824f2b17e20c # main, 2026-08-15
+      - run: spack repo add --name fenics $GITHUB_WORKSPACE/spack-fenics/spack_repo/fenics
+
+      - uses: actions/checkout@v7
+        with:
+          path: ffcx-src
+      - run: cat ffcx-src/.github/workflows/fenicsx-refs.env >> $GITHUB_ENV
+
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.ufl_repository }}
+          ref: ${{ env.ufl_ref }}
+          path: ufl-src
+
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.basix_repository }}
+          ref: ${{ env.basix_ref }}
+          path: basix-src
+
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ env.dolfinx_repository }}
+          ref: ${{ env.dolfinx_ref }}
+          path: dolfinx-src
+
+      - run: |
+          echo "UFL_SHA=$(git -C $GITHUB_WORKSPACE/ufl-src rev-parse HEAD)" >> $GITHUB_ENV
+          echo "BASIX_SHA=$(git -C $GITHUB_WORKSPACE/basix-src rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DOLFINX_SHA=$(git -C $GITHUB_WORKSPACE/dolfinx-src rev-parse HEAD)" >> $GITHUB_ENV
+          echo "TEST_DEPS=py-pytest py-pytest-xdist py-scipy catch2 cmake ninja" >> $GITHUB_ENV
+
+      # Dev-path and commit-pin the whole stack: every package is
+      # rebuilt from source (never from the buildcache), and a failure
+      # maps to an exact commit. UFL/Basix/DOLFINx use the repos/refs
+      # from fenicsx-refs.env, not a hardcoded @main.
+      - run: |
+          spack env create ci ffcx-src/.github/workflows/spack-config/gh-actions-env.yml
+          spack -e ci develop --no-clone --path $GITHUB_WORKSPACE/basix-src fenics-basix@main
+          spack -e ci develop --no-clone --path $GITHUB_WORKSPACE/basix-src py-fenics-basix@main
+          spack -e ci develop --no-clone --path $GITHUB_WORKSPACE/ufl-src py-fenics-ufl@main
+          spack -e ci develop --no-clone --path $GITHUB_WORKSPACE/ffcx-src fenics-ufcx@main
+          spack -e ci develop --no-clone --path $GITHUB_WORKSPACE/ffcx-src py-fenics-ffcx@main
+          spack -e ci develop --no-clone --path $GITHUB_WORKSPACE/dolfinx-src fenics-dolfinx@main
+          spack -e ci develop --no-clone --path $GITHUB_WORKSPACE/dolfinx-src py-fenics-dolfinx@main
+          spack -e ci add fenics-basix@main commit=$BASIX_SHA build_type=Developer
+          spack -e ci add py-fenics-basix@main commit=$BASIX_SHA +ufl build_type=Developer
+          spack -e ci add py-fenics-ufl@main commit=$UFL_SHA
+          spack -e ci add fenics-ufcx@main commit=${{ github.sha }}
+          spack -e ci add py-fenics-ffcx@main commit=${{ github.sha }}
+          spack -e ci add fenics-dolfinx@main commit=$DOLFINX_SHA build_type=Developer
+          spack -e ci add py-fenics-dolfinx@main commit=$DOLFINX_SHA build_type=Developer
+          spack -e ci add $TEST_DEPS
+          spack -e ci concretize -j $(nproc)
+          spack -e ci install -j $(nproc) --use-buildcache auto
+
+      - run: spack -e ci buildcache push --base-image ubuntu:26.04 --only dependencies --with-build-dependencies --allow-missing local-buildcache
+        if: ${{ !cancelled() && env.IS_TRUSTED == 'true' }}
+
+      # Configure cpp/test/ standalone (not the whole cpp/ tree with
+      # -DBUILD_TESTING=true): it links against the fenics-dolfinx library
+      # Spack already built and installed above, instead of rebuilding
+      # DOLFINx a second time. py-fenics-ffcx is needed on PATH because
+      # the test build shells out to the `ffcx` CLI to generate C code
+      # (expr.c, poisson.c) from Python test fixtures.
+      - name: Run DOLFINx C++ unit tests
+        shell: spack-bash {0}
+        run: |
+          spack env activate ci
+          spack load gcc cmake ninja catch2 py-fenics-ffcx
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -B build/dolfinx-cpp-test -S dolfinx-src/cpp/test
+          cmake --build build/dolfinx-cpp-test
+          ctest --test-dir build/dolfinx-cpp-test -V --output-on-failure -R unittests_np_1
+
+      - name: Set default DOLFINx JIT options
+        run: |
+          mkdir -p ~/.config/dolfinx
+          echo '{ "cffi_extra_compile_args": ["-g0", "-O0" ] }' > ~/.config/dolfinx/dolfinx_jit_options.json
+
+      - name: Run DOLFINx Python unit tests
+        shell: spack-bash {0}
+        run: |
+          spack env activate ci
+          spack load gcc py-fenics-dolfinx
+          python -m pytest -n auto -m "not petsc4py and not adios2" dolfinx-src/python/test/unit
+
+      - name: Push test cache and update index
+        if: ${{ !cancelled() && env.IS_TRUSTED == 'true' }}
+        run: |
+          spack -e ci buildcache push --base-image ubuntu:26.04 --allow-missing --update-index local-buildcache \
+            $TEST_DEPS
