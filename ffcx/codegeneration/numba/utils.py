@@ -9,6 +9,7 @@ from collections.abc import Callable
 from typing import Any
 
 import numba
+import numpy as np
 import numpy.typing as npt
 
 
@@ -22,11 +23,13 @@ def ufcx_kernel_signature(dtype: npt.DTypeLike, xdtype: npt.DTypeLike) -> Any:
     Returns:
         A Numba signature (``numba.core.typing.templates.Signature``).
     """
+    scalar_type = numba.from_dtype(np.dtype(dtype))
+    geom_type = numba.from_dtype(np.dtype(xdtype))
     return numba.types.void(
-        numba.types.CPointer(numba.from_dtype(dtype)),
-        numba.types.CPointer(numba.from_dtype(dtype)),
-        numba.types.CPointer(numba.from_dtype(dtype)),
-        numba.types.CPointer(numba.from_dtype(xdtype)),
+        numba.types.CPointer(scalar_type),
+        numba.types.CPointer(scalar_type),
+        numba.types.CPointer(scalar_type),
+        numba.types.CPointer(geom_type),
         numba.types.CPointer(numba.types.intc),
         numba.types.CPointer(numba.types.uint8),
         numba.types.CPointer(numba.types.void),
