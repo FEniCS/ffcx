@@ -108,7 +108,11 @@ def compile_ufl_objects(
 
     # Stage 1: analysis
     cpu_time = time()
-    analysis = analyze_ufl_objects(ufl_objects, options["scalar_type"])  # type: ignore
+    analysis = analyze_ufl_objects(
+        ufl_objects,
+        options["scalar_type"],
+        do_cancel_jacobian_products=options.get("do_cancel_jacobian_products", False),
+    )  # type: ignore
     _print_timing(1, time() - cpu_time)
 
     # Stage 2: intermediate representation
