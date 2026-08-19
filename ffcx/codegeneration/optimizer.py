@@ -535,9 +535,11 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 counter += 1
                 temp = L.Symbol(name, L.DataType.SCALAR)
                 # Every entry gets written unconditionally by the loop just
-                # below (a plain Assign, not AssignAdd), so a zero-fill here
-                # is dead.
-                pre_loop.append(L.ArrayDecl(temp, size))
+                # below (a plain Assign, not AssignAdd), so this zero-fill is
+                # value-dead. Kept anyway to match PR #853's original code
+                # exactly (harmless either way; not the source of the
+                # mass-matrix vectoriser regression documented on PR #865).
+                pre_loop.append(L.ArrayDecl(temp, size, [0]))
                 hoist_loop_body.append(
                     L.Assign(L.ArrayAccess(temp, [outer_loop.index]), rhs_hoisted)
                 )
