@@ -48,6 +48,31 @@ def extract_dtype(v, vops: list[Any]):
     return L.merge_dtypes(dtypes)
 
 
+def _contains_mathfunction(node) -> bool:
+    """Search an LNodes statement/expression tree for a call to a MathFunction."""
+    if isinstance(node, list):
+        return any(_contains_mathfunction(n) for n in node)
+    if isinstance(node, L.MathFunction):
+        return True
+    if isinstance(node, (L.StatementList, L.Section)):
+        return _contains_mathfunction(node.statements)
+    if isinstance(node, L.ForRange):
+        return _contains_mathfunction(node.body)
+    if isinstance(node, L.VariableDecl):
+        return node.value is not None and _contains_mathfunction(node.value)
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return False
+    if isinstance(node, L.Statement):
+        return _contains_mathfunction(node.expr)
+    if isinstance(node, L.NaryOp):
+        return any(_contains_mathfunction(a) for a in node.args)
+    if isinstance(node, L.BinOp):
+        return _contains_mathfunction(node.lhs) or _contains_mathfunction(node.rhs)
+    if isinstance(node, L.PrefixUnaryOp):
+        return _contains_mathfunction(node.arg)
+    return False
+
+
 class IntegralGenerator:
     """Integral generator."""
 
@@ -340,6 +365,15 @@ class IntegralGenerator:
         evaluation = [c for c in code if getattr(c, "name", None) != "Tensor Computation"]
         contraction = [c for c in code if getattr(c, "name", None) == "Tensor Computation"]
         if not contraction or not evaluation:
+            return None
+
+        # The split trades a fused loop for two loops plus a store/load of
+        # every fw through a cache array. That only pays for itself when the
+        # evaluation loop has a transcendental math call to vectorise -- most
+        # integrands (mass matrices, plain Poisson, etc.) have none, and for
+        # those the split is a net loss (extra loop and memory traffic for no
+        # vectorisation gain).
+        if not _contains_mathfunction(evaluation):
             return None
 
         num_points = quadrature_rule.weights.size
