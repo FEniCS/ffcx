@@ -237,6 +237,60 @@ def power_of_two_cse_statements(
     return new_statements
 
 
+def fuse_negation_statements(
+    statements: list[L.LNode], speculative_out: set[str] | None = None
+) -> list[L.LNode]:
+    """Fuse a negated operand of a sum directly into a subtraction.
+
+    UFL has no ``Sub`` node: ``a - b`` lowers to ``Sum(a, -b)``, and unary
+    negation itself lowers to ``-1 * b`` (see ``Expr.__sub__``/``__neg__`` in
+    UFL's ``exproperators.py``). Value-numbering gives that negation its own
+    graph node -- and hence its own named scalar temporary -- before the
+    enclosing sum is ever built, which defeats the peephole folding
+    ``LExpr.__add__`` already does for a *literal* ``Neg`` operand: by the
+    time the sum is generated, it only sees a `Symbol` reference to the
+    negation's temporary, not the ``Neg`` expression itself. This walks a
+    flat statement list and undoes that: every declaration that is a pure
+    negation of an earlier value is remembered, and a later sum reading that
+    negation's symbol is rewritten to subtract the original operand
+    directly, skipping the temporary.
+
+    Args:
+        statements: A flat list of statements (no nested loops expected --
+            this targets piecewise/varying scalar partitions, not quadrature
+            loop bodies).
+        speculative_out: If given, updated with the names of negation
+            temporaries whose only known use was folded away here -- the
+            caller should check these against the fully assembled kernel
+            body (via :func:`prune_dead_scalars`) before dropping them,
+            since a negation used elsewhere too must still be kept.
+
+    Returns:
+        A new statement list with fusable negations rewritten.
+    """
+    if speculative_out is None:
+        speculative_out = set()
+    negations: dict[str, L.LExpr] = {}
+    new_statements: list[L.LNode] = []
+    for stmt in statements:
+        if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Neg):
+            negations[stmt.symbol.name] = stmt.value.arg
+            new_statements.append(stmt)
+            continue
+        if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Add):
+            lhs, rhs = stmt.value.lhs, stmt.value.rhs
+            if isinstance(rhs, L.Symbol) and rhs.name in negations:
+                new_statements.append(L.VariableDecl(stmt.symbol, L.Sub(lhs, negations[rhs.name])))
+                speculative_out.add(rhs.name)
+                continue
+            if isinstance(lhs, L.Symbol) and lhs.name in negations:
+                new_statements.append(L.VariableDecl(stmt.symbol, L.Sub(rhs, negations[lhs.name])))
+                speculative_out.add(lhs.name)
+                continue
+        new_statements.append(stmt)
+    return new_statements
+
+
 def _collect_referenced_names(node, out: set[str]) -> None:
     """Recursively collect every symbol name read anywhere in a code tree."""
     if isinstance(node, list):

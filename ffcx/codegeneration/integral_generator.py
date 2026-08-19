@@ -20,6 +20,7 @@ from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import (
     _key,
+    fuse_negation_statements,
     optimize,
     power_of_two_cse_statements,
     prune_dead_scalars,
@@ -121,6 +122,12 @@ class IntegralGenerator:
         # kernel -- checked against the fully assembled body at the end of
         # generate() by prune_dead_scalars().
         self._pow2_cse_speculative: set[str] = set()
+
+        # Names of scalar temporaries kept only speculatively by negation
+        # fusion, across every partition generated for this kernel --
+        # checked against the fully assembled body at the end of generate()
+        # by prune_dead_scalars(), same as _pow2_cse_speculative above.
+        self._neg_fusion_speculative: set[str] = set()
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -229,7 +236,9 @@ class IntegralGenerator:
         # Now that the whole kernel body is assembled, drop any power-of-two
         # CSE temporary that never gained a reader anywhere in it (see
         # power_of_two_cse_statements and prune_dead_scalars).
-        parts = prune_dead_scalars(parts, self._pow2_cse_speculative)
+        parts = prune_dead_scalars(
+            parts, self._pow2_cse_speculative | self._neg_fusion_speculative
+        )
 
         return L.StatementList(parts)
 
@@ -478,6 +487,16 @@ class IntegralGenerator:
 
         # Optimize definitions
         definitions = optimize(definitions, quadrature_rule)
+
+        # Fuse a negated operand of a sum directly into a subtraction (UFL
+        # has no Sub node, so every `a - b` gives its negation its own named
+        # temporary before the sum ever sees it -- see
+        # fuse_negation_statements's docstring). Run before power-of-two CSE
+        # below: that pass only matches Add where both operands are already
+        # equal, so folding Add(a, -b) into Sub(a, b) first doesn't affect
+        # it, and doing this first avoids power-of-two CSE speculatively
+        # keeping a negation temporary this pass would otherwise fold away.
+        intermediates = fuse_negation_statements(intermediates, self._neg_fusion_speculative)
 
         # Fold scalar chains that round-trip through exact powers of two
         # (e.g. a symmetric gradient's factor of 1/2 undoing an earlier *2)
