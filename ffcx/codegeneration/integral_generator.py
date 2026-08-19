@@ -21,6 +21,7 @@ from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_
 from ffcx.codegeneration.optimizer import (
     optimize,
     power_of_two_cse_statements,
+    prune_dead_scalars,
     reciprocal_cse_statements,
 )
 from ffcx.ir.elementtables import piecewise_ttypes
@@ -104,6 +105,12 @@ class IntegralGenerator:
         # Set of counters used for assigning names to intermediate
         # variables
         self.symbol_counters: dict[str, int] = collections.defaultdict(int)
+
+        # Names of scalar temporaries kept only speculatively by
+        # power-of-two CSE, across every partition generated for this
+        # kernel -- checked against the fully assembled body at the end of
+        # generate() by prune_dead_scalars().
+        self._pow2_cse_speculative: set[str] = set()
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -208,6 +215,11 @@ class IntegralGenerator:
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
+
+        # Now that the whole kernel body is assembled, drop any power-of-two
+        # CSE temporary that never gained a reader anywhere in it (see
+        # power_of_two_cse_statements and prune_dead_scalars).
+        parts = prune_dead_scalars(parts, self._pow2_cse_speculative)
 
         return L.StatementList(parts)
 
@@ -462,7 +474,10 @@ class IntegralGenerator:
         # back into a plain alias of the earlier equal value. Must run before
         # reciprocal-CSE below, which would otherwise hide the literal
         # power-of-two divisors this looks for behind a reciprocal symbol.
-        intermediates = power_of_two_cse_statements(intermediates)
+        # Statements this keeps only speculatively are recorded so the whole
+        # kernel body can be checked, once fully assembled, for ones that
+        # never gained a reader -- see generate() and prune_dead_scalars().
+        intermediates = power_of_two_cse_statements(intermediates, self._pow2_cse_speculative)
 
         # Collapse repeated divisions by the same divisor (e.g. every entry of
         # an affine cell's pseudo-inverse Jacobian dividing by the same

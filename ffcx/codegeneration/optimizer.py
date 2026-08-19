@@ -69,29 +69,34 @@ def reciprocal_cse_statements(
     Returns:
         A new statement list with repeated divisions rewritten.
     """
-    divisor_counts: dict[L.LExpr, int] = defaultdict(int)
+    # Keyed by the divisor's structural identity (see `_key`), not the LExpr
+    # object itself: a literal divisor (e.g. dividing by a plain constant)
+    # is a `LiteralFloat`, which -- unlike `LiteralInt` -- has no `__hash__`,
+    # so using it directly as a dict key crashes.
+    divisor_counts: dict[tuple, int] = defaultdict(int)
     for stmt in statements:
         if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Div):
-            divisor_counts[stmt.value.rhs] += 1
+            divisor_counts[_key(stmt.value.rhs)] += 1
 
-    recip_symbols: dict[L.LExpr, L.Symbol] = {}
+    recip_symbols: dict[tuple, L.Symbol] = {}
     counter = 0
     new_statements: list[L.LNode] = []
     for stmt in statements:
         if (
             isinstance(stmt, L.VariableDecl)
             and isinstance(stmt.value, L.Div)
-            and divisor_counts[stmt.value.rhs] >= 2
+            and divisor_counts[_key(stmt.value.rhs)] >= 2
         ):
             divisor = stmt.value.rhs
-            if divisor not in recip_symbols:
+            divisor_key = _key(divisor)
+            if divisor_key not in recip_symbols:
                 recip_symbol = L.Symbol(f"{name_prefix}_{counter}", L.DataType.SCALAR)
                 counter += 1
-                recip_symbols[divisor] = recip_symbol
+                recip_symbols[divisor_key] = recip_symbol
                 new_statements.append(
                     L.VariableDecl(recip_symbol, L.Div(L.LiteralFloat(1.0), divisor))
                 )
-            recip_symbol = recip_symbols[divisor]
+            recip_symbol = recip_symbols[divisor_key]
             new_statements.append(L.VariableDecl(stmt.symbol, L.Mul(stmt.value.lhs, recip_symbol)))
         else:
             new_statements.append(stmt)
@@ -105,7 +110,31 @@ def reciprocal_cse(section: L.Section) -> L.Section:
     return section
 
 
-def power_of_two_cse_statements(statements: list[L.LNode]) -> list[L.LNode]:
+def _referenced_symbol_names(expr: L.LExpr, out: set[str]) -> None:
+    """Collect the names of every Symbol referenced within an expression tree."""
+    if isinstance(expr, L.Symbol):
+        out.add(expr.name)
+    elif isinstance(expr, L.ArrayAccess):
+        out.add(expr.array.name)
+        for i in expr.indices:
+            _referenced_symbol_names(i, out)
+    elif isinstance(expr, L.Conditional):
+        _referenced_symbol_names(expr.condition, out)
+        _referenced_symbol_names(expr.true, out)
+        _referenced_symbol_names(expr.false, out)
+    elif isinstance(expr, L.BinOp):
+        _referenced_symbol_names(expr.lhs, out)
+        _referenced_symbol_names(expr.rhs, out)
+    elif isinstance(expr, L.PrefixUnaryOp):
+        _referenced_symbol_names(expr.arg, out)
+    elif isinstance(expr, (L.NaryOp, L.MathFunction)):
+        for a in expr.args:
+            _referenced_symbol_names(a, out)
+
+
+def power_of_two_cse_statements(
+    statements: list[L.LNode], speculative_out: set[str] | None = None
+) -> list[L.LNode]:
     """Fold scalar chains that round-trip through exact powers of two.
 
     UFL's expansion of e.g. a symmetric gradient introduces factors of 2 and
@@ -120,13 +149,29 @@ def power_of_two_cse_statements(statements: list[L.LNode]) -> list[L.LNode]:
     different name with a plain reference to that name instead of
     recomputing it.
 
+    Rerouting a statement straight back to `base` (or to an earlier scaled
+    symbol) can leave the statement it used to depend on with no remaining
+    reader -- if nothing else ever needed that same intermediate value, it
+    becomes dead code, which GCC rejects under ``-Werror=unused-variable``.
+    Whether that's actually true can depend on code well outside this one
+    statement list (another partition's statements reading this one's
+    output, or the tensor contraction reading it directly), so this
+    function does not decide the question itself: every symbol it keeps
+    only speculatively (in case a later statement in *this* list needs the
+    same value) is recorded into `speculative_out` for the caller to check
+    against the fully assembled kernel body, via :func:`prune_dead_scalars`.
+
     Args:
         statements: A flat list of statements (piecewise/varying partition,
             no nested loops).
+        speculative_out: If given, updated with the names of symbols kept
+            only speculatively by this call.
 
     Returns:
         A new statement list with round-trip duplicates folded to aliases.
     """
+    if speculative_out is None:
+        speculative_out = set()
     # symbol name -> (base symbol, exponent) with value == base * 2**exponent
     canonical: dict[str, tuple[L.Symbol, int]] = {}
     # (base symbol name, exponent) -> symbol already known to hold that value
@@ -181,6 +226,7 @@ def power_of_two_cse_statements(statements: list[L.LNode]) -> list[L.LNode]:
                 continue
             else:
                 seen[key] = stmt.symbol
+                speculative_out.add(stmt.symbol.name)
         else:
             # Opaque: this symbol is its own base, unrelated to anything earlier.
             canonical[stmt.symbol.name] = (stmt.symbol, 0)
@@ -189,6 +235,86 @@ def power_of_two_cse_statements(statements: list[L.LNode]) -> list[L.LNode]:
         new_statements.append(stmt)
 
     return new_statements
+
+
+def _collect_referenced_names(node, out: set[str]) -> None:
+    """Recursively collect every symbol name read anywhere in a code tree."""
+    if isinstance(node, list):
+        for n in node:
+            _collect_referenced_names(n, out)
+    elif isinstance(node, L.VariableDecl):
+        if node.value is not None:
+            _referenced_symbol_names(node.value, out)
+    elif isinstance(node, L.ArrayDecl):
+        pass
+    elif isinstance(node, (L.Section, L.StatementList)):
+        _collect_referenced_names(node.statements, out)
+    elif isinstance(node, L.ForRange):
+        _referenced_symbol_names(node.begin, out)
+        _referenced_symbol_names(node.end, out)
+        _collect_referenced_names(node.body, out)
+    elif isinstance(node, L.Comment):
+        pass
+    elif isinstance(node, L.Statement):
+        _referenced_symbol_names(node.expr, out)
+
+
+def _drop_unreferenced(node, dead: set[str]):
+    """Recursively rebuild a code tree, dropping VariableDecls named in `dead`."""
+    if isinstance(node, list):
+        return [
+            _drop_unreferenced(n, dead)
+            for n in node
+            if not (isinstance(n, L.VariableDecl) and n.symbol.name in dead)
+        ]
+    if isinstance(node, L.Section):
+        node.statements = _drop_unreferenced(node.statements, dead)
+    elif isinstance(node, L.StatementList):
+        node.statements = _drop_unreferenced(node.statements, dead)
+    elif isinstance(node, L.ForRange):
+        # Mutate the existing StatementList's statements in place rather
+        # than wrapping the result in a new one: `body` may itself be a
+        # single-element list holding one multi-statement StatementList,
+        # and re-wrapping that a second time is a shape `as_statement`
+        # cannot unwrap again.
+        node.body.statements = _drop_unreferenced(node.body.statements, dead)
+    return node
+
+
+def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNode]:
+    """Remove scalar declarations in `candidates` that end up with no reader.
+
+    :func:`power_of_two_cse_statements` can reroute a statement past an
+    earlier one it used to depend on (e.g. straight back to the value it
+    was doubled from), leaving that earlier statement with no remaining
+    use -- dead code that GCC rejects under ``-Werror=unused-variable``.
+    Call this once the whole kernel body is assembled (definitions,
+    intermediates, tensor contraction and all), so that a declaration used
+    only by code outside its own partition's own statement list (a
+    different quadrature rule's varying partition consuming a piecewise
+    value, say, or the tensor contraction reading it directly) is
+    correctly recognised as live.
+
+    Args:
+        code: The complete generated kernel body.
+        candidates: Names that are safe to drop if nothing reads them --
+            i.e. ones `power_of_two_cse_statements` itself introduced
+            speculatively, never anything the caller didn't flag as such.
+
+    Returns:
+        `code`, with any now-dead candidate declarations removed. `code`'s
+        Sections/ForRanges are mutated in place; the returned list is a new
+        top-level list.
+    """
+    candidates = set(candidates)
+    while True:
+        referenced: set[str] = set()
+        _collect_referenced_names(code, referenced)
+        dead = candidates - referenced
+        if not dead:
+            return code
+        code = _drop_unreferenced(code, dead)
+        candidates -= dead
 
 
 def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
