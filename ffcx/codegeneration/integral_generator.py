@@ -677,8 +677,8 @@ class IntegralGenerator:
             for expression in keep[indices]:
                 body.append(L.AssignAdd(A[multi_index], expression))
 
-        # reverse B_indices
-        B_indices = B_indices[::-1]
+        # Nest with the last tensor index innermost, so the contiguous index of
+        # the element tensor varies fastest in the accumulation.
         body = [L.create_nested_for_loops(B_indices, body)]
         input = [*vars, *tables]
         output = [A]

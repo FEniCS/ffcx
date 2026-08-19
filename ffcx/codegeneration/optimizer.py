@@ -300,6 +300,30 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
     return False
 
 
+def _key(expr) -> tuple:
+    """Hashable identity of an expression, used to group equal factors.
+
+    LNodes expressions are not generally hashable, so build a structural key
+    that compares equal exactly when two factors are the same expression.
+
+    Args:
+        expr: Expression appearing as a factor in a product.
+
+    Returns:
+        Hashable structural key.
+    """
+    if isinstance(expr, L.ArrayAccess):
+        return ("array", expr.array.name, *(_key(i) for i in expr.indices))
+    elif isinstance(expr, L.Symbol):
+        return ("symbol", expr.name)
+    elif isinstance(expr, L.LiteralFloat | L.LiteralInt):
+        return ("literal", expr.value)
+    args = getattr(expr, "args", None)
+    if args is not None:
+        return (type(expr).__name__, *(_key(a) for a in args))
+    return (type(expr).__name__, repr(expr))
+
+
 def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     """Perform loop invariant code motion.
 
@@ -337,32 +361,48 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             expressions[lhs].append(rhs)
 
     pre_loop: list[L.LNode] = []
+    inner_body: list[L.LNode] = []
+    size = outer_loop.end.value - outer_loop.begin.value
     for lhs, rhs in expressions.items():
+        # Group the terms of this entry by the factors that stay in the inner
+        # loop. Terms sharing them differ only in what is hoisted, so one
+        # temporary can hold their sum and the entry needs a single update.
+        groups: dict[tuple, tuple[list, list]] = {}
+        terms: list[L.LExpr] = []
         for r in rhs:
             hoist_candidates = []
+            keep = []
             for arg in r.args:
-                dependency = check_dependency(arg, inner_loop.index)
-                if not dependency:
+                if check_dependency(arg, inner_loop.index):
+                    keep.append(arg)
+                else:
                     hoist_candidates.append(arg)
             if len(hoist_candidates) > 1:
-                # create new temp
-                name = f"temp_{counter}"
-                counter += 1
-                temp = L.Symbol(name, L.DataType.SCALAR)
-                for h in hoist_candidates:
-                    r.args.remove(h)
-                # update expression with new temp
-                r.args.append(L.ArrayAccess(temp, [outer_loop.index]))
-                # create code for hoisted term
-                size = outer_loop.end.value - outer_loop.begin.value
-                pre_loop.append(L.ArrayDecl(temp, size, [0]))
-                body = L.Assign(
-                    L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates)
-                )
-                pre_loop.append(
-                    L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body])
-                )
+                key = tuple(_key(k) for k in keep)
+                groups.setdefault(key, (keep, []))[1].append(L.Product(hoist_candidates))
+            else:
+                # Nothing worth hoisting, keep the term unchanged
+                terms.append(r)
 
-    section.statements = pre_loop + section.statements
+        for keep, hoisted in groups.values():
+            # Create new temp holding the sum of the hoisted terms
+            name = f"temp_{counter}"
+            counter += 1
+            temp = L.Symbol(name, L.DataType.SCALAR)
+            pre_loop.append(L.ArrayDecl(temp, size, [0]))
+            rhs_hoisted = hoisted[0] if len(hoisted) == 1 else L.Sum(hoisted)
+            body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), rhs_hoisted)
+            pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
+            access = L.ArrayAccess(temp, [outer_loop.index])
+            terms.append(L.Product([*keep, access]))
+
+        # One read-modify-write of the entry instead of one per term
+        if terms:
+            inner_body.append(L.AssignAdd(lhs, terms[0] if len(terms) == 1 else L.Sum(terms)))
+
+    # Rebuild the loop nest around the regrouped body
+    new_inner = L.ForRange(inner_loop.index, inner_loop.begin, inner_loop.end, inner_body)
+    new_outer = L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [new_inner])
+    section.statements = pre_loop + [new_outer] + section.statements[1:]
 
     return section
