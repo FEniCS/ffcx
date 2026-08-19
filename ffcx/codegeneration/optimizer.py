@@ -10,6 +10,8 @@ from ffcx.ir.representationutils import QuadratureRule
 def _pow2_exponent(node: L.LExpr) -> int | None:
     """Return e such that node == 2**e, if node is an exact literal power of two."""
     if isinstance(node, (L.LiteralFloat, L.LiteralInt)):
+        if isinstance(node.value, complex):
+            return None
         value = float(node.value)
         if value <= 0.0:
             return None
