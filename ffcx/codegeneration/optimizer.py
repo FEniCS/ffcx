@@ -6,6 +6,244 @@ import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
 
 
+def _key(expr) -> tuple:
+    """Hashable structural identity for an LExpr, for recognising equal factors.
+
+    LNodes expressions are not generally hashable in a way that reflects
+    their mathematical content, so build a key that compares equal exactly
+    when two expressions are the same expression.
+
+    Args:
+        expr: Expression to key.
+
+    Returns:
+        Hashable structural key.
+    """
+    if isinstance(expr, L.ArrayAccess):
+        return ("array", expr.array.name, *(_key(i) for i in expr.indices))
+    elif isinstance(expr, L.Symbol):
+        return ("symbol", expr.name)
+    elif isinstance(expr, L.LiteralFloat | L.LiteralInt):
+        return ("literal", expr.value)
+    args = getattr(expr, "args", None)
+    if args is not None:
+        return (type(expr).__name__, *(_key(a) for a in args))
+    return (type(expr).__name__, repr(expr))
+
+
+def _get_mul_operands(stmt: L.LNode) -> tuple[L.LExpr, L.LExpr] | None:
+    """Return (lhs, rhs) if stmt is a simple scalar ``VariableDecl(sym, Mul(lhs, rhs))``."""
+    if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
+        return stmt.value.lhs, stmt.value.rhs
+    return None
+
+
+def _detect_dense_product_run(statements: list[L.LNode], start: int):
+    """Look for a maximal run of Mul declarations forming a dense outer product.
+
+    Many block-coupled bilinear forms (e.g. one tensor/vector component
+    multiplying another) produce, for every pair drawn from two small sets
+    of "left" and "right" scalar factors, a separately declared scalar
+    holding their product -- n0 * n1 declarations where n0 + n1 would do,
+    since the two factor sets are each already computed once. This detects
+    such a run when it's laid out in nested (left, right) order: n1
+    consecutive statements sharing one left operand and enumerating every
+    right operand, repeated for each of n0 distinct left operands, with the
+    same right-operand sequence every time.
+
+    Args:
+        statements: Flat statement list to scan.
+        start: Index to start looking for a run at.
+
+    Returns:
+        (n0, n1, left_factors, right_factors, entry_symbols) if a dense run
+        of at least 2x2 is found starting at `start`, else None.
+    """
+    first = _get_mul_operands(statements[start])
+    if first is None:
+        return None
+    first_left, first_right = first
+    left_key0 = _key(first_left)
+
+    j = start
+    right_factors: list[L.LExpr] = []
+    right_keys = []
+    while j < len(statements):
+        mul = _get_mul_operands(statements[j])
+        if mul is None or _key(mul[0]) != left_key0:
+            break
+        right_factors.append(mul[1])
+        right_keys.append(_key(mul[1]))
+        j += 1
+    n1 = j - start
+    if n1 < 2:
+        return None
+
+    left_factors = [first_left]
+    entry_symbols = [statements[k].symbol for k in range(start, j)]
+    pos = j
+    while pos < len(statements):
+        row = _get_mul_operands(statements[pos])
+        if row is None:
+            break
+        row_left_key = _key(row[0])
+        if row_left_key == left_key0:
+            break
+        row_end = pos + n1
+        if row_end > len(statements):
+            break
+        ok = True
+        for k in range(n1):
+            m = _get_mul_operands(statements[pos + k])
+            if m is None or _key(m[0]) != row_left_key or _key(m[1]) != right_keys[k]:
+                ok = False
+                break
+        if not ok:
+            break
+        left_factors.append(row[0])
+        entry_symbols.extend(statements[pos + k].symbol for k in range(n1))
+        pos = row_end
+
+    n0 = len(left_factors)
+    if n0 < 2:
+        return None
+    return n0, n1, left_factors, right_factors, entry_symbols
+
+
+def _substitute_symbols(expr: L.LNode, remap: dict[str, L.LExpr]):
+    """Rebuild expr, replacing any Symbol whose name is a key of remap.
+
+    Statements later in the same list can already reference (by name) a
+    scalar this pass is about to fold into an array, so removing its
+    declaration alone would leave a dangling reference; this rewrites those
+    uses in place.
+
+    Args:
+        expr: Expression or statement to rebuild.
+        remap: Symbol name -> replacement LExpr.
+
+    Returns:
+        A structurally equivalent node with substitutions applied.
+    """
+    if isinstance(expr, L.Symbol):
+        return remap.get(expr.name, expr)
+    if isinstance(expr, (L.LiteralFloat, L.LiteralInt, L.MultiIndex)):
+        return expr
+    if isinstance(expr, L.ArrayAccess):
+        array = _substitute_symbols(expr.array, remap)
+        indices = [_substitute_symbols(idx, remap) for idx in expr.indices]
+        return L.ArrayAccess(array, indices)
+    if isinstance(expr, L.VariableDecl):
+        return L.VariableDecl(expr.symbol, _substitute_symbols(expr.value, remap))
+    if isinstance(expr, L.AssignOp):
+        return type(expr)(
+            _substitute_symbols(expr.lhs, remap), _substitute_symbols(expr.rhs, remap)
+        )
+    if isinstance(expr, L.BinOp):
+        return type(expr)(
+            _substitute_symbols(expr.lhs, remap), _substitute_symbols(expr.rhs, remap)
+        )
+    if isinstance(expr, L.Conditional):
+        return L.Conditional(
+            _substitute_symbols(expr.condition, remap),
+            _substitute_symbols(expr.true, remap),
+            _substitute_symbols(expr.false, remap),
+        )
+    if isinstance(expr, L.MathFunction):
+        return L.MathFunction(expr.function, [_substitute_symbols(a, remap) for a in expr.args])
+    if isinstance(expr, L.NaryOp):
+        return type(expr)([_substitute_symbols(a, remap) for a in expr.args])
+    if isinstance(expr, L.PrefixUnaryOp):
+        return type(expr)(_substitute_symbols(expr.arg, remap))
+    # Unknown/opaque node (e.g. a table Symbol used directly): nothing to do.
+    return expr
+
+
+def fuse_outer_products(
+    statements: list[L.LNode], name_prefix: str = "outer"
+) -> tuple[list[L.LNode], dict[str, L.LExpr]]:
+    """Replace dense n0 x n1 product runs with two small arrays and one loop.
+
+    A block-coupled bilinear form (e.g. linear elasticity's stress-strain
+    coupling between vector components) typically needs, for every pair of
+    "left" and "right" scalar factors drawn from two small sets, their
+    product as a separate scalar -- n0 * n1 declarations, one per pair. Since
+    each factor is itself already computed once, this is n0 * n1 scalar
+    multiplies where n0 + n1 loads plus one small nested loop would do, and
+    a flat run of n0 * n1 unrelated-looking declarations is exactly the kind
+    of code GCC's vectoriser and scheduler have nothing to work with, versus
+    one tight loop.
+
+    Args:
+        statements: A flat list of statements (piecewise/varying partition,
+            no nested loops expected on input).
+        name_prefix: Prefix for generated array/loop-index symbols, kept
+            distinct per call site so two calls in the same kernel can't
+            clash.
+
+    Returns:
+        (new_statements, remap) where remap maps the name of every scalar
+        symbol whose declaration was replaced to the L.ArrayAccess expression
+        that now holds its value -- callers that track a UFL-expression to
+        LNode-access mapping for these symbols need to redirect it.
+    """
+    new_statements: list[L.LNode] = []
+    remap: dict[str, L.LExpr] = {}
+    i = 0
+    counter = 0
+    while i < len(statements):
+        run = _detect_dense_product_run(statements, i)
+        if run is None:
+            new_statements.append(statements[i])
+            i += 1
+            continue
+
+        n0, n1, left_factors, right_factors, entry_symbols = run
+
+        left_arr = L.Symbol(f"{name_prefix}_l{counter}", L.DataType.SCALAR)
+        right_arr = L.Symbol(f"{name_prefix}_r{counter}", L.DataType.SCALAR)
+        out_arr = L.Symbol(f"{name_prefix}_{counter}", L.DataType.SCALAR)
+        i0 = L.Symbol(f"{name_prefix}_i{counter}", L.DataType.INT)
+        i1 = L.Symbol(f"{name_prefix}_j{counter}", L.DataType.INT)
+        counter += 1
+
+        new_statements.append(L.ArrayDecl(left_arr, n0))
+        for k0, factor in enumerate(left_factors):
+            new_statements.append(L.Assign(L.ArrayAccess(left_arr, [k0]), factor))
+        new_statements.append(L.ArrayDecl(right_arr, n1))
+        for k1, factor in enumerate(right_factors):
+            new_statements.append(L.Assign(L.ArrayAccess(right_arr, [k1]), factor))
+        new_statements.append(L.ArrayDecl(out_arr, (n0, n1)))
+        body = L.Assign(
+            L.ArrayAccess(out_arr, [i0, i1]),
+            L.Mul(L.ArrayAccess(left_arr, [i0]), L.ArrayAccess(right_arr, [i1])),
+        )
+        new_statements.append(L.ForRange(i0, 0, n0, [L.ForRange(i1, 0, n1, [body])]))
+
+        run_remap: dict[str, L.LExpr] = {}
+        for k0 in range(n0):
+            for k1 in range(n1):
+                old_symbol = entry_symbols[k0 * n1 + k1]
+                run_remap[old_symbol.name] = L.ArrayAccess(out_arr, [k0, k1])
+        remap.update(run_remap)
+
+        # Statements after this run may already reference one of the folded
+        # symbols by name (e.g. a later accumulation combining this run's
+        # entries with another quadrature/index-sum contribution); rewrite
+        # those uses in place rather than leaving a dangling reference. A
+        # symbol can only be used after its own declaration in this
+        # topologically-ordered list, so the run's own statements (already
+        # emitted above) never need this.
+        tail_start = i + n0 * n1
+        statements[tail_start:] = [
+            _substitute_symbols(stmt, run_remap) for stmt in statements[tail_start:]
+        ]
+
+        i = tail_start
+
+    return new_statements, remap
+
+
 def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNode]:
     """Optimize code.
 

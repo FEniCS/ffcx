@@ -18,7 +18,7 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
-from ffcx.codegeneration.optimizer import optimize
+from ffcx.codegeneration.optimizer import fuse_outer_products, optimize
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
 from ffcx.ir.representation import IntegralIR
@@ -324,6 +324,7 @@ class IntegralGenerator:
         """Generate a partition."""
         definitions = []
         intermediates = []
+        symbol_to_expr: dict[str, object] = {}
 
         for i, attr in F.nodes.items():
             if attr["status"] != mode:
@@ -359,9 +360,25 @@ class IntegralGenerator:
                     j = len(intermediates)
                     vaccess = L.Symbol(f"{symbol.name}_{j}", dtype=dtype)
                     intermediates.append(L.VariableDecl(vaccess, vexpr))
+                    symbol_to_expr[vaccess.name] = v
 
                 # Store access node for future reference
                 self.set_var(quadrature_rule, domain, v, vaccess)
+
+        # A block-coupled bilinear form (e.g. linear elasticity's
+        # stress-strain coupling between vector components) typically
+        # factorizes into a dense grid of "every left factor times every
+        # right factor" scalar products -- n0*n1 separately declared
+        # scalars where n0+n1 loads and one small loop would do. Detect
+        # and collapse such runs, redirecting the UFL-expression ->
+        # access mapping for every scalar that gets folded into the
+        # resulting array so later consumers (e.g. the quadrature-weight
+        # multiply) read the fused array instead of a now-removed symbol.
+        intermediates, remap = fuse_outer_products(
+            intermediates, name_prefix=f"outer_{symbol.name}"
+        )
+        for old_name, new_access in remap.items():
+            self.set_var(quadrature_rule, domain, symbol_to_expr[old_name], new_access)
 
         # Optimize definitions
         definitions = optimize(definitions, quadrature_rule)
