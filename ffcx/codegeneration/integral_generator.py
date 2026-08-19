@@ -18,7 +18,11 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
-from ffcx.codegeneration.optimizer import optimize
+from ffcx.codegeneration.optimizer import (
+    optimize,
+    power_of_two_cse_statements,
+    reciprocal_cse_statements,
+)
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
 from ffcx.ir.representation import IntegralIR
@@ -365,6 +369,19 @@ class IntegralGenerator:
 
         # Optimize definitions
         definitions = optimize(definitions, quadrature_rule)
+
+        # Fold scalar chains that round-trip through exact powers of two
+        # (e.g. a symmetric gradient's factor of 1/2 undoing an earlier *2)
+        # back into a plain alias of the earlier equal value. Must run before
+        # reciprocal-CSE below, which would otherwise hide the literal
+        # power-of-two divisors this looks for behind a reciprocal symbol.
+        intermediates = power_of_two_cse_statements(intermediates)
+
+        # Collapse repeated divisions by the same divisor (e.g. every entry of
+        # an affine cell's pseudo-inverse Jacobian dividing by the same
+        # determinant) into one reciprocal and a multiply each.
+        intermediates = reciprocal_cse_statements(intermediates, name_prefix=f"recip_{symbol.name}")
+
         return definitions, intermediates
 
     def generate_dofblock_partition(

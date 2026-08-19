@@ -1,9 +1,22 @@
 """Optimizer."""
 
+import math
 from collections import defaultdict
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.ir.representationutils import QuadratureRule
+
+
+def _pow2_exponent(node: L.LExpr) -> int | None:
+    """Return e such that node == 2**e, if node is an exact literal power of two."""
+    if isinstance(node, (L.LiteralFloat, L.LiteralInt)):
+        value = float(node.value)
+        if value <= 0.0:
+            return None
+        mantissa, exponent = math.frexp(value)
+        if mantissa == 0.5:
+            return exponent - 1
+    return None
 
 
 def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNode]:
@@ -21,6 +34,8 @@ def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNo
     code = fuse_sections(code, "Jacobian")
     for i, section in enumerate(code):
         if isinstance(section, L.Section):
+            if section.name == "Jacobian":
+                section = reciprocal_cse(section)
             if L.Annotation.fuse in section.annotations:
                 section = fuse_loops(section)
             if L.Annotation.licm in section.annotations:
@@ -28,6 +43,150 @@ def optimize(code: list[L.LNode], quadrature_rule: QuadratureRule) -> list[L.LNo
             code[i] = section
 
     return code
+
+
+def reciprocal_cse_statements(
+    statements: list[L.LNode], name_prefix: str = "recip"
+) -> list[L.LNode]:
+    """Replace repeated divisions by the same divisor with one reciprocal and multiplies.
+
+    An affine cell's pseudo-inverse Jacobian divides every cofactor by the same
+    determinant. FFCx's existing CSE already recognises the shared divisor but
+    still emits one hardware division per entry; a reciprocal computed once and
+    reused as a multiply is exact for the same divide (same IEEE rounding as any
+    other division) and division is markedly more expensive than multiplication
+    on typical hardware.
+
+    Args:
+        statements: A flat list of statements (no nested loops expected --
+            this targets piecewise/varying scalar partitions, not quadrature
+            loop bodies).
+        name_prefix: Prefix for the generated reciprocal symbols, kept distinct
+            per call site so two calls in the same kernel can't clash.
+
+    Returns:
+        A new statement list with repeated divisions rewritten.
+    """
+    divisor_counts: dict[L.LExpr, int] = defaultdict(int)
+    for stmt in statements:
+        if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Div):
+            divisor_counts[stmt.value.rhs] += 1
+
+    recip_symbols: dict[L.LExpr, L.Symbol] = {}
+    counter = 0
+    new_statements: list[L.LNode] = []
+    for stmt in statements:
+        if (
+            isinstance(stmt, L.VariableDecl)
+            and isinstance(stmt.value, L.Div)
+            and divisor_counts[stmt.value.rhs] >= 2
+        ):
+            divisor = stmt.value.rhs
+            if divisor not in recip_symbols:
+                recip_symbol = L.Symbol(f"{name_prefix}_{counter}", L.DataType.SCALAR)
+                counter += 1
+                recip_symbols[divisor] = recip_symbol
+                new_statements.append(
+                    L.VariableDecl(recip_symbol, L.Div(L.LiteralFloat(1.0), divisor))
+                )
+            recip_symbol = recip_symbols[divisor]
+            new_statements.append(L.VariableDecl(stmt.symbol, L.Mul(stmt.value.lhs, recip_symbol)))
+        else:
+            new_statements.append(stmt)
+
+    return new_statements
+
+
+def reciprocal_cse(section: L.Section) -> L.Section:
+    """Apply :func:`reciprocal_cse_statements` to a Section's statements in place."""
+    section.statements = reciprocal_cse_statements(section.statements)
+    return section
+
+
+def power_of_two_cse_statements(statements: list[L.LNode]) -> list[L.LNode]:
+    """Fold scalar chains that round-trip through exact powers of two.
+
+    UFL's expansion of e.g. a symmetric gradient introduces factors of 2 and
+    1/2 (Voigt-style off-diagonal terms, a doubled derivative combined with a
+    later halving, etc.) that don't originate from the same place and so
+    aren't recognised as equal by ordinary CSE, even though multiplying and
+    dividing by an exact power of two never rounds in IEEE-754: ``(x + x) *
+    0.5`` is bit-identical to ``x`` for any finite, non-subnormal x. This walks
+    a flat statement list tracking, for each declared scalar, the (base
+    symbol, power-of-two exponent) pair its value is exactly equal to, and
+    replaces a statement whose computed value is already known under a
+    different name with a plain reference to that name instead of
+    recomputing it.
+
+    Args:
+        statements: A flat list of statements (piecewise/varying partition,
+            no nested loops).
+
+    Returns:
+        A new statement list with round-trip duplicates folded to aliases.
+    """
+    # symbol name -> (base symbol, exponent) with value == base * 2**exponent
+    canonical: dict[str, tuple[L.Symbol, int]] = {}
+    # (base symbol name, exponent) -> symbol already known to hold that value
+    seen: dict[tuple[str, int], L.Symbol] = {}
+
+    def resolve(node: L.LExpr) -> tuple[L.Symbol, int] | None:
+        """Look up a symbol's tracked (base, exponent), if any."""
+        if isinstance(node, L.Symbol) and node.name in canonical:
+            return canonical[node.name]
+        return None
+
+    new_statements: list[L.LNode] = []
+    for stmt in statements:
+        if not isinstance(stmt, L.VariableDecl):
+            new_statements.append(stmt)
+            continue
+
+        value = stmt.value
+        result: tuple[L.Symbol, int] | None = None
+
+        if isinstance(value, L.Add) and value.lhs == value.rhs:
+            operand = resolve(value.lhs)
+            if operand is not None:
+                base, exponent = operand
+                result = (base, exponent + 1)
+        elif isinstance(value, L.Mul):
+            for factor, other in ((value.lhs, value.rhs), (value.rhs, value.lhs)):
+                exponent_shift = _pow2_exponent(other)
+                operand = resolve(factor)
+                if exponent_shift is not None and operand is not None:
+                    base, exponent = operand
+                    result = (base, exponent + exponent_shift)
+                    break
+        elif isinstance(value, L.Div):
+            exponent_shift = _pow2_exponent(value.rhs)
+            operand = resolve(value.lhs)
+            if exponent_shift is not None and operand is not None:
+                base, exponent = operand
+                result = (base, exponent - exponent_shift)
+
+        if result is not None:
+            base, exponent = result
+            canonical[stmt.symbol.name] = (base, exponent)
+            key = (base.name, exponent)
+            if exponent == 0:
+                # Exactly equal to `base` itself: a pure alias.
+                new_statements.append(L.VariableDecl(stmt.symbol, base))
+                continue
+            elif key in seen:
+                # Exactly equal to some earlier scaled symbol: also an alias.
+                new_statements.append(L.VariableDecl(stmt.symbol, seen[key]))
+                continue
+            else:
+                seen[key] = stmt.symbol
+        else:
+            # Opaque: this symbol is its own base, unrelated to anything earlier.
+            canonical[stmt.symbol.name] = (stmt.symbol, 0)
+            seen.setdefault((stmt.symbol.name, 0), stmt.symbol)
+
+        new_statements.append(stmt)
+
+    return new_statements
 
 
 def fuse_sections(code: list[L.LNode], name: str) -> list[L.LNode]:
