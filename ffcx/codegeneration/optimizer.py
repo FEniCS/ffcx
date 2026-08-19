@@ -141,6 +141,30 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
     return False
 
 
+def _key(expr) -> tuple:
+    """Hashable identity of an expression, used to recognise equal hoisted factors.
+
+    LNodes expressions are not generally hashable, so build a structural key
+    that compares equal exactly when two expressions are the same expression.
+
+    Args:
+        expr: Expression to key.
+
+    Returns:
+        Hashable structural key.
+    """
+    if isinstance(expr, L.ArrayAccess):
+        return ("array", expr.array.name, *(_key(i) for i in expr.indices))
+    elif isinstance(expr, L.Symbol):
+        return ("symbol", expr.name)
+    elif isinstance(expr, L.LiteralFloat | L.LiteralInt):
+        return ("literal", expr.value)
+    args = getattr(expr, "args", None)
+    if args is not None:
+        return (type(expr).__name__, *(_key(a) for a in args))
+    return (type(expr).__name__, repr(expr))
+
+
 def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     """Perform loop invariant code motion.
 
@@ -186,6 +210,12 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     # loop computing all of them per iteration is a much better target.
     hoist_loop_body: list[L.LNode] = []
     size = outer_loop.end.value - outer_loop.begin.value
+    # Structural key of an already-hoisted expression -> its temp symbol. A
+    # vector-valued form with identical, uncoupled per-component blocks
+    # (e.g. vector Poisson's diagonal Laplacian blocks) produces the exact
+    # same hoisted expression for each component; without this it was
+    # recomputed and stored again from scratch for every one of them.
+    seen_hoisted: dict[tuple, L.Symbol] = {}
     for lhs, rhs in expressions.items():
         for r in rhs:
             hoist_candidates = []
@@ -194,21 +224,26 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 if not dependency:
                     hoist_candidates.append(arg)
             if len(hoist_candidates) > 1:
-                # create new temp
-                name = f"temp_{counter}"
-                counter += 1
-                temp = L.Symbol(name, L.DataType.SCALAR)
                 for h in hoist_candidates:
                     r.args.remove(h)
+                hoisted_product = L.Product(hoist_candidates)
+                hoisted_key = _key(hoisted_product)
+                temp = seen_hoisted.get(hoisted_key)
+                if temp is None:
+                    # create new temp
+                    name = f"temp_{counter}"
+                    counter += 1
+                    temp = L.Symbol(name, L.DataType.SCALAR)
+                    # Every entry gets written unconditionally by the loop
+                    # below (a plain Assign, not AssignAdd), so a zero-fill
+                    # here is dead.
+                    pre_loop.append(L.ArrayDecl(temp, size))
+                    hoist_loop_body.append(
+                        L.Assign(L.ArrayAccess(temp, [outer_loop.index]), hoisted_product)
+                    )
+                    seen_hoisted[hoisted_key] = temp
                 # update expression with new temp
                 r.args.append(L.ArrayAccess(temp, [outer_loop.index]))
-                # create code for hoisted term
-                # Every entry gets written unconditionally by the loop below
-                # (a plain Assign, not AssignAdd), so a zero-fill here is dead.
-                pre_loop.append(L.ArrayDecl(temp, size))
-                hoist_loop_body.append(
-                    L.Assign(L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates))
-                )
 
     if hoist_loop_body:
         pre_loop.append(
