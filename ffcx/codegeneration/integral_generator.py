@@ -773,8 +773,15 @@ class IntegralGenerator:
                 body.append(L.AssignAdd(A[multi_index], expression))
 
         # Nest with the last tensor index innermost, so the contiguous index of
-        # the element tensor varies fastest in the accumulation.
-        body = [L.create_nested_for_loops(B_indices, body)]
+        # the element tensor varies fastest in the accumulation. Empirically,
+        # this is what GCC's vectoriser wants whenever an entry sums more than
+        # one term (e.g. one per spatial direction in a gradient-gradient
+        # form) -- but for a single-term entry (e.g. a plain mass matrix) the
+        # same order defeats it instead, so keep the old row-innermost order
+        # for that case (see PR #865 for the measurements behind this).
+        multi_term = any(len(v) > 1 for v in keep.values())
+        nest_indices = B_indices if multi_term else B_indices[::-1]
+        body = [L.create_nested_for_loops(nest_indices, body)]
         input = [*vars, *tables]
         output = [A]
 
