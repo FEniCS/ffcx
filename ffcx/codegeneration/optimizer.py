@@ -429,13 +429,13 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
 
 
 def _key(expr) -> tuple:
-    """Hashable identity of an expression, used to group equal factors.
+    """Hashable identity of an expression, used to recognise equal factors.
 
     LNodes expressions are not generally hashable, so build a structural key
-    that compares equal exactly when two factors are the same expression.
+    that compares equal exactly when two expressions are the same expression.
 
     Args:
-        expr: Expression appearing as a factor in a product.
+        expr: Expression to key.
 
     Returns:
         Hashable structural key.
@@ -491,6 +491,19 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     pre_loop: list[L.LNode] = []
     inner_body: list[L.LNode] = []
     size = outer_loop.end.value - outer_loop.begin.value
+    # Assignments for every hoisted temp are collected here and emitted as
+    # one shared loop below, rather than one separate same-range ForRange
+    # per temp: a form with many block entries (e.g. a vector/tensor
+    # equation) can hoist dozens of temps, and dozens of tiny loops back to
+    # back give the compiler's vectoriser nothing to work with, where one
+    # loop computing all of them per iteration is a much better target.
+    hoist_loop_body: list[L.LNode] = []
+    # Structural key of an already-hoisted expression -> its temp symbol. A
+    # vector-valued form with identical, uncoupled per-component blocks
+    # (e.g. vector Poisson's diagonal Laplacian blocks) produces the exact
+    # same hoisted expression for each component; without this it was
+    # recomputed and stored again from scratch for every one of them.
+    seen_hoisted: dict[tuple, L.Symbol] = {}
     for lhs, rhs in expressions.items():
         # Group the terms of this entry by the factors that stay in the inner
         # loop. Terms sharing them differ only in what is hoisted, so one
@@ -513,20 +526,33 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 terms.append(r)
 
         for keep, hoisted in groups.values():
-            # Create new temp holding the sum of the hoisted terms
-            name = f"temp_{counter}"
-            counter += 1
-            temp = L.Symbol(name, L.DataType.SCALAR)
-            pre_loop.append(L.ArrayDecl(temp, size, [0]))
             rhs_hoisted = hoisted[0] if len(hoisted) == 1 else L.Sum(hoisted)
-            body = L.Assign(L.ArrayAccess(temp, [outer_loop.index]), rhs_hoisted)
-            pre_loop.append(L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body]))
+            hoisted_key = _key(rhs_hoisted)
+            temp = seen_hoisted.get(hoisted_key)
+            if temp is None:
+                # Create new temp holding the sum of the hoisted terms
+                name = f"temp_{counter}"
+                counter += 1
+                temp = L.Symbol(name, L.DataType.SCALAR)
+                # Every entry gets written unconditionally by the loop just
+                # below (a plain Assign, not AssignAdd), so a zero-fill here
+                # is dead.
+                pre_loop.append(L.ArrayDecl(temp, size))
+                hoist_loop_body.append(
+                    L.Assign(L.ArrayAccess(temp, [outer_loop.index]), rhs_hoisted)
+                )
+                seen_hoisted[hoisted_key] = temp
             access = L.ArrayAccess(temp, [outer_loop.index])
             terms.append(L.Product([*keep, access]))
 
         # One read-modify-write of the entry instead of one per term
         if terms:
             inner_body.append(L.AssignAdd(lhs, terms[0] if len(terms) == 1 else L.Sum(terms)))
+
+    if hoist_loop_body:
+        pre_loop.append(
+            L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, hoist_loop_body)
+        )
 
     # Rebuild the loop nest around the regrouped body
     new_inner = L.ForRange(inner_loop.index, inner_loop.begin, inner_loop.end, inner_body)

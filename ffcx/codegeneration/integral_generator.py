@@ -19,6 +19,7 @@ import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import (
+    _key,
     optimize,
     power_of_two_cse_statements,
     prune_dead_scalars,
@@ -101,6 +102,15 @@ class IntegralGenerator:
 
         # Cache
         self.temp_symbols: dict[Any, L.Symbol] = {}
+
+        # Piecewise (once-per-cell) symbol name -> (lhs, rhs) of its
+        # defining product, when it's a plain two-factor multiply. Lets
+        # generate_block_parts recognise several piecewise values that all
+        # share one multiplicative factor (e.g. several independent metric
+        # tensor entries all scaled by the same |det J|) and fuse that
+        # shared factor with the quadrature weight once, instead of paying
+        # for it again in every entry.
+        self._piecewise_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
 
         # Set of counters used for assigning names to intermediate
         # variables
@@ -484,6 +494,18 @@ class IntegralGenerator:
         # determinant) into one reciprocal and a multiply each.
         intermediates = reciprocal_cse_statements(intermediates, name_prefix=f"recip_{symbol.name}")
 
+        # Record each piecewise (once-per-cell) scalar that's a plain
+        # two-factor product, so generate_block_parts can recognise several
+        # block entries that share one multiplicative factor (e.g. several
+        # metric-tensor entries all scaled by the same |det J|) and fuse
+        # that shared factor with the quadrature weight once. Read after the
+        # CSE passes above so a division rewritten into a reciprocal
+        # multiply by reciprocal-CSE is also seen as a fusable product.
+        if mode == "piecewise":
+            for stmt in intermediates:
+                if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
+                    self._piecewise_mul_operands[stmt.symbol.name] = (stmt.value.lhs, stmt.value.rhs)
+
         return definitions, intermediates
 
     def generate_dofblock_partition(
@@ -592,6 +614,51 @@ class IntegralGenerator:
 
         A_shape = self.ir.expression.tensor_shape
 
+        # Detect a set of block entries whose piecewise (once-per-cell)
+        # values all share one common multiplicative factor -- e.g. several
+        # independent metric-tensor entries all scaled by the same |det J|.
+        # Multiplying that shared factor into the quadrature weight once and
+        # then multiplying each entry's other factor by the combined result
+        # does less work than multiplying the weight into each already-
+        # scaled entry separately, whenever there are more sharing entries
+        # than quadrature points -- the crossover where a rule has few
+        # enough points that the per-entry weight multiplies dominate. This
+        # is a genuine re-association, not a rewrite GCC could ever perform
+        # itself without -ffast-math, since it changes rounding.
+        fused_factor: dict[int, tuple[L.LExpr, L.LExpr]] = {}
+        if (
+            quadrature_rule is not None
+            and self.ir.expression.integral_type not in ufl.custom_integral_types
+            and len(blocklist) > quadrature_rule.weights.size
+        ):
+            F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
+            factor_indices = []
+            decomps = []
+            for blockdata in blocklist:
+                if len(blockdata.factor_indices_comp_indices) > 1:
+                    decomps = []
+                    break
+                factor_index = blockdata.factor_indices_comp_indices[0][0]
+                v = F.nodes[factor_index]["expression"]
+                f = self.get_var(quadrature_rule, domain, v)
+                decomp = self._piecewise_mul_operands.get(f.name) if isinstance(f, L.Symbol) else None
+                if decomp is None:
+                    decomps = []
+                    break
+                factor_indices.append(factor_index)
+                decomps.append(decomp)
+
+            if decomps:
+                rhs_keys = {_key(d[1]) for d in decomps}
+                lhs_keys = {_key(d[0]) for d in decomps}
+                shared, bases = None, None
+                if len(rhs_keys) == 1:
+                    shared, bases = decomps[0][1], [d[0] for d in decomps]
+                elif len(lhs_keys) == 1:
+                    shared, bases = decomps[0][0], [d[1] for d in decomps]
+                if shared is not None:
+                    fused_factor = dict(zip(factor_indices, zip(bases, [shared] * len(bases))))
+
         for blockdata in blocklist:
             B_indices = []
             for i in range(block_rank):
@@ -629,6 +696,14 @@ class IntegralGenerator:
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
                 weight = weights[iq.global_index]
+
+            if factor_index in fused_factor:
+                base, shared = fused_factor[factor_index]
+                scale_key = (quadrature_rule, _key(shared))
+                combined, defined = self.get_temp_symbol("fwscale", scale_key)
+                if not defined:
+                    intermediates += [L.VariableDecl(combined, L.float_product([shared, weight]))]
+                f, weight = base, combined
 
             # Define fw = f * weight
             fw_rhs = L.float_product([f, weight])

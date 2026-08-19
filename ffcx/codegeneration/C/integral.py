@@ -6,6 +6,7 @@
 """Generate UFCx code for an integral."""
 
 import logging
+import re
 import sys
 
 import basix
@@ -20,6 +21,37 @@ from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.ir.representation import IntegralIR
 
 logger = logging.getLogger("ffcx")
+
+_SCALAR_DECL_RE = re.compile(r"^[\w ]+?\s+(?P<name>[A-Za-z_]\w*)\s*=\s*.*;$")
+_IDENTIFIER_RE = re.compile(r"[A-Za-z_]\w*")
+
+
+def _eliminate_dead_scalar_decls(body: str) -> str:
+    """Drop scalar declarations (``T name = expr;``) whose value is never read.
+
+    A rewrite that reassociates which factors get multiplied together (e.g.
+    hoisting a factor shared by several quadrature-weight-scaled block
+    entries so it's only combined with the weight once instead of once per
+    entry) can leave the original, no-longer-referenced scalar temporary
+    behind. `VariableDecl` is always side-effect-free here, so removing a
+    genuinely unread one is always safe; doing it once, textually, after
+    formatting is simpler and more robust than tracking liveness through
+    every LNode-level rewrite that might create one -- and it also cleans up
+    any other dead scalar this pipeline already produced.
+    """
+    lines = body.split("\n")
+    used: set[str] = set()
+    keep = [True] * len(lines)
+    for i in range(len(lines) - 1, -1, -1):
+        line = lines[i]
+        stripped = line.strip()
+        m = _SCALAR_DECL_RE.match(stripped)
+        if m and "[" not in stripped.split("=", 1)[0]:
+            if m.group("name") not in used:
+                keep[i] = False
+                continue
+        used.update(_IDENTIFIER_RE.findall(line))
+    return "\n".join(line for i, line in enumerate(lines) if keep[i])
 
 
 def generator(
@@ -57,6 +89,7 @@ def generator(
     # Format code as string
     format = Formatter(options["scalar_type"])  # type: ignore
     body = format(parts)
+    body = _eliminate_dead_scalar_decls(body)
 
     # Generate generic FFCx code snippets and add specific parts
     code = {}
