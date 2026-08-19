@@ -178,6 +178,14 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
             expressions[lhs].append(rhs)
 
     pre_loop: list[L.LNode] = []
+    # Assignments for every hoisted temp are collected here and emitted as
+    # one shared loop below, rather than one separate same-range ForRange
+    # per temp: a form with many block entries (e.g. a vector/tensor
+    # equation) can hoist dozens of temps, and dozens of tiny loops back to
+    # back give the compiler's vectoriser nothing to work with, where one
+    # loop computing all of them per iteration is a much better target.
+    hoist_loop_body: list[L.LNode] = []
+    size = outer_loop.end.value - outer_loop.begin.value
     for lhs, rhs in expressions.items():
         for r in rhs:
             hoist_candidates = []
@@ -195,14 +203,17 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 # update expression with new temp
                 r.args.append(L.ArrayAccess(temp, [outer_loop.index]))
                 # create code for hoisted term
-                size = outer_loop.end.value - outer_loop.begin.value
-                pre_loop.append(L.ArrayDecl(temp, size, [0]))
-                body = L.Assign(
-                    L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates)
+                # Every entry gets written unconditionally by the loop below
+                # (a plain Assign, not AssignAdd), so a zero-fill here is dead.
+                pre_loop.append(L.ArrayDecl(temp, size))
+                hoist_loop_body.append(
+                    L.Assign(L.ArrayAccess(temp, [outer_loop.index]), L.Product(hoist_candidates))
                 )
-                pre_loop.append(
-                    L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, [body])
-                )
+
+    if hoist_loop_body:
+        pre_loop.append(
+            L.ForRange(outer_loop.index, outer_loop.begin, outer_loop.end, hoist_loop_body)
+        )
 
     section.statements = pre_loop + section.statements
 
