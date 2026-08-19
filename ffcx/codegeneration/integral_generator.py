@@ -504,7 +504,10 @@ class IntegralGenerator:
         if mode == "piecewise":
             for stmt in intermediates:
                 if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
-                    self._piecewise_mul_operands[stmt.symbol.name] = (stmt.value.lhs, stmt.value.rhs)
+                    self._piecewise_mul_operands[stmt.symbol.name] = (
+                        stmt.value.lhs,
+                        stmt.value.rhs,
+                    )
 
         return definitions, intermediates
 
@@ -641,7 +644,9 @@ class IntegralGenerator:
                 factor_index = blockdata.factor_indices_comp_indices[0][0]
                 v = F.nodes[factor_index]["expression"]
                 f = self.get_var(quadrature_rule, domain, v)
-                decomp = self._piecewise_mul_operands.get(f.name) if isinstance(f, L.Symbol) else None
+                decomp = (
+                    self._piecewise_mul_operands.get(f.name) if isinstance(f, L.Symbol) else None
+                )
                 if decomp is None:
                     decomps = []
                     break
