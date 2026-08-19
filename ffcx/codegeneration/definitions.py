@@ -186,6 +186,7 @@ class FFCXBackendDefinitions:
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+        assert begin is not None
 
         assert num_scalar_dofs == num_dofs
 
@@ -231,19 +232,19 @@ class FFCXBackendDefinitions:
             # values fold away as plain constant propagation, same as
             # unrolled code would.
             terms = []
-            tables: list[L.Symbol] = []
+            coord_tables: list[L.Symbol] = []
             for k in range(num_dofs):
                 ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
                 FE_k, tables_k = self.access.table_access(
                     tabledata, self.entity_type, mt.restriction, iq, ic_k
                 )
                 for t in tables_k:
-                    if t not in tables:
-                        tables.append(t)
+                    if t not in coord_tables:
+                        coord_tables.append(t)
                 terms.append(dof_access[k * dim + begin + offset] * FE_k)
             declaration = [L.VariableDecl(access, L.Sum(terms))]
             code = []
-            input = [dof_access, *tables]
+            input = [dof_access, *coord_tables]
 
         name = type(mt.terminal).__name__
         output = [access]

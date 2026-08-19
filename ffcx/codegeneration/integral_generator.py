@@ -636,7 +636,7 @@ class IntegralGenerator:
         ):
             F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
             factor_indices = []
-            decomps = []
+            decomps: list[tuple[L.LExpr, L.LExpr]] = []
             for blockdata in blocklist:
                 if len(blockdata.factor_indices_comp_indices) > 1:
                     decomps = []
@@ -661,7 +661,7 @@ class IntegralGenerator:
                     shared, bases = decomps[0][1], [d[0] for d in decomps]
                 elif len(lhs_keys) == 1:
                     shared, bases = decomps[0][0], [d[1] for d in decomps]
-                if shared is not None:
+                if shared is not None and bases is not None:
                     fused_factor = dict(zip(factor_indices, zip(bases, [shared] * len(bases))))
 
         for blockdata in blocklist:
