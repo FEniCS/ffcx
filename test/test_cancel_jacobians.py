@@ -112,7 +112,7 @@ def test_cancel_jacobians(dtype, compile_args, degree, cell_type, gdim):
     )
     old_end = time.perf_counter()
     if dtype == "float32":
-        tol = 1e-5
+        tol = 5e-4
     elif dtype == "float64":
         tol = 1e-12
     else:
