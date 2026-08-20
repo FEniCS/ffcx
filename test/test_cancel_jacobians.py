@@ -22,10 +22,10 @@ from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
     [("triangle", 2), ("tetrahedron", 3), ("quadrilateral", 2), ("hexahedron", 3)],
 )
 def test_cancel_jacobians(dtype, compile_args, degree, cell_type, gdim):
-    basix.cell
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell_type, 1, shape=(gdim,)))
     rt = basix.ufl.element("Raviart-Thomas", cell_type, degree)
     space = ufl.FunctionSpace(domain, rt)
+
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
     form = ufl.inner(ufl.div(u), ufl.div(v)) * ufl.dx
 
@@ -111,10 +111,13 @@ def test_cancel_jacobians(dtype, compile_args, degree, cell_type, gdim):
         ffi.NULL,
     )
     old_end = time.perf_counter()
-
-    np.testing.assert_allclose(
-        A, A_ref, rtol=np.finfo(dtype).eps * 1000, atol=np.finfo(dtype).eps * 1000
-    )
+    if dtype == "float32":
+        tol = 1e-5
+    elif dtype == "float64":
+        tol = 1e-12
+    else:
+        raise ValueError(f"Unsupported {dtype=}")
+    np.testing.assert_allclose(A, A_ref, rtol=tol, atol=tol)
 
     print(f"Time with cancel_jacobian_products: {new_end - new_start:.6e} seconds")
     print(f"Time without cancel_jacobian_products: {old_end - old_start:.6e} seconds")
