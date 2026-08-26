@@ -299,14 +299,11 @@ def test_facet_expression(compile_args):
     consts = np.array([], dtype=dtype)
     entity_index = np.array([0], dtype=np.intc)
     quad_perm = np.array([0], dtype=np.dtype("uint8"))
-    tangents = np.array([coords[1] - coords[2], coords[2] - coords[0], coords[0] - coords[1]])
-    midpoints = np.array(
-        [
-            coords[1] + (coords[2] - coords[1]) / 2,
-            coords[0] + (coords[2] - coords[0]) / 2,
-            coords[1] + (coords[1] - coords[0]) / 2,
-        ]
-    )
+
+    edges = basix.topology(basix.CellType.triangle)[1]
+    tangents = np.array([coords[j] - coords[i] for i, j in edges])
+    midpoints = np.array([(coords[i] + coords[j]) / 2 for i, j in edges])
+
     for i, (tangent, midpoint) in enumerate(zip(tangents, midpoints)):
         # normalize tangent
         tangent /= np.linalg.norm(tangent)
@@ -329,7 +326,7 @@ def test_facet_expression(compile_args):
         assert np.isclose(np.linalg.norm(output), 1)
 
         # Check that facet normal is pointing out of the cell
-        assert np.dot(midpoint - coords[i], output) > 0
+        assert max(np.dot(midpoint - c, output) for c in coords) > 0
 
 
 def test_facet_geometry_expressions(compile_args):
@@ -518,11 +515,12 @@ def test_mixed_mesh_expression(compile_args):
 
     # Define exact normals
     face_normal = np.array([0.0, 0.0, 1.0])
-    e0 = coords[2] - coords[1]
-    e1 = coords[0] - coords[2]
-    e2 = coords[1] - coords[0]
-    edges = np.array([e0, e1, e2])
+    topology = basix.cell.topology(basix.CellType.triangle)
+    edges = np.array([coords[j] - coords[i] for i, j in topology[1]])
     edge_normals = np.cross(edges, face_normal)[:, :2]
+    for i, orient in enumerate(basix.cell.facet_orientations(basix.CellType.triangle)):
+        if orient == 1:
+            edge_normals[i] *= -1
     norms = np.linalg.norm(edge_normals, axis=1, keepdims=True)
     edge_normals_normalized = edge_normals / norms
 
@@ -554,7 +552,6 @@ def test_mixed_mesh_expression(compile_args):
 @pytest.mark.parametrize("facet_perm", [0, 1], ids=["no_perm", "perm"])
 @pytest.mark.parametrize("local_index", [0, 1, 2], ids=["facet0", "facet1", "facet2"])
 def test_expression_facet_perm(compile_args, facet_perm, local_index):
-
     c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
     mesh = ufl.Mesh(c_el)
     expr = ufl.SpatialCoordinate(mesh)
@@ -586,10 +583,10 @@ def test_expression_facet_perm(compile_args, facet_perm, local_index):
     entity_index = np.array([local_index], dtype=np.intc)
 
     # Perm 0, means that global facet is ordered as
-    # 1----2
+    # 0----1
     # and quadrature point is not reflected
     # Perm 1, means that global facet is ordered as
-    # 2----1
+    # 1----0
     # and quadrature point should be reflected
     quad_perm = np.array([facet_perm], dtype=np.uint8)
 
@@ -606,8 +603,10 @@ def test_expression_facet_perm(compile_args, facet_perm, local_index):
         ffi.NULL,
     )
 
+    edges = basix.topology(basix.CellType.triangle)[1]
+
     ordered_points = points * (facet_perm == 0) + (1 - points) * (facet_perm == 1)
-    facet = np.delete(coords, local_index, axis=0)[:, :2]
+    facet = [coords[i][:2] for i in edges[local_index]]
     edge = facet[1] - facet[0]
     exact_value = facet[0] + ordered_points * edge
-    np.testing.assert_allclose(output, exact_value)
+    np.testing.assert_allclose(output, exact_value, 1e-10)

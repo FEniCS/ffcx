@@ -618,7 +618,7 @@ def lagrange_triangle_symbolic(order, corners=((1, 0), (2, 0), (0, 1)), fun=lamb
     # vertices
     eval_points = [S(c) for c in corners]
     # edges
-    for e in [(1, 2), (0, 2), (0, 1)]:
+    for e in basix.topology(basix.CellType.triangle)[1]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
         if order > 3:
@@ -722,7 +722,7 @@ def lagrange_tetrahedron_symbolic(
     # vertices
     eval_points = [S(c) for c in corners]
     # edges
-    for e in [(2, 3), (1, 3), (1, 2), (0, 3), (0, 2), (0, 1)]:
+    for e in basix.topology(basix.CellType.tetrahedron)[1]:
         p0 = corners[e[0]]
         p1 = corners[e[1]]
         if order > 3:
@@ -738,7 +738,7 @@ def lagrange_tetrahedron_symbolic(
                 for i in range(1, order)
             ]
     # face
-    for f in [(1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2)]:
+    for f in basix.topology(basix.CellType.tetrahedron)[2]:
         p0 = corners[f[0]]
         p1 = corners[f[1]]
         p2 = corners[f[2]]
@@ -1181,6 +1181,10 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     form where the test function and g are codim 0 but have the same trace on the facet.
     """
 
+    (facet_index,) = [
+        i for i, v in enumerate(basix.topology(basix.CellType.triangle)[1]) if v == [1, 2]
+    ]
+
     def tabulate_tensor(ele_type, V_cell_type, W_cell_type, coeffs):
         "Helper function to create a form and compute the local element tensor"
         V_ele = basix.ufl.element(ele_type, V_cell_type, 2)
@@ -1213,7 +1217,7 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
         A = np.zeros((W_ele.dim, V_ele.dim), dtype=dtype)
         w = np.array(coeffs, dtype=dtype)
         c = np.array([], dtype=dtype)
-        facet = np.array([0], dtype=np.intc)
+        facet = np.array([facet_index], dtype=np.intc)
         perm = np.array(permutation, dtype=np.uint8)
 
         xdtype = dtype_to_scalar_dtype(dtype)
@@ -1262,32 +1266,33 @@ def test_mixed_dim_form(compile_args, dtype, permutation):
     A_ref = A_ref[1:][:]
 
     # The orientation of the interval is assumed to be fixed (since it is given uniquely
-    # by its global orientation in the mesh). Let us focus on local facet 0. It can have
-    # two possible orientations depending on the cell topology:
+    # by its global orientation in the mesh). Let us focus on the local facet between vertices
+    # 1 and 2. It can have two possible orientations depending on the cell topology:
     #
     # 2   1          1   1
     # | \  \         | \  \
     # |  \  \   or   |  \  \
     # 0---1  0       0---2  0
     #
-    # In the second case, local facet 0 is flipped relative to the interval. If we look at
+    # In the second case, the local facet is flipped relative to the interval. If we look at
     # the degrees of freedom second-order Lagrange on the triangle and first-order Lagrange
     # on the interval, we have
     #
     # 2    1           1    1
     # | \   \          | \   \
-    # 4  3   \         5  3   \
+    # B  C   \         A  C   \
     # |    \  \    or  |    \  \
-    # 0--5--1  0       0--4--2  0
+    # 0--A--1  0       0--B--2  0
     #
     # Since the trial function is defined on the triangle, the second case (where the
-    # permutation is 1) is thus the same as swapping cols 1 and 2 and cols 4 and 5 of the
+    # permutation is 1) is thus the same as swapping cols 1 and 2 and cols A and B of the
     # first case result.
     # NOTE: Although we choose to fix the orientation of the interval, the same result
     # can be obtained by fixing the triangle and considering flipping the interval.
     if permutation[0] == 1:
         A_ref[:, [1, 2]] = A_ref[:, [2, 1]]
-        A_ref[:, [4, 5]] = A_ref[:, [5, 4]]
+        edge_dofs = [3 + i for i in range(3) if i != facet_index]
+        A_ref[:, edge_dofs] = A_ref[:, edge_dofs[::-1]]
 
     assert np.allclose(A, A_ref)
 
@@ -1661,7 +1666,7 @@ def test_mixed_dim_form_codim2(compile_args, dtype, permutation, local_entity_in
     A_ref = tabulate_tensor(ele_type, V_cell_type, V_cell_type, coeff_data, local_entity_index)
 
     # Map from local edge index to (local) DOF indices on that edge
-    local_index_to_slice = {0: [2, 3], 1: [1, 3], 2: [1, 2], 3: [0, 3], 4: [0, 2], 5: [0, 1]}
+    local_index_to_slice = basix.ufl.element(ele_type, V_cell_type, 1).entity_closure_dofs[1]
 
     A_ref = A_ref[local_index_to_slice[local_entity_index]]
 
@@ -1833,7 +1838,10 @@ def test_ridge_integral(compile_args, dtype, permutation):
     V_cell_type = "tetrahedron"
 
     # Tabulate the tensor for the mixed-dimensional form
-    b = tabulate_tensor(ele_type, V_cell_type, 0)
+    (ridge_index,) = [
+        i for i, v in enumerate(basix.topology(basix.CellType.tetrahedron)[1]) if v == [2, 3]
+    ]
+    b = tabulate_tensor(ele_type, V_cell_type, ridge_index)
 
     # Ref first ridge integral length
     rl = np.sqrt(y_ext**2 + z_ext**2) / y_ext
