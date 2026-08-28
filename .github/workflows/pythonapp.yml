@@ -6,8 +6,7 @@ name: FFCx CI
 
 on:
   push:
-    branches:
-      - "**"
+    branches: [main]
     tags:
       - "v*"
   pull_request:
@@ -83,7 +82,14 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           pip install git+https://github.com/${{ env.ufl_repository }}.git@${{ env.ufl_ref }}
-          pip install -v git+https://github.com/${{ env.basix_repository }}.git@${{ env.basix_ref }} --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+          $maxAttempts = 3
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+            pip install -v git+https://github.com/${{ env.basix_repository }}.git@${{ env.basix_ref }} --config-settings=cmake.args=-DINSTALL_RUNTIME_DEPENDENCIES=ON --config-settings=cmake.args=-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($i -eq $maxAttempts) { exit $LASTEXITCODE }
+            Write-Host "basix build failed (attempt $i/$maxAttempts), likely a transient Windows file-lock error during wheel build cleanup. Retrying..."
+            Start-Sleep -Seconds 10
+          }
 
       - name: Install FFCx (Linux, with optional dependencies)
         if: runner.os == 'Linux'
