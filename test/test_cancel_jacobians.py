@@ -1,3 +1,5 @@
+import sys
+
 import basix.ufl
 import numpy as np
 import pytest
@@ -119,7 +121,27 @@ def test_cancel_jacobians(dtype, compile_args, degree, cell_type, gdim):
     _assert_tensors_equal(A, A_ref, dtype)
 
 
-@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        pytest.param(
+            "complex64",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
 def test_cancel_jacobians_complex(dtype, compile_args):
     """Test cancellation for complex-valued RT div-div kernels."""
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
@@ -134,7 +156,20 @@ def test_cancel_jacobians_complex(dtype, compile_args):
     _assert_tensors_equal(A, A_ref, dtype)
 
 
-@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
 def test_cancel_both_jacobian_product_orders(dtype, compile_args):
     """Test both J @ inv(J) and inv(J) @ J contractions."""
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
