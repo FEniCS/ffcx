@@ -28,8 +28,19 @@ _REFERENCE_VERTICES = {
 
 
 def _reference_coords(cellname: str) -> np.ndarray:
-    """Flattened vertex coordinates of the reference cell (P1 geometry)."""
-    return np.array(_REFERENCE_VERTICES[cellname], dtype=np.float64).flatten()
+    """Flattened vertex coordinates of the reference cell (P1 geometry).
+
+    coordinate_dofs is always stored 3D (z=0 padding for a 2D cell),
+    regardless of the mesh's actual geometric dimension -- this doesn't
+    affect timing (an out-of-bounds-but-unread coordinate costs nothing),
+    but does mean a case's kernel doesn't compute a *meaningful* tensor
+    unless padded correctly, so pad here anyway for anyone tempted to
+    inspect values (e.g. while debugging a case) rather than just timing.
+    """
+    vertices = np.array(_REFERENCE_VERTICES[cellname], dtype=np.float64)
+    padded = np.zeros((vertices.shape[0], 3), dtype=np.float64)
+    padded[:, : vertices.shape[1]] = vertices
+    return padded.flatten()
 
 
 class BenchCase:
