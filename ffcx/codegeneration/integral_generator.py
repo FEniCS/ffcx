@@ -345,7 +345,14 @@ class IntegralGenerator:
         for fw in intermediates_fw:
             assert isinstance(fw, L.VariableDecl)
             output += [fw.symbol]
-            declarations += [L.VariableDecl(fw.symbol, 0)]
+            # Declared here with no initial value: it's unconditionally
+            # assigned its real value below once that's computed, so a
+            # placeholder initialiser here would be a pure dead store. The
+            # declaration itself still has to live here (rather than fold
+            # into the assignment below) because that assignment sits
+            # inside this section's own C block scope, while fw needs to
+            # stay visible to the "Tensor Computation" section that follows.
+            declarations += [L.VariableDecl(fw.symbol)]
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
 
@@ -378,6 +385,15 @@ class IntegralGenerator:
         contracting in a second loop leaves the evaluation loop free of
         those accesses, so it vectorises onto the SIMD math library.
 
+        The `fw` cache is tiled rather than sized to the full point count:
+        a form with many `fw` values and a large rule (e.g. a nonlinear
+        constitutive law at a high estimated quadrature degree) can
+        otherwise put megabytes on the stack -- one array per `fw`, each
+        the length of the rule. Tiling bounds every kernel's stack use to a
+        fixed small budget regardless of point count, and as a side effect
+        keeps the whole cache resident in L1d across both passes over a
+        tile instead of spilling to memory.
+
         Returns `None` if the split does not apply, in which case the
         caller emits a single fused loop.
         """
@@ -405,19 +421,67 @@ class IntegralGenerator:
         num_points = quadrature_rule.weights.size
         index = iq.local_index(0)
 
-        declarations: list[L.LNode] = []
-        store: list[L.LNode] = []
-        load: list[L.LNode] = []
-        for fw in intermediates_fw:
-            cache = L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
-            declarations += [L.ArrayDecl(cache, sizes=num_points)]
-            store += [L.Assign(L.ArrayAccess(cache, [index]), fw.symbol)]
-            load += [L.VariableDecl(fw.symbol, L.ArrayAccess(cache, [index]))]
+        # Budget the whole fw cache (every fw's tile, for both passes over
+        # it) at 32 KiB, comfortably inside a typical 32-48 KiB L1d, using a
+        # conservative 16 bytes/scalar (covers complex128; overestimating
+        # the element size only makes the tile smaller than strictly
+        # necessary for float64, never unsafe). Rounded down to a multiple
+        # of 8 so the tile is still a friendly SIMD width.
+        n_fw = len(intermediates_fw)
+        tile = max(8, (32768 // (n_fw * 16)) // 8 * 8)
+        tile = min(tile, num_points)
 
-        return declarations + [
-            L.create_nested_for_loops([iq], evaluation + store),
-            L.create_nested_for_loops([iq], load + contraction),
+        caches = {
+            fw.symbol.name: L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
+            for fw in intermediates_fw
+        }
+        declarations: list[L.LNode] = [L.ArrayDecl(cache, sizes=tile) for cache in caches.values()]
+
+        if tile >= num_points:
+            # Whole rule fits in one tile: no need for an outer tiling loop.
+            store = [
+                L.Assign(L.ArrayAccess(caches[fw.symbol.name], [index]), fw.symbol)
+                for fw in intermediates_fw
+            ]
+            load = [
+                L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [index]))
+                for fw in intermediates_fw
+            ]
+            return declarations + [
+                L.create_nested_for_loops([iq], evaluation + store),
+                L.create_nested_for_loops([iq], load + contraction),
+            ]
+
+        num_tiles = -(-num_points // tile)  # ceil division
+        tile_index = L.Symbol(f"{index.name}_tile", L.DataType.INT)
+        tile_base = L.Symbol(f"{index.name}_base", L.DataType.INT)
+        tile_end = L.Symbol(f"{index.name}_end", L.DataType.INT)
+        local_offset = L.Sub(index, tile_base)
+
+        tile_end_expr = L.Conditional(
+            L.LT(L.Add(tile_base, L.LiteralInt(tile)), L.LiteralInt(num_points)),
+            L.Add(tile_base, L.LiteralInt(tile)),
+            L.LiteralInt(num_points),
+        )
+        setup: list[L.LNode] = [
+            L.VariableDecl(tile_base, L.Mul(tile_index, L.LiteralInt(tile))),
+            L.VariableDecl(tile_end, tile_end_expr),
         ]
+
+        store = [
+            L.Assign(L.ArrayAccess(caches[fw.symbol.name], [local_offset]), fw.symbol)
+            for fw in intermediates_fw
+        ]
+        load = [
+            L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [local_offset]))
+            for fw in intermediates_fw
+        ]
+
+        tile_body = setup + [
+            L.ForRange(index, tile_base, tile_end, evaluation + store),
+            L.ForRange(index, tile_base, tile_end, load + contraction),
+        ]
+        return declarations + [L.ForRange(tile_index, 0, num_tiles, tile_body)]
 
     def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
