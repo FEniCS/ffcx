@@ -21,6 +21,7 @@ The frozen data was generated once with the unmodified compiler; see
 """
 
 import importlib.util
+import sys
 import types
 from pathlib import Path
 
@@ -49,8 +50,19 @@ def _load_hyperelasticity_demo() -> types.ModuleType:
     [
         ("float32", np.float32, np.float32, "float", "float", 2e-5, 2e-6),
         ("float64", np.float64, np.float64, "double", "double", 1e-12, 1e-14),
-        ("complex64", np.complex64, np.float32, "float _Complex", "float", 2e-5, 2e-6),
-        (
+        pytest.param(
+            "complex64",
+            np.complex64,
+            np.float32,
+            "float _Complex",
+            "float",
+            2e-5,
+            2e-6,
+            marks=pytest.mark.skipif(
+                sys.platform.startswith("win32"), reason="Windows has no C99 _Complex support"
+            ),
+        ),
+        pytest.param(
             "complex128",
             np.complex128,
             np.float64,
@@ -58,6 +70,9 @@ def _load_hyperelasticity_demo() -> types.ModuleType:
             "double",
             1e-12,
             1e-14,
+            marks=pytest.mark.skipif(
+                sys.platform.startswith("win32"), reason="Windows has no C99 _Complex support"
+            ),
         ),
     ],
 )
