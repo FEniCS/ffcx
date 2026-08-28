@@ -33,6 +33,32 @@ from ffcx.ir.representationutils import QuadratureRule
 logger = logging.getLogger("ffcx")
 
 
+_FW_CACHE_BUDGET_BYTES = 32768
+_FW_CACHE_BYTES_PER_SCALAR = 16
+
+
+def _fw_cache_tile_size(n_fw: int, num_points: int) -> int | None:
+    """Return a cache-tile length that stays within the fixed stack budget.
+
+    ``None`` means that even one cached value per intermediate would exceed
+    the budget, so the quadrature loop should remain fused.
+    """
+    assert n_fw > 0
+    assert num_points > 0
+
+    max_tile = _FW_CACHE_BUDGET_BYTES // (n_fw * _FW_CACHE_BYTES_PER_SCALAR)
+    if max_tile == 0:
+        return None
+
+    tile = min(max_tile, num_points)
+    # Preserve a SIMD-friendly width when it fits the budget. For a very
+    # large number of intermediates, a smaller tile is preferable to
+    # exceeding the fixed stack allocation budget.
+    if tile >= 8:
+        tile = tile // 8 * 8
+    return tile
+
+
 def extract_dtype(v, vops: list[Any]):
     """Extract dtype from ufl expression v and its operands."""
     dtypes = []
@@ -426,10 +452,12 @@ class IntegralGenerator:
         # conservative 16 bytes/scalar (covers complex128; overestimating
         # the element size only makes the tile smaller than strictly
         # necessary for float64, never unsafe). Rounded down to a multiple
-        # of 8 so the tile is still a friendly SIMD width.
+        # of 8 when that still fits, so the common case has a friendly SIMD
+        # width without letting a large intermediate set exceed the budget.
         n_fw = len(intermediates_fw)
-        tile = max(8, (32768 // (n_fw * 16)) // 8 * 8)
-        tile = min(tile, num_points)
+        tile = _fw_cache_tile_size(n_fw, num_points)
+        if tile is None:
+            return None
 
         caches = {
             fw.symbol.name: L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
