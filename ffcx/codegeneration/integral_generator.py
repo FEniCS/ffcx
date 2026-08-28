@@ -150,7 +150,7 @@ def _contraction_work(node) -> int:
     if isinstance(node, L.ForRange):
         if not isinstance(node.begin, L.LiteralInt) or not isinstance(node.end, L.LiteralInt):
             return 0
-        return max(0, node.end.value - node.begin.value) * _contraction_work(node.body)
+        return int(max(0, node.end.value - node.begin.value)) * _contraction_work(node.body)
     return int(isinstance(node, L.Statement))
 
 
