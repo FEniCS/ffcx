@@ -486,6 +486,16 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     outer_loop = section.statements[0]
     inner_loop = outer_loop.body.statements[0]
 
+    # The hoisted temps below are sized from the outer loop's bounds and
+    # indexed by its (full-range) index; that's only correct if those
+    # bounds are literal. They always are here -- even the symmetric
+    # triangular-loop path (integral_generator.py's
+    # _create_triangular_loop) keeps the outer loop's bounds literal and
+    # only makes the *inner* loop's begin symbolic -- but check explicitly
+    # rather than silently computing a wrong temp array size if that ever
+    # stops being true.
+    assert isinstance(outer_loop.begin, L.LiteralInt) and isinstance(outer_loop.end, L.LiteralInt)
+
     # Collect all expressions in the inner loop by corresponding RHS
     expressions = defaultdict(list)
     for body in inner_loop.body.statements:
