@@ -18,6 +18,17 @@ from ffcx.ir.representationutils import QuadratureRule
 logger = logging.getLogger("ffcx")
 
 
+# Keep the literal coordinate-dof sum small enough that unrolling improves
+# generated code instead of making curved simplex geometry expensive to
+# compile. Tensor-product geometry is handled by the same loop path.
+_MAX_UNROLLED_COORDINATE_DOFS = 16
+
+
+def _should_unroll_coordinate_dofs(num_dofs: int, has_tensor_factorisation: bool) -> bool:
+    """Return whether a coordinate-dof linear combination should be unrolled."""
+    return not has_tensor_factorisation and num_dofs <= _MAX_UNROLLED_COORDINATE_DOFS
+
+
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
     """Create a multi index for the quadrature loop."""
     ranges = [0]
@@ -209,9 +220,11 @@ class FFCXBackendDefinitions:
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        if tabledata.has_tensor_factorisation:
-            # Tensor-product dof counts can be large (high-order hex/quad
-            # geometry); keep the general runtime-loop path.
+        if not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
+            # High-order geometry can have many coordinate dofs on both
+            # tensor-product cells and curved simplices. Keep the general
+            # runtime-loop path in either case, rather than emitting one
+            # literal term per coordinate dof.
             ic = create_dof_index(tabledata, ic_symbol)
             FE, tables = self.access.table_access(
                 tabledata, self.entity_type, mt.restriction, iq, ic
@@ -222,10 +235,9 @@ class FFCXBackendDefinitions:
             code = [L.create_nested_for_loops([ic], body)]
             input = [dof_access, *tables]
         else:
-            # The coordinate element's dof count is always small (an affine
-            # simplex's Jacobian sums over 3-10 vertices/geometry nodes, say).
-            # Unroll into a single literal-indexed sum instead of a runtime
-            # reduction loop: this is what a hand-written kernel would do,
+            # Small affine/simplex geometry sums are best emitted as a single
+            # literal-indexed expression instead of a runtime reduction loop:
+            # this is what a hand-written kernel would do,
             # and it avoids GCC's vectoriser mis-vectorising a tiny
             # fixed-trip-count reduction into an expensive
             # permute-then-horizontal-sum sequence -- a real, measured cost

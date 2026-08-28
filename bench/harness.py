@@ -45,8 +45,18 @@ class BenchResult:
     tensor_size: int
 
 
+def _check_supported_platform() -> None:
+    """Raise a clear error on platforms unsupported by the C timing loop."""
+    if sys.platform.startswith("win32"):
+        raise RuntimeError(
+            "The benchmark harness currently requires a POSIX C toolchain "
+            "(clock_gettime, -fPIC, and -march=native); Windows is not supported."
+        )
+
+
 def _build_timer_library() -> ctypes.CDLL:
     """Compile (once, cached) and load bench/_timer.c's timing loop."""
+    _check_supported_platform()
     _CACHE_DIR.mkdir(exist_ok=True)
     src = _HERE / "_timer.c"
     lib_path = _CACHE_DIR / ("_timer" + (".dylib" if sys.platform == "darwin" else ".so"))
@@ -122,12 +132,14 @@ def _stack_usage_bytes(source_path: Path, cellname: str) -> int | None:
         return best
 
 
-def run_case(case: BenchCase, timer: ctypes.CDLL, nrepeat: int = _NREPEAT) -> BenchResult:
+def run_case(
+    case: BenchCase, timer: ctypes.CDLL, cache_dir: Path, nrepeat: int = _NREPEAT
+) -> BenchResult:
     """Compile, JIT-build, and time one benchmark case."""
     compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
         [case.form],
         options={"scalar_type": "float64"},
-        cache_dir=_CACHE_DIR,
+        cache_dir=cache_dir,
         cffi_extra_compile_args=_COMPILE_ARGS,
     )
     compiled_form = compiled_forms[0]
@@ -150,7 +162,7 @@ def run_case(case: BenchCase, timer: ctypes.CDLL, nrepeat: int = _NREPEAT) -> Be
     ns_per_call = timer.bench_run(fn_addr, ptr(A), a_size, ptr(w), ptr(c), ptr(coords), nrepeat)
 
     module_name = module.__name__.rsplit(".", 1)[-1]
-    source_path = _CACHE_DIR / f"{module_name}.c"
+    source_path = cache_dir / f"{module_name}.c"
     stack_bytes = _stack_usage_bytes(source_path, case.cellname) if source_path.exists() else None
 
     return BenchResult(case.name, ns_per_call, stack_bytes, tensor_size=a_size)
