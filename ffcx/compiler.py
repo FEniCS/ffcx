@@ -111,7 +111,7 @@ def compile_ufl_objects(
     analysis = analyze_ufl_objects(
         ufl_objects,
         options["scalar_type"],  # type: ignore
-        do_cancel_jacobian_products=options.get("do_cancel_jacobian_products", False),  # type: ignore
+        do_cancel_jacobian_products=options["do_cancel_jacobian_products"],  # type: ignore
     )
     _print_timing(1, time() - cpu_time)
 
