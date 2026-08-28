@@ -106,7 +106,6 @@ class IntegralIR(typing.NamedTuple):
     rank: int
     enabled_coefficients: list[bool]
     part: TensorPart
-    symmetric: bool
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -478,16 +477,7 @@ def _compute_integral_ir(
             visualise,
         )
 
-        # "symmetric" belongs on IntegralIR (like "part"), not
-        # CommonExpressionIR: it's a property of the whole local tensor
-        # this integral contributes to, checked (and gated on the
-        # exploit_symmetry option) here rather than in the generator, since
-        # only here is every quadrature rule's block data visible at once.
-        # Filtered out (rather than popped) when merging the rest into
-        # expression_ir: IntermediateIntegralIR is a TypedDict, and mypy
-        # doesn't allow deleting a required key from one.
-        ir["symmetric"] = bool(options["exploit_symmetry"]) and integral_ir["symmetric"]
-        expression_ir.update({k: v for k, v in integral_ir.items() if k != "symmetric"})
+        expression_ir.update(integral_ir)
 
         # Fetch name
         expression_ir["name"] = integral_names[(form_index, itg_data_index)]
@@ -714,9 +704,6 @@ def _compute_expression_ir(
         visualise,
     )
 
-    # "symmetric" (see _compute_integral_ir) has no meaning for a plain
-    # Expression -- there's no local tensor being assembled, symmetric or
-    # otherwise -- and ExpressionIR has no field for it.
-    base_ir.update({k: v for k, v in expression_ir.items() if k != "symmetric"})
+    base_ir.update(expression_ir)
     ir["expression"] = CommonExpressionIR(**base_ir)
     return ExpressionIR(**ir)

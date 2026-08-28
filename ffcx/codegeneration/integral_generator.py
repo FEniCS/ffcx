@@ -226,37 +226,12 @@ class IntegralGenerator:
         parts += all_preparts
         parts += all_quadparts
 
-        if self.ir.symmetric:
-            # Every blockmap group that reached the triangular-loop path in
-            # generate_block_parts computed only the entries with row <=
-            # column; fill in the rest once here. Valid regardless of how
-            # many groups or quadrature rules contributed, since
-            # accumulation into A is linear -- there's nothing left to add
-            # to a lower-triangle entry after this copies it.
-            parts += self._generate_symmetry_mirror()
-
         # Now that the whole kernel body is assembled, drop any power-of-two
         # CSE temporary that never gained a reader anywhere in it (see
         # power_of_two_cse_statements and prune_dead_scalars).
         parts = prune_dead_scalars(parts, self._pow2_cse_speculative)
 
         return L.StatementList(parts)
-
-    def _generate_symmetry_mirror(self) -> list[L.LNode]:
-        """Mirror A's strict lower triangle from its upper triangle (A == A.T)."""
-        A_shape = self.ir.expression.tensor_shape
-        assert len(A_shape) == 2 and A_shape[0] == A_shape[1]
-        n = A_shape[0]
-        A = self.backend.symbols.element_tensor
-        i = L.Symbol("sym_i", L.DataType.INT)
-        j = L.Symbol("sym_j", L.DataType.INT)
-        copy = L.Assign(A[L.MultiIndex([i, j], A_shape)], A[L.MultiIndex([j, i], A_shape)])
-        inner = L.ForRange(j, 0, i, [copy])
-        outer = L.ForRange(i, 0, n, [inner])
-        result: list[L.LNode] = L.commented_code_list(
-            [outer], "Mirror the lower triangle (local tensor is symmetric)"
-        )
-        return result
 
     def generate_quadrature_tables(self, domain: basix.CellType, expression: CommonExpressionIR):
         """Generate static tables of quadrature points and weights."""
@@ -676,26 +651,6 @@ class IntegralGenerator:
 
         return arg_factors, tables
 
-    def _create_triangular_loop(
-        self, i_index: L.MultiIndex, j_index: L.MultiIndex, body: list[L.LNode]
-    ) -> L.LNode:
-        """Nest i_index (full range) around j_index restricted to j >= i.
-
-        Only used once the whole local tensor has been proven symmetric
-        (self.ir.symmetric): computing just the upper triangle (including
-        the diagonal) here, and mirroring the strict lower triangle once
-        after every quadrature loop (see generate()), does the same
-        arithmetic in roughly half the dof-loop iterations. Requires both
-        indices to range over the same size (true whenever test and trial
-        use the same element, which detect_bilinear_symmetry's swap check
-        already implies).
-        """
-        i = i_index.local_index(0)
-        j = j_index.local_index(0)
-        n = i_index.sizes[0]
-        inner = L.ForRange(j, i, n, body)
-        return L.ForRange(i, 0, n, [inner])
-
     def generate_block_parts(
         self,
         quadrature_rule: QuadratureRule,
@@ -881,40 +836,16 @@ class IntegralGenerator:
             for expression in keep[indices]:
                 body.append(L.AssignAdd(A[multi_index], expression))
 
-        if (
-            self.ir.symmetric
-            and block_rank == 2
-            and B_indices[0].dim == 1
-            and B_indices[1].dim == 1
-            and B_indices[0].sizes == B_indices[1].sizes
-        ):
-            # The whole local tensor has been proven symmetric (see
-            # ffcx.ir.integral.detect_bilinear_symmetry): every component
-            # pair's dof-loop nest above computed A[bs*i+ci, bs*j+cj] for
-            # every (ci, cj), sharing this one (i, j) loop -- restricting it
-            # to j >= i computes exactly the entries with global row <=
-            # column, a superset of the true upper triangle and nothing
-            # below the block diagonal. generate() mirrors the rest once,
-            # after every quadrature loop. This bypasses the nest-order
-            # choice below entirely (deliberately: combining a fixed
-            # row/column convention, needed so one mirror pass at the end
-            # is correct regardless of how many blockmap groups there are,
-            # with the vectoriser-driven reordering below is more risk than
-            # the two together are worth -- see PR #865 for why that
-            # reordering is fussy on its own).
-            body = [self._create_triangular_loop(B_indices[0], B_indices[1], body)]
-        else:
-            # Nest with the last tensor index innermost, so the contiguous
-            # index of the element tensor varies fastest in the
-            # accumulation. Empirically, this is what GCC's vectoriser
-            # wants whenever an entry sums more than one term (e.g. one per
-            # spatial direction in a gradient-gradient form) -- but for a
-            # single-term entry (e.g. a plain mass matrix) the same order
-            # defeats it instead, so keep the old row-innermost order for
-            # that case (see PR #865 for the measurements behind this).
-            multi_term = any(len(v) > 1 for v in keep.values())
-            nest_indices = B_indices if multi_term else B_indices[::-1]
-            body = [L.create_nested_for_loops(nest_indices, body)]
+        # Nest with the last tensor index innermost, so the contiguous index of
+        # the element tensor varies fastest in the accumulation. Empirically,
+        # this is what GCC's vectoriser wants whenever an entry sums more than
+        # one term (e.g. one per spatial direction in a gradient-gradient
+        # form) -- but for a single-term entry (e.g. a plain mass matrix) the
+        # same order defeats it instead, so keep the old row-innermost order
+        # for that case (see PR #865 for the measurements behind this).
+        multi_term = any(len(v) > 1 for v in keep.values())
+        nest_indices = B_indices if multi_term else B_indices[::-1]
+        body = [L.create_nested_for_loops(nest_indices, body)]
         input = [*vars, *tables]
         output = [A]
 

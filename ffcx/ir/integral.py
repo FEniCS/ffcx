@@ -91,97 +91,6 @@ class BlockDataT(typing.NamedTuple):
     is_permuted: bool  # Do quad points on facets need to be permuted?
 
 
-def _factor_symmetry_key(expr: ufl.core.expr.Expr) -> tuple:
-    """Canonical structural key for a UFL scalar expression graph node.
-
-    Commutative operands (Sum, Product) are sorted so that algebraically
-    identical expressions built in a different operand order compare equal.
-    This does NOT fold algebraic identities (e.g. it won't see that ``x/2 +
-    x/2`` equals ``x``) -- only true reorderings of an already-identical
-    operand list are recognised. A false negative here only costs the
-    caller a missed optimisation, never a wrong answer.
-    """
-    ops = expr.ufl_operands
-    if not ops:
-        # A terminal (literal, coefficient, argument, geometric quantity,
-        # ...): repr() is used as the key since UFL's terminal reprs are
-        # complete enough to reconstruct the object, i.e. distinguishing.
-        return ("terminal", type(expr).__name__, repr(expr))
-    keys = tuple(_factor_symmetry_key(op) for op in ops)
-    if isinstance(expr, (ufl.algebra.Sum, ufl.algebra.Product)):
-        keys = tuple(sorted(keys))
-    return (type(expr).__name__, keys)
-
-
-def detect_bilinear_symmetry(
-    F: ExpressionGraph,
-    block_contributions: dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
-) -> bool:
-    """Detect whether a rank-2 integrand's local element tensor is symmetric.
-
-    Checks the property code generation actually needs -- that swapping
-    which argument slot (test vs trial) each block's table/factor
-    combination belongs to leaves the whole set of block contributions
-    unchanged -- by building a hashable key per block and its slot-swapped
-    counterpart, then requiring the multiset of keys to equal its own
-    swapped multiset.
-
-    This is sound (no false positives): whenever it returns True, every
-    block's contribution has a matching, identically-scaled partner under
-    the argument-slot swap, so the accumulated tensor entry at (i, j)
-    equals the one at (j, i) for every dof pair i, j -- including across
-    different blockmaps, which is what makes this correct for vector-valued
-    elements: swapping component (ci, cj) requires a matching (cj, ci)
-    block, not just self-symmetry within one blockmap.
-
-    It is not complete: differing test/trial elements make a matching
-    swapped block structurally impossible to find (a term can't draw its
-    test-side factor from the trial space), so those are safely rejected
-    without needing a separate explicit check. False negatives (a
-    genuinely symmetric form not recognised as such, e.g. from an algebraic
-    identity `_factor_symmetry_key` doesn't fold) just forgo the
-    optimisation.
-
-    Args:
-        F: The factorization graph the block contributions were derived from
-            (for looking up each block's scalar factor expression).
-        block_contributions: Block data for one (domain, quadrature rule).
-
-    Returns:
-        True if the whole local tensor is provably symmetric.
-    """
-    keys = []
-    for contributions in block_contributions.values():
-        for blockdata in contributions:
-            if len(blockdata.ma_data) != 2:
-                return False
-            if len(blockdata.factor_indices_comp_indices) != 1:
-                return False
-            if any(mad.tabledata.has_tensor_factorisation for mad in blockdata.ma_data):
-                return False
-            # Restriction ("+"/"-") only means anything on a facet integral;
-            # the caller restricts detection to cell integrals, where it
-            # should never be set. Checked (rather than assumed) since
-            # `blockdata.restrictions` isn't reliably aligned 1:1 with
-            # `ma_data` -- it's built by filtering on table uniformity, so
-            # it can be shorter than `ma_data`.
-            if any(blockdata.restrictions):
-                return False
-            slot_keys = tuple(
-                (mad.tabledata.name, mad.tabledata.offset, mad.tabledata.block_size)
-                for mad in blockdata.ma_data
-            )
-            factor_index = blockdata.factor_indices_comp_indices[0][0]
-            factor_key = _factor_symmetry_key(F.nodes[factor_index]["expression"])
-            keys.append((slot_keys, factor_key, blockdata.is_permuted))
-
-    if not keys:
-        return True
-
-    swapped = [((k[0][1], k[0][0]), k[1], k[2]) for k in keys]
-    return collections.Counter(keys) == collections.Counter(swapped)
-
-
 class IntermediateIntegrandIR(typing.TypedDict):
     """Intermediate IR for integrands."""
 
@@ -197,7 +106,6 @@ class IntermediateIntegralIR(typing.TypedDict):
     unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]]
     unique_table_types: dict[basix.CellType, dict[str, _table_types]]
     integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
-    symmetric: bool
 
 
 class CommonExpressionIR(typing.NamedTuple):
@@ -508,22 +416,6 @@ def compute_integral_ir(
     unique_tables: dict[basix.CellType, dict[str, npt.NDArray[np.float64]]] = {}
     unique_table_types: dict[basix.CellType, dict[str, _table_types]] = {}
     integrand_map: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR] = {}
-
-    # Whether the whole local tensor is provably symmetric, checked (and
-    # ANDed together) over every quadrature rule below -- see
-    # detect_bilinear_symmetry. Gated here on the conditions that make the
-    # check meaningful/safe to even attempt: a real rank-2 "full" tensor,
-    # not a facet integral (restriction ("+"/"-") pairing across cells
-    # isn't handled), not a complex scalar type (UFL's inner() conjugates
-    # one side, so a(u,v) == a(v,u) as computed here isn't the property
-    # that actually matters for a Hermitian sesquilinear form).
-    symmetric = (
-        integral_type == "cell"
-        and len(argument_shape) == 2
-        and TensorPart.from_str(str(p["part"])) == TensorPart.full
-        and not np.issubdtype(np.dtype(p["scalar_type"]), np.complexfloating)
-    )
-
     for integral_domain, integrands_on_domain in integrands.items():
         unique_tables[integral_domain] = {}
         unique_table_types[integral_domain] = {}
@@ -553,9 +445,6 @@ def compute_integral_ir(
                 p,
             )
 
-            if symmetric:
-                symmetric = detect_bilinear_symmetry(F, block_contributions)
-
             # Add tables and types for this quadrature rule to global tables dict
             unique_tables[integral_domain].update(active_tables)
             unique_table_types[integral_domain].update(active_table_types)
@@ -578,7 +467,6 @@ def compute_integral_ir(
         unique_tables=unique_tables,
         unique_table_types=unique_table_types,
         integrand=integrand_map,
-        symmetric=symmetric,
     )
 
 

@@ -48,14 +48,6 @@ FFCX_DEFAULT_OPTIONS = {
         None,
     ),
     "part": (str, "full", "Part of bilinear tensor to assemble", ("full", "diagonal")),
-    "exploit_symmetry": (
-        bool,
-        False,
-        "For a rank-2 cell integral proven symmetric (real scalar type, identical "
-        "test/trial element, part='full'), compute only its upper triangle and "
-        "mirror it, instead of the full local tensor.",
-        None,
-    ),
 }
 
 
