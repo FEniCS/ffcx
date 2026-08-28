@@ -345,7 +345,14 @@ class IntegralGenerator:
         for fw in intermediates_fw:
             assert isinstance(fw, L.VariableDecl)
             output += [fw.symbol]
-            declarations += [L.VariableDecl(fw.symbol, 0)]
+            # Declared here with no initial value: it's unconditionally
+            # assigned its real value below once that's computed, so a
+            # placeholder initialiser here would be a pure dead store. The
+            # declaration itself still has to live here (rather than fold
+            # into the assignment below) because that assignment sits
+            # inside this section's own C block scope, while fw needs to
+            # stay visible to the "Tensor Computation" section that follows.
+            declarations += [L.VariableDecl(fw.symbol)]
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
 
