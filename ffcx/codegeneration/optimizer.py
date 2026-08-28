@@ -253,7 +253,12 @@ def _collect_referenced_names(node, out: set[str]) -> None:
             _referenced_symbol_names(node.value, out)
     elif isinstance(node, L.ArrayDecl):
         pass
-    elif isinstance(node, (L.Section, L.StatementList)):
+    elif isinstance(node, L.Section):
+        for declaration in node.declarations:
+            if isinstance(declaration, L.VariableDecl) and declaration.value is not None:
+                _referenced_symbol_names(declaration.value, out)
+        _collect_referenced_names(node.statements, out)
+    elif isinstance(node, L.StatementList):
         _collect_referenced_names(node.statements, out)
     elif isinstance(node, L.ForRange):
         _referenced_symbol_names(node.begin, out)
@@ -274,6 +279,12 @@ def _drop_unreferenced(node, dead: set[str]):
             if not (isinstance(n, L.VariableDecl) and n.symbol.name in dead)
         ]
     if isinstance(node, L.Section):
+        node.declarations = [
+            declaration
+            for declaration in node.declarations
+            if not (isinstance(declaration, L.VariableDecl) and declaration.symbol.name in dead)
+        ]
+        node.output = [symbol for symbol in node.output if symbol.name not in dead]
         node.statements = _drop_unreferenced(node.statements, dead)
     elif isinstance(node, L.StatementList):
         node.statements = _drop_unreferenced(node.statements, dead)
@@ -285,6 +296,33 @@ def _drop_unreferenced(node, dead: set[str]):
         # cannot unwrap again.
         node.body.statements = _drop_unreferenced(node.body.statements, dead)
     return node
+
+
+def scalar_declaration_names(code: list[L.LNode]) -> set[str]:
+    """Return the names of every scalar declaration in a code tree.
+
+    Generated scalar declarations are pure computations, so an unread one can
+    be removed safely. Keeping this analysis on LNodes, rather than parsing
+    formatted C, preserves lexical structure and works for every backend.
+    """
+    names: set[str] = set()
+
+    def visit(node) -> None:
+        if isinstance(node, list):
+            for child in node:
+                visit(child)
+        elif isinstance(node, L.VariableDecl):
+            names.add(node.symbol.name)
+        elif isinstance(node, L.Section):
+            visit(node.declarations)
+            visit(node.statements)
+        elif isinstance(node, L.StatementList):
+            visit(node.statements)
+        elif isinstance(node, L.ForRange):
+            visit(node.body)
+
+    visit(code)
+    return names
 
 
 def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNode]:

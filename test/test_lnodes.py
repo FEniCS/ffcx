@@ -49,10 +49,9 @@ def test_power_expansion_falls_back_to_pow_outside_small_range(exponent):
 def test_squared_coefficient_generates_no_pow_call(compile_args):
     """A squared term in a form compiles without a pow() call in the generated code.
 
-    Also matters beyond the arithmetic: a stray pow() call makes
-    integral_generator._contains_mathfunction treat the kernel as containing
-    a transcendental call, triggering the quadrature-loop SIMD split for a
-    form that has no actual transcendental function to vectorise.
+    Also matters beyond the arithmetic: a stray pow() call can make the
+    vector-math split treat the kernel as containing a transcendental call,
+    despite there being no useful vectorised function to expose.
     """
     element = basix.ufl.element("Lagrange", "triangle", 2)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))

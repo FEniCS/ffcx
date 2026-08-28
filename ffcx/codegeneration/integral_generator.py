@@ -9,6 +9,8 @@
 
 import collections
 import logging
+import platform
+import sys
 from numbers import Integral
 from typing import Any
 
@@ -24,6 +26,7 @@ from ffcx.codegeneration.optimizer import (
     power_of_two_cse_statements,
     prune_dead_scalars,
     reciprocal_cse_statements,
+    scalar_declaration_names,
 )
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
@@ -35,6 +38,30 @@ logger = logging.getLogger("ffcx")
 
 _FW_CACHE_BUDGET_BYTES = 32768
 _FW_CACHE_BYTES_PER_SCALAR = 16
+_UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK = 256
+
+# GCC can lower these calls to glibc libmvec on supported x86-64 Linux
+# targets. Other hosts commonly keep scalar libm calls, in which case a
+# second loop and an fw cache are pure overhead.
+_VECTORIZABLE_MATH_FUNCTIONS = frozenset(
+    {
+        "acos",
+        "acosh",
+        "asin",
+        "asinh",
+        "atan",
+        "atanh",
+        "cos",
+        "cosh",
+        "erf",
+        "exp",
+        "ln",
+        "sin",
+        "sinh",
+        "tan",
+        "tanh",
+    }
+)
 
 
 def _fw_cache_tile_size(n_fw: int, num_points: int) -> int | None:
@@ -80,29 +107,51 @@ def extract_dtype(v, vops: list[Any]):
     return L.merge_dtypes(dtypes)
 
 
-def _contains_mathfunction(node) -> bool:
-    """Search an LNodes statement/expression tree for a call to a MathFunction."""
+def _contains_vectorizable_mathfunction(node) -> bool:
+    """Return whether *node* contains a math call targeted by libmvec."""
     if isinstance(node, list):
-        return any(_contains_mathfunction(n) for n in node)
+        return any(_contains_vectorizable_mathfunction(n) for n in node)
     if isinstance(node, L.MathFunction):
-        return True
+        return node.function in _VECTORIZABLE_MATH_FUNCTIONS or any(
+            _contains_vectorizable_mathfunction(arg) for arg in node.args
+        )
     if isinstance(node, (L.StatementList, L.Section)):
-        return _contains_mathfunction(node.statements)
+        return _contains_vectorizable_mathfunction(node.statements)
     if isinstance(node, L.ForRange):
-        return _contains_mathfunction(node.body)
+        return _contains_vectorizable_mathfunction(node.body)
     if isinstance(node, L.VariableDecl):
-        return node.value is not None and _contains_mathfunction(node.value)
+        return node.value is not None and _contains_vectorizable_mathfunction(node.value)
     if isinstance(node, (L.ArrayDecl, L.Comment)):
         return False
     if isinstance(node, L.Statement):
-        return _contains_mathfunction(node.expr)
+        return _contains_vectorizable_mathfunction(node.expr)
     if isinstance(node, L.NaryOp):
-        return any(_contains_mathfunction(a) for a in node.args)
+        return any(_contains_vectorizable_mathfunction(a) for a in node.args)
     if isinstance(node, L.BinOp):
-        return _contains_mathfunction(node.lhs) or _contains_mathfunction(node.rhs)
+        return _contains_vectorizable_mathfunction(node.lhs) or _contains_vectorizable_mathfunction(
+            node.rhs
+        )
     if isinstance(node, L.PrefixUnaryOp):
-        return _contains_mathfunction(node.arg)
+        return _contains_vectorizable_mathfunction(node.arg)
     return False
+
+
+def _supports_vector_math_loop_split() -> bool:
+    """Return whether the current JIT host has the required vector libm ABI."""
+    return sys.platform.startswith("linux") and platform.machine().lower() in {"amd64", "x86_64"}
+
+
+def _contraction_work(node) -> int:
+    """Estimate statically repeated scalar statements in a contraction tree."""
+    if isinstance(node, list):
+        return sum(_contraction_work(child) for child in node)
+    if isinstance(node, (L.Section, L.StatementList)):
+        return _contraction_work(node.statements)
+    if isinstance(node, L.ForRange):
+        if not isinstance(node.begin, L.LiteralInt) or not isinstance(node.end, L.LiteralInt):
+            return 0
+        return max(0, node.end.value - node.begin.value) * _contraction_work(node.body)
+    return int(isinstance(node, L.Statement))
 
 
 class IntegralGenerator:
@@ -141,12 +190,6 @@ class IntegralGenerator:
         # Set of counters used for assigning names to intermediate
         # variables
         self.symbol_counters: dict[str, int] = collections.defaultdict(int)
-
-        # Names of scalar temporaries kept only speculatively by
-        # power-of-two CSE, across every partition generated for this
-        # kernel -- checked against the fully assembled body at the end of
-        # generate() by prune_dead_scalars().
-        self._pow2_cse_speculative: set[str] = set()
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -252,10 +295,10 @@ class IntegralGenerator:
         parts += all_preparts
         parts += all_quadparts
 
-        # Now that the whole kernel body is assembled, drop any power-of-two
-        # CSE temporary that never gained a reader anywhere in it (see
-        # power_of_two_cse_statements and prune_dead_scalars).
-        parts = prune_dead_scalars(parts, self._pow2_cse_speculative)
+        # Now that the whole kernel body is assembled, drop every unread
+        # scalar declaration. This must happen on the LNode tree, before
+        # formatting, so it respects scopes and is shared by all backends.
+        parts = prune_dead_scalars(parts, scalar_declaration_names(parts))
 
         return L.StatementList(parts)
 
@@ -441,7 +484,14 @@ class IntegralGenerator:
         # integrands (mass matrices, plain Poisson, etc.) have none, and for
         # those the split is a net loss (extra loop and memory traffic for no
         # vectorisation gain).
-        if not _contains_mathfunction(evaluation):
+        if not _contains_vectorizable_mathfunction(evaluation):
+            return None
+        # On x86-64 Linux the separate evaluation loop can call libmvec. On
+        # other targets only use it for a sufficiently expensive contraction,
+        # where separating the passes is still able to amortise the fw cache.
+        if not _supports_vector_math_loop_split() and (
+            _contraction_work(contraction) < _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK
+        ):
             return None
 
         num_points = quadrature_rule.weights.size
@@ -576,10 +626,7 @@ class IntegralGenerator:
         # back into a plain alias of the earlier equal value. Must run before
         # reciprocal-CSE below, which would otherwise hide the literal
         # power-of-two divisors this looks for behind a reciprocal symbol.
-        # Statements this keeps only speculatively are recorded so the whole
-        # kernel body can be checked, once fully assembled, for ones that
-        # never gained a reader -- see generate() and prune_dead_scalars().
-        intermediates = power_of_two_cse_statements(intermediates, self._pow2_cse_speculative)
+        intermediates = power_of_two_cse_statements(intermediates)
 
         # Collapse repeated divisions by the same divisor (e.g. every entry of
         # an affine cell's pseudo-inverse Jacobian dividing by the same
