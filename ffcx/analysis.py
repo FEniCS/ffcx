@@ -50,7 +50,7 @@ def analyze_ufl_objects(
         | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
     ],
     scalar_type: npt.DTypeLike,
-    do_cancel_jacobian_products: bool = False,
+    do_cancel_jacobian_products: bool = True,
 ) -> UFLData:
     """Analyze ufl object(s).
 
