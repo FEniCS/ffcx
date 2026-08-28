@@ -54,10 +54,16 @@ def reciprocal_cse_statements(
 
     An affine cell's pseudo-inverse Jacobian divides every cofactor by the same
     determinant. FFCx's existing CSE already recognises the shared divisor but
-    still emits one hardware division per entry; a reciprocal computed once and
-    reused as a multiply is exact for the same divide (same IEEE rounding as any
-    other division) and division is markedly more expensive than multiplication
-    on typical hardware.
+    still emits one hardware division per entry; replacing repeated divisions
+    with one reciprocal and a multiply each trades one division for one
+    division plus N-1 multiplications, which is a net win since division is
+    markedly more expensive than multiplication on typical hardware. This is
+    the same reassociation `-ffast-math`/`-freciprocal-math` would apply
+    automatically, done unconditionally here: `a * (1.0 / b)` is not in
+    general bit-identical to `a / b` (two roundings instead of one), except
+    when `b` is an exact power of two. The difference is at the ULP level and
+    negligible next to quadrature/discretisation error, but it does mean
+    results can differ in the last bit or so from a naively-divided kernel.
 
     Args:
         statements: A flat list of statements (no nested loops expected --
@@ -69,14 +75,14 @@ def reciprocal_cse_statements(
     Returns:
         A new statement list with repeated divisions rewritten.
     """
-    # Keyed by the divisor's structural identity (see `_key`), not the LExpr
+    # Keyed by the divisor's structural identity (see `expr_key`), not the LExpr
     # object itself: a literal divisor (e.g. dividing by a plain constant)
     # is a `LiteralFloat`, which -- unlike `LiteralInt` -- has no `__hash__`,
     # so using it directly as a dict key crashes.
     divisor_counts: dict[tuple, int] = defaultdict(int)
     for stmt in statements:
         if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Div):
-            divisor_counts[_key(stmt.value.rhs)] += 1
+            divisor_counts[expr_key(stmt.value.rhs)] += 1
 
     recip_symbols: dict[tuple, L.Symbol] = {}
     counter = 0
@@ -85,10 +91,10 @@ def reciprocal_cse_statements(
         if (
             isinstance(stmt, L.VariableDecl)
             and isinstance(stmt.value, L.Div)
-            and divisor_counts[_key(stmt.value.rhs)] >= 2
+            and divisor_counts[expr_key(stmt.value.rhs)] >= 2
         ):
             divisor = stmt.value.rhs
-            divisor_key = _key(divisor)
+            divisor_key = expr_key(divisor)
             if divisor_key not in recip_symbols:
                 recip_symbol = L.Symbol(f"{name_prefix}_{counter}", L.DataType.SCALAR)
                 counter += 1
@@ -428,7 +434,7 @@ def check_dependency(statement: L.Statement, index: L.Symbol) -> bool:
     return False
 
 
-def _key(expr) -> tuple:
+def expr_key(expr) -> tuple:
     """Hashable identity of an expression, used to recognise equal factors.
 
     LNodes expressions are not generally hashable, so build a structural key
@@ -441,14 +447,19 @@ def _key(expr) -> tuple:
         Hashable structural key.
     """
     if isinstance(expr, L.ArrayAccess):
-        return ("array", expr.array.name, *(_key(i) for i in expr.indices))
+        return ("array", expr.array.name, *(expr_key(i) for i in expr.indices))
     elif isinstance(expr, L.Symbol):
         return ("symbol", expr.name)
     elif isinstance(expr, L.LiteralFloat | L.LiteralInt):
         return ("literal", expr.value)
+    elif isinstance(expr, L.PrefixUnaryOp):
+        # No isinstance branch above covers this; `repr()` would otherwise
+        # fall through to the identity-based default, since PrefixUnaryOp
+        # (Neg, Not) has no __repr__ override of its own.
+        return (type(expr).__name__, expr_key(expr.arg))
     args = getattr(expr, "args", None)
     if args is not None:
-        return (type(expr).__name__, *(_key(a) for a in args))
+        return (type(expr).__name__, *(expr_key(a) for a in args))
     return (type(expr).__name__, repr(expr))
 
 
@@ -519,7 +530,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 else:
                     hoist_candidates.append(arg)
             if len(hoist_candidates) > 1:
-                key = tuple(_key(k) for k in keep)
+                key = tuple(expr_key(k) for k in keep)
                 groups.setdefault(key, (keep, []))[1].append(L.Product(hoist_candidates))
             else:
                 # Nothing worth hoisting, keep the term unchanged
@@ -527,7 +538,7 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
 
         for keep, hoisted in groups.values():
             rhs_hoisted = hoisted[0] if len(hoisted) == 1 else L.Sum(hoisted)
-            hoisted_key = _key(rhs_hoisted)
+            hoisted_key = expr_key(rhs_hoisted)
             temp = seen_hoisted.get(hoisted_key)
             if temp is None:
                 # Create new temp holding the sum of the hoisted terms

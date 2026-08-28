@@ -199,9 +199,7 @@ class FFCXBackendDefinitions:
         # Get access to element table
         ic_symbol = self.symbols.coefficient_dof_sum_index
         iq_symbol = self.symbols.quadrature_loop_index
-        ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
@@ -214,6 +212,10 @@ class FFCXBackendDefinitions:
         if tabledata.has_tensor_factorisation:
             # Tensor-product dof counts can be large (high-order hex/quad
             # geometry); keep the general runtime-loop path.
+            ic = create_dof_index(tabledata, ic_symbol)
+            FE, tables = self.access.table_access(
+                tabledata, self.entity_type, mt.restriction, iq, ic
+            )
             code = []
             declaration = [L.VariableDecl(access, 0.0)]
             body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]

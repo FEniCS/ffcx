@@ -19,7 +19,7 @@ import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import (
-    _key,
+    expr_key,
     optimize,
     power_of_two_cse_statements,
     prune_dead_scalars,
@@ -654,8 +654,8 @@ class IntegralGenerator:
                 decomps.append(decomp)
 
             if decomps:
-                rhs_keys = {_key(d[1]) for d in decomps}
-                lhs_keys = {_key(d[0]) for d in decomps}
+                rhs_keys = {expr_key(d[1]) for d in decomps}
+                lhs_keys = {expr_key(d[0]) for d in decomps}
                 shared, bases = None, None
                 if len(rhs_keys) == 1:
                     shared, bases = decomps[0][1], [d[0] for d in decomps]
@@ -704,7 +704,7 @@ class IntegralGenerator:
 
             if factor_index in fused_factor:
                 base, shared = fused_factor[factor_index]
-                scale_key = (quadrature_rule, _key(shared))
+                scale_key = (quadrature_rule, expr_key(shared))
                 combined, defined = self.get_temp_symbol("fwscale", scale_key)
                 if not defined:
                     intermediates += [L.VariableDecl(combined, L.float_product([shared, weight]))]
