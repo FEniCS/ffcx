@@ -18,6 +18,16 @@ from ffcx.ir.representationutils import QuadratureRule
 logger = logging.getLogger("ffcx")
 
 
+# Cap on unrolling, so a curved high-order simplex doesn't blow up compile
+# time. Tensor-product geometry always keeps the loop path regardless.
+_MAX_UNROLLED_COORDINATE_DOFS = 16
+
+
+def _should_unroll_coordinate_dofs(num_dofs: int, has_tensor_factorisation: bool) -> bool:
+    """Return whether a coordinate-dof linear combination should be unrolled."""
+    return not has_tensor_factorisation and num_dofs <= _MAX_UNROLLED_COORDINATE_DOFS
+
+
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
     """Create a multi index for the quadrature loop."""
     ranges = [0]
@@ -186,6 +196,7 @@ class FFCXBackendDefinitions:
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+        assert begin is not None
 
         assert num_scalar_dofs == num_dofs
 
@@ -198,9 +209,7 @@ class FFCXBackendDefinitions:
         # Get access to element table
         ic_symbol = self.symbols.coefficient_dof_sum_index
         iq_symbol = self.symbols.quadrature_loop_index
-        ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
@@ -210,14 +219,41 @@ class FFCXBackendDefinitions:
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        code = []
-        declaration = [L.VariableDecl(access, 0.0)]
-        body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
-        code = [L.create_nested_for_loops([ic], body)]
+        if not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
+            # Many coordinate dofs: keep the runtime loop instead of one
+            # literal term per dof.
+            ic = create_dof_index(tabledata, ic_symbol)
+            FE, tables = self.access.table_access(
+                tabledata, self.entity_type, mt.restriction, iq, ic
+            )
+            code = []
+            declaration = [L.VariableDecl(access, 0.0)]
+            body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
+            code = [L.create_nested_for_loops([ic], body)]
+            input = [dof_access, *tables]
+        else:
+            # Few dofs: emit a single literal-indexed sum instead of a
+            # runtime loop. This avoids GCC's vectoriser mis-vectorising a
+            # tiny fixed-trip-count reduction into an expensive
+            # permute-then-horizontal-sum sequence, and lets the table's
+            # exact 0.0/+-1.0 low-order values constant-fold away.
+            terms = []
+            coord_tables: list[L.Symbol] = []
+            for k in range(num_dofs):
+                ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
+                FE_k, tables_k = self.access.table_access(
+                    tabledata, self.entity_type, mt.restriction, iq, ic_k
+                )
+                for t in tables_k:
+                    if t not in coord_tables:
+                        coord_tables.append(t)
+                terms.append(dof_access[k * dim + begin + offset] * FE_k)
+            declaration = [L.VariableDecl(access, L.Sum(terms))]
+            code = []
+            input = [dof_access, *coord_tables]
 
         name = type(mt.terminal).__name__
         output = [access]
-        input = [dof_access, *tables]
         annotations = [L.Annotation.fuse]
 
         # assert input and output are Symbol objects

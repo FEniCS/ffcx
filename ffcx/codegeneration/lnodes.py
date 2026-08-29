@@ -1075,6 +1075,34 @@ def _math_function(op, *args):
     return MathFunction(name, args)
 
 
+# Small integer exponents a power is expanded into multiplications for,
+# rather than emitted as a pow() call -- see _power.
+_POWER_EXPAND_RANGE = range(-2, 5)
+
+
+def _power(op, base, exponent):
+    """Get a power expression, expanding small integer exponents.
+
+    ``pow(x, n)`` is a libm call GCC only folds into multiplications for
+    some exponents and dtypes, so for a literal integer exponent in a small
+    range this emits the multiplications directly: ``x*x``, ``x*x*x``,
+    ``1.0/x``, ``1.0/(x*x)``. It also avoids a stray ``pow()`` call
+    triggering the quadrature-loop SIMD split (see
+    ``integral_generator.py``) for a form whose only "math function" is a
+    small integer power, e.g. ``x**2`` from a squared norm. Any other
+    exponent falls back to a plain ``pow()`` call.
+    """
+    if isinstance(exponent, LiteralInt) and exponent.value in _POWER_EXPAND_RANGE:
+        n = exponent.value
+        if n == 0:
+            return LiteralFloat(1.0)
+        result = base
+        for _ in range(abs(n) - 1):
+            result = result * base
+        return result if n > 0 else LiteralFloat(1.0) / result
+    return _math_function(op, base, exponent)
+
+
 # Lookup table for handler to call when the ufl_to_lnodes method (below) is
 # called, depending on the first argument type.
 _ufl_call_lookup = {
@@ -1086,7 +1114,7 @@ _ufl_call_lookup = {
     ufl.algebra.Sum: lambda x, a, b: a + b,
     ufl.algebra.Division: lambda x, a, b: a / b,
     ufl.algebra.Abs: _math_function,
-    ufl.algebra.Power: _math_function,
+    ufl.algebra.Power: _power,
     ufl.algebra.Real: _math_function,
     ufl.algebra.Imag: _math_function,
     ufl.algebra.Conj: _math_function,
