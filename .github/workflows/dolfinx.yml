@@ -30,11 +30,11 @@ jobs:
       matrix:
         petsc:
           - name: fp64
-            spec: +double~complex
+            spec: +double~complex+mumps+superlu-dist
           - name: fp32
-            spec: ~double~complex
+            spec: ~double~complex+mumps+superlu-dist
           - name: complex128
-            spec: +double+complex
+            spec: +double+complex+mumps+superlu-dist
     env:
       GITHUB_USER: ${{ github.actor }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
