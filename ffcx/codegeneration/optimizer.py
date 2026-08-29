@@ -253,7 +253,12 @@ def _collect_referenced_names(node, out: set[str]) -> None:
             _referenced_symbol_names(node.value, out)
     elif isinstance(node, L.ArrayDecl):
         pass
-    elif isinstance(node, (L.Section, L.StatementList)):
+    elif isinstance(node, L.Section):
+        for declaration in node.declarations:
+            if isinstance(declaration, L.VariableDecl) and declaration.value is not None:
+                _referenced_symbol_names(declaration.value, out)
+        _collect_referenced_names(node.statements, out)
+    elif isinstance(node, L.StatementList):
         _collect_referenced_names(node.statements, out)
     elif isinstance(node, L.ForRange):
         _referenced_symbol_names(node.begin, out)
@@ -274,6 +279,12 @@ def _drop_unreferenced(node, dead: set[str]):
             if not (isinstance(n, L.VariableDecl) and n.symbol.name in dead)
         ]
     if isinstance(node, L.Section):
+        node.declarations = [
+            declaration
+            for declaration in node.declarations
+            if not (isinstance(declaration, L.VariableDecl) and declaration.symbol.name in dead)
+        ]
+        node.output = [symbol for symbol in node.output if symbol.name not in dead]
         node.statements = _drop_unreferenced(node.statements, dead)
     elif isinstance(node, L.StatementList):
         node.statements = _drop_unreferenced(node.statements, dead)
@@ -285,6 +296,33 @@ def _drop_unreferenced(node, dead: set[str]):
         # cannot unwrap again.
         node.body.statements = _drop_unreferenced(node.body.statements, dead)
     return node
+
+
+def scalar_declaration_names(code: list[L.LNode]) -> set[str]:
+    """Return the names of every scalar declaration in a code tree.
+
+    Generated scalar declarations are pure computations, so an unread one can
+    be removed safely. Keeping this analysis on LNodes, rather than parsing
+    formatted C, preserves lexical structure and works for every backend.
+    """
+    names: set[str] = set()
+
+    def visit(node) -> None:
+        if isinstance(node, list):
+            for child in node:
+                visit(child)
+        elif isinstance(node, L.VariableDecl):
+            names.add(node.symbol.name)
+        elif isinstance(node, L.Section):
+            visit(node.declarations)
+            visit(node.statements)
+        elif isinstance(node, L.StatementList):
+            visit(node.statements)
+        elif isinstance(node, L.ForRange):
+            visit(node.body)
+
+    visit(code)
+    return names
 
 
 def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNode]:
@@ -545,12 +583,10 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
                 name = f"temp_{counter}"
                 counter += 1
                 temp = L.Symbol(name, L.DataType.SCALAR)
-                # Every entry gets written unconditionally by the loop just
-                # below (a plain Assign, not AssignAdd), so this zero-fill is
-                # value-dead. Kept anyway to match PR #853's original code
-                # exactly (harmless either way; not the source of the
-                # mass-matrix vectoriser regression documented on PR #865).
-                pre_loop.append(L.ArrayDecl(temp, size, [0]))
+                # No initialiser: every entry is written unconditionally by
+                # the loop just below (a plain Assign, not AssignAdd), so a
+                # zero-fill here would be a pure dead store.
+                pre_loop.append(L.ArrayDecl(temp, size))
                 hoist_loop_body.append(
                     L.Assign(L.ArrayAccess(temp, [outer_loop.index]), rhs_hoisted)
                 )

@@ -21,10 +21,12 @@ The frozen data was generated once with the unmodified compiler; see
 """
 
 import importlib.util
+import sys
 import types
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 import ffcx.codegeneration.jit
 
@@ -43,20 +45,60 @@ def _load_hyperelasticity_demo() -> types.ModuleType:
     return module
 
 
-def test_hyperelasticity_cell_kernels_match_golden_values(compile_args) -> None:
+@pytest.mark.parametrize(
+    "scalar_type, scalar_dtype, geometry_dtype, c_scalar_type, c_geometry_type, rtol, atol",
+    [
+        ("float32", np.float32, np.float32, "float", "float", 2e-5, 2e-6),
+        ("float64", np.float64, np.float64, "double", "double", 1e-12, 1e-14),
+        pytest.param(
+            "complex64",
+            np.complex64,
+            np.float32,
+            "float _Complex",
+            "float",
+            2e-5,
+            2e-6,
+            marks=pytest.mark.skipif(
+                sys.platform.startswith("win32"), reason="Windows has no C99 _Complex support"
+            ),
+        ),
+        pytest.param(
+            "complex128",
+            np.complex128,
+            np.float64,
+            "double _Complex",
+            "double",
+            1e-12,
+            1e-14,
+            marks=pytest.mark.skipif(
+                sys.platform.startswith("win32"), reason="Windows has no C99 _Complex support"
+            ),
+        ),
+    ],
+)
+def test_hyperelasticity_cell_kernels_match_golden_values(
+    compile_args,
+    scalar_type,
+    scalar_dtype,
+    geometry_dtype,
+    c_scalar_type,
+    c_geometry_type,
+    rtol,
+    atol,
+) -> None:
     """Tabulate demo/HyperElasticity.py's a_F and a_J cell kernels, compare to frozen values."""
     demo = _load_hyperelasticity_demo()
     golden = np.load(golden_file)
 
     compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
-        demo.forms, options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+        demo.forms, options={"scalar_type": scalar_type}, cffi_extra_compile_args=compile_args
     )
     ffi = module.ffi
     cell = module.lib.cell
 
-    coords = golden["coords"]
-    w = golden["w"]
-    c = golden["c"]
+    coords = golden["coords"].astype(geometry_dtype)
+    w = golden["w"].astype(scalar_dtype)
+    c = golden["c"].astype(scalar_dtype)
 
     for name, compiled_form, size in [
         ("a_F", compiled_forms[0], 30),
@@ -64,22 +106,22 @@ def test_hyperelasticity_cell_kernels_match_golden_values(compile_args) -> None:
     ]:
         offsets = compiled_form.form_integral_offsets
         integral = compiled_form.form_integrals[offsets[cell]]
-        A = np.zeros(size, dtype=np.float64)
-        kernel = getattr(integral, "tabulate_tensor_float64")
+        A = np.zeros(size, dtype=scalar_dtype)
+        kernel = getattr(integral, f"tabulate_tensor_{scalar_type}")
         kernel(
-            ffi.cast("double *", A.ctypes.data),
-            ffi.cast("double *", w.ctypes.data),
-            ffi.cast("double *", c.ctypes.data),
-            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast(f"{c_scalar_type} *", A.ctypes.data),
+            ffi.cast(f"{c_scalar_type} *", w.ctypes.data),
+            ffi.cast(f"{c_scalar_type} *", c.ctypes.data),
+            ffi.cast(f"{c_geometry_type} *", coords.ctypes.data),
             ffi.NULL,
             ffi.NULL,
             ffi.NULL,
         )
         np.testing.assert_allclose(
             A,
-            golden[name],
-            rtol=1e-12,
-            atol=1e-14,
+            golden[name].astype(scalar_dtype),
+            rtol=rtol,
+            atol=atol,
             err_msg=f"HyperElasticity {name} cell kernel no longer matches the frozen golden "
             "value -- if this change is intentional (e.g. a deliberate scalarization/"
             "factorization rewrite), regenerate test/data/hyperelasticity_golden.npz and "

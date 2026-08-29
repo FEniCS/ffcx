@@ -9,6 +9,8 @@
 
 import collections
 import logging
+import platform
+import sys
 from numbers import Integral
 from typing import Any
 
@@ -24,6 +26,7 @@ from ffcx.codegeneration.optimizer import (
     power_of_two_cse_statements,
     prune_dead_scalars,
     reciprocal_cse_statements,
+    scalar_declaration_names,
 )
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
@@ -31,6 +34,56 @@ from ffcx.ir.representation import IntegralIR
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
+
+
+_FW_CACHE_BUDGET_BYTES = 32768
+_FW_CACHE_BYTES_PER_SCALAR = 16
+_UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK = 256
+
+# GCC can lower these calls to glibc libmvec on supported x86-64 Linux
+# targets. Other hosts commonly keep scalar libm calls, in which case a
+# second loop and an fw cache are pure overhead.
+_VECTORIZABLE_MATH_FUNCTIONS = frozenset(
+    {
+        "acos",
+        "acosh",
+        "asin",
+        "asinh",
+        "atan",
+        "atanh",
+        "cos",
+        "cosh",
+        "erf",
+        "exp",
+        "ln",
+        "sin",
+        "sinh",
+        "tan",
+        "tanh",
+    }
+)
+
+
+def _fw_cache_tile_size(n_fw: int, num_points: int) -> int | None:
+    """Return a cache-tile length that stays within the fixed stack budget.
+
+    ``None`` means that even one cached value per intermediate would exceed
+    the budget, so the quadrature loop should remain fused.
+    """
+    assert n_fw > 0
+    assert num_points > 0
+
+    max_tile = _FW_CACHE_BUDGET_BYTES // (n_fw * _FW_CACHE_BYTES_PER_SCALAR)
+    if max_tile == 0:
+        return None
+
+    tile = min(max_tile, num_points)
+    # Preserve a SIMD-friendly width when it fits the budget. For a very
+    # large number of intermediates, a smaller tile is preferable to
+    # exceeding the fixed stack allocation budget.
+    if tile >= 8:
+        tile = tile // 8 * 8
+    return tile
 
 
 def extract_dtype(v, vops: list[Any]):
@@ -54,29 +107,51 @@ def extract_dtype(v, vops: list[Any]):
     return L.merge_dtypes(dtypes)
 
 
-def _contains_mathfunction(node) -> bool:
-    """Search an LNodes statement/expression tree for a call to a MathFunction."""
+def _contains_vectorizable_mathfunction(node) -> bool:
+    """Return whether *node* contains a math call targeted by libmvec."""
     if isinstance(node, list):
-        return any(_contains_mathfunction(n) for n in node)
+        return any(_contains_vectorizable_mathfunction(n) for n in node)
     if isinstance(node, L.MathFunction):
-        return True
+        return node.function in _VECTORIZABLE_MATH_FUNCTIONS or any(
+            _contains_vectorizable_mathfunction(arg) for arg in node.args
+        )
     if isinstance(node, (L.StatementList, L.Section)):
-        return _contains_mathfunction(node.statements)
+        return _contains_vectorizable_mathfunction(node.statements)
     if isinstance(node, L.ForRange):
-        return _contains_mathfunction(node.body)
+        return _contains_vectorizable_mathfunction(node.body)
     if isinstance(node, L.VariableDecl):
-        return node.value is not None and _contains_mathfunction(node.value)
+        return node.value is not None and _contains_vectorizable_mathfunction(node.value)
     if isinstance(node, (L.ArrayDecl, L.Comment)):
         return False
     if isinstance(node, L.Statement):
-        return _contains_mathfunction(node.expr)
+        return _contains_vectorizable_mathfunction(node.expr)
     if isinstance(node, L.NaryOp):
-        return any(_contains_mathfunction(a) for a in node.args)
+        return any(_contains_vectorizable_mathfunction(a) for a in node.args)
     if isinstance(node, L.BinOp):
-        return _contains_mathfunction(node.lhs) or _contains_mathfunction(node.rhs)
+        return _contains_vectorizable_mathfunction(node.lhs) or _contains_vectorizable_mathfunction(
+            node.rhs
+        )
     if isinstance(node, L.PrefixUnaryOp):
-        return _contains_mathfunction(node.arg)
+        return _contains_vectorizable_mathfunction(node.arg)
     return False
+
+
+def _supports_vector_math_loop_split() -> bool:
+    """Return whether the current JIT host has the required vector libm ABI."""
+    return sys.platform.startswith("linux") and platform.machine().lower() in {"amd64", "x86_64"}
+
+
+def _contraction_work(node) -> int:
+    """Estimate statically repeated scalar statements in a contraction tree."""
+    if isinstance(node, list):
+        return sum(_contraction_work(child) for child in node)
+    if isinstance(node, (L.Section, L.StatementList)):
+        return _contraction_work(node.statements)
+    if isinstance(node, L.ForRange):
+        if not isinstance(node.begin, L.LiteralInt) or not isinstance(node.end, L.LiteralInt):
+            return 0
+        return int(max(0, node.end.value - node.begin.value)) * _contraction_work(node.body)
+    return int(isinstance(node, L.Statement))
 
 
 class IntegralGenerator:
@@ -115,12 +190,6 @@ class IntegralGenerator:
         # Set of counters used for assigning names to intermediate
         # variables
         self.symbol_counters: dict[str, int] = collections.defaultdict(int)
-
-        # Names of scalar temporaries kept only speculatively by
-        # power-of-two CSE, across every partition generated for this
-        # kernel -- checked against the fully assembled body at the end of
-        # generate() by prune_dead_scalars().
-        self._pow2_cse_speculative: set[str] = set()
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -226,10 +295,10 @@ class IntegralGenerator:
         parts += all_preparts
         parts += all_quadparts
 
-        # Now that the whole kernel body is assembled, drop any power-of-two
-        # CSE temporary that never gained a reader anywhere in it (see
-        # power_of_two_cse_statements and prune_dead_scalars).
-        parts = prune_dead_scalars(parts, self._pow2_cse_speculative)
+        # Now that the whole kernel body is assembled, drop every unread
+        # scalar declaration. This must happen on the LNode tree, before
+        # formatting, so it respects scopes and is shared by all backends.
+        parts = prune_dead_scalars(parts, scalar_declaration_names(parts))
 
         return L.StatementList(parts)
 
@@ -345,7 +414,14 @@ class IntegralGenerator:
         for fw in intermediates_fw:
             assert isinstance(fw, L.VariableDecl)
             output += [fw.symbol]
-            declarations += [L.VariableDecl(fw.symbol, 0)]
+            # Declared here with no initial value: it's unconditionally
+            # assigned its real value below once that's computed, so a
+            # placeholder initialiser here would be a pure dead store. The
+            # declaration itself still has to live here (rather than fold
+            # into the assignment below) because that assignment sits
+            # inside this section's own C block scope, while fw needs to
+            # stay visible to the "Tensor Computation" section that follows.
+            declarations += [L.VariableDecl(fw.symbol)]
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
 
@@ -378,6 +454,15 @@ class IntegralGenerator:
         contracting in a second loop leaves the evaluation loop free of
         those accesses, so it vectorises onto the SIMD math library.
 
+        The `fw` cache is tiled rather than sized to the full point count:
+        a form with many `fw` values and a large rule (e.g. a nonlinear
+        constitutive law at a high estimated quadrature degree) can
+        otherwise put megabytes on the stack -- one array per `fw`, each
+        the length of the rule. Tiling bounds every kernel's stack use to a
+        fixed small budget regardless of point count, and as a side effect
+        keeps the whole cache resident in L1d across both passes over a
+        tile instead of spilling to memory.
+
         Returns `None` if the split does not apply, in which case the
         caller emits a single fused loop.
         """
@@ -399,25 +484,82 @@ class IntegralGenerator:
         # integrands (mass matrices, plain Poisson, etc.) have none, and for
         # those the split is a net loss (extra loop and memory traffic for no
         # vectorisation gain).
-        if not _contains_mathfunction(evaluation):
+        if not _contains_vectorizable_mathfunction(evaluation):
+            return None
+        # On x86-64 Linux the separate evaluation loop can call libmvec. On
+        # other targets only use it for a sufficiently expensive contraction,
+        # where separating the passes is still able to amortise the fw cache.
+        if not _supports_vector_math_loop_split() and (
+            _contraction_work(contraction) < _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK
+        ):
             return None
 
         num_points = quadrature_rule.weights.size
         index = iq.local_index(0)
 
-        declarations: list[L.LNode] = []
-        store: list[L.LNode] = []
-        load: list[L.LNode] = []
-        for fw in intermediates_fw:
-            cache = L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
-            declarations += [L.ArrayDecl(cache, sizes=num_points)]
-            store += [L.Assign(L.ArrayAccess(cache, [index]), fw.symbol)]
-            load += [L.VariableDecl(fw.symbol, L.ArrayAccess(cache, [index]))]
+        # Budget the whole fw cache (every fw's tile, for both passes over
+        # it) at 32 KiB, comfortably inside a typical 32-48 KiB L1d, using a
+        # conservative 16 bytes/scalar (covers complex128; overestimating
+        # the element size only makes the tile smaller than strictly
+        # necessary for float64, never unsafe). Rounded down to a multiple
+        # of 8 when that still fits, so the common case has a friendly SIMD
+        # width without letting a large intermediate set exceed the budget.
+        n_fw = len(intermediates_fw)
+        tile = _fw_cache_tile_size(n_fw, num_points)
+        if tile is None:
+            return None
 
-        return declarations + [
-            L.create_nested_for_loops([iq], evaluation + store),
-            L.create_nested_for_loops([iq], load + contraction),
+        caches = {
+            fw.symbol.name: L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
+            for fw in intermediates_fw
+        }
+        declarations: list[L.LNode] = [L.ArrayDecl(cache, sizes=tile) for cache in caches.values()]
+
+        if tile >= num_points:
+            # Whole rule fits in one tile: no need for an outer tiling loop.
+            store = [
+                L.Assign(L.ArrayAccess(caches[fw.symbol.name], [index]), fw.symbol)
+                for fw in intermediates_fw
+            ]
+            load = [
+                L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [index]))
+                for fw in intermediates_fw
+            ]
+            return declarations + [
+                L.create_nested_for_loops([iq], evaluation + store),
+                L.create_nested_for_loops([iq], load + contraction),
+            ]
+
+        num_tiles = -(-num_points // tile)  # ceil division
+        tile_index = L.Symbol(f"{index.name}_tile", L.DataType.INT)
+        tile_base = L.Symbol(f"{index.name}_base", L.DataType.INT)
+        tile_end = L.Symbol(f"{index.name}_end", L.DataType.INT)
+        local_offset = L.Sub(index, tile_base)
+
+        tile_end_expr = L.Conditional(
+            L.LT(L.Add(tile_base, L.LiteralInt(tile)), L.LiteralInt(num_points)),
+            L.Add(tile_base, L.LiteralInt(tile)),
+            L.LiteralInt(num_points),
+        )
+        setup: list[L.LNode] = [
+            L.VariableDecl(tile_base, L.Mul(tile_index, L.LiteralInt(tile))),
+            L.VariableDecl(tile_end, tile_end_expr),
         ]
+
+        store = [
+            L.Assign(L.ArrayAccess(caches[fw.symbol.name], [local_offset]), fw.symbol)
+            for fw in intermediates_fw
+        ]
+        load = [
+            L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [local_offset]))
+            for fw in intermediates_fw
+        ]
+
+        tile_body = setup + [
+            L.ForRange(index, tile_base, tile_end, evaluation + store),
+            L.ForRange(index, tile_base, tile_end, load + contraction),
+        ]
+        return declarations + [L.ForRange(tile_index, 0, num_tiles, tile_body)]
 
     def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
@@ -484,10 +626,7 @@ class IntegralGenerator:
         # back into a plain alias of the earlier equal value. Must run before
         # reciprocal-CSE below, which would otherwise hide the literal
         # power-of-two divisors this looks for behind a reciprocal symbol.
-        # Statements this keeps only speculatively are recorded so the whole
-        # kernel body can be checked, once fully assembled, for ones that
-        # never gained a reader -- see generate() and prune_dead_scalars().
-        intermediates = power_of_two_cse_statements(intermediates, self._pow2_cse_speculative)
+        intermediates = power_of_two_cse_statements(intermediates)
 
         # Collapse repeated divisions by the same divisor (e.g. every entry of
         # an affine cell's pseudo-inverse Jacobian dividing by the same

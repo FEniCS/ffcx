@@ -249,9 +249,11 @@ class Formatter(FormatterInterface):
     @__call__.register
     def _(self, v: L.VariableDecl) -> str:
         """Format a variable declaration."""
-        val = self(v.value)
         symbol = self(v.symbol)
         typename = self._dtype_to_name(v.symbol.dtype)
+        if v.value is None:
+            return f"{typename} {symbol};\n"
+        val = self(v.value)
         return f"{typename} {symbol} = {val};\n"
 
     @__call__.register
