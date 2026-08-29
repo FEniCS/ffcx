@@ -1,7 +1,8 @@
 name: DOLFINx integration
 
 # Build and test DOLFINx via Spack against FFCx, exercising the
-# fenics-dolfinx and py-fenics-dolfinx Spack packages (without PETSc).
+# fenics-dolfinx and py-fenics-dolfinx Spack packages across a PETSc
+# real64/real32/complex128 scalar-type matrix.
 # Structure mirrors FEniCS/basix's own .github/workflows/dolfinx.yml.
 
 on:
@@ -19,11 +20,21 @@ concurrency:
 
 jobs:
   dolfinx:
-    name: Run DOLFINx tests
+    name: Run DOLFINx tests (PETSc ${{ matrix.petsc.name }})
     runs-on: ubuntu-26.04
     container: ubuntu:26.04
     permissions:
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        petsc:
+          - name: fp64
+            spec: +double~complex+mumps+superlu-dist
+          - name: fp32
+            spec: ~double~complex+mumps+superlu-dist
+          - name: complex128
+            spec: +double+complex+mumps+superlu-dist
     env:
       GITHUB_USER: ${{ github.actor }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,7 +92,7 @@ jobs:
           echo "UFL_SHA=$(git -C $GITHUB_WORKSPACE/ufl-src rev-parse HEAD)" >> $GITHUB_ENV
           echo "BASIX_SHA=$(git -C $GITHUB_WORKSPACE/basix-src rev-parse HEAD)" >> $GITHUB_ENV
           echo "DOLFINX_SHA=$(git -C $GITHUB_WORKSPACE/dolfinx-src rev-parse HEAD)" >> $GITHUB_ENV
-          echo "TEST_DEPS=py-pytest py-pytest-xdist py-scipy catch2 cmake ninja" >> $GITHUB_ENV
+          echo "TEST_DEPS=py-pytest py-pytest-xdist py-scipy catch2 cmake ninja py-gmsh py-pyamg py-matplotlib py-networkx py-numba py-pyvista" >> $GITHUB_ENV
 
       # Dev-path and commit-pin the whole stack: every package is
       # rebuilt from source (never from the buildcache), and a failure
@@ -101,8 +112,17 @@ jobs:
           spack -e ci add py-fenics-ufl@main commit=$UFL_SHA
           spack -e ci add fenics-ufcx@main commit=${{ github.sha }}
           spack -e ci add py-fenics-ffcx@main commit=${{ github.sha }}
-          spack -e ci add fenics-dolfinx@main commit=$DOLFINX_SHA build_type=Developer
-          spack -e ci add py-fenics-dolfinx@main commit=$DOLFINX_SHA build_type=Developer
+          spack -e ci add fenics-dolfinx@main commit=$DOLFINX_SHA build_type=Developer +petsc
+          spack -e ci add py-fenics-dolfinx@main commit=$DOLFINX_SHA build_type=Developer +petsc4py
+          spack -e ci add petsc${{ matrix.petsc.spec }}
+          # Demo dependencies. gmsh~fltk avoids the FLTK GUI (headless CI);
+          # it and opencascade+draw still dlopen GLU/X11 unconditionally,
+          # so pyvista's GL virtual is pinned to the container's OSMesa
+          # (software rendering, from the external mesa in
+          # gh-actions-env.yml) rather than a real GLX driver.
+          spack -e ci add py-gmsh ^gmsh~med~fltk+external ^opencascade~draw py-pyamg py-matplotlib \
+            py-networkx py-numba ^llvm~clang~lldb~lld~offload~libomptarget~polly targets=x86 \
+            "py-pyvista ^[virtuals=gl] osmesa"
           spack -e ci add $TEST_DEPS
           spack -e ci concretize -j $(nproc)
           spack -e ci install -j $(nproc) --use-buildcache auto
@@ -125,6 +145,16 @@ jobs:
           cmake --build build/dolfinx-cpp-test
           ctest --test-dir build/dolfinx-cpp-test -V --output-on-failure -R unittests_np_1
 
+      - name: Build and run DOLFINx C++ demos (serial and MPI np=3)
+        shell: spack-bash {0}
+        run: |
+          spack env activate ci
+          spack load gcc cmake ninja py-fenics-ffcx
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build/dolfinx-cpp-demo -S dolfinx-src/cpp/demo
+          cmake --build build/dolfinx-cpp-demo
+          ctest --test-dir build/dolfinx-cpp-demo -V --output-on-failure -R "demo_.*_np_1"
+          ctest --test-dir build/dolfinx-cpp-demo -V --output-on-failure -R "demo_.*_np_3"
+
       - name: Set default DOLFINx JIT options
         run: |
           mkdir -p ~/.config/dolfinx
@@ -135,7 +165,15 @@ jobs:
         run: |
           spack env activate ci
           spack load gcc py-fenics-dolfinx
-          python -m pytest -n auto -m "not petsc4py and not adios2" dolfinx-src/python/test/unit
+          python -m pytest -n auto -m "not adios2" dolfinx-src/python/test/unit
+
+      - name: Run DOLFINx Python demos (serial and MPI np=3)
+        shell: spack-bash {0}
+        run: |
+          spack env activate ci
+          spack load gcc py-fenics-dolfinx
+          python -m pytest -n auto -m serial --durations=10 dolfinx-src/python/demo/test.py
+          python -m pytest -m mpi --num-proc=3 dolfinx-src/python/demo/test.py
 
       - name: Push test cache and update index
         if: ${{ !cancelled() && env.IS_TRUSTED == 'true' }}
