@@ -52,18 +52,14 @@ def reciprocal_cse_statements(
 ) -> list[L.LNode]:
     """Replace repeated divisions by the same divisor with one reciprocal and multiplies.
 
-    An affine cell's pseudo-inverse Jacobian divides every cofactor by the same
-    determinant. FFCx's existing CSE already recognises the shared divisor but
-    still emits one hardware division per entry; replacing repeated divisions
-    with one reciprocal and a multiply each trades one division for one
-    division plus N-1 multiplications, which is a net win since division is
-    markedly more expensive than multiplication on typical hardware. This is
-    the same reassociation `-ffast-math`/`-freciprocal-math` would apply
-    automatically, done unconditionally here: `a * (1.0 / b)` is not in
-    general bit-identical to `a / b` (two roundings instead of one), except
-    when `b` is an exact power of two. The difference is at the ULP level and
-    negligible next to quadrature/discretisation error, but it does mean
-    results can differ in the last bit or so from a naively-divided kernel.
+    N divisions by the same value cost more than one reciprocal plus N
+    multiplications, since division is markedly more expensive than
+    multiplication on typical hardware. This is the same reassociation
+    `-ffast-math`/`-freciprocal-math` would apply automatically, done
+    unconditionally here: `a * (1.0 / b)` is not in general bit-identical to
+    `a / b` (two roundings instead of one) unless `b` is an exact power of
+    two, but the difference is at the ULP level, negligible next to
+    quadrature/discretisation error.
 
     Args:
         statements: A flat list of statements (no nested loops expected --
@@ -75,10 +71,8 @@ def reciprocal_cse_statements(
     Returns:
         A new statement list with repeated divisions rewritten.
     """
-    # Keyed by the divisor's structural identity (see `expr_key`), not the LExpr
-    # object itself: a literal divisor (e.g. dividing by a plain constant)
-    # is a `LiteralFloat`, which -- unlike `LiteralInt` -- has no `__hash__`,
-    # so using it directly as a dict key crashes.
+    # Keyed by the divisor's structural identity (`expr_key`), not the LExpr
+    # itself: a literal divisor is a `LiteralFloat`, which has no `__hash__`.
     divisor_counts: dict[tuple, int] = defaultdict(int)
     for stmt in statements:
         if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Div):
@@ -144,28 +138,22 @@ def power_of_two_cse_statements(
     """Fold scalar chains that round-trip through exact powers of two.
 
     UFL's expansion of e.g. a symmetric gradient introduces factors of 2 and
-    1/2 (Voigt-style off-diagonal terms, a doubled derivative combined with a
-    later halving, etc.) that don't originate from the same place and so
-    aren't recognised as equal by ordinary CSE, even though multiplying and
-    dividing by an exact power of two never rounds in IEEE-754: ``(x + x) *
-    0.5`` is bit-identical to ``x`` for any finite, non-subnormal x. This walks
-    a flat statement list tracking, for each declared scalar, the (base
-    symbol, power-of-two exponent) pair its value is exactly equal to, and
-    replaces a statement whose computed value is already known under a
-    different name with a plain reference to that name instead of
-    recomputing it.
+    1/2 from different places (Voigt-style off-diagonal terms, a doubled
+    derivative later halved, etc.), so ordinary CSE doesn't recognise them
+    as equal -- even though multiplying/dividing by an exact power of two
+    never rounds in IEEE-754: ``(x + x) * 0.5`` is bit-identical to ``x``.
+    This walks a flat statement list tracking, for each declared scalar, the
+    (base symbol, power-of-two exponent) pair its value equals, and replaces
+    a statement whose value is already known under a different name with a
+    reference to that name.
 
-    Rerouting a statement straight back to `base` (or to an earlier scaled
-    symbol) can leave the statement it used to depend on with no remaining
-    reader -- if nothing else ever needed that same intermediate value, it
-    becomes dead code, which GCC rejects under ``-Werror=unused-variable``.
-    Whether that's actually true can depend on code well outside this one
-    statement list (another partition's statements reading this one's
-    output, or the tensor contraction reading it directly), so this
-    function does not decide the question itself: every symbol it keeps
-    only speculatively (in case a later statement in *this* list needs the
-    same value) is recorded into `speculative_out` for the caller to check
-    against the fully assembled kernel body, via :func:`prune_dead_scalars`.
+    Rerouting a statement back to `base` (or an earlier scaled symbol) can
+    leave the statement it depended on with no remaining reader -- dead
+    code, which GCC rejects under ``-Werror=unused-variable``. Whether
+    that's true can depend on code outside this statement list, so this
+    function doesn't decide it: symbols kept only speculatively are recorded
+    into `speculative_out` for the caller to check against the fully
+    assembled kernel body, via :func:`prune_dead_scalars`.
 
     Args:
         statements: A flat list of statements (piecewise/varying partition,
@@ -329,15 +317,10 @@ def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNod
     """Remove scalar declarations in `candidates` that end up with no reader.
 
     :func:`power_of_two_cse_statements` can reroute a statement past an
-    earlier one it used to depend on (e.g. straight back to the value it
-    was doubled from), leaving that earlier statement with no remaining
-    use -- dead code that GCC rejects under ``-Werror=unused-variable``.
-    Call this once the whole kernel body is assembled (definitions,
-    intermediates, tensor contraction and all), so that a declaration used
-    only by code outside its own partition's own statement list (a
-    different quadrature rule's varying partition consuming a piecewise
-    value, say, or the tensor contraction reading it directly) is
-    correctly recognised as live.
+    earlier one it depended on, leaving that one dead -- code GCC rejects
+    under ``-Werror=unused-variable``. Call this once the whole kernel body
+    is assembled, so a declaration read only by code outside its own
+    partition (e.g. the tensor contraction) is still recognised as live.
 
     Args:
         code: The complete generated kernel body.
@@ -491,9 +474,8 @@ def expr_key(expr) -> tuple:
     elif isinstance(expr, L.LiteralFloat | L.LiteralInt):
         return ("literal", expr.value)
     elif isinstance(expr, L.PrefixUnaryOp):
-        # No isinstance branch above covers this; `repr()` would otherwise
-        # fall through to the identity-based default, since PrefixUnaryOp
-        # (Neg, Not) has no __repr__ override of its own.
+        # PrefixUnaryOp (Neg, Not) has no __repr__ override, so it would
+        # otherwise fall through to the identity-based default below.
         return (type(expr).__name__, expr_key(expr.arg))
     args = getattr(expr, "args", None)
     if args is not None:
@@ -540,23 +522,18 @@ def licm(section: L.Section, quadrature_rule: QuadratureRule) -> L.Section:
     pre_loop: list[L.LNode] = []
     inner_body: list[L.LNode] = []
     size = outer_loop.end.value - outer_loop.begin.value
-    # Assignments for every hoisted temp are collected here and emitted as
-    # one shared loop below, rather than one separate same-range ForRange
-    # per temp: a form with many block entries (e.g. a vector/tensor
-    # equation) can hoist dozens of temps, and dozens of tiny loops back to
-    # back give the compiler's vectoriser nothing to work with, where one
-    # loop computing all of them per iteration is a much better target.
+    # Every hoisted temp's assignment is collected here and emitted as one
+    # shared loop below, rather than one ForRange per temp -- many small
+    # loops back to back give the vectoriser nothing to work with.
     hoist_loop_body: list[L.LNode] = []
-    # Structural key of an already-hoisted expression -> its temp symbol. A
-    # vector-valued form with identical, uncoupled per-component blocks
-    # (e.g. vector Poisson's diagonal Laplacian blocks) produces the exact
-    # same hoisted expression for each component; without this it was
-    # recomputed and stored again from scratch for every one of them.
+    # Structural key of an already-hoisted expression -> its temp symbol, so
+    # identical hoisted expressions (e.g. vector Poisson's diagonal blocks)
+    # are computed once instead of once per block entry.
     seen_hoisted: dict[tuple, L.Symbol] = {}
     for lhs, rhs in expressions.items():
-        # Group the terms of this entry by the factors that stay in the inner
-        # loop. Terms sharing them differ only in what is hoisted, so one
-        # temporary can hold their sum and the entry needs a single update.
+        # Group terms by the factors that stay in the inner loop: terms
+        # sharing them differ only in what's hoisted, so one temporary can
+        # hold their sum and the entry needs a single update.
         groups: dict[tuple, tuple[list, list]] = {}
         terms: list[L.LExpr] = []
         for r in rhs:

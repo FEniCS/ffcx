@@ -18,9 +18,8 @@ from ffcx.ir.representationutils import QuadratureRule
 logger = logging.getLogger("ffcx")
 
 
-# Keep the literal coordinate-dof sum small enough that unrolling improves
-# generated code instead of making curved simplex geometry expensive to
-# compile. Tensor-product geometry is handled by the same loop path.
+# Cap on unrolling, so a curved high-order simplex doesn't blow up compile
+# time. Tensor-product geometry always keeps the loop path regardless.
 _MAX_UNROLLED_COORDINATE_DOFS = 16
 
 
@@ -221,10 +220,8 @@ class FFCXBackendDefinitions:
             offset = num_scalar_dofs * dim
 
         if not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
-            # High-order geometry can have many coordinate dofs on both
-            # tensor-product cells and curved simplices. Keep the general
-            # runtime-loop path in either case, rather than emitting one
-            # literal term per coordinate dof.
+            # Many coordinate dofs: keep the runtime loop instead of one
+            # literal term per dof.
             ic = create_dof_index(tabledata, ic_symbol)
             FE, tables = self.access.table_access(
                 tabledata, self.entity_type, mt.restriction, iq, ic
@@ -235,16 +232,11 @@ class FFCXBackendDefinitions:
             code = [L.create_nested_for_loops([ic], body)]
             input = [dof_access, *tables]
         else:
-            # Small affine/simplex geometry sums are best emitted as a single
-            # literal-indexed expression instead of a runtime reduction loop:
-            # this is what a hand-written kernel would do,
-            # and it avoids GCC's vectoriser mis-vectorising a tiny
-            # fixed-trip-count reduction into an expensive
-            # permute-then-horizontal-sum sequence -- a real, measured cost
-            # for e.g. plain P1 geometry, where this sum is most of the
-            # kernel. Also lets the FE table's exact 0.0/+-1.0 low-order
-            # values fold away as plain constant propagation, same as
-            # unrolled code would.
+            # Few dofs: emit a single literal-indexed sum instead of a
+            # runtime loop. This avoids GCC's vectoriser mis-vectorising a
+            # tiny fixed-trip-count reduction into an expensive
+            # permute-then-horizontal-sum sequence, and lets the table's
+            # exact 0.0/+-1.0 low-order values constant-fold away.
             terms = []
             coord_tables: list[L.Symbol] = []
             for k in range(num_dofs):

@@ -1083,18 +1083,14 @@ _POWER_EXPAND_RANGE = range(-2, 5)
 def _power(op, base, exponent):
     """Get a power expression, expanding small integer exponents.
 
-    ``pow(x, n)`` is a libm call that GCC only folds into multiplications
-    for some exponents and dtypes -- float32's ``powf`` fares worse still
-    -- so for a literal integer exponent in a small range this emits the
-    multiplications directly: ``x*x``, ``x*x*x``, ``1.0/x``, ``1.0/(x*x)``.
-    This also matters beyond the arithmetic itself: an emitted ``pow()``
-    call makes `_contains_mathfunction`
-    (``ffcx/codegeneration/integral_generator.py``) treat the expression as
-    containing a transcendental call, which triggers the quadrature-loop
-    SIMD split for zero vectorisation benefit on forms whose only "math
-    function" is really just a small integer power (e.g. ``x**2`` from a
-    squared norm). Any other exponent -- non-integer, or outside the small
-    range -- falls back to a plain ``pow()`` call.
+    ``pow(x, n)`` is a libm call GCC only folds into multiplications for
+    some exponents and dtypes, so for a literal integer exponent in a small
+    range this emits the multiplications directly: ``x*x``, ``x*x*x``,
+    ``1.0/x``, ``1.0/(x*x)``. It also avoids a stray ``pow()`` call
+    triggering the quadrature-loop SIMD split (see
+    ``integral_generator.py``) for a form whose only "math function" is a
+    small integer power, e.g. ``x**2`` from a squared norm. Any other
+    exponent falls back to a plain ``pow()`` call.
     """
     if isinstance(exponent, LiteralInt) and exponent.value in _POWER_EXPAND_RANGE:
         n = exponent.value

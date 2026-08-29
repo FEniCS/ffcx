@@ -78,9 +78,7 @@ def _fw_cache_tile_size(n_fw: int, num_points: int) -> int | None:
         return None
 
     tile = min(max_tile, num_points)
-    # Preserve a SIMD-friendly width when it fits the budget. For a very
-    # large number of intermediates, a smaller tile is preferable to
-    # exceeding the fixed stack allocation budget.
+    # Round down to a SIMD-friendly width when it still fits the budget.
     if tile >= 8:
         tile = tile // 8 * 8
     return tile
@@ -178,13 +176,10 @@ class IntegralGenerator:
         # Cache
         self.temp_symbols: dict[Any, L.Symbol] = {}
 
-        # Piecewise (once-per-cell) symbol name -> (lhs, rhs) of its
-        # defining product, when it's a plain two-factor multiply. Lets
-        # generate_block_parts recognise several piecewise values that all
-        # share one multiplicative factor (e.g. several independent metric
-        # tensor entries all scaled by the same |det J|) and fuse that
-        # shared factor with the quadrature weight once, instead of paying
-        # for it again in every entry.
+        # Piecewise symbol name -> (lhs, rhs) of its defining two-factor
+        # product, if any. Lets generate_block_parts spot several block
+        # entries sharing one factor (e.g. several metric-tensor entries all
+        # scaled by |det J|) and fuse it with the quadrature weight once.
         self._piecewise_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
 
         # Set of counters used for assigning names to intermediate
@@ -295,9 +290,9 @@ class IntegralGenerator:
         parts += all_preparts
         parts += all_quadparts
 
-        # Now that the whole kernel body is assembled, drop every unread
-        # scalar declaration. This must happen on the LNode tree, before
-        # formatting, so it respects scopes and is shared by all backends.
+        # Drop every unread scalar declaration now the kernel body is whole.
+        # Done on the LNode tree, before formatting, so it respects scopes
+        # and is shared by all backends.
         parts = prune_dead_scalars(parts, scalar_declaration_names(parts))
 
         return L.StatementList(parts)
@@ -414,13 +409,10 @@ class IntegralGenerator:
         for fw in intermediates_fw:
             assert isinstance(fw, L.VariableDecl)
             output += [fw.symbol]
-            # Declared here with no initial value: it's unconditionally
-            # assigned its real value below once that's computed, so a
-            # placeholder initialiser here would be a pure dead store. The
-            # declaration itself still has to live here (rather than fold
-            # into the assignment below) because that assignment sits
-            # inside this section's own C block scope, while fw needs to
-            # stay visible to the "Tensor Computation" section that follows.
+            # No initialiser: it's unconditionally assigned below, so one
+            # would be a dead store. Declared here rather than at that
+            # assignment because fw must stay visible to the "Tensor
+            # Computation" section that follows, outside this block's scope.
             declarations += [L.VariableDecl(fw.symbol)]
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
@@ -448,20 +440,16 @@ class IntegralGenerator:
 
         The fused loop interleaves evaluation of the varying quantities
         (which carries any math functions of the spatial coordinate) with
-        the tensor contraction, whose strided reads of the basis tables
-        stop the compiler vectorising the loop -- leaving calls to `sin`
-        and friends scalar. Storing the `fw` values in a small array and
-        contracting in a second loop leaves the evaluation loop free of
-        those accesses, so it vectorises onto the SIMD math library.
+        the tensor contraction, whose strided table reads stop the compiler
+        vectorising the loop -- leaving calls to `sin` and friends scalar.
+        Caching the `fw` values and contracting in a second loop leaves the
+        evaluation loop free of those reads, so it vectorises onto the SIMD
+        math library.
 
-        The `fw` cache is tiled rather than sized to the full point count:
-        a form with many `fw` values and a large rule (e.g. a nonlinear
-        constitutive law at a high estimated quadrature degree) can
-        otherwise put megabytes on the stack -- one array per `fw`, each
-        the length of the rule. Tiling bounds every kernel's stack use to a
-        fixed small budget regardless of point count, and as a side effect
-        keeps the whole cache resident in L1d across both passes over a
-        tile instead of spilling to memory.
+        The `fw` cache is tiled, not sized to the full point count: a form
+        with many `fw` values and a large rule could otherwise put megabytes
+        on the stack. Tiling bounds stack use to a fixed budget and keeps
+        each tile resident in L1d across both passes.
 
         Returns `None` if the split does not apply, in which case the
         caller emits a single fused loop.
@@ -478,17 +466,14 @@ class IntegralGenerator:
         if not contraction or not evaluation:
             return None
 
-        # The split trades a fused loop for two loops plus a store/load of
-        # every fw through a cache array. That only pays for itself when the
-        # evaluation loop has a transcendental math call to vectorise -- most
-        # integrands (mass matrices, plain Poisson, etc.) have none, and for
-        # those the split is a net loss (extra loop and memory traffic for no
-        # vectorisation gain).
+        # The split only pays for itself when there's a transcendental math
+        # call to vectorise -- most integrands (mass matrices, plain
+        # Poisson, etc.) have none, and for those it's a net loss.
         if not _contains_vectorizable_mathfunction(evaluation):
             return None
-        # On x86-64 Linux the separate evaluation loop can call libmvec. On
-        # other targets only use it for a sufficiently expensive contraction,
-        # where separating the passes is still able to amortise the fw cache.
+        # On x86-64 Linux the evaluation loop can call libmvec. Elsewhere,
+        # only split when the contraction is expensive enough to amortise
+        # the fw cache without that benefit.
         if not _supports_vector_math_loop_split() and (
             _contraction_work(contraction) < _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK
         ):
@@ -497,13 +482,8 @@ class IntegralGenerator:
         num_points = quadrature_rule.weights.size
         index = iq.local_index(0)
 
-        # Budget the whole fw cache (every fw's tile, for both passes over
-        # it) at 32 KiB, comfortably inside a typical 32-48 KiB L1d, using a
-        # conservative 16 bytes/scalar (covers complex128; overestimating
-        # the element size only makes the tile smaller than strictly
-        # necessary for float64, never unsafe). Rounded down to a multiple
-        # of 8 when that still fits, so the common case has a friendly SIMD
-        # width without letting a large intermediate set exceed the budget.
+        # Budget the whole fw cache at 32 KiB, comfortably inside a typical
+        # L1d, using a conservative 16 bytes/scalar (covers complex128).
         n_fw = len(intermediates_fw)
         tile = _fw_cache_tile_size(n_fw, num_points)
         if tile is None:
@@ -622,24 +602,20 @@ class IntegralGenerator:
         definitions = optimize(definitions, quadrature_rule)
 
         # Fold scalar chains that round-trip through exact powers of two
-        # (e.g. a symmetric gradient's factor of 1/2 undoing an earlier *2)
-        # back into a plain alias of the earlier equal value. Must run before
-        # reciprocal-CSE below, which would otherwise hide the literal
-        # power-of-two divisors this looks for behind a reciprocal symbol.
+        # (e.g. a symmetric gradient's 1/2 undoing an earlier *2) into a
+        # plain alias. Must run before reciprocal-CSE, which would otherwise
+        # hide the power-of-two divisors this looks for behind a symbol.
         intermediates = power_of_two_cse_statements(intermediates)
 
-        # Collapse repeated divisions by the same divisor (e.g. every entry of
-        # an affine cell's pseudo-inverse Jacobian dividing by the same
+        # Collapse repeated divisions by the same divisor (e.g. an affine
+        # cell's pseudo-inverse Jacobian dividing every entry by the same
         # determinant) into one reciprocal and a multiply each.
         intermediates = reciprocal_cse_statements(intermediates, name_prefix=f"recip_{symbol.name}")
 
-        # Record each piecewise (once-per-cell) scalar that's a plain
-        # two-factor product, so generate_block_parts can recognise several
-        # block entries that share one multiplicative factor (e.g. several
-        # metric-tensor entries all scaled by the same |det J|) and fuse
-        # that shared factor with the quadrature weight once. Read after the
-        # CSE passes above so a division rewritten into a reciprocal
-        # multiply by reciprocal-CSE is also seen as a fusable product.
+        # Record each piecewise two-factor product so generate_block_parts
+        # can fuse a shared factor across block entries with the quadrature
+        # weight once (see _piecewise_mul_operands). Read after the CSE
+        # passes so a reciprocal-CSE-rewritten division counts too.
         if mode == "piecewise":
             for stmt in intermediates:
                 if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
@@ -756,17 +732,13 @@ class IntegralGenerator:
 
         A_shape = self.ir.expression.tensor_shape
 
-        # Detect a set of block entries whose piecewise (once-per-cell)
-        # values all share one common multiplicative factor -- e.g. several
-        # independent metric-tensor entries all scaled by the same |det J|.
-        # Multiplying that shared factor into the quadrature weight once and
-        # then multiplying each entry's other factor by the combined result
-        # does less work than multiplying the weight into each already-
-        # scaled entry separately, whenever there are more sharing entries
-        # than quadrature points -- the crossover where a rule has few
-        # enough points that the per-entry weight multiplies dominate. This
-        # is a genuine re-association, not a rewrite GCC could ever perform
-        # itself without -ffast-math, since it changes rounding.
+        # Detect block entries whose piecewise values share one common
+        # factor (e.g. several metric-tensor entries scaled by the same
+        # |det J|). Multiplying that factor into the quadrature weight once,
+        # rather than into every already-scaled entry, is cheaper whenever
+        # there are more sharing entries than quadrature points. This is a
+        # genuine re-association GCC can't perform itself without
+        # -ffast-math, since it changes rounding.
         fused_factor: dict[int, tuple[L.LExpr, L.LExpr]] = {}
         if (
             quadrature_rule is not None
@@ -911,13 +883,10 @@ class IntegralGenerator:
             for expression in keep[indices]:
                 body.append(L.AssignAdd(A[multi_index], expression))
 
-        # Nest with the last tensor index innermost, so the contiguous index of
-        # the element tensor varies fastest in the accumulation. Empirically,
-        # this is what GCC's vectoriser wants whenever an entry sums more than
-        # one term (e.g. one per spatial direction in a gradient-gradient
-        # form) -- but for a single-term entry (e.g. a plain mass matrix) the
-        # same order defeats it instead, so keep the old row-innermost order
-        # for that case (see PR #865 for the measurements behind this).
+        # Nest with the last tensor index innermost when an entry sums more
+        # than one term (e.g. gradient-gradient) -- GCC's vectoriser wants
+        # this. A single-term entry (e.g. a plain mass matrix) prefers the
+        # opposite, row-innermost order instead.
         multi_term = any(len(v) > 1 for v in keep.values())
         nest_indices = B_indices if multi_term else B_indices[::-1]
         body = [L.create_nested_for_loops(nest_indices, body)]
