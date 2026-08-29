@@ -739,11 +739,30 @@ class IntegralGenerator:
         # there are more sharing entries than quadrature points. This is a
         # genuine re-association GCC can't perform itself without
         # -ffast-math, since it changes rounding.
+        #
+        # Skip it when every argument table in this block is itself
+        # quadrature-point-independent (piecewise_ttypes) and there is more
+        # than one quadrature point: the per-entry values are then fully
+        # loop-invariant, and GCC/clang hoist the unfused multiply-by-weight
+        # out of the loop entirely -- an indirection this fusion adds (a
+        # shared factor computed fresh each iteration) can stop the compiler
+        # seeing that the whole loop is redundant, costing far more than the
+        # fusion saves (see PR #865's hyperelasticity_residual_p1 finding).
+        # With a single quadrature point there's no loop to hoist away, so
+        # the fusion's reduced op count is a clean win regardless.
         fused_factor: dict[int, tuple[L.LExpr, L.LExpr]] = {}
         if (
             quadrature_rule is not None
             and self.ir.expression.integral_type not in ufl.custom_integral_types
             and len(blocklist) > quadrature_rule.weights.size
+            and (
+                quadrature_rule.weights.size == 1
+                or any(
+                    ttype not in piecewise_ttypes
+                    for blockdata in blocklist
+                    for ttype in blockdata.ttypes
+                )
+            )
         ):
             F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
             factor_indices = []
