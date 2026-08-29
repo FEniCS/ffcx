@@ -18,7 +18,13 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
-from ffcx.codegeneration.optimizer import optimize
+from ffcx.codegeneration.optimizer import (
+    _key,
+    optimize,
+    power_of_two_cse_statements,
+    prune_dead_scalars,
+    reciprocal_cse_statements,
+)
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
 from ffcx.ir.representation import IntegralIR
@@ -48,6 +54,31 @@ def extract_dtype(v, vops: list[Any]):
     return L.merge_dtypes(dtypes)
 
 
+def _contains_mathfunction(node) -> bool:
+    """Search an LNodes statement/expression tree for a call to a MathFunction."""
+    if isinstance(node, list):
+        return any(_contains_mathfunction(n) for n in node)
+    if isinstance(node, L.MathFunction):
+        return True
+    if isinstance(node, (L.StatementList, L.Section)):
+        return _contains_mathfunction(node.statements)
+    if isinstance(node, L.ForRange):
+        return _contains_mathfunction(node.body)
+    if isinstance(node, L.VariableDecl):
+        return node.value is not None and _contains_mathfunction(node.value)
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return False
+    if isinstance(node, L.Statement):
+        return _contains_mathfunction(node.expr)
+    if isinstance(node, L.NaryOp):
+        return any(_contains_mathfunction(a) for a in node.args)
+    if isinstance(node, L.BinOp):
+        return _contains_mathfunction(node.lhs) or _contains_mathfunction(node.rhs)
+    if isinstance(node, L.PrefixUnaryOp):
+        return _contains_mathfunction(node.arg)
+    return False
+
+
 class IntegralGenerator:
     """Integral generator."""
 
@@ -72,9 +103,24 @@ class IntegralGenerator:
         # Cache
         self.temp_symbols: dict[Any, L.Symbol] = {}
 
+        # Piecewise (once-per-cell) symbol name -> (lhs, rhs) of its
+        # defining product, when it's a plain two-factor multiply. Lets
+        # generate_block_parts recognise several piecewise values that all
+        # share one multiplicative factor (e.g. several independent metric
+        # tensor entries all scaled by the same |det J|) and fuse that
+        # shared factor with the quadrature weight once, instead of paying
+        # for it again in every entry.
+        self._piecewise_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
+
         # Set of counters used for assigning names to intermediate
         # variables
         self.symbol_counters: dict[str, int] = collections.defaultdict(int)
+
+        # Names of scalar temporaries kept only speculatively by
+        # power-of-two CSE, across every partition generated for this
+        # kernel -- checked against the fully assembled body at the end of
+        # generate() by prune_dead_scalars().
+        self._pow2_cse_speculative: set[str] = set()
 
     def init_scopes(self):
         """Initialize variable scope dicts."""
@@ -179,6 +225,11 @@ class IntegralGenerator:
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
+
+        # Now that the whole kernel body is assembled, drop any power-of-two
+        # CSE temporary that never gained a reader anywhere in it (see
+        # power_of_two_cse_statements and prune_dead_scalars).
+        parts = prune_dead_scalars(parts, self._pow2_cse_speculative)
 
         return L.StatementList(parts)
 
@@ -304,7 +355,69 @@ class IntegralGenerator:
         code = definitions + intermediates + tensor_comp
         code = optimize(code, quadrature_rule)
 
+        split = self._split_quadrature_loop(code, iq, intermediates_fw, quadrature_rule)
+        if split is not None:
+            return split
+
         return [L.create_nested_for_loops([iq], code)]
+
+    def _split_quadrature_loop(
+        self,
+        code: list[L.LNode],
+        iq: L.MultiIndex,
+        intermediates_fw: list[L.VariableDecl],
+        quadrature_rule: QuadratureRule,
+    ):
+        """Split the quadrature loop into evaluation and contraction loops.
+
+        The fused loop interleaves evaluation of the varying quantities
+        (which carries any math functions of the spatial coordinate) with
+        the tensor contraction, whose strided reads of the basis tables
+        stop the compiler vectorising the loop -- leaving calls to `sin`
+        and friends scalar. Storing the `fw` values in a small array and
+        contracting in a second loop leaves the evaluation loop free of
+        those accesses, so it vectorises onto the SIMD math library.
+
+        Returns `None` if the split does not apply, in which case the
+        caller emits a single fused loop.
+        """
+        if quadrature_rule is None or not intermediates_fw:
+            return None
+
+        # Only single-index (non tensor-product) rules for now
+        if quadrature_rule.has_tensor_factors or iq.dim != 1:
+            return None
+
+        evaluation = [c for c in code if getattr(c, "name", None) != "Tensor Computation"]
+        contraction = [c for c in code if getattr(c, "name", None) == "Tensor Computation"]
+        if not contraction or not evaluation:
+            return None
+
+        # The split trades a fused loop for two loops plus a store/load of
+        # every fw through a cache array. That only pays for itself when the
+        # evaluation loop has a transcendental math call to vectorise -- most
+        # integrands (mass matrices, plain Poisson, etc.) have none, and for
+        # those the split is a net loss (extra loop and memory traffic for no
+        # vectorisation gain).
+        if not _contains_mathfunction(evaluation):
+            return None
+
+        num_points = quadrature_rule.weights.size
+        index = iq.local_index(0)
+
+        declarations: list[L.LNode] = []
+        store: list[L.LNode] = []
+        load: list[L.LNode] = []
+        for fw in intermediates_fw:
+            cache = L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
+            declarations += [L.ArrayDecl(cache, sizes=num_points)]
+            store += [L.Assign(L.ArrayAccess(cache, [index]), fw.symbol)]
+            load += [L.VariableDecl(fw.symbol, L.ArrayAccess(cache, [index]))]
+
+        return declarations + [
+            L.create_nested_for_loops([iq], evaluation + store),
+            L.create_nested_for_loops([iq], load + contraction),
+        ]
 
     def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
@@ -365,6 +478,37 @@ class IntegralGenerator:
 
         # Optimize definitions
         definitions = optimize(definitions, quadrature_rule)
+
+        # Fold scalar chains that round-trip through exact powers of two
+        # (e.g. a symmetric gradient's factor of 1/2 undoing an earlier *2)
+        # back into a plain alias of the earlier equal value. Must run before
+        # reciprocal-CSE below, which would otherwise hide the literal
+        # power-of-two divisors this looks for behind a reciprocal symbol.
+        # Statements this keeps only speculatively are recorded so the whole
+        # kernel body can be checked, once fully assembled, for ones that
+        # never gained a reader -- see generate() and prune_dead_scalars().
+        intermediates = power_of_two_cse_statements(intermediates, self._pow2_cse_speculative)
+
+        # Collapse repeated divisions by the same divisor (e.g. every entry of
+        # an affine cell's pseudo-inverse Jacobian dividing by the same
+        # determinant) into one reciprocal and a multiply each.
+        intermediates = reciprocal_cse_statements(intermediates, name_prefix=f"recip_{symbol.name}")
+
+        # Record each piecewise (once-per-cell) scalar that's a plain
+        # two-factor product, so generate_block_parts can recognise several
+        # block entries that share one multiplicative factor (e.g. several
+        # metric-tensor entries all scaled by the same |det J|) and fuse
+        # that shared factor with the quadrature weight once. Read after the
+        # CSE passes above so a division rewritten into a reciprocal
+        # multiply by reciprocal-CSE is also seen as a fusable product.
+        if mode == "piecewise":
+            for stmt in intermediates:
+                if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
+                    self._piecewise_mul_operands[stmt.symbol.name] = (
+                        stmt.value.lhs,
+                        stmt.value.rhs,
+                    )
+
         return definitions, intermediates
 
     def generate_dofblock_partition(
@@ -473,6 +617,53 @@ class IntegralGenerator:
 
         A_shape = self.ir.expression.tensor_shape
 
+        # Detect a set of block entries whose piecewise (once-per-cell)
+        # values all share one common multiplicative factor -- e.g. several
+        # independent metric-tensor entries all scaled by the same |det J|.
+        # Multiplying that shared factor into the quadrature weight once and
+        # then multiplying each entry's other factor by the combined result
+        # does less work than multiplying the weight into each already-
+        # scaled entry separately, whenever there are more sharing entries
+        # than quadrature points -- the crossover where a rule has few
+        # enough points that the per-entry weight multiplies dominate. This
+        # is a genuine re-association, not a rewrite GCC could ever perform
+        # itself without -ffast-math, since it changes rounding.
+        fused_factor: dict[int, tuple[L.LExpr, L.LExpr]] = {}
+        if (
+            quadrature_rule is not None
+            and self.ir.expression.integral_type not in ufl.custom_integral_types
+            and len(blocklist) > quadrature_rule.weights.size
+        ):
+            F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
+            factor_indices = []
+            decomps: list[tuple[L.LExpr, L.LExpr]] = []
+            for blockdata in blocklist:
+                if len(blockdata.factor_indices_comp_indices) > 1:
+                    decomps = []
+                    break
+                factor_index = blockdata.factor_indices_comp_indices[0][0]
+                v = F.nodes[factor_index]["expression"]
+                f = self.get_var(quadrature_rule, domain, v)
+                decomp = (
+                    self._piecewise_mul_operands.get(f.name) if isinstance(f, L.Symbol) else None
+                )
+                if decomp is None:
+                    decomps = []
+                    break
+                factor_indices.append(factor_index)
+                decomps.append(decomp)
+
+            if decomps:
+                rhs_keys = {_key(d[1]) for d in decomps}
+                lhs_keys = {_key(d[0]) for d in decomps}
+                shared, bases = None, None
+                if len(rhs_keys) == 1:
+                    shared, bases = decomps[0][1], [d[0] for d in decomps]
+                elif len(lhs_keys) == 1:
+                    shared, bases = decomps[0][0], [d[1] for d in decomps]
+                if shared is not None and bases is not None:
+                    fused_factor = dict(zip(factor_indices, zip(bases, [shared] * len(bases))))
+
         for blockdata in blocklist:
             B_indices = []
             for i in range(block_rank):
@@ -510,6 +701,14 @@ class IntegralGenerator:
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
                 weight = weights[iq.global_index]
+
+            if factor_index in fused_factor:
+                base, shared = fused_factor[factor_index]
+                scale_key = (quadrature_rule, _key(shared))
+                combined, defined = self.get_temp_symbol("fwscale", scale_key)
+                if not defined:
+                    intermediates += [L.VariableDecl(combined, L.float_product([shared, weight]))]
+                f, weight = base, combined
 
             # Define fw = f * weight
             fw_rhs = L.float_product([f, weight])
@@ -573,9 +772,16 @@ class IntegralGenerator:
             for expression in keep[indices]:
                 body.append(L.AssignAdd(A[multi_index], expression))
 
-        # reverse B_indices
-        B_indices = B_indices[::-1]
-        body = [L.create_nested_for_loops(B_indices, body)]
+        # Nest with the last tensor index innermost, so the contiguous index of
+        # the element tensor varies fastest in the accumulation. Empirically,
+        # this is what GCC's vectoriser wants whenever an entry sums more than
+        # one term (e.g. one per spatial direction in a gradient-gradient
+        # form) -- but for a single-term entry (e.g. a plain mass matrix) the
+        # same order defeats it instead, so keep the old row-innermost order
+        # for that case (see PR #865 for the measurements behind this).
+        multi_term = any(len(v) > 1 for v in keep.values())
+        nest_indices = B_indices if multi_term else B_indices[::-1]
+        body = [L.create_nested_for_loops(nest_indices, body)]
         input = [*vars, *tables]
         output = [A]
 

@@ -186,6 +186,7 @@ class FFCXBackendDefinitions:
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+        assert begin is not None
 
         assert num_scalar_dofs == num_dofs
 
@@ -210,14 +211,43 @@ class FFCXBackendDefinitions:
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        code = []
-        declaration = [L.VariableDecl(access, 0.0)]
-        body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
-        code = [L.create_nested_for_loops([ic], body)]
+        if tabledata.has_tensor_factorisation:
+            # Tensor-product dof counts can be large (high-order hex/quad
+            # geometry); keep the general runtime-loop path.
+            code = []
+            declaration = [L.VariableDecl(access, 0.0)]
+            body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
+            code = [L.create_nested_for_loops([ic], body)]
+            input = [dof_access, *tables]
+        else:
+            # The coordinate element's dof count is always small (an affine
+            # simplex's Jacobian sums over 3-10 vertices/geometry nodes, say).
+            # Unroll into a single literal-indexed sum instead of a runtime
+            # reduction loop: this is what a hand-written kernel would do,
+            # and it avoids GCC's vectoriser mis-vectorising a tiny
+            # fixed-trip-count reduction into an expensive
+            # permute-then-horizontal-sum sequence -- a real, measured cost
+            # for e.g. plain P1 geometry, where this sum is most of the
+            # kernel. Also lets the FE table's exact 0.0/+-1.0 low-order
+            # values fold away as plain constant propagation, same as
+            # unrolled code would.
+            terms = []
+            coord_tables: list[L.Symbol] = []
+            for k in range(num_dofs):
+                ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
+                FE_k, tables_k = self.access.table_access(
+                    tabledata, self.entity_type, mt.restriction, iq, ic_k
+                )
+                for t in tables_k:
+                    if t not in coord_tables:
+                        coord_tables.append(t)
+                terms.append(dof_access[k * dim + begin + offset] * FE_k)
+            declaration = [L.VariableDecl(access, L.Sum(terms))]
+            code = []
+            input = [dof_access, *coord_tables]
 
         name = type(mt.terminal).__name__
         output = [access]
-        input = [dof_access, *tables]
         annotations = [L.Annotation.fuse]
 
         # assert input and output are Symbol objects
