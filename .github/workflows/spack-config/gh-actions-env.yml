@@ -11,15 +11,21 @@ spack:
 
   packages:
     all:
+      # Pin to the generic microarchitecture the shared GitHub Actions
+      # build cache (added by spack/setup-spack) and our own
+      # local-buildcache are built for. Without this, concretization picks
+      # the runner's exact detected microarch, which does not match the
+      # cache's hashes, so every package (including LLVM, for numba)
+      # rebuilds from source instead of being pulled as a binary.
       require:
       - target=x86_64_v3
 
-    blas:
-      require:
-      - netlib-lapack
-    lapack:
-      require:
-      - netlib-lapack
+      # Use netlib-lapack for blas/lapack: it is a much smaller/faster
+      # build than openblas, and CI only needs correctness, not
+      # performance.
+      providers:
+        blas: [netlib-lapack]
+        lapack: [netlib-lapack]
 
     # Use the container's mesa instead of building one. mesa@25.0.5 (the
     # newest version the pinned packages_ref knows) does not compile

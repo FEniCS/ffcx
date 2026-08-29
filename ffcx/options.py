@@ -48,12 +48,6 @@ FFCX_DEFAULT_OPTIONS = {
         None,
     ),
     "part": (str, "full", "Part of bilinear tensor to assemble", ("full", "diagonal")),
-    "do_cancel_jacobian_products": (
-        bool,
-        True,
-        "Cancel contractions of the Jacobian with its inverse in form integrands.",
-        None,
-    ),
 }
 
 

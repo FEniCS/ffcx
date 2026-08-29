@@ -9,8 +9,6 @@
 
 import collections
 import logging
-import platform
-import sys
 from numbers import Integral
 from typing import Any
 
@@ -20,68 +18,13 @@ import ufl
 import ffcx.codegeneration.lnodes as L
 from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
-from ffcx.codegeneration.optimizer import (
-    expr_key,
-    optimize,
-    power_of_two_cse_statements,
-    prune_dead_scalars,
-    reciprocal_cse_statements,
-    scalar_declaration_names,
-)
+from ffcx.codegeneration.optimizer import optimize
 from ffcx.ir.elementtables import piecewise_ttypes
 from ffcx.ir.integral import BlockDataT, CommonExpressionIR, TensorPart
 from ffcx.ir.representation import IntegralIR
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
-
-
-_FW_CACHE_BUDGET_BYTES = 32768
-_FW_CACHE_BYTES_PER_SCALAR = 16
-_UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK = 256
-
-# GCC can lower these calls to glibc libmvec on supported x86-64 Linux
-# targets. Other hosts commonly keep scalar libm calls, in which case a
-# second loop and an fw cache are pure overhead.
-_VECTORIZABLE_MATH_FUNCTIONS = frozenset(
-    {
-        "acos",
-        "acosh",
-        "asin",
-        "asinh",
-        "atan",
-        "atanh",
-        "cos",
-        "cosh",
-        "erf",
-        "exp",
-        "ln",
-        "sin",
-        "sinh",
-        "tan",
-        "tanh",
-    }
-)
-
-
-def _fw_cache_tile_size(n_fw: int, num_points: int) -> int | None:
-    """Return a cache-tile length that stays within the fixed stack budget.
-
-    ``None`` means that even one cached value per intermediate would exceed
-    the budget, so the quadrature loop should remain fused.
-    """
-    assert n_fw > 0
-    assert num_points > 0
-
-    max_tile = _FW_CACHE_BUDGET_BYTES // (n_fw * _FW_CACHE_BYTES_PER_SCALAR)
-    if max_tile == 0:
-        return None
-
-    tile = min(max_tile, num_points)
-    # Round down to a SIMD-friendly width when it still fits the budget.
-    if tile >= 8:
-        tile = tile // 8 * 8
-    return tile
 
 
 def extract_dtype(v, vops: list[Any]):
@@ -103,53 +46,6 @@ def extract_dtype(v, vops: list[Any]):
     if is_real:
         return L.DataType.REAL
     return L.merge_dtypes(dtypes)
-
-
-def _contains_vectorizable_mathfunction(node) -> bool:
-    """Return whether *node* contains a math call targeted by libmvec."""
-    if isinstance(node, list):
-        return any(_contains_vectorizable_mathfunction(n) for n in node)
-    if isinstance(node, L.MathFunction):
-        return node.function in _VECTORIZABLE_MATH_FUNCTIONS or any(
-            _contains_vectorizable_mathfunction(arg) for arg in node.args
-        )
-    if isinstance(node, (L.StatementList, L.Section)):
-        return _contains_vectorizable_mathfunction(node.statements)
-    if isinstance(node, L.ForRange):
-        return _contains_vectorizable_mathfunction(node.body)
-    if isinstance(node, L.VariableDecl):
-        return node.value is not None and _contains_vectorizable_mathfunction(node.value)
-    if isinstance(node, (L.ArrayDecl, L.Comment)):
-        return False
-    if isinstance(node, L.Statement):
-        return _contains_vectorizable_mathfunction(node.expr)
-    if isinstance(node, L.NaryOp):
-        return any(_contains_vectorizable_mathfunction(a) for a in node.args)
-    if isinstance(node, L.BinOp):
-        return _contains_vectorizable_mathfunction(node.lhs) or _contains_vectorizable_mathfunction(
-            node.rhs
-        )
-    if isinstance(node, L.PrefixUnaryOp):
-        return _contains_vectorizable_mathfunction(node.arg)
-    return False
-
-
-def _supports_vector_math_loop_split() -> bool:
-    """Return whether the current JIT host has the required vector libm ABI."""
-    return sys.platform.startswith("linux") and platform.machine().lower() in {"amd64", "x86_64"}
-
-
-def _contraction_work(node) -> int:
-    """Estimate statically repeated scalar statements in a contraction tree."""
-    if isinstance(node, list):
-        return sum(_contraction_work(child) for child in node)
-    if isinstance(node, (L.Section, L.StatementList)):
-        return _contraction_work(node.statements)
-    if isinstance(node, L.ForRange):
-        if not isinstance(node.begin, L.LiteralInt) or not isinstance(node.end, L.LiteralInt):
-            return 0
-        return int(max(0, node.end.value - node.begin.value)) * _contraction_work(node.body)
-    return int(isinstance(node, L.Statement))
 
 
 class IntegralGenerator:
@@ -175,12 +71,6 @@ class IntegralGenerator:
 
         # Cache
         self.temp_symbols: dict[Any, L.Symbol] = {}
-
-        # Piecewise symbol name -> (lhs, rhs) of its defining two-factor
-        # product, if any. Lets generate_block_parts spot several block
-        # entries sharing one factor (e.g. several metric-tensor entries all
-        # scaled by |det J|) and fuse it with the quadrature weight once.
-        self._piecewise_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
 
         # Set of counters used for assigning names to intermediate
         # variables
@@ -289,11 +179,6 @@ class IntegralGenerator:
         # Collect parts before, during, and after quadrature loops
         parts += all_preparts
         parts += all_quadparts
-
-        # Drop every unread scalar declaration now the kernel body is whole.
-        # Done on the LNode tree, before formatting, so it respects scopes
-        # and is shared by all backends.
-        parts = prune_dead_scalars(parts, scalar_declaration_names(parts))
 
         return L.StatementList(parts)
 
@@ -409,11 +294,7 @@ class IntegralGenerator:
         for fw in intermediates_fw:
             assert isinstance(fw, L.VariableDecl)
             output += [fw.symbol]
-            # No initialiser: it's unconditionally assigned below, so one
-            # would be a dead store. Declared here rather than at that
-            # assignment because fw must stay visible to the "Tensor
-            # Computation" section that follows, outside this block's scope.
-            declarations += [L.VariableDecl(fw.symbol)]
+            declarations += [L.VariableDecl(fw.symbol, 0)]
             intermediates_0 += [L.Assign(fw.symbol, fw.value)]
         intermediates = [L.Section("Intermediates", intermediates_0, declarations, inputs, output)]
 
@@ -423,123 +304,7 @@ class IntegralGenerator:
         code = definitions + intermediates + tensor_comp
         code = optimize(code, quadrature_rule)
 
-        split = self._split_quadrature_loop(code, iq, intermediates_fw, quadrature_rule)
-        if split is not None:
-            return split
-
         return [L.create_nested_for_loops([iq], code)]
-
-    def _split_quadrature_loop(
-        self,
-        code: list[L.LNode],
-        iq: L.MultiIndex,
-        intermediates_fw: list[L.VariableDecl],
-        quadrature_rule: QuadratureRule,
-    ):
-        """Split the quadrature loop into evaluation and contraction loops.
-
-        The fused loop interleaves evaluation of the varying quantities
-        (which carries any math functions of the spatial coordinate) with
-        the tensor contraction, whose strided table reads stop the compiler
-        vectorising the loop -- leaving calls to `sin` and friends scalar.
-        Caching the `fw` values and contracting in a second loop leaves the
-        evaluation loop free of those reads, so it vectorises onto the SIMD
-        math library.
-
-        The `fw` cache is tiled, not sized to the full point count: a form
-        with many `fw` values and a large rule could otherwise put megabytes
-        on the stack. Tiling bounds stack use to a fixed budget and keeps
-        each tile resident in L1d across both passes.
-
-        Returns `None` if the split does not apply, in which case the
-        caller emits a single fused loop.
-        """
-        if quadrature_rule is None or not intermediates_fw:
-            return None
-
-        # Only single-index (non tensor-product) rules for now
-        if quadrature_rule.has_tensor_factors or iq.dim != 1:
-            return None
-
-        evaluation = [c for c in code if getattr(c, "name", None) != "Tensor Computation"]
-        contraction = [c for c in code if getattr(c, "name", None) == "Tensor Computation"]
-        if not contraction or not evaluation:
-            return None
-
-        # The split only pays for itself when there's a transcendental math
-        # call to vectorise -- most integrands (mass matrices, plain
-        # Poisson, etc.) have none, and for those it's a net loss.
-        if not _contains_vectorizable_mathfunction(evaluation):
-            return None
-        # On x86-64 Linux the evaluation loop can call libmvec. Elsewhere,
-        # only split when the contraction is expensive enough to amortise
-        # the fw cache without that benefit.
-        if not _supports_vector_math_loop_split() and (
-            _contraction_work(contraction) < _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK
-        ):
-            return None
-
-        num_points = quadrature_rule.weights.size
-        index = iq.local_index(0)
-
-        # Budget the whole fw cache at 32 KiB, comfortably inside a typical
-        # L1d, using a conservative 16 bytes/scalar (covers complex128).
-        n_fw = len(intermediates_fw)
-        tile = _fw_cache_tile_size(n_fw, num_points)
-        if tile is None:
-            return None
-
-        caches = {
-            fw.symbol.name: L.Symbol(f"{fw.symbol.name}_q", fw.symbol.dtype)
-            for fw in intermediates_fw
-        }
-        declarations: list[L.LNode] = [L.ArrayDecl(cache, sizes=tile) for cache in caches.values()]
-
-        if tile >= num_points:
-            # Whole rule fits in one tile: no need for an outer tiling loop.
-            store = [
-                L.Assign(L.ArrayAccess(caches[fw.symbol.name], [index]), fw.symbol)
-                for fw in intermediates_fw
-            ]
-            load = [
-                L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [index]))
-                for fw in intermediates_fw
-            ]
-            return declarations + [
-                L.create_nested_for_loops([iq], evaluation + store),
-                L.create_nested_for_loops([iq], load + contraction),
-            ]
-
-        num_tiles = -(-num_points // tile)  # ceil division
-        tile_index = L.Symbol(f"{index.name}_tile", L.DataType.INT)
-        tile_base = L.Symbol(f"{index.name}_base", L.DataType.INT)
-        tile_end = L.Symbol(f"{index.name}_end", L.DataType.INT)
-        local_offset = L.Sub(index, tile_base)
-
-        tile_end_expr = L.Conditional(
-            L.LT(L.Add(tile_base, L.LiteralInt(tile)), L.LiteralInt(num_points)),
-            L.Add(tile_base, L.LiteralInt(tile)),
-            L.LiteralInt(num_points),
-        )
-        setup: list[L.LNode] = [
-            L.VariableDecl(tile_base, L.Mul(tile_index, L.LiteralInt(tile))),
-            L.VariableDecl(tile_end, tile_end_expr),
-        ]
-
-        store = [
-            L.Assign(L.ArrayAccess(caches[fw.symbol.name], [local_offset]), fw.symbol)
-            for fw in intermediates_fw
-        ]
-        load = [
-            L.VariableDecl(fw.symbol, L.ArrayAccess(caches[fw.symbol.name], [local_offset]))
-            for fw in intermediates_fw
-        ]
-
-        tile_body = setup + [
-            L.ForRange(index, tile_base, tile_end, evaluation + store),
-            L.ForRange(index, tile_base, tile_end, load + contraction),
-        ]
-        return declarations + [L.ForRange(tile_index, 0, num_tiles, tile_body)]
 
     def generate_piecewise_partition(self, quadrature_rule, domain: basix.CellType):
         """Generate a piecewise partition."""
@@ -600,30 +365,6 @@ class IntegralGenerator:
 
         # Optimize definitions
         definitions = optimize(definitions, quadrature_rule)
-
-        # Fold scalar chains that round-trip through exact powers of two
-        # (e.g. a symmetric gradient's 1/2 undoing an earlier *2) into a
-        # plain alias. Must run before reciprocal-CSE, which would otherwise
-        # hide the power-of-two divisors this looks for behind a symbol.
-        intermediates = power_of_two_cse_statements(intermediates)
-
-        # Collapse repeated divisions by the same divisor (e.g. an affine
-        # cell's pseudo-inverse Jacobian dividing every entry by the same
-        # determinant) into one reciprocal and a multiply each.
-        intermediates = reciprocal_cse_statements(intermediates, name_prefix=f"recip_{symbol.name}")
-
-        # Record each piecewise two-factor product so generate_block_parts
-        # can fuse a shared factor across block entries with the quadrature
-        # weight once (see _piecewise_mul_operands). Read after the CSE
-        # passes so a reciprocal-CSE-rewritten division counts too.
-        if mode == "piecewise":
-            for stmt in intermediates:
-                if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
-                    self._piecewise_mul_operands[stmt.symbol.name] = (
-                        stmt.value.lhs,
-                        stmt.value.rhs,
-                    )
-
         return definitions, intermediates
 
     def generate_dofblock_partition(
@@ -732,68 +473,6 @@ class IntegralGenerator:
 
         A_shape = self.ir.expression.tensor_shape
 
-        # Detect block entries whose piecewise values share one common
-        # factor (e.g. several metric-tensor entries scaled by the same
-        # |det J|). Multiplying that factor into the quadrature weight once,
-        # rather than into every already-scaled entry, is cheaper whenever
-        # there are more sharing entries than quadrature points. This is a
-        # genuine re-association GCC can't perform itself without
-        # -ffast-math, since it changes rounding.
-        #
-        # Skip it when every argument table in this block is itself
-        # quadrature-point-independent (piecewise_ttypes) and there is more
-        # than one quadrature point: the per-entry values are then fully
-        # loop-invariant, and GCC/clang hoist the unfused multiply-by-weight
-        # out of the loop entirely -- an indirection this fusion adds (a
-        # shared factor computed fresh each iteration) can stop the compiler
-        # seeing that the whole loop is redundant, costing far more than the
-        # fusion saves (see PR #865's hyperelasticity_residual_p1 finding).
-        # With a single quadrature point there's no loop to hoist away, so
-        # the fusion's reduced op count is a clean win regardless.
-        fused_factor: dict[int, tuple[L.LExpr, L.LExpr]] = {}
-        if (
-            quadrature_rule is not None
-            and self.ir.expression.integral_type not in ufl.custom_integral_types
-            and len(blocklist) > quadrature_rule.weights.size
-            and (
-                quadrature_rule.weights.size == 1
-                or any(
-                    ttype not in piecewise_ttypes
-                    for blockdata in blocklist
-                    for ttype in blockdata.ttypes
-                )
-            )
-        ):
-            F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
-            factor_indices = []
-            decomps: list[tuple[L.LExpr, L.LExpr]] = []
-            for blockdata in blocklist:
-                if len(blockdata.factor_indices_comp_indices) > 1:
-                    decomps = []
-                    break
-                factor_index = blockdata.factor_indices_comp_indices[0][0]
-                v = F.nodes[factor_index]["expression"]
-                f = self.get_var(quadrature_rule, domain, v)
-                decomp = (
-                    self._piecewise_mul_operands.get(f.name) if isinstance(f, L.Symbol) else None
-                )
-                if decomp is None:
-                    decomps = []
-                    break
-                factor_indices.append(factor_index)
-                decomps.append(decomp)
-
-            if decomps:
-                rhs_keys = {expr_key(d[1]) for d in decomps}
-                lhs_keys = {expr_key(d[0]) for d in decomps}
-                shared, bases = None, None
-                if len(rhs_keys) == 1:
-                    shared, bases = decomps[0][1], [d[0] for d in decomps]
-                elif len(lhs_keys) == 1:
-                    shared, bases = decomps[0][0], [d[1] for d in decomps]
-                if shared is not None and bases is not None:
-                    fused_factor = dict(zip(factor_indices, zip(bases, [shared] * len(bases))))
-
         for blockdata in blocklist:
             B_indices = []
             for i in range(block_rank):
@@ -831,14 +510,6 @@ class IntegralGenerator:
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
                 weight = weights[iq.global_index]
-
-            if factor_index in fused_factor:
-                base, shared = fused_factor[factor_index]
-                scale_key = (quadrature_rule, expr_key(shared))
-                combined, defined = self.get_temp_symbol("fwscale", scale_key)
-                if not defined:
-                    intermediates += [L.VariableDecl(combined, L.float_product([shared, weight]))]
-                f, weight = base, combined
 
             # Define fw = f * weight
             fw_rhs = L.float_product([f, weight])
@@ -902,13 +573,9 @@ class IntegralGenerator:
             for expression in keep[indices]:
                 body.append(L.AssignAdd(A[multi_index], expression))
 
-        # Nest with the last tensor index innermost when an entry sums more
-        # than one term (e.g. gradient-gradient) -- GCC's vectoriser wants
-        # this. A single-term entry (e.g. a plain mass matrix) prefers the
-        # opposite, row-innermost order instead.
-        multi_term = any(len(v) > 1 for v in keep.values())
-        nest_indices = B_indices if multi_term else B_indices[::-1]
-        body = [L.create_nested_for_loops(nest_indices, body)]
+        # reverse B_indices
+        B_indices = B_indices[::-1]
+        body = [L.create_nested_for_loops(B_indices, body)]
         input = [*vars, *tables]
         output = [A]
 
