@@ -90,12 +90,11 @@ def reciprocal_cse_statements(
             divisor = stmt.value.rhs
             divisor_key = expr_key(divisor)
             if divisor_key not in recip_symbols:
-                recip_symbol = L.Symbol(f"{name_prefix}_{counter}", L.DataType.SCALAR)
+                recip_expr = L.Div(L.LiteralFloat(1.0), divisor)
+                recip_symbol = L.Symbol(f"{name_prefix}_{counter}", recip_expr.dtype)
                 counter += 1
                 recip_symbols[divisor_key] = recip_symbol
-                new_statements.append(
-                    L.VariableDecl(recip_symbol, L.Div(L.LiteralFloat(1.0), divisor))
-                )
+                new_statements.append(L.VariableDecl(recip_symbol, recip_expr))
             recip_symbol = recip_symbols[divisor_key]
             new_statements.append(L.VariableDecl(stmt.symbol, L.Mul(stmt.value.lhs, recip_symbol)))
         else:
