@@ -1,4 +1,4 @@
-# Copyright (C) 2026 Garth N. Wells
+# Copyright (C) 2026 Garth N. Wells and Paul T. Kühner
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -20,7 +20,11 @@ from ffcx.codegeneration.integral_generator import (
     _fw_cache_tile_size,
     _supports_vector_math_loop_split,
 )
-from ffcx.codegeneration.optimizer import prune_dead_scalars, scalar_declaration_names
+from ffcx.codegeneration.optimizer import (
+    prune_dead_scalars,
+    reciprocal_cse_statements,
+    scalar_declaration_names,
+)
 
 
 def test_coordinate_dof_unrolling_is_limited_to_small_non_tensor_geometry():
@@ -104,3 +108,25 @@ def test_dead_scalar_pruning_respects_section_declarations():
 
     pruned = prune_dead_scalars([section], scalar_declaration_names([section]))
     assert [declaration.symbol.name for declaration in pruned[0].declarations] == ["live"]
+
+
+@pytest.mark.parametrize("dtype", [L.DataType.REAL, L.DataType.SCALAR])
+def test_reciprocal_cse(dtype):
+    #            ==> r = 1 / c
+    # x = a / c      x = a * r
+    # y = b / c      y = b * r
+
+    c = L.Symbol("c", dtype)
+    exprs = [
+        L.VariableDecl(L.Symbol("x", L.DataType.REAL), L.Div(L.Symbol("a", L.DataType.REAL), c)),
+        L.VariableDecl(L.Symbol("y", dtype), L.Div(L.Symbol("b", dtype), c)),
+    ]
+
+    r, *exprs_recip = reciprocal_cse_statements(exprs)
+
+    assert r.value == L.Div(L.LiteralFloat(1.0), c)
+    assert all(expr.value.rhs.name == r.symbol.name for expr in exprs_recip)
+
+    # (possibly) wider type of r dictates the expression dtype
+    assert r.symbol.dtype == dtype
+    assert all(statement.value.dtype == dtype for statement in exprs_recip)
