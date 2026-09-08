@@ -30,6 +30,7 @@ from ffcx.ir.analysis.modified_terminals import (
 )
 from ffcx.ir.analysis.visualise import visualise_graph
 from ffcx.ir.elementtables import (
+    InterpolatedTableT,
     UniqueTableReferenceT,
     build_optimized_tables,
 )
@@ -106,6 +107,7 @@ class IntermediateIntegralIR(typing.TypedDict):
     needs_facet_permutations: bool
     unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]]
     unique_table_types: dict[basix.CellType | str, dict[str, _table_types]]
+    interpolated_tables: dict[basix.CellType | str, dict[str, InterpolatedTableT]]
     integrand: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR]
 
 
@@ -133,6 +135,7 @@ class CommonExpressionIR(typing.NamedTuple):
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]
+    interpolated_tables: dict[basix.CellType, dict[str, InterpolatedTableT]]
     integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
     name: str
     needs_facet_permutations: bool
@@ -154,6 +157,7 @@ def _compute_integral_ir(
 ) -> tuple[
     dict[str, npt.NDArray[np.float64]],
     dict[str, _table_types],
+    dict[str, InterpolatedTableT],
     ExpressionGraph,
     list[int],
     dict[tuple[tuple[int, ...], ...], list[BlockDataT]],
@@ -201,6 +205,10 @@ def _compute_integral_ir(
     table_types: dict[str, _table_types] = {v.name: v.ttype for v in mt_table_reference.values()}
     tables: dict[str, npt.NDArray[np.float64]] = {
         v.name: v.values for v in mt_table_reference.values()
+    }
+    # Tables that the generated code has to build for each cell.
+    interpolated_tables: dict[str, InterpolatedTableT] = {
+        v.name: v.interpolation for v in mt_table_reference.values() if v.interpolation is not None
     }
 
     S_targets = [i for i, v in S.nodes.items() if v.get("target", False)]
@@ -303,12 +311,18 @@ def _compute_integral_ir(
         assert not any(tt == "zeros" for tt in ttypes)
 
         _blockmap: list[tuple[int, ...]] = []
-        for tr in trs:
+        for slot, tr in enumerate(trs):
             assert tr is not None
             begin = tr.offset
             assert begin is not None
-            num_dofs = tr.values.shape[3]
             assert tr.block_size is not None
+            if tr.interpolation is not None and len(tr.interpolation.dof_dims) > 1:
+                # An interpolation of an expression linear in several arguments
+                # takes one element tensor axis per argument, so the same table
+                # appears in every slot with its own dof extent.
+                num_dofs = tr.interpolation.dof_dims[slot]
+            else:
+                num_dofs = tr.values.shape[3]
             dofmap = tuple(begin + i * tr.block_size for i in range(num_dofs))
             _blockmap.append(dofmap)
         blockmap = tuple(_blockmap)
@@ -386,6 +400,7 @@ def _compute_integral_ir(
     return (
         active_tables,
         active_table_types,
+        interpolated_tables,
         F,
         argkeys,
         block_contributions,
@@ -419,10 +434,12 @@ def compute_integral_ir(
     needs_facet_permutations: bool = False
     unique_tables: dict[basix.CellType | str, dict[str, npt.NDArray[np.float64]]] = {}
     unique_table_types: dict[basix.CellType | str, dict[str, _table_types]] = {}
+    interpolated_tables: dict[basix.CellType | str, dict[str, InterpolatedTableT]] = {}
     integrand_map: dict[tuple[basix.CellType | str, QuadratureRule], IntermediateIntegrandIR] = {}
     for integral_domain, integrands_on_domain in integrands.items():
         unique_tables[integral_domain] = {}
         unique_table_types[integral_domain] = {}
+        interpolated_tables[integral_domain] = {}
         for quadrature_rule, integrand in integrands_on_domain.items():
             expression = integrand
 
@@ -432,6 +449,7 @@ def compute_integral_ir(
             (
                 active_tables,
                 active_table_types,
+                active_interpolated_tables,
                 F,
                 argkeys,
                 block_contributions,
@@ -452,6 +470,7 @@ def compute_integral_ir(
             # Add tables and types for this quadrature rule to global tables dict
             unique_tables[integral_domain].update(active_tables)
             unique_table_types[integral_domain].update(active_table_types)
+            interpolated_tables[integral_domain].update(active_interpolated_tables)
             # Build IR dict for the given expressions
             # Store final ir for this num_points
             integrand_map[(integral_domain, quadrature_rule)] = IntermediateIntegrandIR(
@@ -470,6 +489,7 @@ def compute_integral_ir(
         needs_facet_permutations=needs_facet_permutations,
         unique_tables=unique_tables,
         unique_table_types=unique_table_types,
+        interpolated_tables=interpolated_tables,
         integrand=integrand_map,
     )
 

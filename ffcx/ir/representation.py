@@ -35,7 +35,13 @@ from ufl.classes import Integral
 from ufl.sorting import sorted_expr_sum
 
 from ffcx import naming
-from ffcx.analysis import ProxyCoefficient, UFLData
+from ffcx.analysis import (
+    ProxyCoefficient,
+    UFLData,
+    interpolated_expression,
+    interpolation_dof_elements,
+    interpolation_has_runtime_table,
+)
 from ffcx.definitions import entity_types, supported_integral_types
 from ffcx.ir.integral import CommonExpressionIR, TensorPart, compute_integral_ir
 from ffcx.ir.representationutils import (
@@ -111,6 +117,10 @@ class IntegralIR(typing.NamedTuple):
     proxy_pack_shape: list[tuple[int, ...]]
     coefficients_in_proxy: list[ufl.Coefficient]
     proxy_coefficient_offsets: list[int]
+    argument_sub_expressions: list[tuple[ufl.Interpolate, str]]
+    argument_proxy_shapes: list[tuple[int, ...]]
+    coefficients_in_argument_proxy: list[ufl.Coefficient]
+    argument_proxy_offsets: list[int]
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -540,6 +550,39 @@ def _compute_integral_ir(
                 )
             )
 
+        # Interpolations of an expression that is only linear in the argument
+        # need their element table built for each cell, from an expression
+        # kernel evaluated at the target element's interpolation points.
+        runtime_interpolations: list[ufl.Interpolate] = []
+        for integral in itg_data.integrals:
+            for node in ufl.corealg.traversal.unique_pre_traversal(integral.integrand()):
+                if (
+                    isinstance(node, ufl.Interpolate)
+                    and interpolation_has_runtime_table(node)
+                    and node not in runtime_interpolations
+                ):
+                    runtime_interpolations.append(node)
+
+        argument_proxy_offsets = [0]
+        ir["coefficients_in_argument_proxy"] = []
+        ir["argument_sub_expressions"] = []
+        ir["argument_proxy_shapes"] = []
+        for interpolation in runtime_interpolations:
+            expression = interpolated_expression(interpolation)
+            for coeff in ufl.algorithms.extract_coefficients(expression):
+                ir["coefficients_in_argument_proxy"].append(coeff)
+            argument_proxy_offsets.append(len(ir["coefficients_in_argument_proxy"]))
+            ir["argument_sub_expressions"].append((interpolation, expression_names[expression]))
+            target = interpolation.ufl_element()
+            ir["argument_proxy_shapes"].append(
+                (
+                    target.basix_element.points.shape[0],
+                    target.reference_value_size,
+                    *(element.dim for element in interpolation_dof_elements(interpolation)),
+                )
+            )
+        ir["argument_proxy_offsets"] = argument_proxy_offsets
+
         expression_ir.update(integral_ir)
 
         # Fetch name
@@ -684,8 +727,8 @@ def _compute_expression_ir(
     expr_name = object_names.get(id(original_expr), index)
     ir["name_from_uflfile"] = f"expression_{prefix}_{expr_name}"
 
-    if len(argument_elements) > 1:
-        raise RuntimeError("Expression with more than one Argument not implemented.")
+    if len(argument_elements) > 2:
+        raise RuntimeError("Expression with more than two Arguments not implemented.")
 
     coefficients = ufl.algorithms.extract_coefficients(expr)
     original_coefficients = ufl.algorithms.extract_coefficients(original_expr)
