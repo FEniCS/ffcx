@@ -219,6 +219,62 @@ class FFCXBackendDefinitions:
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
+        # A mixed-dimensional submesh's own coordinate dofs are always a
+        # subset of the integration domain's own -- gather them via a
+        # per-entity, per-orientation closure-dofs table instead of reading
+        # `coordinate_dofs` directly at `dof`, which is laid out for the
+        # integration domain, not this one.
+        closure_table = None
+        parent_element = self.access.integration_domain_coordinate_element
+        if (
+            parent_element is not None
+            and (codim := parent_element.cell.topological_dimension - domain.topological_dimension)
+            != 0
+        ):
+            # Keyed by entity_type, not codim for now.
+            # Nomenclature note: We should really use the entity type
+            # "peak" for codim-3 integrals. However, "peak" is not itself
+            # a distinct integral/entity type in FFCx today -- FFCx only
+            # has "vertex" (a codim-agnostic point-integral entity_type,
+            # used for a mesh's own vertices regardless of the parent's
+            # topological dimension), so the dict below is still keyed by
+            # "vertex", matching entity_type.
+            table_kind, expected_codim = {
+                "facet": ("facet_closure_dofs", 1),
+                "ridge": ("ridge_closure_dofs", 2),
+                "vertex": ("peak_closure_dofs", parent_element.cell.topological_dimension),
+            }.get(self.entity_type, (None, None))
+            if table_kind is None or codim != expected_codim:
+                raise NotImplementedError(
+                    "Cannot gather a mixed-dimensional submesh's coordinate dofs: coefficient "
+                    f"domain has codimension {codim} relative to the integration domain, but "
+                    f"the integral's entity type is {self.entity_type!r}."
+                )
+            parent_cellname = parent_element.cell.cellname
+            closure_table = L.Symbol(f"{parent_cellname}_{table_kind}", dtype=L.DataType.INT)
+            entity = self.symbols.entity(self.entity_type, mt.restriction)
+            # A vertex has no orientation ambiguity, so its closure-dofs
+            # table has a single row, never index it with the runtime
+            # quadrature_permutation value (which may be meaningless, or
+            # even out of range for a single-row table, for vertex
+            # integrals).
+            perm = (
+                L.LiteralInt(0)
+                if self.entity_type == "vertex"
+                else self.access.entity_permutation(mt.restriction)
+            )
+            closure_index = closure_table[perm][entity]
+
+        # Map a submesh-local scalar dof index to its coordinate_dofs index.
+        if closure_table is None:
+
+            def _dof(local_index):
+                return local_index
+        else:
+
+            def _dof(local_index):
+                return closure_index[local_index]
+
         if not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
             # Many coordinate dofs: keep the runtime loop instead of one
             # literal term per dof.
@@ -228,7 +284,9 @@ class FFCXBackendDefinitions:
             )
             code = []
             declaration = [L.VariableDecl(access, 0.0)]
-            body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
+            body = [
+                L.AssignAdd(access, dof_access[_dof(ic.global_index) * dim + begin + offset] * FE)
+            ]
             code = [L.create_nested_for_loops([ic], body)]
             input = [dof_access, *tables]
         else:
@@ -247,10 +305,13 @@ class FFCXBackendDefinitions:
                 for t in tables_k:
                     if t not in coord_tables:
                         coord_tables.append(t)
-                terms.append(dof_access[k * dim + begin + offset] * FE_k)
+                terms.append(dof_access[_dof(k) * dim + begin + offset] * FE_k)
             declaration = [L.VariableDecl(access, L.Sum(terms))]
             code = []
             input = [dof_access, *coord_tables]
+
+        if closure_table is not None:
+            input.append(closure_table)
 
         name = type(mt.terminal).__name__
         output = [access]

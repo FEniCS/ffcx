@@ -130,6 +130,10 @@ class CommonExpressionIR(typing.NamedTuple):
     shape: list[int]
     coordinate_element_hash: str
     number_coordinate_dofs: int
+    # The integration domain's own coordinate element, used to
+    # get the coordinate closure dofs for each mixed-dimensional
+    # submesh. Avoids having to pack duplicate coordinates.
+    integration_domain_coordinate_element: object | None = None
 
 
 def _compute_integral_ir(

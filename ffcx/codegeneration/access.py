@@ -25,13 +25,25 @@ class FFCXBackendAccess:
 
     entity_type: entity_types
 
-    def __init__(self, entity_type: entity_types, integral_type: str, symbols, options):
+    def __init__(
+        self,
+        entity_type: entity_types,
+        integral_type: str,
+        symbols,
+        options,
+        integration_domain_coordinate_element=None,
+    ):
         """Initialise."""
         # Store ir and options
         self.entity_type = entity_type
         self.integral_type = integral_type
         self.symbols = symbols
         self.options = options
+        # The integration domain's own coordinate element (a
+        # `basix.ufl` element), needed to look up which of its scalar
+        # dofs belong to a given local facet/ridge's closure, for the
+        # mixed-dimensional-submesh gather above.
+        self.integration_domain_coordinate_element = integration_domain_coordinate_element
 
         # Lookup table for handler to call when the "get" method (below)
         # is called, depending on the first argument type.
@@ -238,6 +250,17 @@ class FFCXBackendAccess:
             return table[facet][mt.component[0]]
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
+
+    def entity_permutation(self, restriction):
+        """Access the quadrature/entity permutation value for a given restriction.
+
+        Used both here and, cross-class, from `FFCXBackendDefinitions`
+        (for the mixed-dimensional-submesh coordinate-dofs gather).
+        """
+        qp = self.symbols.quadrature_permutation[0]
+        if restriction == "-":
+            qp = self.symbols.quadrature_permutation[1]
+        return qp
 
     def cell_facet_jacobian(self, mt, tabledata, num_points):
         """Access a cell facet jacobian."""

@@ -72,6 +72,16 @@ class ExpressionGenerator:
         }
 
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
+        # See the analogous comment in `integral_generator.generate_geometry_tables`
+        # (and the nomenclature note in
+        # `definitions._define_coordinate_dofs_lincomb`)
+        parent_element = self.ir.expression.integration_domain_coordinate_element
+        closure_table_kind = {
+            "facet": "facet_closure_dofs",
+            "ridge": "ridge_closure_dofs",
+            "vertex": "peak_closure_dofs",
+        }.get(self.ir.expression.entity_type)
+        closure_table_kinds: set[str] = set()
         for integrand in self.ir.expression.integrand.values():
             for attr in integrand["factorization"].nodes.values():
                 mt = attr.get("mt")
@@ -85,11 +95,25 @@ class ExpressionGenerator:
                         cells[t].add(
                             ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
                         )
+                    if (
+                        t in (ufl.geometry.SpatialCoordinate, ufl.geometry.Jacobian)
+                        and parent_element is not None
+                        and closure_table_kind is not None
+                    ):
+                        domain = ufl.domain.extract_unique_domain(mt.terminal)
+                        parent_tdim = parent_element.cell.topological_dimension
+                        if domain.topological_dimension != parent_tdim:
+                            closure_table_kinds.add(closure_table_kind)
 
         parts = []
         for i, cell_list in cells.items():
             for c in cell_list:
                 parts.append(geometry.write_table(ufl_geometry[i], c))
+
+        for table_kind in closure_table_kinds:
+            parts.append(
+                geometry.write_table(table_kind, parent_element.cell.cellname, parent_element)
+            )
 
         return parts
 

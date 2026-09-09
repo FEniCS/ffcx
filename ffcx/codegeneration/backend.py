@@ -27,7 +27,11 @@ class FFCXBackend:
             coefficient_numbering, coefficient_offsets, original_constant_offsets
         )
         self.access = FFCXBackendAccess(
-            ir.expression.entity_type, ir.expression.integral_type, self.symbols, options
+            ir.expression.entity_type,
+            ir.expression.integral_type,
+            self.symbols,
+            options,
+            ir.expression.integration_domain_coordinate_element,
         )
         self.definitions = FFCXBackendDefinitions(
             ir.expression.entity_type, ir.expression.integral_type, self.access, options
