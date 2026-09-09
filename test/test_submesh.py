@@ -210,6 +210,62 @@ def test_multiple_mesh_codim1_facet_gradient(dtype, compile_args):
         ),
     ],
 )
+def test_multiple_mesh_codim1_facet_rt(dtype, compile_args):
+    """A Raviart-Thomas coefficient on a codim-1 (facet) mixed-dimensional submesh.
+
+    An RT coefficient's contravariant Piola pullback needs the submesh's own Jacobian
+    directly (not just Grad(SpatialCoordinate)), and `Grad(w)` of that
+    Piola-mapped field additionally needs its JacobianInverse -- so this
+    exercises the coordinate-dofs gather through two different UFL code
+    paths than the plain-Lagrange Grad tests above use. Integrating via
+    a facet measure on the tetrahedron parent must reproduce the same
+    value, for every facet, as integrating directly on the submesh's
+    own triangle mesh.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    codomain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(3,)))
+    element = basix.ufl.element("RT", "triangle", 1)
+    space = ufl.FunctionSpace(codomain, element)
+    w_coeff = ufl.Coefficient(space)
+    expr = ufl.inner(w_coeff, w_coeff) + ufl.inner(ufl.grad(w_coeff), ufl.grad(w_coeff))
+
+    parent_integral, parent_module = _compile_scalar_form(
+        expr * ufl.Measure("ds", domain=domain), dtype, compile_args
+    )
+    manifold_integral, manifold_module = _compile_scalar_form(
+        expr * ufl.Measure("dx", domain=codomain), dtype, compile_args
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    # A scalene, asymmetric tetrahedron, so a facet's shape genuinely
+    # differs from facet to facet.
+    coords = np.array([0.1, 0.2, 0.0, 2.3, 0.1, 0.4, 0.2, 3.1, 0.3, 0.5, 0.6, 4.7], dtype=xdtype)
+    w = np.array([1.3, -2.1, 0.7], dtype=dtype)
+
+    facet_vertices = basix.topology(basix.CellType.tetrahedron)[2]
+    for i, verts in enumerate(facet_vertices):
+        A_parent = _call_scalar_kernel(
+            parent_integral, parent_module, dtype, coords, w, entity_local_index=i
+        )
+        facet_coords = coords.reshape(-1, 3)[list(verts)].copy()
+        A_manifold = _call_scalar_kernel(manifold_integral, manifold_module, dtype, facet_coords, w)
+        np.testing.assert_allclose(A_parent, A_manifold, atol=1e-10)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
 def test_multiple_mesh_codim2_ridge_gradient(dtype, compile_args):
     """Grad of a coefficient on a codim-2 (ridge) mixed-dimensional submesh.
 
