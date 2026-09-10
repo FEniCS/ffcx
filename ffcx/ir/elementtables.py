@@ -38,6 +38,7 @@ table_types = typing.Literal[
     "quadrature",
     "varying",
     "tensor_factor",
+    "index",
 ]
 piecewise_ttypes = ("piecewise", "fixed", "ones", "zeros")
 uniform_ttypes = ("fixed", "ones", "zeros", "uniform")
@@ -67,6 +68,14 @@ class UniqueTableReferenceT(typing.NamedTuple):
     block_size: int | None = None
     tensor_factors: list["UniqueTableReferenceT"] | None = None
     tensor_permutation: np.typing.NDArray[np.int32] | None = None
+    # If not None, `values` holds only the canonical (unpermuted) table,
+    # and this table (ttype "index", shape (nperm, num_points), dtype
+    # int32) maps (quadrature_permutation value, permuted-point-index) to
+    # canonical-point-index -- see `compute_quadrature_permutation_table`.
+    # `None` means either not permuted, or permuted but no valid mapping
+    # was found (in which case `values` holds the full per-permutation
+    # stack directly, exactly as when this field was first introduced).
+    quadrature_permutation_table: "UniqueTableReferenceT | None" = None
 
     @property
     def has_tensor_factorisation(self):
@@ -348,6 +357,159 @@ def permute_quadrature_quadrilateral(points, reflections=0, rotations=0):
     return output
 
 
+def compute_quadrature_permutation_table(
+    permuted_point_sets, rtol=default_rtol, atol=default_atol
+) -> npt.NDArray[np.int32] | None:
+    """Try to express every permuted quadrature-point set as a reordering of the first.
+
+    `permuted_point_sets[0]` is taken as the canonical (unpermuted) point
+    set -- true by construction for every caller here, since each of
+    `permute_quadrature_interval`/`_triangle`/`_quadrilateral` is a no-op
+    at reflections=rotations=0, which is always the first entry.
+
+    Args:
+        permuted_point_sets: One point array per orientation variant.
+        rtol: Relative tolerance for matching points.
+        atol: Absolute tolerance for matching points.
+
+    Returns:
+        An `int32[nperm, num_points]` array `idx` such that
+        `permuted_point_sets[v][i]` is numerically equal to
+        `permuted_point_sets[0][idx[v, i]]`, or `None` if no such mapping
+        exists for some variant -- either because some point has no
+        (unique) match, or because the matches for a variant are not a
+        bijection (which would otherwise silently corrupt the resulting
+        table: two distinct permuted points tolerance-matching the same
+        canonical point, while some other canonical point goes unmatched).
+        `None` means the caller must fall back to tabulating every
+        variant directly instead of reconstructing it from the first.
+    """
+    canonical_points = permuted_point_sets[0]
+    num_points = canonical_points.shape[0]
+    out = np.empty((len(permuted_point_sets), num_points), dtype=np.int32)
+    for v, points in enumerate(permuted_point_sets):
+        if points.shape != canonical_points.shape:
+            return None
+        # close[i, j] is True iff points[i] matches canonical_points[j];
+        # one broadcasted comparison for the whole variant instead of one
+        # np.isclose call per point.
+        close = np.all(
+            np.isclose(points[:, None, :], canonical_points[None, :, :], rtol=rtol, atol=atol),
+            axis=-1,
+        )
+        if np.any(close.sum(axis=1) != 1):
+            return None
+        matches = np.argmax(close, axis=1)
+        # A genuine reordering must hit every canonical index exactly once.
+        if not np.array_equal(np.sort(matches), np.arange(num_points)):
+            return None
+        out[v] = matches
+    return out
+
+
+def _tabulate_permutation_group(
+    cell,
+    integral_type,
+    element,
+    avg,
+    entity_type: entity_types,
+    local_derivatives,
+    flat_component,
+    codim,
+    point_sets,
+    quadrature_permutation_table: "UniqueTableReferenceT | None",
+):
+    """Tabulate one canonical table, or every orientation variant, as needed.
+
+    `point_sets[0]` (the canonical, unpermuted points) is always
+    tabulated. If `quadrature_permutation_table` is not `None`, that
+    canonical table alone is returned (the reordering for every other
+    variant is reconstructed later via a cheap gather, see
+    `_finalize_table`); this is the whole point of the optimization --
+    the expensive re-tabulation of every other variant is skipped
+    entirely. Otherwise (the permanent fallback for a quadrature rule
+    with no valid reordering, e.g. an explicit `gauss_jacobi` triangle
+    rule at degree >= 2, or an arbitrary `"custom"` rule), every variant
+    is tabulated and stacked, exactly as before this optimization existed.
+    """
+    canonical = get_ffcx_table_values(
+        point_sets[0],
+        cell,
+        integral_type,
+        element,
+        avg,
+        entity_type,
+        local_derivatives,
+        flat_component,
+        codim,
+    )
+    if quadrature_permutation_table is not None:
+        return canonical
+    variants = [canonical] + [
+        get_ffcx_table_values(
+            points,
+            cell,
+            integral_type,
+            element,
+            avg,
+            entity_type,
+            local_derivatives,
+            flat_component,
+            codim,
+        )
+        for points in point_sets[1:]
+    ]
+    t = variants[0]
+    t["array"] = np.vstack([v["array"] for v in variants])
+    return t
+
+
+def _finalize_table(t, quadrature_permutation_table, rtol=default_rtol, atol=default_atol):
+    """Clamp, classify, and reduce a table's axes.
+
+    `t["array"]` holds either the full `(nperm, entities, points, dofs)`
+    stack (when `quadrature_permutation_table` is `None`), or just the
+    canonical `(1, entities, points, dofs)` table (when it is not
+    `None`). In the latter case, the full stack is reconstructed here via
+    a cheap numpy gather -- not by re-tabulating -- purely so the
+    classification below (`analyse_table_type`/`is_permuted_table`) runs
+    on numerically-identical data to what a real re-tabulation would
+    produce: a valid `quadrature_permutation_table` means every permuted
+    variant's points are exact reorderings of the canonical points, and
+    evaluating any basis function at the same (reordered) input always
+    gives the same output, so the gathered reconstruction and a true
+    re-tabulation agree by construction, not by approximation.
+
+    Returns the (possibly axis-reduced) table, its ttype, whether it is
+    genuinely permuted, and the `quadrature_permutation_table` to keep
+    (dropped, i.e. returned as `None`, if the table turned out not to be
+    permuted after all -- e.g. a low-order table whose single quadrature
+    point is invariant under every orientation variant).
+    """
+    array = clamp_table_small_numbers(t["array"], rtol=rtol, atol=atol)
+    if quadrature_permutation_table is None:
+        full = array
+    else:
+        idx = quadrature_permutation_table.values
+        full = array[0][:, idx, :].transpose(1, 0, 2, 3)
+    tabletype = analyse_table_type(full)
+
+    if tabletype in piecewise_ttypes:
+        # Reduce table to dimension 1 along num_points axis in generated code
+        array = array[:, :, :1, :]
+        full = full[:, :, :1, :]
+    if tabletype in uniform_ttypes:
+        # Reduce table to dimension 1 along num_entities axis in generated code
+        array = array[:, :1, :, :]
+        full = full[:, :1, :, :]
+    is_permuted = is_permuted_table(full)
+    if not is_permuted:
+        # Reduce table along num_perms axis
+        array = array[:1, :, :, :]
+        quadrature_permutation_table = None
+    return array, tabletype, is_permuted, quadrature_permutation_table
+
+
 def build_optimized_tables(
     quadrature_rule: QuadratureRule,
     cell: ufl.Cell,
@@ -401,6 +563,29 @@ def build_optimized_tables(
     all_tensor_factors: list[UniqueTableReferenceT] = []
     tensor_n = 0
 
+    # Memoized per call: `cell`/`entity_type`/`quadrature_rule` are fixed
+    # for the whole call, and exactly one of the branches below (keyed by
+    # `cache_key`) is reachable for any given call, so every modified
+    # terminal that reaches a given branch shares the identical
+    # quadrature-permutation table.
+    _quadrature_permutation_tables: dict[str, UniqueTableReferenceT | None] = {}
+
+    def _get_quadrature_permutation_table(cache_key, point_sets):
+        if cache_key not in _quadrature_permutation_tables:
+            idx = compute_quadrature_permutation_table(point_sets, rtol, atol)
+            if idx is None:
+                qpt = None
+            else:
+                qpt = UniqueTableReferenceT(
+                    name=f"QPT{quadrature_rule.id()}",
+                    values=idx,
+                    is_permuted=False,
+                    ttype="index",
+                )
+                mt_tables[qpt.name] = qpt
+            _quadrature_permutation_tables[cache_key] = qpt
+        return _quadrature_permutation_tables[cache_key]
+
     for mt in modified_terminals:
         res = analysis.get(mt)
         if not res:
@@ -435,6 +620,7 @@ def build_optimized_tables(
         # the codim zero element in mixed-dimensional integrals. The latter is
         # needed because a cell may see its sub-entities as being oriented
         # differently to their global orientation
+        quadrature_permutation_table = None
         if (
             integral_type == "interior_facet"
             or integral_type == "ridge"
@@ -457,68 +643,68 @@ def build_optimized_tables(
                         codim,
                     )
                 elif tdim == 2:
-                    new_table = []
-                    for ref in range(2):
-                        new_table.append(
-                            get_ffcx_table_values(
-                                permute_quadrature_interval(quadrature_rule.points, ref),
-                                cell,
-                                integral_type,
-                                element,
-                                avg,
-                                entity_type,
-                                local_derivatives,
-                                flat_component,
-                                codim,
-                            )
-                        )
-
-                    t = new_table[0]
-                    t["array"] = np.vstack([td["array"] for td in new_table])
+                    point_sets = [
+                        permute_quadrature_interval(quadrature_rule.points, ref) for ref in range(2)
+                    ]
+                    quadrature_permutation_table = _get_quadrature_permutation_table(
+                        "facet_interval", point_sets
+                    )
+                    t = _tabulate_permutation_group(
+                        cell,
+                        integral_type,
+                        element,
+                        avg,
+                        entity_type,
+                        local_derivatives,
+                        flat_component,
+                        codim,
+                        point_sets,
+                        quadrature_permutation_table,
+                    )
                 elif tdim == 3:
                     cell_type = cell.cellname
                     if cell_type == "tetrahedron":
-                        new_table = []
-                        for rot in range(3):
-                            for ref in range(2):
-                                new_table.append(
-                                    get_ffcx_table_values(
-                                        permute_quadrature_triangle(
-                                            quadrature_rule.points, ref, rot
-                                        ),
-                                        cell,
-                                        integral_type,
-                                        element,
-                                        avg,
-                                        entity_type,
-                                        local_derivatives,
-                                        flat_component,
-                                        codim,
-                                    )
-                                )
-                        t = new_table[0]
-                        t["array"] = np.vstack([td["array"] for td in new_table])
+                        point_sets = [
+                            permute_quadrature_triangle(quadrature_rule.points, ref, rot)
+                            for rot in range(3)
+                            for ref in range(2)
+                        ]
+                        quadrature_permutation_table = _get_quadrature_permutation_table(
+                            "facet_triangle", point_sets
+                        )
+                        t = _tabulate_permutation_group(
+                            cell,
+                            integral_type,
+                            element,
+                            avg,
+                            entity_type,
+                            local_derivatives,
+                            flat_component,
+                            codim,
+                            point_sets,
+                            quadrature_permutation_table,
+                        )
                     elif cell_type == "hexahedron":
-                        new_table = []
-                        for rot in range(4):
-                            for ref in range(2):
-                                new_table.append(
-                                    get_ffcx_table_values(
-                                        permute_quadrature_quadrilateral(
-                                            quadrature_rule.points, ref, rot
-                                        ),
-                                        cell,
-                                        integral_type,
-                                        element,
-                                        avg,
-                                        entity_type,
-                                        local_derivatives,
-                                        flat_component,
-                                        codim,
-                                    )
-                                )
-                        t = new_table[0]
-                        t["array"] = np.vstack([td["array"] for td in new_table])
+                        point_sets = [
+                            permute_quadrature_quadrilateral(quadrature_rule.points, ref, rot)
+                            for rot in range(4)
+                            for ref in range(2)
+                        ]
+                        quadrature_permutation_table = _get_quadrature_permutation_table(
+                            "facet_quadrilateral", point_sets
+                        )
+                        t = _tabulate_permutation_group(
+                            cell,
+                            integral_type,
+                            element,
+                            avg,
+                            entity_type,
+                            local_derivatives,
+                            flat_component,
+                            codim,
+                            point_sets,
+                            quadrature_permutation_table,
+                        )
             elif entity_type == "ridge":
                 if tdim < 3 or codim == 2:
                     # If ridge integral over vertex no permutation is needed,
@@ -536,23 +722,24 @@ def build_optimized_tables(
                         codim,
                     )
                 else:
-                    new_table = []
-                    for ref in range(2):
-                        new_table.append(
-                            get_ffcx_table_values(
-                                permute_quadrature_interval(quadrature_rule.points, ref),
-                                cell,
-                                integral_type,
-                                element,
-                                avg,
-                                entity_type,
-                                local_derivatives,
-                                flat_component,
-                                codim,
-                            )
-                        )
-                    t = new_table[0]
-                    t["array"] = np.vstack([td["array"] for td in new_table])
+                    point_sets = [
+                        permute_quadrature_interval(quadrature_rule.points, ref) for ref in range(2)
+                    ]
+                    quadrature_permutation_table = _get_quadrature_permutation_table(
+                        "ridge_interval", point_sets
+                    )
+                    t = _tabulate_permutation_group(
+                        cell,
+                        integral_type,
+                        element,
+                        avg,
+                        entity_type,
+                        local_derivatives,
+                        flat_component,
+                        codim,
+                        point_sets,
+                        quadrature_permutation_table,
+                    )
         else:
             t = get_ffcx_table_values(
                 quadrature_rule.points,
@@ -565,20 +752,12 @@ def build_optimized_tables(
                 flat_component,
                 codim,
             )
-        # Clean up table
-        tbl = clamp_table_small_numbers(t["array"], rtol=rtol, atol=atol)
-        tabletype = analyse_table_type(tbl)
-
-        if tabletype in piecewise_ttypes:
-            # Reduce table to dimension 1 along num_points axis in generated code
-            tbl = tbl[:, :, :1, :]
-        if tabletype in uniform_ttypes:
-            # Reduce table to dimension 1 along num_entities axis in generated code
-            tbl = tbl[:, :1, :, :]
-        is_permuted = is_permuted_table(tbl)
-        if not is_permuted:
-            # Reduce table along num_perms axis
-            tbl = tbl[:1, :, :, :]
+        # Clean up, classify, and reduce axes -- see `_finalize_table` for
+        # why this gives identical results whether or not
+        # `quadrature_permutation_table` is in play.
+        tbl, tabletype, is_permuted, quadrature_permutation_table = _finalize_table(
+            t, quadrature_permutation_table, rtol=rtol, atol=atol
+        )
 
         # Check for existing identical table
         is_new_table = True
@@ -650,6 +829,7 @@ def build_optimized_tables(
             is_permuted=is_permuted,
             tensor_factors=tensor_factors,
             tensor_permutation=tensor_perm,
+            quadrature_permutation_table=quadrature_permutation_table,
         )
     return mt_tables
 

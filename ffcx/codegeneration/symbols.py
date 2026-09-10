@@ -201,6 +201,17 @@ class FFCXBackendSymbols:
         else:
             qp = 0
 
+        if tabledata.quadrature_permutation_table is not None:
+            # The stored table holds only the canonical (unpermuted)
+            # points; gather the canonical point index for this
+            # (permutation, point) pair, then read the canonical table
+            # directly (qp=0).
+            qpt = tabledata.quadrature_permutation_table
+            if qpt.name not in self.element_tables:
+                self.element_tables[qpt.name] = L.Symbol(qpt.name, dtype=L.DataType.INT)
+            iq = self.element_tables[qpt.name][qp][iq]
+            qp = 0
+
         # Return direct access to element table, reusing symbol if possible
         if tabledata.name not in self.element_tables:
             self.element_tables[tabledata.name] = L.Symbol(tabledata.name, dtype=L.DataType.REAL)

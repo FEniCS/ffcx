@@ -5,6 +5,8 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Tests for code-generation size and storage heuristics."""
 
+import re
+
 import basix.ufl
 import pytest
 import ufl
@@ -104,3 +106,36 @@ def test_dead_scalar_pruning_respects_section_declarations():
 
     pruned = prune_dead_scalars([section], scalar_declaration_names([section]))
     assert [declaration.symbol.name for declaration in pruned[0].declarations] == ["live"]
+
+
+def test_reorderable_permuted_table_uses_compact_storage(compile_args):
+    """A reorderable interior-facet table must store one canonical row plus
+
+    a small quadrature-permutation index table, not a full per-orientation
+    duplicate of the basis-function values -- guards against silently
+    regressing back to full `nperm`x stacking (see
+    `ffcx.ir.elementtables.compute_quadrature_permutation_table` and
+    `_finalize_table`).
+    """
+    element = basix.ufl.element("Lagrange", "tetrahedron", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    form = ufl.inner(ufl.jump(u), ufl.jump(v)) * ufl.dS
+
+    _, _, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+    )
+
+    # A compact quadrature-permutation index table is present
+    qpt_decl = re.search(r"static const int QPT\w*\[(\d+)\]\[(\d+)\]", implementation)
+    assert qpt_decl is not None
+    assert qpt_decl.group(1) == "6"  # nperm for a tetrahedron's triangle facets
+
+    # The FE0 (value) table's own leading (permutation) dimension
+    # has collapsed to 1, since the compact table now carries that
+    # indexing (non-greedy `\S*?` to stop at the *first* bracket, not the
+    # last one on the line).
+    fe_decl = re.search(r"static const double FE0\S*?\[(\d+)\]", implementation)
+    assert fe_decl is not None
+    assert fe_decl.group(1) == "1"

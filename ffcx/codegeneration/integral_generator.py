@@ -365,7 +365,7 @@ class IntegralGenerator:
 
         for name in table_names:
             table = tables[name]
-            parts += self.declare_table(name, table)
+            parts += self.declare_table(name, table, table_types[name])
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(
@@ -377,14 +377,15 @@ class IntegralGenerator:
         )
         return parts
 
-    def declare_table(self, name, table):
+    def declare_table(self, name, table, ttype=None):
         """Declare a table.
 
         If the dof dimensions of the table have dof rotations, apply
         these rotations.
 
         """
-        table_symbol = L.Symbol(name, dtype=L.DataType.REAL)
+        dtype = L.DataType.INT if ttype == "index" else L.DataType.REAL
+        table_symbol = L.Symbol(name, dtype=dtype)
         self.backend.symbols.element_tables[name] = table_symbol
         return [L.ArrayDecl(table_symbol, values=table, const=True)]
 

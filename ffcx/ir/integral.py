@@ -359,6 +359,8 @@ def _compute_integral_ir(
                     active_table_names.add(t.name)
             else:
                 active_table_names.add(tr.name)
+            if tr.quadrature_permutation_table is not None:
+                active_table_names.add(tr.quadrature_permutation_table.name)
 
     # Figure out which table names are referenced in blocks
     for blockmap, contributions in itertools.chain(block_contributions.items()):
@@ -370,6 +372,8 @@ def _compute_integral_ir(
                         active_table_names.add(t.name)
                 else:
                     active_table_names.add(mad.tabledata.name)
+                if mad.tabledata.quadrature_permutation_table is not None:
+                    active_table_names.add(mad.tabledata.quadrature_permutation_table.name)
 
     active_tables: dict[str, npt.NDArray[np.float64]] = {}
     active_table_types: dict[str, _table_types] = {}

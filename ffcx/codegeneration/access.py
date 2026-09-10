@@ -446,15 +446,27 @@ class FFCXBackendAccess:
         if tabledata.is_uniform:
             entity = L.LiteralInt(0)
 
-        if tabledata.is_piecewise:
-            iq_global_index = L.LiteralInt(0)
-
-        # FIXME: Hopefully tabledata is not permuted when applying sum
-        # factorization
         if tabledata.is_permuted:
             qp = self.symbols.quadrature_permutation[0]
             if restriction == "-":
                 qp = self.symbols.quadrature_permutation[1]
+
+        if tabledata.quadrature_permutation_table is not None:
+            # The stored table holds only the canonical (unpermuted)
+            # points; gather the canonical point index for this
+            # (permutation, point) pair, then read the canonical table
+            # directly (qp=0). `elif` here encodes a proven invariant, not
+            # just an optimization: a piecewise-and-genuinely-permuted
+            # table is impossible (see `_finalize_table` in
+            # elementtables.py, which forces quadrature_permutation_table
+            # back to None whenever is_permuted ends up False), so these
+            # two conditions never both hold for the same tabledata.
+            qpt = tabledata.quadrature_permutation_table
+            symbols += [L.Symbol(qpt.name, dtype=L.DataType.INT)]
+            iq_global_index = self.symbols.element_tables[qpt.name][qp][iq_global_index]
+            qp = 0
+        elif tabledata.is_piecewise:
+            iq_global_index = L.LiteralInt(0)
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
             symbols += [L.Symbol(tabledata.name, dtype=L.DataType.REAL)]
