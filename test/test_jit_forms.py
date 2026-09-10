@@ -505,7 +505,7 @@ def _interior_facet_permutation_reference(
 
 
 @pytest.mark.parametrize(
-    "permutation,matches", enumerate([False, False, False, False, True, False])
+    "permutation,matches", list(enumerate([False, False, False, False, True, False]))
 )
 def test_interior_facet_integral_tetrahedron(permutation, matches, compile_args):
     """Interior-facet ('dS') regression oracle for a tetrahedron parent (nperm=6).
@@ -571,7 +571,7 @@ def test_interior_facet_integral_tetrahedron(permutation, matches, compile_args)
 
 
 @pytest.mark.parametrize(
-    "permutation,matches", enumerate([True, False, False, False, False, False, False, False])
+    "permutation,matches", list(enumerate([True, False, False, False, False, False, False, False]))
 )
 def test_interior_facet_integral_hexahedron(permutation, matches, compile_args):
     """Interior-facet ('dS') regression oracle for a hexahedron parent (nperm=8).
