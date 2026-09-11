@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 import ufl
 
+import ffcx.analysis
 import ffcx.codegeneration.jit
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 
@@ -598,3 +599,40 @@ def test_interpolate_second_derivative(compile_args, dtype, ngrads, block_size):
     scale = max(np.abs(expected).max(), 1e-30)
     assert np.abs(A).max() > 1e-10
     assert np.abs(A - expected).max() / scale < (1e-6 if dtype == "float64" else 1e-2)
+
+
+@pytest.mark.parametrize("family", ["Lagrange", "N1curl"])
+def test_interpolate_argument_is_compile_time(family):
+    """Interpolating an argument itself must not need a table built per cell.
+
+    The operand is compared against the argument as it stands after the pull
+    backs, which lower the geometry of a Piola map, so the comparison has to be
+    made up to that lowering.
+    """
+    cell = "triangle"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
+    V_a = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 2))
+    V_t = ufl.FunctionSpace(domain, basix.ufl.element(family, cell, 1))
+
+    interpolated = ufl.Interpolate(ufl.TrialFunction(V_a), V_t)
+    integrand = interpolated
+    if integrand.ufl_shape:
+        integrand = sum(integrand[i] for i in range(integrand.ufl_shape[0]))
+
+    form = ffcx.analysis.compute_form_data(
+        integrand * ufl.dx,
+        do_apply_function_pullbacks=True,
+        do_apply_geometry_lowering=True,
+        preserve_geometry_types=(ufl.classes.Jacobian,),
+    )
+    interpolations = [
+        node
+        for integral_data in form.integral_data
+        for integral in integral_data.integrals
+        for node in ufl.corealg.traversal.unique_pre_traversal(integral.integrand())
+        if isinstance(node, ufl.Interpolate)
+    ]
+    assert interpolations
+    for node in interpolations:
+        assert ffcx.analysis.interpolated_argument(node) is not None
+        assert not ffcx.analysis.interpolation_has_runtime_table(node)

@@ -26,7 +26,10 @@ import numpy.typing as npt
 import ufl.algorithms
 from ufl.algorithms.apply_algebra_lowering import apply_algebra_lowering
 from ufl.algorithms.apply_derivatives import apply_coordinate_derivatives, apply_derivatives
-from ufl.algorithms.apply_function_pullbacks import apply_function_pullbacks
+from ufl.algorithms.apply_function_pullbacks import (
+    apply_function_pullbacks,
+    apply_interpolate_pullbacks,
+)
 from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
 from ufl.algorithms.apply_integral_scaling import apply_integral_scaling
 from ufl.algorithms.compute_form_data import attach_estimated_degrees, preprocess_form
@@ -163,6 +166,65 @@ def interpolation_dof_elements(
     )
 
 
+def interpolated_argument(interpolation: ufl.Interpolate) -> ufl.Argument | None:
+    """Get the argument that an interpolation maps directly, if it maps one.
+
+    `apply_interpolate_pullbacks` maps the operand onto the reference cell, so
+    interpolating an argument itself leaves the argument under the target
+    element's inverse pull back rather than on its own.
+
+    Args:
+        interpolation: A `ufl.Interpolate`.
+
+    Returns:
+        The argument, or None if the operand is not one mapped that way.
+    """
+    operand = interpolated_expression(interpolation)
+    arguments = interpolation_arguments(interpolation)
+    if len(arguments) != 1:
+        return None
+    (argument,) = arguments
+    space = interpolation_target_space(interpolation)
+    target = space.ufl_element()
+    source = argument.ufl_function_space().ufl_element()
+    domain = ufl.domain.extract_unique_domain(argument) or space.ufl_domain()
+    # The argument as it stands in the operand. `apply_interpolate_pullbacks`
+    # maps the operand onto the reference cell of the target element, and
+    # `apply_function_pullbacks` later represents the argument itself in
+    # reference value, through its own pull back. Both forms are met: the
+    # interpolations are checked between the two passes, and classified after.
+    mapped = (
+        target.pullback.apply_inverse(argument, domain),
+        target.pullback.apply_inverse(
+            source.pullback.apply(ufl.classes.ReferenceValue(argument), domain), domain
+        ),
+    )
+    return argument if any(_same_expression(operand, m) for m in mapped) else None
+
+
+def _same_expression(a: ufl.core.expr.Expr, b: ufl.core.expr.Expr) -> bool:
+    """Compare two expressions up to lowering and index numbering.
+
+    The operand of an interpolation is compared against one built here, which
+    has not been through the passes the form has: the geometry of a pull back is
+    lowered in the form, and each pull back numbers its free indices from a
+    global counter.
+
+    Args:
+        a: An expression.
+        b: An expression to compare it against.
+    """
+
+    def normalise(expression: ufl.core.expr.Expr) -> ufl.core.expr.Expr:
+        preserve = (ufl.classes.Jacobian,)
+        for _ in range(2):
+            expression = apply_geometry_lowering(expression, preserve)
+            expression = apply_derivatives(expression)
+        return ufl.algorithms.renumbering.renumber_indices(expression)
+
+    return bool(normalise(a) == normalise(b))
+
+
 def interpolation_has_runtime_table(interpolation: ufl.Interpolate) -> bool:
     """Whether an interpolation's element table has to be built for each cell.
 
@@ -175,7 +237,46 @@ def interpolation_has_runtime_table(interpolation: ufl.Interpolate) -> bool:
     Args:
         interpolation: A `ufl.Interpolate`.
     """
-    return not isinstance(interpolated_expression(interpolation), ufl.Argument)
+    return interpolated_argument(interpolation) is None
+
+
+def check_interpolation(interpolation: ufl.Interpolate) -> None:
+    """Check that an interpolation holding an argument can be turned into a table.
+
+    Args:
+        interpolation: A `ufl.Interpolate`.
+    """
+    target = interpolation_target_space(interpolation).ufl_element()
+    argument = interpolated_argument(interpolation)
+    if argument is not None:
+        # The argument's reference basis is pushed straight through the
+        # interpolation, so the table is known at compile time. That needs the
+        # Jacobian factors of the two pull backs to cancel and the block
+        # structures to line up.
+        source = argument.ufl_function_space().ufl_element()
+        if source.pullback != target.pullback:
+            raise NotImplementedError(
+                f"Interpolation of an argument from {source.pullback} to "
+                f"{target.pullback} is not supported."
+            )
+        if source.block_size != target.block_size:
+            raise NotImplementedError(
+                f"Interpolation of an argument from a block size {source.block_size} "
+                f"space into a block size {target.block_size} space is not supported."
+            )
+    else:
+        # The table has to be built for each cell from an expression kernel, see
+        # `ffcx.codegeneration.integral_generator.IntegralGenerator`.
+        if target.pullback != ufl.pullback.identity_pullback:
+            raise NotImplementedError(
+                f"Interpolating an expression into a {target.pullback} space is "
+                "only supported when the expression is the argument itself."
+            )
+        if target.block_size != target.reference_value_size:
+            raise NotImplementedError(
+                "Interpolating an expression into a non-blocked vector valued "
+                "space is only supported when the expression is the argument itself."
+            )
 
 
 def interpolation_target_space(
@@ -250,13 +351,23 @@ def analyze_ufl_objects(
             original_expression = interpolated_expression(interpolation)
             target_space = interpolation_target_space(interpolation)
             element = target_space.ufl_element()
-            # Push expression forward to physical cell
-            domain = target_space.ufl_domain()
-            pushed_forward_expression = apply_push_forward(
-                original_expression, domain, element.pullback
+            if isinstance(interpolation, ProxyCoefficient):
+                # Map the expression onto the reference cell of the target
+                # element, which is what its dual basis evaluates. An
+                # interpolation that stayed in the integrands was mapped there
+                # by `apply_interpolate_pullbacks`.
+                domain = target_space.ufl_domain()
+                mapped_expression = apply_push_forward(
+                    original_expression, domain, element.pullback
+                )
+            else:
+                mapped_expression = original_expression
+            elements += ufl.algorithms.extract_elements(mapped_expression)
+            processed_expression = _analyze_expression(
+                mapped_expression,
+                scalar_type,
+                do_apply_function_pullbacks=isinstance(interpolation, ProxyCoefficient),
             )
-            elements += ufl.algorithms.extract_elements(pushed_forward_expression)
-            processed_expression = _analyze_expression(pushed_forward_expression, scalar_type)
             points = element.basix_element.points
             processed_expressions += [(processed_expression, points, original_expression)]
 
@@ -321,13 +432,25 @@ def analyze_ufl_objects(
 
 
 def _analyze_expression(
-    expression: ufl.core.expr.Expr, scalar_type: npt.DTypeLike
+    expression: ufl.core.expr.Expr,
+    scalar_type: npt.DTypeLike,
+    do_apply_function_pullbacks: bool = True,
 ) -> ufl.core.expr.Expr:
-    """Analyzes and preprocesses expressions."""
+    """Analyzes and preprocesses expressions.
+
+    Args:
+        expression: The expression to process.
+        scalar_type: The scalar type to compile for.
+        do_apply_function_pullbacks: Represent the form arguments and
+            coefficients in reference value. This is already done for the
+            operand of an interpolation that stayed in a form, which is
+            collected after the form has been processed.
+    """
     preserve_geometry_types = (ufl.classes.Jacobian,)
     expression = ufl.algorithms.apply_algebra_lowering.apply_algebra_lowering(expression)
     expression = ufl.algorithms.apply_derivatives.apply_derivatives(expression)
-    expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
+    if do_apply_function_pullbacks:
+        expression = ufl.algorithms.apply_function_pullbacks.apply_function_pullbacks(expression)
     expression = ufl.algorithms.apply_geometry_lowering.apply_geometry_lowering(
         expression, preserve_geometry_types
     )
@@ -709,6 +832,17 @@ def compute_form_data(
     # internal to the generated kernel, so they must *not* appear in
     # `original_form`, whose coefficients are the ones the caller passes in.
     form = replace_ufl_operands(form)
+
+    # Evaluate the interpolations that are left, which are the ones holding an
+    # argument, on the reference cell of their target element. The ones that
+    # became proxy coefficients are gone by now: their operand is compiled as an
+    # expression of its own, and mapped there in `analyze_ufl_objects`.
+    if do_apply_function_pullbacks:
+        form = apply_interpolate_pullbacks(form)
+        for integral in form.integrals():
+            for node in ufl.corealg.traversal.unique_pre_traversal(integral.integrand()):
+                if isinstance(node, ufl.Interpolate):
+                    check_interpolation(node)
 
     form = preprocess_form(form, complex_mode)
 
