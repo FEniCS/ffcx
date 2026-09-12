@@ -170,6 +170,9 @@ class IntegralGenerator:
         # will will be part of pre-computations.
         all_preparts += self.generate_proxy_coefficient_packing()
 
+        # Generate the element tables that have to be built for each cell.
+        all_preparts += self.generate_interpolated_tables(domain)
+
         # Pre-definitions are collected across all quadrature loops to
         # improve re-use and avoid name clashes
         for cell, rule in self.ir.expression.integrand.keys():
@@ -246,6 +249,9 @@ class IntegralGenerator:
         parts = []
         tables = self.ir.expression.unique_tables[domain]
         table_types = self.ir.expression.unique_table_types[domain]
+        # Tables built for each cell are declared and filled by
+        # `generate_interpolated_tables` instead.
+        interpolated = self.ir.expression.interpolated_tables.get(domain, {})
         if self.ir.expression.integral_type in ufl.custom_integral_types:
             # Define only piecewise tables
             table_names = [name for name in sorted(tables) if table_types[name] in piecewise_ttypes]
@@ -254,6 +260,8 @@ class IntegralGenerator:
             table_names = sorted(tables)
 
         for name in table_names:
+            if name in interpolated:
+                continue
             table = tables[name]
             parts += self.declare_table(name, table)
 
@@ -317,6 +325,150 @@ class IntegralGenerator:
         F = self.ir.expression.integrand[(domain, quadrature_rule)]["factorization"]
         arraysymbol = L.Symbol(f"sp_{quadrature_rule.id()}", dtype=L.DataType.SCALAR)
         return self.generate_partition(arraysymbol, F, "piecewise", None, None)
+
+    def generate_interpolated_tables(self, domain: basix.CellType):
+        """Generate the element tables that have to be built for each cell.
+
+        Interpolating an expression that is only linear in an argument brings
+        coefficients into the interpolation, so the argument's table depends on
+        the cell. A separately compiled expression kernel evaluates the
+        interpolated expression at the target element's interpolation points for
+        each dof of the argument, and that is contracted with the target element
+        table times the interpolation matrix.
+        """
+        interpolated = self.ir.expression.interpolated_tables.get(domain, {})
+        if not interpolated:
+            return []
+
+        parts: list[L.LNode] = []
+        evaluated = {}
+        custom_data = L.Symbol("custom_data", dtype=L.DataType.SCALAR)
+        ai = L.Symbol("ai", dtype=L.DataType.INT)
+
+        for i, (proxy, expr_name) in enumerate(self.ir.argument_sub_expressions):
+            num_points, value_size, *expression_dims = self.ir.argument_proxy_shapes[i]
+            declarations: list[L.Declaration] = []
+            statements: list[L.LNode] = []
+
+            # Pack the coefficients of the expression into a contiguous array
+            offsets = self.ir.argument_proxy_offsets[i : i + 2]
+            active = self.ir.coefficients_in_argument_proxy[offsets[0] : offsets[1]]
+            sizes = [coefficient.ufl_element().dim for coefficient in active]
+            positions = np.zeros(len(active) + 1, dtype=int)
+            positions[1:] = np.cumsum(sizes)
+
+            sub_coefficients = L.Symbol(f"arg_sub_coeff_{i}", dtype=L.DataType.SCALAR)
+            declarations.append(L.ArrayDecl(sub_coefficients, sizes=max(int(positions[-1]), 1)))
+            for j, coefficient in enumerate(active):
+                offset = self.ir.expression.coefficient_offsets[coefficient]
+                statements.append(
+                    L.ForRange(
+                        ai,
+                        0,
+                        sizes[j],
+                        [
+                            L.Assign(
+                                sub_coefficients[int(positions[j]) + ai],
+                                self.backend.symbols.coefficients[offset + ai],
+                            )
+                        ],
+                    )
+                )
+
+            # Evaluate the expression at the interpolation points, per argument dof
+            values = L.Symbol(f"arg_expr_{i}", dtype=L.DataType.SCALAR)
+            size = num_points * value_size * int(np.prod(expression_dims))
+            declarations.append(L.ArrayDecl(values, sizes=size))
+            statements.append(L.ForRange(ai, 0, size, [L.Assign(values[ai], 0.0)]))
+            statements.append(
+                L.Statement(
+                    L.CallOp(
+                        expr_name + ".tabulate_tensor",
+                        (
+                            values,
+                            sub_coefficients,
+                            self.backend.symbols.constants,
+                            self.backend.symbols.coordinate_dofs,
+                            self.backend.symbols.entity_local_index,
+                            self.backend.symbols.quadrature_permutation,
+                            custom_data,
+                        ),
+                    )
+                )
+            )
+            evaluated[proxy] = (values, tuple(expression_dims), value_size)
+            parts.append(
+                L.Section(
+                    name=f"Evaluate interpolated expression {i}",
+                    statements=statements,
+                    declarations=declarations,
+                    input=[],
+                    output=[],
+                )
+            )
+
+        for name, data in sorted(interpolated.items()):
+            values, dof_dims, value_size = evaluated[data.proxy]
+            num_quadrature_points, num_points = data.contraction.shape
+
+            table = L.Symbol(name, dtype=L.DataType.SCALAR)
+            self.backend.symbols.element_tables[name] = table
+            contraction = L.Symbol(f"{name}_M", dtype=L.DataType.REAL)
+
+            aq = L.Symbol("aq", dtype=L.DataType.INT)
+            ap = L.Symbol("ap", dtype=L.DataType.INT)
+            dof_indices = [
+                L.Symbol(f"ad{axis}", dtype=L.DataType.INT) for axis in range(len(dof_dims))
+            ]
+            table_sizes: tuple[int, ...]
+            # The kernel writes the expression as [point][component][dof]... .
+            block = int(np.prod(dof_dims))
+            flat_index = ap * (value_size * block) + data.flat_component * block
+            stride = block
+            for index, dim in zip(dof_indices, dof_dims):
+                stride //= dim
+                flat_index = flat_index + index * stride
+
+            if len(dof_dims) == 1:
+                # Read back through `table_access`, which indexes a table by
+                # permutation and entity first. Both are singletons here: the
+                # table is the same for every entity and is not permuted.
+                entry = table[0][0][aq]
+                table_sizes = (1, 1, num_quadrature_points, *dof_dims)
+            else:
+                # A dense element tensor block, read directly in
+                # `get_arg_factors` by quadrature point and one index per
+                # argument.
+                entry = table[aq]
+                table_sizes = (num_quadrature_points, *dof_dims)
+            for index in dof_indices:
+                entry = entry[index]
+
+            body: list[L.LNode] = [
+                L.Assign(entry, 0.0),
+                L.ForRange(
+                    ap,
+                    0,
+                    num_points,
+                    [L.AssignAdd(entry, contraction[aq][ap] * values[flat_index])],
+                ),
+            ]
+            for index, dim in zip(reversed(dof_indices), reversed(dof_dims)):
+                body = [L.ForRange(index, 0, dim, body)]
+            parts.append(
+                L.Section(
+                    name=f"Build interpolated table {name}",
+                    statements=[L.ForRange(aq, 0, num_quadrature_points, body)],
+                    declarations=[
+                        L.ArrayDecl(contraction, values=data.contraction, const=True),
+                        L.ArrayDecl(table, sizes=table_sizes),
+                    ],
+                    input=[],
+                    output=[],
+                )
+            )
+
+        return parts
 
     def generate_proxy_coefficient_packing(self):
         """Generate packing of proxy coefficients into contiguous arrays."""
@@ -573,6 +725,20 @@ class IntegralGenerator:
             #       now because it assumes too much about indices.
 
             assert td.ttype != "zeros"
+
+            if td.interpolation is not None and len(td.interpolation.dof_dims) > 1:
+                # An interpolation of an expression linear in several arguments
+                # is one table spanning every element tensor axis, not a factor
+                # per axis, so contribute it once at its first slot.
+                if i > 0 and blockdata.ma_data[i - 1].ma_index == mad.ma_index:
+                    continue
+                table = self.backend.symbols.element_tables[td.name]
+                access = table[iq.global_index]
+                for index in indices[: len(td.interpolation.dof_dims)]:
+                    access = access[index.global_index]
+                arg_factors.append(access)
+                tables.append(table)
+                continue
 
             if td.ttype == "ones":
                 arg_factor = 1

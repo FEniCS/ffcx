@@ -280,8 +280,8 @@ class ExpressionGenerator:
                 body.append(L.AssignAdd(A[multi_index], Brhs))
 
             for i in reversed(range(block_rank)):
-                body = L.ForRange(B_indices[i + 1], 0, blockdims[i], body=body)
-            quadparts += [body]
+                body = [L.ForRange(B_indices[i + 1], 0, blockdims[i], body=body)]
+            quadparts += body
 
         return preparts, quadparts
 
