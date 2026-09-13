@@ -251,17 +251,6 @@ class FFCXBackendAccess:
         else:
             raise RuntimeError(f"Unhandled cell types {cellname}.")
 
-    def entity_permutation(self, restriction):
-        """Access the quadrature/entity permutation value for a given restriction.
-
-        Used both here and, cross-class, from `FFCXBackendDefinitions`
-        (for the mixed-dimensional-submesh coordinate-dofs gather).
-        """
-        qp = self.symbols.quadrature_permutation[0]
-        if restriction == "-":
-            qp = self.symbols.quadrature_permutation[1]
-        return qp
-
     def cell_facet_jacobian(self, mt, tabledata, num_points):
         """Access a cell facet jacobian."""
         cellname = ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
@@ -475,9 +464,7 @@ class FFCXBackendAccess:
         # FIXME: Hopefully tabledata is not permuted when applying sum
         # factorization
         if tabledata.is_permuted:
-            qp = self.symbols.quadrature_permutation[0]
-            if restriction == "-":
-                qp = self.symbols.quadrature_permutation[1]
+            qp = self.symbols.entity_permutation(restriction)
 
         if dof_index.dim == 1 and quadrature_index.dim == 1:
             symbols += [L.Symbol(tabledata.name, dtype=L.DataType.REAL)]

@@ -257,7 +257,7 @@ class FFCXBackendDefinitions:
             perm = (
                 L.LiteralInt(0)
                 if domain.topological_dimension == 0
-                else self.access.entity_permutation(mt.restriction)
+                else self.symbols.entity_permutation(mt.restriction)
             )
             closure_index = closure_table[perm][entity]
 

@@ -179,6 +179,12 @@ class FFCXBackendSymbols:
         c = self.constants
         return c[offset + index]
 
+    def entity_permutation(self, restriction):
+        """Access the quadrature permutation value for a given restriction."""
+        if restriction == "-":
+            return self.quadrature_permutation[1]
+        return self.quadrature_permutation[0]
+
     # TODO: Remove this, use table_access instead
     def element_table(self, tabledata, entity_type: entity_types, restriction):
         """Get an element table."""
@@ -195,9 +201,7 @@ class FFCXBackendSymbols:
             iq = self.quadrature_loop_index
 
         if tabledata.is_permuted:
-            qp = self.quadrature_permutation[0]
-            if restriction == "-":
-                qp = self.quadrature_permutation[1]
+            qp = self.entity_permutation(restriction)
         else:
             qp = 0
 
