@@ -2326,13 +2326,14 @@ def test_mixed_constants(compile_args, dtype):
         ),
     ],
 )
-def test_point_mesh(compile_args, dtype):
+@pytest.mark.parametrize("gdim", [1, 2, 3])
+def test_point_mesh(compile_args, dtype, gdim):
     """Check spatial coordinates on a point mesh compiles."""
-    domain = ufl.Mesh(basix.ufl.element("Lagrange", "point", 0, shape=(3,), discontinuous=True))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "point", 0, shape=(gdim,), discontinuous=True))
     x = ufl.SpatialCoordinate(domain)
 
     def f(x):
-        return x[0] + 2 * x[1] * 3 + 5 * x[2] ** 2
+        return sum((i + 1) * x[i] ** (i + 1) for i in range(gdim))
 
     J = f(x) * ufl.dx(domain=domain)
     forms = [J]
@@ -2348,6 +2349,8 @@ def test_point_mesh(compile_args, dtype):
     xdtype = dtype_to_scalar_dtype(dtype)
 
     J = np.zeros(1, dtype=dtype)
+
+    # Coordinate dofs are always three-dimensional, independent of gdim
     coords = np.array([1.3, 2.4, 0.8], dtype=xdtype)
 
     c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
