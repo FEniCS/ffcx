@@ -182,7 +182,8 @@ def _vertex_closure_dofs(tablename, cellname, coordinate_element):
 
     A vertex has no orientation ambiguity, unlike `facet_closure_dofs`
     and `ridge_closure_dofs` on a 3D cell. Therefore this table has
-    a single row and `quadrature_permutation` is never consulted to index it.    """
+    a single row and `quadrature_permutation` is never consulted to index it.
+    """
     celltype = getattr(basix.CellType, cellname)
     be = _scalar_basix_element(coordinate_element)
     num_vertices = len(basix.topology(celltype)[0])
@@ -200,8 +201,7 @@ def _vertex_closure_dofs(tablename, cellname, coordinate_element):
 
 
 def peak_closure_dofs(tablename, cellname, coordinate_element):
-    """Write a peak-closure-dofs table (peak = a cell's own vertex).
-    """
+    """Write a peak-closure-dofs table (peak = a cell's own vertex)."""
     return _vertex_closure_dofs(tablename, cellname, coordinate_element)
 
 
