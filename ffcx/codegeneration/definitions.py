@@ -212,11 +212,19 @@ class FFCXBackendDefinitions:
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
+        parent_element = self.access.integration_domain_coordinate_element
+
         # coordinate dofs is always 3d
         dim = 3
         offset = 0
         if mt.restriction == "-":
-            offset = num_scalar_dofs * dim
+            # `coordinate_dofs` holds the two cells of the *integration
+            # domain* back to back. If terminal is on a submesh,
+            # we need the offset to get the second parent cell
+            restriction_dofs = (
+                num_scalar_dofs if parent_element is None else parent_element._sub_element.dim
+            )
+            offset = restriction_dofs * dim
 
         # A mixed-dimensional submesh's own coordinate dofs are always a
         # subset of the integration domain's own -- gather them via a
