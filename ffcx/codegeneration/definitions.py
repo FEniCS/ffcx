@@ -10,6 +10,7 @@ import logging
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration import geometry
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
@@ -232,25 +233,14 @@ class FFCXBackendDefinitions:
         # `coordinate_dofs` directly at `dof`, which is laid out for the
         # integration domain, not this one.
         closure_table = None
-        parent_element = self.access.integration_domain_coordinate_element
         if (
             parent_element is not None
             and (codim := parent_element.cell.topological_dimension - domain.topological_dimension)
             != 0
         ):
-            # Keyed by entity_type, not codim for now.
-            # Nomenclature note: We should really use the entity type
-            # "peak" for codim-3 integrals. However, "peak" is not itself
-            # a distinct integral/entity type in FFCx today -- FFCx only
-            # has "vertex" (a codim-agnostic point-integral entity_type,
-            # used for a mesh's own vertices regardless of the parent's
-            # topological dimension), so the dict below is still keyed by
-            # "vertex", matching entity_type.
-            table_kind, expected_codim = {
-                "facet": ("facet_closure_dofs", 1),
-                "ridge": ("ridge_closure_dofs", 2),
-                "vertex": ("peak_closure_dofs", parent_element.cell.topological_dimension),
-            }.get(self.entity_type, (None, None))
+            table_kind, expected_codim = geometry.CLOSURE_DOFS_TABLES.get(
+                self.entity_type, (None, None)
+            )
             if table_kind is None or codim != expected_codim:
                 raise NotImplementedError(
                     "Cannot gather a mixed-dimensional submesh's coordinate dofs: coefficient "
@@ -260,14 +250,13 @@ class FFCXBackendDefinitions:
             parent_cellname = parent_element.cell.cellname
             closure_table = L.Symbol(f"{parent_cellname}_{table_kind}", dtype=L.DataType.INT)
             entity = self.symbols.entity(self.entity_type, mt.restriction)
-            # A vertex has no orientation ambiguity, so its closure-dofs
-            # table has a single row, never index it with the runtime
-            # quadrature_permutation value (which may be meaningless, or
-            # even out of range for a single-row table, for vertex
-            # integrals).
+            # A vertex has no orientation ambiguity, so a table gathering
+            # over vertices has a single row and must never be indexed
+            # with the runtime quadrature_permutation (which may be
+            # meaningless, or even out of range for a one-row table).
             perm = (
                 L.LiteralInt(0)
-                if self.entity_type == "vertex"
+                if domain.topological_dimension == 0
                 else self.access.entity_permutation(mt.restriction)
             )
             closure_index = closure_table[perm][entity]

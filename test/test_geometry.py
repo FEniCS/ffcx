@@ -207,3 +207,28 @@ def test_peak_closure_dofs_shape_and_value(cellname, degree):
 def test_facet_closure_dofs_unsupported_cell_type():
     element = _coordinate_element("prism", 3)
     geometry.write_table("facet_closure_dofs", "prism", element)
+
+
+@pytest.mark.parametrize("cellname", ["triangle", "quadrilateral"])
+@pytest.mark.parametrize("degree", [1, 2, 3])
+def test_ridge_closure_dofs_2d_is_the_vertex_closure(cellname, degree):
+    """A 2D cell's ridges are its vertices, so its ridge table is the vertex table.
+
+    It therefore has a single orientation row (a vertex has nothing to
+    permute), unlike the 3D ridge tables above whose ridges are edges.
+    """
+    gdim = 2
+    element = _coordinate_element(cellname, gdim, degree=degree)
+    be = element.basix_element
+    celltype = getattr(basix.CellType, cellname)
+    num_vertices = len(basix.topology(celltype)[0])
+
+    decl = geometry.write_table("ridge_closure_dofs", cellname, element)
+    assert decl.symbol.name == f"{cellname}_ridge_closure_dofs"
+    assert decl.values.shape == (1, num_vertices, 1)
+    for v in range(num_vertices):
+        assert list(decl.values[0, v]) == be.entity_closure_dofs[0][v]
+
+    # The peak table is the same values under the other name.
+    peak = geometry.write_table("peak_closure_dofs", cellname, element)
+    assert (peak.values == decl.values).all()

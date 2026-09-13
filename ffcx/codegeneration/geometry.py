@@ -7,8 +7,20 @@
 
 import basix
 import numpy as np
+import ufl
 
 import ffcx.codegeneration.lnodes as L
+
+# Per entity_type: the table a mixed-dimensional submesh's coordinate
+# dofs are gathered through, and the codimension it must have. Keyed by
+# "vertex" rather than "peak", which is not an entity_type in FFCx.
+# Codimension 2 is the cap: `ffcx/ir/elementtables.py` rejects anything
+# higher, so a 3D parent never reaches codegen.
+CLOSURE_DOFS_TABLES: dict[str, tuple[str, int]] = {
+    "facet": ("facet_closure_dofs", 1),
+    "ridge": ("ridge_closure_dofs", 2),
+    "vertex": ("peak_closure_dofs", 2),
+}
 
 # Number of possible facet/ridge orientations ("quadrature_permutation"
 # values) FFCx/DOLFINx currently support permuting for -- matches the
@@ -157,21 +169,20 @@ def ridge_closure_dofs(tablename, cellname, coordinate_element):
     """Write a ridge-closure-dofs table (see `_closure_dofs_table`)."""
     celltype = getattr(basix.CellType, cellname)
     tdim = len(basix.topology(celltype)) - 1
+    if tdim - 2 == 0:
+        # A 2D cell's ridges are its vertices, with no orientation to
+        # permute over. Keeps the `ridge_closure_dofs` name, since the
+        # symbol is derived from entity_type, not from entity dimension.
+        return _vertex_closure_dofs(tablename, cellname, coordinate_element)
     return _closure_dofs_table(tablename, cellname, coordinate_element, tdim - 2, _RIDGE_NPERM)
 
 
-def peak_closure_dofs(tablename, cellname, coordinate_element):
-    """Write a peak-closure-dofs table (peak = codim-3 entity, a cell's own vertex).
+def _vertex_closure_dofs(tablename, cellname, coordinate_element):
+    """Write a single-row table of each of a cell's vertices' own closure dofs.
 
-    A vertex has no orientation ambiguity -- there is nothing to permute
-    -- so, unlike `facet_closure_dofs`/`ridge_closure_dofs`, this table
-    has a single row and `quadrature_permutation` is never consulted to
-    index it (see `definitions._define_coordinate_dofs_lincomb`). This
-    also means it holds for a coordinate element of any degree, not just
-    affine ones: a vertex's own closure is always its own single dof,
-    regardless of how many further dofs a higher-degree element places on
-    edges/faces/interior.
-    """
+    A vertex has no orientation ambiguity, unlike `facet_closure_dofs`
+    and `ridge_closure_dofs` on a 3D cell. Therefore this table has
+    a single row and `quadrature_permutation` is never consulted to index it.    """
     celltype = getattr(basix.CellType, cellname)
     be = _scalar_basix_element(coordinate_element)
     num_vertices = len(basix.topology(celltype)[0])
@@ -186,6 +197,12 @@ def peak_closure_dofs(tablename, cellname, coordinate_element):
     out = np.array([[closure_dofs[v] for v in range(num_vertices)]], dtype=int)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.INT)
     return L.ArrayDecl(symbol, values=out, const=True)
+
+
+def peak_closure_dofs(tablename, cellname, coordinate_element):
+    """Write a peak-closure-dofs table (peak = a cell's own vertex).
+    """
+    return _vertex_closure_dofs(tablename, cellname, coordinate_element)
 
 
 def cell_ridge_jacobian(tablename, cellname):
@@ -267,3 +284,39 @@ def facet_orientation(tablename, cellname):
     out = basix.cell.facet_orientations(celltype)
     symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.REAL)
     return L.ArrayDecl(symbol, values=np.asarray(out), const=True)
+
+
+def closure_dofs_tables(entity_type, integrands, parent_element):
+    """Write the closure-dofs tables a mixed-dimensional integrand needs.
+
+    Returns the table declarations for gathering any lower-dimensional
+    submesh's coordinate dofs out of the integration domain's own
+    `coordinate_dofs` buffer, or an empty list when the integrand has no
+    such submesh geometry.
+    """
+    if parent_element is None:
+        return []
+    table_kind, expected_codim = CLOSURE_DOFS_TABLES.get(entity_type, (None, None))
+    if table_kind is None:
+        return []
+
+    parent_tdim = parent_element.cell.topological_dimension
+    needed = False
+    for integrand in integrands:
+        for attr in integrand["factorization"].nodes.values():
+            mt = attr.get("mt")
+            if mt is None:
+                continue
+            if type(mt.terminal) not in (ufl.geometry.SpatialCoordinate, ufl.geometry.Jacobian):
+                continue
+            domain = ufl.domain.extract_unique_domain(mt.terminal)
+            # Match on the exact codimension the table is built for, so
+            # this agrees with the check in
+            # `definitions._define_coordinate_dofs_lincomb` rather than
+            # emitting a table that side would reject.
+            if parent_tdim - domain.topological_dimension == expected_codim:
+                needed = True
+
+    if not needed:
+        return []
+    return [write_table(table_kind, parent_element.cell.cellname, parent_element)]

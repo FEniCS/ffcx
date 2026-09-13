@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Sequence
 
 import basix.ufl
 import numpy as np
@@ -110,10 +111,14 @@ def _call_scalar_kernel(
     dtype: str,
     coordinate_dofs: np.ndarray,
     coefficients: np.ndarray,
-    entity_local_index: int | None = None,
-    quadrature_permutation: int = 0,
+    entity_local_index: int | Sequence[int] | None = None,
+    quadrature_permutation: int | Sequence[int] = 0,
 ) -> np.ndarray:
-    """Call a compiled scalar-valued tabulate_tensor kernel and return its output."""
+    """Call a compiled scalar-valued tabulate_tensor kernel and return its output.
+
+    Pass a pair for `entity_local_index`/`quadrature_permutation` to call
+    an interior-facet kernel, which sees both sides of the facet.
+    """
     ffi = module.ffi
     xdtype = dtype_to_scalar_dtype(dtype)
     c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
@@ -125,8 +130,8 @@ def _call_scalar_kernel(
         entity_ptr = ffi.NULL
         perm_ptr = ffi.NULL
     else:
-        local_index = np.array([entity_local_index], dtype=np.int32)
-        perm = np.array([quadrature_permutation], dtype=np.uint8)
+        local_index = np.atleast_1d(np.asarray(entity_local_index, dtype=np.int32))
+        perm = np.atleast_1d(np.asarray(quadrature_permutation, dtype=np.uint8))
         entity_ptr = ffi.cast("int *", local_index.ctypes.data)
         perm_ptr = ffi.cast("uint8_t *", perm.ctypes.data)
 
@@ -494,3 +499,224 @@ def test_multiple_mesh_codim1_2d_facet_gradient_quadrature_permutation(compile_a
     # A generic (non-degenerate) facet must give 6 genuinely different
     # results across its 6 possible orientations.
     assert len(set(np.round(results, 8))) == 6
+
+
+def _point_submesh_forms(dtype: str, compile_args: list[str], measure: str):
+    """Compile a codim-2 point-submesh functional and its manifold reference.
+
+    `measure` is the parent measure to integrate over: "dP" (a vertex
+    integral) or "ridge" -- on a 2D cell a ridge *is* a vertex, so both
+    gather the submesh's coordinate dofs over the parent's vertices.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    codomain = ufl.Mesh(basix.ufl.element("Lagrange", "point", 0, shape=(2,), discontinuous=True))
+    # The function space's element must be continuous: `ffcx/analysis.py`
+    # rejects discontinuous elements in vertex integrals. The *coordinate*
+    # element above stays discontinuous, matching what DOLFINx builds.
+    element = basix.ufl.element("Lagrange", "point", 0)
+    u = ufl.Coefficient(ufl.FunctionSpace(codomain, element))
+    x = ufl.SpatialCoordinate(codomain)
+    expr = u * (x[0] + 2 * x[1])
+
+    return (
+        _compile_scalar_form(expr * ufl.Measure(measure, domain=domain), dtype, compile_args),
+        _compile_scalar_form(expr * ufl.Measure("dx", domain=codomain), dtype, compile_args),
+    )
+
+
+# An irregular triangle, so the three vertices give genuinely different values.
+_POINT_SUBMESH_COORDS = [0.3, 0.2, 0.0, 2.0, 0.7, 0.0, 0.6, 3.0, 0.0]
+
+
+@pytest.mark.parametrize("measure", ["dP", "ridge"])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_multiple_mesh_codim2_point_spatial_coordinate(dtype, compile_args, measure):
+    """Spatial coordinates of a codim-2 (point) mixed-dimensional submesh.
+
+    Integrating them over the parent's vertices must reproduce, for every
+    vertex, the value of integrating directly on the submesh's own mesh.
+    Covers the vertex-closure-dofs gather for both spellings of a 2D
+    codim-2 measure.
+    """
+    (parent_integral, parent_module), (manifold_integral, manifold_module) = _point_submesh_forms(
+        dtype, compile_args, measure
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    coords = np.array(_POINT_SUBMESH_COORDS, dtype=xdtype)
+    w = np.array([3.2], dtype=dtype)
+
+    results = []
+    for i, verts in enumerate(basix.topology(basix.CellType.triangle)[0]):
+        A_parent = _call_scalar_kernel(
+            parent_integral, parent_module, dtype, coords, w, entity_local_index=i
+        )
+        vertex_coords = coords.reshape(-1, 3)[list(verts)].copy()
+        A_manifold = _call_scalar_kernel(
+            manifold_integral, manifold_module, dtype, vertex_coords, w
+        )
+        np.testing.assert_allclose(A_parent, A_manifold, atol=1e-10)
+        results.append(A_parent[0])
+
+    # A generic triangle must give 3 genuinely different results, i.e. the
+    # gather really does follow `entity_local_index`.
+    assert len(set(np.round(results, 8))) == 3
+
+
+@pytest.mark.parametrize("measure", ["dP", "ridge"])
+def test_multiple_mesh_codim2_point_quadrature_permutation_invariance(compile_args, measure):
+    """A vertex has no orientation, so its gather must ignore the permutation.
+
+    The inverse of the facet/ridge permutation sweeps above, which assert
+    the kernel *is* permutation-sensitive. Here a single-row closure table
+    is indexed with a literal 0, so a varying (and, for a one-row table,
+    out-of-range) `quadrature_permutation` must change nothing.
+    """
+    dtype = "float64"
+    (parent_integral, parent_module), _ = _point_submesh_forms(dtype, compile_args, measure)
+
+    coords = np.array(_POINT_SUBMESH_COORDS, dtype=dtype_to_scalar_dtype(dtype))
+    w = np.array([3.2], dtype=dtype)
+
+    for i in range(len(basix.topology(basix.CellType.triangle)[0])):
+        values = [
+            _call_scalar_kernel(
+                parent_integral,
+                parent_module,
+                dtype,
+                coords,
+                w,
+                entity_local_index=i,
+                quadrature_permutation=perm,
+            )[0]
+            for perm in (0, 1, 5)
+        ]
+        assert len(set(values)) == 1
+
+
+def test_geometry_only_submesh_needs_facet_permutations(compile_args):
+    """A submesh that enters only through geometry is still mixed-dimensional.
+
+    With no coefficient or argument of its own, the submesh was invisible
+    to the `is_mixed_dim` scan, so the integral under-reported
+    `needs_facet_permutations` and DOLFINx would skip computing the
+    permutation the closure-dofs gather indexes with.
+
+    Note the *values* below are the same for every orientation, and were
+    so before the fix too: an integral of a function of the physical
+    coordinate over a fixed facet cannot depend on how that facet is
+    parameterised, so a geometry-only integrand is orientation-invariant
+    by construction. The sweep is a correctness guard on the gather; the
+    flag is the regression.
+    """
+    dtype = "float64"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    codomain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(3,)))
+    x = ufl.SpatialCoordinate(codomain)
+    expr = x[0] + 2 * x[1] + 3 * x[2]
+
+    parent_integral, parent_module = _compile_scalar_form(
+        expr * ufl.Measure("ds", domain=domain), dtype, compile_args
+    )
+    manifold_integral, manifold_module = _compile_scalar_form(
+        expr * ufl.Measure("dx", domain=codomain), dtype, compile_args
+    )
+
+    assert parent_integral.needs_facet_permutations
+
+    # An irregular tetrahedron, so each facet genuinely differs.
+    coords = np.array(
+        [0.0, 0.0, 0.0, 2.0, 0.3, 0.1, 0.2, 3.0, 0.4, 0.5, 0.6, 4.0],
+        dtype=dtype_to_scalar_dtype(dtype),
+    )
+    w = np.array([], dtype=dtype)
+    facet_local_index = 0
+    facet_vertices = basix.topology(basix.CellType.tetrahedron)[2][facet_local_index]
+
+    vertex_permutations = _reference_vertex_permutations(basix.CellType.triangle)
+    for perm, vertex_permutation in enumerate(vertex_permutations):
+        A_perm = _call_scalar_kernel(
+            parent_integral,
+            parent_module,
+            dtype,
+            coords,
+            w,
+            entity_local_index=facet_local_index,
+            quadrature_permutation=perm,
+        )
+        permuted_vertices = [facet_vertices[v] for v in vertex_permutation]
+        manifold_coords = coords.reshape(-1, 3)[permuted_vertices].copy()
+        A_manifold = _call_scalar_kernel(
+            manifold_integral, manifold_module, dtype, manifold_coords, w
+        )
+        np.testing.assert_allclose(A_perm, A_manifold, atol=1e-10)
+
+
+def test_multiple_mesh_codim1_interior_facet_restriction_offset(compile_args):
+    """The "-" side of an interior facet starts one *parent* cell in.
+
+    `coordinate_dofs` holds the two cells of the integration domain back
+    to back, so the "-" restriction's offset is the parent's scalar dof
+    count -- not the submesh's, which is smaller. A degree-2 triangle
+    parent with a degree-2 interval submesh makes the two strides (18 vs
+    9) far enough apart that the wrong one reads a mix of both cells.
+
+    Ground truth needs no second mesh: feed the *same* cell on both sides
+    of the facet, and the "-" restriction must then agree exactly with
+    the "+" restriction.
+    """
+    dtype = "float64"
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 2, shape=(2,)))
+    codomain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 2, shape=(2,)))
+    x = ufl.SpatialCoordinate(codomain)
+    dS = ufl.Measure("dS", domain=domain)
+
+    minus_integral, minus_module = _compile_scalar_form(
+        (x[0]("-") + 2 * x[1]("-")) * dS, dtype, compile_args
+    )
+    plus_integral, plus_module = _compile_scalar_form(
+        (x[0]("+") + 2 * x[1]("+")) * dS, dtype, compile_args
+    )
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+    rng = np.random.default_rng(7)
+    cell = rng.uniform(0.0, 1.0, (6, 3))
+    cell[:, 2] = 0.0
+    coords = np.concatenate([cell, cell]).ravel().astype(xdtype)
+    w = np.array([], dtype=dtype)
+
+    for facet in range(3):
+        for perm in (0, 1):
+            A_minus = _call_scalar_kernel(
+                minus_integral,
+                minus_module,
+                dtype,
+                coords,
+                w,
+                entity_local_index=(facet, facet),
+                quadrature_permutation=(perm, perm),
+            )
+            A_plus = _call_scalar_kernel(
+                plus_integral,
+                plus_module,
+                dtype,
+                coords,
+                w,
+                entity_local_index=(facet, facet),
+                quadrature_permutation=(perm, perm),
+            )
+            np.testing.assert_allclose(A_minus, A_plus, atol=1e-10)
+            assert abs(A_plus[0]) > 1e-3
