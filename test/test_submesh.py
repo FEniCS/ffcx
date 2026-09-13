@@ -13,7 +13,7 @@ import basix.ufl
 import numpy as np
 import pytest
 import ufl
-from conftest import _reference_vertex_permutations
+from utils import reference_vertex_permutations
 
 import ffcx.codegeneration.jit
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
@@ -476,7 +476,7 @@ def test_multiple_mesh_codim1_2d_facet_gradient_quadrature_permutation(compile_a
     facet_local_index = 0  # connects parent-local vertices 1, 2, 3 (basix tetrahedron facet 0)
     facet_vertices = [1, 2, 3]
 
-    vertex_permutations = _reference_vertex_permutations(basix.CellType.triangle)
+    vertex_permutations = reference_vertex_permutations(basix.CellType.triangle)
     results = []
     for perm, vertex_permutation in enumerate(vertex_permutations):
         A_perm = _call_scalar_kernel(
@@ -646,7 +646,7 @@ def test_geometry_only_submesh_needs_facet_permutations(compile_args):
     facet_local_index = 0
     facet_vertices = basix.topology(basix.CellType.tetrahedron)[2][facet_local_index]
 
-    vertex_permutations = _reference_vertex_permutations(basix.CellType.triangle)
+    vertex_permutations = reference_vertex_permutations(basix.CellType.triangle)
     for perm, vertex_permutation in enumerate(vertex_permutations):
         A_perm = _call_scalar_kernel(
             parent_integral,

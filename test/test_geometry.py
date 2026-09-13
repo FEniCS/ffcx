@@ -8,7 +8,7 @@
 import basix
 import basix.ufl
 import pytest
-from conftest import _reference_vertex_permutations
+from utils import reference_vertex_permutations
 
 from ffcx.codegeneration import geometry
 
@@ -82,7 +82,7 @@ def test_facet_closure_dofs_vertex_part_matches_reference_permutation(
     element = _coordinate_element(cellname, gdim, degree=degree)
     be = element.basix_element
     entity_dim = gdim - 1
-    expected_vertex_perms = _reference_vertex_permutations(facet_celltype)
+    expected_vertex_perms = reference_vertex_permutations(facet_celltype)
     num_vertices = len(basix.geometry(facet_celltype))
     table = geometry.write_table("facet_closure_dofs", cellname, element).values
     for facet in range(table.shape[1]):
@@ -132,7 +132,7 @@ def test_ridge_closure_dofs_vertex_part_matches_reference_permutation(cellname, 
     element = _coordinate_element(cellname, 3, degree=degree)
     be = element.basix_element
     interval = basix.CellType.interval
-    expected_vertex_perms = _reference_vertex_permutations(interval)
+    expected_vertex_perms = reference_vertex_permutations(interval)
     table = geometry.write_table("ridge_closure_dofs", cellname, element).values
     for ridge in range(table.shape[1]):
         base = be.entity_closure_dofs[1][ridge]
@@ -198,15 +198,29 @@ def test_peak_closure_dofs_shape_and_value(cellname, degree):
         assert list(decl.values[0, v]) == be.entity_closure_dofs[0][v]
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason="Prism/pyramid facets are not uniform (mixed triangle/quadrilateral), matching the "
-    "same restriction `ffcx/ir/elementtables.py`'s mixed-dimensional-submesh element "
-    "permutation already has.",
-)
-def test_facet_closure_dofs_unsupported_cell_type():
-    element = _coordinate_element("prism", 3)
-    geometry.write_table("facet_closure_dofs", "prism", element)
+@pytest.mark.parametrize("cellname", ["prism", "pyramid"])
+def test_facet_closure_dofs_unsupported_cell_type(cellname):
+    """Prism/pyramid facets mix triangles and quadrilaterals, so have no single
+    orientation count -- the same restriction `ffcx/ir/elementtables.py` has."""
+    element = _coordinate_element(cellname, 3)
+    with pytest.raises(NotImplementedError):
+        geometry.write_table("facet_closure_dofs", cellname, element)
+
+
+@pytest.mark.parametrize("cellname", ["tetrahedron", "hexahedron", "prism", "pyramid"])
+def test_ridge_closure_dofs_supported_for_every_3d_cell(cellname):
+    """Every 3D cell's ridges are intervals, so keying the orientation count on
+    the entity rather than the parent cell covers prism and pyramid for free."""
+    element = _coordinate_element(cellname, 3)
+    decl = geometry.write_table("ridge_closure_dofs", cellname, element)
+    num_ridges = len(basix.topology(getattr(basix.CellType, cellname))[1])
+    assert decl.values.shape == (2, num_ridges, 2)
+
+
+def test_closure_table_requires_a_coordinate_element():
+    """The closure tables need the element; omitting it must say so."""
+    with pytest.raises(ValueError, match="requires a coordinate element"):
+        geometry.write_table("facet_closure_dofs", "triangle")
 
 
 @pytest.mark.parametrize("cellname", ["triangle", "quadrilateral"])

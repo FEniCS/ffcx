@@ -22,28 +22,27 @@ CLOSURE_DOFS_TABLES: dict[str, tuple[str, int]] = {
     "vertex": ("peak_closure_dofs", 2),
 }
 
-# Number of possible facet/ridge orientations ("quadrature_permutation"
-# values) FFCx/DOLFINx currently support permuting for -- matches the
-# variant counts `ffcx/ir/elementtables.py`'s `build_optimized_tables`
-# already permutes mixed-dimensional-submesh element tables over for the
-# same cell types (interior_facet / mixed-dim codim-0 case).
-_FACET_NPERM = {
-    "triangle": 2,  # interval facets
-    "quadrilateral": 2,  # interval facets
-    "tetrahedron": 6,  # triangle facets
-    "hexahedron": 8,  # quadrilateral facets
+# Orientations ("quadrature_permutation" values) a sub-entity can have:
+# rotations x reflections. A property of the entity, not of its parent cell.
+_ENTITY_NPERM = {
+    basix.CellType.point: 1,
+    basix.CellType.interval: 2,
+    basix.CellType.triangle: 6,
+    basix.CellType.quadrilateral: 8,
 }
-_RIDGE_NPERM = {
-    # Every 3D cell's ridges (codim-2 entities) are edges.
-    "tetrahedron": 2,
-    "hexahedron": 2,
-    "prism": 2,
-    "pyramid": 2,
-}
+
+
+_CLOSURE_TABLE_NAMES = {name for name, _ in CLOSURE_DOFS_TABLES.values()}
 
 
 def write_table(tablename, cellname, coordinate_element=None):
-    """Write a table."""
+    """Write a table.
+
+    `coordinate_element` is required for the closure-dofs tables and
+    ignored by every other table kind.
+    """
+    if tablename in _CLOSURE_TABLE_NAMES and coordinate_element is None:
+        raise ValueError(f"Geometry table {tablename!r} requires a coordinate element.")
     if tablename == "facet_edge_vertices":
         return facet_edge_vertices(tablename, cellname)
     if tablename == "cell_facet_jacobian":
@@ -106,14 +105,11 @@ def cell_facet_jacobian(tablename, cellname):
 def _scalar_basix_element(coordinate_element):
     """Return the scalar (unblocked) basix FiniteElement of a coordinate element."""
     sub_elements = coordinate_element.sub_elements
-    if sub_elements:
-        (scalar_element,) = set(sub_elements)
-    else:
-        scalar_element = coordinate_element
+    scalar_element = sub_elements[0] if sub_elements else coordinate_element
     return scalar_element.basix_element
 
 
-def _closure_dofs_table(tablename, cellname, coordinate_element, entity_dim, nperm_by_cell):
+def _closure_dofs_table(tablename, cellname, coordinate_element, entity_dim):
     """Write a per-orientation table of a cell's own sub-entity closure dofs.
 
     One row per possible sub-entity orientation ("quadrature_permutation"
@@ -122,18 +118,21 @@ def _closure_dofs_table(tablename, cellname, coordinate_element, entity_dim, npe
     sub-entity's closure.
 
     A co-dimensional entity's coordinate dofs are always a subset of its
-    parent cell. The permutation handles the fact that the submesh's own
-    dofmap is always canonically (globally) oriented, but the parent
-    cell's local sub-entity closure is not. We use the
-    `quadrature_permutation` to resolve this mismatch.
+    parent cell's. The permutation resolves the mismatch between the
+    submesh's canonically oriented dofmap and the parent cell's local
+    sub-entity closure.
     """
     celltype = getattr(basix.CellType, cellname)
-    nperm = nperm_by_cell.get(cellname)
-    if nperm is None:
+    entity_celltypes = set(basix.cell.subentity_types(celltype)[entity_dim])
+    if len(entity_celltypes) != 1:
         raise NotImplementedError(
             f"Mixed-dimensional integrals with a submesh domain are not supported for "
-            f"cell type {cellname!r} (entity dimension {entity_dim})."
+            f"cell type {cellname!r} (entity dimension {entity_dim}): its sub-entities are "
+            f"not all the same cell type."
         )
+    (entity_celltype,) = entity_celltypes
+    nperm = _ENTITY_NPERM[entity_celltype]
+
     be = _scalar_basix_element(coordinate_element)
     if not be.dof_transformations_are_permutations:
         raise NotImplementedError(
@@ -141,7 +140,6 @@ def _closure_dofs_table(tablename, cellname, coordinate_element, entity_dim, npe
             "dof transformations are permutations."
         )
     topology = basix.topology(celltype)
-    (entity_celltype,) = set(basix.cell.subentity_types(celltype)[entity_dim])
     num_entities = len(topology[entity_dim])
     closure_dofs = be.entity_closure_dofs[entity_dim]
     ndofs = len(closure_dofs[0])
@@ -158,51 +156,27 @@ def _closure_dofs_table(tablename, cellname, coordinate_element, entity_dim, npe
     return L.ArrayDecl(symbol, values=out, const=True)
 
 
+def _cell_tdim(cellname):
+    return len(basix.topology(getattr(basix.CellType, cellname))) - 1
+
+
 def facet_closure_dofs(tablename, cellname, coordinate_element):
     """Write a facet-closure-dofs table (see `_closure_dofs_table`)."""
-    celltype = getattr(basix.CellType, cellname)
-    tdim = len(basix.topology(celltype)) - 1
-    return _closure_dofs_table(tablename, cellname, coordinate_element, tdim - 1, _FACET_NPERM)
+    return _closure_dofs_table(tablename, cellname, coordinate_element, _cell_tdim(cellname) - 1)
 
 
 def ridge_closure_dofs(tablename, cellname, coordinate_element):
     """Write a ridge-closure-dofs table (see `_closure_dofs_table`)."""
-    celltype = getattr(basix.CellType, cellname)
-    tdim = len(basix.topology(celltype)) - 1
-    if tdim - 2 == 0:
-        # A 2D cell's ridges are its vertices, with no orientation to
-        # permute over. Keeps the `ridge_closure_dofs` name, since the
-        # symbol is derived from entity_type, not from entity dimension.
-        return _vertex_closure_dofs(tablename, cellname, coordinate_element)
-    return _closure_dofs_table(tablename, cellname, coordinate_element, tdim - 2, _RIDGE_NPERM)
-
-
-def _vertex_closure_dofs(tablename, cellname, coordinate_element):
-    """Write a single-row table of each of a cell's vertices' own closure dofs.
-
-    A vertex has no orientation ambiguity, unlike `facet_closure_dofs`
-    and `ridge_closure_dofs` on a 3D cell. Therefore this table has
-    a single row and `quadrature_permutation` is never consulted to index it.
-    """
-    celltype = getattr(basix.CellType, cellname)
-    be = _scalar_basix_element(coordinate_element)
-    num_vertices = len(basix.topology(celltype)[0])
-    closure_dofs = be.entity_closure_dofs[0]
-
-    if any(len(closure_dofs[v]) != 1 for v in range(num_vertices)):
-        raise NotImplementedError(
-            "Mixed-dimensional coordinate-dofs gathering is only implemented for coordinate "
-            "elements whose vertex closure is a single dof."
-        )
-
-    out = np.array([[closure_dofs[v] for v in range(num_vertices)]], dtype=int)
-    symbol = L.Symbol(f"{cellname}_{tablename}", dtype=L.DataType.INT)
-    return L.ArrayDecl(symbol, values=out, const=True)
+    return _closure_dofs_table(tablename, cellname, coordinate_element, _cell_tdim(cellname) - 2)
 
 
 def peak_closure_dofs(tablename, cellname, coordinate_element):
-    """Write a peak-closure-dofs table (peak = a cell's own vertex)."""
-    return _vertex_closure_dofs(tablename, cellname, coordinate_element)
+    """Write a peak-closure-dofs table (see `_closure_dofs_table`).
+
+    A vertex has one orientation, so this table has a single row and
+    `quadrature_permutation` is never consulted to index it.
+    """
+    return _closure_dofs_table(tablename, cellname, coordinate_element, 0)
 
 
 def cell_ridge_jacobian(tablename, cellname):

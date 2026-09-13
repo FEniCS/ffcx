@@ -193,7 +193,7 @@ class FFCXBackendDefinitions:
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         assert isinstance(domain, ufl.Mesh)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = coordinate_element._sub_element.dim
+        num_scalar_dofs = coordinate_element.sub_elements[0].dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
@@ -223,15 +223,13 @@ class FFCXBackendDefinitions:
             # domain* back to back. If terminal is on a submesh,
             # we need the offset to get the second parent cell
             restriction_dofs = (
-                num_scalar_dofs if parent_element is None else parent_element._sub_element.dim
+                num_scalar_dofs if parent_element is None else parent_element.sub_elements[0].dim
             )
             offset = restriction_dofs * dim
 
-        # A mixed-dimensional submesh's own coordinate dofs are always a
-        # subset of the integration domain's own -- gather them via a
-        # per-entity, per-orientation closure-dofs table instead of reading
-        # `coordinate_dofs` directly at `dof`, which is laid out for the
-        # integration domain, not this one.
+        # A submesh's coordinate dofs are a subset of the integration
+        # domain's, so gather them through a closure-dofs table rather
+        # than indexing `coordinate_dofs` directly.
         closure_table = None
         if (
             parent_element is not None
@@ -250,10 +248,8 @@ class FFCXBackendDefinitions:
             parent_cellname = parent_element.cell.cellname
             closure_table = L.Symbol(f"{parent_cellname}_{table_kind}", dtype=L.DataType.INT)
             entity = self.symbols.entity(self.entity_type, mt.restriction)
-            # A vertex has no orientation ambiguity, so a table gathering
-            # over vertices has a single row and must never be indexed
-            # with the runtime quadrature_permutation (which may be
-            # meaningless, or even out of range for a one-row table).
+            # A vertex table has one row, so the runtime permutation
+            # would be meaningless and possibly out of range.
             perm = (
                 L.LiteralInt(0)
                 if domain.topological_dimension == 0
