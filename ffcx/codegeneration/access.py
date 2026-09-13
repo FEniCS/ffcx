@@ -31,7 +31,7 @@ class FFCXBackendAccess:
         integral_type: str,
         symbols,
         options,
-        integration_domain_coordinate_element=None,
+        integration_domain_coordinate_element: basix.ufl._ElementBase | None = None,
     ):
         """Initialise."""
         # Store ir and options
