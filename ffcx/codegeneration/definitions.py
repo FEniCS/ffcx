@@ -218,6 +218,7 @@ class FFCXBackendDefinitions:
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
+        code: list[L.LNode]
         if ttype == "ones":
             # Point meshes have DG-0 basis functions, so the table
             # for this element has been dropped (as it is all ones).
