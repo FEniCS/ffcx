@@ -133,7 +133,7 @@ class CommonExpressionIR(typing.NamedTuple):
     # The integration domain's own coordinate element, used to
     # get the coordinate closure dofs for each mixed-dimensional
     # submesh. Avoids having to pack duplicate coordinates.
-    integration_domain_coordinate_element: object | None = None
+    integration_domain_coordinate_element: basix.ufl._ElementBase | None = None
 
 
 def _compute_integral_ir(
@@ -181,6 +181,14 @@ def _compute_integral_ir(
     ) + ufl.algorithms.analysis.extract_coefficients(expression)
     domains = map(ufl.domain.extract_unique_domain, coeffs_and_arguments)
     for domain in domains:
+        assert domain is not None
+        if domain.topological_dimension != cell.topological_dimension:
+            is_mixed_dim = True
+    # Check geometric terminals for mixed-dimensionality
+    for mt in initial_terminals.values():
+        if type(mt.terminal) not in (ufl.geometry.SpatialCoordinate, ufl.geometry.Jacobian):
+            continue
+        domain = ufl.domain.extract_unique_domain(mt.terminal)
         assert domain is not None
         if domain.topological_dimension != cell.topological_dimension:
             is_mixed_dim = True
