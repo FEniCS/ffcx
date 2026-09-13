@@ -553,6 +553,11 @@ def build_optimized_tables(
                         )
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
+            else:
+                raise NotImplementedError(
+                    f"Cannot build a permuted element table for integral type {integral_type!r} "
+                    f"with entity type {entity_type!r} at codimension {codim}."
+                )
         else:
             t = get_ffcx_table_values(
                 quadrature_rule.points,
