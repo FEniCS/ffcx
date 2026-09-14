@@ -204,7 +204,6 @@ class FFCXBackendDefinitions:
         ttype = tabledata.ttype
 
         assert ttype != "zeros"
-        assert ttype != "ones"
 
         # Get access to element table
         ic_symbol = self.symbols.coefficient_dof_sum_index
@@ -219,7 +218,17 @@ class FFCXBackendDefinitions:
         if mt.restriction == "-":
             offset = num_scalar_dofs * dim
 
-        if not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
+        code: list[L.LNode]
+        if ttype == "ones":
+            # Point meshes have DG-0 basis functions, so the table
+            # for this element has been dropped (as it is all ones).
+            # A coordinate basis is a partition of unity, so an all-ones
+            # table can only come from a single-dof element.
+            assert num_dofs == 1
+            declaration = [L.VariableDecl(access, dof_access[begin + offset])]
+            code = []
+            input = [dof_access]
+        elif not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
             # Many coordinate dofs: keep the runtime loop instead of one
             # literal term per dof.
             ic = create_dof_index(tabledata, ic_symbol)

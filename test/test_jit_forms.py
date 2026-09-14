@@ -2310,3 +2310,61 @@ def test_mixed_constants(compile_args, dtype):
         ffi.NULL,
     )
     assert np.isclose(J[0], 2 * np.prod(c))
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+@pytest.mark.parametrize("gdim", [1, 2, 3])
+def test_point_mesh(compile_args, dtype, gdim):
+    """Check spatial coordinates on a point mesh compiles."""
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "point", 0, shape=(gdim,), discontinuous=True))
+    x = ufl.SpatialCoordinate(domain)
+
+    def f(x):
+        return sum((i + 1) * x[i] ** (i + 1) for i in range(gdim))
+
+    J = f(x) * ufl.dx(domain=domain)
+    forms = [J]
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    ffi = module.ffi
+    form = compiled_forms[0]
+    default_integral = form.form_integrals[0]
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    J = np.zeros(1, dtype=dtype)
+
+    # Coordinate dofs are always three-dimensional, independent of gdim
+    coords = np.array([1.3, 2.4, 0.8], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    c = np.array([], dtype=dtype)
+
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", J.ctypes.data),
+        ffi.NULL,
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    assert np.isclose(J[0], f(coords))
