@@ -98,11 +98,13 @@ class ExpressionGenerator:
         parts = []
 
         tables = self.ir.expression.unique_tables[self.quadrature_rule[0]]
+        table_types = self.ir.expression.unique_table_types[self.quadrature_rule[0]]
         table_names = sorted(tables)
 
         for name in table_names:
             table = tables[name]
-            symbol = L.Symbol(name, dtype=L.DataType.REAL)
+            dtype = L.DataType.INT if table_types[name] == "index" else L.DataType.REAL
+            symbol = L.Symbol(name, dtype=dtype)
             self.backend.symbols.element_tables[name] = symbol
             decl = L.ArrayDecl(symbol, sizes=table.shape, values=table, const=True)
             parts += [decl]

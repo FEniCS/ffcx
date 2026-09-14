@@ -463,6 +463,310 @@ def test_interior_facet_integral(dtype, compile_args):
     )
 
 
+def _interior_facet_permutation_reference(
+    cellname, facet_cellname, facet_verts, uval, compile_args, dx_metadata=None
+):
+    """Independent reference for an interior-facet 'u(+) * u(-) * dS' probe.
+
+    Returns the integral of u**2 over the shared facet, computed directly
+    as a plain cell integral on a standalone mesh of the facet's own cell
+    type -- this is what 'u(+) * u(-) * dS' *should* equal whenever the
+    two sides' traces are correctly matched to the same physical points.
+
+    `dx_metadata`, if given, is passed to the reference `dx` measure too,
+    so a caller using a non-default quadrature rule for the interior-facet
+    form under test can match it exactly here.
+    """
+    element = basix.ufl.element("Lagrange", facet_cellname, 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", facet_cellname, 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u = ufl.Coefficient(space)
+    dx = ufl.Measure("dx", domain=domain, metadata=dx_metadata)
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [u * u * dx], options={"scalar_type": "float64"}, cffi_extra_compile_args=compile_args
+    )
+    integral0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(integral0, "tabulate_tensor_float64")
+    w = np.array([uval(p) for p in facet_verts], dtype="float64")
+    c = np.array([], dtype="float64")
+    coords = facet_verts.flatten().astype("float64")
+    A = np.zeros(1, dtype="float64")
+    ffi = module.ffi
+    kernel(
+        ffi.cast("double *", A.ctypes.data),
+        ffi.cast("double *", w.ctypes.data),
+        ffi.cast("double *", c.ctypes.data),
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    return A[0]
+
+
+@pytest.mark.parametrize(
+    "permutation,matches", list(enumerate([False, False, False, False, True, False]))
+)
+def test_interior_facet_integral_tetrahedron(permutation, matches, compile_args):
+    """Interior-facet ('dS') regression oracle for a tetrahedron parent (nperm=6).
+
+    The specific relative orientation tested here (which local facet
+    vertex order the "-" cell uses for its shared facet, and which
+    single `permutation` value out of 0..5 correctly reconciles it with
+    the "+" cell's own, canonical order) was determined empirically
+    against today's (pre-refactor) FFCx and is pinned as the expected
+    behaviour going forward.
+    """
+    element = basix.ufl.element("Lagrange", "tetrahedron", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u = ufl.Coefficient(space)
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [u("+") * u("-") * ufl.dS],
+        options={"scalar_type": "float64"},
+        cffi_extra_compile_args=compile_args,
+    )
+    integral0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(integral0, "tabulate_tensor_float64")
+
+    # "+" cell: the reference tetrahedron. Its facet 0 (basix convention:
+    # local vertices [1, 2, 3]) is the shared facet.
+    plus_verts = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    shared_pts = plus_verts[[1, 2, 3]]
+
+    # "-" cell: shares the same 3 physical points on its own facet 0, but
+    # assigns them to its local vertices [1, 2, 3] in a different (fixed,
+    # deliberately non-identity) order, plus an arbitrary opposite vertex.
+    minus_local123 = shared_pts[[2, 0, 1]]
+    minus_v0 = np.array([1.0, 1.0, 1.0])
+    minus_verts = np.vstack([minus_v0, minus_local123])
+
+    def uval(p):
+        return p[0] + 2 * p[1] + 3 * p[2]
+
+    w = np.concatenate([[uval(p) for p in plus_verts], [uval(p) for p in minus_verts]]).astype(
+        "float64"
+    )
+    c = np.array([], dtype="float64")
+    coords = np.concatenate([plus_verts.flatten(), minus_verts.flatten()]).astype("float64")
+
+    A = np.zeros(1, dtype="float64")
+    facets = np.array([0, 0], dtype=np.intc)
+    perms = np.array([0, permutation], dtype=np.uint8)
+    ffi = module.ffi
+    kernel(
+        ffi.cast("double *", A.ctypes.data),
+        ffi.cast("double *", w.ctypes.data),
+        ffi.cast("double *", c.ctypes.data),
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.cast("int *", facets.ctypes.data),
+        ffi.cast("uint8_t *", perms.ctypes.data),
+        ffi.NULL,
+    )
+
+    reference = _interior_facet_permutation_reference(
+        "tetrahedron", "triangle", shared_pts, uval, compile_args
+    )
+    assert np.isclose(A[0], reference) == matches
+
+
+@pytest.mark.parametrize(
+    "permutation,matches", list(enumerate([True, False, False, False, False, False, False, False]))
+)
+def test_interior_facet_integral_hexahedron(permutation, matches, compile_args):
+    """Interior-facet ('dS') regression oracle for a hexahedron parent (nperm=8).
+
+    Here the "-" cell shares its facet 0 (basix
+    convention: local vertices [0, 1, 2, 3]) with the "+" cell's own
+    facet 0, using the *identity* physical-point assignment, so the
+    correct permutation is 0 (verified empirically against today's
+    pre-refactor FFCx).
+    """
+    element = basix.ufl.element("Lagrange", "hexahedron", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "hexahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u = ufl.Coefficient(space)
+    compiled_forms, module, _code = ffcx.codegeneration.jit.compile_forms(
+        [u("+") * u("-") * ufl.dS],
+        options={"scalar_type": "float64"},
+        cffi_extra_compile_args=compile_args,
+    )
+    integral0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(integral0, "tabulate_tensor_float64")
+
+    plus_verts = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0],
+        ]
+    )
+    shared_pts = plus_verts[[0, 1, 2, 3]]
+
+    # "-" cell: shares facet 0 with the identity physical-point
+    # assignment, offset along -z so it's a genuine, distinct cell.
+    minus_verts = np.zeros((8, 3))
+    minus_verts[[0, 1, 2, 3]] = shared_pts
+    minus_verts[[4, 5, 6, 7]] = shared_pts + np.array([0.0, 0.0, -1.0])
+
+    def uval(p):
+        return p[0] + 2 * p[1] + 3 * p[2]
+
+    w = np.concatenate([[uval(p) for p in plus_verts], [uval(p) for p in minus_verts]]).astype(
+        "float64"
+    )
+    c = np.array([], dtype="float64")
+    coords = np.concatenate([plus_verts.flatten(), minus_verts.flatten()]).astype("float64")
+
+    A = np.zeros(1, dtype="float64")
+    facets = np.array([0, 0], dtype=np.intc)
+    perms = np.array([0, permutation], dtype=np.uint8)
+    ffi = module.ffi
+    kernel(
+        ffi.cast("double *", A.ctypes.data),
+        ffi.cast("double *", w.ctypes.data),
+        ffi.cast("double *", c.ctypes.data),
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.cast("int *", facets.ctypes.data),
+        ffi.cast("uint8_t *", perms.ctypes.data),
+        ffi.NULL,
+    )
+
+    reference = _interior_facet_permutation_reference(
+        "hexahedron", "quadrilateral", shared_pts, uval, compile_args
+    )
+    assert np.isclose(A[0], reference) == matches
+
+
+def test_interior_facet_integral_tetrahedron_gauss_jacobi_fallback(compile_args):
+    """Test of permutation tables for non-symmetric quadrature rules.
+
+    The element tabulation should fall back to storing all basis value
+    tables for the "gauss_jacobi" rule on a triangle facet at degree >= 2.
+    """
+    metadata = {"quadrature_rule": "gauss_jacobi", "quadrature_degree": 3}
+    element = basix.ufl.element("Lagrange", "tetrahedron", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u = ufl.Coefficient(space)
+    dS = ufl.Measure("dS", domain=domain, metadata=metadata)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        [u("+") * u("-") * dS],
+        options={"scalar_type": "float64"},
+        cffi_extra_compile_args=compile_args,
+    )
+    # Confirm the fallback is actually reached, not just correct in theory:
+    # no compact quadrature-permutation table ("QPT"-prefixed symbol) is
+    # emitted for this rule.
+    assert "QPT" not in code[1]
+
+    integral0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(integral0, "tabulate_tensor_float64")
+
+    plus_verts = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    shared_pts = plus_verts[[1, 2, 3]]
+    minus_local123 = shared_pts[[2, 0, 1]]
+    minus_v0 = np.array([1.0, 1.0, 1.0])
+    minus_verts = np.vstack([minus_v0, minus_local123])
+
+    def uval(p):
+        return p[0] + 2 * p[1] + 3 * p[2]
+
+    w = np.concatenate([[uval(p) for p in plus_verts], [uval(p) for p in minus_verts]]).astype(
+        "float64"
+    )
+    c = np.array([], dtype="float64")
+    coords = np.concatenate([plus_verts.flatten(), minus_verts.flatten()]).astype("float64")
+    ffi = module.ffi
+
+    reference = _interior_facet_permutation_reference(
+        "tetrahedron", "triangle", shared_pts, uval, compile_args, dx_metadata=metadata
+    )
+    for permutation in range(6):
+        A = np.zeros(1, dtype="float64")
+        facets = np.array([0, 0], dtype=np.intc)
+        perms = np.array([0, permutation], dtype=np.uint8)
+        kernel(
+            ffi.cast("double *", A.ctypes.data),
+            ffi.cast("double *", w.ctypes.data),
+            ffi.cast("double *", c.ctypes.data),
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast("int *", facets.ctypes.data),
+            ffi.cast("uint8_t *", perms.ctypes.data),
+            ffi.NULL,
+        )
+        assert np.isclose(A[0], reference) == (permutation == 4)
+
+
+def test_interior_facet_integral_tetrahedron_custom_quadrature_fallback(compile_args):
+    """Same as the `gauss_jacobi` fallback test above, but for a genuinely
+
+    arbitrary `"custom"` quadrature rule with no structural guarantee
+    whatsoever -- gatherability can never be assumed for a custom rule,
+    only checked, and this proves the fallback is reachable and correct
+    for that case specifically too, not just for `gauss_jacobi`.
+    """
+    # Points deliberately not respecting the triangle's own symmetry.
+    metadata = {
+        "quadrature_rule": "custom",
+        "quadrature_points": np.array([[0.1, 0.2], [0.7, 0.05], [0.3, 0.6]]),
+        "quadrature_weights": np.array([1.0 / 6, 1.0 / 6, 1.0 / 6]),
+    }
+    element = basix.ufl.element("Lagrange", "tetrahedron", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    u = ufl.Coefficient(space)
+    dS = ufl.Measure("dS", domain=domain, metadata=metadata)
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        [u("+") * u("-") * dS],
+        options={"scalar_type": "float64"},
+        cffi_extra_compile_args=compile_args,
+    )
+    assert "QPT" not in code[1]
+
+    integral0 = compiled_forms[0].form_integrals[0]
+    kernel = getattr(integral0, "tabulate_tensor_float64")
+
+    plus_verts = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    shared_pts = plus_verts[[1, 2, 3]]
+    minus_local123 = shared_pts[[2, 0, 1]]
+    minus_v0 = np.array([1.0, 1.0, 1.0])
+    minus_verts = np.vstack([minus_v0, minus_local123])
+
+    def uval(p):
+        return p[0] + 2 * p[1] + 3 * p[2]
+
+    w = np.concatenate([[uval(p) for p in plus_verts], [uval(p) for p in minus_verts]]).astype(
+        "float64"
+    )
+    c = np.array([], dtype="float64")
+    coords = np.concatenate([plus_verts.flatten(), minus_verts.flatten()]).astype("float64")
+    ffi = module.ffi
+
+    reference = _interior_facet_permutation_reference(
+        "tetrahedron", "triangle", shared_pts, uval, compile_args, dx_metadata=metadata
+    )
+    for permutation in range(6):
+        A = np.zeros(1, dtype="float64")
+        facets = np.array([0, 0], dtype=np.intc)
+        perms = np.array([0, permutation], dtype=np.uint8)
+        kernel(
+            ffi.cast("double *", A.ctypes.data),
+            ffi.cast("double *", w.ctypes.data),
+            ffi.cast("double *", c.ctypes.data),
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast("int *", facets.ctypes.data),
+            ffi.cast("uint8_t *", perms.ctypes.data),
+            ffi.NULL,
+        )
+        assert np.isclose(A[0], reference) == (permutation == 4)
+
+
 @pytest.mark.parametrize(
     "dtype",
     [
