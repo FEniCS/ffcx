@@ -365,6 +365,7 @@ def _compute_integral_ir(
             "shape": (),
             "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
             "number_coordinate_dofs": itg_data.domain.ufl_coordinate_element().dim,
+            "integration_domain_coordinate_element": itg_data.domain.ufl_coordinate_element(),
         }
         # Initial population of what will become the IntegralIR
         ir = {
@@ -682,6 +683,9 @@ def _compute_expression_ir(
     )
     base_ir["number_coordinate_dofs"] = (
         0 if expr_domain is None else expr_domain.ufl_coordinate_element().dim
+    )
+    base_ir["integration_domain_coordinate_element"] = (
+        None if expr_domain is None else expr_domain.ufl_coordinate_element()
     )
 
     weights = np.array([1.0] * points.shape[0])

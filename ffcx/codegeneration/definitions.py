@@ -10,6 +10,7 @@ import logging
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.codegeneration import geometry
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
@@ -192,7 +193,7 @@ class FFCXBackendDefinitions:
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         assert isinstance(domain, ufl.Mesh)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = coordinate_element._sub_element.dim
+        num_scalar_dofs = coordinate_element.sub_elements[0].dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
@@ -212,11 +213,59 @@ class FFCXBackendDefinitions:
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
 
+        parent_element = self.access.integration_domain_coordinate_element
+
         # coordinate dofs is always 3d
         dim = 3
         offset = 0
         if mt.restriction == "-":
-            offset = num_scalar_dofs * dim
+            # `coordinate_dofs` holds the two cells of the *integration
+            # domain* back to back. If terminal is on a submesh,
+            # we need the offset to get the second parent cell
+            restriction_dofs = (
+                num_scalar_dofs if parent_element is None else parent_element.sub_elements[0].dim
+            )
+            offset = restriction_dofs * dim
+
+        # A submesh's coordinate dofs are a subset of the integration
+        # domain's, so gather them through a closure-dofs table rather
+        # than indexing `coordinate_dofs` directly.
+        closure_table = None
+        if (
+            parent_element is not None
+            and (codim := parent_element.cell.topological_dimension - domain.topological_dimension)
+            != 0
+        ):
+            table_kind, expected_codim = geometry.CLOSURE_DOFS_TABLES.get(
+                self.entity_type, (None, None)
+            )
+            if table_kind is None or codim != expected_codim:
+                raise NotImplementedError(
+                    "Cannot gather a mixed-dimensional submesh's coordinate dofs: coefficient "
+                    f"domain has codimension {codim} relative to the integration domain, but "
+                    f"the integral's entity type is {self.entity_type!r}."
+                )
+            parent_cellname = parent_element.cell.cellname
+            closure_table = L.Symbol(f"{parent_cellname}_{table_kind}", dtype=L.DataType.INT)
+            entity = self.symbols.entity(self.entity_type, mt.restriction)
+            # A vertex table has one row, so the runtime permutation
+            # would be meaningless and possibly out of range.
+            perm = (
+                L.LiteralInt(0)
+                if domain.topological_dimension == 0
+                else self.symbols.entity_permutation(mt.restriction)
+            )
+            closure_index = closure_table[perm][entity]
+
+        # Map a submesh-local scalar dof index to its coordinate_dofs index.
+        if closure_table is None:
+
+            def _dof(local_index):
+                return local_index
+        else:
+
+            def _dof(local_index):
+                return closure_index[local_index]
 
         code: list[L.LNode]
         if ttype == "ones":
@@ -225,7 +274,7 @@ class FFCXBackendDefinitions:
             # A coordinate basis is a partition of unity, so an all-ones
             # table can only come from a single-dof element.
             assert num_dofs == 1
-            declaration = [L.VariableDecl(access, dof_access[begin + offset])]
+            declaration = [L.VariableDecl(access, dof_access[_dof(0) * dim + begin + offset])]
             code = []
             input = [dof_access]
         elif not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
@@ -237,7 +286,9 @@ class FFCXBackendDefinitions:
             )
             code = []
             declaration = [L.VariableDecl(access, 0.0)]
-            body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
+            body = [
+                L.AssignAdd(access, dof_access[_dof(ic.global_index) * dim + begin + offset] * FE)
+            ]
             code = [L.create_nested_for_loops([ic], body)]
             input = [dof_access, *tables]
         else:
@@ -256,10 +307,13 @@ class FFCXBackendDefinitions:
                 for t in tables_k:
                     if t not in coord_tables:
                         coord_tables.append(t)
-                terms.append(dof_access[k * dim + begin + offset] * FE_k)
+                terms.append(dof_access[_dof(k) * dim + begin + offset] * FE_k)
             declaration = [L.VariableDecl(access, L.Sum(terms))]
             code = []
             input = [dof_access, *coord_tables]
+
+        if closure_table is not None:
+            input.append(closure_table)
 
         name = type(mt.terminal).__name__
         output = [access]
