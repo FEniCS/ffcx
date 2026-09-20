@@ -605,14 +605,13 @@ def build_optimized_tables(
 
         tensor_factors: list[UniqueTableReferenceT] | None = None
         tensor_perm = None
+        factors = element.get_tensor_product_representation()
         if (
             use_sum_factorization
-            and element.has_tensor_product_factorisation
-            and len(element.get_tensor_product_representation()) == 1
+            and factors is not None
+            and len(factors) == 1
             and quadrature_rule.has_tensor_factors
         ):
-            factors = element.get_tensor_product_representation()
-
             tensor_factors = []
             for i, j in enumerate(factors[0]):
                 pts = quadrature_rule.tensor_factors[i][0]
@@ -636,8 +635,6 @@ def build_optimized_tables(
                     tensor_factors.append(ut)
                     mt_tables[ut.name] = ut
                     tensor_n += 1
-
-            tensor_perm = factors[0][1]
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
