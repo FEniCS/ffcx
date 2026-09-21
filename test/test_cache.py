@@ -73,7 +73,7 @@ def test_cache_hit_does_not_scan_cache_dir(compile_args, tmp_path):
         forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
     )
     del sys.modules[module.__name__]
-    # Drop the in-process memo so the lookup goes to the file system.
+    # Drop the memo so the lookup reaches the file system.
     ffcx.codegeneration.jit._loaded_modules.clear()
 
     listed = []
@@ -96,9 +96,8 @@ def test_cache_hit_does_not_scan_cache_dir(compile_args, tmp_path):
 def test_loaded_module_reused_in_process(compile_args, tmp_path):
     """A module already imported in this process is not imported again.
 
-    Importing an extension module costs a ``module_from_spec`` /
-    ``exec_module`` round trip plus several stats, paid on every cache
-    hit for a module that is already mapped.
+    The round trip costs a ``module_from_spec``/``exec_module`` pair plus
+    several stats, paid on every hit for an already-mapped module.
     """
     element = basix.ufl.element("Lagrange", "triangle", 1)
     domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))

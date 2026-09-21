@@ -83,12 +83,10 @@ def _compute_option_signature(options):
     return str(sorted(options.items()))
 
 
-# Modules already imported in this process, keyed by (module name, cache
-# directory). A module name is a signature over the forms, the options and
-# the compilation flags, so a repeat lookup is the same generated code. The
-# extension is mapped for the lifetime of the process once imported, so an
-# entry costs a dict slot rather than keeping anything alive that would
-# otherwise be freed.
+# Modules imported in this process, keyed by (module name, cache directory).
+# A module name signs the forms, options and compilation flags, so a repeat
+# lookup is the same generated code. The extension stays mapped once
+# imported, so an entry costs only a dict slot.
 _loaded_modules: dict[tuple[str, str], tuple[list, object]] = {}
 
 
@@ -126,9 +124,8 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = Path(cache_dir)
 
-    # Importing an extension module costs a module_from_spec/exec_module
-    # round trip and several stats, on every cache hit. Re-use the one
-    # already imported for this (module name, cache directory).
+    # Re-use an imported module rather than repeating the
+    # module_from_spec/exec_module round trip on every hit.
     key = (module_name, str(cache_dir))
     if (cached := _loaded_modules.get(key)) is not None:
         return cached
@@ -468,11 +465,9 @@ def _load_objects(cache_dir, module_name, object_names, memoise=False):
         cache_dir: Directory holding the compiled module.
         module_name: Name of the module, without an extension suffix.
         object_names: Names of the objects to extract from the module.
-        memoise: Record the module for re-use by later lookups. Only set
-            for a caller-supplied cache directory, so that the temporary
-            directory used when no cache is configured -- a fresh one per
-            call, which can never be hit again -- does not accumulate
-            entries.
+        memoise: Record the module for later lookups. Set only for a
+            caller-supplied cache directory; the per-call temporary
+            directory used when none is configured can never be hit again.
 
     Returns:
         The extracted objects and the module holding them.
