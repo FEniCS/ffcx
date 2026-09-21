@@ -83,6 +83,36 @@ def _compute_option_signature(options):
     return str(sorted(options.items()))
 
 
+def _load_extension_module(module_name, cache_dir):
+    """Import a compiled extension module from ``cache_dir`` by name.
+
+    The file name of a JIT-compiled module is fully determined by its
+    module name, so the file is located by probing the candidate
+    extension suffixes rather than by scanning the directory. Scanning
+    costs one ``listdir`` of a directory that grows with every form ever
+    compiled, which is paid on every cache hit.
+
+    Args:
+        module_name: Name of the module, without an extension suffix.
+        cache_dir: Directory holding the compiled module.
+
+    Returns:
+        The imported module, or ``None`` if it is not present.
+    """
+    for suffix in importlib.machinery.EXTENSION_SUFFIXES:
+        path = cache_dir / (module_name + suffix)
+        if not path.is_file():
+            continue
+        loader = importlib.machinery.ExtensionFileLoader(module_name, str(path))
+        spec = importlib.util.spec_from_file_location(module_name, path, loader=loader)
+        if spec is None:
+            continue
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    return None
+
+
 def get_cached_module(module_name, object_names, cache_dir, timeout):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = Path(cache_dir)
@@ -99,20 +129,13 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
         return None, None
     except FileExistsError:
         logger.info("Cached C file already exists: " + str(c_filename))
-        finder = importlib.machinery.FileFinder(
-            str(cache_dir),
-            (importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES),
-        )
-        finder.invalidate_caches()
 
         # Now, wait for ready
         for i in range(timeout):
             if os.path.exists(ready_name):
-                spec = finder.find_spec(module_name)
-                if spec is None:
+                compiled_module = _load_extension_module(module_name, cache_dir)
+                if compiled_module is None:
                     raise ModuleNotFoundError("Unable to find JIT module.")
-                compiled_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(compiled_module)
 
                 compiled_objects = [getattr(compiled_module.lib, name) for name in object_names]
                 return compiled_objects, compiled_module
