@@ -1,4 +1,5 @@
-# Copyright (C) 2015-2021 Martin Sandve Alnæs, Michal Habera, Igor Baratta
+# Copyright (C) 2015-2026 Martin Sandve Alnæs, Michal Habera, Igor Baratta,
+# Garth N. Wells
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
@@ -41,9 +42,23 @@ def generator(
     logger.info(f"--- name: {ir.expression.name}")
 
     factory_name = f"{ir.expression.name}_{domain.name}"
+    hashed_kernel_name = f"tabulate_tensor_{factory_name}"
+    kernel_name = (
+        f"tabulate_tensor_{ir.kernel_name}_{domain.name}"
+        if ir.kernel_name is not None
+        else hashed_kernel_name
+    )
+    np_scalar_type = np.dtype(options["scalar_type"]).name  # type: ignore
 
     # Format declaration
-    declaration = ufcx_integrals.declaration.format(factory_name=factory_name)
+    kernel_declaration = (
+        f"extern ufcx_tabulate_tensor_{np_scalar_type} {kernel_name};"
+        if ir.kernel_name is not None
+        else ""
+    )
+    declaration = ufcx_integrals.declaration.format(
+        factory_name=factory_name, kernel_declaration=kernel_declaration
+    )
 
     # Create FFCx backend
     backend = FFCXBackend(ir, options)
@@ -82,10 +97,26 @@ def generator(
     else:
         code["tabulate_tensor_complex64"] = ".tabulate_tensor_complex64 = NULL,"
         code["tabulate_tensor_complex128"] = ".tabulate_tensor_complex128 = NULL,"
-    np_scalar_type = np.dtype(options["scalar_type"]).name  # type: ignore
     code[f"tabulate_tensor_{np_scalar_type}"] = (
-        f".tabulate_tensor_{np_scalar_type} = tabulate_tensor_{factory_name},"
+        f".tabulate_tensor_{np_scalar_type} = {kernel_name},"
     )
+
+    if kernel_name == hashed_kernel_name:
+        kernel_alias = ""
+    else:
+        scalar_type = dtype_to_c_type(options["scalar_type"])  # type: ignore
+        geom_type = dtype_to_c_type(dtype_to_scalar_dtype(options["scalar_type"]))  # type: ignore
+        kernel_alias = f"""void {hashed_kernel_name}({scalar_type}* restrict A,
+                                    const {scalar_type}* restrict w,
+                                    const {scalar_type}* restrict c,
+                                    const {geom_type}* restrict coordinate_dofs,
+                                    const int* restrict entity_local_index,
+                                    const uint8_t* restrict quadrature_permutation,
+                                    void* custom_data)
+{{
+  {kernel_name}(A, w, c, coordinate_dofs, entity_local_index,
+                quadrature_permutation, custom_data);
+}}"""
 
     assert ir.expression.coordinate_element_hash is not None
     implementation = ufcx_integrals.factory.format(
@@ -101,6 +132,8 @@ def generator(
         tabulate_tensor_float64=code["tabulate_tensor_float64"],
         tabulate_tensor_complex64=code["tabulate_tensor_complex64"],
         tabulate_tensor_complex128=code["tabulate_tensor_complex128"],
+        kernel_alias=kernel_alias,
+        kernel_name=kernel_name,
         domain=int(domain),
     )
 

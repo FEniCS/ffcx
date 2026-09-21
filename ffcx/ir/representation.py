@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import itertools
 import logging
+import re
 import typing
 
 if typing.TYPE_CHECKING:
@@ -106,6 +107,7 @@ class IntegralIR(typing.NamedTuple):
     rank: int
     enabled_coefficients: list[bool]
     part: TensorPart
+    kernel_name: str | None
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -263,12 +265,25 @@ def compute_ir(
             i,
             analysis.element_numbers.keys(),
             integral_names,
+            object_names,
+            prefix,
             options,
             visualise,
         )
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
+
+    # A kernel name must identify one generated kernel in an output file.
+    kernel_names: set[str] = set()
+    for integral_ir in ir_integrals:
+        if integral_ir.kernel_name is None:
+            continue
+        for domain in {i[0] for i in integral_ir.expression.integrand}:
+            kernel_name = f"tabulate_tensor_{integral_ir.kernel_name}_{domain.name}"
+            if kernel_name in kernel_names:
+                raise ValueError(f"Duplicate FFCx kernel name '{kernel_name}'.")
+            kernel_names.add(kernel_name)
 
     integral_domains = {
         i.expression.name: set(j[0] for j in i.expression.integrand.keys()) for a in irs for i in a
@@ -313,6 +328,8 @@ def _compute_integral_ir(
     form_index: int,
     unique_elements: typing.Iterable[basix.ufl._ElementBase],
     integral_names: dict[tuple[int, int], str],
+    object_names: dict[int, str],
+    prefix: str,
     options,
     visualise,
 ) -> list[IntegralIR]:
@@ -323,6 +340,8 @@ def _compute_integral_ir(
         form_index: Index of form in the sequence of forms.
         unique_elements: Set of unique elements in the form.
         integral_names: Map from `(form_index, integral_index)` to the name of the integral.
+        object_names: Map from object Python id to object name.
+        prefix: Namespace prefix for generated code.
         options: Options for the intermediate representation. 'part': If the full tensor or
             the diagonal of the tensor should be generated. Only valid for bi-linear forms.
             'sum_factorization': If sum factorization should be used. Only has an effect on cell
@@ -373,6 +392,42 @@ def _compute_integral_ir(
             "enabled_coefficients": itg_data.enabled_coefficients,
             "part": TensorPart.from_str(options["part"]),
         }
+
+        # Use an explicit metadata name when supplied. Otherwise, derive a
+        # stable name from the form variable in the UFL file. Forms compiled
+        # through the API without an object name retain hash-based names.
+        metadata_kernel_names = []
+        for integral in itg_data.integrals:
+            name = integral.metadata().get("ffcx_kernel_name")
+            if name is not None and not isinstance(name, str):
+                raise ValueError("'ffcx_kernel_name' metadata must be a string.")
+            metadata_kernel_names.append(name)
+
+        unique_kernel_names = set(metadata_kernel_names)
+        if len(unique_kernel_names) != 1:
+            raise ValueError(
+                "Integrals grouped into one FFCx kernel must use the same "
+                "'ffcx_kernel_name' metadata."
+            )
+
+        metadata_kernel_name = unique_kernel_names.pop()
+
+        form_name = object_names.get(id(form_data.original_form))
+        name_parts: tuple[str, ...]
+        if metadata_kernel_name is not None:
+            name_parts = (prefix, metadata_kernel_name)
+        elif form_name is not None:
+            name_parts = (prefix, form_name, integral_type, str(itg_data_index))
+        else:
+            name_parts = ()
+
+        kernel_name = "_".join(name for name in name_parts if name)
+        if kernel_name and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", kernel_name) is None:
+            raise ValueError(
+                f"Invalid FFCx kernel name '{kernel_name}'. Kernel names must contain only "
+                "letters, digits and underscores, and must not start with a digit."
+            )
+        ir["kernel_name"] = kernel_name or None
 
         # Determine if the form compiler has been asked to diagonalize a
         # bilinear form (by only assembling the diagonal entries, modify rank if True)
