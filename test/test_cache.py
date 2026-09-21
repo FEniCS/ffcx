@@ -73,6 +73,8 @@ def test_cache_hit_does_not_scan_cache_dir(compile_args, tmp_path):
         forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
     )
     del sys.modules[module.__name__]
+    # Drop the in-process memo so the lookup goes to the file system.
+    ffcx.codegeneration.jit._loaded_modules.clear()
 
     listed = []
     real_listdir = bootstrap._os.listdir
@@ -89,3 +91,50 @@ def test_cache_hit_does_not_scan_cache_dir(compile_args, tmp_path):
     assert cached.__name__ == module.__name__
     scanned = [p for p in listed if Path(p).resolve() == cache_dir.resolve()]
     assert not scanned, f"cache hit listed the cache directory {len(scanned)} time(s)"
+
+
+def test_loaded_module_reused_in_process(compile_args, tmp_path):
+    """A module already imported in this process is not imported again.
+
+    Importing an extension module costs a ``module_from_spec`` /
+    ``exec_module`` round trip plus several stats, paid on every cache
+    hit for a module that is already mapped.
+    """
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    forms = [ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx]
+
+    cache_dir = tmp_path / "cache"
+    ffcx.codegeneration.jit._loaded_modules.clear()
+    objects, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
+    )
+
+    with mock.patch.object(ffcx.codegeneration.jit, "_load_extension_module") as load:
+        again_objects, again, _ = ffcx.codegeneration.jit.compile_forms(
+            forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
+        )
+    load.assert_not_called()
+    assert again is module
+    assert again_objects == objects
+
+
+def test_loaded_module_not_reused_across_cache_dirs(compile_args, tmp_path):
+    """The memo is per cache directory, so a second cache still compiles."""
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    forms = [ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx]
+
+    ffcx.codegeneration.jit._loaded_modules.clear()
+    _, first, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=tmp_path / "a", cffi_extra_compile_args=compile_args
+    )
+    _, second, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=tmp_path / "b", cffi_extra_compile_args=compile_args
+    )
+    assert first.__name__ == second.__name__
+    assert Path(first.__file__).parent != Path(second.__file__).parent
