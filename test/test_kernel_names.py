@@ -51,21 +51,23 @@ def test_kernel_name_from_ufl_object_name():
 
 
 def test_kernel_name_from_integral_metadata():
-    """Integral metadata overrides the form-derived kernel name."""
-    form = create_mass_form({"ffcx_kernel_name": "p1_mass"})
+    """Integral metadata specifies the complete kernel name."""
+    form = create_mass_form({"ffcx_kernel_name": "tabulate_tensor_p1_mass"})
     header, implementation = compile_form(form, name="ignored")
-    kernel_name = "tabulate_tensor_demo_p1_mass_triangle"
+    kernel_name = "tabulate_tensor_p1_mass"
     assert f"extern ufcx_tabulate_tensor_float64 {kernel_name};" in header
     assert f"void {kernel_name}(" in implementation
+    assert f"{kernel_name}_triangle" not in implementation
 
 
 def test_metadata_name_without_object_name():
     """Explicit metadata names do not require a named UFL object."""
-    form = create_mass_form({"ffcx_kernel_name": "p1_mass"})
+    form = create_mass_form({"ffcx_kernel_name": "tabulate_tensor_p1_mass"})
     options = get_options()
     code, _ = compile_ufl_objects([form], options=options, namespace="demo")
     header, _ = code
-    assert "tabulate_tensor_demo_p1_mass_triangle" in header
+    assert "tabulate_tensor_p1_mass" in header
+    assert "tabulate_tensor_demo_p1_mass" not in header
 
 
 def test_hash_name_without_object_name():

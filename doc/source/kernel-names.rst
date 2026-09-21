@@ -24,17 +24,18 @@ available as a forwarding symbol for compatibility.
 Explicit names
 --------------
 
-Set ``ffcx_kernel_name`` integral metadata to override the form-derived part
-of the name:
+Set ``ffcx_kernel_name`` integral metadata to specify the complete function
+name:
 
 .. code-block:: python
 
-   mass = inner(u, v) * dx(metadata={"ffcx_kernel_name": "p1_mass"})
+   mass = inner(u, v) * dx(metadata={"ffcx_kernel_name": "tabulate_tensor_p1_mass"})
 
-This produces ``tabulate_tensor_forms_p1_mass_triangle``. Explicit names must
-contain only letters, digits and underscores, and must not start with a digit.
-Names must be unique within a generated output file. Integrals that FFCx
-combines into one kernel must use the same explicit name.
+This produces ``tabulate_tensor_p1_mass`` exactly: FFCx does not add the output
+namespace or cell type to an explicit name. Explicit names must contain only
+letters, digits and underscores, and must not start with a digit. Names must be
+unique within a generated output file. Integrals that FFCx combines into one
+kernel must use the same explicit name.
 
 Compilation through the Python API without an object name or explicit
 ``ffcx_kernel_name`` continues to use only the hash-derived kernel name.

@@ -43,11 +43,12 @@ def generator(
 
     factory_name = f"{ir.expression.name}_{domain.name}"
     hashed_kernel_name = f"tabulate_tensor_{factory_name}"
-    kernel_name = (
-        f"tabulate_tensor_{ir.kernel_name}_{domain.name}"
-        if ir.kernel_name is not None
-        else hashed_kernel_name
-    )
+    if ir.kernel_name is None:
+        kernel_name = hashed_kernel_name
+    elif ir.kernel_name_is_explicit:
+        kernel_name = ir.kernel_name
+    else:
+        kernel_name = f"tabulate_tensor_{ir.kernel_name}_{domain.name}"
     np_scalar_type = np.dtype(options["scalar_type"]).name  # type: ignore
 
     # Format declaration

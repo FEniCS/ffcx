@@ -108,6 +108,7 @@ class IntegralIR(typing.NamedTuple):
     enabled_coefficients: list[bool]
     part: TensorPart
     kernel_name: str | None
+    kernel_name_is_explicit: bool
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -280,7 +281,11 @@ def compute_ir(
         if integral_ir.kernel_name is None:
             continue
         for domain in {i[0] for i in integral_ir.expression.integrand}:
-            kernel_name = f"tabulate_tensor_{integral_ir.kernel_name}_{domain.name}"
+            kernel_name = (
+                integral_ir.kernel_name
+                if integral_ir.kernel_name_is_explicit
+                else f"tabulate_tensor_{integral_ir.kernel_name}_{domain.name}"
+            )
             if kernel_name in kernel_names:
                 raise ValueError(f"Duplicate FFCx kernel name '{kernel_name}'.")
             kernel_names.add(kernel_name)
@@ -415,11 +420,14 @@ def _compute_integral_ir(
         form_name = object_names.get(id(form_data.original_form))
         name_parts: tuple[str, ...]
         if metadata_kernel_name is not None:
-            name_parts = (prefix, metadata_kernel_name)
+            name_parts = (metadata_kernel_name,)
+            ir["kernel_name_is_explicit"] = True
         elif form_name is not None:
             name_parts = (prefix, form_name, integral_type, str(itg_data_index))
+            ir["kernel_name_is_explicit"] = False
         else:
             name_parts = ()
+            ir["kernel_name_is_explicit"] = False
 
         kernel_name = "_".join(name for name in name_parts if name)
         if kernel_name and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", kernel_name) is None:

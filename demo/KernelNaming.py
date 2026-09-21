@@ -20,6 +20,6 @@ u = TrialFunction(space)
 v = TestFunction(space)
 
 mass = inner(u, v) * dx
-unit_load = inner(1.0, v) * dx(metadata={"ffcx_kernel_name": "unit_load"})
+unit_load = inner(1.0, v) * dx(metadata={"ffcx_kernel_name": "tabulate_tensor_unit_load"})
 
 forms = [mass, unit_load]
