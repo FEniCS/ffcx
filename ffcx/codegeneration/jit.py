@@ -83,6 +83,13 @@ def _compute_option_signature(options):
     return str(sorted(options.items()))
 
 
+# Modules imported in this process, keyed by (module name, cache directory).
+# A module name signs the forms, options and compilation flags, so a repeat
+# lookup is the same generated code. The extension stays mapped once
+# imported, so an entry costs only a dict slot.
+_loaded_modules: dict[tuple[str, str], tuple[list, object]] = {}
+
+
 def _load_extension_module(module_name, cache_dir):
     """Import a compiled extension module from ``cache_dir`` by name.
 
@@ -116,6 +123,13 @@ def _load_extension_module(module_name, cache_dir):
 def get_cached_module(module_name, object_names, cache_dir, timeout):
     """Look for an existing C file and wait for compilation, or if it does not exist, create it."""
     cache_dir = Path(cache_dir)
+
+    # Re-use an imported module rather than repeating the
+    # module_from_spec/exec_module round trip on every hit.
+    key = (module_name, str(cache_dir))
+    if (cached := _loaded_modules.get(key)) is not None:
+        return cached
+
     c_filename = cache_dir.joinpath(module_name).with_suffix(".c")
     ready_name = c_filename.with_suffix(".c.cached")
 
@@ -138,6 +152,7 @@ def get_cached_module(module_name, object_names, cache_dir, timeout):
                     raise ModuleNotFoundError("Unable to find JIT module.")
 
                 compiled_objects = [getattr(compiled_module.lib, name) for name in object_names]
+                _loaded_modules[key] = (compiled_objects, compiled_module)
                 return compiled_objects, compiled_module
 
             logger.info(f"Waiting for {ready_name} to appear.")
@@ -225,6 +240,7 @@ def compile_forms(
 
     form_names = [ffcx.naming.form_name(form, i, module_name) for i, form in enumerate(forms)]
 
+    persistent_cache = cache_dir is not None
     if cache_dir is not None:
         cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, form_names, cache_dir, timeout)
@@ -266,7 +282,7 @@ def compile_forms(
             pass
         raise e
 
-    obj, module = _load_objects(cache_dir, module_name, form_names)
+    obj, module = _load_objects(cache_dir, module_name, form_names, persistent_cache)
     return obj, module, (decl, impl)
 
 
@@ -304,6 +320,7 @@ def compile_expressions(
         ffcx.naming.expression_name(expression, module_name) for expression in expressions
     ]
 
+    persistent_cache = cache_dir is not None
     if cache_dir is not None:
         cache_dir = Path(cache_dir)
         obj, mod = get_cached_module(module_name, expr_names, cache_dir, timeout)
@@ -346,7 +363,7 @@ def compile_expressions(
             pass
         raise e
 
-    obj, module = _load_objects(cache_dir, module_name, expr_names)
+    obj, module = _load_objects(cache_dir, module_name, expr_names, persistent_cache)
     return obj, module, (decl, impl)
 
 
@@ -441,27 +458,30 @@ def _compile_objects(
     return code_body
 
 
-def _load_objects(cache_dir, module_name, object_names):
-    # Create module finder that searches the compile path
-    finder = importlib.machinery.FileFinder(
-        str(cache_dir),
-        (importlib.machinery.ExtensionFileLoader, importlib.machinery.EXTENSION_SUFFIXES),
-    )
+def _load_objects(cache_dir, module_name, object_names, memoise=False):
+    """Import a freshly compiled module and pull out its objects.
 
-    # Find module. Clear search cache to be sure dynamically created
-    # (new) modules are found
-    finder.invalidate_caches()
-    spec = finder.find_spec(module_name)
-    if spec is None:
+    Args:
+        cache_dir: Directory holding the compiled module.
+        module_name: Name of the module, without an extension suffix.
+        object_names: Names of the objects to extract from the module.
+        memoise: Record the module for later lookups. Set only for a
+            caller-supplied cache directory; the per-call temporary
+            directory used when none is configured can never be hit again.
+
+    Returns:
+        The extracted objects and the module holding them.
+    """
+    compiled_module = _load_extension_module(module_name, Path(cache_dir))
+    if compiled_module is None:
         raise ModuleNotFoundError("Unable to find JIT module.")
-
-    # Load module
-    compiled_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(compiled_module)
 
     compiled_objects = []
     for name in object_names:
         obj = getattr(compiled_module.lib, name)
         compiled_objects.append(obj)
+
+    if memoise:
+        _loaded_modules[(module_name, str(cache_dir))] = (compiled_objects, compiled_module)
 
     return compiled_objects, compiled_module
