@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import os
+import re
 import sys
 import typing
 
@@ -2368,3 +2369,40 @@ def test_point_mesh(compile_args, dtype, gdim):
         ffi.NULL,
     )
     assert np.isclose(J[0], f(coords))
+
+
+@pytest.mark.parametrize(
+    "mixed_dimensional,expected_variants",
+    [(False, {1}), (True, {1, 2})],
+    ids=["single_domain", "mixed_dimensional"],
+)
+def test_ridge_table_permutation_variants(compile_args, mixed_dimensional, expected_variants):
+    """Regression: a single-domain ridge integral emitted a permuted table.
+
+    Its element tables carried two quadrature permutation variants while the
+    integral reported ``needs_facet_permutations = False``, so an assembler
+    that trusts the flag could never select the second variant and the table
+    was twice the size it needed to be. A mixed-dimensional ridge integral
+    does need the second variant, because the parent cell may see the ridge
+    oriented opposite to the submesh cell.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    if mixed_dimensional:
+        codomain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(3,)))
+        space = ufl.FunctionSpace(codomain, basix.ufl.element("Lagrange", "interval", 1))
+        integrand = ufl.Coefficient(space) * ufl.SpatialCoordinate(domain)[0]
+    else:
+        space = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "tetrahedron", 1))
+        integrand = ufl.Coefficient(space) * ufl.SpatialCoordinate(domain)[0]
+
+    _, _, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [integrand * ufl.Measure("ridge", domain=domain)],
+        options={"scalar_type": "float64"},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    # Element tables are declared as [permutation][entities][points][dofs].
+    # Match the declaration only, so that indexing into a table is not counted.
+    variants = {int(n) for n in re.findall(r"double FE\w*\[(\d+)\]", implementation)}
+    assert variants, "no element tables were generated"
+    assert variants == expected_variants

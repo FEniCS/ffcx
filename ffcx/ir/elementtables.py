@@ -520,10 +520,15 @@ def build_optimized_tables(
                         t = new_table[0]
                         t["array"] = np.vstack([td["array"] for td in new_table])
             elif entity_type == "ridge":
-                if tdim < 3 or codim == 2:
-                    # If ridge integral over vertex no permutation is needed,
-                    # or if it is a single domain ridge integral,
-                    # as ridges has a global orientation in DOLFINx.
+                if tdim < 3 or codim == 2 or (integral_type == "ridge" and not is_mixed_dim):
+                    # No permutation is needed when the ridge is a vertex
+                    # (tdim < 3), when the element is on the ridges
+                    # themselves (codim 2, the entity is the cell), or for
+                    # a single-domain ridge integral, where each ridge is
+                    # integrated once and there is no other ordering to
+                    # agree with. An expression is excluded: its caller
+                    # chooses the entities, so its points follow the global
+                    # ridge orientation as they do for facets.
                     t = get_ffcx_table_values(
                         quadrature_rule.points,
                         cell,

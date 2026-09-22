@@ -762,3 +762,104 @@ def test_expression_vertex_ridge(compile_args, ridge_perm, local_index):
     )
 
     np.testing.assert_allclose(output[0], coords[local_index][:2])
+
+
+def _tabulate_geometry_expression(expr, points, coords, output, local_index, compile_args):
+    """Compile `expr` and evaluate it on one local entity of a single cell."""
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+    ffi = cffi.FFI()
+    empty = np.array([], dtype=np.float64)
+    entity_index = np.array([local_index], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.uint8)
+    obj[0].tabulate_tensor_float64(
+        ffi.cast("double *", output.ctypes.data),
+        ffi.cast("double *", empty.ctypes.data),
+        ffi.cast("double *", empty.ctypes.data),
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+
+# A tetrahedron with no symmetry, so a wrong entity index cannot pass by luck
+_TET_COORDS = np.array([[1.0, 0.0, 0.0], [3.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 1.0]])
+
+
+@pytest.mark.parametrize("local_index", range(4), ids=[f"facet{i}" for i in range(4)])
+def test_facet_edge_vectors_expression(compile_args, local_index):
+    """Regression: the expression generator asked for a table name that does not exist.
+
+    ``FacetEdgeVectors`` was mapped to ``facet_edge_vectors`` rather than
+    ``facet_edge_vertices``, so building the table raised ``ValueError``.
+    Form kernels were unaffected.
+    """
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+
+    output = np.zeros((3, 3))
+    _tabulate_geometry_expression(
+        ufl.geometry.FacetEdgeVectors(mesh),
+        np.array([[0.33, 0.33]]),
+        _TET_COORDS,
+        output,
+        local_index,
+        compile_args,
+    )
+
+    # `access.py` builds this as `vertex0 - vertex1`, the opposite sign to
+    # `ReferenceFacetEdgeVectors`, which `geometry.py` builds as
+    # `vertex1 - vertex0`. That convention is shared with form kernels, so it
+    # is pinned here as it stands rather than assumed.
+    facet = basix.topology(cell)[-2][local_index]
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    exact = [_TET_COORDS[facet[i]] - _TET_COORDS[facet[j]] for i, j in triangle_edges]
+    np.testing.assert_allclose(output, exact)
+
+
+@pytest.mark.parametrize("local_index", range(6), ids=[f"ridge{i}" for i in range(6)])
+def test_cell_ridge_jacobian_expression(compile_args, local_index):
+    """Regression: ``CellRidgeJacobian`` was missing from the expression generator.
+
+    No table was emitted, but the access layer still referenced it, so the
+    generated C failed to compile. Form kernels were unaffected.
+    """
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+
+    output = np.zeros((3, 1))
+    _tabulate_geometry_expression(
+        ufl.geometry.CellRidgeJacobian(mesh),
+        np.array([[0.3]]),
+        _TET_COORDS,
+        output,
+        local_index,
+        compile_args,
+    )
+
+    np.testing.assert_allclose(output, basix.cell.edge_jacobians(cell)[local_index])
+
+
+@pytest.mark.parametrize("local_index", range(4), ids=[f"facet{i}" for i in range(4)])
+def test_facet_orientation_expression(compile_args, local_index):
+    """Regression: ``FacetOrientation`` was missing from the expression generator.
+
+    Same failure mode as ``CellRidgeJacobian``: an undeclared table in the
+    generated C. Form kernels were unaffected.
+    """
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+
+    output = np.zeros(1)
+    _tabulate_geometry_expression(
+        ufl.geometry.FacetOrientation(mesh),
+        np.array([[0.33, 0.33]]),
+        _TET_COORDS,
+        output,
+        local_index,
+        compile_args,
+    )
+
+    assert output[0] == basix.cell.facet_orientations(cell)[local_index]

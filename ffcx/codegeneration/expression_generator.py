@@ -61,14 +61,20 @@ class ExpressionGenerator:
 
     def generate_geometry_tables(self):
         """Generate static tables of geometry data."""
+        # Must stay in sync with the same table in
+        # `IntegralGenerator.generate_geometry_tables`. The names are those
+        # `geometry.write_table` knows, and `access.py` emits the matching
+        # symbols for both kernel kinds from one place.
         ufl_geometry = {
-            ufl.geometry.FacetEdgeVectors: "facet_edge_vectors",
+            ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
             ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
+            ufl.geometry.CellRidgeJacobian: "cell_ridge_jacobian",
             ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
             ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
             ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
             ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
             ufl.geometry.ReferenceNormal: "reference_normals",
+            ufl.geometry.FacetOrientation: "facet_orientation",
         }
 
         cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
@@ -118,7 +124,7 @@ class ExpressionGenerator:
             parts,
             [
                 "Precomputed values of basis functions",
-                "FE* dimensions: [entities][points][dofs]",
+                "FE* dimensions: [permutation][entities][points][dofs]",
             ],
         )
         return parts
