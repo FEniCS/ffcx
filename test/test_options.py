@@ -14,9 +14,8 @@ import ffcx.options
 def test_options_not_formatted_when_info_disabled():
     """Option values must not be pretty-printed unless INFO is emitted.
 
-    ``pprint.pformat`` accounts for essentially all of ``get_options``, and
-    ``get_options`` runs on every JIT cache hit, so formatting it for a log
-    record that is discarded is pure overhead.
+    ``pformat`` accounts for nearly all of ``get_options``, which runs on
+    every JIT cache hit, so formatting a discarded record is pure waste.
     """
     with mock.patch.object(pprint, "pformat", wraps=pprint.pformat) as pformat:
         ffcx.options.get_options({"verbosity": logging.WARNING})

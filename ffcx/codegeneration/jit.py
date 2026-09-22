@@ -93,18 +93,17 @@ _loaded_modules: dict[tuple[str, str], tuple[list, object]] = {}
 def _load_extension_module(module_name, cache_dir):
     """Import a compiled extension module from ``cache_dir`` by name.
 
-    The file name of a JIT-compiled module is fully determined by its
-    module name, so the file is located by probing the candidate
-    extension suffixes rather than by scanning the directory. Scanning
-    costs one ``listdir`` of a directory that grows with every form ever
-    compiled, which is paid on every cache hit.
+    The file name follows from the module name, so probe the candidate
+    suffixes rather than scan the directory. A scan costs a ``listdir``
+    of a directory that grows with every form ever compiled, on every
+    cache hit.
 
     Args:
-        module_name: Name of the module, without an extension suffix.
+        module_name: Module name, without extension suffix.
         cache_dir: Directory holding the compiled module.
 
     Returns:
-        The imported module, or ``None`` if it is not present.
+        The imported module, or ``None`` if absent.
     """
     for suffix in importlib.machinery.EXTENSION_SUFFIXES:
         path = cache_dir / (module_name + suffix)

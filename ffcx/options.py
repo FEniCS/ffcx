@@ -124,8 +124,7 @@ def get_options(
         options.update(priority_options)
 
     logger.setLevel(int(options["verbosity"]))  # type: ignore
-    # pprint.pformat is the whole cost of this function, and get_options is
-    # called on every JIT cache hit, so only format when it will be emitted.
+    # pformat dominates this function and runs on every JIT cache hit.
     if logger.isEnabledFor(logging.INFO):
         logger.info("Final option values")
         logger.info(pprint.pformat(options))

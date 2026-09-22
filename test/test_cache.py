@@ -49,14 +49,11 @@ def test_cache_modes(compile_args):
 def test_cache_hit_does_not_scan_cache_dir(compile_args, tmp_path):
     """A cache hit must not list the cache directory.
 
-    ``get_cached_module`` used to locate the compiled module with an
-    ``importlib`` finder, which lists the whole directory on every hit.
-    The cache holds four files per form ever compiled, so that cost grows
-    without bound over a user's lifetime. The module file name is fully
-    determined by the module name, so no listing is needed.
+    The finder previously used listed the whole directory on every hit,
+    and the cache grows by four files per form ever compiled.
 
-    ``importlib._bootstrap_external`` binds ``listdir`` at import time, so
-    the directory scan is caught there rather than via ``os.listdir``.
+    ``importlib._bootstrap_external`` binds ``listdir`` at import time,
+    so intercept it there rather than on ``os``.
     """
     bootstrap = importlib._bootstrap_external
     if not hasattr(bootstrap, "_os") or not hasattr(bootstrap._os, "listdir"):
