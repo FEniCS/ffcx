@@ -724,6 +724,8 @@ def _compute_expression_ir(
             base_ir["entity_type"] = "cell"
         elif tdim - 1 == pdim:
             base_ir["entity_type"] = "facet"
+        elif tdim - 2 == pdim:
+            base_ir["entity_type"] = "ridge"
         else:
             raise ValueError(
                 f"Expression on domain with topological dimension {tdim}"
