@@ -611,3 +611,108 @@ def test_expression_facet_perm(compile_args, facet_perm, local_index):
     edge = facet[1] - facet[0]
     exact_value = facet[0] + ordered_points * edge
     np.testing.assert_allclose(output, exact_value)
+
+
+@pytest.mark.parametrize("ridge_perm", [0, 1], ids=["no_perm", "perm"])
+@pytest.mark.parametrize("local_index", range(6), ids=[f"ridge{i}" for i in range(6)])
+def test_expression_ridge_perm(compile_args, ridge_perm, local_index):
+    """Test an expression evaluated on the ridges (edges) of a tetrahedron."""
+    c_el = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+    expr = ufl.SpatialCoordinate(mesh)
+
+    dtype = np.float64
+    points = np.array([[0.2], [0.93], [0.99]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros((points.shape[0], 3), dtype=dtype)
+    coords = np.array(
+        [[0.3, 0.0, 0.1], [1.3, 0.2, 0.0], [0.4, 2.0, 0.3], [0.1, 0.5, 1.7]], dtype=dtype
+    )
+
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([local_index], dtype=np.intc)
+
+    # Perm 1 means that the ridge is ordered opposite to the cell-local
+    # ordering, so the quadrature points are reflected
+    quad_perm = np.array([ridge_perm], dtype=np.uint8)
+
+    expression.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    ordered_points = points if ridge_perm == 0 else 1 - points
+    v0, v1 = (coords[v] for v in basix.topology(basix.CellType.tetrahedron)[1][local_index])
+    np.testing.assert_allclose(output, v0 + ordered_points * (v1 - v0))
+
+
+def test_mixed_mesh_ridge_expression(compile_args):
+    """Test a ridge expression with a coefficient on the ridge mesh."""
+    c_el = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+
+    r_c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(3,))
+    ridge_mesh = ufl.Mesh(r_c_el)
+    r_el = basix.ufl.element("P", "interval", 1)
+    V = ufl.FunctionSpace(ridge_mesh, r_el)
+    c = ufl.Coefficient(V)
+
+    expr = c * ufl.SpatialCoordinate(mesh)
+
+    dtype = np.float64
+    points = np.array([[0.3], [0.5], [0.8]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros(points.shape[0] * 3, dtype=dtype)
+    coords = np.array(
+        [[0.3, 0.0, 0.1], [1.3, 0.2, 0.0], [0.4, 2.0, 0.3], [0.1, 0.5, 1.7]], dtype=dtype
+    )
+
+    # Degrees of freedom of the P1 coefficient on the ridge
+    u_coeffs = np.array([0.1, 0.5], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.uint8)
+
+    ref_coeff = u_coeffs[0] + points * (u_coeffs[1] - u_coeffs[0])
+    for local_index, ridge in enumerate(basix.topology(basix.CellType.tetrahedron)[1]):
+        output[:] = 0
+        entity_index[0] = local_index
+        expression.tabulate_tensor_float64(
+            ffi.cast(f"{c_type} *", output.ctypes.data),
+            ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+            ffi.cast(f"{c_type} *", consts.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", entity_index.ctypes.data),
+            ffi.cast("uint8_t *", quad_perm.ctypes.data),
+            ffi.NULL,
+        )
+
+        v0, v1 = (coords[v] for v in ridge)
+        x = v0 + points * (v1 - v0)
+        np.testing.assert_allclose(output, (ref_coeff * x).flatten())
