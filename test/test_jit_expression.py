@@ -716,3 +716,49 @@ def test_mixed_mesh_ridge_expression(compile_args):
         v0, v1 = (coords[v] for v in ridge)
         x = v0 + points * (v1 - v0)
         np.testing.assert_allclose(output, (ref_coeff * x).flatten())
+
+
+@pytest.mark.parametrize("ridge_perm", [0, 1], ids=["no_perm", "perm"])
+@pytest.mark.parametrize("local_index", range(3), ids=[f"ridge{i}" for i in range(3)])
+def test_expression_vertex_ridge(compile_args, ridge_perm, local_index):
+    """Test an expression evaluated on the ridges (vertices) of a triangle.
+
+    A vertex has no interior, so the points array has zero columns, and
+    no orientation, so the quadrature permutation is ignored.
+    """
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+    expr = ufl.SpatialCoordinate(mesh)
+
+    dtype = np.float64
+    points = np.zeros((1, 0), dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros((1, 2), dtype=dtype)
+    coords = np.array([[0.3, 0.0, 0.0], [1.3, 0.2, 0.0], [0.4, 2.0, 0.0]], dtype=dtype)
+
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([local_index], dtype=np.intc)
+    quad_perm = np.array([ridge_perm], dtype=np.uint8)
+
+    expression.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    np.testing.assert_allclose(output[0], coords[local_index][:2])
