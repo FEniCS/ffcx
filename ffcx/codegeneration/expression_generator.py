@@ -43,7 +43,11 @@ class ExpressionGenerator:
         parts += self.generate_element_tables()
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += geometry.static_tables(
+            self.ir.expression.entity_type,
+            self.ir.expression.integrand.values(),
+            self.ir.expression.integration_domain_coordinate_element,
+        )
         parts += self.generate_piecewise_partition()
 
         all_preparts = []
@@ -58,52 +62,6 @@ class ExpressionGenerator:
         parts += all_quadparts
 
         return L.StatementList(parts)
-
-    def generate_geometry_tables(self):
-        """Generate static tables of geometry data."""
-        # Must stay in sync with the same table in
-        # `IntegralGenerator.generate_geometry_tables`. The names are those
-        # `geometry.write_table` knows, and `access.py` emits the matching
-        # symbols for both kernel kinds from one place.
-        ufl_geometry = {
-            ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
-            ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
-            ufl.geometry.CellRidgeJacobian: "cell_ridge_jacobian",
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
-            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
-            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
-            ufl.geometry.ReferenceNormal: "reference_normals",
-            ufl.geometry.FacetOrientation: "facet_orientation",
-        }
-
-        cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
-        for integrand in self.ir.expression.integrand.values():
-            for attr in integrand["factorization"].nodes.values():
-                mt = attr.get("mt")
-                if mt is not None:
-                    t = type(mt.terminal)
-                    if self.ir.expression.entity_type == "cell" and issubclass(
-                        t, ufl.geometry.GeometricFacetQuantity
-                    ):
-                        raise RuntimeError(f"Expressions for cells do not support {t}.")
-                    if t in ufl_geometry:
-                        cells[t].add(
-                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
-                        )
-
-        parts = []
-        for i, cell_list in cells.items():
-            for c in cell_list:
-                parts.append(geometry.write_table(ufl_geometry[i], c))
-
-        parts += geometry.closure_dofs_tables(
-            self.ir.expression.entity_type,
-            self.ir.expression.integrand.values(),
-            self.ir.expression.integration_domain_coordinate_element,
-        )
-
-        return parts
 
     def generate_element_tables(self):
         """Generate tables of FE basis evaluated at specified points."""

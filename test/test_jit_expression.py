@@ -863,3 +863,48 @@ def test_facet_orientation_expression(compile_args, local_index):
     )
 
     assert output[0] == basix.cell.facet_orientations(cell)[local_index]
+
+
+@pytest.mark.parametrize(
+    "quantity,points",
+    [
+        # Ridge geometry outside a ridge: a cell kernel would dereference a
+        # NULL entity index, a facet kernel would read the wrong table row
+        (ufl.geometry.CellRidgeJacobian, [[0.2, 0.2, 0.2]]),
+        (ufl.geometry.CellRidgeJacobian, [[0.3, 0.3]]),
+        # Facet geometry outside a facet: in a ridge kernel the entity index
+        # runs past the end of the facet table
+        (ufl.geometry.FacetOrientation, [[0.3]]),
+        (ufl.geometry.FacetOrientation, [[0.2, 0.2, 0.2]]),
+    ],
+    ids=["ridge_on_cell", "ridge_on_facet", "facet_on_ridge", "facet_on_cell"],
+)
+def test_expression_rejects_geometry_of_another_entity(quantity, points):
+    """Geometry of a sub-entity is only allowed in a kernel over that entity."""
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    q = quantity(mesh)
+    expr = q[(0,) * len(q.ufl_shape)] if q.ufl_shape else q
+    with pytest.raises(RuntimeError, match=f"{quantity.__name__} is only defined on a"):
+        ffcx.codegeneration.jit.compile_expressions([(expr, np.array(points))])
+
+
+@pytest.mark.parametrize(
+    "quantity", [ufl.geometry.ReferenceCellVolume, ufl.geometry.ReferenceCellEdgeVectors]
+)
+def test_cell_geometry_in_cell_expression(compile_args, quantity):
+    """Geometry of the whole cell is allowed in a cell expression."""
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+    q = quantity(mesh)
+
+    output = np.zeros(q.ufl_shape or (1,))
+    _tabulate_geometry_expression(
+        q, np.array([[0.2, 0.2, 0.2]]), _TET_COORDS, output, 0, compile_args
+    )
+
+    if quantity is ufl.geometry.ReferenceCellVolume:
+        exact = [basix.cell.volume(cell)]
+    else:
+        geometry = basix.geometry(cell)
+        exact = [geometry[j] - geometry[i] for i, j in basix.topology(cell)[1]]
+    np.testing.assert_allclose(output, exact)

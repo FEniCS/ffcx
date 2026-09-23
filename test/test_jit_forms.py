@@ -2406,3 +2406,19 @@ def test_ridge_table_permutation_variants(compile_args, mixed_dimensional, expec
     variants = {int(n) for n in re.findall(r"double FE\w*\[(\d+)\]", implementation)}
     assert variants, "no element tables were generated"
     assert variants == expected_variants
+
+
+@pytest.mark.parametrize("measure", ["dx", "ds"])
+def test_form_rejects_ridge_geometry_outside_ridge_integral(measure):
+    """Ridge geometry is only allowed in a ridge integral.
+
+    UFL checks facet geometry against the integral type, but not ridge
+    geometry, so this is caught in FFCx. Previously a cell integral compiled
+    to a read through a NULL entity index, and a facet integral indexed the
+    ridge table by a facet index.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "tetrahedron", 1))
+    integrand = ufl.geometry.CellRidgeJacobian(domain)[0, 0] * ufl.TestFunction(space)
+    with pytest.raises(RuntimeError, match="CellRidgeJacobian is only defined on a ridge"):
+        ffcx.codegeneration.jit.compile_forms([integrand * ufl.Measure(measure, domain=domain)])
