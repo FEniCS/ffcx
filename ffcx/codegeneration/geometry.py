@@ -367,9 +367,9 @@ def static_tables(
                         f"but this kernel is over a {entity_type}."
                     )
             if terminal in _GEOMETRY_TABLES:
-                cellnames[terminal].add(
-                    ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
-                )
+                ud = ufl.domain.extract_unique_domain(mt.terminal)
+                assert ud is not None and isinstance(ud, ufl.Mesh)
+                cellnames[terminal].add(ud.ufl_cell().cellname)
 
     tables: list[L.ArrayDecl] = []
     for terminal, names in cellnames.items():

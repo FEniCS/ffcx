@@ -624,6 +624,9 @@ class IntegralGenerator:
             for i, b in enumerate(blockmap):
                 bs = blockdata.ma_data[i].tabledata.block_size
                 offset = blockdata.ma_data[i].tabledata.offset
+                # Only sum-factorisation tensor factors lack these, and they
+                # are never the table of a block's modified argument
+                assert bs is not None and offset is not None
                 b = tuple([(idx - offset) // bs for idx in b])
                 scalar_blockmap.append(b)
             block_groups[tuple(scalar_blockmap)].append(blockdata)
