@@ -64,9 +64,8 @@ def generator(ir: ExpressionIR, options):
         d["points_init"] = f"static double points_{factory_name}[{sizes}] = {{{values}}};"
         d["points"] = f"points_{factory_name}"
     else:
-        # An expression on the ridges of a 2D mesh is evaluated on vertices,
-        # which have no interior, so the points have zero components. A
-        # zero-length array is not valid C, and MSVC rejects it.
+        # An entity with topological dimension 0 (vertex) has a reference point with
+        # 0 components. A zero-length array is not VALID C, and MSVC rejects it.
         d["points_init"] = ""
         d["points"] = "NULL"
 
