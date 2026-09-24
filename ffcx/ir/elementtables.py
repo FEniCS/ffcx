@@ -132,9 +132,9 @@ def get_ffcx_table_values(
 
     if integral_type == "expression":
         # FFCx tables for expression are generated as either interior cell points
-        # or points on a facet
-        if entity_type == "cell":
-            integral_type = "cell"
+        # or points on a facet or ridge
+        if entity_type in ("cell", "ridge"):
+            integral_type = entity_type
         else:
             integral_type = "exterior_facet"
 
@@ -439,7 +439,7 @@ def build_optimized_tables(
             integral_type == "interior_facet"
             or integral_type == "ridge"
             or (is_mixed_dim and codim == 0)
-            or (integral_type == "expression" and entity_type == "facet")
+            or (integral_type == "expression" and entity_type in ("facet", "ridge"))
         ):
             if entity_type == "facet":
                 if tdim == 1 or codim == 1:
