@@ -133,10 +133,8 @@ def get_ffcx_table_values(
     if integral_type == "expression":
         # FFCx tables for expression are generated as either interior cell points
         # or points on a facet or ridge
-        if entity_type == "cell":
-            integral_type = "cell"
-        elif entity_type == "ridge":
-            integral_type = "ridge"
+        if entity_type in ("cell", "ridge"):
+            integral_type = entity_type
         else:
             integral_type = "exterior_facet"
 
