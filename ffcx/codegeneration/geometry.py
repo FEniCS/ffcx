@@ -5,11 +5,16 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 """Geometry."""
 
+from collections.abc import Iterable
+
 import basix
+import basix.ufl
 import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
+from ffcx.definitions import entity_types
+from ffcx.ir.integral import IntermediateIntegrandIR
 
 # Per entity_type: the table a mixed-dimensional submesh's coordinate
 # dofs are gathered through, and the codimension it must have. Keyed by
@@ -294,3 +299,83 @@ def closure_dofs_tables(entity_type, integrands, parent_element):
     if not needed:
         return []
     return [write_table(table_kind, parent_element.cell.cellname, parent_element)]
+
+
+# Geometry defined on a sub-entity, and the entity a kernel must be over to
+# use it. `access.py` indexes these by the kernel's local entity index,
+# which is NULL in a cell kernel and the wrong kind of index in any other.
+_ENTITY_GEOMETRY: tuple[tuple[type, str], ...] = (
+    (ufl.geometry.GeometricFacetQuantity, "facet"),
+    (ufl.geometry.GeometricRidgeQuantity, "ridge"),
+)
+
+# The geometry quantity a kernel can reference, and the table it is read
+# from. These are the names `write_table` knows and the ones `access.py`
+# emits symbols for; form and expression kernels share both.
+_GEOMETRY_TABLES: dict[type, str] = {
+    ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
+    ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
+    ufl.geometry.CellRidgeJacobian: "cell_ridge_jacobian",
+    ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
+    ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
+    ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
+    ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
+    ufl.geometry.ReferenceNormal: "reference_normals",
+    ufl.geometry.FacetOrientation: "facet_orientation",
+}
+
+
+def static_tables(
+    entity_type: entity_types,
+    integrands: Iterable[IntermediateIntegrandIR],
+    parent_element: basix.ufl._ElementBase | None,
+) -> list[L.ArrayDecl]:
+    """Write the static tables of geometry data a kernel needs.
+
+    The single entry point for both form and expression kernels: they read
+    the same geometry quantities through the same tables, so keeping one
+    copy of this mapping is what stops the two drifting apart.
+
+    Args:
+        entity_type: The entity the kernel is over.
+        integrands: The kernel's integrands, whose factorization graphs are
+            scanned for the geometry quantities actually referenced.
+        parent_element: Coordinate element of the integration domain, used
+            for the closure-dofs tables. May be None.
+
+    Returns:
+        Table declarations, in a deterministic order.
+    """
+    integrands = list(integrands)
+
+    # One entry per quantity, created up front so tables are emitted in
+    # `_GEOMETRY_TABLES` order rather than the order the graph is walked.
+    # Quantities the integrands never reference keep an empty set.
+    cellnames: dict[type, set[str]] = {terminal: set() for terminal in _GEOMETRY_TABLES}
+    for integrand in integrands:
+        for attr in integrand["factorization"].nodes.values():
+            mt = attr.get("mt")
+            if mt is None:
+                continue
+            terminal = type(mt.terminal)
+            # UFL checks facet quantities in forms, but not ridge
+            # quantities, and nothing in expressions, which have no measure
+            for base, required in _ENTITY_GEOMETRY:
+                if issubclass(terminal, base) and entity_type != required:
+                    raise RuntimeError(
+                        f"{terminal.__name__} is only defined on a {required}, "
+                        f"but this kernel is over a {entity_type}."
+                    )
+            if terminal in _GEOMETRY_TABLES:
+                ud = ufl.domain.extract_unique_domain(mt.terminal)
+                assert ud is not None and isinstance(ud, ufl.Mesh)
+                cellnames[terminal].add(ud.ufl_cell().cellname)
+
+    tables: list[L.ArrayDecl] = []
+    for terminal, names in cellnames.items():
+        tablename = _GEOMETRY_TABLES[terminal]
+        for cellname in sorted(names):
+            tables.append(write_table(tablename, cellname))
+
+    tables.extend(closure_dofs_tables(entity_type, integrands, parent_element))
+    return tables

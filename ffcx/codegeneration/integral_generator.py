@@ -267,7 +267,11 @@ class IntegralGenerator:
         parts += self.generate_element_tables(domain)
 
         # Generate the tables of geometry data that are needed
-        parts += self.generate_geometry_tables()
+        parts += geometry.static_tables(
+            self.ir.expression.entity_type,
+            self.ir.expression.integrand.values(),
+            self.ir.expression.integration_domain_coordinate_element,
+        )
 
         # Loop generation code will produce parts to go before
         # quadloops, to define the quadloops, and to go after the
@@ -314,44 +318,6 @@ class IntegralGenerator:
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
-        return parts
-
-    def generate_geometry_tables(self):
-        """Generate static tables of geometry data."""
-        ufl_geometry = {
-            ufl.geometry.FacetEdgeVectors: "facet_edge_vertices",
-            ufl.geometry.CellFacetJacobian: "cell_facet_jacobian",
-            ufl.geometry.CellRidgeJacobian: "cell_ridge_jacobian",
-            ufl.geometry.ReferenceCellVolume: "reference_cell_volume",
-            ufl.geometry.ReferenceFacetVolume: "reference_facet_volume",
-            ufl.geometry.ReferenceCellEdgeVectors: "reference_cell_edge_vectors",
-            ufl.geometry.ReferenceFacetEdgeVectors: "reference_facet_edge_vectors",
-            ufl.geometry.ReferenceNormal: "reference_normals",
-            ufl.geometry.FacetOrientation: "facet_orientation",
-        }
-        cells: dict[Any, set[Any]] = {t: set() for t in ufl_geometry.keys()}  # type: ignore
-
-        for integrand in self.ir.expression.integrand.values():
-            for attr in integrand["factorization"].nodes.values():
-                mt = attr.get("mt")
-                if mt is not None:
-                    t = type(mt.terminal)
-                    if t in ufl_geometry:
-                        cells[t].add(
-                            ufl.domain.extract_unique_domain(mt.terminal).ufl_cell().cellname
-                        )
-
-        parts = []
-        for i, cell_list in cells.items():
-            for c in cell_list:
-                parts.append(geometry.write_table(ufl_geometry[i], c))
-
-        parts += geometry.closure_dofs_tables(
-            self.ir.expression.entity_type,
-            self.ir.expression.integrand.values(),
-            self.ir.expression.integration_domain_coordinate_element,
-        )
-
         return parts
 
     def generate_element_tables(self, domain: basix.CellType):
@@ -658,6 +624,9 @@ class IntegralGenerator:
             for i, b in enumerate(blockmap):
                 bs = blockdata.ma_data[i].tabledata.block_size
                 offset = blockdata.ma_data[i].tabledata.offset
+                # Only sum-factorisation tensor factors lack these, and they
+                # are never the table of a block's modified argument
+                assert bs is not None and offset is not None
                 b = tuple([(idx - offset) // bs for idx in b])
                 scalar_blockmap.append(b)
             block_groups[tuple(scalar_blockmap)].append(blockdata)

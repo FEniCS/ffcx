@@ -124,7 +124,7 @@ class CommonExpressionIR(typing.NamedTuple):
     original_constant_offsets: dict[ufl.Constant, int]
     unique_tables: dict[basix.CellType, npt.NDArray[np.float64]]
     unique_table_types: dict[basix.CellType, dict[str, str]]
-    integrand: dict[tuple[basix.CellType, QuadratureRule], dict]
+    integrand: dict[tuple[basix.CellType, QuadratureRule], IntermediateIntegrandIR]
     name: str
     needs_facet_permutations: bool
     shape: list[int]
