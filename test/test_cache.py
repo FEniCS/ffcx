@@ -1,12 +1,14 @@
-# Copyright (C) 2019 Chris Richardson
+# Copyright (C) 2019-2026 Chris Richardson and Jack S. Hale
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import importlib._bootstrap_external
+import itertools
 import os
 import sys
+import sysconfig
 from pathlib import Path
 from unittest import mock
 
@@ -134,3 +136,45 @@ def test_loaded_module_not_reused_across_cache_dirs(compile_args, tmp_path):
     )
     assert first.__name__ == second.__name__
     assert Path(first.__file__).parent != Path(second.__file__).parent
+
+
+def test_repeated_compiles_hit_cache(compile_args, tmp_path):
+    """One form must compile once, even as the build variables change.
+
+    On macOS setuptools rewrites the sysconfig build variables in place on
+    every compile, so a signature built from them changes as compilation
+    proceeds and no cache entry is ever found again.
+    """
+    osx_support = pytest.importorskip("_osx_support")
+    real = sysconfig.get_config_var
+    reads = itertools.count()
+
+    def drifting(name):
+        if name in osx_support._UNIVERSAL_CONFIG_VARS:
+            return f"{real(name)} -arch arm64{' ' * next(reads)}"
+        return real(name)
+
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    forms = [ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx]
+
+    ffcx.codegeneration.jit._loaded_modules.clear()
+    compiled = []
+    real_compile = ffcx.codegeneration.jit._compile_objects
+
+    def counting_compile(*args, **kwargs):
+        compiled.append(args[3])
+        return real_compile(*args, **kwargs)
+
+    with (
+        mock.patch.object(sysconfig, "get_config_var", drifting),
+        mock.patch.object(ffcx.codegeneration.jit, "_compile_objects", counting_compile),
+    ):
+        for _ in range(5):
+            _, module, _ = ffcx.codegeneration.jit.compile_forms(
+                forms, cache_dir=tmp_path / "cache", cffi_extra_compile_args=compile_args
+            )
+
+    assert compiled == [module.__name__]
