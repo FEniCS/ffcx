@@ -1,4 +1,4 @@
-# Copyright (C) 2004-2019 Garth N. Wells
+# Copyright (C) 2004-2026 Garth N. Wells and Jack S. Hale
 #
 # This file is part of FFCx.(https://www.fenicsproject.org)
 #
@@ -167,23 +167,17 @@ def _compilation_signature(cffi_extra_compile_args, cffi_debug):
 
     Used to avoid cache conflicts across Python versions, architectures, installs.
 
-    - SOABI includes platform, Python version, debug flags
-    - CFLAGS includes prefixes, arch targets
+    - ``EXT_SUFFIX`` gives the implementation, Python version and ABI
+      flags, e.g. ``.cpython-312-darwin.so``.
+    - ``get_platform`` gives the architecture and, on macOS, the
+      deployment target.
     """
-    if sys.platform.startswith("win32"):
-        # NOTE: SOABI not defined on win32, EXT_SUFFIX contains e.g. '.cp312-win_amd64.pyd'
-        return (
-            str(cffi_extra_compile_args)
-            + str(cffi_debug)
-            + str(sysconfig.get_config_var("EXT_SUFFIX"))
-        )
-    else:
-        return (
-            str(cffi_extra_compile_args)
-            + str(cffi_debug)
-            + str(sysconfig.get_config_var("CFLAGS"))
-            + str(sysconfig.get_config_var("SOABI"))
-        )
+    return (
+        str(cffi_extra_compile_args)
+        + str(cffi_debug)
+        + sysconfig.get_platform()
+        + str(sysconfig.get_config_var("EXT_SUFFIX"))
+    )
 
 
 def compile_forms(
