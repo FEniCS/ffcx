@@ -28,6 +28,7 @@ from ufl.algorithms.apply_derivatives import apply_coordinate_derivatives, apply
 from ufl.algorithms.apply_function_pullbacks import apply_function_pullbacks
 from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
 from ufl.algorithms.apply_integral_scaling import apply_integral_scaling
+from ufl.algorithms.cancel_jacobian_products import cancel_jacobian_products
 from ufl.algorithms.compute_form_data import attach_estimated_degrees, preprocess_form
 
 # See TODOs at the call sites of these below:
@@ -96,7 +97,8 @@ def analyze_ufl_objects(
         | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
     ],
     scalar_type: npt.DTypeLike,
-    do_cancel_jacobian_products: bool = True,
+    # do_cancel_jacobian_products: bool = True,
+    do_cancel_jacobian_products: bool = False,
 ) -> UFLData:
     """Analyze ufl object(s).
 
@@ -480,6 +482,7 @@ def compute_form_data(
     do_apply_integral_scaling: bool = False,
     do_apply_geometry_lowering: bool = False,
     preserve_geometry_types: tuple[ufl.geometry.GeometricQuantity, ...] = (),
+    do_cancel_jacobian_products=False,
     do_apply_default_restrictions: bool = True,
     do_apply_restrictions: bool = True,
     do_estimate_degrees: bool = True,
@@ -576,6 +579,15 @@ def compute_form_data(
             form = apply_geometry_lowering(form, preserve_geometry_types)
             # Lower derivatives that may have appeared
             form = apply_derivatives(form)
+
+            if do_cancel_jacobian_products:
+                # Cancel contractions of the Jacobian with its inverse,
+                # which requires component tensors to be removed first
+                form = remove_component_tensors(form)
+                form = cancel_jacobian_products(form)
+                # Lower the Jacobian quantities that were preserved above
+                form = apply_geometry_lowering(form, preserve_geometry_types)
+                form = apply_derivatives(form)
 
     form = apply_coordinate_derivatives(form)
 
