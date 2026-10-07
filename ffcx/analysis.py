@@ -505,6 +505,12 @@ def compute_form_data(
             quantities to a smaller subset of quantities
         preserve_geometry_types: Set of quantities not to lower, and keep
             at its present stage for the form-compiler.
+        do_cancel_jacobian_products: Delay the expansion of the Jacobian
+            inverse into individual matrix entries, and cancel out index
+            contractions of the Jacobian with its inverse.  This
+            simplifies the expressions that Piola-mapped elements
+            generate, before lowering the surviving Jacobian quantities
+            as usual.
         do_apply_default_restrictions: Apply default restrictions, defined in
             {py:mod}`ufl.algorithms.apply_restrictions` to integrals if no
             restriction has been set.
