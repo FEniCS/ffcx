@@ -611,3 +611,300 @@ def test_expression_facet_perm(compile_args, facet_perm, local_index):
     edge = facet[1] - facet[0]
     exact_value = facet[0] + ordered_points * edge
     np.testing.assert_allclose(output, exact_value)
+
+
+@pytest.mark.parametrize("ridge_perm", [0, 1], ids=["no_perm", "perm"])
+@pytest.mark.parametrize("local_index", range(6), ids=[f"ridge{i}" for i in range(6)])
+def test_expression_ridge_perm(compile_args, ridge_perm, local_index):
+    """Test an expression evaluated on the ridges (edges) of a tetrahedron."""
+    c_el = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+    expr = ufl.SpatialCoordinate(mesh)
+
+    dtype = np.float64
+    points = np.array([[0.2], [0.93], [0.99]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros((points.shape[0], 3), dtype=dtype)
+    coords = np.array(
+        [[0.3, 0.0, 0.1], [1.3, 0.2, 0.0], [0.4, 2.0, 0.3], [0.1, 0.5, 1.7]], dtype=dtype
+    )
+
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([local_index], dtype=np.intc)
+
+    # Perm 1 means that the ridge is ordered opposite to the cell-local
+    # ordering, so the quadrature points are reflected
+    quad_perm = np.array([ridge_perm], dtype=np.uint8)
+
+    expression.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    ordered_points = points if ridge_perm == 0 else 1 - points
+    v0, v1 = (coords[v] for v in basix.topology(basix.CellType.tetrahedron)[1][local_index])
+    np.testing.assert_allclose(output, v0 + ordered_points * (v1 - v0))
+
+
+def test_mixed_mesh_ridge_expression(compile_args):
+    """Test a ridge expression with a coefficient on the ridge mesh."""
+    c_el = basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,))
+    mesh = ufl.Mesh(c_el)
+
+    r_c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(3,))
+    ridge_mesh = ufl.Mesh(r_c_el)
+    r_el = basix.ufl.element("P", "interval", 1)
+    V = ufl.FunctionSpace(ridge_mesh, r_el)
+    c = ufl.Coefficient(V)
+
+    expr = c * ufl.SpatialCoordinate(mesh)
+
+    dtype = np.float64
+    points = np.array([[0.3], [0.5], [0.8]], dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros(points.shape[0] * 3, dtype=dtype)
+    coords = np.array(
+        [[0.3, 0.0, 0.1], [1.3, 0.2, 0.0], [0.4, 2.0, 0.3], [0.1, 0.5, 1.7]], dtype=dtype
+    )
+
+    # Degrees of freedom of the P1 coefficient on the ridge
+    u_coeffs = np.array([0.1, 0.5], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([0], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.uint8)
+
+    ref_coeff = u_coeffs[0] + points * (u_coeffs[1] - u_coeffs[0])
+    for local_index, ridge in enumerate(basix.topology(basix.CellType.tetrahedron)[1]):
+        output[:] = 0
+        entity_index[0] = local_index
+        expression.tabulate_tensor_float64(
+            ffi.cast(f"{c_type} *", output.ctypes.data),
+            ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+            ffi.cast(f"{c_type} *", consts.ctypes.data),
+            ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+            ffi.cast("int *", entity_index.ctypes.data),
+            ffi.cast("uint8_t *", quad_perm.ctypes.data),
+            ffi.NULL,
+        )
+
+        v0, v1 = (coords[v] for v in ridge)
+        x = v0 + points * (v1 - v0)
+        np.testing.assert_allclose(output, (ref_coeff * x).flatten())
+
+
+@pytest.mark.parametrize("ridge_perm", [0, 1], ids=["no_perm", "perm"])
+@pytest.mark.parametrize("local_index", range(3), ids=[f"ridge{i}" for i in range(3)])
+def test_expression_vertex_ridge(compile_args, ridge_perm, local_index):
+    """Test an expression evaluated on the ridges (vertices) of a triangle.
+
+    A vertex has no interior, so the points array has zero columns, and
+    no orientation, so the quadrature permutation is ignored.
+    """
+    c_el = basix.ufl.element("Lagrange", "triangle", 1, shape=(2,))
+    mesh = ufl.Mesh(c_el)
+    expr = ufl.SpatialCoordinate(mesh)
+
+    dtype = np.float64
+    points = np.zeros((1, 0), dtype=dtype)
+
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+
+    ffi = cffi.FFI()
+    expression = obj[0]
+
+    c_type = "double"
+    c_xtype = "double"
+
+    output = np.zeros((1, 2), dtype=dtype)
+    coords = np.array([[0.3, 0.0, 0.0], [1.3, 0.2, 0.0], [0.4, 2.0, 0.0]], dtype=dtype)
+
+    u_coeffs = np.array([], dtype=dtype)
+    consts = np.array([], dtype=dtype)
+    entity_index = np.array([local_index], dtype=np.intc)
+    quad_perm = np.array([ridge_perm], dtype=np.uint8)
+
+    expression.tabulate_tensor_float64(
+        ffi.cast(f"{c_type} *", output.ctypes.data),
+        ffi.cast(f"{c_type} *", u_coeffs.ctypes.data),
+        ffi.cast(f"{c_type} *", consts.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+    np.testing.assert_allclose(output[0], coords[local_index][:2])
+
+
+def _tabulate_geometry_expression(expr, points, coords, output, local_index, compile_args):
+    """Compile `expr` and evaluate it on one local entity of a single cell."""
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(expr, points)], cffi_extra_compile_args=compile_args
+    )
+    ffi = cffi.FFI()
+    empty = np.array([], dtype=np.float64)
+    entity_index = np.array([local_index], dtype=np.intc)
+    quad_perm = np.array([0], dtype=np.uint8)
+    obj[0].tabulate_tensor_float64(
+        ffi.cast("double *", output.ctypes.data),
+        ffi.cast("double *", empty.ctypes.data),
+        ffi.cast("double *", empty.ctypes.data),
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.cast("int *", entity_index.ctypes.data),
+        ffi.cast("uint8_t *", quad_perm.ctypes.data),
+        ffi.NULL,
+    )
+
+
+# A tetrahedron with no symmetry, so a wrong entity index cannot pass by luck
+_TET_COORDS = np.array([[1.0, 0.0, 0.0], [3.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 1.0]])
+
+
+@pytest.mark.parametrize("local_index", range(4), ids=[f"facet{i}" for i in range(4)])
+def test_facet_edge_vectors_expression(compile_args, local_index):
+    """Regression: the expression generator asked for a table name that does not exist.
+
+    ``FacetEdgeVectors`` was mapped to ``facet_edge_vectors`` rather than
+    ``facet_edge_vertices``, so building the table raised ``ValueError``.
+    Form kernels were unaffected.
+    """
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+
+    output = np.zeros((3, 3))
+    _tabulate_geometry_expression(
+        ufl.geometry.FacetEdgeVectors(mesh),
+        np.array([[0.33, 0.33]]),
+        _TET_COORDS,
+        output,
+        local_index,
+        compile_args,
+    )
+
+    # `access.py` builds this as `vertex0 - vertex1`, the opposite sign to
+    # `ReferenceFacetEdgeVectors`, which `geometry.py` builds as
+    # `vertex1 - vertex0`. That convention is shared with form kernels, so it
+    # is pinned here as it stands rather than assumed.
+    facet = basix.topology(cell)[-2][local_index]
+    triangle_edges = basix.topology(basix.CellType.triangle)[1]
+    exact = [_TET_COORDS[facet[i]] - _TET_COORDS[facet[j]] for i, j in triangle_edges]
+    np.testing.assert_allclose(output, exact)
+
+
+@pytest.mark.parametrize("local_index", range(6), ids=[f"ridge{i}" for i in range(6)])
+def test_cell_ridge_jacobian_expression(compile_args, local_index):
+    """Regression: ``CellRidgeJacobian`` was missing from the expression generator.
+
+    No table was emitted, but the access layer still referenced it, so the
+    generated C failed to compile. Form kernels were unaffected.
+    """
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+
+    output = np.zeros((3, 1))
+    _tabulate_geometry_expression(
+        ufl.geometry.CellRidgeJacobian(mesh),
+        np.array([[0.3]]),
+        _TET_COORDS,
+        output,
+        local_index,
+        compile_args,
+    )
+
+    np.testing.assert_allclose(output, basix.cell.edge_jacobians(cell)[local_index])
+
+
+@pytest.mark.parametrize("local_index", range(4), ids=[f"facet{i}" for i in range(4)])
+def test_facet_orientation_expression(compile_args, local_index):
+    """Regression: ``FacetOrientation`` was missing from the expression generator.
+
+    Same failure mode as ``CellRidgeJacobian``: an undeclared table in the
+    generated C. Form kernels were unaffected.
+    """
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+
+    output = np.zeros(1)
+    _tabulate_geometry_expression(
+        ufl.geometry.FacetOrientation(mesh),
+        np.array([[0.33, 0.33]]),
+        _TET_COORDS,
+        output,
+        local_index,
+        compile_args,
+    )
+
+    assert output[0] == basix.cell.facet_orientations(cell)[local_index]
+
+
+@pytest.mark.parametrize(
+    "quantity,points",
+    [
+        # Ridge geometry outside a ridge: a cell kernel would dereference a
+        # NULL entity index, a facet kernel would read the wrong table row
+        (ufl.geometry.CellRidgeJacobian, [[0.2, 0.2, 0.2]]),
+        (ufl.geometry.CellRidgeJacobian, [[0.3, 0.3]]),
+        # Facet geometry outside a facet: in a ridge kernel the entity index
+        # runs past the end of the facet table
+        (ufl.geometry.FacetOrientation, [[0.3]]),
+        (ufl.geometry.FacetOrientation, [[0.2, 0.2, 0.2]]),
+    ],
+    ids=["ridge_on_cell", "ridge_on_facet", "facet_on_ridge", "facet_on_cell"],
+)
+def test_expression_rejects_geometry_of_another_entity(quantity, points):
+    """Geometry of a sub-entity is only allowed in a kernel over that entity."""
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    q = quantity(mesh)
+    expr = q[(0,) * len(q.ufl_shape)] if q.ufl_shape else q
+    with pytest.raises(RuntimeError, match=f"{quantity.__name__} is only defined on a"):
+        ffcx.codegeneration.jit.compile_expressions([(expr, np.array(points))])
+
+
+@pytest.mark.parametrize(
+    "quantity", [ufl.geometry.ReferenceCellVolume, ufl.geometry.ReferenceCellEdgeVectors]
+)
+def test_cell_geometry_in_cell_expression(compile_args, quantity):
+    """Geometry of the whole cell is allowed in a cell expression."""
+    cell = basix.CellType.tetrahedron
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(3,)))
+    q = quantity(mesh)
+
+    output = np.zeros(q.ufl_shape or (1,))
+    _tabulate_geometry_expression(
+        q, np.array([[0.2, 0.2, 0.2]]), _TET_COORDS, output, 0, compile_args
+    )
+
+    if quantity is ufl.geometry.ReferenceCellVolume:
+        exact = [basix.cell.volume(cell)]
+    else:
+        geometry = basix.geometry(cell)
+        exact = [geometry[j] - geometry[i] for i, j in basix.topology(cell)[1]]
+    np.testing.assert_allclose(output, exact)

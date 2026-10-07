@@ -32,6 +32,7 @@ from ufl.algorithms.apply_function_pullbacks import (
 )
 from ufl.algorithms.apply_geometry_lowering import apply_geometry_lowering
 from ufl.algorithms.apply_integral_scaling import apply_integral_scaling
+from ufl.algorithms.cancel_jacobian_products import cancel_jacobian_products
 from ufl.algorithms.compute_form_data import attach_estimated_degrees, preprocess_form
 
 # See TODOs at the call sites of these below:
@@ -300,12 +301,15 @@ def analyze_ufl_objects(
         | tuple[ufl.core.expr.Expr, npt.NDArray[np.floating]]
     ],
     scalar_type: npt.DTypeLike,
+    # do_cancel_jacobian_products: bool = True,
+    do_cancel_jacobian_products: bool = False,
 ) -> UFLData:
     """Analyze ufl object(s).
 
     Args:
         ufl_objects: UFL objects
         scalar_type: Scalar type that should be used for the analysis
+        do_cancel_jacobian_products: Whether to cancel jacobian products.
 
     Returns:
         A named tuple :class:`UFLData`.
@@ -338,7 +342,9 @@ def analyze_ufl_objects(
         else:
             raise TypeError("UFL objects not recognised.")
 
-    form_data = tuple(_analyze_form(form, scalar_type) for form in forms)
+    form_data = tuple(
+        _analyze_form(form, scalar_type, do_cancel_jacobian_products) for form in forms
+    )
     for data in form_data:
         elements += data.unique_sub_elements
         coordinate_elements += data.coordinate_elements
@@ -467,13 +473,16 @@ def _analyze_expression(
     return expression
 
 
-def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
+def _analyze_form(
+    form: ufl.Form, scalar_type: npt.DTypeLike, do_cancel_jacobian_products: bool
+) -> FormData:
     """Analyzes UFL form and attaches metadata.
 
     Args:
         form: forms
         scalar_type: Scalar type used for form. This is used to simplify
             real valued forms.
+        do_cancel_jacobian_products: Whether to cancel jacobian products.
 
     Returns:
         Form data computed by UFL with metadata attached
@@ -504,6 +513,7 @@ def _analyze_form(form: ufl.Form, scalar_type: npt.DTypeLike) -> FormData:
         preserve_geometry_types=(ufl.geometry.Jacobian,),  # type: ignore
         do_apply_restrictions=True,
         do_append_everywhere_integrals=False,  # do not add dx integrals to dx(i) in UFL
+        do_cancel_jacobian_products=do_cancel_jacobian_products,
         complex_mode=complex_mode,
     )
 
@@ -772,6 +782,7 @@ def compute_form_data(
     do_apply_integral_scaling: bool = False,
     do_apply_geometry_lowering: bool = False,
     preserve_geometry_types: tuple[ufl.geometry.GeometricQuantity, ...] = (),
+    do_cancel_jacobian_products=False,
     do_apply_default_restrictions: bool = True,
     do_apply_restrictions: bool = True,
     do_estimate_degrees: bool = True,
@@ -794,6 +805,12 @@ def compute_form_data(
             quantities to a smaller subset of quantities
         preserve_geometry_types: Set of quantities not to lower, and keep
             at its present stage for the form-compiler.
+        do_cancel_jacobian_products: Delay the expansion of the Jacobian
+            inverse into individual matrix entries, and cancel out index
+            contractions of the Jacobian with its inverse.  This
+            simplifies the expressions that Piola-mapped elements
+            generate, before lowering the surviving Jacobian quantities
+            as usual.
         do_apply_default_restrictions: Apply default restrictions, defined in
             {py:mod}`ufl.algorithms.apply_restrictions` to integrals if no
             restriction has been set.
@@ -894,6 +911,15 @@ def compute_form_data(
             form = apply_geometry_lowering(form, preserve_geometry_types)
             # Lower derivatives that may have appeared
             form = apply_derivatives(form)
+
+            if do_cancel_jacobian_products:
+                # Cancel contractions of the Jacobian with its inverse,
+                # which requires component tensors to be removed first
+                form = remove_component_tensors(form)
+                form = cancel_jacobian_products(form)
+                # Lower the Jacobian quantities that were preserved above
+                form = apply_geometry_lowering(form, preserve_geometry_types)
+                form = apply_derivatives(form)
 
     form = apply_coordinate_derivatives(form)
 

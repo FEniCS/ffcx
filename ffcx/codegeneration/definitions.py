@@ -12,12 +12,23 @@ import ufl
 
 import ffcx.codegeneration.lnodes as L
 from ffcx.analysis import ProxyCoefficient
+from ffcx.codegeneration import geometry
 from ffcx.definitions import entity_types
 from ffcx.ir.analysis.modified_terminals import ModifiedTerminal
 from ffcx.ir.elementtables import UniqueTableReferenceT
 from ffcx.ir.representationutils import QuadratureRule
 
 logger = logging.getLogger("ffcx")
+
+
+# Cap on unrolling, so a curved high-order simplex doesn't blow up compile
+# time. Tensor-product geometry always keeps the loop path regardless.
+_MAX_UNROLLED_COORDINATE_DOFS = 16
+
+
+def _should_unroll_coordinate_dofs(num_dofs: int, has_tensor_factorisation: bool) -> bool:
+    """Return whether a coordinate-dof linear combination should be unrolled."""
+    return not has_tensor_factorisation and num_dofs <= _MAX_UNROLLED_COORDINATE_DOFS
 
 
 def create_quadrature_index(quadrature_rule, quadrature_index_symbol):
@@ -244,10 +255,11 @@ class FFCXBackendDefinitions:
         domain = ufl.domain.extract_unique_domain(mt.terminal)
         assert isinstance(domain, ufl.Mesh)
         coordinate_element = domain.ufl_coordinate_element()
-        num_scalar_dofs = coordinate_element._sub_element.dim
+        num_scalar_dofs = coordinate_element.sub_elements[0].dim
 
         num_dofs = tabledata.values.shape[3]
         begin = tabledata.offset
+        assert begin is not None
 
         assert num_scalar_dofs == num_dofs
 
@@ -255,31 +267,118 @@ class FFCXBackendDefinitions:
         ttype = tabledata.ttype
 
         assert ttype != "zeros"
-        assert ttype != "ones"
 
         # Get access to element table
         ic_symbol = self.symbols.coefficient_dof_sum_index
         iq_symbol = self.symbols.quadrature_loop_index
-        ic = create_dof_index(tabledata, ic_symbol)
         iq = create_quadrature_index(quadrature_rule, iq_symbol)
-        FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
 
         dof_access = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)
+
+        parent_element = self.access.integration_domain_coordinate_element
 
         # coordinate dofs is always 3d
         dim = 3
         offset = 0
         if mt.restriction == "-":
-            offset = num_scalar_dofs * dim
+            # `coordinate_dofs` holds the two cells of the *integration
+            # domain* back to back. If terminal is on a submesh,
+            # we need the offset to get the second parent cell
+            restriction_dofs = (
+                num_scalar_dofs if parent_element is None else parent_element.sub_elements[0].dim
+            )
+            offset = restriction_dofs * dim
 
-        code = []
-        declaration = [L.VariableDecl(access, 0.0)]
-        body = [L.AssignAdd(access, dof_access[ic.global_index * dim + begin + offset] * FE)]
-        code = [L.create_nested_for_loops([ic], body)]
+        # A submesh's coordinate dofs are a subset of the integration
+        # domain's, so gather them through a closure-dofs table rather
+        # than indexing `coordinate_dofs` directly.
+        closure_table = None
+        if (
+            parent_element is not None
+            and (codim := parent_element.cell.topological_dimension - domain.topological_dimension)
+            != 0
+        ):
+            table_kind, expected_codim = geometry.CLOSURE_DOFS_TABLES.get(
+                self.entity_type, (None, None)
+            )
+            if table_kind is None or codim != expected_codim:
+                raise NotImplementedError(
+                    "Cannot gather a mixed-dimensional submesh's coordinate dofs: coefficient "
+                    f"domain has codimension {codim} relative to the integration domain, but "
+                    f"the integral's entity type is {self.entity_type!r}."
+                )
+            parent_cellname = parent_element.cell.cellname
+            closure_table = L.Symbol(f"{parent_cellname}_{table_kind}", dtype=L.DataType.INT)
+            entity = self.symbols.entity(self.entity_type, mt.restriction)
+            # A vertex table has one row, so the runtime permutation
+            # would be meaningless and possibly out of range.
+            perm = (
+                L.LiteralInt(0)
+                if domain.topological_dimension == 0
+                else self.symbols.entity_permutation(mt.restriction)
+            )
+            closure_index = closure_table[perm][entity]
+
+        # Map a submesh-local scalar dof index to its coordinate_dofs index.
+        if closure_table is None:
+
+            def _dof(local_index):
+                return local_index
+        else:
+
+            def _dof(local_index):
+                return closure_index[local_index]
+
+        code: list[L.LNode]
+        if ttype == "ones":
+            # Point meshes have DG-0 basis functions, so the table
+            # for this element has been dropped (as it is all ones).
+            # A coordinate basis is a partition of unity, so an all-ones
+            # table can only come from a single-dof element.
+            assert num_dofs == 1
+            declaration = [L.VariableDecl(access, dof_access[_dof(0) * dim + begin + offset])]
+            code = []
+            input = [dof_access]
+        elif not _should_unroll_coordinate_dofs(num_dofs, tabledata.has_tensor_factorisation):
+            # Many coordinate dofs: keep the runtime loop instead of one
+            # literal term per dof.
+            ic = create_dof_index(tabledata, ic_symbol)
+            FE, tables = self.access.table_access(
+                tabledata, self.entity_type, mt.restriction, iq, ic
+            )
+            code = []
+            declaration = [L.VariableDecl(access, 0.0)]
+            body = [
+                L.AssignAdd(access, dof_access[_dof(ic.global_index) * dim + begin + offset] * FE)
+            ]
+            code = [L.create_nested_for_loops([ic], body)]
+            input = [dof_access, *tables]
+        else:
+            # Few dofs: emit a single literal-indexed sum instead of a
+            # runtime loop. This avoids GCC's vectoriser mis-vectorising a
+            # tiny fixed-trip-count reduction into an expensive
+            # permute-then-horizontal-sum sequence, and lets the table's
+            # exact 0.0/+-1.0 low-order values constant-fold away.
+            terms = []
+            coord_tables: list[L.Symbol] = []
+            for k in range(num_dofs):
+                ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
+                FE_k, tables_k = self.access.table_access(
+                    tabledata, self.entity_type, mt.restriction, iq, ic_k
+                )
+                for t in tables_k:
+                    if t not in coord_tables:
+                        coord_tables.append(t)
+                terms.append(dof_access[_dof(k) * dim + begin + offset] * FE_k)
+            declaration = [L.VariableDecl(access, L.Sum(terms))]
+            code = []
+            input = [dof_access, *coord_tables]
+
+        if closure_table is not None:
+            input.append(closure_table)
 
         name = type(mt.terminal).__name__
         output = [access]
-        input = [dof_access, *tables]
         annotations = [L.Annotation.fuse]
 
         # assert input and output are Symbol objects

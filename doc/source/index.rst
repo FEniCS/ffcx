@@ -9,6 +9,8 @@ It is developed at https://github.com/FEniCS/ffcx.
    :maxdepth: 2
    :caption: Contents:
 
+   kernel-names
+
 API reference
 =============
 
