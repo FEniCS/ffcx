@@ -40,8 +40,8 @@ class ModifiedTerminal:
         flat_component: int,
         global_derivatives: tuple[int, ...],
         local_derivatives: tuple[int, ...],
-        averaged: None | str,
-        restriction: None | str,
+        averaged: str | None,
+        restriction: str | None,
     ):
         """Initialise.
 
