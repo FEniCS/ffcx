@@ -53,7 +53,10 @@ parser.add_argument("-p", "--profile", action="store_true", help="Enable profili
 for opt_name, (arg_type, opt_val, opt_desc, choices) in FFCX_DEFAULT_OPTIONS.items():
     if isinstance(opt_val, bool):
         parser.add_argument(
-            f"--{opt_name}", action="store_true", help=f"{opt_desc} (default={opt_val})"
+            f"--{opt_name}",
+            action=argparse.BooleanOptionalAction,
+            default=None,
+            help=f"{opt_desc} (default={opt_val})",
         )
     else:
         parser.add_argument(

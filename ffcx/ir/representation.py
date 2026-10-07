@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import itertools
 import logging
+import re
 import typing
 
 if typing.TYPE_CHECKING:
@@ -111,6 +112,8 @@ class IntegralIR(typing.NamedTuple):
     proxy_pack_shape: list[tuple[int, ...]]
     coefficients_in_proxy: list[ufl.Coefficient]
     proxy_coefficient_offsets: list[int]
+    kernel_name: str | None
+    kernel_name_is_explicit: bool
 
 
 class ExpressionIR(typing.NamedTuple):
@@ -273,12 +276,29 @@ def compute_ir(
             analysis.element_numbers.keys(),
             integral_names,
             expression_names,
+            object_names,
+            prefix,
             options,
             visualise,
         )
         for (i, fd) in enumerate(analysis.form_data)
     ]
     ir_integrals = list(itertools.chain(*irs))
+
+    # A kernel name must identify one generated kernel in an output file.
+    kernel_names: set[str] = set()
+    for integral_ir in ir_integrals:
+        if integral_ir.kernel_name is None:
+            continue
+        for domain in {i[0] for i in integral_ir.expression.integrand}:
+            kernel_name = (
+                integral_ir.kernel_name
+                if integral_ir.kernel_name_is_explicit
+                else f"tabulate_tensor_{integral_ir.kernel_name}_{domain.name}"
+            )
+            if kernel_name in kernel_names:
+                raise ValueError(f"Duplicate FFCx kernel name '{kernel_name}'.")
+            kernel_names.add(kernel_name)
 
     integral_domains = {
         i.expression.name: set(j[0] for j in i.expression.integrand.keys()) for a in irs for i in a
@@ -322,6 +342,8 @@ def _compute_integral_ir(
     unique_elements: typing.Iterable[basix.ufl._ElementBase],
     integral_names: dict[tuple[int, int], str],
     expression_names: dict[ufl.core.expr.Expr, str],
+    object_names: dict[int, str],
+    prefix: str,
     options,
     visualise,
 ) -> list[IntegralIR]:
@@ -334,6 +356,8 @@ def _compute_integral_ir(
         integral_names: Map from `(form_index, integral_index)` to the name of the integral.
         expression_names: Map from original expression to the name of the expression.
             Used for sub-expressions that are coefficients in the integral (internal proxies).
+        object_names: Map from object Python id to object name.
+        prefix: Namespace prefix for generated code.
         options: Options for the intermediate representation. 'part': If the full tensor or
             the diagonal of the tensor should be generated. Only valid for bi-linear forms.
             'sum_factorization': If sum factorization should be used. Only has an effect on cell
@@ -376,6 +400,7 @@ def _compute_integral_ir(
             "shape": (),
             "coordinate_element_hash": itg_data.domain.ufl_coordinate_element().basix_hash(),
             "number_coordinate_dofs": itg_data.domain.ufl_coordinate_element().dim,
+            "integration_domain_coordinate_element": itg_data.domain.ufl_coordinate_element(),
         }
         # Initial population of what will become the IntegralIR
         ir = {
@@ -383,6 +408,45 @@ def _compute_integral_ir(
             "enabled_coefficients": itg_data.enabled_coefficients,
             "part": TensorPart.from_str(options["part"]),
         }
+
+        # Use an explicit metadata name when supplied. Otherwise, derive a
+        # stable name from the form variable in the UFL file. Forms compiled
+        # through the API without an object name retain hash-based names.
+        metadata_kernel_names = []
+        for integral in itg_data.integrals:
+            name = integral.metadata().get("ffcx_kernel_name")
+            if name is not None and not isinstance(name, str):
+                raise ValueError("'ffcx_kernel_name' metadata must be a string.")
+            metadata_kernel_names.append(name)
+
+        unique_kernel_names = set(metadata_kernel_names)
+        if len(unique_kernel_names) != 1:
+            raise ValueError(
+                "Integrals grouped into one FFCx kernel must use the same "
+                "'ffcx_kernel_name' metadata."
+            )
+
+        metadata_kernel_name = unique_kernel_names.pop()
+
+        form_name = object_names.get(id(form_data.original_form))
+        name_parts: tuple[str, ...]
+        if metadata_kernel_name is not None:
+            name_parts = (metadata_kernel_name,)
+            ir["kernel_name_is_explicit"] = True
+        elif form_name is not None:
+            name_parts = (prefix, form_name, integral_type, str(itg_data_index))
+            ir["kernel_name_is_explicit"] = False
+        else:
+            name_parts = ()
+            ir["kernel_name_is_explicit"] = False
+
+        kernel_name = "_".join(name for name in name_parts if name)
+        if kernel_name and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", kernel_name) is None:
+            raise ValueError(
+                f"Invalid FFCx kernel name '{kernel_name}'. Kernel names must contain only "
+                "letters, digits and underscores, and must not start with a digit."
+            )
+        ir["kernel_name"] = kernel_name or None
 
         # Determine if the form compiler has been asked to diagonalize a
         # bilinear form (by only assembling the diagonal entries, modify rank if True)
@@ -725,6 +789,8 @@ def _compute_expression_ir(
             base_ir["entity_type"] = "cell"
         elif tdim - 1 == pdim:
             base_ir["entity_type"] = "facet"
+        elif tdim - 2 == pdim:
+            base_ir["entity_type"] = "ridge"
         else:
             raise ValueError(
                 f"Expression on domain with topological dimension {tdim}"
@@ -747,6 +813,9 @@ def _compute_expression_ir(
     )
     base_ir["number_coordinate_dofs"] = (
         0 if expr_domain is None else expr_domain.ufl_coordinate_element().dim
+    )
+    base_ir["integration_domain_coordinate_element"] = (
+        None if expr_domain is None else expr_domain.ufl_coordinate_element()
     )
 
     weights = np.array([1.0] * points.shape[0])

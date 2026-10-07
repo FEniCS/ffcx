@@ -5,6 +5,7 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import os
+import re
 import sys
 import typing
 
@@ -2253,3 +2254,171 @@ def test_ufl_complex_extraction(
         ffi.NULL,
     )
     assert np.isclose(J[0], val)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+def test_mixed_constants(compile_args, dtype):
+    """Check that you can use constants from different meshes in a single form."""
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "quadrilateral", 1, shape=(3,)))
+    domain2 = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(3,)))
+    domain3 = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+
+    c = ufl.Constant(domain)
+    c2 = ufl.Constant(domain2)
+    c3 = ufl.Constant(domain3)
+    J = c * c2 * c3 * ufl.dx(domain=domain)
+    forms = [J]
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    ffi = module.ffi
+    form = compiled_forms[0]
+    default_integral = form.form_integrals[0]
+
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    J = np.zeros(1, dtype=dtype)
+    coords = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 1.0, 2.0, 0.0], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    c = np.array([4.0, 3.0, 2.1], dtype=dtype)
+
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", J.ctypes.data),
+        ffi.NULL,
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    assert np.isclose(J[0], 2 * np.prod(c))
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "float64",
+        pytest.param(
+            "complex128",
+            marks=pytest.mark.xfail(
+                sys.platform.startswith("win32"),
+                raises=NotImplementedError,
+                reason="missing _Complex",
+            ),
+        ),
+    ],
+)
+@pytest.mark.parametrize("gdim", [1, 2, 3])
+def test_point_mesh(compile_args, dtype, gdim):
+    """Check spatial coordinates on a point mesh compiles."""
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "point", 0, shape=(gdim,), discontinuous=True))
+    x = ufl.SpatialCoordinate(domain)
+
+    def f(x):
+        return sum((i + 1) * x[i] ** (i + 1) for i in range(gdim))
+
+    J = f(x) * ufl.dx(domain=domain)
+    forms = [J]
+    compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms,
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    ffi = module.ffi
+    form = compiled_forms[0]
+    default_integral = form.form_integrals[0]
+    xdtype = dtype_to_scalar_dtype(dtype)
+
+    J = np.zeros(1, dtype=dtype)
+
+    # Coordinate dofs are always three-dimensional, independent of gdim
+    coords = np.array([1.3, 2.4, 0.8], dtype=xdtype)
+
+    c_type, c_xtype = dtype_to_c_type(dtype), dtype_to_c_type(xdtype)
+
+    c = np.array([], dtype=dtype)
+
+    kernel = getattr(default_integral, f"tabulate_tensor_{dtype}")
+    kernel(
+        ffi.cast(f"{c_type} *", J.ctypes.data),
+        ffi.NULL,
+        ffi.cast(f"{c_type} *", c.ctypes.data),
+        ffi.cast(f"{c_xtype} *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+    assert np.isclose(J[0], f(coords))
+
+
+@pytest.mark.parametrize(
+    "mixed_dimensional,expected_variants",
+    [(False, {1}), (True, {1, 2})],
+    ids=["single_domain", "mixed_dimensional"],
+)
+def test_ridge_table_permutation_variants(compile_args, mixed_dimensional, expected_variants):
+    """Regression: a single-domain ridge integral emitted a permuted table.
+
+    Its element tables carried two quadrature permutation variants while the
+    integral reported ``needs_facet_permutations = False``, so an assembler
+    that trusts the flag could never select the second variant and the table
+    was twice the size it needed to be. A mixed-dimensional ridge integral
+    does need the second variant, because the parent cell may see the ridge
+    oriented opposite to the submesh cell.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    if mixed_dimensional:
+        codomain = ufl.Mesh(basix.ufl.element("Lagrange", "interval", 1, shape=(3,)))
+        space = ufl.FunctionSpace(codomain, basix.ufl.element("Lagrange", "interval", 1))
+        integrand = ufl.Coefficient(space) * ufl.SpatialCoordinate(domain)[0]
+    else:
+        space = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "tetrahedron", 1))
+        integrand = ufl.Coefficient(space) * ufl.SpatialCoordinate(domain)[0]
+
+    _, _, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [integrand * ufl.Measure("ridge", domain=domain)],
+        options={"scalar_type": "float64"},
+        cffi_extra_compile_args=compile_args,
+    )
+
+    # Element tables are declared as [permutation][entities][points][dofs].
+    # Match the declaration only, so that indexing into a table is not counted.
+    variants = {int(n) for n in re.findall(r"double FE\w*\[(\d+)\]", implementation)}
+    assert variants, "no element tables were generated"
+    assert variants == expected_variants
+
+
+@pytest.mark.parametrize("measure", ["dx", "ds"])
+def test_form_rejects_ridge_geometry_outside_ridge_integral(measure):
+    """Ridge geometry is only allowed in a ridge integral.
+
+    UFL checks facet geometry against the integral type, but not ridge
+    geometry, so this is caught in FFCx. Previously a cell integral compiled
+    to a read through a NULL entity index, and a facet integral indexed the
+    ridge table by a facet index.
+    """
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, basix.ufl.element("Lagrange", "tetrahedron", 1))
+    integrand = ufl.geometry.CellRidgeJacobian(domain)[0, 0] * ufl.TestFunction(space)
+    with pytest.raises(RuntimeError, match="CellRidgeJacobian is only defined on a ridge"):
+        ffcx.codegeneration.jit.compile_forms([integrand * ufl.Measure(measure, domain=domain)])

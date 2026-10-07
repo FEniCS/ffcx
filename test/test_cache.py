@@ -1,12 +1,19 @@
-# Copyright (C) 2019 Chris Richardson
+# Copyright (C) 2019-2026 Chris Richardson and Jack S. Hale
 #
 # This file is part of FFCx. (https://www.fenicsproject.org)
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import importlib._bootstrap_external
+import itertools
+import os
 import sys
+import sysconfig
+from pathlib import Path
+from unittest import mock
 
 import basix.ufl
+import pytest
 import ufl
 
 import ffcx.codegeneration.jit
@@ -39,3 +46,135 @@ def test_cache_modes(compile_args):
 
     assert newname == tmpname
     assert newfile != tmpfile
+
+
+def test_cache_hit_does_not_scan_cache_dir(compile_args, tmp_path):
+    """A cache hit must not list the cache directory.
+
+    The finder previously used listed the whole directory on every hit,
+    and the cache grows by four files per form ever compiled.
+
+    ``importlib._bootstrap_external`` binds ``listdir`` at import time,
+    so intercept it there rather than on ``os``.
+    """
+    bootstrap = importlib._bootstrap_external
+    if not hasattr(bootstrap, "_os") or not hasattr(bootstrap._os, "listdir"):
+        pytest.skip("cannot intercept the import system's directory listing")
+
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    forms = [ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx]
+
+    cache_dir = tmp_path / "cache"
+    _, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
+    )
+    del sys.modules[module.__name__]
+    # Drop the memo so the lookup reaches the file system.
+    ffcx.codegeneration.jit._loaded_modules.clear()
+
+    listed = []
+    real_listdir = bootstrap._os.listdir
+
+    def counting_listdir(path="."):
+        listed.append(os.fspath(path))
+        return real_listdir(path)
+
+    with mock.patch.object(bootstrap._os, "listdir", counting_listdir):
+        _, cached, _ = ffcx.codegeneration.jit.compile_forms(
+            forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
+        )
+
+    assert cached.__name__ == module.__name__
+    scanned = [p for p in listed if Path(p).resolve() == cache_dir.resolve()]
+    assert not scanned, f"cache hit listed the cache directory {len(scanned)} time(s)"
+
+
+def test_loaded_module_reused_in_process(compile_args, tmp_path):
+    """A module already imported in this process is not imported again.
+
+    The round trip costs a ``module_from_spec``/``exec_module`` pair plus
+    several stats, paid on every hit for an already-mapped module.
+    """
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    forms = [ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx]
+
+    cache_dir = tmp_path / "cache"
+    ffcx.codegeneration.jit._loaded_modules.clear()
+    objects, module, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
+    )
+
+    with mock.patch.object(ffcx.codegeneration.jit, "_load_extension_module") as load:
+        again_objects, again, _ = ffcx.codegeneration.jit.compile_forms(
+            forms, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
+        )
+    load.assert_not_called()
+    assert again is module
+    assert again_objects == objects
+
+
+def test_loaded_module_not_reused_across_cache_dirs(compile_args, tmp_path):
+    """The memo is per cache directory, so a second cache still compiles."""
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    forms = [ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx]
+
+    ffcx.codegeneration.jit._loaded_modules.clear()
+    _, first, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=tmp_path / "a", cffi_extra_compile_args=compile_args
+    )
+    _, second, _ = ffcx.codegeneration.jit.compile_forms(
+        forms, cache_dir=tmp_path / "b", cffi_extra_compile_args=compile_args
+    )
+    assert first.__name__ == second.__name__
+    assert Path(first.__file__).parent != Path(second.__file__).parent
+
+
+def test_repeated_compiles_hit_cache(compile_args, tmp_path):
+    """One form must compile once, even as the build variables change.
+
+    On macOS setuptools rewrites the sysconfig build variables in place on
+    every compile, so a signature built from them changes as compilation
+    proceeds and no cache entry is ever found again.
+    """
+    osx_support = pytest.importorskip("_osx_support")
+    real = sysconfig.get_config_var
+    reads = itertools.count()
+
+    def drifting(name):
+        if name in osx_support._UNIVERSAL_CONFIG_VARS:
+            return f"{real(name)} -arch arm64{' ' * next(reads)}"
+        return real(name)
+
+    element = basix.ufl.element("Lagrange", "triangle", 1)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "triangle", 1, shape=(2,)))
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    forms = [ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx]
+
+    ffcx.codegeneration.jit._loaded_modules.clear()
+    compiled = []
+    real_compile = ffcx.codegeneration.jit._compile_objects
+
+    def counting_compile(*args, **kwargs):
+        compiled.append(args[3])
+        return real_compile(*args, **kwargs)
+
+    with (
+        mock.patch.object(sysconfig, "get_config_var", drifting),
+        mock.patch.object(ffcx.codegeneration.jit, "_compile_objects", counting_compile),
+    ):
+        for _ in range(5):
+            _, module, _ = ffcx.codegeneration.jit.compile_forms(
+                forms, cache_dir=tmp_path / "cache", cffi_extra_compile_args=compile_args
+            )
+
+    assert compiled == [module.__name__]

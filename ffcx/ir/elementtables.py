@@ -132,9 +132,9 @@ def get_ffcx_table_values(
 
     if integral_type == "expression":
         # FFCx tables for expression are generated as either interior cell points
-        # or points on a facet
-        if entity_type == "cell":
-            integral_type = "cell"
+        # or points on a facet or ridge
+        if entity_type in ("cell", "ridge"):
+            integral_type = entity_type
         else:
             integral_type = "exterior_facet"
 
@@ -441,7 +441,7 @@ def build_optimized_tables(
             integral_type == "interior_facet"
             or integral_type == "ridge"
             or (is_mixed_dim and codim == 0)
-            or (integral_type == "expression" and entity_type == "facet")
+            or (integral_type == "expression" and entity_type in ("facet", "ridge"))
         ):
             if entity_type == "facet":
                 if tdim == 1 or codim == 1:
@@ -522,10 +522,15 @@ def build_optimized_tables(
                         t = new_table[0]
                         t["array"] = np.vstack([td["array"] for td in new_table])
             elif entity_type == "ridge":
-                if tdim < 3 or codim == 2:
-                    # If ridge integral over vertex no permutation is needed,
-                    # or if it is a single domain ridge integral,
-                    # as ridges has a global orientation in DOLFINx.
+                if tdim < 3 or codim == 2 or (integral_type == "ridge" and not is_mixed_dim):
+                    # No permutation is needed when the ridge is a vertex
+                    # (tdim < 3), when the element is on the ridges
+                    # themselves (codim 2, the entity is the cell), or for
+                    # a single-domain ridge integral, where each ridge is
+                    # integrated once and there is no other ordering to
+                    # agree with. An expression is excluded: its caller
+                    # chooses the entities, so its points follow the global
+                    # ridge orientation as they do for facets.
                     t = get_ffcx_table_values(
                         quadrature_rule.points,
                         cell,
@@ -555,6 +560,11 @@ def build_optimized_tables(
                         )
                     t = new_table[0]
                     t["array"] = np.vstack([td["array"] for td in new_table])
+            else:
+                raise NotImplementedError(
+                    f"Cannot build a permuted element table for integral type {integral_type!r} "
+                    f"with entity type {entity_type!r} at codimension {codim}."
+                )
         else:
             t = get_ffcx_table_values(
                 quadrature_rule.points,
@@ -602,14 +612,13 @@ def build_optimized_tables(
 
         tensor_factors: list[UniqueTableReferenceT] | None = None
         tensor_perm = None
+        factors = element.get_tensor_product_representation()
         if (
             use_sum_factorization
-            and element.has_tensor_product_factorisation
-            and len(element.get_tensor_product_representation()) == 1
+            and factors is not None
+            and len(factors) == 1
             and quadrature_rule.has_tensor_factors
         ):
-            factors = element.get_tensor_product_representation()
-
             tensor_factors = []
             for i, j in enumerate(factors[0]):
                 pts = quadrature_rule.tensor_factors[i][0]
@@ -633,8 +642,6 @@ def build_optimized_tables(
                     tensor_factors.append(ut)
                     mt_tables[ut.name] = ut
                     tensor_n += 1
-
-            tensor_perm = factors[0][1]
 
         if mt.restriction == "-" and isinstance(mt.terminal, ufl.classes.FormArgument):
             # offset = 0 or number of element dofs, if restricted to "-"
