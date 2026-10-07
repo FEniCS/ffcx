@@ -208,8 +208,8 @@ def _same_expression(a: ufl.core.expr.Expr, b: ufl.core.expr.Expr) -> bool:
 
     The operand of an interpolation is compared against one built here, which
     has not been through the passes the form has: the geometry of a pull back is
-    lowered in the form, and each pull back numbers its free indices from a
-    global counter.
+    lowered in the form, cancelling Jacobian products removes its component
+    tensors, and each pull back numbers its free indices from a global counter.
 
     Args:
         a: An expression.
@@ -221,6 +221,7 @@ def _same_expression(a: ufl.core.expr.Expr, b: ufl.core.expr.Expr) -> bool:
         for _ in range(2):
             expression = apply_geometry_lowering(expression, preserve)
             expression = apply_derivatives(expression)
+        expression = remove_component_tensors(expression)
         return ufl.algorithms.renumbering.renumber_indices(expression)
 
     return bool(normalise(a) == normalise(b))

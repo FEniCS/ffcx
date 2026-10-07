@@ -601,13 +601,15 @@ def test_interpolate_second_derivative(compile_args, dtype, ngrads, block_size):
     assert np.abs(A - expected).max() / scale < (1e-6 if dtype == "float64" else 1e-2)
 
 
+@pytest.mark.parametrize("do_cancel_jacobian_products", [False, True])
 @pytest.mark.parametrize("family", ["Lagrange", "N1curl"])
-def test_interpolate_argument_is_compile_time(family):
+def test_interpolate_argument_is_compile_time(family, do_cancel_jacobian_products):
     """Interpolating an argument itself must not need a table built per cell.
 
     The operand is compared against the argument as it stands after the pull
-    backs, which lower the geometry of a Piola map, so the comparison has to be
-    made up to that lowering.
+    backs, which lower the geometry of a Piola map, and after cancelling
+    Jacobian products, which removes its component tensors, so the comparison
+    has to be made up to both.
     """
     cell = "triangle"
     domain = ufl.Mesh(basix.ufl.element("Lagrange", cell, 1, shape=(2,)))
@@ -624,6 +626,7 @@ def test_interpolate_argument_is_compile_time(family):
         do_apply_function_pullbacks=True,
         do_apply_geometry_lowering=True,
         preserve_geometry_types=(ufl.classes.Jacobian,),
+        do_cancel_jacobian_products=do_cancel_jacobian_products,
     )
     interpolations = [
         node
