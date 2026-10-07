@@ -721,7 +721,7 @@ class IntermediateCoefficientReplacer(DAGTraverser):
         Args:
             o: `ufl.core.expr.Expr` to be processed.
             reference_value: Whether `ReferenceValue` has been applied or not.
-            reference_grad: Number of `ReferenceGrad`s that have been applied.
+            reference_grad: Number of `ReferenceGrad` operators that have been applied.
             restricted: '+', '-', or None.
         """
         return super().process(o)
