@@ -565,7 +565,13 @@ class IntegralGenerator:
             positions[1:] = np.cumsum(sizes)
 
             sub_coefficients = L.Symbol(f"arg_sub_coeff_{i}", dtype=L.DataType.SCALAR)
-            declarations.append(L.ArrayDecl(sub_coefficients, sizes=max(int(positions[-1]), 1)))
+            declarations.append(
+                L.ArrayDecl(
+                    sub_coefficients,
+                    sizes=max(int(positions[-1]), 1),
+                    values=None if active else [0.0], # ensure no uninitalised memory warnings
+                )
+            )
             for j, coefficient in enumerate(active):
                 offset = self.ir.expression.coefficient_offsets[coefficient]
                 statements.append(
