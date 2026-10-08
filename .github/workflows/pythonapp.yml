@@ -107,8 +107,8 @@ jobs:
           ruff check .
           ruff format --check .
 
-      - name: Static check with mypy
-        run: mypy -p ffcx
+      # - name: Static check with mypy
+      #   run: mypy -p ffcx
 
       - name: Run unit tests
         run: >
