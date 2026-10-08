@@ -9,10 +9,14 @@ import logging
 from functools import singledispatch
 
 from ufl import as_ufl, conditional
-from ufl.classes import Argument, Conditional, Conj, Division, Product, Sum, Zero
+from ufl.classes import Conditional, Conj, Division, Product, Sum, Zero
 
 from ffcx.ir.analysis.graph import ExpressionGraph
-from ffcx.ir.analysis.modified_terminals import analyse_modified_terminal, strip_modified_terminal
+from ffcx.ir.analysis.modified_terminals import (
+    analyse_modified_terminal,
+    modified_terminal_arguments,
+    strip_modified_terminal,
+)
 
 logger = logging.getLogger("ffcx")
 
@@ -22,7 +26,7 @@ def build_argument_indices(S):
     arg_indices = []
     for i, v in S.nodes.items():
         arg = strip_modified_terminal(v["expression"])
-        if isinstance(arg, Argument):
+        if arg is not None and modified_terminal_arguments(arg):
             arg_indices.append(i)
 
     # Make a canonical ordering of vertex indices for modified arguments
@@ -269,8 +273,11 @@ def compute_argument_factorization(S, rank):
 
         if si in arg_indices:
             assert len(deps) == 0
-            # v is a modified Argument
-            factors = {(si,): one_index}
+            # v is a modified Argument. An interpolation stands for every
+            # argument its expression is linear in, so it takes that many
+            # element tensor axes: repeat the vertex once per axis.
+            slots = len(modified_terminal_arguments(strip_modified_terminal(v)))
+            factors = {(si,) * slots: one_index}
         else:
             fac = [S.nodes[d]["factors"] for d in deps]
             if not any(fac):

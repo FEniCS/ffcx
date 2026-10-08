@@ -7,6 +7,7 @@
 
 import logging
 
+from ufl.algorithms.analysis import extract_arguments
 from ufl.classes import (
     Argument,
     CellAvg,
@@ -15,6 +16,7 @@ from ufl.classes import (
     FormArgument,
     Grad,
     Indexed,
+    Interpolate,
     Jacobian,
     ReferenceGrad,
     ReferenceValue,
@@ -111,11 +113,12 @@ class ModifiedTerminal:
         The key is based on the properties of the modified terminal.
         Used in factorization but moved here for closeness with ModifiedTerminal attributes.
         """
-        t = self.terminal
-        assert isinstance(t, Argument)
-        n = t.number()
+        arguments = modified_terminal_arguments(self.terminal)
+        assert arguments
+        # An interpolation may stand for several arguments; order by the first.
+        n = arguments[0].number()
         assert n >= 0
-        p = t.part()
+        p = arguments[0].part()
         rv = self.reference_value
         # bs = self.base_shape
         # bsy = self.base_symmetry
@@ -147,10 +150,33 @@ class ModifiedTerminal:
         )
 
 
+def modified_terminal_arguments(terminal):
+    """Get the arguments that a core terminal of a modified terminal stands for.
+
+    Ordered by argument number. An interpolation stands for the arguments its
+    expression is linear in, so it occupies one element tensor axis per
+    argument; anything that is not an argument stands for none.
+
+    Args:
+        terminal: The core terminal of a modified terminal.
+    """
+    if isinstance(terminal, Interpolate):
+        (operand,) = terminal.ufl_operands
+        arguments = extract_arguments(operand)
+        return tuple(sorted(arguments, key=lambda argument: argument.number()))
+    return (terminal,) if isinstance(terminal, Argument) else ()
+
+
 def is_modified_terminal(v):
-    """Check if v is a terminal or a terminal wrapped in terminal modifier types."""
+    """Check if v is a terminal or a terminal wrapped in terminal modifier types.
+
+    An interpolation counts as a terminal: the expression it interpolates is
+    evaluated separately, at the interpolation points of its target element.
+    """
     while not v._ufl_is_terminal_:
-        if v._ufl_is_terminal_modifier_:
+        if isinstance(v, Interpolate):
+            return True
+        elif v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
         else:
             return False
@@ -160,7 +186,9 @@ def is_modified_terminal(v):
 def strip_modified_terminal(v):
     """Extract core Terminal from a modified terminal or return None."""
     while not v._ufl_is_terminal_:
-        if v._ufl_is_terminal_modifier_:
+        if isinstance(v, Interpolate):
+            return v
+        elif v._ufl_is_terminal_modifier_:
             v = v.ufl_operands[0]
         else:
             return None
@@ -189,7 +217,7 @@ def analyse_modified_terminal(expr):
 
     # Start with expr and strip away layers of modifiers
     t = expr
-    while not t._ufl_is_terminal_:
+    while not (t._ufl_is_terminal_ or isinstance(t, Interpolate)):
         if isinstance(t, Indexed):
             if component is not None:
                 raise RuntimeError("Got twice indexed terminal.")
@@ -275,9 +303,9 @@ def analyse_modified_terminal(expr):
 
     # Get the shape of the core terminal or its reference value, this is
     # the shape that component refers to
-    if isinstance(t, FormArgument):
-        assert hasattr(t, "ufl_function_space")
-        element = t.ufl_function_space().ufl_element()
+    if isinstance(t, FormArgument | Interpolate):
+        # An interpolation is a finite element field of its target space.
+        element = t.ufl_element()
         if reference_value:
             # Ignoring symmetry, assuming already applied in conversion
             # to reference frame
