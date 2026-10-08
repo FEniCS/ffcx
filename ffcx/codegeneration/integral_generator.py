@@ -569,7 +569,7 @@ class IntegralGenerator:
                 L.ArrayDecl(
                     sub_coefficients,
                     sizes=max(int(positions[-1]), 1),
-                    values=None if active else [0.0], # ensure no uninitalised memory warnings
+                    values=None if active else [0.0],  # ensure no uninitalised memory warnings
                 )
             )
             for j, coefficient in enumerate(active):
