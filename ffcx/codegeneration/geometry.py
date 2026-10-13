@@ -17,10 +17,10 @@ from ffcx.definitions import entity_types
 from ffcx.ir.integral import IntermediateIntegrandIR
 
 # Per entity_type: the table a mixed-dimensional submesh's coordinate
-# dofs are gathered through, and the codimension it must have. Keyed by
-# "vertex" rather than "peak", which is not an entity_type in FFCx.
-# Codimension 2 is the cap: `ffcx/ir/elementtables.py` rejects anything
-# higher, so a 3D parent never reaches codegen.
+# dofs are gathered through, and the codimension it must have. A vertex
+# integral gathers through the peak table. Codimension 2 is the cap:
+# `ffcx/ir/elementtables.py` rejects anything higher, so a 3D parent, and
+# with it the "peak" entity type, never reaches codegen.
 CLOSURE_DOFS_TABLES: dict[str, tuple[str, int]] = {
     "facet": ("facet_closure_dofs", 1),
     "ridge": ("ridge_closure_dofs", 2),

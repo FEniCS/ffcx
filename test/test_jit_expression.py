@@ -11,7 +11,10 @@ import numpy as np
 import pytest
 import ufl
 
+import ffcx.analysis
 import ffcx.codegeneration.jit
+import ffcx.ir.representation
+import ffcx.options
 
 
 def test_matvec(compile_args):
@@ -908,3 +911,83 @@ def test_cell_geometry_in_cell_expression(compile_args, quantity):
         geometry = basix.geometry(cell)
         exact = [geometry[j] - geometry[i] for i, j in basix.topology(cell)[1]]
     np.testing.assert_allclose(output, exact)
+
+
+@pytest.mark.parametrize(
+    "cellname", ["interval", "triangle", "quadrilateral", "tetrahedron", "hexahedron"]
+)
+def test_expression_entity_type_from_point_dimension(cellname):
+    """Points of dimension tdim to tdim - 3 give a cell, facet, ridge or peak
+    Expression. Zero-dimensional points are a facet on a 1D cell and a ridge on
+    a 2D cell, so only a 3D cell has peaks. Points of dimension above tdim are
+    rejected.
+    """
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cellname, 1, shape=(3,)))
+    tdim = mesh.ufl_cell().topological_dimension
+    x = ufl.SpatialCoordinate(mesh)
+    options = ffcx.options.get_options()
+
+    def entity_type(pdim):
+        points = np.zeros((1, pdim))
+        analysis = ffcx.analysis.analyze_ufl_objects([(x[0], points)], options["scalar_type"])
+        ir = ffcx.ir.representation.compute_ir(analysis, {}, "", options, False)
+        return ir.expressions[0].expression.entity_type
+
+    for pdim in range(tdim + 1):
+        assert entity_type(pdim) == ("cell", "facet", "ridge", "peak")[tdim - pdim]
+
+    with pytest.raises(
+        ValueError, match=f"dimension {tdim} with points of dimension {tdim + 1} not supported"
+    ):
+        entity_type(tdim + 1)
+
+
+@pytest.mark.parametrize(
+    "cellname,coords",
+    [
+        ("tetrahedron", [[0.3, 0.1, 0.0], [1.3, 0.2, 0.1], [0.4, 2.0, 0.3], [0.2, 0.5, 1.7]]),
+        (
+            "hexahedron",
+            [
+                [0.1, 0.0, 0.0],
+                [1.2, 0.1, 0.0],
+                [0.0, 1.1, 0.2],
+                [1.3, 1.0, 0.1],
+                [0.0, 0.2, 1.0],
+                [1.1, 0.0, 1.2],
+                [0.2, 1.0, 1.1],
+                [1.0, 1.3, 1.0],
+            ],
+        ),
+    ],
+)
+def test_expression_peak(compile_args, cellname, coords):
+    """Test an expression evaluated on the peaks (vertices) of a 3D cell.
+
+    A vertex has no interior, so the points array has zero columns.
+    """
+    mesh = ufl.Mesh(basix.ufl.element("Lagrange", cellname, 1, shape=(3,)))
+    points = np.zeros((1, 0), dtype=np.float64)
+    obj, _, _ = ffcx.codegeneration.jit.compile_expressions(
+        [(ufl.SpatialCoordinate(mesh), points)], cffi_extra_compile_args=compile_args
+    )
+    expression = obj[0]
+    assert expression.entity_dimension == 0
+
+    ffi = cffi.FFI()
+    coords = np.array(coords, dtype=np.float64)
+    empty = np.zeros(0, dtype=np.float64)
+    quad_perm = np.zeros(1, dtype=np.uint8)
+    for local_index in range(coords.shape[0]):
+        output = np.zeros(3, dtype=np.float64)
+        entity_index = np.array([local_index], dtype=np.intc)
+        expression.tabulate_tensor_float64(
+            ffi.cast("double *", output.ctypes.data),
+            ffi.cast("double *", empty.ctypes.data),
+            ffi.cast("double *", empty.ctypes.data),
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.cast("int *", entity_index.ctypes.data),
+            ffi.cast("uint8_t *", quad_perm.ctypes.data),
+            ffi.NULL,
+        )
+        np.testing.assert_allclose(output, coords[local_index])

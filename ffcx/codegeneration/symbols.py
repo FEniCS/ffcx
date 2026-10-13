@@ -111,6 +111,8 @@ class FFCXBackendSymbols:
             return self.entity_local_index[0]
         elif entity_type == "ridge":
             return self.entity_local_index[0]
+        elif entity_type == "peak":
+            return self.entity_local_index[0]
         else:
             logger.error(f"Unknown entity_type {entity_type}")
 

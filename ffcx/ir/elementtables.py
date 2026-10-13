@@ -132,9 +132,12 @@ def get_ffcx_table_values(
 
     if integral_type == "expression":
         # FFCx tables for expression are generated as either interior cell points
-        # or points on a facet or ridge
+        # or points on a facet, ridge or peak. A peak, only reachable on a 3D
+        # cell, is tabulated as the vertex of a vertex integral.
         if entity_type in ("cell", "ridge"):
             integral_type = entity_type
+        elif entity_type == "peak":
+            integral_type = "vertex"
         else:
             integral_type = "exterior_facet"
 
@@ -239,7 +242,7 @@ def generate_psi_table_name(
     if any(derivative_counts):
         name += "_D" + "".join(str(d) for d in derivative_counts)
     name += {None: "", "cell": "_AC", "facet": "_AF"}[averaged]
-    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_R"}[entity_type]
+    name += {"cell": "", "facet": "_F", "vertex": "_V", "ridge": "_R", "peak": "_P"}[entity_type]
     name += f"_Q{quadrature_rule.id()}"
     return name
 
