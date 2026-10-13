@@ -28,6 +28,14 @@ FFCX_DEFAULT_OPTIONS = {
         ("float32", "float64", "complex64", "complex128"),
     ),
     "sum_factorization": (bool, False, "Use sum factorization.", None),
+    "sum_factorization_contraction": (
+        bool,
+        False,
+        "With sum factorization, contract cell integrals one direction at a time instead of "
+        "updating the element tensor at every quadrature point. Uses up to 256 KiB of stack; "
+        "larger integrals keep the fused quadrature loop.",
+        None,
+    ),
     "table_rtol": (
         float,
         1e-6,

@@ -257,6 +257,13 @@ def _collect_referenced_names(node, out: set[str]) -> None:
         _referenced_symbol_names(node.expr, out)
 
 
+def referenced_names(code: list[L.LNode]) -> set[str]:
+    """Return the names of every symbol read anywhere in a code tree."""
+    names: set[str] = set()
+    _collect_referenced_names(code, names)
+    return names
+
+
 def _drop_unreferenced(node, dead: set[str]):
     """Recursively rebuild a code tree, dropping VariableDecls named in `dead`."""
     if isinstance(node, list):
