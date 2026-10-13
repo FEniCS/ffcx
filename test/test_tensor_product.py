@@ -274,13 +274,24 @@ def test_sum_factorised_contraction_complex(name, cell_type, compile_args, tmp_p
     assert uses_sum_factorised_contraction(form, dtype)
 
 
-@pytest.mark.parametrize("quadrature_degree,expected", [(8, True), (30, False)])
-def test_sum_factorised_contraction_stack_budget(quadrature_degree, expected):
-    """Rules whose cached integrand doesn't fit the stack keep the fused loop."""
+@pytest.mark.parametrize(
+    "quadrature_degree,dtype,expected",
+    [
+        (8, "float64", True),
+        (22, "float64", True),
+        (22, "complex128", False),
+        (34, "float64", False),
+    ],
+)
+def test_sum_factorised_contraction_stack_budget(quadrature_degree, dtype, expected):
+    """Rules whose buffers don't fit the stack keep the fused loop.
+
+    The buffers hold scalars, so complex rules reach the budget first.
+    """
     form, _ = sum_factorisation_forms(basix.CellType.hexahedron, 1)["laplace"]
     integrand = form.integrals()[0].integrand()
     a = integrand * ufl.dx(metadata={"quadrature_degree": quadrature_degree})
-    assert uses_sum_factorised_contraction(a, "float64") == expected
+    assert uses_sum_factorised_contraction(a, dtype) == expected
 
 
 @pytest.mark.parametrize("name", ["two_quadrature_degrees", "piecewise_coefficient", "linear"])

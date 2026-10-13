@@ -257,13 +257,20 @@ def _collect_referenced_names(node, out: set[str]) -> None:
         _referenced_symbol_names(node.expr, out)
 
 
+def referenced_names(code: list[L.LNode]) -> set[str]:
+    """Return the names of every symbol read anywhere in a code tree."""
+    names: set[str] = set()
+    _collect_referenced_names(code, names)
+    return names
+
+
 def _drop_unreferenced(node, dead: set[str]):
-    """Recursively rebuild a code tree, dropping declarations named in `dead`."""
+    """Recursively rebuild a code tree, dropping VariableDecls named in `dead`."""
     if isinstance(node, list):
         return [
             _drop_unreferenced(n, dead)
             for n in node
-            if not (isinstance(n, (L.VariableDecl, L.ArrayDecl)) and n.symbol.name in dead)
+            if not (isinstance(n, L.VariableDecl) and n.symbol.name in dead)
         ]
     if isinstance(node, L.Section):
         node.declarations = [
@@ -313,7 +320,7 @@ def scalar_declaration_names(code: list[L.LNode]) -> set[str]:
 
 
 def prune_dead_scalars(code: list[L.LNode], candidates: set[str]) -> list[L.LNode]:
-    """Remove scalar or array declarations in `candidates` that end up with no reader.
+    """Remove scalar declarations in `candidates` that end up with no reader.
 
     :func:`power_of_two_cse_statements` can reroute a statement past an
     earlier one it depended on, leaving that one dead -- code GCC rejects
