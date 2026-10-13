@@ -312,9 +312,15 @@ class IntegralGenerator:
         # Loop over quadrature rules
         for (cell, quadrature_rule), _ in expression.integrand.items():
             if domain == cell:
-                # Generate quadrature weights array
-                wsym = self.backend.symbols.weights_table(quadrature_rule)
-                parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
+                # Generate quadrature weights array, one per direction for
+                # tensor product rules
+                if quadrature_rule.has_tensor_factors:
+                    for i, (_, w) in enumerate(quadrature_rule.tensor_factors):
+                        wsym = self.backend.symbols.weights_table(quadrature_rule, i)
+                        parts += [L.ArrayDecl(wsym, values=w, const=True)]
+                else:
+                    wsym = self.backend.symbols.weights_table(quadrature_rule)
+                    parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
 
         # Add leading comment if there are any tables
         parts = L.commented_code_list(parts, "Quadrature rules")
@@ -803,6 +809,13 @@ class IntegralGenerator:
             if self.ir.expression.integral_type in ufl.custom_integral_types:
                 weights = self.backend.symbols.custom_weights_table
                 weight = weights[iq.global_index]
+            elif quadrature_rule.has_tensor_factors:
+                weight = L.float_product(
+                    [
+                        self.backend.symbols.weights_table(quadrature_rule, i)[iq.local_index(i)]
+                        for i in range(iq.dim)
+                    ]
+                )
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
                 weight = weights[iq.global_index]
