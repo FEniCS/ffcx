@@ -15,6 +15,7 @@ import ffcx.codegeneration.jit
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
 from ffcx.element_interface import basix_index
 from ffcx.ir.elementtables import (
+    TensorProductTablePlaceholder,
     analyse_table_type,
     analyse_tensor_product_table_type,
     clamp_table_small_numbers,
@@ -160,6 +161,28 @@ def test_tensor_product_table_type(cell_type, P):
             table = element.tabulate(sum(derivatives), points)[basix_index(derivatives)][..., 0]
             table = clamp_table_small_numbers(table.reshape(1, 1, *table.shape))
             factors = [
-                factor.tabulate(n, x)[n][..., 0].reshape(1, 1, x.shape[0], -1) for n in derivatives
+                clamp_table_small_numbers(
+                    factor.tabulate(n, x)[n][..., 0].reshape(1, 1, x.shape[0], -1)
+                )
+                for n in derivatives
             ]
             assert analyse_tensor_product_table_type(factors) == analyse_table_type(table)
+
+
+def test_tensor_product_table_type_clamped_to_zero():
+    """Factors whose products all clamp to zero give a zero table."""
+    rng = np.random.default_rng(0)
+    factors = [1e-5 * (1 + rng.random((1, 1, 3, 2))) for _ in range(2)]
+    full = np.einsum("pi,qj->pqij", factors[0][0, 0], factors[1][0, 0]).reshape(1, 1, 9, 4)
+    assert analyse_table_type(clamp_table_small_numbers(full)) == "zeros"
+    assert analyse_tensor_product_table_type(factors) == "zeros"
+
+
+def test_tensor_product_table_placeholder():
+    """The placeholder of a table that isn't formed has a shape but no values."""
+    table = TensorProductTablePlaceholder((1, 1, 9, 4))
+    assert table.shape == (1, 1, 9, 4)
+    with pytest.raises(RuntimeError):
+        np.asarray(table)
+    with pytest.raises(RuntimeError):
+        table[0]

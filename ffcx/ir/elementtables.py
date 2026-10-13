@@ -58,7 +58,7 @@ class UniqueTableReferenceT(typing.NamedTuple):
     """Unique table reference."""
 
     name: str
-    values: npt.NDArray[np.float64]
+    values: "npt.NDArray[np.float64] | TensorProductTablePlaceholder"
     is_permuted: (
         bool  # If table is permuted (integral over interior facets) or mixed dimensional integrals.
     )
@@ -451,6 +451,7 @@ def build_optimized_tables(
                 d = local_derivatives[i]
                 sub_tbl = j.tabulate(d, pts)[d]
                 sub_tbl = sub_tbl.reshape(1, 1, sub_tbl.shape[0], sub_tbl.shape[1])
+                sub_tbl = clamp_table_small_numbers(sub_tbl, rtol=rtol, atol=atol)
                 for tensor_factor in all_tensor_factors:
                     if tensor_factor.values.shape == sub_tbl.shape and np.allclose(
                         tensor_factor.values, sub_tbl
@@ -479,6 +480,7 @@ def build_optimized_tables(
             or (is_mixed_dim and codim == 0)
             or (integral_type == "expression" and entity_type in ("facet", "ridge"))
         )
+        tbl: npt.NDArray[np.float64] | TensorProductTablePlaceholder
         if tensor_factors is not None and not needs_permutations and not avg:
             # The full table is the tensor product of the 1D factors: derive
             # what the IR needs from them instead of tabulating it, which costs
@@ -490,7 +492,7 @@ def build_optimized_tables(
             )
             num_points = 1 if tabletype in piecewise_ttypes else quadrature_rule.points.shape[0]
             num_dofs = math.prod(factor.values.shape[-1] for factor in tensor_factors)
-            tbl = tensor_product_table_placeholder((1, 1, num_points, num_dofs))
+            tbl = TensorProductTablePlaceholder((1, 1, num_points, num_dofs))
             is_permuted = False
         else:
             if needs_permutations:
@@ -655,6 +657,7 @@ def build_optimized_tables(
                     break
 
             if is_new_table:
+                assert isinstance(tbl, np.ndarray)
                 _existing_tables[name] = tbl
 
         cell_offset = 0
@@ -728,9 +731,12 @@ def analyse_tensor_product_table_type(factors, rtol=default_rtol, atol=default_a
     """Analyse the type of a cell table from the 1D tables it's the tensor product of.
 
     Gives the type `analyse_table_type` would find for the full table,
-    which has a single entity and permutation, without forming it.
+    which has a single entity and permutation, after clamping, without
+    forming it. The factors are expected to be clamped.
     """
-    if any(is_zeros_table(factor, rtol=rtol, atol=atol) for factor in factors):
+    # Every product clamps to zero if the largest one does
+    largest = math.prod(float(np.max(np.abs(factor), initial=0.0)) for factor in factors)
+    if largest <= atol:
         return "zeros"
     if all(is_piecewise_table(factor, rtol=rtol, atol=atol) for factor in factors):
         # The full table is constant over the points, with this row
@@ -741,13 +747,30 @@ def analyse_tensor_product_table_type(factors, rtol=default_rtol, atol=default_a
     return "uniform"
 
 
-def tensor_product_table_placeholder(shape):
-    """Return a read-only stand-in for a tensor product table that isn't formed.
+class TensorProductTablePlaceholder:
+    """Stand-in for a tensor product table that isn't formed.
 
-    Only its shape is meaningful: code generation reads the values of the
-    1D tensor factors instead. It takes no memory.
+    It has the shape of the table, but reading its values raises: code
+    generation reads the values of the 1D tensor factors instead.
     """
-    return np.broadcast_to(np.zeros(1), shape)
+
+    def __init__(self, shape: tuple[int, ...]):
+        """Initialise."""
+        self.shape = tuple(shape)
+        self.ndim = len(self.shape)
+
+    def _values_not_formed(self):
+        raise RuntimeError(
+            "The values of a tensor product table aren't formed; use its tensor factors."
+        )
+
+    def __array__(self, *args, **kwargs):
+        """Raise: the values aren't formed."""
+        self._values_not_formed()
+
+    def __getitem__(self, key):
+        """Raise: the values aren't formed."""
+        self._values_not_formed()
 
 
 def analyse_table_type(table, rtol=default_rtol, atol=default_atol):
