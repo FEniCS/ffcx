@@ -476,7 +476,11 @@ class FFCXBackendAccess:
             assert tabledata.tensor_factors is not None
             for i in range(dof_index.dim):
                 factor = tabledata.tensor_factors[i]
-                iq_i = quadrature_index.local_index(i)
+                # A piecewise table's 1D factors are constant over the points,
+                # and it's accessed outside the quadrature loop
+                iq_i = (
+                    L.LiteralInt(0) if tabledata.is_piecewise else quadrature_index.local_index(i)
+                )
                 ic_i = dof_index.local_index(i)
                 table = self.symbols.element_tables[factor.name][qp][entity][iq_i][ic_i]
                 symbols += [L.Symbol(factor.name, dtype=L.DataType.REAL)]
