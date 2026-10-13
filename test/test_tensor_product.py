@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
+import itertools
+
 import basix.ufl
 import numpy as np
 import pytest
@@ -11,6 +13,12 @@ import ufl
 
 import ffcx.codegeneration.jit
 from ffcx.codegeneration.utils import dtype_to_c_type, dtype_to_scalar_dtype
+from ffcx.element_interface import basix_index
+from ffcx.ir.elementtables import (
+    analyse_table_type,
+    analyse_tensor_product_table_type,
+    clamp_table_small_numbers,
+)
 
 
 def cell_to_gdim(cell_type):
@@ -130,3 +138,28 @@ def test_bilinear_form(dtype, P, cell_type):
     )
 
     np.testing.assert_allclose(A, A1, rtol=1e-6, atol=1e-6)
+
+
+@pytest.mark.parametrize("P", [1, 2, 3])
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_tensor_product_table_type(cell_type, P):
+    """The table type derived from the 1D factors matches the one of the full table."""
+    d = cell_to_gdim(cell_type)
+    element = basix.create_tp_element(
+        basix.ElementFamily.P, cell_type, P, basix.LagrangeVariant.gll_warped
+    )
+    factor = element.get_tensor_product_representation()[0][0]
+    rules = [basix.make_quadrature(basix.CellType.interval, q)[0] for q in (0, 1, 2 * P)]
+    # Collocated with the dofs, giving quadrature tables
+    rules.append(basix.create_lattice(basix.CellType.interval, P, basix.LatticeType.gll, True))
+    for x in rules:
+        points = np.array(list(itertools.product(*[x[:, 0]] * d)))
+        for derivatives in itertools.product(range(3), repeat=d):
+            if sum(derivatives) > 2:
+                continue
+            table = element.tabulate(sum(derivatives), points)[basix_index(derivatives)][..., 0]
+            table = clamp_table_small_numbers(table.reshape(1, 1, *table.shape))
+            factors = [
+                factor.tabulate(n, x)[n][..., 0].reshape(1, 1, x.shape[0], -1) for n in derivatives
+            ]
+            assert analyse_tensor_product_table_type(factors) == analyse_table_type(table)
