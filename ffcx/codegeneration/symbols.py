@@ -119,17 +119,13 @@ class FFCXBackendSymbols:
         indices = ["i", "j", "k", "l"]
         return L.Symbol(indices[iarg], dtype=L.DataType.INT)
 
-    def weights_table(self, quadrature_rule, direction=None):
-        """Table of quadrature weights.
-
-        If ``direction`` is given, return the table of 1D weights of that
-        tensor factor of the quadrature rule.
-        """
+    def weights_table(self, quadrature_rule):
+        """Table of quadrature weights."""
         key = f"weights_{quadrature_rule.id()}"
-        if direction is not None:
-            key += f"_{direction}"
         if key not in self.quadrature_weight_tables:
-            self.quadrature_weight_tables[key] = L.Symbol(key, dtype=L.DataType.REAL)
+            self.quadrature_weight_tables[key] = L.Symbol(
+                f"weights_{quadrature_rule.id()}", dtype=L.DataType.REAL
+            )
         return self.quadrature_weight_tables[key]
 
     def points_table(self, quadrature_rule):
