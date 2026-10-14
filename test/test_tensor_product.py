@@ -274,6 +274,28 @@ def test_sum_factorised_contraction_complex(name, cell_type, compile_args, tmp_p
     assert uses_sum_factorised_contraction(form, dtype)
 
 
+@pytest.mark.parametrize("name", ["vector_laplace", "elasticity"])
+@pytest.mark.parametrize("P", [2, 4])
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorised_contraction_vector(name, P, cell_type, compile_args, tmp_path):
+    """Vector-valued forms, whose blocks share contributions, at even degree.
+
+    An even degree gives an odd number of dofs and points per direction.
+    """
+    dtype = "float64"
+    form, num_coefficients = sum_factorisation_forms(cell_type, P)[name]
+    args = (form, num_coefficients, cell_type, dtype)
+    A_ref = tabulate(*args, {}, compile_args, tmp_path / "ref")
+    A = tabulate(
+        *args,
+        {"sum_factorization": True, "sum_factorization_contraction": True},
+        compile_args,
+        tmp_path / "sf",
+    )
+    np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
+    assert uses_sum_factorised_contraction(form, dtype)
+
+
 @pytest.mark.parametrize(
     "quadrature_degree,dtype,expected",
     [
