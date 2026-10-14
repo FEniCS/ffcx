@@ -631,7 +631,7 @@ def build_optimized_tables(
                         break
                 else:
                     ut = UniqueTableReferenceT(
-                        name=f"FE_TF{tensor_n}",
+                        name=f"FE_TF{tensor_n}_Q{quadrature_rule.id()}",
                         values=sub_tbl,
                         ttype="tensor_factor",
                         is_permuted=False,
