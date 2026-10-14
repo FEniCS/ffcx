@@ -537,11 +537,27 @@ class IntegralGenerator:
                     if stage not in stages:
                         stages.add(stage)
                         num_scalars += math.prod(num_points[s + 1 :])
+            # At most one row and one combined table per block in the last
+            # direction, sized by the last argument's dofs
+            num_inner = 0
+            for _, blockdata in group:
+                inner_factors = blockdata.ma_data[-1].tabledata.tensor_factors
+                assert inner_factors is not None
+                num_inner = max(num_inner, inner_factors[-1].values.shape[-1])
+            num_scalars += len(group) * (num_points[-1] + 1) * num_inner
         scalar_size = np.dtype(options["scalar_type"]).itemsize
         stack_left = _SUM_FACTORISATION_STACK_BUDGET_BYTES - num_scalars * scalar_size
         if stack_left < 0:
             return None
         return {"groups": list(groups.values()), "stack_left": stack_left}
+
+    def _is_cell_jacobian(self, mt: ModifiedTerminal) -> bool:
+        """Whether a terminal is the Jacobian of the integration domain itself, not a submesh's."""
+        if not isinstance(mt.terminal, ufl.geometry.Jacobian):
+            return False
+        domain = ufl.domain.extract_unique_domain(mt.terminal)
+        parent = self.backend.access.integration_domain_coordinate_element
+        return parent is None or parent.cell.topological_dimension == domain.topological_dimension
 
     def _sum_factorised_coefficient(
         self,
@@ -550,7 +566,7 @@ class IntegralGenerator:
         quadrature_rule: QuadratureRule,
         access: L.Symbol,
     ) -> L.Section | None:
-        """Evaluate a coefficient on the whole tensor product rule, one direction at a time.
+        """Evaluate a coefficient or the Jacobian on the whole tensor product rule.
 
         Evaluated at each point, a coefficient sums over all its dofs,
         costing O(Q^d N^d). Contracting its dofs with the 1D tables one
@@ -560,12 +576,15 @@ class IntegralGenerator:
             t[i0, q1] = sum_i1 B1[q1, i1] w[i0, i1]
             f[q0, q1] = sum_i0 B0[q0, i0] t[i0, q1]
 
-        The quadrature loop then reads f. Returns `None` where this doesn't
-        apply, or the buffers don't fit the stack left, and the coefficient
-        is evaluated at each point.
+        The quadrature loop then reads f. The Jacobian of the integration
+        domain is a linear combination of the coordinate dofs, so its
+        entries are evaluated the same way. Returns `None` where this
+        doesn't apply, or the buffers don't fit the stack left, and the
+        terminal is evaluated at each point.
         """
+        is_coefficient = isinstance(mt.terminal, ufl.Coefficient)
         if (
-            not isinstance(mt.terminal, ufl.Coefficient)
+            not (is_coefficient or self._is_cell_jacobian(mt))
             or mt.restriction is not None
             or tabledata.ttype in ("zeros", "ones")
             or tabledata.is_piecewise
@@ -604,10 +623,11 @@ class IntegralGenerator:
             return index, lambda body: [L.ForRange(index, 0, extent, body)]
 
         name = f"{access.name}_{quadrature_rule.id()}"
+        dtype = L.DataType.SCALAR if is_coefficient else L.DataType.REAL
         code: list[L.LNode] = []
         source = None
         for d in reversed(range(dim)):
-            stage = L.Symbol(f"{name}_c{d}", dtype=L.DataType.SCALAR)
+            stage = L.Symbol(f"{name}_c{d}", dtype=dtype)
             code.append(L.ArrayDecl(stage, sizes=sizes[d]))
             inner = math.prod(num_points[d + 1 :])
             a, a_loop = loop("a", math.prod(num_dofs[:d]))
@@ -615,8 +635,11 @@ class IntegralGenerator:
             i, i_loop = loop("i", num_dofs[d])
             b, b_loop = loop("b", inner)
             index = (a * num_dofs[d] + i) * inner + b
-            if source is None:
+            if source is None and is_coefficient:
                 value = self.backend.symbols.coefficient_dof_access(mt.terminal, index * bs + begin)
+            elif source is None:
+                # coordinate_dofs hold three components per node
+                value = L.Symbol("coordinate_dofs", dtype=L.DataType.REAL)[index * 3 + begin]
             else:
                 value = source[index]
             table, _ = self.backend.access.tensor_factor_access(tabledata, d, q, i)
@@ -693,15 +716,32 @@ class IntegralGenerator:
         weighted_tables: dict[tuple[str, bytes], L.Symbol] = {}
         table_declarations: list[L.LNode] = []
 
-        def table(arg, td, direction, quadrature_index, dof_index):
-            """Return the access to a 1D table."""
-            if arg > 0:
+        # Transposed copies, [dof][point], so a sum over the points reads
+        # the table contiguously
+        transposed_tables: dict[tuple[str, bytes | None], L.Symbol] = {}
+
+        def table(arg, td, direction, quadrature_index, dof_index, transpose=False):
+            """Return the access to a 1D table, transposed if asked."""
+            factor = td.tensor_factors[direction]
+            weights = quadrature_rule.tensor_factors[direction][1] if arg == 0 else None
+            if transpose:
+                key_t = (factor.name, None if weights is None else weights.tobytes())
+                if key_t not in transposed_tables:
+                    values = factor.values
+                    if weights is not None:
+                        values = values * weights.reshape(1, 1, -1, 1)
+                    weighted = "_w" if weights is not None else ""
+                    name = f"{factor.name}{weighted}_t{len(transposed_tables)}"
+                    table_declarations.extend(
+                        self.declare_table(name, values.transpose(0, 1, 3, 2))
+                    )
+                    transposed_tables[key_t] = self.backend.symbols.element_tables[name]
+                return transposed_tables[key_t][0][0][dof_index][quadrature_index]
+            if weights is None:
                 access, _ = self.backend.access.tensor_factor_access(
                     td, direction, quadrature_index, dof_index
                 )
                 return access
-            factor = td.tensor_factors[direction]
-            weights = quadrature_rule.tensor_factors[direction][1]
             key = (factor.name, weights.tobytes())
             if key not in weighted_tables:
                 name = f"{factor.name}_w{len(weighted_tables)}"
@@ -745,25 +785,41 @@ class IntegralGenerator:
     ) -> list[L.LNode]:
         """Contract cached integrand factors with the argument 1D tables, direction by direction.
 
-        All terms share the same dof loops. Stage arrays and contributions
-        shared by several terms, such as the components of a vector
-        Laplacian, are computed once, and each element tensor entry is
-        updated once.
+        All terms share the same dof loops. Stage arrays shared by several
+        terms are computed once. In the last direction, each element tensor
+        entry is a sum over the points of the terms' contributions; terms
+        sharing the 1D tables of all but the last argument, such as the
+        cross terms of a Laplacian on a non-affine cell, are first combined
+        over the last argument's table,
+
+            h[j, q] = sum_t g_t[q] B_t[q, j]
+            A[i, j] += sum_q Bw[q, i] h[j, q]
+
+        so each entry takes one product per group of terms instead of two
+        per term. Blocks receiving the same contributions, such as the
+        components of a vector Laplacian, share one sum.
         """
         dim = iq.dim
         B_indices = terms[0]["B_indices"]
+        outer_indices, inner_index = B_indices[:-1], B_indices[-1]
+        last = dim - 1
+        num_points = iq.sizes[last]
+        num_inner = inner_index.sizes[last]
+        q, j = iq.local_index(last), inner_index.local_index(last)
 
-        def dof_loops(direction: int, body: list[L.LNode]) -> list[L.LNode]:
+        def dof_loops(direction: int, body: list[L.LNode], indices) -> list[L.LNode]:
             # Last argument innermost, so the innermost loop is contiguous in A
-            for B_index in reversed(B_indices):
+            for B_index in reversed(indices):
                 body = [
                     L.ForRange(B_index.local_index(direction), 0, B_index.sizes[direction], body)
                 ]
             return body
 
-        def factors(term, direction, quadrature_index):
+        def factors(term, direction, quadrature_index, transpose=False):
             accesses = [
-                table(arg, td, direction, quadrature_index, B_index.local_index(direction))
+                table(
+                    arg, td, direction, quadrature_index, B_index.local_index(direction), transpose
+                )
                 for arg, (td, B_index) in enumerate(zip(term["tables"], B_indices))
             ]
             keys = tuple(
@@ -771,35 +827,27 @@ class IntegralGenerator:
             )
             return accesses, keys
 
-        def contract(stage, accesses, direction, stride, m):
-            """Return a loop accumulating stage contracted in direction into a new scalar."""
-            nonlocal num_accumulators
-            acc = L.Symbol(f"acc{group_id}_{num_accumulators}", dtype=L.DataType.SCALAR)
-            num_accumulators += 1
-            q = iq.local_index(direction)
-            index = q if m is None else q * stride + m
-            loop = L.ForRange(
-                q,
-                0,
-                iq.sizes[direction],
-                [L.AssignAdd(acc, L.float_product([stage[index]] + accesses))],
-            )
-            return acc, [L.VariableDecl(acc, L.LiteralFloat(0.0)), loop]
+        num_temps = 0
+
+        def temp(name: str, dtype=L.DataType.SCALAR) -> L.Symbol:
+            nonlocal num_temps
+            num_temps += 1
+            return L.Symbol(f"{name}{group_id}_{num_temps}", dtype=dtype)
+
+        def total(values: list[L.LExpr]) -> L.LExpr:
+            return values[0] if len(values) == 1 else L.Sum(values)
 
         # level_code[s] runs inside the dof loops of directions <= s. A
         # stage array g_s holds a cache contracted over directions < s, on
-        # the points of directions >= s. Stage arrays and contributions are
-        # identified by the cache and the tables they were contracted with.
+        # the points of directions >= s, identified by the cache and the
+        # tables it was contracted with.
         level_code: list[list[L.LNode]] = [[] for _ in range(dim)]
         declarations: list[L.LNode] = []
         stages: dict[tuple, L.Symbol] = {}
-        contributions: dict[tuple, L.Symbol] = {}
-        targets: dict[tuple, tuple[list[L.LExpr], list[L.LExpr]]] = {}
-        num_accumulators = 0
         for term in terms:
             stage = term["cache"]
             key: tuple = (term["factor"],)
-            for s in range(dim - 1):
+            for s in range(last):
                 accesses, names = factors(term, s, iq.local_index(s))
                 key = key + (names,)
                 if key not in stages:
@@ -811,32 +859,92 @@ class IntegralGenerator:
                     stages[key] = next_stage
                     declarations.append(L.ArrayDecl(next_stage, sizes=stride))
                     m = L.Symbol(f"iqm{s}", dtype=L.DataType.INT)
-                    acc, code = contract(stage, accesses, s, stride, m)
+                    qs = iq.local_index(s)
+                    acc = temp("acc")
+                    contraction = L.float_product([stage[qs * stride + m], *accesses])
                     level_code[s].append(
-                        L.ForRange(m, 0, stride, code + [L.Assign(next_stage[m], acc)])
+                        L.ForRange(
+                            m,
+                            0,
+                            stride,
+                            [
+                                L.VariableDecl(acc, L.LiteralFloat(0.0)),
+                                L.ForRange(qs, 0, iq.sizes[s], [L.AssignAdd(acc, contraction)]),
+                                L.Assign(next_stage[m], acc),
+                            ],
+                        )
                     )
                 stage = stages[key]
+            term["stage"], term["stage_key"] = stage, key
 
-            # Last direction: contract to a scalar contribution
-            accesses, names = factors(term, dim - 1, iq.local_index(dim - 1))
-            key = key + (names,)
-            if key not in contributions:
-                acc, code = contract(stage, accesses, dim - 1, 1, None)
-                contributions[key] = acc
-                level_code[dim - 1] += code
-
+        # Last direction: contributions, identified by their stage and
+        # tables, and the contributions each element tensor block receives
+        contributions: dict[tuple, tuple] = {}
+        targets: dict[tuple, tuple[list[L.LExpr], list[tuple]]] = {}
+        for term in terms:
+            # The last direction sums over its points: transposed tables
+            accesses, names = factors(term, last, q, transpose=True)
+            key = term["stage_key"] + (names,)
+            contributions.setdefault(key, (term["stage"], accesses[:-1], accesses[-1], names[:-1]))
             target = tuple(expr_key(index) for index in term["A_indices"])
-            targets.setdefault(target, (term["A_indices"], []))[1].append(contributions[key])
+            targets.setdefault(target, (term["A_indices"], []))[1].append(key)
 
+        # Blocks receiving the same contributions share one accumulator
+        rows: dict[tuple, tuple[list[tuple], list[list[L.LExpr]]]] = {}
+        for A_indices, keys in targets.values():
+            signature = tuple(sorted(keys, key=repr))
+            rows.setdefault(signature, (keys, []))[1].append(A_indices)
+
+        # pre_rows runs inside the dof loops of directions < last, before
+        # the last direction's; row_code inside those of the other arguments
+        pre_rows: list[L.LNode] = []
+        row_code: list[L.LNode] = []
         A = self.backend.symbols.element_tensor
-        for A_indices, values in targets.values():
-            A_index = L.MultiIndex(list(A_indices), self.ir.expression.tensor_shape)
-            value = values[0] if len(values) == 1 else L.Sum(values)
-            level_code[dim - 1].append(L.AssignAdd(A[A_index], value))
+        for keys, row_targets in rows.values():
+            groups: dict[tuple, list[tuple]] = collections.defaultdict(list)
+            for key in keys:
+                groups[contributions[key][3]].append(contributions[key])
+            updates: list[L.LExpr] = []
+            for members in groups.values():
+                outer = members[0][1]
+                if outer and len(members) > 1:
+                    # h[j, q] = sum over the group of stage[q] * table[q, j]
+                    h = temp("h")
+                    declarations.append(L.ArrayDecl(h, sizes=num_points * num_inner))
+                    value = total([stage[q] * inner for stage, _, inner, _ in members])
+                    pre_rows.append(
+                        L.ForRange(
+                            j,
+                            0,
+                            num_inner,
+                            [
+                                L.ForRange(
+                                    q, 0, num_points, [L.Assign(h[j * num_points + q], value)]
+                                )
+                            ],
+                        )
+                    )
+                    updates.append(L.float_product([*outer, h[j * num_points + q]]))
+                else:
+                    updates += [
+                        L.float_product([stage[q], *outer_access, inner])
+                        for stage, outer_access, inner, _ in members
+                    ]
+            acc = temp("acc")
+            row_body: list[L.LNode] = [
+                L.VariableDecl(acc, L.LiteralFloat(0.0)),
+                L.ForRange(q, 0, num_points, [L.AssignAdd(acc, total(updates))]),
+            ]
+            for A_indices in row_targets:
+                A_index = L.MultiIndex(list(A_indices), self.ir.expression.tensor_shape)
+                row_body.append(L.AssignAdd(A[A_index], acc))
+            row_code.append(L.ForRange(j, 0, num_inner, row_body))
 
-        body = dof_loops(dim - 1, level_code[dim - 1])
-        for s in reversed(range(dim - 1)):
-            body = dof_loops(s, level_code[s] + body)
+        body = pre_rows + dof_loops(last, row_code, outer_indices)
+        if last > 0:
+            body = dof_loops(last - 1, level_code[last - 1] + body, B_indices)
+        for s in reversed(range(last - 1)):
+            body = dof_loops(s, level_code[s] + body, B_indices)
         return declarations + body
 
     def _element_tensor_indices(
