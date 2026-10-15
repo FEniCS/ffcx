@@ -364,6 +364,7 @@ def _compute_integral_ir(
         "interior_facet": "facet",
         "vertex": "vertex",
         "ridge": "ridge",
+        "peak": "peak"
     }
 
     # Iterate over groups of integrals
@@ -614,6 +615,7 @@ def _compute_form_ir(
         "interior_facet",
         "vertex",
         "ridge",
+        "peak"
     )
     ir["subdomain_ids"] = {itg_type: [] for itg_type in ufcx_integral_types}
     ir["integral_names"] = {itg_type: [] for itg_type in ufcx_integral_types}

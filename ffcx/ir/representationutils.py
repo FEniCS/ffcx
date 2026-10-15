@@ -99,7 +99,7 @@ def create_quadrature_points_and_weights(
                 rule,
                 elements,
             )
-    elif integral_type in ufl.measure.point_integral_types:
+    elif integral_type in ufl.measure.peak_integral_types:
         pts["vertex"], wts["vertex"] = create_quadrature("vertex", degree, rule, elements)
     elif integral_type == "expression":
         pass
@@ -117,8 +117,8 @@ def integral_type_to_entity_dim(integral_type: str, tdim: int) -> int:
         entity_dim = tdim - 1
     elif integral_type in ufl.measure.ridge_integral_types:
         entity_dim = tdim - 2
-    elif integral_type in ufl.measure.point_integral_types:
-        entity_dim = 0
+    elif integral_type in ufl.measure.peak_integral_types:
+        entity_dim = tdim - 3
     elif integral_type in ufl.custom_integral_types:
         entity_dim = tdim
     elif integral_type == "expression":
