@@ -130,3 +130,67 @@ def test_bilinear_form(dtype, P, cell_type):
     )
 
     np.testing.assert_allclose(A, A1, rtol=1e-6, atol=1e-6)
+
+
+def distorted_cell(cell_type):
+    """Vertices of a non-affine cell."""
+    if cell_type == basix.CellType.quadrilateral:
+        coords = [[0.0, 0.0, 0.0], [1.2, 0.1, 0.0], [0.1, 0.9, 0.0], [1.3, 1.4, 0.0]]
+    else:
+        coords = [
+            [x + 0.1 * y * z, y + 0.05 * x, z + 0.1 * x * y]
+            for z in (0, 1)
+            for y in (0, 1)
+            for x in (0, 1)
+        ]
+    return np.array(coords, dtype=np.float64)
+
+
+@pytest.mark.parametrize("name", ["two_quadrature_degrees", "piecewise_coefficient", "linear"])
+@pytest.mark.parametrize("cell_type", [basix.CellType.quadrilateral, basix.CellType.hexahedron])
+def test_sum_factorisation_quadrature_rules(name, cell_type, compile_args, tmp_path):
+    """Integrals with several or one point rules.
+
+    Each rule has its own 1D tables, and a one point rule makes the
+    tables of coefficients piecewise.
+    """
+    gdim = cell_to_gdim(cell_type)
+    variant = basix.LagrangeVariant.gll_warped
+    mesh = ufl.Mesh(create_tensor_product_element(cell_type, 1, variant, shape=(gdim,)))
+    V = ufl.FunctionSpace(mesh, create_tensor_product_element(cell_type, 2, variant))
+    u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+    f = ufl.Coefficient(V)
+    one_point = ufl.dx(metadata={"quadrature_degree": 1})
+    form = {
+        "two_quadrature_degrees": u * v * ufl.dx(degree=2)
+        + ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx(degree=5),
+        "piecewise_coefficient": f * u * v * one_point,
+        "linear": f * v * one_point,
+    }[name]
+
+    def tabulate(options, cache_dir):
+        compiled_forms, module, _ = ffcx.codegeneration.jit.compile_forms(
+            [form], options=options, cache_dir=cache_dir, cffi_extra_compile_args=compile_args
+        )
+        form0 = compiled_forms[0]
+        integral = form0.form_integrals[form0.form_integral_offsets[module.lib.cell]]
+        ndofs = V.ufl_element().dim
+        A = np.zeros(ndofs ** len(form.arguments()))
+        w = np.linspace(0.3, 1.7, ndofs)
+        c = np.zeros(1)
+        coords = distorted_cell(cell_type)
+        ffi = module.ffi
+        integral.tabulate_tensor_float64(
+            ffi.cast("double *", A.ctypes.data),
+            ffi.cast("double *", w.ctypes.data),
+            ffi.cast("double *", c.ctypes.data),
+            ffi.cast("double *", coords.ctypes.data),
+            ffi.NULL,
+            ffi.NULL,
+            ffi.NULL,
+        )
+        return A
+
+    A_ref = tabulate({}, tmp_path / "ref")
+    A = tabulate({"sum_factorization": True}, tmp_path / "sf")
+    np.testing.assert_allclose(A, A_ref, rtol=1e-12, atol=1e-12 * np.max(np.abs(A_ref)))
