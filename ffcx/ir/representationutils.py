@@ -104,12 +104,12 @@ def create_quadrature_points_and_weights(
     elif integral_type == "expression":
         pass
     else:
-        logger.error(f"Unknown integral type: {integral_type}")
+        raise ValueError(f"Unknown integral type: {integral_type}")
 
     return pts, wts, tensor_factors
 
 
-def integral_type_to_entity_dim(integral_type, tdim):
+def integral_type_to_entity_dim(integral_type: str, tdim: int) -> int:
     """Given integral_type and domain tdim, return the tdim of the integration entity."""
     if integral_type == "cell":
         entity_dim = tdim
