@@ -24,6 +24,8 @@ import numpy as np
 import numpy.typing as npt
 import ufl.algorithms
 
+from ffcx.ir.representationutils import integral_type_to_entity_dim
+
 logger = logging.getLogger("ffcx")
 
 
@@ -205,11 +207,19 @@ def _analyze_form(
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
 
-            # Vertex integrals do not support discontinuous integrands.
-            if integral.integral_type() == "vertex":
+            # Patch assembly not supported
+            if integral.integral_type() in ("ridge", "peak"):
+                entity_dim = integral_type_to_entity_dim(
+                    integral.integral_type(), integral.ufl_domain().topological_dimension
+                )
                 elements = ufl.algorithms.extract_elements(integral)
-                if any(e.discontinuous for e in elements):
-                    raise TypeError("Vertex integrals not supported for discontinuous elements.")
+                if any(
+                    e.discontinuous and e.cell.topological_dimension > entity_dim for e in elements
+                ):
+                    raise TypeError(
+                        f"{integral.integral_type().capitalize()} integrals not supported for "
+                        "discontinuous elements."
+                    )
 
             # If form contains a quadrature element, use the custom
             # quadrature scheme
