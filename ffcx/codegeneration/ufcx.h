@@ -52,6 +52,7 @@ extern "C"
     interior_facet = 2,
     vertex = 3,
     ridge = 4,
+    peak = 5,
   } ufcx_integral_type;
 
   // </HEADER_DECL>
