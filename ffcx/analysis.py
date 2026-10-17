@@ -147,6 +147,20 @@ def _analyze_expression(
     return expression
 
 
+_SIMPLEX_CELLS = frozenset({"vertex", "interval", "triangle", "tetrahedron"})
+
+
+def _has_affine_geometry(domain: ufl.Mesh) -> bool:
+    """Check whether a domain's cells have a constant Jacobian.
+
+    True for a simplex with a degree 1 coordinate element. A higher
+    degree element may still describe a straight-sided cell, but that
+    cannot be known before the cell coordinates are supplied.
+    """
+    element = domain.ufl_coordinate_element()
+    return element.embedded_superdegree <= 1 and domain.ufl_cell().cellname in _SIMPLEX_CELLS
+
+
 def _analyze_form(
     form: ufl.Form, scalar_type: npt.DTypeLike, do_cancel_jacobian_products: bool
 ) -> FormData:
@@ -204,6 +218,23 @@ def _analyze_form(
 
         for i, integral in enumerate(integral_data.integrals):
             metadata = integral.metadata()
+
+            # Averaging a terminal over a cell or facet is tabulated
+            # against the reference cell, where the Jacobian determinant
+            # cancels only if it is constant. On a cell with a varying
+            # Jacobian the result would be a reference average, silently
+            # differing from the physical one.
+            if not _has_affine_geometry(integral_data.domain):
+                averages = [
+                    e
+                    for e in ufl.corealg.traversal.unique_pre_traversal(integral.integrand())
+                    if isinstance(e, ufl.classes.CellAvg | ufl.classes.FacetAvg)
+                ]
+                if averages:
+                    raise NotImplementedError(
+                        f"{type(averages[0]).__name__} is only supported on cells with a "
+                        "constant Jacobian (a simplex with a degree 1 coordinate element)."
+                    )
 
             # Vertex integrals do not support discontinuous integrands.
             if integral.integral_type() == "vertex":
