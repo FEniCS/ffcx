@@ -2422,3 +2422,52 @@ def test_form_rejects_ridge_geometry_outside_ridge_integral(measure):
     integrand = ufl.geometry.CellRidgeJacobian(domain)[0, 0] * ufl.TestFunction(space)
     with pytest.raises(RuntimeError, match="CellRidgeJacobian is only defined on a ridge"):
         ffcx.codegeneration.jit.compile_forms([integrand * ufl.Measure(measure, domain=domain)])
+
+
+@pytest.mark.filterwarnings("ignore:Explicitly selected vertex")
+def test_bessel_functions(compile_args):
+    """Test integer-order Bessel functions in generated code.
+
+    Uses the vertex rule so the kernel evaluates the integrand at the two
+    endpoints, giving a closed form to check against. Also checks that the
+    generated source maps jn/yn to the MSVC CRT names, which are spelled
+    with a leading underscore there.
+    """
+    c_el = basix.ufl.element("Lagrange", "interval", 1, shape=(1,))
+    mesh = ufl.Mesh(c_el)
+    x = ufl.SpatialCoordinate(mesh)
+    dx_vertex = ufl.Measure("dx", metadata={"quadrature_rule": "vertex"})
+    forms = [(ufl.bessel_J(1, x[0]) + ufl.bessel_Y(1, x[0])) * dx_vertex]
+
+    compiled_forms, module, code = ffcx.codegeneration.jit.compile_forms(
+        forms, cffi_extra_compile_args=compile_args
+    )
+
+    # MSVC deprecates the POSIX spellings in favour of _jn/_yn
+    assert "#if defined(_MSC_VER)" in code[1]
+    assert "#define jn(n, x) _jn((n), (x))" in code[1]
+    assert "#define yn(n, x) _yn((n), (x))" in code[1]
+
+    form = compiled_forms[0]
+    offsets = form.form_integral_offsets
+    integral = form.form_integrals[offsets[module.lib.cell]]
+
+    a, b = 1.0, 2.0
+    ffi = module.ffi
+    J = np.zeros(1, dtype=np.float64)
+    coords = np.array([a, 0.0, 0.0, b, 0.0, 0.0], dtype=np.float64)
+    integral.tabulate_tensor_float64(
+        ffi.cast("double *", J.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.cast("double *", coords.ctypes.data),
+        ffi.NULL,
+        ffi.NULL,
+        ffi.NULL,
+    )
+
+    def f(t):
+        return float(sympy.besselj(1, t).evalf()) + float(sympy.bessely(1, t).evalf())
+
+    # Vertex rule on [a, b]: (b - a) / 2 * (f(a) + f(b))
+    assert np.isclose(J[0], 0.5 * (b - a) * (f(a) + f(b)))
