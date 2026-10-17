@@ -44,6 +44,7 @@ logger = logging.getLogger("ffcx")
 
 _FW_CACHE_BUDGET_BYTES = 32768
 _MAX_PREINTEGRATED_TABLE_BYTES = 65536
+_MIN_PARTIAL_PREINTEGRATION_WORK = 64
 _FW_CACHE_BYTES_PER_SCALAR = 16
 _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK = 256
 
@@ -372,13 +373,15 @@ class IntegralGenerator:
 
     def _generate_preintegrated_tensor(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
-    ) -> list[L.LNode] | None:
-        """Precompute reference contractions when every scalar factor is point-independent.
+    ) -> tuple[list[L.LNode], set[int]] | None:
+        """Precompute reference contractions for blocks with point-independent factors.
 
-        Each table holds the weighted product of two argument tables summed over
+        Each table holds an argument table or product of two tables summed over
         quadrature points. Runtime assembly contracts these reference tensors
         with the cellwise factors, avoiding repeated output updates for each
         point. The table budget bounds generated data for large argument spaces.
+        Return the generated code and identities of the integrated IR blocks so
+        the remaining quadrature contraction can omit those exact contributions.
         """
         if (
             self.ir.expression.integral_type != "cell"
@@ -389,41 +392,57 @@ class IntegralGenerator:
         ):
             return None
         integrand = self.ir.expression.integrand[(domain, quadrature_rule)]
-        blocks = [b for values in integrand["block_contributions"].values() for b in values]
-        if not blocks or any(
-            len(b.ma_data) != 2
-            or not b.all_factors_piecewise
-            or b.transposed
-            or len(b.factor_indices_comp_indices) != 1
-            or any(
-                ma.tabledata.has_tensor_factorisation
-                or ma.tabledata.is_permuted
-                or ma.tabledata.values.shape[:2] != (1, 1)
+        blocks = [
+            b
+            for contributions in integrand["block_contributions"].values()
+            for b in contributions
+            if len(b.ma_data) in (1, 2)
+            and b.all_factors_piecewise
+            and not b.transposed
+            and len(b.factor_indices_comp_indices) == 1
+            and all(
+                not ma.tabledata.has_tensor_factorisation
+                and not ma.tabledata.is_permuted
+                and ma.tabledata.values.shape[:2] == (1, 1)
                 for ma in b.ma_data
             )
-            for b in blocks
+        ]
+        if not blocks:
+            return None
+        # A partial contraction adds another pass over the output. Keep small
+        # mixed forms with varying argument tables fused unless enough terms
+        # are removed to pay for that pass and the reference-table reads.
+        # Point-independent argument tables can always collapse their loop.
+        num_blocks = sum(
+            len(contributions) for contributions in integrand["block_contributions"].values()
+        )
+        if (
+            len(blocks) < num_blocks
+            and len(blocks) * (quadrature_rule.weights.size - 1) < _MIN_PARTIAL_PREINTEGRATION_WORK
+            and any(not ma.tabledata.is_piecewise for block in blocks for ma in block.ma_data)
         ):
             return None
         pairs = {
             tuple(ma.tabledata.name for ma in b.ma_data): tuple(ma.tabledata for ma in b.ma_data)
             for b in blocks
         }
-        table_bytes = sum(a.values.shape[-1] * b.values.shape[-1] * 8 for a, b in pairs.values())
+        table_bytes = sum(
+            math.prod(t.values.shape[-1] for t in pair) * 8 for pair in pairs.values()
+        )
         if table_bytes > _MAX_PREINTEGRATED_TABLE_BYTES:
             return None
 
         declarations: list[L.LNode] = []
         tables: dict[tuple[str, ...], L.Symbol] = {}
-        for names, (test_table, trial_table) in pairs.items():
-            av = np.broadcast_to(
-                test_table.values[0, 0],
-                (len(quadrature_rule.weights), test_table.values.shape[-1]),
-            )
-            bv = np.broadcast_to(
-                trial_table.values[0, 0],
-                (len(quadrature_rule.weights), trial_table.values.shape[-1]),
-            )
-            values = np.einsum("q,qi,qj->ij", quadrature_rule.weights, av, bv)
+        for names, pair in pairs.items():
+            argument_values = [
+                np.broadcast_to(
+                    table.values[0, 0], (len(quadrature_rule.weights), table.values.shape[-1])
+                )
+                for table in pair
+            ]
+            contraction = "q,qi->i" if len(pair) == 1 else "q,qi,qj->ij"
+            values = np.einsum(contraction, quadrature_rule.weights, *argument_values)
             symbol = L.Symbol(f"RI_{quadrature_rule.id()}_{len(tables)}", L.DataType.REAL)
             tables[names] = symbol
             declarations.append(L.ArrayDecl(symbol, values=values, const=True))
@@ -432,43 +451,52 @@ class IntegralGenerator:
         F = integrand["factorization"]
         A = self.backend.symbols.element_tensor
         shape = self.ir.expression.tensor_shape
-        i, j = [self.backend.symbols.argument_loop_index(k) for k in range(2)]
+        indices = [self.backend.symbols.argument_loop_index(k) for k in range(len(shape))]
         for block in blocks:
-            a, c = [ma.tabledata for ma in block.ma_data]
-            assert a.block_size is not None and a.offset is not None
-            assert c.block_size is not None and c.offset is not None
+            data = [ma.tabledata for ma in block.ma_data]
+            assert all(t.block_size is not None and t.offset is not None for t in data)
             factor = self.get_var(
                 quadrature_rule,
                 domain,
                 F.nodes[block.factor_indices_comp_indices[0][0]]["expression"],
             )
-            output = (a.block_size * i + a.offset, c.block_size * j + c.offset)
-            groups[(a.values.shape[-1], c.values.shape[-1])].append(
-                (output, factor * tables[(a.name, c.name)][i][j])
-            )
+            output = tuple(t.block_size * index + t.offset for t, index in zip(data, indices))
+            table = tables[tuple(t.name for t in data)]
+            access = L.ArrayAccess(table, indices)
+            groups[tuple(t.values.shape[-1] for t in data)].append((output, factor * access))
         code: list[L.LNode] = []
-        for (ni, nj), entries in groups.items():
+        for sizes, entries in groups.items():
             updates = collections.defaultdict(list)
             for output, term in entries:
                 updates[output].append(term)
-            body = [
+            body: list[L.LNode] = [
                 L.AssignAdd(A[L.MultiIndex(list(output), shape)], L.Sum(terms))
                 for output, terms in updates.items()
             ]
-            code.append(L.ForRange(i, 0, ni, [L.ForRange(j, 0, nj, body)]))
-        return declarations + code
+            for index, size in reversed(list(zip(indices, sizes))):
+                body = [L.ForRange(index, 0, size, body)]
+            code.extend(body)
+        return declarations + code, {id(block) for block in blocks}
 
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
         """Generate quadrature loop with for this quadrature_rule."""
         preintegrated = self._generate_preintegrated_tensor(quadrature_rule, domain)
-        if preintegrated is not None:
-            return preintegrated
+        preintegrated_code, preintegrated_blocks = preintegrated or ([], set())
+        blocks = self.ir.expression.integrand[(domain, quadrature_rule)]["block_contributions"]
+        if preintegrated_blocks and all(
+            id(block) in preintegrated_blocks
+            for contributions in blocks.values()
+            for block in contributions
+        ):
+            return preintegrated_code
 
         # Generate varying partition
         definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule, domain)
 
         # Generate dofblock parts, some of this will be placed before or after quadloop
-        tensor_comp, intermediates_fw = self.generate_dofblock_partition(quadrature_rule, domain)
+        tensor_comp, intermediates_fw = self.generate_dofblock_partition(
+            quadrature_rule, domain, preintegrated_blocks
+        )
         assert all([isinstance(tc, L.Section) for tc in tensor_comp])
 
         # Check if we only have Section objects
@@ -498,13 +526,13 @@ class IntegralGenerator:
         code = optimize(code, quadrature_rule)
 
         if self._quadrature_invariant(quadrature_rule, domain):
-            return code
+            return preintegrated_code + code
 
         split = self._split_quadrature_loop(code, iq, intermediates_fw, quadrature_rule)
         if split is not None:
-            return split
+            return preintegrated_code + split
 
-        return [L.create_nested_for_loops([iq], code)]
+        return preintegrated_code + [L.create_nested_for_loops([iq], code)]
 
     def _quadrature_invariant(
         self, quadrature_rule: QuadratureRule, domain: basix.CellType
@@ -724,8 +752,9 @@ class IntegralGenerator:
         self,
         quadrature_rule: QuadratureRule,
         domain: basix.CellType,
+        preintegrated_blocks: set[int],
     ):
-        """Generate a dofblock partition."""
+        """Generate a dofblock partition, excluding already integrated blocks."""
         block_contributions = self.ir.expression.integrand[(domain, quadrature_rule)][
             "block_contributions"
         ]
@@ -734,6 +763,7 @@ class IntegralGenerator:
             (blockmap, blockdata)
             for blockmap, contributions in sorted(block_contributions.items())
             for blockdata in contributions
+            if id(blockdata) not in preintegrated_blocks
         ]
 
         block_groups = collections.defaultdict(list)

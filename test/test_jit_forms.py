@@ -2530,3 +2530,123 @@ def test_preintegrated_rectangular_tensor(dtype, mode, monkeypatch, compile_args
     expected = np.einsum("q,qi,qj->ij", weights * coefficient_values, test_values, trial_values)
     expected *= abs(np.linalg.det((coords[1:] - coords[0]).T))
     np.testing.assert_allclose(A, expected, atol=1e-12)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("cell", ["triangle", "tetrahedron"])
+@pytest.mark.parametrize("mode", ["constant", "varying", "budget", "curved"])
+@pytest.mark.parametrize("blocked", [False, True])
+def test_preintegrated_linear_form(dtype, cell, mode, blocked, monkeypatch, compile_args):
+    """Integrate values and gradients with signed weights and non-affine geometry."""
+    import ffcx.codegeneration.integral_generator as integral_generator
+
+    if mode == "budget":
+        monkeypatch.setattr(integral_generator, "_MAX_PREINTEGRATED_TABLE_BYTES", 0)
+    dim = 2 if cell == "triangle" else 3
+    geometry_degree = 2 if mode == "curved" else 1
+    coordinate_element = basix.ufl.element("Lagrange", cell, geometry_degree, shape=(dim,))
+    domain = ufl.Mesh(coordinate_element)
+    element = basix.ufl.element("Lagrange", cell, 3, shape=(dim,) if blocked else None)
+    coefficient_element = basix.ufl.element("DG", cell, 1 if mode == "varying" else 0)
+    v = ufl.TestFunction(ufl.FunctionSpace(domain, element))
+    f = ufl.Coefficient(ufl.FunctionSpace(domain, coefficient_element))
+    points = np.array([[0.1, 0.1, 0.1], [0.2, 0.3, 0.1], [0.2, 0.1, 0.4]])[:, :dim]
+    weights = np.array([0.1, -0.05, 0.2])
+    direction = np.arange(1, dim + 1, dtype=np.float64)
+    measure = ufl.dx(
+        metadata={
+            "quadrature_rule": "custom",
+            "quadrature_points": points,
+            "quadrature_weights": weights,
+        }
+    )
+    scalar_test = ufl.dot(ufl.as_vector(direction), v) if blocked else v
+    form = (
+        f
+        * ufl.conj(scalar_test + ufl.dot(ufl.as_vector(direction), ufl.grad(scalar_test)))
+        * measure
+    )
+    compiled, module, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    assert ("RI_" in implementation) == (mode == "constant")
+    values = np.linspace(0.3, 1.2, coefficient_element.dim).astype(dtype)
+    if dtype == "complex128":
+        values *= 1 + 0.4j
+    nodes = coordinate_element.basix_element.points
+    coords = np.zeros((len(nodes), 3))
+    coords[:, :dim] = nodes @ (np.eye(dim) + 0.1).T
+    if mode == "curved":
+        coords[:, :dim] += 0.07 * nodes**2
+    geometry = coordinate_element.basix_element.tabulate(1, points)
+    jacobians = np.einsum("dqj,jc->qcd", geometry[1 : dim + 1, :, :, 0], coords[:, :dim])
+    basis = element.basix_element.tabulate(1, points)
+    gradients = np.einsum("dqi,qdc->qic", basis[1 : dim + 1, :, :, 0], np.linalg.inv(jacobians))
+    coefficient = coefficient_element.basix_element.tabulate(0, points)[0, :, :, 0] @ values
+    expected = np.einsum(
+        "q,qi->i",
+        weights * coefficient * np.abs(np.linalg.det(jacobians)),
+        basis[0, :, :, 0] + gradients @ direction,
+    )
+    if blocked:
+        expected = (expected[:, None] * direction).ravel()
+    A = np.zeros(element.dim, dtype=dtype)
+    ctype = dtype_to_c_type(dtype)
+    getattr(compiled[0].form_integrals[0], f"tabulate_tensor_{dtype}")(
+        module.ffi.cast(f"{ctype} *", A.ctypes.data),
+        module.ffi.cast(f"{ctype} *", values.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.cast("double *", coords.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.NULL,
+        module.ffi.NULL,
+    )
+    np.testing.assert_allclose(A, expected, atol=1e-12)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("family", ["Lagrange", "RT", "N1curl"])
+def test_preintegrated_constant_blocks_in_varying_form(dtype, family, monkeypatch, compile_args):
+    """Preintegrate constant blocks while retaining point-dependent contractions."""
+    import ffcx.codegeneration.integral_generator as integral_generator
+
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    element = basix.ufl.element(family, "tetrahedron", 1 if family == "N1curl" else 2)
+    space = ufl.FunctionSpace(domain, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    f = ufl.Coefficient(ufl.FunctionSpace(domain, basix.ufl.element("DG", "tetrahedron", 1)))
+    operator = {"Lagrange": ufl.grad, "RT": ufl.div, "N1curl": ufl.curl}[family]
+    form = (f * ufl.inner(u, v) + ufl.inner(operator(u), operator(v))) * ufl.dx
+    optimized, module, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    assert "RI_" in implementation
+    assert "for (int iq" in implementation
+    monkeypatch.setattr(integral_generator, "_MAX_PREINTEGRATED_TABLE_BYTES", 0)
+    # A fresh temporary cache directory compiles the fallback independently.
+    reference, reference_module, (_, reference_code) = ffcx.codegeneration.jit.compile_forms(
+        [form],
+        options={"scalar_type": dtype},
+        cffi_extra_compile_args=compile_args,
+        cache_dir=None,
+    )
+    assert "RI_" not in reference_code
+    coords = np.array([[0, 0, 0], [1.1, 0.03, 0.02], [0.1, 0.92, 0.05], [0.04, 0.08, 1.2]])
+    values = np.array([0.7, 0.8, 1.1, 0.9], dtype=dtype)
+    if dtype == "complex128":
+        values *= 1 + 0.4j
+    tensors = []
+    ctype = dtype_to_c_type(dtype)
+    for compiled, m in [(optimized, module), (reference, reference_module)]:
+        A = np.zeros((element.dim, element.dim), dtype=dtype)
+        getattr(compiled[0].form_integrals[0], f"tabulate_tensor_{dtype}")(
+            m.ffi.cast(f"{ctype} *", A.ctypes.data),
+            m.ffi.cast(f"{ctype} *", values.ctypes.data),
+            m.ffi.NULL,
+            m.ffi.cast("double *", coords.ctypes.data),
+            m.ffi.NULL,
+            m.ffi.NULL,
+            m.ffi.NULL,
+        )
+        tensors.append(A)
+    np.testing.assert_allclose(tensors[0], tensors[1], atol=1e-12)
