@@ -83,12 +83,26 @@ def _print_timing(stage: int, timing: float) -> None:
     logger.info(f"Compiler stage {stage} finished in {timing:.4f} seconds.")
 
 
+def _visualise_format(visualise: bool | str | None) -> str | None:
+    """Normalise the `visualise` argument to an image format, or None.
+
+    A bool is accepted so that existing callers passing `True` keep
+    working; it means the default "pdf".
+    """
+    if visualise is None or visualise is False:
+        return None
+    elif visualise is True:
+        return "pdf"
+    else:
+        return visualise
+
+
 def compile_ufl_objects(
     ufl_objects: list[typing.Any],
     options: dict[str, int | float | npt.DTypeLike],
     object_names: dict[int, str] | None = None,
     namespace: str | None = None,
-    visualise: bool = False,
+    visualise: bool | str | None = None,
 ) -> tuple[list[str], tuple[str, ...]]:
     """Generate UFCx code for a given UFL objects.
 
@@ -98,7 +112,9 @@ def compile_ufl_objects(
           object_names: Map from object Python id to object name
           namespace: Convenience namespace/prefix for generated code.
           options: Options
-          visualise: Toggle visualisation
+          visualise: If set, the image format in which to store the IR
+            graphs, e.g. "pdf" or "png". `True` is accepted as a synonym
+            for "pdf".
 
      Returns: tuple containing list of code file strings and tuple of associated file suffixes.
 
@@ -117,7 +133,7 @@ def compile_ufl_objects(
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, _object_names, _namespace, options, visualise)
+    ir = compute_ir(analysis, _object_names, _namespace, options, _visualise_format(visualise))
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: code generation
