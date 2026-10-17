@@ -162,6 +162,41 @@ def _contraction_work(node) -> int:
     return int(isinstance(node, L.Statement))
 
 
+def _arithmetic_work(node) -> int:
+    """Estimate scalar arithmetic in one evaluation of a generated section."""
+    if isinstance(node, list):
+        return sum(_arithmetic_work(child) for child in node)
+    if isinstance(node, L.Section):
+        return _arithmetic_work(node.declarations) + _arithmetic_work(node.statements)
+    if isinstance(node, L.StatementList):
+        return _arithmetic_work(node.statements)
+    if isinstance(node, L.ForRange):
+        if not isinstance(node.begin, L.LiteralInt) or not isinstance(node.end, L.LiteralInt):
+            return 0
+        return int(max(0, node.end.value - node.begin.value)) * _arithmetic_work(node.body)
+    if isinstance(node, L.VariableDecl):
+        return _arithmetic_work(node.value)
+    if isinstance(node, (L.ArrayDecl, L.Comment)):
+        return 0
+    if isinstance(node, L.Statement):
+        return _arithmetic_work(node.expr)
+    if isinstance(node, L.Assign):
+        return _arithmetic_work(node.rhs)
+    if isinstance(node, L.BinOp):
+        return 1 + _arithmetic_work(node.lhs) + _arithmetic_work(node.rhs)
+    if isinstance(node, L.NaryOp):
+        return max(0, len(node.args) - 1) + sum(_arithmetic_work(arg) for arg in node.args)
+    if isinstance(node, L.MathFunction):
+        return 1 + sum(_arithmetic_work(arg) for arg in node.args)
+    if isinstance(node, L.PrefixUnaryOp):
+        return _arithmetic_work(node.arg)
+    if isinstance(node, L.Conditional):
+        return _arithmetic_work(node.condition) + max(
+            _arithmetic_work(node.true), _arithmetic_work(node.false)
+        )
+    return 0
+
+
 class IntegralGenerator:
     """Integral generator."""
 
@@ -561,7 +596,9 @@ class IntegralGenerator:
         vectorising the loop -- leaving calls to `sin` and friends scalar.
         Caching the `fw` values and contracting in a second loop leaves the
         evaluation loop free of those reads, so it vectorises onto the SIMD
-        math library.
+        math library. For sufficiently large unrolled geometry evaluations,
+        the same separation permits SIMD arithmetic across quadrature points
+        without interleaved tensor updates.
 
         The `fw` cache is tiled, not sized to the full point count: a form
         with many `fw` values and a large rule could otherwise put megabytes
@@ -587,11 +624,26 @@ class IntegralGenerator:
         if not intermediates_fw:
             return None
 
-        # The split only pays for itself when there's a transcendental math
-        # call to vectorise -- most integrands (mass matrices, plain
-        # Poisson, etc.) have none, and for those it's a net loss.
         if not _contains_vectorizable_mathfunction(evaluation):
-            return None
+            # Separate unrolled geometry evaluation so SIMD can run across
+            # points. Tiny rules, retained reductions and contractions that
+            # dominate evaluation do not amortise the additional cache pass.
+            jacobians = [
+                section for section in evaluation if getattr(section, "name", None) == "Jacobian"
+            ]
+            reductions = [
+                section
+                for section in evaluation
+                if getattr(section, "name", None) in ("Jacobian", "Coefficient")
+            ]
+            if (
+                not jacobians
+                or quadrature_rule.weights.size < 8
+                or len(intermediates_fw) > 12
+                or any(_contraction_work(section) for section in reductions)
+                or _arithmetic_work(evaluation) < _contraction_work(contraction)
+            ):
+                return None
         # On x86-64 Linux the evaluation loop can call libmvec. Elsewhere,
         # only split when the contraction is expensive enough to amortise
         # the fw cache without that benefit.

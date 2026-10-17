@@ -2,10 +2,15 @@
 
 Generate each revision into its own directory, then compare, for example::
 
-    python benchmarks/forms.py generate /tmp/forms/before --revision before
-    python benchmarks/forms.py generate /tmp/forms/after --revision after
+    PYTHONHASHSEED=0 python benchmarks/forms.py generate /tmp/forms/before --revision before
+    PYTHONHASHSEED=0 python benchmarks/forms.py generate /tmp/forms/after --revision after
     python benchmarks/forms.py compare --variant before=/tmp/forms/before \
         --variant after=/tmp/forms/after --output /tmp/forms/results.json
+
+Use ``generate --geometry nonaffine`` for quadratic simplex geometry and
+warped Q1 quadrilateral/hexahedral geometry. Pass ``--quadrature-from`` to share
+prescribed quadrature across revisions. Every generated cell is checked for a
+positive determinant and nonconstant geometry at the quadrature points.
 
 The suite covers scalar loads, mass, diffusion, transport, vector mass, mixed
 divergence, and H(div)/H(curl) operators on simplex and tensor-product cells.
@@ -32,7 +37,7 @@ from pathlib import Path
 import numpy as np
 
 
-def cases(cells, degrees):
+def cases(cells, degrees, geometry="affine", quadrature_from=None):
     """Yield forms together with deterministic coefficient and coordinate data."""
     import basix
     import basix.ufl
@@ -40,14 +45,31 @@ def cases(cells, degrees):
 
     for cell in cells:
         dim = len(basix.topology(getattr(basix.CellType, cell))) - 1
-        coordinate = basix.ufl.element("Lagrange", cell, 1, shape=(dim,))
+        geometry_degree = (
+            2 if geometry == "nonaffine" and cell in ("triangle", "tetrahedron") else 1
+        )
+        coordinate = basix.ufl.element("Lagrange", cell, geometry_degree, shape=(dim,))
         mesh = ufl.Mesh(coordinate)
-        vertices = coordinate.basix_element.points
+        geometry_nodes = coordinate.basix_element.points
         B = np.eye(dim) + 0.08 * np.ones((dim, dim))
         coordinates = []
         for k in range(32):
-            physical = vertices @ (B * (1 + 0.001 * k)).T + 0.01 * k
-            padded = np.zeros((len(vertices), 3))
+            mapped = geometry_nodes.copy()
+            if geometry == "nonaffine":
+                r, t = geometry_nodes[:, 0], geometry_nodes[:, 1]
+                amplitude = 1 + 0.002 * k
+                if dim == 2:
+                    mapped[:, 0] += amplitude * 0.12 * r * t
+                    mapped[:, 1] += amplitude * 0.08 * r * t
+                else:
+                    z = geometry_nodes[:, 2]
+                    mapped[:, 0] += amplitude * 0.10 * t * z
+                    if cell == "hexahedron":
+                        mapped[:, 0] += amplitude * 0.06 * r * t * z
+                    mapped[:, 1] += amplitude * 0.08 * r * z
+                    mapped[:, 2] += amplitude * 0.07 * r * t
+            physical = mapped @ (B * (1 + 0.001 * k)).T + 0.01 * k
+            padded = np.zeros((len(geometry_nodes), 3))
             padded[:, :dim] = physical
             coordinates.append(padded.ravel())
         coordinates = np.array(coordinates)
@@ -100,8 +122,26 @@ def cases(cells, degrees):
                     p, r = ufl.TrialFunction(X), ufl.TestFunction(X)
                     forms[label] = (ufl.inner(p, r) + ufl.inner(operator(p), operator(r))) * ufl.dx
             for name, form in forms.items():
+                case = f"{cell}_p{degree}_{name}"
+                if geometry == "nonaffine":
+                    case = f"nonaffine_{case}"
+                    if quadrature_from is not None:
+                        rule = np.load(quadrature_from / f"{case}.npz")
+                        points, weights = rule["quadrature_points"], rule["quadrature_weights"]
+                    else:
+                        points, weights = basix.make_quadrature(
+                            getattr(basix.CellType, cell), 2 * degree + 2
+                        )
+                    form = form.integrals()[0].reconstruct(
+                        metadata={
+                            "quadrature_rule": "custom",
+                            "quadrature_points": points,
+                            "quadrature_weights": weights,
+                        }
+                    )
+                    form = ufl.Form([form])
                 shape = [arg.ufl_function_space().ufl_element().dim for arg in form.arguments()]
-                yield f"{cell}_p{degree}_{name}", form, shape, coefficients, coordinates
+                yield case, form, shape, coefficients, coordinates
 
 
 def generate(args):
@@ -123,19 +163,48 @@ def generate(args):
         "ufl": ufl.__version__,
         "numpy": np.__version__,
         "python": platform.python_version(),
+        "python_hash_seed": os.environ.get("PYTHONHASHSEED"),
+        "geometry": args.geometry,
         "cases": {},
     }
-    for name, form, shape, coefficients, coordinates in cases(args.cells, args.degrees):
+    for name, form, shape, coefficients, coordinates in cases(
+        args.cells, args.degrees, args.geometry, args.quadrature_from
+    ):
+        if args.filter and not re.search(args.filter, name):
+            continue
         sources, suffixes = compile_ufl_objects(
             [form], options=get_options({"scalar_type": "float64"})
         )
         for source, suffix in zip(sources, suffixes):
             (root / f"{name}{suffix}").write_text(source)
-        np.savez(root / f"{name}.npz", coefficients=coefficients, coordinates=coordinates)
+        arrays = {"coefficients": coefficients, "coordinates": coordinates}
+        geometry_info = {}
+        if args.geometry == "nonaffine":
+            metadata = form.integrals()[0].metadata()
+            arrays.update(
+                {key: metadata[key] for key in ("quadrature_points", "quadrature_weights")}
+            )
+            element = form.ufl_domains()[0].ufl_coordinate_element().basix_element
+            dim = element.points.shape[1]
+            derivative = element.tabulate(1, arrays["quadrature_points"])[1 : dim + 1, :, :, 0]
+            jacobians = np.einsum(
+                "dqn,knc->kqcd", derivative, coordinates.reshape(32, -1, 3)[:, :, :dim]
+            )
+            determinants = np.linalg.det(jacobians)
+            assert np.all(determinants > 0)
+            assert np.all(np.ptp(determinants, axis=1) > 1e-5)
+            geometry_info = {
+                "coordinate_degree": element.degree,
+                "quadrature_points": len(determinants[0]),
+                "min_jacobian_determinant": float(determinants.min()),
+                "max_jacobian_determinant": float(determinants.max()),
+            }
+        np.savez(root / f"{name}.npz", **arrays)
         manifest["cases"][name] = {
             "shape": shape,
             "source_sha256": hashlib.sha256(sources[1].encode()).hexdigest(),
             "inputs_sha256": hashlib.sha256((root / f"{name}.npz").read_bytes()).hexdigest(),
+            **geometry_info,
         }
         print(name, shape, flush=True)
     (root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
@@ -211,9 +280,15 @@ def compare(args):
     manifests = {
         label: json.loads((root / "manifest.json").read_text()) for label, root in roots.items()
     }
-    names = list(manifests[labels[0]]["cases"])
+
+    def selected(manifest):
+        return [
+            name for name in manifest["cases"] if not args.filter or re.search(args.filter, name)
+        ]
+
+    names = selected(manifests[labels[0]])
     for manifest in manifests.values():
-        assert list(manifest["cases"]) == names
+        assert selected(manifest) == names
     report = {
         "flags": args.flags,
         "cpu": args.cpu,
@@ -241,8 +316,6 @@ def compare(args):
         ).splitlines()[0]
         results = report["results"][cc] = {}
         for name in names:
-            if args.filter and not re.search(args.filter, name):
-                continue
             modules, data, counts, outputs = {}, {}, {}, {}
             shape = manifests[labels[0]]["cases"][name]["shape"]
             for label, root in roots.items():
@@ -250,6 +323,9 @@ def compare(args):
                 data[label] = np.load(root / f"{name}.npz")
                 ws, xs = data[label]["coefficients"], data[label]["coordinates"]
                 assert len(ws) == len(xs) == 32
+                for key in ("quadrature_points", "quadrature_weights"):
+                    if key in data[labels[0]]:
+                        np.testing.assert_array_equal(data[label][key], data[labels[0]][key])
                 np.testing.assert_array_equal(ws, data[labels[0]]["coefficients"])
                 np.testing.assert_array_equal(xs, data[labels[0]]["coordinates"])
                 m = modules[label] = load_kernel(root, name, shape, data[label], cc, args.flags)
@@ -304,6 +380,9 @@ def main():
     gen = commands.add_parser("generate")
     gen.add_argument("directory", type=Path)
     gen.add_argument("--revision", required=True)
+    gen.add_argument("--geometry", choices=["affine", "nonaffine"], default="affine")
+    gen.add_argument("--quadrature-from", type=Path)
+    gen.add_argument("--filter")
     gen.add_argument(
         "--cells", nargs="+", default=["triangle", "tetrahedron", "quadrilateral", "hexahedron"]
     )

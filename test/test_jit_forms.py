@@ -2650,3 +2650,89 @@ def test_preintegrated_constant_blocks_in_varying_form(dtype, family, monkeypatc
         )
         tensors.append(A)
     np.testing.assert_allclose(tensors[0], tensors[1], atol=1e-12)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("cell", ["triangle", "tetrahedron", "quadrilateral", "hexahedron"])
+@pytest.mark.parametrize("family", ["Lagrange", "RT", "N1curl"])
+def test_nonaffine_cell_operators(dtype, cell, family, compile_args):
+    """Check curved geometry and commuting Piola maps against direct quadrature."""
+    dim = 2 if cell in ("triangle", "quadrilateral") else 3
+    simplex = cell in ("triangle", "tetrahedron")
+    coordinate_element = basix.ufl.element(
+        "Lagrange",
+        cell,
+        2 if simplex else 1,
+        shape=(dim,),
+        lagrange_variant=basix.LagrangeVariant.equispaced,
+    )
+    mesh = ufl.Mesh(coordinate_element)
+    element = basix.ufl.element(family, cell, 2 if simplex or family == "Lagrange" else 1)
+    space = ufl.FunctionSpace(mesh, element)
+    u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
+    f = ufl.Coefficient(ufl.FunctionSpace(mesh, basix.ufl.element("DG", cell, 0)))
+    points, weights = basix.make_quadrature(getattr(basix.CellType, cell), 6)
+    measure = ufl.dx(
+        metadata={
+            "quadrature_rule": "custom",
+            "quadrature_points": points,
+            "quadrature_weights": weights,
+        }
+    )
+    operator = {"Lagrange": ufl.grad, "RT": ufl.div, "N1curl": ufl.curl}[family]
+    form = (f * ufl.inner(u, v) + ufl.inner(operator(u), operator(v))) * measure
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    nodes = coordinate_element.basix_element.points
+    coords = np.zeros((len(nodes), 3))
+    coords[:, :dim] = nodes @ (np.eye(dim) + 0.08).T
+    for j in range(dim):
+        coords[:, j] += 0.07 * nodes[:, j] * nodes[:, (j + 1) % dim]
+    derivatives = coordinate_element.basix_element.tabulate(1, points)[1 : dim + 1, :, :, 0]
+    J = np.einsum("dqn,nc->qcd", derivatives, coords[:, :dim])
+    det = np.linalg.det(J)
+    assert np.all(det > 0)
+    assert np.ptp(det) > 0.01
+    basis = element.basix_element.tabulate(1, points)
+    derivative = basis[1 : dim + 1]
+    if family == "Lagrange":
+        values = basis[0, :, :, 0]
+        differentiated = np.einsum("dqi,qdc->qic", derivative[:, :, :, 0], np.linalg.inv(J))
+    elif family == "RT":
+        values = np.einsum("qcd,qnd->qnc", J, basis[0]) / det[:, None, None]
+        differentiated = np.einsum("dqnd->qn", derivative) / det[:, None]
+    else:
+        values = np.einsum("qdc,qnd->qnc", np.linalg.inv(J), basis[0])
+        if dim == 2:
+            differentiated = (derivative[0, :, :, 1] - derivative[1, :, :, 0]) / det[:, None]
+        else:
+            curl = np.stack(
+                [
+                    derivative[1, :, :, 2] - derivative[2, :, :, 1],
+                    derivative[2, :, :, 0] - derivative[0, :, :, 2],
+                    derivative[0, :, :, 1] - derivative[1, :, :, 0],
+                ],
+                axis=-1,
+            )
+            differentiated = np.einsum("qcd,qnd->qnc", J, curl) / det[:, None, None]
+    coefficient = np.array([0.8 + (0.3j if dtype == "complex128" else 0)], dtype=dtype)
+
+    def integrate(table):
+        contraction = "q,qi,qj->ij" if table.ndim == 2 else "q,qic,qjc->ij"
+        return np.einsum(contraction, weights * det, table, table)
+
+    initial = 0.15 * np.eye(element.dim, dtype=dtype)
+    expected = initial + coefficient[0] * integrate(values) + integrate(differentiated)
+    A = initial.copy()
+    ctype = dtype_to_c_type(dtype)
+    getattr(compiled[0].form_integrals[0], f"tabulate_tensor_{dtype}")(
+        module.ffi.cast(f"{ctype} *", A.ctypes.data),
+        module.ffi.cast(f"{ctype} *", coefficient.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.cast("double *", coords.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.NULL,
+        module.ffi.NULL,
+    )
+    np.testing.assert_allclose(A, expected, rtol=2e-11, atol=2e-11)
