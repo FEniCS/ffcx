@@ -22,6 +22,7 @@ logger = logging.getLogger("ffcx")
 # Cap on unrolling, so a curved high-order simplex doesn't blow up compile
 # time. Tensor-product geometry always keeps the loop path regardless.
 _MAX_UNROLLED_COORDINATE_DOFS = 16
+_MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS = 20
 
 
 def _should_unroll_coordinate_dofs(num_dofs: int, has_tensor_factorisation: bool) -> bool:
@@ -160,6 +161,56 @@ class FFCXBackendDefinitions:
 
         assert begin < end
 
+        if (
+            tabledata.is_piecewise
+            and tabledata.is_uniform
+            and not tabledata.is_permuted
+            and not tabledata.has_tensor_factorisation
+            and num_dofs <= 16
+        ):
+            terms = [
+                L.float_product(
+                    [self.symbols.coefficient_dof_access(mt.terminal, k * bs + begin), value]
+                )
+                for k, value in enumerate(tabledata.values[0, 0, 0])
+                if value != 0.0
+            ]
+            return L.Section(
+                type(mt.terminal).__name__,
+                [],
+                [L.VariableDecl(access, L.Sum(terms))],
+                [self.symbols.coefficient_dof_access(mt.terminal, begin).array],
+                [access],
+            )
+
+        # Bound expansion while removing basis derivatives that vanish at every point.
+        if (
+            not tabledata.has_tensor_factorisation
+            and num_dofs <= _MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS
+        ):
+            active = tabledata.values.any(axis=(0, 1, 2)).nonzero()[0]
+            if len(active) < num_dofs:
+                terms = []
+                tables = []
+                for k in active:
+                    ic_k = L.MultiIndex([L.LiteralInt(int(k))], [num_dofs])
+                    FE, term_tables = self.access.table_access(
+                        tabledata, self.entity_type, mt.restriction, iq, ic_k
+                    )
+                    terms.append(
+                        self.symbols.coefficient_dof_access(mt.terminal, int(k) * bs + begin) * FE
+                    )
+                    tables.extend(term_tables)
+                return L.Section(
+                    type(mt.terminal).__name__,
+                    [],
+                    [L.VariableDecl(access, L.Sum(terms))],
+                    [
+                        self.symbols.coefficient_dof_access(mt.terminal, begin).array,
+                        *dict.fromkeys(tables),
+                    ],
+                    [access],
+                )
         # Get access to element table
         FE, tables = self.access.table_access(tabledata, self.entity_type, mt.restriction, iq, ic)
         dof_access: L.ArrayAccess = self.symbols.coefficient_dof_access(
@@ -300,6 +351,13 @@ class FFCXBackendDefinitions:
             terms = []
             coord_tables: list[L.Symbol] = []
             for k in range(num_dofs):
+                if tabledata.is_piecewise and tabledata.is_uniform and not tabledata.is_permuted:
+                    value = tabledata.values[0, 0, 0, k]
+                    if value != 0.0:
+                        terms.append(
+                            L.float_product([dof_access[_dof(k) * dim + begin + offset], value])
+                        )
+                    continue
                 ic_k = L.MultiIndex([L.LiteralInt(k)], [num_dofs])
                 FE_k, tables_k = self.access.table_access(
                     tabledata, self.entity_type, mt.restriction, iq, ic_k

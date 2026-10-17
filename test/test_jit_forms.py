@@ -2422,3 +2422,111 @@ def test_form_rejects_ridge_geometry_outside_ridge_integral(measure):
     integrand = ufl.geometry.CellRidgeJacobian(domain)[0, 0] * ufl.TestFunction(space)
     with pytest.raises(RuntimeError, match="CellRidgeJacobian is only defined on a ridge"):
         ffcx.codegeneration.jit.compile_forms([integrand * ufl.Measure(measure, domain=domain)])
+
+
+@pytest.mark.parametrize("degree", [1, 2, 3])
+def test_elasticity_tangent_and_residual(degree, compile_args):
+    """Check the nonlinear tangent against finite differences and its linear limit."""
+    element = basix.ufl.element("Lagrange", "tetrahedron", degree, shape=(3,))
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    space = ufl.FunctionSpace(domain, element)
+    state = ufl.Coefficient(space)
+    trial, test = ufl.TrialFunction(space), ufl.TestFunction(space)
+    F = ufl.Identity(3) + ufl.grad(state)
+    J = ufl.det(F)
+    energy = (ufl.inner(F, F) - 3) / 2 - ufl.ln(J) + 0.625 * ufl.ln(J) ** 2
+    measure = ufl.dx(metadata={"quadrature_degree": 2 * degree})
+    residual = ufl.derivative(energy * measure, state, test)
+    tangent = ufl.derivative(residual, state, trial)
+    linear = (
+        2 * ufl.inner(ufl.sym(ufl.grad(trial)), ufl.sym(ufl.grad(test)))
+        + 1.25 * ufl.div(trial) * ufl.div(test)
+    ) * measure
+    compiled, module, _ = ffcx.codegeneration.jit.compile_forms(
+        [residual, tangent, linear], cffi_extra_compile_args=compile_args
+    )
+    n = element.dim
+    coords = np.array([[0, 0, 0], [1.1, 0.03, 0.02], [0.1, 0.92, 0.05], [0.04, 0.08, 1.2]])
+    rng = np.random.default_rng(371)
+    displacement = 0.003 * rng.standard_normal(n)
+    direction = rng.standard_normal(n)
+
+    def evaluate(index, values):
+        A = np.zeros(n if index == 0 else (n, n))
+        kernel = compiled[index].form_integrals[0].tabulate_tensor_float64
+        kernel(
+            module.ffi.cast("double *", A.ctypes.data),
+            module.ffi.cast("double *", values.ctypes.data),
+            module.ffi.NULL,
+            module.ffi.cast("double *", coords.ctypes.data),
+            module.ffi.NULL,
+            module.ffi.NULL,
+            module.ffi.NULL,
+        )
+        return A
+
+    np.testing.assert_allclose(evaluate(0, np.zeros(n)), 0, atol=1e-13)
+    np.testing.assert_allclose(evaluate(1, np.zeros(n)), evaluate(2, np.zeros(n)), atol=1e-12)
+    h = 1e-6
+    difference = (
+        evaluate(0, displacement + h * direction) - evaluate(0, displacement - h * direction)
+    ) / (2 * h)
+    jacobian = evaluate(1, displacement)
+    np.testing.assert_allclose(jacobian, jacobian.T, atol=1e-12)
+    np.testing.assert_allclose(jacobian @ direction, difference, atol=1e-8, rtol=1e-7)
+
+
+@pytest.mark.parametrize("dtype", ["float64", "complex128"])
+@pytest.mark.parametrize("mode", ["constant", "varying", "budget"])
+def test_preintegrated_rectangular_tensor(dtype, mode, monkeypatch, compile_args):
+    """Preserve rectangular spaces, signed custom weights and varying factors."""
+    import ffcx.codegeneration.integral_generator as integral_generator
+
+    if mode == "budget":
+        monkeypatch.setattr(integral_generator, "_MAX_PREINTEGRATED_TABLE_BYTES", 0)
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", "tetrahedron", 1, shape=(3,)))
+    trial_element = basix.ufl.element("Lagrange", "tetrahedron", 2)
+    test_element = basix.ufl.element("Lagrange", "tetrahedron", 3)
+    coefficient_element = basix.ufl.element("DG", "tetrahedron", 1 if mode == "varying" else 0)
+    trial = ufl.TrialFunction(ufl.FunctionSpace(domain, trial_element))
+    test = ufl.TestFunction(ufl.FunctionSpace(domain, test_element))
+    coefficient = ufl.Coefficient(ufl.FunctionSpace(domain, coefficient_element))
+    points = np.array([[0.1, 0.1, 0.1], [0.2, 0.3, 0.1], [0.2, 0.1, 0.4]])
+    weights = np.array([0.1, -0.05, 0.2])
+    form = (
+        coefficient
+        * ufl.inner(trial, test)
+        * ufl.dx(
+            metadata={
+                "quadrature_rule": "custom",
+                "quadrature_points": points,
+                "quadrature_weights": weights,
+            }
+        )
+    )
+    compiled, module, (_, implementation) = ffcx.codegeneration.jit.compile_forms(
+        [form], options={"scalar_type": dtype}, cffi_extra_compile_args=compile_args
+    )
+    assert ("RI_" in implementation) == (mode == "constant")
+    values = np.linspace(0.3, 1.2, coefficient_element.dim).astype(dtype)
+    if dtype == "complex128":
+        values *= 1 + 0.4j
+    coords = np.array([[0, 0, 0], [1.1, 0.03, 0.02], [0.1, 0.92, 0.05], [0.04, 0.08, 1.2]])
+    A = np.zeros((test_element.dim, trial_element.dim), dtype=dtype)
+    kernel = getattr(compiled[0].form_integrals[0], f"tabulate_tensor_{dtype}")
+    ctype = dtype_to_c_type(dtype)
+    kernel(
+        module.ffi.cast(f"{ctype} *", A.ctypes.data),
+        module.ffi.cast(f"{ctype} *", values.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.cast("double *", coords.ctypes.data),
+        module.ffi.NULL,
+        module.ffi.NULL,
+        module.ffi.NULL,
+    )
+    trial_values = trial_element.basix_element.tabulate(0, points)[0, :, :, 0]
+    test_values = test_element.basix_element.tabulate(0, points)[0, :, :, 0]
+    coefficient_values = coefficient_element.basix_element.tabulate(0, points)[0, :, :, 0] @ values
+    expected = np.einsum("q,qi,qj->ij", weights * coefficient_values, test_values, trial_values)
+    expected *= abs(np.linalg.det((coords[1:] - coords[0]).T))
+    np.testing.assert_allclose(A, expected, atol=1e-12)

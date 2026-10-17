@@ -8,13 +8,16 @@
 """Integral generator."""
 
 import collections
+import itertools
 import logging
+import math
 import platform
 import sys
 from numbers import Integral
 from typing import Any
 
 import basix
+import numpy as np
 import ufl
 
 import ffcx.codegeneration.lnodes as L
@@ -22,10 +25,13 @@ from ffcx.codegeneration import geometry
 from ffcx.codegeneration.definitions import create_dof_index, create_quadrature_index
 from ffcx.codegeneration.optimizer import (
     expr_key,
+    factor_scalar_sums,
     optimize,
     power_of_two_cse_statements,
     prune_dead_scalars,
+    prune_unused_tables,
     reciprocal_cse_statements,
+    referenced_symbol_names,
     scalar_declaration_names,
 )
 from ffcx.ir.elementtables import piecewise_ttypes
@@ -37,6 +43,7 @@ logger = logging.getLogger("ffcx")
 
 
 _FW_CACHE_BUDGET_BYTES = 32768
+_MAX_PREINTEGRATED_TABLE_BYTES = 65536
 _FW_CACHE_BYTES_PER_SCALAR = 16
 _UNSUPPORTED_VECTOR_MATH_MIN_CONTRACTION_WORK = 256
 
@@ -76,6 +83,8 @@ def _fw_cache_tile_size(n_fw: int, num_points: int) -> int | None:
     max_tile = _FW_CACHE_BUDGET_BYTES // (n_fw * _FW_CACHE_BYTES_PER_SCALAR)
     if max_tile == 0:
         return None
+    if num_points <= max_tile:
+        return num_points
 
     tile = min(max_tile, num_points)
     # Round down to a SIMD-friendly width when it still fits the budget.
@@ -176,11 +185,11 @@ class IntegralGenerator:
         # Cache
         self.temp_symbols: dict[Any, L.Symbol] = {}
 
-        # Piecewise symbol name -> (lhs, rhs) of its defining two-factor
+        # Scalar symbol name -> (lhs, rhs) of its defining two-factor
         # product, if any. Lets generate_block_parts spot several block
         # entries sharing one factor (e.g. several metric-tensor entries all
         # scaled by |det J|) and fuse it with the quadrature weight once.
-        self._piecewise_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
+        self._scalar_mul_operands: dict[str, tuple[L.LExpr, L.LExpr]] = {}
 
         # Set of counters used for assigning names to intermediate
         # variables
@@ -298,6 +307,7 @@ class IntegralGenerator:
         # Done on the LNode tree, before formatting, so it respects scopes
         # and is shared by all backends.
         parts = prune_dead_scalars(parts, scalar_declaration_names(parts))
+        parts = prune_unused_tables(parts)
 
         return L.StatementList(parts)
 
@@ -311,7 +321,7 @@ class IntegralGenerator:
 
         # Loop over quadrature rules
         for (cell, quadrature_rule), _ in expression.integrand.items():
-            if domain == cell:
+            if domain == cell and not self._quadrature_invariant(quadrature_rule, domain):
                 # Generate quadrature weights array
                 wsym = self.backend.symbols.weights_table(quadrature_rule)
                 parts += [L.ArrayDecl(wsym, values=quadrature_rule.weights, const=True)]
@@ -360,8 +370,100 @@ class IntegralGenerator:
         self.backend.symbols.element_tables[name] = table_symbol
         return [L.ArrayDecl(table_symbol, values=table, const=True)]
 
+    def _generate_preintegrated_tensor(
+        self, quadrature_rule: QuadratureRule, domain: basix.CellType
+    ) -> list[L.LNode] | None:
+        """Precompute reference contractions when every scalar factor is point-independent.
+
+        Each table holds the weighted product of two argument tables summed over
+        quadrature points. Runtime assembly contracts these reference tensors
+        with the cellwise factors, avoiding repeated output updates for each
+        point. The table budget bounds generated data for large argument spaces.
+        """
+        if (
+            self.ir.expression.integral_type != "cell"
+            or self.ir.part != TensorPart.full
+            or quadrature_rule.has_tensor_factors
+            or quadrature_rule.weights.size < 2
+            or self._quadrature_invariant(quadrature_rule, domain)
+        ):
+            return None
+        integrand = self.ir.expression.integrand[(domain, quadrature_rule)]
+        blocks = [b for values in integrand["block_contributions"].values() for b in values]
+        if not blocks or any(
+            len(b.ma_data) != 2
+            or not b.all_factors_piecewise
+            or b.transposed
+            or len(b.factor_indices_comp_indices) != 1
+            or any(
+                ma.tabledata.has_tensor_factorisation
+                or ma.tabledata.is_permuted
+                or ma.tabledata.values.shape[:2] != (1, 1)
+                for ma in b.ma_data
+            )
+            for b in blocks
+        ):
+            return None
+        pairs = {
+            tuple(ma.tabledata.name for ma in b.ma_data): tuple(ma.tabledata for ma in b.ma_data)
+            for b in blocks
+        }
+        table_bytes = sum(a.values.shape[-1] * b.values.shape[-1] * 8 for a, b in pairs.values())
+        if table_bytes > _MAX_PREINTEGRATED_TABLE_BYTES:
+            return None
+
+        declarations: list[L.LNode] = []
+        tables: dict[tuple[str, ...], L.Symbol] = {}
+        for names, (test_table, trial_table) in pairs.items():
+            av = np.broadcast_to(
+                test_table.values[0, 0],
+                (len(quadrature_rule.weights), test_table.values.shape[-1]),
+            )
+            bv = np.broadcast_to(
+                trial_table.values[0, 0],
+                (len(quadrature_rule.weights), trial_table.values.shape[-1]),
+            )
+            values = np.einsum("q,qi,qj->ij", quadrature_rule.weights, av, bv)
+            symbol = L.Symbol(f"RI_{quadrature_rule.id()}_{len(tables)}", L.DataType.REAL)
+            tables[names] = symbol
+            declarations.append(L.ArrayDecl(symbol, values=values, const=True))
+
+        groups = collections.defaultdict(list)
+        F = integrand["factorization"]
+        A = self.backend.symbols.element_tensor
+        shape = self.ir.expression.tensor_shape
+        i, j = [self.backend.symbols.argument_loop_index(k) for k in range(2)]
+        for block in blocks:
+            a, c = [ma.tabledata for ma in block.ma_data]
+            assert a.block_size is not None and a.offset is not None
+            assert c.block_size is not None and c.offset is not None
+            factor = self.get_var(
+                quadrature_rule,
+                domain,
+                F.nodes[block.factor_indices_comp_indices[0][0]]["expression"],
+            )
+            output = (a.block_size * i + a.offset, c.block_size * j + c.offset)
+            groups[(a.values.shape[-1], c.values.shape[-1])].append(
+                (output, factor * tables[(a.name, c.name)][i][j])
+            )
+        code: list[L.LNode] = []
+        for (ni, nj), entries in groups.items():
+            updates = collections.defaultdict(list)
+            for output, term in entries:
+                updates[output].append(term)
+            body = [
+                L.AssignAdd(A[L.MultiIndex(list(output), shape)], L.Sum(terms))
+                for output, terms in updates.items()
+            ]
+            code.append(L.ForRange(i, 0, ni, [L.ForRange(j, 0, nj, body)]))
+        return declarations + code
+
     def generate_quadrature_loop(self, quadrature_rule: QuadratureRule, domain: basix.CellType):
         """Generate quadrature loop with for this quadrature_rule."""
+        preintegrated = self._generate_preintegrated_tensor(quadrature_rule, domain)
+        if preintegrated is not None:
+            return preintegrated
+
         # Generate varying partition
         definitions, intermediates_0 = self.generate_varying_partition(quadrature_rule, domain)
 
@@ -395,11 +497,26 @@ class IntegralGenerator:
         code = definitions + intermediates + tensor_comp
         code = optimize(code, quadrature_rule)
 
+        if self._quadrature_invariant(quadrature_rule, domain):
+            return code
+
         split = self._split_quadrature_loop(code, iq, intermediates_fw, quadrature_rule)
         if split is not None:
             return split
 
         return [L.create_nested_for_loops([iq], code)]
+
+    def _quadrature_invariant(
+        self, quadrature_rule: QuadratureRule, domain: basix.CellType
+    ) -> bool:
+        """Check whether every block is independent of the quadrature point."""
+        if self.ir.expression.integral_type in ufl.custom_integral_types:
+            return False
+        integrand = self.ir.expression.integrand[(domain, quadrature_rule)]
+        blocks = [b for values in integrand["block_contributions"].values() for b in values]
+        return bool(blocks) and all(
+            b.all_factors_piecewise and all(t in piecewise_ttypes for t in b.ttypes) for b in blocks
+        )
 
     def _split_quadrature_loop(
         self,
@@ -436,6 +553,10 @@ class IntegralGenerator:
         evaluation = [c for c in code if getattr(c, "name", None) != "Tensor Computation"]
         contraction = [c for c in code if getattr(c, "name", None) == "Tensor Computation"]
         if not contraction or not evaluation:
+            return None
+        contraction_inputs = referenced_symbol_names(contraction)
+        intermediates_fw = [fw for fw in intermediates_fw if fw.symbol.name in contraction_inputs]
+        if not intermediates_fw:
             return None
 
         # The split only pays for itself when there's a transcendental math
@@ -584,17 +705,18 @@ class IntegralGenerator:
         # determinant) into one reciprocal and a multiply each.
         intermediates = reciprocal_cse_statements(intermediates, name_prefix=f"recip_{symbol.name}")
 
-        # Record each piecewise two-factor product so generate_block_parts
+        # Record each two-factor product so generate_block_parts
         # can fuse a shared factor across block entries with the quadrature
-        # weight once (see _piecewise_mul_operands). Read after the CSE
+        # weight once (see _scalar_mul_operands). Read after the CSE
         # passes so a reciprocal-CSE-rewritten division counts too.
-        if mode == "piecewise":
-            for stmt in intermediates:
-                if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
-                    self._piecewise_mul_operands[stmt.symbol.name] = (
-                        stmt.value.lhs,
-                        stmt.value.rhs,
-                    )
+        for stmt in intermediates:
+            if isinstance(stmt, L.VariableDecl) and isinstance(stmt.value, L.Mul):
+                self._scalar_mul_operands[stmt.symbol.name] = (
+                    stmt.value.lhs,
+                    stmt.value.rhs,
+                )
+
+        intermediates = factor_scalar_sums(intermediates)
 
         return definitions, intermediates
 
@@ -699,7 +821,7 @@ class IntegralGenerator:
         vars = []
 
         # RHS expressions grouped by LHS "dofmap"
-        rhs_expressions = collections.defaultdict(list)
+        rhs_expressions: dict[tuple[L.LExpr, ...], list[L.LExpr]] = collections.defaultdict(list)
 
         block_rank = len(blockmap)
         iq_symbol = self.backend.symbols.quadrature_loop_index
@@ -707,13 +829,26 @@ class IntegralGenerator:
 
         A_shape = self.ir.expression.tensor_shape
 
-        # Detect block entries whose piecewise values share one common
+        unroll = all(
+            td.is_piecewise
+            and td.is_uniform
+            and not td.is_permuted
+            and not td.has_tensor_factorisation
+            and td.values.shape[-1] <= 4
+            for b in blocklist
+            for td in (ma.tabledata for ma in b.ma_data)
+        )
+        quadrature_invariant = self._quadrature_invariant(quadrature_rule, domain)
+
+        # Detect block entries whose scalar values share one common
         # factor (e.g. several metric-tensor entries scaled by the same
         # |det J|). Multiplying that factor into the quadrature weight once,
         # rather than into every already-scaled entry, is cheaper whenever
         # there are more sharing entries than quadrature points. This is a
         # genuine re-association GCC can't perform itself without
         # -ffast-math, since it changes rounding.
+        # Varying factors save a multiplication per sharing entry at every
+        # point, so two entries suffice regardless of the rule size.
         #
         # Skip it when every argument table in this block is itself
         # quadrature-point-independent (piecewise_ttypes) and there is more
@@ -729,9 +864,13 @@ class IntegralGenerator:
         if (
             quadrature_rule is not None
             and self.ir.expression.integral_type not in ufl.custom_integral_types
-            and len(blocklist) > quadrature_rule.weights.size
+            and (
+                len(blocklist) > quadrature_rule.weights.size
+                or (len(blocklist) > 1 and any(not b.all_factors_piecewise for b in blocklist))
+            )
             and (
                 quadrature_rule.weights.size == 1
+                or any(not b.all_factors_piecewise for b in blocklist)
                 or any(
                     ttype not in piecewise_ttypes
                     for blockdata in blocklist
@@ -749,9 +888,7 @@ class IntegralGenerator:
                 factor_index = blockdata.factor_indices_comp_indices[0][0]
                 v = F.nodes[factor_index]["expression"]
                 f = self.get_var(quadrature_rule, domain, v)
-                decomp = (
-                    self._piecewise_mul_operands.get(f.name) if isinstance(f, L.Symbol) else None
-                )
+                decomp = self._scalar_mul_operands.get(f.name) if isinstance(f, L.Symbol) else None
                 if decomp is None:
                     decomps = []
                     break
@@ -803,6 +940,8 @@ class IntegralGenerator:
             if self.ir.expression.integral_type in ufl.custom_integral_types:
                 weights = self.backend.symbols.custom_weights_table
                 weight = weights[iq.global_index]
+            elif quadrature_invariant:
+                weight = L.LiteralFloat(math.fsum(quadrature_rule.weights))
             else:
                 weights = self.backend.symbols.weights_table(quadrature_rule)
                 weight = weights[iq.global_index]
@@ -839,6 +978,25 @@ class IntegralGenerator:
             vars += [var]
             assert not blockdata.transposed, "Not handled yet"
 
+            if unroll:
+                data = [ma.tabledata for ma in blockdata.ma_data]
+                ranges = [range(td.values.shape[-1]) for td in data]
+                for dofs in itertools.product(*ranges):
+                    if self.ir.part == TensorPart.diagonal and len(dofs) == 2:
+                        if dofs[0] != dofs[1]:
+                            continue
+                    values = [td.values[0, 0, 0, i] for td, i in zip(data, dofs)]
+                    if any(value == 0.0 for value in values):
+                        continue
+                    output_indices = []
+                    for td, i in zip(data, dofs):
+                        assert td.block_size is not None and td.offset is not None
+                        output_indices.append(L.LiteralInt(td.block_size * i + td.offset))
+                    if self.ir.part == TensorPart.diagonal:
+                        output_indices = output_indices[:1]
+                    rhs_expressions[tuple(output_indices)].append(L.float_product([fw, *values]))
+                continue
+
             # Fetch code to access modified arguments
             arg_factors, table = self.get_arg_factors(
                 blockdata, block_rank, quadrature_rule, domain, iq, B_indices
@@ -874,8 +1032,11 @@ class IntegralGenerator:
         A = self.backend.symbols.element_tensor
         for indices in keep:
             multi_index = L.MultiIndex(list(indices), A_shape)
-            for expression in keep[indices]:
-                body.append(L.AssignAdd(A[multi_index], expression))
+            if unroll or block_rank == 1:
+                body.append(L.AssignAdd(A[multi_index], L.Sum(keep[indices])))
+            else:
+                for expression in keep[indices]:
+                    body.append(L.AssignAdd(A[multi_index], expression))
 
         # Nest with the last tensor index innermost when an entry sums more
         # than one term (e.g. gradient-gradient) -- GCC's vectoriser wants
@@ -883,7 +1044,8 @@ class IntegralGenerator:
         # opposite, row-innermost order instead.
         multi_term = any(len(v) > 1 for v in keep.values())
         nest_indices = B_indices if multi_term else B_indices[::-1]
-        body = [L.create_nested_for_loops(nest_indices, body)]
+        if not unroll:
+            body = [L.create_nested_for_loops(nest_indices, body)]
         input = [*vars, *tables]
         output = [A]
 
@@ -895,7 +1057,7 @@ class IntegralGenerator:
         assert all(isinstance(o, L.Symbol) for o in output)
 
         annotations = []
-        if len(B_indices) > 1:
+        if len(B_indices) > 1 and not unroll:
             annotations.append(L.Annotation.licm)
 
         quadparts += [L.Section("Tensor Computation", body, [], input, output, annotations)]

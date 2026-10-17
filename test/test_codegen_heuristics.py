@@ -21,10 +21,16 @@ from ffcx.codegeneration.integral_generator import (
     _supports_vector_math_loop_split,
 )
 from ffcx.codegeneration.optimizer import (
+    expr_key,
     prune_dead_scalars,
     reciprocal_cse_statements,
     scalar_declaration_names,
 )
+
+
+def test_expression_keys_distinguish_math_functions():
+    x = L.Symbol("x", L.DataType.SCALAR)
+    assert expr_key(L.MathFunction("sin", [x])) != expr_key(L.MathFunction("cos", [x]))
 
 
 def test_coordinate_dof_unrolling_is_limited_to_small_non_tensor_geometry():
@@ -43,6 +49,8 @@ def test_coordinate_dof_unrolling_is_limited_to_small_non_tensor_geometry():
         (2048, 10000, 1),
         (2049, 10000, None),
         (1000, 4, 2),
+        (9, 11, 11),
+        (81, 24, 24),
     ],
 )
 def test_fw_cache_tiles_do_not_exceed_the_stack_budget(n_fw, num_points, expected):
