@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.19)
+
+project(ffcx-c-demo LANGUAGES C)
+
+find_package(ufcx REQUIRED)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+# Compile the UFL file with FFCx. This writes poisson.c and poisson.h
+# into the build directory.
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/poisson.c ${CMAKE_CURRENT_BINARY_DIR}/poisson.h
+  COMMAND ${Python3_EXECUTABLE} -m ffcx --dir ${CMAKE_CURRENT_BINARY_DIR}
+          ${CMAKE_CURRENT_SOURCE_DIR}/poisson.py
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/poisson.py
+  COMMENT "Compiling poisson.py with FFCx")
+
+add_executable(poisson main.c ${CMAKE_CURRENT_BINARY_DIR}/poisson.c)
+target_include_directories(poisson PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(poisson PRIVATE ufcx::ufcx)
+
+# The generated code calls into the C maths library
+if(NOT WIN32)
+  target_link_libraries(poisson PRIVATE m)
+endif()
