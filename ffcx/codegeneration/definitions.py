@@ -218,7 +218,7 @@ class FFCXBackendDefinitions:
             not tabledata.has_tensor_factorisation
             and num_dofs <= _MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS
         ):
-            active = tabledata.values.any(axis=(0, 1, 2)).nonzero()[0]
+            active = np.flatnonzero(tabledata.values.any(axis=(0, 1, 2)))
             if len(active) < num_dofs:
                 terms = []
                 tables = []
