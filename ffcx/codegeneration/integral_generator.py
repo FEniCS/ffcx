@@ -642,6 +642,13 @@ class IntegralGenerator:
                 or len(intermediates_fw) > 12
                 or any(_contraction_work(section) for section in reductions)
                 or _arithmetic_work(evaluation) < _contraction_work(contraction)
+                # A cheap coefficient evaluation followed by a tiny load
+                # does not reliably amortise the extra cache pass.
+                or (
+                    any(getattr(section, "name", None) == "Coefficient" for section in reductions)
+                    and _arithmetic_work(evaluation) < 64
+                    and _contraction_work(contraction) < 16
+                )
             ):
                 return None
         # On x86-64 Linux the evaluation loop can call libmvec. Elsewhere,

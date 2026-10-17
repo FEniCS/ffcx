@@ -23,6 +23,7 @@ logger = logging.getLogger("ffcx")
 # Cap on unrolling, so a curved high-order simplex doesn't blow up compile
 # time. Tensor-product geometry always keeps the loop path regardless.
 _MAX_UNROLLED_COORDINATE_DOFS = 16
+_MAX_UNROLLED_DENSE_COEFFICIENT_DOFS = 8
 _MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS = 20
 
 
@@ -213,13 +214,21 @@ class FFCXBackendDefinitions:
                 [access],
             )
 
-        # Bound expansion while removing basis derivatives that vanish at every point.
+        # Expand small reductions to expose SIMD across quadrature points,
+        # including the evaluation/contraction split for varying geometry.
+        # Larger reductions are expanded only when some basis derivatives
+        # vanish at every point. Preserve tensor-product factorisations.
         if (
             not tabledata.has_tensor_factorisation
             and num_dofs <= _MAX_UNROLLED_SPARSE_COEFFICIENT_DOFS
         ):
             active = np.flatnonzero(tabledata.values.any(axis=(0, 1, 2)))
-            if len(active) < num_dofs:
+            domain = ufl.domain.extract_unique_domain(mt.terminal)
+            unroll_dense = (
+                num_dofs <= _MAX_UNROLLED_DENSE_COEFFICIENT_DOFS
+                and not domain.is_piecewise_linear_simplex_domain()
+            )
+            if len(active) < num_dofs or unroll_dense:
                 terms = []
                 tables = []
                 for k in active:

@@ -2655,7 +2655,8 @@ def test_preintegrated_constant_blocks_in_varying_form(dtype, family, monkeypatc
 @pytest.mark.parametrize("dtype", ["float64", "complex128"])
 @pytest.mark.parametrize("cell", ["triangle", "tetrahedron", "quadrilateral", "hexahedron"])
 @pytest.mark.parametrize("family", ["Lagrange", "RT", "N1curl"])
-def test_nonaffine_cell_operators(dtype, cell, family, compile_args):
+@pytest.mark.parametrize("coefficient_degree", [0, 1])
+def test_nonaffine_cell_operators(dtype, cell, family, coefficient_degree, compile_args):
     """Check curved geometry and commuting Piola maps against direct quadrature."""
     dim = 2 if cell in ("triangle", "quadrilateral") else 3
     simplex = cell in ("triangle", "tetrahedron")
@@ -2670,7 +2671,8 @@ def test_nonaffine_cell_operators(dtype, cell, family, compile_args):
     element = basix.ufl.element(family, cell, 2 if simplex or family == "Lagrange" else 1)
     space = ufl.FunctionSpace(mesh, element)
     u, v = ufl.TrialFunction(space), ufl.TestFunction(space)
-    f = ufl.Coefficient(ufl.FunctionSpace(mesh, basix.ufl.element("DG", cell, 0)))
+    coefficient_element = basix.ufl.element("DG", cell, coefficient_degree)
+    f = ufl.Coefficient(ufl.FunctionSpace(mesh, coefficient_element))
     points, weights = basix.make_quadrature(getattr(basix.CellType, cell), 6)
     measure = ufl.dx(
         metadata={
@@ -2716,14 +2718,19 @@ def test_nonaffine_cell_operators(dtype, cell, family, compile_args):
                 axis=-1,
             )
             differentiated = np.einsum("qcd,qnd->qnc", J, curl) / det[:, None, None]
-    coefficient = np.array([0.8 + (0.3j if dtype == "complex128" else 0)], dtype=dtype)
+    coefficient = np.linspace(0.8, 1.3, coefficient_element.dim).astype(dtype)
+    if dtype == "complex128":
+        coefficient *= 1 + 0.3j
+    coefficient_values = (
+        coefficient_element.basix_element.tabulate(0, points)[0, :, :, 0] @ coefficient
+    )
 
-    def integrate(table):
+    def integrate(table, factor=1):
         contraction = "q,qi,qj->ij" if table.ndim == 2 else "q,qic,qjc->ij"
-        return np.einsum(contraction, weights * det, table, table)
+        return np.einsum(contraction, weights * det * factor, table, table)
 
     initial = 0.15 * np.eye(element.dim, dtype=dtype)
-    expected = initial + coefficient[0] * integrate(values) + integrate(differentiated)
+    expected = initial + integrate(values, coefficient_values) + integrate(differentiated)
     A = initial.copy()
     ctype = dtype_to_c_type(dtype)
     getattr(compiled[0].form_integrals[0], f"tabulate_tensor_{dtype}")(
