@@ -6,6 +6,7 @@
 
 import ctypes
 import importlib
+import os
 from pathlib import Path
 
 import numpy as np
@@ -29,22 +30,36 @@ def as_C_array(np_array: npt.NDArray):
     return np_array.ctypes.data_as(ctypes.POINTER(dtype_C))
 
 
+def _unique_stem(prefix: str) -> str:
+    """Build an output stem unique to this pytest-xdist worker.
+
+    Generated code is written to the working directory, which is shared
+    by all workers, so a fixed stem would have workers overwrite each
+    other's file while another worker is importing it.
+    """
+    return f"{prefix}_{os.environ.get('PYTEST_XDIST_WORKER', 'main')}"
+
+
 def test_external_module():
     """Inject ffcx.codegeneration.numba as external module, to test support for custom backends."""
     opts = "--language ffcx.codegeneration.numba --scalar_type float64"
     dir = Path(__file__).parent
-    assert ffcx.main.main([str(dir / "poisson.py"), *opts.split(" ")]) == 0
+    stem = _unique_stem("poisson_external")
+    assert ffcx.main.main([str(dir / "poisson.py"), "-o", stem, *opts.split(" ")]) == 0
 
 
-@pytest.fixture
-def generate_poisson() -> None:
+@pytest.fixture(scope="module")
+def generate_poisson() -> str:
+    """Generate the Poisson numba module and return its importable name."""
     dir = Path(__file__).parent
-    assert ffcx.main.main([str(dir / "poisson.py"), "--language", "numba"]) == 0
+    stem = _unique_stem("poisson")
+    assert ffcx.main.main([str(dir / "poisson.py"), "-o", stem, "--language", "numba"]) == 0
+    return f"{stem}_numba"
 
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
-def test_integral(scalar_type: str, generate_poisson) -> None:
-    poisson = importlib.import_module("poisson_numba")
+def test_integral(scalar_type: str, generate_poisson: str) -> None:
+    poisson = importlib.import_module(generate_poisson)
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)
@@ -96,8 +111,8 @@ def test_integral(scalar_type: str, generate_poisson) -> None:
 
 
 @pytest.mark.parametrize("scalar_type", ["float32", "float64"])  # TODO: complex limited by ctypes
-def test_expression(scalar_type: str, generate_poisson) -> None:
-    poisson = importlib.import_module("poisson_numba")
+def test_expression(scalar_type: str, generate_poisson: str) -> None:
+    poisson = importlib.import_module(generate_poisson)
 
     dtype = np.dtype(scalar_type).type
     dtype_r = dtype_to_scalar_dtype(dtype)

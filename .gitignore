@@ -65,7 +65,7 @@ test/*.pdf
 compile-cache/
 ffcx-cache-*/
 libffcx_*
-poisson_numba.py
+poisson*_numba.py
 _cffi_*.c
 _gemm_*.c
 _gemv_*.c
