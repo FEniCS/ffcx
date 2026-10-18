@@ -5,10 +5,13 @@
 # SPDX-License-Identifier:    LGPL-3.0-or-later
 
 import importlib
+import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+
+import ffcx.codegeneration
 
 
 def test_cmdline_simple():
@@ -53,3 +56,34 @@ def test_visualise_format_normalisation():
     assert _visualise_format(False) is None
     assert _visualise_format(None) is None
     assert _visualise_format("png") == "png"
+
+
+def test_generated_code_without_complex(tmp_path):
+    """Generated code must compile where C99 complex is unavailable.
+
+    `ufcx.h` declares the complex kernel members only when the compiler
+    supports them, so the generated initialisers have to be guarded the
+    same way. MSVC is the case that matters.
+    """
+    cc = shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
+    if cc is None:
+        pytest.skip("no C compiler found.")
+
+    dir = Path(__file__).parent
+    subprocess.run(["ffcx", "-d", str(tmp_path), str(dir / "poisson.py")], check=True)
+
+    include = Path(ffcx.codegeneration.__file__).parent
+    for extra in ([], ["-D__STDC_NO_COMPLEX__"]):
+        subprocess.run(
+            [
+                cc,
+                "-c",
+                f"-I{include}",
+                f"-I{tmp_path}",
+                *extra,
+                str(tmp_path / "poisson.c"),
+                "-o",
+                str(tmp_path / "poisson.o"),
+            ],
+            check=True,
+        )
