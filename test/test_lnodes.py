@@ -159,3 +159,30 @@ def test_gemv(dtype):
 
     gemv(py, pA, px)
     assert np.all(y == result)
+
+
+@pytest.mark.parametrize(
+    "dtype,suffix",
+    [("float32", "f"), ("complex64", "f"), ("float64", ""), ("complex128", "")],
+)
+def test_float_literals_suffixed_for_float_real_type(dtype, suffix):
+    """Float literals carry an 'f' suffix when the real type is 'float'.
+
+    An unsuffixed literal is a 'double' in C, so assigning it to a float
+    is a narrowing conversion that compilers warn about once per table
+    entry (MSVC C4305/C4244).
+    """
+    fmt = Formatter(np.dtype(dtype))
+
+    value = L.LiteralFloat(0.5)
+    assert fmt(value) == f"0.5{suffix}"
+
+    # Table initialisers go through a separate path
+    array = L.ArrayDecl(
+        L.Symbol("table", L.DataType.REAL), sizes=(2,), values=np.array([0.5, 1.5]), const=True
+    )
+    assert f"0.5{suffix}" in fmt(array)
+    assert f"1.5{suffix}" in fmt(array)
+
+    # Integer literals are never suffixed
+    assert fmt(L.LiteralInt(2)) == "2"
